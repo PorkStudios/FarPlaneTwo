@@ -1,0 +1,24 @@
+{
+  "uniforms": [
+    {
+      "name": "speed",
+      "type": "float"
+    },
+    {
+      "name": "scale",
+      "type": "float"
+    },
+    {
+      "name": "rotation",
+      "type": "vec2"
+    },
+    {
+      "name": "time",
+      "type": "float"
+    }
+  ],
+  "requires": [
+    //"gl_TexCoord",
+    "vert_color"
+  ]
+}

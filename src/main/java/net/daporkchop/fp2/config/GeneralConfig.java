@@ -29,8 +29,4 @@ import net.minecraftforge.common.config.Config;
  */
 @Config(modid = FP2.MODID, name = FP2.MODID + "/general")
 public class GeneralConfig {
-    @Config.Comment({
-            "The strategy that will be used for rendering distant terrain."
-    })
-    public static RenderStrategy renderStrategy = RenderStrategy.HEIGHT_2D;
 }

@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.config;
 
 import net.daporkchop.fp2.FP2;
+import net.daporkchop.fp2.client.RenderStrategy;
 import net.minecraftforge.common.config.Config;
 
 /**
@@ -28,4 +29,8 @@ import net.minecraftforge.common.config.Config;
  */
 @Config(modid = FP2.MODID, name = FP2.MODID + "/client")
 public class ClientConfig {
+    @Config.Comment({
+            "The strategy that will be used for rendering distant terrain."
+    })
+    public static RenderStrategy renderStrategy = RenderStrategy.HEIGHT_2D;
 }

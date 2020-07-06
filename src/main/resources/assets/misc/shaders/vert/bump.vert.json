@@ -1,0 +1,20 @@
+{
+  "uniforms": [
+    {
+      "name": "view_matrix",
+      "type": "mat4"
+    },
+    {
+      "name": "camera_view",
+      "type": "mat4"
+    },
+    {
+      "name": "camera_model",
+      "type": "mat4"
+    }
+  ],
+  "provides": [
+    "vert_color",
+    "vert_height"
+  ]
+}

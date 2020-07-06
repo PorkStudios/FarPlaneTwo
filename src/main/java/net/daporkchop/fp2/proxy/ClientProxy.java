@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.proxy;
 
+import net.daporkchop.fp2.config.ClientConfig;
 import net.daporkchop.fp2.config.GeneralConfig;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -30,8 +31,8 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 public class ClientProxy extends ServerProxy {
     @SubscribeEvent
     public void onWorldLoad(WorldEvent.Load event)  {
-        if (!event.getWorld().isRemote) {
-            event.getWorld().provider.setSkyRenderer(GeneralConfig.renderStrategy.createTerrainRenderer(event.getWorld()));
+        if (event.getWorld().isRemote) {
+            event.getWorld().provider.setSkyRenderer(ClientConfig.renderStrategy.createTerrainRenderer(event.getWorld()));
         }
     }
 }

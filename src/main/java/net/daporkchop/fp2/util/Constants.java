@@ -18,31 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.client;
+package net.daporkchop.fp2.util;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.client.height.HeightTerrainRenderer;
-import net.minecraft.world.World;
-import net.minecraftforge.client.IRenderHandler;
-import net.minecraftforge.common.config.Config;
+import lombok.experimental.UtilityClass;
 
 /**
+ * Various constants used throughout the mod.
+ *
  * @author DaPorkchop_
  */
-public enum RenderStrategy {
-    @Config.Comment("Renders a simple 2D heightmap of the world. Overhangs are not supported.")
-    HEIGHT_2D {
-        @Override
-        public IRenderHandler createTerrainRenderer(@NonNull World world) {
-            return new HeightTerrainRenderer();
-        }
-    },
-    FULL_3D {
-        @Override
-        public IRenderHandler createTerrainRenderer(@NonNull World world) {
-            throw new UnsupportedOperationException(); //TODO
-        }
-    };
-
-    public abstract IRenderHandler createTerrainRenderer(@NonNull World world);
+@UtilityClass
+public class Constants {
+    public static final int HEIGHT_TILE_SIZE = 64; //side length of a height tile
 }
