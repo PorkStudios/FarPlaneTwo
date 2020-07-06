@@ -1,0 +1,18 @@
+[
+  {
+    "modid": "fp2",
+    "name": "FarPlaneTwo",
+    "description": "The successor to Foghrye4's CWGFarPlaneView",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "https://daporkchop.net",
+    "updateUrl": "",
+    "authorList": [
+      "DaPorkchop_"
+    ],
+    "credits": "Foghrye4 for the original idea\nBarteks2x for making Cubic Chunks",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]
