@@ -40,8 +40,6 @@ public abstract class TerrainRenderer extends IRenderHandler {
     public double y;
     public double z;
 
-    public Mat4 projectionMatrix;
-    public Mat4 viewMatrix;
     public FloatBuffer proj;
     public FloatBuffer modelView;
 
@@ -55,29 +53,5 @@ public abstract class TerrainRenderer extends IRenderHandler {
         this.x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks;
         this.y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks + entity.getEyeHeight();
         this.z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks;
-
-        this.projectionMatrix = Matrices.perspective(mc.entityRenderer.getFOVModifier(partialTicks, true), mc.displayWidth / mc.displayHeight, 0.05f, 10000000f);
-        Vec3d lookVec = entity.getLook(partialTicks);
-
-        Vec3 eye = new Vec3((float) this.x, (float) this.y, (float) this.z);
-        Vec3 f = new Vec3((float) lookVec.x, (float)lookVec.y, (float) lookVec.z);
-        if (false) {
-            Vec3 u = new Vec3(0f, 1f, 0f);
-            Vec3 s = f.cross(u).getUnitVector();
-            u = s.cross(f);
-
-            this.viewMatrix = new Mat4(
-                    s.getX(), u.getX(), -f.getX(), 0f,
-                    s.getY(), u.getY(), -f.getY(), 0f,
-                    s.getZ(), u.getZ(), -f.getZ(), 0f,
-                    -s.dot(eye), -u.dot(eye), f.dot(eye), 1f);
-        } else {
-            this.viewMatrix = Matrices.lookAt(
-                    eye,
-                    eye.add(f),
-                    new Vec3(0f, 1f, 0f));
-        }
-        this.modelView = MatrixHelper.getModelViewMatrix(this.modelView);
-        this.proj = MatrixHelper.getProjectionMatrix(this.proj);
     }
 }

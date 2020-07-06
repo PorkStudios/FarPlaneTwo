@@ -29,5 +29,6 @@ import lombok.experimental.UtilityClass;
  */
 @UtilityClass
 public class Constants {
-    public static final int HEIGHT_TILE_SIZE = 64; //side length of a height tile
+    public static final int HEIGHT_TILE_SQUARES = 64; //side length of a height tile
+    public static final int HEIGHT_TILE_VERTS = HEIGHT_TILE_SQUARES + 1; //side length of a height tile (in vertices)
 }

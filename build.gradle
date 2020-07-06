@@ -44,7 +44,7 @@ ext {
     //dependency things
     junitVersion = "4.12"
     lombokVersion = "1.16.20"
-    porklibVersion = "0.5.4-SNAPSHOT"
+    porklibVersion = "0.5.5-SNAPSHOT"
 }
 
 compileJava {
@@ -72,6 +72,9 @@ repositories {
 
 dependencies {
     compile ("net.daporkchop.lib:binary:$porklibVersion")   {
+        exclude group: "io.netty"
+    }
+    compile ("net.daporkchop.lib:noise:$porklibVersion")   {
         exclude group: "io.netty"
     }
     compile "com.hackoeur:jglm:1.0.0"

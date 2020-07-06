@@ -1,7 +1,0 @@
-{
-  "uniforms": [
-  ],
-  "provides": [
-    "gl_TexCoord"
-  ]
-}
