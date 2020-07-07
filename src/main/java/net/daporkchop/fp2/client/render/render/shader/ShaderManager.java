@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.pepsimod.util.render.shader;
+package net.daporkchop.fp2.client.render.render.shader;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -26,13 +26,12 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.lib.binary.oio.StreamUtil;
 import net.daporkchop.lib.common.function.io.IOFunction;
-import net.daporkchop.pepsimod.util.render.OpenGL;
+import net.daporkchop.fp2.client.render.render.OpenGL;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 

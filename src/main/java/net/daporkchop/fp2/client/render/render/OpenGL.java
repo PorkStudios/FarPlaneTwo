@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.pepsimod.util.render;
+package net.daporkchop.fp2.client.render.render;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;

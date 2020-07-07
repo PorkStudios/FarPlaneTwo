@@ -20,14 +20,9 @@
 
 package net.daporkchop.fp2.client.common;
 
-import com.hackoeur.jglm.Mat4;
-import com.hackoeur.jglm.Matrices;
-import com.hackoeur.jglm.Vec3;
-import net.daporkchop.pepsimod.util.render.MatrixHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.client.IRenderHandler;
 
 import java.nio.FloatBuffer;

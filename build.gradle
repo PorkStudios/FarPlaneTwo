@@ -77,7 +77,6 @@ dependencies {
     compile ("net.daporkchop.lib:noise:$porklibVersion")   {
         exclude group: "io.netty"
     }
-    compile "com.hackoeur:jglm:1.0.0"
 
     deobfCompile "io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT"
 

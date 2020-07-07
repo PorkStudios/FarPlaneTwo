@@ -18,12 +18,11 @@
  *
  */
 
-package net.daporkchop.pepsimod.util.render.shader;
+package net.daporkchop.fp2.client.render.render.shader;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.lib.unsafe.PUnsafe;
-import net.daporkchop.pepsimod.util.render.OpenGL;
+import net.daporkchop.fp2.client.render.render.OpenGL;
 
 /**
  * Basic wrapper around a shader.

@@ -18,13 +18,12 @@
  *
  */
 
-package net.daporkchop.pepsimod.util.render.shader;
+package net.daporkchop.fp2.client.render.render.shader;
 
 import com.google.gson.JsonObject;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.experimental.Accessors;
-import net.daporkchop.pepsimod.util.render.OpenGL;
+import net.daporkchop.fp2.client.render.render.OpenGL;
 
 import java.util.Collection;
 import java.util.Collections;

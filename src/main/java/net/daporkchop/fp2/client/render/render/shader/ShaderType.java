@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.pepsimod.util.render.shader;
+package net.daporkchop.fp2.client.render.render.shader;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static net.daporkchop.pepsimod.util.render.OpenGL.*;
+import static net.daporkchop.fp2.client.render.render.OpenGL.*;
 
 /**
  * The different types of shaders.

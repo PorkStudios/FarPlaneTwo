@@ -18,25 +18,11 @@
  *
  */
 
-package net.daporkchop.pepsimod.util.render;
+package net.daporkchop.fp2.client.render.render;
 
-import com.hackoeur.jglm.Mat4;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.lib.unsafe.PUnsafe;
-import net.daporkchop.pepsimod.util.render.shader.ShaderProgram;
 import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.ARBShaderObjects;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL12;
-import org.lwjgl.opengl.GL13;
-import org.lwjgl.opengl.GL14;
-import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL21;
-import org.lwjgl.opengl.GL30;
-import org.lwjgl.opengl.GL31;
-import org.lwjgl.opengl.GL32;
-import org.lwjgl.util.vector.Matrix4f;
 
 import java.nio.FloatBuffer;
 
@@ -45,28 +31,11 @@ import java.nio.FloatBuffer;
  */
 @UtilityClass
 public class MatrixHelper {
-    private static final FloatBuffer BUFFER = BufferUtils.createFloatBuffer(16);
-
-    public static void setMatrixUniform(ShaderProgram shader, String uniform, Mat4 matrix)  {
-        BUFFER.clear();
-        BUFFER.put(matrix.getBuffer()).flip();
-
-        ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation(uniform), false, BUFFER);
-    }
-
-    public static FloatBuffer getModelViewMatrix(FloatBuffer buffer)  {
+    public static FloatBuffer getMatrix(int id, FloatBuffer buffer) {
         if (buffer == null) {
             buffer = BufferUtils.createFloatBuffer(16);
         }
-        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, buffer);
-        return buffer;
-    }
-
-    public static FloatBuffer getProjectionMatrix(FloatBuffer buffer)  {
-        if (buffer == null) {
-            buffer = BufferUtils.createFloatBuffer(16);
-        }
-        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, buffer);
+        GL11.glGetFloat(id, buffer);
         return buffer;
     }
 }
