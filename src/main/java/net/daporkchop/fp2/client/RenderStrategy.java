@@ -35,7 +35,7 @@ public enum RenderStrategy {
     HEIGHT_2D {
         @Override
         public TerrainRenderer createTerrainRenderer(@NonNull World world) {
-            return new HeightTerrainRenderer();
+            return new HeightTerrainRenderer(world);
         }
     },
     FULL_3D {

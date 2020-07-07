@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.asm.client.renderer;
 
+import net.daporkchop.fp2.client.render.MatrixHelper;
 import net.daporkchop.fp2.util.asm.TerrainRendererHolder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
@@ -28,6 +29,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
@@ -47,5 +49,39 @@ public abstract class MixinEntityRenderer {
     private void renderWorldPass_postSetupTerrain(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
         this.mc.profiler.endStartSection("fp2_renderDistantTerrain");
         ((TerrainRendererHolder) this.mc.world).fp2_terrainRenderer().render(partialTicks, this.mc.world, this.mc);
+    }
+
+    //use a projection with infinite zFar
+
+    @Redirect(
+            method = "Lnet/minecraft/client/renderer/EntityRenderer;renderCloudsCheck(Lnet/minecraft/client/renderer/RenderGlobal;FIDDD)V",
+            at = @At(value = "INVOKE",
+                    target = "Lorg/lwjgl/util/glu/Project;gluPerspective(FFFF)V"))
+    private void renderCloudsCheck_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar)  {
+        MatrixHelper.perspectiveInfinite(fov, aspect, zNear);
+    }
+
+    @Redirect(
+            method = "Lnet/minecraft/client/renderer/EntityRenderer;renderHand(FI)V",
+            at = @At(value = "INVOKE",
+                    target = "Lorg/lwjgl/util/glu/Project;gluPerspective(FFFF)V"))
+    private void renderHand_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar)  {
+        MatrixHelper.perspectiveInfinite(fov, aspect, zNear);
+    }
+
+    @Redirect(
+            method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
+            at = @At(value = "INVOKE",
+                    target = "Lorg/lwjgl/util/glu/Project;gluPerspective(FFFF)V"))
+    private void renderWorldPass_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar)  {
+        MatrixHelper.perspectiveInfinite(fov, aspect, zNear);
+    }
+
+    @Redirect(
+            method = "Lnet/minecraft/client/renderer/EntityRenderer;setupCameraTransform(FI)V",
+            at = @At(value = "INVOKE",
+                    target = "Lorg/lwjgl/util/glu/Project;gluPerspective(FFFF)V"))
+    private void setupCameraTransform_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar)  {
+        MatrixHelper.perspectiveInfinite(fov, aspect, zNear);
     }
 }

@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.client.height;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.client.common.TerrainRenderer;
 import net.daporkchop.fp2.client.render.MatrixHelper;
 import net.daporkchop.fp2.client.render.object.BufferTextureObject;
@@ -33,10 +34,14 @@ import net.daporkchop.lib.noise.NoiseSource;
 import net.daporkchop.lib.noise.engine.OpenSimplexNoiseEngine;
 import net.daporkchop.lib.random.impl.FastPRandom;
 import net.minecraft.block.material.MapColor;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.ARBShaderObjects;
 import org.lwjgl.opengl.GL15;
@@ -48,7 +53,6 @@ import java.nio.ShortBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -117,25 +121,52 @@ public class HeightTerrainRenderer extends TerrainRenderer {
     public static final Map<ChunkPos, VertexArrayObject> VAO_LOOKUP = Collections.synchronizedMap(new HashMap<>());
 
     static {
+    }
+
+    public static final BufferTextureObject MAP_COLORS = new BufferTextureObject();
+
+    static {
+        IntBuffer buffer = BufferUtils.createIntBuffer(MapColor.COLORS.length);
+        buffer.put(Stream.of(MapColor.COLORS).mapToInt(color -> color == null ? 0xFFFF00FF : color.colorValue).toArray())
+                .flip();
+
+        try (VertexBufferObject vbo = new VertexBufferObject().bind()) {
+            glBufferData(GL_ARRAY_BUFFER, buffer, GL_STATIC_DRAW);
+
+            MAP_COLORS.useBuffer(vbo, GL_RGBA8);
+        }
+    }
+
+    public HeightTerrainRenderer(@NonNull World world)  {
+        //lol this isn't thread-safe at all
         new Thread(() -> {
+            PorkUtil.sleep(10000L);
+            World serverWorld = Minecraft.getMinecraft().getIntegratedServer().getWorld(0);
+            //IChunkGenerator generator = serverWorld.provider.createChunkGenerator();
             for (int x = 0; x < 5; x++) {
                 for (int z = 0; z < 5; z++) {
-                    PorkUtil.sleep(5000L);
-
                     IntBuffer heightBuffer = BufferUtils.createIntBuffer(HEIGHT_TILE_VERTS * HEIGHT_TILE_VERTS);
+                    ByteBuffer colorBuffer = BufferUtils.createByteBuffer(HEIGHT_TILE_VERTS * HEIGHT_TILE_VERTS);
                     for (int xx = 0; xx < HEIGHT_TILE_VERTS; xx++) {
+                        Z_LOOP:
                         for (int zz = 0; zz < HEIGHT_TILE_VERTS; zz++) {
-                            heightBuffer.put((int) NOISE.get(x * HEIGHT_TILE_SQUARES + xx, z * HEIGHT_TILE_SQUARES + zz));
+                            int blockX = x * HEIGHT_TILE_SQUARES + xx;
+                            int blockZ = z * HEIGHT_TILE_SQUARES + zz;
+                            Chunk chunk = serverWorld.getChunk(blockX >> 4, blockZ >> 4);//generator.generateChunk(blockX >> 4, blockZ >> 4);
+
+                            for (int y = 255; y >= 0; y--)  {
+                                IBlockState state = chunk.getBlockState(blockX & 0xF, y, blockZ & 0xF);
+                                if (state.getBlock().canCollideCheck(state, true))   {
+                                    heightBuffer.put(y);
+                                    colorBuffer.put((byte) state.getMapColor(serverWorld, new BlockPos(blockX, y, blockZ)).colorIndex);
+                                    continue Z_LOOP;
+                                }
+                            }
+                            heightBuffer.put(0);
+                            colorBuffer.put((byte) MapColor.AIR.colorIndex);
                         }
                     }
                     heightBuffer.flip();
-
-                    ByteBuffer colorBuffer = BufferUtils.createByteBuffer(HEIGHT_TILE_VERTS * HEIGHT_TILE_VERTS);
-                    for (int xx = 0; xx < HEIGHT_TILE_VERTS; xx++) {
-                        for (int zz = 0; zz < HEIGHT_TILE_VERTS; zz++) {
-                            colorBuffer.put((byte) (ThreadLocalRandom.current().nextInt() & 0x3F));
-                        }
-                    }
                     colorBuffer.flip();
 
                     ChunkPos pos = new ChunkPos(x, z);
@@ -176,20 +207,6 @@ public class HeightTerrainRenderer extends TerrainRenderer {
         }).start();
     }
 
-    public static final BufferTextureObject MAP_COLORS = new BufferTextureObject();
-
-    static {
-        IntBuffer buffer = BufferUtils.createIntBuffer(MapColor.COLORS.length);
-        buffer.put(Stream.of(MapColor.COLORS).mapToInt(color -> color == null ? 0xFFFF00FF : color.colorValue).toArray())
-                .flip();
-
-        try (VertexBufferObject vbo = new VertexBufferObject().bind()) {
-            glBufferData(GL_ARRAY_BUFFER, buffer, GL_STATIC_DRAW);
-
-            MAP_COLORS.useBuffer(vbo, GL_RGBA8);
-        }
-    }
-
     @Override
     public void render(float partialTicks, WorldClient world, Minecraft mc) {
         super.render(partialTicks, world, mc);
@@ -202,17 +219,8 @@ public class HeightTerrainRenderer extends TerrainRenderer {
         glPushMatrix();
         glTranslated(-this.cameraX, -this.cameraY, -this.cameraZ);
 
-        this.modelView = MatrixHelper.getMatrix(GL_MODELVIEW_MATRIX, this.modelView);
-        this.proj = MatrixHelper.getMatrix(GL_PROJECTION_MATRIX, this.proj);
-
-        { //increase clipping range
-            float zNear = 0.05F;
-            float zFar = 1000000F;
-
-            float deltaZ = zFar - zNear;
-            this.proj.put(2 * 4 + 2, -(zFar + zNear) / deltaZ);
-            this.proj.put(3 * 4 + 2, -2 * zNear * zFar / deltaZ);
-        }
+        this.modelView = MatrixHelper.getMATRIX(GL_MODELVIEW_MATRIX, this.modelView);
+        this.proj = MatrixHelper.getMATRIX(GL_PROJECTION_MATRIX, this.proj);
 
         try (ShaderProgram shader = HEIGHT_SHADER.use();
              BufferTextureObject tex = MAP_COLORS.bind()) {

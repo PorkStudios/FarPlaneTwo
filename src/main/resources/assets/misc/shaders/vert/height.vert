@@ -17,10 +17,8 @@ out vec4 vert_color;
 void main(){
     vec2 pos = offset + vertexPosition_modelspace;
 
-    float fheight = float(height) / 256. * 2.;
-    gl_Position = camera_projection * camera_modelview * vec4(pos.x, fheight + 70., pos.y, 1.);
-
-    vert_height = fheight;
+    gl_Position = camera_projection * camera_modelview * vec4(pos.x, float(height), pos.y, 1.);
+    vert_height = float(height);
 
     vert_color = vec4(texelFetch(palette, color));
 }
