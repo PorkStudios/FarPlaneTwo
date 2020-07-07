@@ -20,8 +20,18 @@
 
 package net.daporkchop.fp2.proxy;
 
+import net.daporkchop.fp2.client.render.OpenGL;
+import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import org.lwjgl.opengl.GLContext;
+
 /**
  * @author DaPorkchop_
  */
 public class ClientProxy extends ServerProxy {
+    @Override
+    public void preInit(FMLPreInitializationEvent event) {
+        super.preInit(event);
+
+        OpenGL.init(GLContext.getCapabilities());
+    }
 }

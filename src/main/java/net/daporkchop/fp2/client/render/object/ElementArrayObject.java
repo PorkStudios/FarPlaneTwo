@@ -18,33 +18,38 @@
  *
  */
 
-package net.daporkchop.fp2.proxy;
+package net.daporkchop.fp2.client.render.object;
 
-import net.daporkchop.fp2.FP2;
-import net.minecraftforge.common.config.ConfigManager;
-import net.minecraftforge.fml.client.event.ConfigChangedEvent;
-import net.minecraftforge.fml.common.event.FMLInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import static net.minecraft.client.renderer.OpenGlHelper.glBindBuffer;
+import static net.minecraft.client.renderer.OpenGlHelper.glDeleteBuffers;
+import static net.minecraft.client.renderer.OpenGlHelper.glGenBuffers;
+import static org.lwjgl.opengl.GL15.*;
 
 /**
  * @author DaPorkchop_
  */
-public class ServerProxy {
-    public void preInit(FMLPreInitializationEvent event)    {
+public final class ElementArrayObject extends GLObject<ElementArrayObject> {
+    public ElementArrayObject() {
+        this(glGenBuffers());
     }
 
-    public void init(FMLInitializationEvent event)  {
+    public ElementArrayObject(int id) {
+        super(id);
     }
 
-    public void postInit(FMLPostInitializationEvent event)  {
+    @Override
+    public ElementArrayObject bind() {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this.id);
+        return this;
     }
 
-    @SubscribeEvent
-    public void onConfigChanged(ConfigChangedEvent.OnConfigChangedEvent event) {
-        if (event.getModID().equals(FP2.MODID)) {
-            ConfigManager.sync(FP2.MODID, net.minecraftforge.common.config.Config.Type.INSTANCE);
-        }
+    @Override
+    public void close() {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+
+    @Override
+    protected Runnable delete(int id) {
+        return () -> glDeleteBuffers(id);
     }
 }
