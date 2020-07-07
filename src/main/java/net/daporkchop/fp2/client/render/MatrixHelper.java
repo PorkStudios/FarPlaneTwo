@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.client.render.render;
+package net.daporkchop.fp2.client.render;
 
 import lombok.experimental.UtilityClass;
 import org.lwjgl.BufferUtils;

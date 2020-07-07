@@ -18,11 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.client.render.render.shader;
+package net.daporkchop.fp2.client.render.shader;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.render.render.OpenGL;
+import net.daporkchop.fp2.client.render.OpenGL;
 
 /**
  * Basic wrapper around a shader.
