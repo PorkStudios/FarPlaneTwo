@@ -1,0 +1,10 @@
+{
+  "required": true,
+  "compatibilityLevel": "JAVA_8",
+  "package": "net.daporkchop.fp2.asm",
+  "refmap": "mixins.fp2.refmap.json",
+  "client": [
+    "client.multiplayer.MixinWorldClient",
+    "client.renderer.MixinEntityRenderer"
+  ]
+}

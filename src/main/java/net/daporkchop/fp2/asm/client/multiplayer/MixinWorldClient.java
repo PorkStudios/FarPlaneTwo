@@ -18,32 +18,28 @@
  *
  */
 
-package net.daporkchop.fp2.client;
+package net.daporkchop.fp2.asm.client.multiplayer;
 
-import lombok.NonNull;
 import net.daporkchop.fp2.client.common.TerrainRenderer;
-import net.daporkchop.fp2.client.height.HeightTerrainRenderer;
+import net.daporkchop.fp2.config.ClientConfig;
+import net.daporkchop.fp2.util.asm.TerrainRendererHolder;
+import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.World;
-import net.minecraftforge.client.IRenderHandler;
-import net.minecraftforge.common.config.Config;
+import org.spongepowered.asm.mixin.Mixin;
 
 /**
  * @author DaPorkchop_
  */
-public enum RenderStrategy {
-    @Config.Comment("Renders a simple 2D heightmap of the world. Overhangs are not supported.")
-    HEIGHT_2D {
-        @Override
-        public TerrainRenderer createTerrainRenderer(@NonNull World world) {
-            return new HeightTerrainRenderer();
-        }
-    },
-    FULL_3D {
-        @Override
-        public TerrainRenderer createTerrainRenderer(@NonNull World world) {
-            throw new UnsupportedOperationException(); //TODO
-        }
-    };
+@Mixin(WorldClient.class)
+public abstract class MixinWorldClient extends World implements TerrainRendererHolder {
+    private final TerrainRenderer terrainRenderer = ClientConfig.renderStrategy.createTerrainRenderer(this);
 
-    public abstract TerrainRenderer createTerrainRenderer(@NonNull World world);
+    protected MixinWorldClient() {
+        super(null, null, null, null, false);
+    }
+
+    @Override
+    public TerrainRenderer fp2_terrainRenderer() {
+        return this.terrainRenderer;
+    }
 }

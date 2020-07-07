@@ -18,32 +18,34 @@
  *
  */
 
-package net.daporkchop.fp2.client;
+package net.daporkchop.fp2.asm.client.renderer;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.client.common.TerrainRenderer;
-import net.daporkchop.fp2.client.height.HeightTerrainRenderer;
-import net.minecraft.world.World;
-import net.minecraftforge.client.IRenderHandler;
-import net.minecraftforge.common.config.Config;
+import net.daporkchop.fp2.util.asm.TerrainRendererHolder;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.EntityRenderer;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * @author DaPorkchop_
  */
-public enum RenderStrategy {
-    @Config.Comment("Renders a simple 2D heightmap of the world. Overhangs are not supported.")
-    HEIGHT_2D {
-        @Override
-        public TerrainRenderer createTerrainRenderer(@NonNull World world) {
-            return new HeightTerrainRenderer();
-        }
-    },
-    FULL_3D {
-        @Override
-        public TerrainRenderer createTerrainRenderer(@NonNull World world) {
-            throw new UnsupportedOperationException(); //TODO
-        }
-    };
+@Mixin(EntityRenderer.class)
+public abstract class MixinEntityRenderer {
+    @Shadow
+    @Final
+    private Minecraft mc;
 
-    public abstract TerrainRenderer createTerrainRenderer(@NonNull World world);
+    @Inject(
+            method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/RenderGlobal;setupTerrain(Lnet/minecraft/entity/Entity;DLnet/minecraft/client/renderer/culling/ICamera;IZ)V",
+                    shift = At.Shift.AFTER))
+    private void renderWorldPass_postSetupTerrain(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
+        this.mc.profiler.endStartSection("fp2_renderDistantTerrain");
+        ((TerrainRendererHolder) this.mc.world).fp2_terrainRenderer().render(partialTicks, this.mc.world, this.mc);
+    }
 }

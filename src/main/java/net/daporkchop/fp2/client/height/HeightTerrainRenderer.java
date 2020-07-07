@@ -26,9 +26,6 @@ import net.daporkchop.fp2.client.common.TerrainRenderer;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.noise.NoiseSource;
 import net.daporkchop.lib.noise.engine.OpenSimplexNoiseEngine;
-import net.daporkchop.lib.noise.engine.PerlinNoiseEngine;
-import net.daporkchop.lib.noise.filter.OctaveFilter;
-import net.daporkchop.lib.noise.filter.ScaleOctavesOffsetFilter;
 import net.daporkchop.lib.random.impl.FastPRandom;
 import net.daporkchop.fp2.client.render.render.MatrixHelper;
 import net.daporkchop.fp2.client.render.render.shader.ShaderManager;
@@ -43,9 +40,6 @@ import org.lwjgl.opengl.GL15;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
@@ -118,13 +112,13 @@ public class HeightTerrainRenderer extends TerrainRenderer {
     public void render(float partialTicks, WorldClient world, Minecraft mc) {
         super.render(partialTicks, world, mc);
 
-        GlStateManager.disableFog();
+        //GlStateManager.disableFog();
         GlStateManager.disableAlpha();
         //GlStateManager.enableBlend();
         GlStateManager.disableCull();
 
         glPushMatrix();
-        glTranslated(-this.x, -this.y, -this.z);
+        glTranslated(-this.cameraX, -this.cameraY, -this.cameraZ);
 
         this.modelView = MatrixHelper.getMatrix(GL_MODELVIEW_MATRIX, this.modelView);
         this.proj = MatrixHelper.getMatrix(GL_PROJECTION_MATRIX, this.proj);
@@ -181,6 +175,6 @@ public class HeightTerrainRenderer extends TerrainRenderer {
         GlStateManager.enableCull();
         //GlStateManager.disableBlend();
         GlStateManager.enableAlpha();
-        GlStateManager.enableFog();
+        //GlStateManager.enableFog();
     }
 }

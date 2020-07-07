@@ -23,30 +23,24 @@ package net.daporkchop.fp2.client.common;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.entity.Entity;
-import net.minecraftforge.client.IRenderHandler;
 
 import java.nio.FloatBuffer;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class TerrainRenderer extends IRenderHandler {
-    public double x;
-    public double y;
-    public double z;
+public abstract class TerrainRenderer {
+    public double cameraX;
+    public double cameraY;
+    public double cameraZ;
 
     public FloatBuffer proj;
     public FloatBuffer modelView;
 
-    @Override
     public void render(float partialTicks, WorldClient world, Minecraft mc) {
-        world.provider.setSkyRenderer(null);
-        mc.renderGlobal.renderSky(partialTicks, 2);
-        world.provider.setSkyRenderer(this);
-
         Entity entity = mc.getRenderViewEntity();
-        this.x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks;
-        this.y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks + entity.getEyeHeight();
-        this.z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks;
+        this.cameraX = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks;
+        this.cameraY = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks + entity.getEyeHeight();
+        this.cameraZ = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks;
     }
 }

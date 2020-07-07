@@ -18,63 +18,98 @@
  *
  */
 
+import java.util.stream.StreamSupport
+
 buildscript {
     repositories {
         jcenter()
         maven {
+            name = "MinecraftForge"
             url = "https://files.minecraftforge.net/maven"
+        }
+        maven {
+            name = "SpongePowered"
+            url = "http://repo.spongepowered.org/maven"
         }
     }
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
+        classpath "net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT"
+        classpath "org.spongepowered:mixingradle:0.6-SNAPSHOT"
     }
 }
-apply plugin: 'net.minecraftforge.gradle.forge'
-
-version = "0.0.1-1.12.2"
-group = "net.daporkchop"
-
-archivesBaseName = "FarPlaneTwo"
+apply plugin: "net.minecraftforge.gradle.forge"
+apply plugin: "org.spongepowered.mixin"
 
 ext {
     //general things
     javaVersion = "1.8"
-    savesearcherVersion = "1.5.4"
+    fp2Version = "0.0.1"
+
+    //minecraft things
+    mcpmappingsVersion = "stable_39"
+    minecraftforgeVersion = "14.23.5.2847"
+    minecraftVersion = "1.12.2"
 
     //dependency things
+    guavaVersion = "21.0"
     junitVersion = "4.12"
     lombokVersion = "1.16.20"
+    mixinVersion = "0.8.1-SNAPSHOT"
     porklibVersion = "0.5.5-SNAPSHOT"
 }
+
+version = "$fp2Version"
+group = "net.daporkchop"
 
 compileJava {
     sourceCompatibility = targetCompatibility = "$javaVersion"
 }
 
-minecraft {
-    version = "1.12.2-14.23.5.2847"
-    runDir = "run"
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
 
-    mappings = "stable_39"
+configurations {
+    //shade
+    //compile.extendsFrom shade
+
+    all {
+        resolutionStrategy {
+            force("com.google.guava:guava:$guavaVersion")
+        }
+    }
 }
 
 repositories {
     maven {
+        name = "DaPorkchop_"
         url = "https://maven.daporkchop.net/"
     }
     maven {
+        name = "Sonatype Releases"
         url = "https://oss.sonatype.org/content/repositories/public/"
     }
     maven {
+        name = "SpongePowered"
         url = "http://repo.spongepowered.org/maven/"
     }
+    mavenCentral()
 }
 
 dependencies {
-    compile ("net.daporkchop.lib:binary:$porklibVersion")   {
+    compileOnly("org.spongepowered:mixin:$mixinVersion") {
+        exclude module: "launchwrapper"
+        exclude module: "guava"
+        exclude module: "gson"
+        exclude module: "commons-io"
+        exclude module: "log4j-core"
+    }
+    annotationProcessor("org.spongepowered:mixin:$mixinVersion")
+
+    compile("net.daporkchop.lib:binary:$porklibVersion") {
         exclude group: "io.netty"
     }
-    compile ("net.daporkchop.lib:noise:$porklibVersion")   {
+    compile("net.daporkchop.lib:noise:$porklibVersion") {
         exclude group: "io.netty"
     }
 
@@ -88,6 +123,28 @@ dependencies {
     testAnnotationProcessor "org.projectlombok:lombok:$lombokVersion"
 }
 
+minecraft {
+    version = "$minecraftVersion-$minecraftforgeVersion"
+    runDir = "run"
+    mappings = "$mcpmappingsVersion"
+    makeObfSourceJar = false
+
+    coreMod = "net.daporkchop.fp2.asm.FP2MixinLoader"
+
+    def args = [
+            "-Dmixin.checks.interfaces=true",
+            "-Dmixin.debug.export=true",
+            "-Dmixin.debug.verbose=true",
+            "-Dmixin.hotSwap=true",
+            "-Xmx2G",
+            "-XX:+UseG1GC",
+            "-ea",
+            "-da:io.netty..."
+    ]
+    clientJvmArgs += args
+    serverJvmArgs += args
+}
+
 processResources {
     // this will ensure that this task is redone when the versions change.
     inputs.property "version", project.version
@@ -95,14 +152,53 @@ processResources {
 
     // replace stuff in mcmod.info, nothing else
     from(sourceSets.main.resources.srcDirs) {
-        include 'mcmod.info'
+        include "mcmod.info"
 
         // replace version and mcversion
-        expand 'version': project.version, 'mcversion': project.minecraft.version
+        expand "version": project.version, "mcversion": project.minecraft.version
     }
 
     // copy everything else except the mcmod.info
     from(sourceSets.main.resources.srcDirs) {
-        exclude 'mcmod.info'
+        exclude "mcmod.info"
+    }
+    rename '(.+_at.cfg)', 'META-INF/$1'
+}
+
+mixin {
+    defaultObfuscationEnv searge
+    add sourceSets.main, "mixins.fp2.refmap.json"
+}
+
+reobf.jar {
+    mappingType = "SEARGE"
+    classpath = sourceSets.main.compileClasspath
+}
+
+jar {
+    archiveName "fp2-v$fp2Version-$minecraftVersion" + ".jar"
+
+    manifest {
+        attributes(
+                "MixinConfigs": "mixins.fp2.json",
+                "tweakClass": "org.spongepowered.asm.launch.MixinTweaker",
+                "TweakOrder": 0,
+                "FMLCorePluginContainsFMLMod": "true",
+                "FMLCorePlugin": "net.daporkchop.fp2.asm.FP2MixinLoader",
+                "ForceLoadAsMod": "true",
+                "FMLAT": "fp2_at.cfg"
+        )
     }
 }
+
+task preIntellijRuns {
+    doFirst {
+        StreamSupport.stream(configurations.compile.spliterator(), false).filter({
+            it.name.contains("mixin")
+        }).findAny().ifPresent({
+            minecraft.clientJvmArgs += "-javaagent:" + it.absolutePath
+            minecraft.serverJvmArgs += "-javaagent:" + it.absolutePath
+        })
+    }
+}
+genIntellijRuns.dependsOn(preIntellijRuns)
