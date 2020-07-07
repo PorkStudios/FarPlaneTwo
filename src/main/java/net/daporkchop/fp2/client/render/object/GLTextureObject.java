@@ -20,22 +20,39 @@
 
 package net.daporkchop.fp2.client.render.object;
 
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static net.minecraft.client.renderer.OpenGlHelper.*;
+import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author DaPorkchop_
  */
-public final class VertexBufferObject extends GLBufferObject<VertexBufferObject> {
-    public VertexBufferObject() {
-        super();
+public abstract class GLTextureObject<T extends GLTextureObject<T>> extends GLObject<T> {
+    protected final int target = this.target();
+
+    public GLTextureObject() {
+        this(glGenTextures());
     }
 
-    public VertexBufferObject(int id) {
+    public GLTextureObject(int id) {
         super(id);
     }
 
+    protected abstract int target();
+
     @Override
-    protected int target() {
-        return GL_ARRAY_BUFFER;
+    public T bind() {
+        glBindTexture(this.target, this.id);
+        return uncheckedCast(this);
+    }
+
+    @Override
+    public void close() {
+        glBindTexture(this.target, 0);
+    }
+
+    @Override
+    protected Runnable delete(int id) {
+        return () -> glDeleteTextures(id);
     }
 }

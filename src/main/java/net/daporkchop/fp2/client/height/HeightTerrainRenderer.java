@@ -22,16 +22,17 @@ package net.daporkchop.fp2.client.height;
 
 import net.daporkchop.fp2.client.common.TerrainRenderer;
 import net.daporkchop.fp2.client.render.MatrixHelper;
+import net.daporkchop.fp2.client.render.object.BufferTextureObject;
 import net.daporkchop.fp2.client.render.object.ElementArrayObject;
 import net.daporkchop.fp2.client.render.object.VertexArrayObject;
 import net.daporkchop.fp2.client.render.object.VertexBufferObject;
 import net.daporkchop.fp2.client.render.shader.ShaderManager;
 import net.daporkchop.fp2.client.render.shader.ShaderProgram;
-import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.noise.NoiseSource;
 import net.daporkchop.lib.noise.engine.OpenSimplexNoiseEngine;
 import net.daporkchop.lib.random.impl.FastPRandom;
+import net.minecraft.block.material.MapColor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
@@ -40,17 +41,18 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.ARBShaderObjects;
 import org.lwjgl.opengl.GL15;
 
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
-import static net.minecraft.client.renderer.OpenGlHelper.glBindBuffer;
-import static net.minecraft.client.renderer.OpenGlHelper.glGenBuffers;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL15.*;
@@ -120,28 +122,42 @@ public class HeightTerrainRenderer extends TerrainRenderer {
                 for (int z = 0; z < 5; z++) {
                     PorkUtil.sleep(5000L);
 
-                    IntBuffer buffer = BufferUtils.createIntBuffer(HEIGHT_TILE_VERTS * HEIGHT_TILE_VERTS);
+                    IntBuffer heightBuffer = BufferUtils.createIntBuffer(HEIGHT_TILE_VERTS * HEIGHT_TILE_VERTS);
                     for (int xx = 0; xx < HEIGHT_TILE_VERTS; xx++) {
                         for (int zz = 0; zz < HEIGHT_TILE_VERTS; zz++) {
-                            buffer.put((int) NOISE.get(x * HEIGHT_TILE_SQUARES + xx, z * HEIGHT_TILE_SQUARES + zz));
+                            heightBuffer.put((int) NOISE.get(x * HEIGHT_TILE_SQUARES + xx, z * HEIGHT_TILE_SQUARES + zz));
                         }
                     }
-                    buffer.flip();
+                    heightBuffer.flip();
+
+                    ByteBuffer colorBuffer = BufferUtils.createByteBuffer(HEIGHT_TILE_VERTS * HEIGHT_TILE_VERTS);
+                    for (int xx = 0; xx < HEIGHT_TILE_VERTS; xx++) {
+                        for (int zz = 0; zz < HEIGHT_TILE_VERTS; zz++) {
+                            colorBuffer.put((byte) (ThreadLocalRandom.current().nextInt() & 0x3F));
+                        }
+                    }
+                    colorBuffer.flip();
 
                     ChunkPos pos = new ChunkPos(x, z);
                     Minecraft.getMinecraft().addScheduledTask(() -> {
-                        try (VertexArrayObject vao = new VertexArrayObject().bind())    {
+                        try (VertexArrayObject vao = new VertexArrayObject().bind()) {
                             glEnableVertexAttribArray(0);
                             glEnableVertexAttribArray(1);
+                            glEnableVertexAttribArray(2);
 
                             try (VertexBufferObject coords = COORDS.bind()) {
                                 glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0L);
                                 vao.putDependency(0, coords);
                             }
-                            try (VertexBufferObject heights = new VertexBufferObject().bind())  {
-                                glBufferData(GL_ARRAY_BUFFER, buffer, GL_STATIC_DRAW);
+                            try (VertexBufferObject heights = new VertexBufferObject().bind()) {
+                                glBufferData(GL_ARRAY_BUFFER, heightBuffer, GL_STATIC_DRAW);
                                 glVertexAttribIPointer(1, 1, GL_INT, 0, 0L);
                                 vao.putDependency(1, heights);
+                            }
+                            try (VertexBufferObject colors = new VertexBufferObject().bind()) {
+                                glBufferData(GL_ARRAY_BUFFER, colorBuffer, GL_STATIC_DRAW);
+                                glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, 0, 0L);
+                                vao.putDependency(2, colors);
                             }
 
                             vao.putElementArray(MESH.bind());
@@ -150,6 +166,7 @@ public class HeightTerrainRenderer extends TerrainRenderer {
                         } finally {
                             glDisableVertexAttribArray(0);
                             glDisableVertexAttribArray(1);
+                            glDisableVertexAttribArray(2);
 
                             MESH.close();
                         }
@@ -157,6 +174,20 @@ public class HeightTerrainRenderer extends TerrainRenderer {
                 }
             }
         }).start();
+    }
+
+    public static final BufferTextureObject MAP_COLORS = new BufferTextureObject();
+
+    static {
+        IntBuffer buffer = BufferUtils.createIntBuffer(MapColor.COLORS.length);
+        buffer.put(Stream.of(MapColor.COLORS).mapToInt(color -> color == null ? 0xFFFF00FF : color.colorValue).toArray())
+                .flip();
+
+        try (VertexBufferObject vbo = new VertexBufferObject().bind()) {
+            glBufferData(GL_ARRAY_BUFFER, buffer, GL_STATIC_DRAW);
+
+            MAP_COLORS.useBuffer(vbo, GL_RGBA8);
+        }
     }
 
     @Override
@@ -174,14 +205,24 @@ public class HeightTerrainRenderer extends TerrainRenderer {
         this.modelView = MatrixHelper.getMatrix(GL_MODELVIEW_MATRIX, this.modelView);
         this.proj = MatrixHelper.getMatrix(GL_PROJECTION_MATRIX, this.proj);
 
-        try (ShaderProgram shader = HEIGHT_SHADER.use()) {
+        { //increase clipping range
+            float zNear = 0.05F;
+            float zFar = 1000000F;
+
+            float deltaZ = zFar - zNear;
+            this.proj.put(2 * 4 + 2, -(zFar + zNear) / deltaZ);
+            this.proj.put(3 * 4 + 2, -2 * zNear * zFar / deltaZ);
+        }
+
+        try (ShaderProgram shader = HEIGHT_SHADER.use();
+             BufferTextureObject tex = MAP_COLORS.bind()) {
             ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
             ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
 
             VAO_LOOKUP.forEach((pos, o) -> {
                 ARBShaderObjects.glUniform2fARB(shader.uniformLocation("offset"), pos.x * HEIGHT_TILE_SQUARES, pos.z * HEIGHT_TILE_SQUARES);
 
-                try (VertexArrayObject vao = o.bind())  {
+                try (VertexArrayObject vao = o.bind()) {
                     glDrawElements(GL_TRIANGLE_STRIP, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
                 }
             });

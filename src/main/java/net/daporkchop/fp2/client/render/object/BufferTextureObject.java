@@ -20,22 +20,34 @@
 
 package net.daporkchop.fp2.client.render.object;
 
-import static net.minecraft.client.renderer.OpenGlHelper.*;
+import lombok.NonNull;
+
+import static org.lwjgl.opengl.GL31.*;
 
 /**
  * @author DaPorkchop_
  */
-public final class VertexBufferObject extends GLBufferObject<VertexBufferObject> {
-    public VertexBufferObject() {
+public final class BufferTextureObject extends GLTextureObject<BufferTextureObject> {
+    private VertexBufferObject dependency;
+
+    public BufferTextureObject() {
         super();
     }
 
-    public VertexBufferObject(int id) {
+    public BufferTextureObject(int id) {
         super(id);
     }
 
     @Override
     protected int target() {
-        return GL_ARRAY_BUFFER;
+        return GL_TEXTURE_BUFFER;
+    }
+
+    public BufferTextureObject useBuffer(@NonNull VertexBufferObject data, int format)  {
+        try (BufferTextureObject buffer = this.bind())  {
+            glTexBuffer(GL_TEXTURE_BUFFER, format, data.id());
+        }
+        this.dependency = data;
+        return this;
     }
 }

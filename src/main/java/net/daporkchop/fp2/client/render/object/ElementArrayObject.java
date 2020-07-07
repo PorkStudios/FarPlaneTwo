@@ -28,9 +28,9 @@ import static org.lwjgl.opengl.GL15.*;
 /**
  * @author DaPorkchop_
  */
-public final class ElementArrayObject extends GLObject<ElementArrayObject> {
+public final class ElementArrayObject extends GLBufferObject<ElementArrayObject> {
     public ElementArrayObject() {
-        this(glGenBuffers());
+        super();
     }
 
     public ElementArrayObject(int id) {
@@ -38,18 +38,7 @@ public final class ElementArrayObject extends GLObject<ElementArrayObject> {
     }
 
     @Override
-    public ElementArrayObject bind() {
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this.id);
-        return this;
-    }
-
-    @Override
-    public void close() {
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    }
-
-    @Override
-    protected Runnable delete(int id) {
-        return () -> glDeleteBuffers(id);
+    protected int target() {
+        return GL_ELEMENT_ARRAY_BUFFER;
     }
 }
