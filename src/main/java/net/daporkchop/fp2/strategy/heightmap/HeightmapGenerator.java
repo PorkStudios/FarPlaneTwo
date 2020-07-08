@@ -42,7 +42,13 @@ public interface HeightmapGenerator {
     void init(@NonNull WorldServer world);
 
     /**
-     * Generates the initial data for the given chunk.
+     * Generates a rough estimate of the terrain in the given chunk.
+     * <p>
+     * This allows implementations to make an optimized, generator-specific estimation of what the terrain would look like once generated, without requiring
+     * the actual generation of said chunks.
+     * <p>
+     * A {@link CachedBlockAccess} parameter is provided only for implementations do not implement this method, and instead choose to have it serve as a
+     * proxy to {@link #generateExact(CachedBlockAccess, HeightmapChunk)}.
      * <p>
      * Note that this should only generate a square with side length {@link HeightmapConstants#HEIGHT_VOXELS}, centered on chunk coordinates 0,0. Any outer
      * edges will be automatically filled in with data from the generated area, and later with data from neighboring chunks once it becomes available.
@@ -50,5 +56,16 @@ public interface HeightmapGenerator {
      * @param world the {@link CachedBlockAccess} providing access to block/height data in the world
      * @param chunk the chunk to generate
      */
-    void generate(@NonNull CachedBlockAccess world, @NonNull HeightmapChunk chunk);
+    void generateRough(@NonNull CachedBlockAccess world, @NonNull HeightmapChunk chunk);
+
+    /**
+     * Generates the terrain for the given chunk based on the block data.
+     * <p>
+     * Note that this should only generate a square with side length {@link HeightmapConstants#HEIGHT_VOXELS}, centered on chunk coordinates 0,0. Any outer
+     * edges will be automatically filled in with data from the generated area, and later with data from neighboring chunks once it becomes available.
+     *
+     * @param world the {@link CachedBlockAccess} providing access to block/height data in the world
+     * @param chunk the chunk to generate
+     */
+    void generateExact(@NonNull CachedBlockAccess world, @NonNull HeightmapChunk chunk);
 }

@@ -36,7 +36,7 @@ import static net.daporkchop.lib.common.util.PValidation.checkArg;
  */
 @RequiredArgsConstructor
 @Accessors(fluent = true)
-public class HeightmapChunk implements HeightmapAccess {
+public class HeightmapChunk {
     public static void checkCoords(int x, int z)    {
         checkArg(x >= 0 && x < HEIGHT_VERTS && z >= 0 && z < HEIGHT_VERTS, "coordinates out of bounds (x=%d, z=%d)", x, z);
     }
@@ -46,26 +46,22 @@ public class HeightmapChunk implements HeightmapAccess {
 
     protected final IntBuffer data = Constants.createIntBuffer(HEIGHT_VERTS * HEIGHT_VERTS << 1); //2 ints per pixel: height followed by color
 
-    @Override
     public int height(int x, int z) {
         checkCoords(x, z);
         return this.data.get(x * HEIGHT_VERTS + z);
     }
 
-    @Override
     public int color(int x, int z) {
         checkCoords(x, z);
         return this.data.get(x * HEIGHT_VERTS + z + 1);
     }
 
-    @Override
     public HeightmapChunk height(int x, int z, int height) {
         checkCoords(x, z);
         this.data.put(x * HEIGHT_VERTS + z, height);
         return this;
     }
 
-    @Override
     public HeightmapChunk color(int x, int z, int color) {
         checkCoords(x, z);
         this.data.put(x * HEIGHT_VERTS + z + 1, color);

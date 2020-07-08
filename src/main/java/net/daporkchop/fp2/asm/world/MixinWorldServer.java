@@ -18,15 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.util.asm;
+package net.daporkchop.fp2.asm.world;
 
-import net.daporkchop.fp2.strategy.common.TerrainRenderer;
+import net.daporkchop.fp2.util.threading.CachedBlockAccess;
+import net.daporkchop.fp2.util.vanilla.VanillaCachedBlockAccessImpl;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
+import org.spongepowered.asm.mixin.Mixin;
 
 /**
- * Allows access to the {@link TerrainRenderer} belonging to a {@link net.minecraft.client.multiplayer.WorldClient}.
- *
  * @author DaPorkchop_
  */
-public interface TerrainRendererHolder {
-    TerrainRenderer fp2_terrainRenderer();
+@Mixin(WorldServer.class)
+public abstract class MixinWorldServer extends World implements CachedBlockAccess.Holder {
+    protected final CachedBlockAccess cachedBlockAccess = new VanillaCachedBlockAccessImpl((WorldServer) (Object) this);
+
+    protected MixinWorldServer() {
+        super(null, null, null, null, false);
+    }
+
+    @Override
+    public CachedBlockAccess fp2_cachedBlockAccess() {
+        return this.cachedBlockAccess;
+    }
 }

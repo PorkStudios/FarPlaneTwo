@@ -46,4 +46,13 @@ public abstract class TerrainRenderer {
         this.cameraY = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks;
         this.cameraZ = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks;
     }
+
+    /**
+     * Allows access to the {@link TerrainRenderer} belonging to a {@link WorldClient}.
+     *
+     * @author DaPorkchop_
+     */
+    public interface Holder {
+        TerrainRenderer fp2_terrainRenderer();
+    }
 }

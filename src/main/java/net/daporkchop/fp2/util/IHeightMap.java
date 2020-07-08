@@ -31,20 +31,17 @@ public interface IHeightMap {
     /**
      * @see io.github.opencubicchunks.cubicchunks.api.world.IHeightMap#isOccluded(int, int, int)
      */
-    boolean isOccluded(int localX, int blockY, int localZ);
+    default boolean isOccluded(int blockX, int blockY, int blockZ)  {
+        return blockY < this.getTopBlockY(blockX, blockZ);
+    }
 
     /**
      * @see io.github.opencubicchunks.cubicchunks.api.world.IHeightMap#getTopBlockY(int, int)
      */
-    int getTopBlockY(int localX, int localZ);
+    int getTopBlockY(int blockX, int blockZ);
 
     /**
      * @see io.github.opencubicchunks.cubicchunks.api.world.IHeightMap#getTopBlockYBelow(int, int, int)
      */
-    int getTopBlockYBelow(int localX, int localZ, int blockY);
-
-    /**
-     * @see io.github.opencubicchunks.cubicchunks.api.world.IHeightMap#getLowestTopBlockY()
-     */
-    int getLowestTopBlockY();
+    int getTopBlockYBelow(int blockX, int blockY, int blockZ);
 }

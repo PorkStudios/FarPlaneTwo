@@ -18,60 +18,45 @@
  *
  */
 
-package net.daporkchop.fp2;
+package net.daporkchop.fp2.server;
 
-import net.daporkchop.fp2.server.ServerProxy;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.SidedProxy;
+import net.daporkchop.fp2.FP2;
+import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
+import net.minecraftforge.common.config.ConfigManager;
+import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
-import org.apache.logging.log4j.Logger;
-
-import static net.daporkchop.fp2.FP2.*;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 /**
  * @author DaPorkchop_
  */
-@Mod(modid = MODID,
-        dependencies = "required:cubicchunks@[0.0.951.0,);")
-        //dependencies = "required:cubicchunks@[0.0.951.0,);required:cubicgen@[0.0.54.0,);required:forge@[14.23.3.2658,)")
-public class FP2 {
-    public static final String MODID = "fp2";
-
-    @SidedProxy(clientSide = "net.daporkchop.fp2.client.ClientProxy", serverSide = "net.daporkchop.fp2.server.ServerProxy")
-    public static ServerProxy PROXY;
-
-    public static Logger LOGGER;
-
-    @Mod.EventHandler
-    public void preInit(FMLPreInitializationEvent event) {
-        LOGGER = event.getModLog();
-        MinecraftForge.EVENT_BUS.register(PROXY);
-
-        PROXY.preInit(event);
+public class ServerProxy {
+    public void preInit(FMLPreInitializationEvent event)    {
     }
 
-    @Mod.EventHandler
     public void init(FMLInitializationEvent event)  {
-        PROXY.init(event);
     }
 
-    @Mod.EventHandler
     public void postInit(FMLPostInitializationEvent event)  {
-        PROXY.postInit(event);
     }
 
-    @Mod.EventHandler
     public void serverStarting(FMLServerStartingEvent event)    {
-        PROXY.serverStarting(event);
+        ServerThreadExecutor.INSTANCE.startup();
     }
 
-    @Mod.EventHandler
     public void serverStopping(FMLServerStoppingEvent event)    {
-        PROXY.serverStopping(event);
+        ServerThreadExecutor.INSTANCE.shutdown();
+    }
+
+    @SubscribeEvent
+    public void onConfigChanged(ConfigChangedEvent.OnConfigChangedEvent event) {
+        if (event.getModID().equals(FP2.MODID)) {
+            ConfigManager.sync(FP2.MODID, net.minecraftforge.common.config.Config.Type.INSTANCE);
+        }
     }
 }

@@ -21,8 +21,7 @@
 package net.daporkchop.fp2.asm.client.multiplayer;
 
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
-import net.daporkchop.fp2.config.ClientConfig;
-import net.daporkchop.fp2.util.asm.TerrainRendererHolder;
+import net.daporkchop.fp2.client.ClientConfig;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
@@ -31,7 +30,7 @@ import org.spongepowered.asm.mixin.Mixin;
  * @author DaPorkchop_
  */
 @Mixin(WorldClient.class)
-public abstract class MixinWorldClient extends World implements TerrainRendererHolder {
+public abstract class MixinWorldClient extends World implements TerrainRenderer.Holder {
     private final TerrainRenderer terrainRenderer = ClientConfig.renderStrategy.createTerrainRenderer(this);
 
     protected MixinWorldClient() {

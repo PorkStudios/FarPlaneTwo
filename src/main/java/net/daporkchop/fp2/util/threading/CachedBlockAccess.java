@@ -47,16 +47,10 @@ public interface CachedBlockAccess extends IBlockAccess, IHeightMap {
     void prefetch(@NonNull AxisAlignedBB range);
 
     @Override
-    boolean isOccluded(int localX, int blockY, int localZ);
+    int getTopBlockY(int blockX, int blockZ);
 
     @Override
-    int getTopBlockY(int localX, int localZ);
-
-    @Override
-    int getTopBlockYBelow(int localX, int localZ, int blockY);
-
-    @Override
-    int getLowestTopBlockY();
+    int getTopBlockYBelow(int blockX, int blockY, int blockZ);
 
     @Override
     int getCombinedLight(BlockPos pos, int lightValue);
@@ -65,19 +59,26 @@ public interface CachedBlockAccess extends IBlockAccess, IHeightMap {
     IBlockState getBlockState(BlockPos pos);
 
     @Override
-    boolean isAirBlock(BlockPos pos);
+    default boolean isAirBlock(BlockPos pos)    {
+        IBlockState state = this.getBlockState(pos);
+        return state.getBlock().isAir(state, this, pos);
+    }
 
     @Override
     Biome getBiome(BlockPos pos);
 
     @Override
-    int getStrongPower(BlockPos pos, EnumFacing direction);
+    default int getStrongPower(BlockPos pos, EnumFacing direction)  {
+        return this.getBlockState(pos).getStrongPower(this, pos, direction);
+    }
 
     @Override
     WorldType getWorldType();
 
     @Override
-    boolean isSideSolid(BlockPos pos, EnumFacing side, boolean _default);
+    default boolean isSideSolid(BlockPos pos, EnumFacing side, boolean _default)    {
+        return this.getBlockState(pos).isSideSolid(this, pos, side);
+    }
 
     /**
      * @deprecated access to tile entities is not allowed
@@ -86,5 +87,14 @@ public interface CachedBlockAccess extends IBlockAccess, IHeightMap {
     @Deprecated
     default TileEntity getTileEntity(BlockPos pos) {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Allows access to the {@link CachedBlockAccess} belonging to a {@link net.minecraft.world.WorldServer}.
+     *
+     * @author DaPorkchop_
+     */
+    interface Holder {
+        CachedBlockAccess fp2_cachedBlockAccess();
     }
 }

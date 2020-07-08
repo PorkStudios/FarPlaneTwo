@@ -18,33 +18,9 @@
  *
  */
 
-package net.daporkchop.fp2.proxy;
-
-import net.daporkchop.fp2.FP2;
-import net.minecraftforge.common.config.ConfigManager;
-import net.minecraftforge.fml.client.event.ConfigChangedEvent;
-import net.minecraftforge.fml.common.event.FMLInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-
 /**
+ * All this stuff should really be moved to a PorkLib module at some point...
+ *
  * @author DaPorkchop_
  */
-public class ServerProxy {
-    public void preInit(FMLPreInitializationEvent event)    {
-    }
-
-    public void init(FMLInitializationEvent event)  {
-    }
-
-    public void postInit(FMLPostInitializationEvent event)  {
-    }
-
-    @SubscribeEvent
-    public void onConfigChanged(ConfigChangedEvent.OnConfigChangedEvent event) {
-        if (event.getModID().equals(FP2.MODID)) {
-            ConfigManager.sync(FP2.MODID, net.minecraftforge.common.config.Config.Type.INSTANCE);
-        }
-    }
-}
+package net.daporkchop.fp2.client.render;

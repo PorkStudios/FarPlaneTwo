@@ -25,24 +25,5 @@ package net.daporkchop.fp2.strategy.heightmap;
  *
  * @author DaPorkchop_
  */
-public class HeightmapWorld implements HeightmapAccess {
-    @Override
-    public int height(int x, int z) {
-        return 0; //TODO
-    }
-
-    @Override
-    public int color(int x, int z) {
-        return 0; //TODO
-    }
-
-    @Override
-    public HeightmapWorld height(int x, int z, int height) {
-        return this; //TODO
-    }
-
-    @Override
-    public HeightmapWorld color(int x, int z, int color) {
-        return this; //TODO
-    }
+public class HeightmapWorld {
 }

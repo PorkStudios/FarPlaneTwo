@@ -18,19 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.config;
+package net.daporkchop.fp2.client;
 
-import net.daporkchop.fp2.FP2;
-import net.daporkchop.fp2.strategy.RenderStrategy;
-import net.minecraftforge.common.config.Config;
+import net.daporkchop.fp2.client.render.OpenGL;
+import net.daporkchop.fp2.server.ServerProxy;
+import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
+import org.lwjgl.opengl.GLContext;
 
 /**
  * @author DaPorkchop_
  */
-@Config(modid = FP2.MODID, name = FP2.MODID + "/client")
-public class ClientConfig {
-    @Config.Comment({
-            "The strategy that will be used for rendering distant terrain."
-    })
-    public static RenderStrategy renderStrategy = RenderStrategy.HEIGHTMAP;
+@SideOnly(Side.CLIENT)
+public class ClientProxy extends ServerProxy {
+    @Override
+    public void preInit(FMLPreInitializationEvent event) {
+        super.preInit(event);
+
+        OpenGL.init(GLContext.getCapabilities());
+    }
 }

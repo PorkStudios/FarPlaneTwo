@@ -106,10 +106,13 @@ dependencies {
     }
     annotationProcessor("org.spongepowered:mixin:$mixinVersion")
 
-    compile("net.daporkchop.lib:binary:$porklibVersion") {
+    compile("net.daporkchop.lib:binary:$porklibVersion") { //TODO: shade these dependencies into a sub-package
         exclude group: "io.netty"
     }
     compile("net.daporkchop.lib:noise:$porklibVersion") {
+        exclude group: "io.netty"
+    }
+    compile("net.daporkchop.lib:primitive:$porklibVersion") {
         exclude group: "io.netty"
     }
 

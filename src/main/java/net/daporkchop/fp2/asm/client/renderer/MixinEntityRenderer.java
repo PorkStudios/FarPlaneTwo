@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.asm.client.renderer;
 
 import net.daporkchop.fp2.client.render.MatrixHelper;
-import net.daporkchop.fp2.util.asm.TerrainRendererHolder;
+import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
 import org.spongepowered.asm.mixin.Final;
@@ -48,7 +48,7 @@ public abstract class MixinEntityRenderer {
                     shift = At.Shift.AFTER))
     private void renderWorldPass_postSetupTerrain(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
         this.mc.profiler.endStartSection("fp2_renderDistantTerrain");
-        ((TerrainRendererHolder) this.mc.world).fp2_terrainRenderer().render(partialTicks, this.mc.world, this.mc);
+        ((TerrainRenderer.Holder) this.mc.world).fp2_terrainRenderer().render(partialTicks, this.mc.world, this.mc);
     }
 
     //use a projection with infinite zFar
