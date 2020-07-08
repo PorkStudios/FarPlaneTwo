@@ -117,11 +117,7 @@ public class HeightTerrainRenderer extends TerrainRenderer {
         }
     }
 
-    public static final NoiseSource NOISE = new OpenSimplexNoiseEngine(new FastPRandom()).scaled(0.03d).octaves(8).mul(256d);
     public static final Map<ChunkPos, VertexArrayObject> VAO_LOOKUP = Collections.synchronizedMap(new HashMap<>());
-
-    static {
-    }
 
     public static final BufferTextureObject MAP_COLORS = new BufferTextureObject();
 
@@ -228,7 +224,7 @@ public class HeightTerrainRenderer extends TerrainRenderer {
             ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
 
             VAO_LOOKUP.forEach((pos, o) -> {
-                ARBShaderObjects.glUniform2fARB(shader.uniformLocation("offset"), pos.x * HEIGHT_TILE_SQUARES, pos.z * HEIGHT_TILE_SQUARES);
+                ARBShaderObjects.glUniform2fARB(shader.uniformLocation("offset"), pos.x * HEIGHT_TILE_SQUARES + .5f, pos.z * HEIGHT_TILE_SQUARES + .5f);
 
                 try (VertexArrayObject vao = o.bind()) {
                     glDrawElements(GL_TRIANGLE_STRIP, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);

@@ -45,6 +45,7 @@ public class MatrixHelper {
     }
 
     public void perspectiveInfinite(float fovy, float aspect, float zNear) {
+        //from http://dev.theomader.com/depth-precision/
         float radians = (float) Math.toRadians(fovy);
         float f = 1.0f / (float) Math.tan(radians * 0.5f);
 

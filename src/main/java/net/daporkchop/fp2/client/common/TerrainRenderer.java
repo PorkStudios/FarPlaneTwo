@@ -40,7 +40,7 @@ public abstract class TerrainRenderer {
     public void render(float partialTicks, WorldClient world, Minecraft mc) {
         Entity entity = mc.getRenderViewEntity();
         this.cameraX = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks;
-        this.cameraY = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks + entity.getEyeHeight();
+        this.cameraY = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks;
         this.cameraZ = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks;
     }
 }
