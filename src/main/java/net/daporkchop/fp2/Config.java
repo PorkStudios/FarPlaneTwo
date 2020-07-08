@@ -20,9 +20,15 @@
 
 package net.daporkchop.fp2;
 
+import net.daporkchop.fp2.strategy.RenderStrategy;
+
 /**
  * @author DaPorkchop_
  */
 @net.minecraftforge.common.config.Config(modid = FP2.MODID, name = FP2.MODID + "/general")
 public class Config {
+    @net.minecraftforge.common.config.Config.Comment({
+            "The strategy that will be used for rendering distant terrain."
+    })
+    public static RenderStrategy renderStrategy = RenderStrategy.HEIGHTMAP;
 }

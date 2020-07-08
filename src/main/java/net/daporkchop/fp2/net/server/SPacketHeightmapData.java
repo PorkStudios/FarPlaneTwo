@@ -18,37 +18,50 @@
  *
  */
 
-package net.daporkchop.fp2.strategy;
+package net.daporkchop.fp2.net.server;
 
+import io.netty.buffer.ByteBuf;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapChunk;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.world.World;
-import net.minecraftforge.common.config.Config;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
+import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 /**
  * @author DaPorkchop_
  */
-public enum RenderStrategy {
-    @Config.Comment("Renders a simple 2D heightmap of the world. Overhangs are not supported.")
-    HEIGHTMAP {
-        @Override
-        @SideOnly(Side.CLIENT)
-        public TerrainRenderer createTerrainRenderer(@NonNull WorldClient world) {
-            return new HeightmapTerrainRenderer(world);
-        }
-    },
-    VOLUMETRIC {
-        @Override
-        @SideOnly(Side.CLIENT)
-        public TerrainRenderer createTerrainRenderer(@NonNull WorldClient world) {
-            throw new UnsupportedOperationException(); //TODO
-        }
-    };
+@NoArgsConstructor
+@Getter
+@Setter
+@Accessors(fluent = true, chain = true)
+public class SPacketHeightmapData implements IMessage {
+    @NonNull
+    protected HeightmapChunk chunk;
 
-    @SideOnly(Side.CLIENT)
-    public abstract TerrainRenderer createTerrainRenderer(@NonNull WorldClient world);
+    @Override
+    public void fromBytes(ByteBuf buf) {
+        this.chunk = new HeightmapChunk(buf.readInt(), buf.readInt());
+        this.chunk.fromBytes(buf);
+    }
+
+    @Override
+    public void toBytes(ByteBuf buf) {
+        buf.writeInt(this.chunk.x()).writeInt(this.chunk.z());
+        this.chunk.toBytes(buf);
+    }
+
+    public static class Handler implements IMessageHandler<SPacketHeightmapData, IMessage> {
+        @Override
+        public IMessage onMessage(SPacketHeightmapData message, MessageContext ctx) {
+            HeightmapTerrainRenderer renderer = (HeightmapTerrainRenderer) ((TerrainRenderer.Holder) ctx.getClientHandler().world).fp2_terrainRenderer();
+            renderer.receiveRemoteChunk(message.chunk);
+            return null;
+        }
+    }
 }

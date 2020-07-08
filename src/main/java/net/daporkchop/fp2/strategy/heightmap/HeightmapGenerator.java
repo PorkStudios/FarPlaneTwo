@@ -51,7 +51,7 @@ public interface HeightmapGenerator {
      * proxy to {@link #generateExact(CachedBlockAccess, HeightmapChunk)}.
      * <p>
      * Note that this should only generate a square with side length {@link HeightmapConstants#HEIGHT_VOXELS}, centered on chunk coordinates 0,0. Any outer
-     * edges will be automatically filled in with data from the generated area, and later with data from neighboring chunks once it becomes available.
+     * edges will be automatically filled in with data from the generated area, and later with height from neighboring chunks once it becomes available.
      *
      * @param world the {@link CachedBlockAccess} providing access to block/height data in the world
      * @param chunk the chunk to generate
@@ -62,7 +62,7 @@ public interface HeightmapGenerator {
      * Generates the terrain for the given chunk based on the block data.
      * <p>
      * Note that this should only generate a square with side length {@link HeightmapConstants#HEIGHT_VOXELS}, centered on chunk coordinates 0,0. Any outer
-     * edges will be automatically filled in with data from the generated area, and later with data from neighboring chunks once it becomes available.
+     * edges will be automatically filled in with data from the generated area, and later with height from neighboring chunks once it becomes available.
      *
      * @param world the {@link CachedBlockAccess} providing access to block/height data in the world
      * @param chunk the chunk to generate

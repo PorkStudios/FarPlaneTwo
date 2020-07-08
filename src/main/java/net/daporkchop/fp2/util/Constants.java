@@ -20,7 +20,14 @@
 
 package net.daporkchop.fp2.util;
 
+import io.netty.util.concurrent.EventExecutorGroup;
+import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.FP2;
+import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
+import net.daporkchop.lib.common.util.PorkUtil;
+import net.minecraftforge.fml.common.network.NetworkRegistry;
+import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -38,6 +45,12 @@ import java.nio.ShortBuffer;
  */
 @UtilityClass
 public class Constants {
+    public static final SimpleNetworkWrapper NETWORK_WRAPPER = NetworkRegistry.INSTANCE.newSimpleChannel(FP2.MODID);
+
+    public static final EventExecutorGroup THREAD_POOL = new UnorderedThreadPoolEventExecutor(
+            PorkUtil.CPU_COUNT,
+            new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Worker Thread #%d").build());
+
     //the following methods are copied from LWJGL's BufferUtils in order to ensure their availability on the dedicated server as well
     public static ByteBuffer createByteBuffer(int size) {
         return ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder());

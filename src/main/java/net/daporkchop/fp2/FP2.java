@@ -20,6 +20,8 @@
 
 package net.daporkchop.fp2;
 
+import net.daporkchop.fp2.net.server.SPacketHeightmapData;
+import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
 import net.daporkchop.fp2.server.ServerProxy;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
@@ -29,16 +31,18 @@ import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
+import net.minecraftforge.fml.relauncher.Side;
 import org.apache.logging.log4j.Logger;
 
 import static net.daporkchop.fp2.FP2.*;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
 @Mod(modid = MODID,
         dependencies = "required:cubicchunks@[0.0.951.0,);")
-        //dependencies = "required:cubicchunks@[0.0.951.0,);required:cubicgen@[0.0.54.0,);required:forge@[14.23.3.2658,)")
+//dependencies = "required:cubicchunks@[0.0.951.0,);required:cubicgen@[0.0.54.0,);required:forge@[14.23.3.2658,)")
 public class FP2 {
     public static final String MODID = "fp2";
 
@@ -53,25 +57,33 @@ public class FP2 {
         MinecraftForge.EVENT_BUS.register(PROXY);
 
         PROXY.preInit(event);
+
+        this.registerPackets();
     }
 
     @Mod.EventHandler
-    public void init(FMLInitializationEvent event)  {
+    public void init(FMLInitializationEvent event) {
         PROXY.init(event);
     }
 
     @Mod.EventHandler
-    public void postInit(FMLPostInitializationEvent event)  {
+    public void postInit(FMLPostInitializationEvent event) {
         PROXY.postInit(event);
     }
 
     @Mod.EventHandler
-    public void serverStarting(FMLServerStartingEvent event)    {
+    public void serverStarting(FMLServerStartingEvent event) {
         PROXY.serverStarting(event);
     }
 
     @Mod.EventHandler
-    public void serverStopping(FMLServerStoppingEvent event)    {
+    public void serverStopping(FMLServerStoppingEvent event) {
         PROXY.serverStopping(event);
+    }
+
+    protected void registerPackets() {
+        int id = 0;
+        NETWORK_WRAPPER.registerMessage(SPacketRenderingStrategy.Handler.class, SPacketRenderingStrategy.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(SPacketHeightmapData.Handler.class, SPacketHeightmapData.class, id++, Side.CLIENT);
     }
 }

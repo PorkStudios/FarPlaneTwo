@@ -47,7 +47,10 @@ public abstract class MixinEntityRenderer {
                     shift = At.Shift.AFTER))
     private void renderWorldPass_postSetupTerrain(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
         this.mc.profiler.endStartSection("fp2_renderDistantTerrain");
-        ((TerrainRenderer.Holder) this.mc.world).fp2_terrainRenderer().render(partialTicks, this.mc.world, this.mc);
+        TerrainRenderer renderer = ((TerrainRenderer.Holder) this.mc.world).fp2_terrainRenderer();
+        if (renderer != null) {
+            renderer.render(partialTicks, this.mc.world, this.mc);
+        }
     }
 
     //use a projection with infinite zFar

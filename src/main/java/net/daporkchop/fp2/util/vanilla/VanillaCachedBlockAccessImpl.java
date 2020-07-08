@@ -60,7 +60,7 @@ public class VanillaCachedBlockAccessImpl implements CachedBlockAccess {
             CompletableFuture<Chunk> future = CompletableFuture.supplyAsync(
                     () -> this.world.getChunk(BinMath.unpackX(l), BinMath.unpackY(l)),
                     ServerThreadExecutor.INSTANCE);
-            future.thenAccept(chunk -> this.cache.replace(l, future, chunk)); //replace future with chunk instance in cache, to avoid indirection
+            future.thenAcceptAsync(chunk -> this.cache.replace(l, future, chunk)); //replace future with chunk instance in cache, to avoid indirection
             return future;
         };
     }

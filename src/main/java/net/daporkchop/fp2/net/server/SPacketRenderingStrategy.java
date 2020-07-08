@@ -18,45 +18,47 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.common;
+package net.daporkchop.fp2.net.server;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.util.NetUtil;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import net.daporkchop.fp2.strategy.RenderStrategy;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.entity.Entity;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-
-import java.nio.FloatBuffer;
+import net.daporkchop.fp2.strategy.common.TerrainRenderer;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
+import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public abstract class TerrainRenderer {
-    public double cameraX;
-    public double cameraY;
-    public double cameraZ;
+@NoArgsConstructor
+@Setter
+@Getter
+@Accessors(fluent = true, chain = true)
+public class SPacketRenderingStrategy implements IMessage {
+    @NonNull
+    protected RenderStrategy strategy;
 
-    public FloatBuffer proj;
-    public FloatBuffer modelView;
-
-    public void render(float partialTicks, WorldClient world, Minecraft mc) {
-        Entity entity = mc.getRenderViewEntity();
-        this.cameraX = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks;
-        this.cameraY = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks;
-        this.cameraZ = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks;
+    @Override
+    public void fromBytes(ByteBuf buf) {
+        this.strategy = RenderStrategy.values()[buf.readInt()];
     }
 
-    /**
-     * Allows access to the {@link TerrainRenderer} belonging to a {@link WorldClient}.
-     *
-     * @author DaPorkchop_
-     */
-    public interface Holder {
-        TerrainRenderer fp2_terrainRenderer();
+    @Override
+    public void toBytes(ByteBuf buf) {
+        buf.writeInt(this.strategy.ordinal());
+    }
 
-        void fp2_updateStrategy(@NonNull RenderStrategy strategy);
+    public static class Handler implements IMessageHandler<SPacketRenderingStrategy, IMessage>  {
+        @Override
+        public IMessage onMessage(SPacketRenderingStrategy message, MessageContext ctx) {
+            ((TerrainRenderer.Holder) ctx.getClientHandler().world).fp2_updateStrategy(message.strategy);
+            return null;
+        }
     }
 }

@@ -20,6 +20,8 @@
 
 package net.daporkchop.fp2.asm.client.multiplayer;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.strategy.RenderStrategy;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.daporkchop.fp2.client.ClientConfig;
 import net.minecraft.client.multiplayer.WorldClient;
@@ -31,7 +33,7 @@ import org.spongepowered.asm.mixin.Mixin;
  */
 @Mixin(WorldClient.class)
 public abstract class MixinWorldClient extends World implements TerrainRenderer.Holder {
-    private final TerrainRenderer terrainRenderer = ClientConfig.renderStrategy.createTerrainRenderer(this);
+    private TerrainRenderer terrainRenderer;
 
     protected MixinWorldClient() {
         super(null, null, null, null, false);
@@ -40,5 +42,10 @@ public abstract class MixinWorldClient extends World implements TerrainRenderer.
     @Override
     public TerrainRenderer fp2_terrainRenderer() {
         return this.terrainRenderer;
+    }
+
+    @Override
+    public void fp2_updateStrategy(@NonNull RenderStrategy strategy) {
+        this.terrainRenderer = strategy.createTerrainRenderer((WorldClient) (Object) this);
     }
 }

@@ -29,31 +29,22 @@ import net.daporkchop.fp2.client.render.object.VertexArrayObject;
 import net.daporkchop.fp2.client.render.object.VertexBufferObject;
 import net.daporkchop.fp2.client.render.shader.ShaderManager;
 import net.daporkchop.fp2.client.render.shader.ShaderProgram;
-import net.daporkchop.fp2.util.threading.CachedBlockAccess;
-import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.block.material.MapColor;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.ARBShaderObjects;
 import org.lwjgl.opengl.GL15;
 
-import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL11.*;
@@ -117,14 +108,15 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         }
     }
 
-    public static final Map<ChunkPos, VertexArrayObject> VAO_LOOKUP = Collections.synchronizedMap(new HashMap<>());
-
     public static final BufferTextureObject MAP_COLORS = new BufferTextureObject();
 
     static {
         IntBuffer buffer = BufferUtils.createIntBuffer(MapColor.COLORS.length);
-        buffer.put(Stream.of(MapColor.COLORS).mapToInt(color -> color == null ? 0xFFFF00FF : color.colorValue).toArray())
-                .flip();
+        for (MapColor color : MapColor.COLORS)  {
+            if (color != null)  {
+                buffer.put(color.colorIndex, color.colorValue);
+            }
+        }
 
         try (VertexBufferObject vbo = new VertexBufferObject().bind()) {
             glBufferData(GL_ARRAY_BUFFER, buffer, GL_STATIC_DRAW);
@@ -133,9 +125,11 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         }
     }
 
-    public HeightmapTerrainRenderer(@NonNull World world)  {
+    private final Map<ChunkPos, VertexArrayObject> chunks = new HashMap<>();
+
+    public HeightmapTerrainRenderer(@NonNull WorldClient world)  {
         //lol this isn't thread-safe at all
-        new Thread(() -> {
+        /*new Thread(() -> {
             CachedBlockAccess access = ((CachedBlockAccess.Holder) Minecraft.getMinecraft().getIntegratedServer().getWorld(0)).fp2_cachedBlockAccess();
             BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos();
             for (int x = 0; x < 5; x++) {
@@ -189,7 +183,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
 
                             vao.putElementArray(MESH.bind());
 
-                            VAO_LOOKUP.put(pos, vao);
+                            chunks.put(pos, vao);
                         } finally {
                             glDisableVertexAttribArray(0);
                             glDisableVertexAttribArray(1);
@@ -200,7 +194,42 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                     });
                 }
             }
-        }).start();
+        }).start();*/
+    }
+
+    public void receiveRemoteChunk(@NonNull HeightmapChunk chunk)  {
+        Minecraft.getMinecraft().addScheduledTask(() -> {
+            try (VertexArrayObject vao = new VertexArrayObject().bind()) {
+                glEnableVertexAttribArray(0);
+                glEnableVertexAttribArray(1);
+                glEnableVertexAttribArray(2);
+
+                try (VertexBufferObject coords = COORDS.bind()) {
+                    glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0L);
+                    vao.putDependency(0, coords);
+                }
+                try (VertexBufferObject heights = new VertexBufferObject().bind()) {
+                    glBufferData(GL_ARRAY_BUFFER, chunk.height(), GL_STATIC_DRAW);
+                    glVertexAttribIPointer(1, 1, GL_INT, 0, 0L);
+                    vao.putDependency(1, heights);
+                }
+                try (VertexBufferObject colors = new VertexBufferObject().bind()) {
+                    glBufferData(GL_ARRAY_BUFFER, chunk.color(), GL_STATIC_DRAW);
+                    glVertexAttribIPointer(2, 1, GL_INT, 0, 0L);
+                    vao.putDependency(2, colors);
+                }
+
+                vao.putElementArray(MESH.bind());
+
+                this.chunks.put(new ChunkPos(chunk.x(), chunk.z()), vao);
+            } finally {
+                glDisableVertexAttribArray(0);
+                glDisableVertexAttribArray(1);
+                glDisableVertexAttribArray(2);
+
+                MESH.close();
+            }
+        });
     }
 
     @Override
@@ -223,7 +252,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
             ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
             ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
 
-            VAO_LOOKUP.forEach((pos, o) -> {
+            chunks.forEach((pos, o) -> {
                 ARBShaderObjects.glUniform2fARB(shader.uniformLocation("offset"), pos.x * HeightmapConstants.HEIGHT_VOXELS + .5f, pos.z * HeightmapConstants.HEIGHT_VOXELS + .5f);
 
                 try (VertexArrayObject vao = o.bind()) {

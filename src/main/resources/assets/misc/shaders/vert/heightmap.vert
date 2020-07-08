@@ -2,7 +2,7 @@
 
 layout(location = 0) in vec2 vertexPosition_modelspace;
 layout(location = 1) in int height;
-layout(location = 2) in int color;
+layout(location = 2) in uint color;
 
 uniform mat4 camera_projection = mat4(1.0);
 uniform mat4 camera_modelview = mat4(1.0);
@@ -20,5 +20,6 @@ void main(){
     gl_Position = camera_projection * camera_modelview * vec4(pos.x, float(height) + .5, pos.y, 1.);
     vert_height = float(height);
 
-    vert_color = vec4(texelFetch(palette, color));
+    //vert_color = texelFetch(palette, color);
+    vert_color = vec4(uvec4(color) >> uvec4(16, 8, 0, 24) & uint(0xFF)) / 255.;
 }

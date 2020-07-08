@@ -22,7 +22,11 @@ package net.daporkchop.fp2.client;
 
 import net.daporkchop.fp2.client.render.OpenGL;
 import net.daporkchop.fp2.server.ServerProxy;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
+import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.opengl.GLContext;
@@ -37,5 +41,12 @@ public class ClientProxy extends ServerProxy {
         super.preInit(event);
 
         OpenGL.init(GLContext.getCapabilities());
+    }
+
+    @Override
+    public void postInit(FMLPostInitializationEvent event) {
+        super.postInit(event);
+
+        HeightmapTerrainRenderer.MESH.id(); //load HeightmapTerrainRenderer on client thread
     }
 }

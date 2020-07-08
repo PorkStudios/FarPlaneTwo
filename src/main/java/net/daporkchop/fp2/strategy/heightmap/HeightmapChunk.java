@@ -20,14 +20,17 @@
 
 package net.daporkchop.fp2.strategy.heightmap;
 
+import io.netty.buffer.ByteBuf;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import net.daporkchop.fp2.util.Constants;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
 import java.nio.IntBuffer;
 
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
-import static net.daporkchop.lib.common.util.PValidation.checkArg;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * A "chunk" containing the data used by the heightmap rendering strategy.
@@ -35,36 +38,59 @@ import static net.daporkchop.lib.common.util.PValidation.checkArg;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
+@Getter
 @Accessors(fluent = true)
-public class HeightmapChunk {
-    public static void checkCoords(int x, int z)    {
+public class HeightmapChunk implements IMessage {
+    public static void checkCoords(int x, int z) {
         checkArg(x >= 0 && x < HEIGHT_VERTS && z >= 0 && z < HEIGHT_VERTS, "coordinates out of bounds (x=%d, z=%d)", x, z);
     }
 
     protected final int x;
     protected final int z;
 
-    protected final IntBuffer data = Constants.createIntBuffer(HEIGHT_VERTS * HEIGHT_VERTS << 1); //2 ints per pixel: height followed by color
+    protected final IntBuffer height = Constants.createIntBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
+    protected final IntBuffer color = Constants.createIntBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
 
     public int height(int x, int z) {
         checkCoords(x, z);
-        return this.data.get(x * HEIGHT_VERTS + z);
+        return this.height.get(x * HEIGHT_VERTS + z);
     }
 
     public int color(int x, int z) {
         checkCoords(x, z);
-        return this.data.get(x * HEIGHT_VERTS + z + 1);
+        return this.color.get(x * HEIGHT_VERTS + z);
     }
 
     public HeightmapChunk height(int x, int z, int height) {
         checkCoords(x, z);
-        this.data.put(x * HEIGHT_VERTS + z, height);
+        this.height.put(x * HEIGHT_VERTS + z, height);
         return this;
     }
 
     public HeightmapChunk color(int x, int z, int color) {
         checkCoords(x, z);
-        this.data.put(x * HEIGHT_VERTS + z + 1, color);
+        this.color.put(x * HEIGHT_VERTS + z, color);
         return this;
+    }
+
+    @Override
+    public void fromBytes(ByteBuf buf) {
+        for (int i = 0, capacity = this.height.capacity(); i < capacity; i++) {
+            this.height.put(i, buf.readInt());
+        }
+        for (int i = 0, capacity = this.color.capacity(); i < capacity; i++) {
+            this.color.put(i, buf.readInt());
+        }
+    }
+
+    @Override
+    public void toBytes(ByteBuf buf) {
+        buf.ensureWritable((this.height.capacity() + this.color.capacity()) * 4);
+        for (int i = 0, capacity = this.height.capacity(); i < capacity; i++) {
+            buf.writeInt(this.height.get(i));
+        }
+        for (int i = 0, capacity = this.color.capacity(); i < capacity; i++) {
+            buf.writeInt(this.color.get(i));
+        }
     }
 }
