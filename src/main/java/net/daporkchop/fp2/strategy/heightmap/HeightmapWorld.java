@@ -18,15 +18,31 @@
  *
  */
 
-package net.daporkchop.fp2.util.asm;
-
-import net.daporkchop.fp2.strategy.common.TerrainRenderer;
+package net.daporkchop.fp2.strategy.heightmap;
 
 /**
- * Allows access to the {@link TerrainRenderer} belonging to a {@link net.minecraft.client.multiplayer.WorldClient}.
+ * Representation of a world used by the heightmap rendering strategy.
  *
  * @author DaPorkchop_
  */
-public interface TerrainRendererHolder {
-    TerrainRenderer fp2_terrainRenderer();
+public class HeightmapWorld implements HeightmapAccess {
+    @Override
+    public int height(int x, int z) {
+        return 0; //TODO
+    }
+
+    @Override
+    public int color(int x, int z) {
+        return 0; //TODO
+    }
+
+    @Override
+    public HeightmapWorld height(int x, int z, int height) {
+        return this; //TODO
+    }
+
+    @Override
+    public HeightmapWorld color(int x, int z, int color) {
+        return this; //TODO
+    }
 }

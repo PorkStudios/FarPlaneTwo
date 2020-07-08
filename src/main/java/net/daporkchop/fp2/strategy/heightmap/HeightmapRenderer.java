@@ -18,10 +18,10 @@
  *
  */
 
-package net.daporkchop.fp2.client.height;
+package net.daporkchop.fp2.strategy.heightmap;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.common.TerrainRenderer;
+import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.daporkchop.fp2.client.render.MatrixHelper;
 import net.daporkchop.fp2.client.render.object.BufferTextureObject;
 import net.daporkchop.fp2.client.render.object.ElementArrayObject;
@@ -30,9 +30,6 @@ import net.daporkchop.fp2.client.render.object.VertexBufferObject;
 import net.daporkchop.fp2.client.render.shader.ShaderManager;
 import net.daporkchop.fp2.client.render.shader.ShaderProgram;
 import net.daporkchop.lib.common.util.PorkUtil;
-import net.daporkchop.lib.noise.NoiseSource;
-import net.daporkchop.lib.noise.engine.OpenSimplexNoiseEngine;
-import net.daporkchop.lib.random.impl.FastPRandom;
 import net.minecraft.block.material.MapColor;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
@@ -42,6 +39,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.ARBShaderObjects;
 import org.lwjgl.opengl.GL15;
@@ -55,7 +54,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
@@ -67,16 +65,17 @@ import static org.lwjgl.opengl.GL30.*;
 /**
  * @author DaPorkchop_
  */
-public class HeightTerrainRenderer extends TerrainRenderer {
-    public static ShaderProgram HEIGHT_SHADER = ShaderManager.get("height");
+@SideOnly(Side.CLIENT)
+public class HeightmapRenderer extends TerrainRenderer {
+    public static ShaderProgram HEIGHT_SHADER = ShaderManager.get("heightmap");
     public static final ElementArrayObject MESH = new ElementArrayObject();
     public static final int MESH_VERTEX_COUNT;
 
     public static final VertexBufferObject COORDS = new VertexBufferObject();
 
     static {
-        ShortBuffer meshData = BufferUtils.createShortBuffer(HEIGHT_TILE_VERTS * HEIGHT_TILE_VERTS * 2 + 1);
-        MESH_VERTEX_COUNT = genMesh(HEIGHT_TILE_VERTS, HEIGHT_TILE_VERTS, meshData);
+        ShortBuffer meshData = BufferUtils.createShortBuffer(HeightmapConstants.HEIGHT_VERTS * HeightmapConstants.HEIGHT_VERTS * 2 + 1);
+        MESH_VERTEX_COUNT = genMesh(HeightmapConstants.HEIGHT_VERTS, HeightmapConstants.HEIGHT_VERTS, meshData);
 
         try (ElementArrayObject mesh = MESH.bind()) {
             GL15.glBufferData(GL_ELEMENT_ARRAY_BUFFER, (ShortBuffer) meshData.flip(), GL_STATIC_DRAW);
@@ -84,9 +83,9 @@ public class HeightTerrainRenderer extends TerrainRenderer {
     }
 
     static {
-        FloatBuffer coordsData = BufferUtils.createFloatBuffer(HEIGHT_TILE_VERTS * HEIGHT_TILE_VERTS * 2);
-        for (int x = 0; x < HEIGHT_TILE_VERTS; x++) {
-            for (int z = 0; z < HEIGHT_TILE_VERTS; z++) {
+        FloatBuffer coordsData = BufferUtils.createFloatBuffer(HeightmapConstants.HEIGHT_VERTS * HeightmapConstants.HEIGHT_VERTS * 2);
+        for (int x = 0; x < HeightmapConstants.HEIGHT_VERTS; x++) {
+            for (int z = 0; z < HeightmapConstants.HEIGHT_VERTS; z++) {
                 coordsData.put(x).put(z);
             }
         }
@@ -133,7 +132,7 @@ public class HeightTerrainRenderer extends TerrainRenderer {
         }
     }
 
-    public HeightTerrainRenderer(@NonNull World world)  {
+    public HeightmapRenderer(@NonNull World world)  {
         //lol this isn't thread-safe at all
         new Thread(() -> {
             PorkUtil.sleep(10000L);
@@ -141,13 +140,13 @@ public class HeightTerrainRenderer extends TerrainRenderer {
             //IChunkGenerator generator = serverWorld.provider.createChunkGenerator();
             for (int x = 0; x < 5; x++) {
                 for (int z = 0; z < 5; z++) {
-                    IntBuffer heightBuffer = BufferUtils.createIntBuffer(HEIGHT_TILE_VERTS * HEIGHT_TILE_VERTS);
-                    ByteBuffer colorBuffer = BufferUtils.createByteBuffer(HEIGHT_TILE_VERTS * HEIGHT_TILE_VERTS);
-                    for (int xx = 0; xx < HEIGHT_TILE_VERTS; xx++) {
+                    IntBuffer heightBuffer = BufferUtils.createIntBuffer(HeightmapConstants.HEIGHT_VERTS * HeightmapConstants.HEIGHT_VERTS);
+                    ByteBuffer colorBuffer = BufferUtils.createByteBuffer(HeightmapConstants.HEIGHT_VERTS * HeightmapConstants.HEIGHT_VERTS);
+                    for (int xx = 0; xx < HeightmapConstants.HEIGHT_VERTS; xx++) {
                         Z_LOOP:
-                        for (int zz = 0; zz < HEIGHT_TILE_VERTS; zz++) {
-                            int blockX = x * HEIGHT_TILE_SQUARES + xx;
-                            int blockZ = z * HEIGHT_TILE_SQUARES + zz;
+                        for (int zz = 0; zz < HeightmapConstants.HEIGHT_VERTS; zz++) {
+                            int blockX = x * HeightmapConstants.HEIGHT_VOXELS + xx;
+                            int blockZ = z * HeightmapConstants.HEIGHT_VOXELS + zz;
                             Chunk chunk = serverWorld.getChunk(blockX >> 4, blockZ >> 4);//generator.generateChunk(blockX >> 4, blockZ >> 4);
 
                             for (int y = 255; y >= 0; y--)  {
@@ -224,7 +223,7 @@ public class HeightTerrainRenderer extends TerrainRenderer {
             ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
 
             VAO_LOOKUP.forEach((pos, o) -> {
-                ARBShaderObjects.glUniform2fARB(shader.uniformLocation("offset"), pos.x * HEIGHT_TILE_SQUARES + .5f, pos.z * HEIGHT_TILE_SQUARES + .5f);
+                ARBShaderObjects.glUniform2fARB(shader.uniformLocation("offset"), pos.x * HeightmapConstants.HEIGHT_VOXELS + .5f, pos.z * HeightmapConstants.HEIGHT_VOXELS + .5f);
 
                 try (VertexArrayObject vao = o.bind()) {
                     glDrawElements(GL_TRIANGLE_STRIP, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);

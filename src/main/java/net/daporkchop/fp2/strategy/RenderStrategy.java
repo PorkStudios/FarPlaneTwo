@@ -18,15 +18,36 @@
  *
  */
 
-package net.daporkchop.fp2.util.asm;
+package net.daporkchop.fp2.strategy;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapRenderer;
+import net.minecraft.world.World;
+import net.minecraftforge.common.config.Config;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 /**
- * Allows access to the {@link TerrainRenderer} belonging to a {@link net.minecraft.client.multiplayer.WorldClient}.
- *
  * @author DaPorkchop_
  */
-public interface TerrainRendererHolder {
-    TerrainRenderer fp2_terrainRenderer();
+public enum RenderStrategy {
+    @Config.Comment("Renders a simple 2D heightmap of the world. Overhangs are not supported.")
+    HEIGHTMAP {
+        @Override
+        @SideOnly(Side.CLIENT)
+        public TerrainRenderer createTerrainRenderer(@NonNull World world) {
+            return new HeightmapRenderer(world);
+        }
+    },
+    VOLUMETRIC {
+        @Override
+        @SideOnly(Side.CLIENT)
+        public TerrainRenderer createTerrainRenderer(@NonNull World world) {
+            throw new UnsupportedOperationException(); //TODO
+        }
+    };
+
+    @SideOnly(Side.CLIENT)
+    public abstract TerrainRenderer createTerrainRenderer(@NonNull World world);
 }

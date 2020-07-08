@@ -18,29 +18,17 @@
  *
  */
 
-package net.daporkchop.fp2.client.common;
+package net.daporkchop.fp2.strategy.heightmap;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.entity.Entity;
-
-import java.nio.FloatBuffer;
+import lombok.experimental.UtilityClass;
 
 /**
+ * Constant values used by the heightmap rendering strategy.
+ *
  * @author DaPorkchop_
  */
-public abstract class TerrainRenderer {
-    public double cameraX;
-    public double cameraY;
-    public double cameraZ;
-
-    public FloatBuffer proj;
-    public FloatBuffer modelView;
-
-    public void render(float partialTicks, WorldClient world, Minecraft mc) {
-        Entity entity = mc.getRenderViewEntity();
-        this.cameraX = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks;
-        this.cameraY = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks;
-        this.cameraZ = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks;
-    }
+@UtilityClass
+public class HeightmapConstants {
+    public static final int HEIGHT_VOXELS = 64; //side length of a tile in voxels contained
+    public static final int HEIGHT_VERTS = HEIGHT_VOXELS + 1; //side length of a tile in vertices
 }

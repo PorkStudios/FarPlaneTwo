@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.asm.client.multiplayer;
 
-import net.daporkchop.fp2.client.common.TerrainRenderer;
+import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.daporkchop.fp2.config.ClientConfig;
 import net.daporkchop.fp2.util.asm.TerrainRendererHolder;
 import net.minecraft.client.multiplayer.WorldClient;

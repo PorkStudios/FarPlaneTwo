@@ -18,15 +18,33 @@
  *
  */
 
-package net.daporkchop.fp2.util.asm;
-
-import net.daporkchop.fp2.strategy.common.TerrainRenderer;
+package net.daporkchop.fp2.util;
 
 /**
- * Allows access to the {@link TerrainRenderer} belonging to a {@link net.minecraft.client.multiplayer.WorldClient}.
+ * Interface with some methods copypasta-'d from {@link io.github.opencubicchunks.cubicchunks.api.world.IHeightMap}, since we can't assume that cubic chunks
+ * will be available.
  *
  * @author DaPorkchop_
+ * @see io.github.opencubicchunks.cubicchunks.api.world.IHeightMap
  */
-public interface TerrainRendererHolder {
-    TerrainRenderer fp2_terrainRenderer();
+public interface IHeightMap {
+    /**
+     * @see io.github.opencubicchunks.cubicchunks.api.world.IHeightMap#isOccluded(int, int, int)
+     */
+    boolean isOccluded(int localX, int blockY, int localZ);
+
+    /**
+     * @see io.github.opencubicchunks.cubicchunks.api.world.IHeightMap#getTopBlockY(int, int)
+     */
+    int getTopBlockY(int localX, int localZ);
+
+    /**
+     * @see io.github.opencubicchunks.cubicchunks.api.world.IHeightMap#getTopBlockYBelow(int, int, int)
+     */
+    int getTopBlockYBelow(int localX, int localZ, int blockY);
+
+    /**
+     * @see io.github.opencubicchunks.cubicchunks.api.world.IHeightMap#getLowestTopBlockY()
+     */
+    int getLowestTopBlockY();
 }

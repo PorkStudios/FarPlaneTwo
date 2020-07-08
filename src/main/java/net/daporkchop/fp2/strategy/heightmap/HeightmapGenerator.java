@@ -18,32 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.client;
+package net.daporkchop.fp2.strategy.heightmap;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.common.TerrainRenderer;
-import net.daporkchop.fp2.client.height.HeightTerrainRenderer;
-import net.minecraft.world.World;
-import net.minecraftforge.client.IRenderHandler;
-import net.minecraftforge.common.config.Config;
+import net.daporkchop.fp2.util.threading.CachedBlockAccess;
+import net.minecraft.world.WorldServer;
 
 /**
+ * Extracts height and color information from a world for use by the heightmap rendering strategy.
+ * <p>
+ * Once initialized, instances of this class are expected to be safely usable by multiple concurrent threads.
+ *
  * @author DaPorkchop_
  */
-public enum RenderStrategy {
-    @Config.Comment("Renders a simple 2D heightmap of the world. Overhangs are not supported.")
-    HEIGHT_2D {
-        @Override
-        public TerrainRenderer createTerrainRenderer(@NonNull World world) {
-            return new HeightTerrainRenderer(world);
-        }
-    },
-    FULL_3D {
-        @Override
-        public TerrainRenderer createTerrainRenderer(@NonNull World world) {
-            throw new UnsupportedOperationException(); //TODO
-        }
-    };
+public interface HeightmapGenerator {
+    /**
+     * Initializes this instance.
+     * <p>
+     * An instance is only initialized once. No other methods will be called on this instance until initialization is complete.
+     *
+     * @param world the world that the heightmap will be generated for
+     */
+    void init(@NonNull WorldServer world);
 
-    public abstract TerrainRenderer createTerrainRenderer(@NonNull World world);
+    /**
+     * Generates the initial data for the given chunk.
+     * <p>
+     * Note that this should only generate a square with side length {@link HeightmapConstants#HEIGHT_VOXELS}, centered on chunk coordinates 0,0. Any outer
+     * edges will be automatically filled in with data from the generated area, and later with data from neighboring chunks once it becomes available.
+     *
+     * @param world the {@link CachedBlockAccess} providing access to block/height data in the world
+     * @param chunk the chunk to generate
+     */
+    void generate(@NonNull CachedBlockAccess world, @NonNull HeightmapChunk chunk);
 }

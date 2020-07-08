@@ -18,15 +18,32 @@
  *
  */
 
-package net.daporkchop.fp2.util.asm;
+package net.daporkchop.fp2.strategy.common;
 
-import net.daporkchop.fp2.strategy.common.TerrainRenderer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.WorldClient;
+import net.minecraft.entity.Entity;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
+
+import java.nio.FloatBuffer;
 
 /**
- * Allows access to the {@link TerrainRenderer} belonging to a {@link net.minecraft.client.multiplayer.WorldClient}.
- *
  * @author DaPorkchop_
  */
-public interface TerrainRendererHolder {
-    TerrainRenderer fp2_terrainRenderer();
+@SideOnly(Side.CLIENT)
+public abstract class TerrainRenderer {
+    public double cameraX;
+    public double cameraY;
+    public double cameraZ;
+
+    public FloatBuffer proj;
+    public FloatBuffer modelView;
+
+    public void render(float partialTicks, WorldClient world, Minecraft mc) {
+        Entity entity = mc.getRenderViewEntity();
+        this.cameraX = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks;
+        this.cameraY = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks;
+        this.cameraZ = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks;
+    }
 }

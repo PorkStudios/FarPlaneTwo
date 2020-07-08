@@ -22,13 +22,48 @@ package net.daporkchop.fp2.util;
 
 import lombok.experimental.UtilityClass;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.CharBuffer;
+import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.nio.LongBuffer;
+import java.nio.ShortBuffer;
+
 /**
- * Various constants used throughout the mod.
+ * Various constants and helper methods used throughout the mod.
  *
  * @author DaPorkchop_
  */
 @UtilityClass
 public class Constants {
-    public static final int HEIGHT_TILE_SQUARES = 64; //side length of a height tile
-    public static final int HEIGHT_TILE_VERTS = HEIGHT_TILE_SQUARES + 1; //side length of a height tile (in vertices)
+    //the following methods are copied from LWJGL's BufferUtils in order to ensure their availability on the dedicated server as well
+    public static ByteBuffer createByteBuffer(int size) {
+        return ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder());
+    }
+
+    public static ShortBuffer createShortBuffer(int size) {
+        return createByteBuffer(size << 1).asShortBuffer();
+    }
+
+    public static CharBuffer createCharBuffer(int size) {
+        return createByteBuffer(size << 1).asCharBuffer();
+    }
+
+    public static IntBuffer createIntBuffer(int size) {
+        return createByteBuffer(size << 2).asIntBuffer();
+    }
+
+    public static LongBuffer createLongBuffer(int size) {
+        return createByteBuffer(size << 3).asLongBuffer();
+    }
+
+    public static FloatBuffer createFloatBuffer(int size) {
+        return createByteBuffer(size << 2).asFloatBuffer();
+    }
+
+    public static DoubleBuffer createDoubleBuffer(int size) {
+        return createByteBuffer(size << 3).asDoubleBuffer();
+    }
 }

@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.config;
 
 import net.daporkchop.fp2.FP2;
-import net.daporkchop.fp2.client.RenderStrategy;
 import net.minecraftforge.common.config.Config;
 
 /**
