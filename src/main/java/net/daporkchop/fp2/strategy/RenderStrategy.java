@@ -22,7 +22,7 @@ package net.daporkchop.fp2.strategy;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapRenderer;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
 import net.minecraft.world.World;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.fml.relauncher.Side;
@@ -37,7 +37,7 @@ public enum RenderStrategy {
         @Override
         @SideOnly(Side.CLIENT)
         public TerrainRenderer createTerrainRenderer(@NonNull World world) {
-            return new HeightmapRenderer(world);
+            return new HeightmapTerrainRenderer(world);
         }
     },
     VOLUMETRIC {

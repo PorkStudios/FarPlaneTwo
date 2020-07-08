@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.util.vanilla;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.lib.common.math.BinMath;
@@ -47,21 +46,24 @@ import java.util.function.LongFunction;
  * @author DaPorkchop_
  */
 //this makes the assumption that asynchronous read-only access to Chunk is safe, which seems to be the case although i'm not entirely sure. testing needed
-//TODO: this never unloads chunks
-@RequiredArgsConstructor
 public class VanillaCachedBlockAccessImpl implements CachedBlockAccess {
-    @NonNull
     protected final WorldServer world;
 
     protected final LongObjMap<Object> cache = new LongObjConcurrentHashMap<>();
 
-    protected final LongFunction<CompletableFuture<Chunk>> cacheMiss = l -> {
-        CompletableFuture<Chunk> future = CompletableFuture.supplyAsync(
-                () -> this.world.getChunk(BinMath.unpackX(l), BinMath.unpackY(l)),
-                ServerThreadExecutor.INSTANCE);
-        future.thenAccept(chunk -> this.cache.replace(l, future, chunk)); //replace future with chunk instance in cache, to avoid indirection
-        return future;
-    };
+    protected final LongFunction<CompletableFuture<Chunk>> cacheMiss;
+
+    public VanillaCachedBlockAccessImpl(@NonNull WorldServer world) {
+        this.world = world;
+
+        this.cacheMiss = l -> {
+            CompletableFuture<Chunk> future = CompletableFuture.supplyAsync(
+                    () -> this.world.getChunk(BinMath.unpackX(l), BinMath.unpackY(l)),
+                    ServerThreadExecutor.INSTANCE);
+            future.thenAccept(chunk -> this.cache.replace(l, future, chunk)); //replace future with chunk instance in cache, to avoid indirection
+            return future;
+        };
+    }
 
     protected Object fetchChunk(int chunkX, int chunkZ) {
         return this.cache.computeIfAbsent(BinMath.packXY(chunkX, chunkZ), this.cacheMiss);
@@ -90,6 +92,11 @@ public class VanillaCachedBlockAccessImpl implements CachedBlockAccess {
                 this.fetchChunk(x, z); //worker threads will only create a future and submit it to the main thread without blocking
             }
         }
+    }
+
+    @Override
+    public void gc() {
+        this.cache.values().removeIf(o -> o instanceof Chunk && ((Chunk) o).isLoaded());
     }
 
     @Override

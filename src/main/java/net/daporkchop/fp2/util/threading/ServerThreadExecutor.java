@@ -87,6 +87,7 @@ public final class ServerThreadExecutor implements WorldWorkerManager.IWorker, E
 
     public void startup() {
         checkState(PUnsafe.compareAndSwapInt(this, ADDED_OFFSET, 0, 1), "already added?!?");
+        this.serverThread = Thread.currentThread();
         WorldWorkerManager.addWorker(this);
     }
 
@@ -110,6 +111,7 @@ public final class ServerThreadExecutor implements WorldWorkerManager.IWorker, E
                 throw exception;
             }
         }
+        this.serverThread = null;
         this.added = 0; //mark as ready to be added again
     }
 }

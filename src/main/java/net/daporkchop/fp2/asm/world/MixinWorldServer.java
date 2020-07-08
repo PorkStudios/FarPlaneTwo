@@ -25,6 +25,9 @@ import net.daporkchop.fp2.util.vanilla.VanillaCachedBlockAccessImpl;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * @author DaPorkchop_
@@ -40,5 +43,13 @@ public abstract class MixinWorldServer extends World implements CachedBlockAcces
     @Override
     public CachedBlockAccess fp2_cachedBlockAccess() {
         return this.cachedBlockAccess;
+    }
+
+    @Inject(method = "Lnet/minecraft/world/WorldServer;tick()V",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/world/chunk/IChunkProvider;tick()Z",
+                    shift = At.Shift.AFTER))
+    private void tick_postChunkProviderTick(CallbackInfo ci) {
+        this.cachedBlockAccess.gc();
     }
 }

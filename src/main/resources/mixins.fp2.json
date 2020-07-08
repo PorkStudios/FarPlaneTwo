@@ -6,5 +6,8 @@
   "client": [
     "client.multiplayer.MixinWorldClient",
     "client.renderer.MixinEntityRenderer"
+  ],
+  "mixins": [
+    "world.MixinWorldServer"
   ]
 }

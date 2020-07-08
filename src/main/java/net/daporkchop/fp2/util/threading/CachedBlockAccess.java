@@ -46,6 +46,11 @@ public interface CachedBlockAccess extends IBlockAccess, IHeightMap {
      */
     void prefetch(@NonNull AxisAlignedBB range);
 
+    /**
+     * Drops some data from the cache.
+     */
+    void gc();
+
     @Override
     int getTopBlockY(int blockX, int blockZ);
 
@@ -59,7 +64,7 @@ public interface CachedBlockAccess extends IBlockAccess, IHeightMap {
     IBlockState getBlockState(BlockPos pos);
 
     @Override
-    default boolean isAirBlock(BlockPos pos)    {
+    default boolean isAirBlock(BlockPos pos) {
         IBlockState state = this.getBlockState(pos);
         return state.getBlock().isAir(state, this, pos);
     }
@@ -68,7 +73,7 @@ public interface CachedBlockAccess extends IBlockAccess, IHeightMap {
     Biome getBiome(BlockPos pos);
 
     @Override
-    default int getStrongPower(BlockPos pos, EnumFacing direction)  {
+    default int getStrongPower(BlockPos pos, EnumFacing direction) {
         return this.getBlockState(pos).getStrongPower(this, pos, direction);
     }
 
@@ -76,7 +81,7 @@ public interface CachedBlockAccess extends IBlockAccess, IHeightMap {
     WorldType getWorldType();
 
     @Override
-    default boolean isSideSolid(BlockPos pos, EnumFacing side, boolean _default)    {
+    default boolean isSideSolid(BlockPos pos, EnumFacing side, boolean _default) {
         return this.getBlockState(pos).isSideSolid(this, pos, side);
     }
 

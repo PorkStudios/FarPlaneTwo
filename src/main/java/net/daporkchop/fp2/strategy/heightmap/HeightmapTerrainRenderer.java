@@ -29,6 +29,7 @@ import net.daporkchop.fp2.client.render.object.VertexArrayObject;
 import net.daporkchop.fp2.client.render.object.VertexBufferObject;
 import net.daporkchop.fp2.client.render.shader.ShaderManager;
 import net.daporkchop.fp2.client.render.shader.ShaderProgram;
+import net.daporkchop.fp2.util.threading.CachedBlockAccess;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.block.material.MapColor;
 import net.minecraft.block.state.IBlockState;
@@ -66,7 +67,7 @@ import static org.lwjgl.opengl.GL30.*;
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public class HeightmapRenderer extends TerrainRenderer {
+public class HeightmapTerrainRenderer extends TerrainRenderer {
     public static ShaderProgram HEIGHT_SHADER = ShaderManager.get("heightmap");
     public static final ElementArrayObject MESH = new ElementArrayObject();
     public static final int MESH_VERTEX_COUNT;
@@ -132,12 +133,11 @@ public class HeightmapRenderer extends TerrainRenderer {
         }
     }
 
-    public HeightmapRenderer(@NonNull World world)  {
+    public HeightmapTerrainRenderer(@NonNull World world)  {
         //lol this isn't thread-safe at all
         new Thread(() -> {
-            PorkUtil.sleep(10000L);
-            World serverWorld = Minecraft.getMinecraft().getIntegratedServer().getWorld(0);
-            //IChunkGenerator generator = serverWorld.provider.createChunkGenerator();
+            CachedBlockAccess access = ((CachedBlockAccess.Holder) Minecraft.getMinecraft().getIntegratedServer().getWorld(0)).fp2_cachedBlockAccess();
+            BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos();
             for (int x = 0; x < 5; x++) {
                 for (int z = 0; z < 5; z++) {
                     IntBuffer heightBuffer = BufferUtils.createIntBuffer(HeightmapConstants.HEIGHT_VERTS * HeightmapConstants.HEIGHT_VERTS);
@@ -147,13 +147,14 @@ public class HeightmapRenderer extends TerrainRenderer {
                         for (int zz = 0; zz < HeightmapConstants.HEIGHT_VERTS; zz++) {
                             int blockX = x * HeightmapConstants.HEIGHT_VOXELS + xx;
                             int blockZ = z * HeightmapConstants.HEIGHT_VOXELS + zz;
-                            Chunk chunk = serverWorld.getChunk(blockX >> 4, blockZ >> 4);//generator.generateChunk(blockX >> 4, blockZ >> 4);
+                            blockPos.setPos(blockX, 255, blockZ);
 
                             for (int y = 255; y >= 0; y--)  {
-                                IBlockState state = chunk.getBlockState(blockX & 0xF, y, blockZ & 0xF);
+                                blockPos.setY(y);
+                                IBlockState state = access.getBlockState(blockPos);
                                 if (state.getBlock().canCollideCheck(state, true))   {
                                     heightBuffer.put(y);
-                                    colorBuffer.put((byte) state.getMapColor(serverWorld, new BlockPos(blockX, y, blockZ)).colorIndex);
+                                    colorBuffer.put((byte) state.getMapColor(access, new BlockPos(blockX, y, blockZ)).colorIndex);
                                     continue Z_LOOP;
                                 }
                             }
