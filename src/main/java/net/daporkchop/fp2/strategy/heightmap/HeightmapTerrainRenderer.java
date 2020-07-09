@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.strategy.heightmap;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.daporkchop.fp2.client.render.MatrixHelper;
 import net.daporkchop.fp2.client.render.object.BufferTextureObject;
 import net.daporkchop.fp2.client.render.object.ElementArrayObject;
@@ -29,11 +28,16 @@ import net.daporkchop.fp2.client.render.object.VertexArrayObject;
 import net.daporkchop.fp2.client.render.object.VertexBufferObject;
 import net.daporkchop.fp2.client.render.shader.ShaderManager;
 import net.daporkchop.fp2.client.render.shader.ShaderProgram;
+import net.daporkchop.fp2.strategy.common.TerrainRenderer;
+import net.daporkchop.fp2.util.Constants;
 import net.minecraft.block.material.MapColor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.OpenGlHelper;
+import net.minecraft.init.Biomes;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.biome.Biome;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.BufferUtils;
@@ -46,11 +50,8 @@ import java.nio.ShortBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
-import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL15.glBufferData;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
 
@@ -109,13 +110,18 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
     }
 
     public static final BufferTextureObject MAP_COLORS = new BufferTextureObject();
+    public static final BufferTextureObject GRASS_COLORS = new BufferTextureObject();
+    public static final IntBuffer GRASS_BUFFER = Constants.createIntBuffer(256 * 256 * 3);
 
     static {
-        IntBuffer buffer = BufferUtils.createIntBuffer(MapColor.COLORS.length);
-        for (MapColor color : MapColor.COLORS)  {
-            if (color != null)  {
+        IntBuffer buffer = BufferUtils.createIntBuffer(MapColor.COLORS.length + 256);
+        for (MapColor color : MapColor.COLORS) {
+            if (color != null) {
                 buffer.put(color.colorIndex, color.colorValue);
             }
+        }
+        for (int i = 0; i < 256; i++) {
+            Biome biome = Biome.getBiome(i, Biomes.PLAINS);
         }
 
         try (VertexBufferObject vbo = new VertexBufferObject().bind()) {
@@ -127,82 +133,27 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
 
     private final Map<ChunkPos, VertexArrayObject> chunks = new HashMap<>();
 
-    public HeightmapTerrainRenderer(@NonNull WorldClient world)  {
-        //lol this isn't thread-safe at all
-        /*new Thread(() -> {
-            CachedBlockAccess access = ((CachedBlockAccess.Holder) Minecraft.getMinecraft().getIntegratedServer().getWorld(0)).fp2_cachedBlockAccess();
-            BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos();
-            for (int x = 0; x < 5; x++) {
-                for (int z = 0; z < 5; z++) {
-                    IntBuffer heightBuffer = BufferUtils.createIntBuffer(HeightmapConstants.HEIGHT_VERTS * HeightmapConstants.HEIGHT_VERTS);
-                    ByteBuffer colorBuffer = BufferUtils.createByteBuffer(HeightmapConstants.HEIGHT_VERTS * HeightmapConstants.HEIGHT_VERTS);
-                    for (int xx = 0; xx < HeightmapConstants.HEIGHT_VERTS; xx++) {
-                        Z_LOOP:
-                        for (int zz = 0; zz < HeightmapConstants.HEIGHT_VERTS; zz++) {
-                            int blockX = x * HeightmapConstants.HEIGHT_VOXELS + xx;
-                            int blockZ = z * HeightmapConstants.HEIGHT_VOXELS + zz;
-                            blockPos.setPos(blockX, 255, blockZ);
-
-                            for (int y = 255; y >= 0; y--)  {
-                                blockPos.setY(y);
-                                IBlockState state = access.getBlockState(blockPos);
-                                if (state.getBlock().canCollideCheck(state, true))   {
-                                    heightBuffer.put(y);
-                                    colorBuffer.put((byte) state.getMapColor(access, new BlockPos(blockX, y, blockZ)).colorIndex);
-                                    continue Z_LOOP;
-                                }
-                            }
-                            heightBuffer.put(0);
-                            colorBuffer.put((byte) MapColor.AIR.colorIndex);
-                        }
-                    }
-                    heightBuffer.flip();
-                    colorBuffer.flip();
-
-                    ChunkPos pos = new ChunkPos(x, z);
-                    Minecraft.getMinecraft().addScheduledTask(() -> {
-                        try (VertexArrayObject vao = new VertexArrayObject().bind()) {
-                            glEnableVertexAttribArray(0);
-                            glEnableVertexAttribArray(1);
-                            glEnableVertexAttribArray(2);
-
-                            try (VertexBufferObject coords = COORDS.bind()) {
-                                glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0L);
-                                vao.putDependency(0, coords);
-                            }
-                            try (VertexBufferObject heights = new VertexBufferObject().bind()) {
-                                glBufferData(GL_ARRAY_BUFFER, heightBuffer, GL_STATIC_DRAW);
-                                glVertexAttribIPointer(1, 1, GL_INT, 0, 0L);
-                                vao.putDependency(1, heights);
-                            }
-                            try (VertexBufferObject colors = new VertexBufferObject().bind()) {
-                                glBufferData(GL_ARRAY_BUFFER, colorBuffer, GL_STATIC_DRAW);
-                                glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, 0, 0L);
-                                vao.putDependency(2, colors);
-                            }
-
-                            vao.putElementArray(MESH.bind());
-
-                            chunks.put(pos, vao);
-                        } finally {
-                            glDisableVertexAttribArray(0);
-                            glDisableVertexAttribArray(1);
-                            glDisableVertexAttribArray(2);
-
-                            MESH.close();
-                        }
-                    });
-                }
+    public HeightmapTerrainRenderer(@NonNull WorldClient world) {
+        Minecraft.getMinecraft().addScheduledTask(() -> {
+            FloatBuffer biomeClimates = Constants.createFloatBuffer(256 * 2);
+            for (int i = 0; i < 256; i++) {
+                Biome biome = Biome.getBiome(i, Biomes.PLAINS);
+                biomeClimates.put((i << 1), biome.getDefaultTemperature())
+                        .put((i << 1) + 1, biome.getRainfall());
             }
-        }).start();*/
+            try (ShaderProgram shader = HEIGHT_SHADER.use()) {
+                glUniform2(shader.uniformLocation("biome_climate"), biomeClimates);
+            }
+        });
     }
 
-    public void receiveRemoteChunk(@NonNull HeightmapChunk chunk)  {
+    public void receiveRemoteChunk(@NonNull HeightmapChunk chunk) {
         Minecraft.getMinecraft().addScheduledTask(() -> {
             try (VertexArrayObject vao = new VertexArrayObject().bind()) {
                 glEnableVertexAttribArray(0);
                 glEnableVertexAttribArray(1);
                 glEnableVertexAttribArray(2);
+                glEnableVertexAttribArray(3);
 
                 try (VertexBufferObject coords = COORDS.bind()) {
                     glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0L);
@@ -218,6 +169,11 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                     glVertexAttribIPointer(2, 1, GL_INT, 0, 0L);
                     vao.putDependency(2, colors);
                 }
+                try (VertexBufferObject biomes = new VertexBufferObject().bind()) {
+                    glBufferData(GL_ARRAY_BUFFER, chunk.biome(), GL_STATIC_DRAW);
+                    glVertexAttribIPointer(3, 1, GL_UNSIGNED_BYTE, 0, 0L);
+                    vao.putDependency(3, biomes);
+                }
 
                 vao.putElementArray(MESH.bind());
 
@@ -226,6 +182,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                 glDisableVertexAttribArray(0);
                 glDisableVertexAttribArray(1);
                 glDisableVertexAttribArray(2);
+                glDisableVertexAttribArray(3);
 
                 MESH.close();
             }
@@ -247,18 +204,29 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         this.modelView = MatrixHelper.getMATRIX(GL_MODELVIEW_MATRIX, this.modelView);
         this.proj = MatrixHelper.getMATRIX(GL_PROJECTION_MATRIX, this.proj);
 
-        try (ShaderProgram shader = HEIGHT_SHADER.use();
-             BufferTextureObject tex = MAP_COLORS.bind()) {
-            ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
-            ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
+        try (BufferTextureObject tex = MAP_COLORS.bind()) {
+            GlStateManager.setActiveTexture(OpenGlHelper.lightmapTexUnit);
+            GlStateManager.enableTexture2D();
 
-            chunks.forEach((pos, o) -> {
-                ARBShaderObjects.glUniform2fARB(shader.uniformLocation("offset"), pos.x * HeightmapConstants.HEIGHT_VOXELS + .5f, pos.z * HeightmapConstants.HEIGHT_VOXELS + .5f);
+            try (BufferTextureObject tex2 = GRASS_COLORS.bind()) {
+                try (ShaderProgram shader = HEIGHT_SHADER.use()) {
+                    ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
+                    ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
 
-                try (VertexArrayObject vao = o.bind()) {
-                    glDrawElements(GL_TRIANGLE_STRIP, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
+                    ARBShaderObjects.glUniform1iARB(shader.uniformLocation("palettePlusClimate"), 0);
+                    ARBShaderObjects.glUniform1iARB(shader.uniformLocation("grassBuffer"), 1);
+
+                    this.chunks.forEach((pos, o) -> {
+                        ARBShaderObjects.glUniform2fARB(shader.uniformLocation("camera_offset"), pos.x * HeightmapConstants.HEIGHT_VOXELS + .5f, pos.z * HeightmapConstants.HEIGHT_VOXELS + .5f);
+
+                        try (VertexArrayObject vao = o.bind()) {
+                            glDrawElements(GL_TRIANGLE_STRIP, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
+                        }
+                    });
                 }
-            });
+            }
+            GlStateManager.disableTexture2D();
+            GlStateManager.setActiveTexture(OpenGlHelper.defaultTexUnit);
         }
 
         glPopMatrix();

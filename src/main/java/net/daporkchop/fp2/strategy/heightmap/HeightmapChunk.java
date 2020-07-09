@@ -27,6 +27,7 @@ import lombok.experimental.Accessors;
 import net.daporkchop.fp2.util.Constants;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
@@ -50,6 +51,7 @@ public class HeightmapChunk implements IMessage {
 
     protected final IntBuffer height = Constants.createIntBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
     protected final IntBuffer color = Constants.createIntBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
+    protected final ByteBuffer biome = Constants.createByteBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
 
     public int height(int x, int z) {
         checkCoords(x, z);
@@ -59,6 +61,11 @@ public class HeightmapChunk implements IMessage {
     public int color(int x, int z) {
         checkCoords(x, z);
         return this.color.get(x * HEIGHT_VERTS + z);
+    }
+
+    public int biome(int x, int z) {
+        checkCoords(x, z);
+        return this.biome.get(x * HEIGHT_VERTS + z) & 0xFF;
     }
 
     public HeightmapChunk height(int x, int z, int height) {
@@ -73,6 +80,12 @@ public class HeightmapChunk implements IMessage {
         return this;
     }
 
+    public HeightmapChunk biome(int x, int z, int biome) {
+        checkCoords(x, z);
+        this.biome.put(x * HEIGHT_VERTS + z, (byte) biome);
+        return this;
+    }
+
     @Override
     public void fromBytes(ByteBuf buf) {
         for (int i = 0, capacity = this.height.capacity(); i < capacity; i++) {
@@ -81,16 +94,22 @@ public class HeightmapChunk implements IMessage {
         for (int i = 0, capacity = this.color.capacity(); i < capacity; i++) {
             this.color.put(i, buf.readInt());
         }
+        for (int i = 0, capacity = this.biome.capacity(); i < capacity; i++) {
+            this.biome.put(i, buf.readByte());
+        }
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.ensureWritable((this.height.capacity() + this.color.capacity()) * 4);
+        buf.ensureWritable((this.height.capacity() + this.color.capacity()) * 4 + this.biome.capacity());
         for (int i = 0, capacity = this.height.capacity(); i < capacity; i++) {
             buf.writeInt(this.height.get(i));
         }
         for (int i = 0, capacity = this.color.capacity(); i < capacity; i++) {
             buf.writeInt(this.color.get(i));
+        }
+        for (int i = 0, capacity = this.biome.capacity(); i < capacity; i++) {
+            buf.writeByte(this.biome.get(i));
         }
     }
 }

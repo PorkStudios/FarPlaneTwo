@@ -59,6 +59,7 @@ abstract class Shader {
             OpenGL.glCompileShader(this.id);
             ShaderManager.validate(name, this.id, OpenGL.GL_COMPILE_STATUS);
         } catch (Exception e) {
+            e.printStackTrace();
             if (this.id != -1) {
                 this.internal_dispose();
             }
