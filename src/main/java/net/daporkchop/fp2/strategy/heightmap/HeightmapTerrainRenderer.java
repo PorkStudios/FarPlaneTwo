@@ -50,9 +50,13 @@ import java.nio.ShortBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL15.glBufferData;
 import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL20.glUniform2;
 import static org.lwjgl.opengl.GL30.*;
 
 /**
@@ -115,19 +119,19 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
 
     static {
         IntBuffer buffer = BufferUtils.createIntBuffer(MapColor.COLORS.length + 256);
-        for (MapColor color : MapColor.COLORS) {
-            if (color != null) {
-                buffer.put(color.colorIndex, color.colorValue);
-            }
-        }
-        for (int i = 0; i < 256; i++) {
-            Biome biome = Biome.getBiome(i, Biomes.PLAINS);
+        for (int i = 0, l = MapColor.COLORS.length; i < l; i++) {
+            int color = MapColor.COLORS[i] != null ? MapColor.COLORS[i].colorValue : 0xFF00FF;
+            buffer.put(i, Constants.convertARGB_ABGR(0xFF000000 | color));
         }
 
         try (VertexBufferObject vbo = new VertexBufferObject().bind()) {
             glBufferData(GL_ARRAY_BUFFER, buffer, GL_STATIC_DRAW);
 
             MAP_COLORS.useBuffer(vbo, GL_RGBA8);
+        }
+
+        for (int i = 0; i < 256; i++) {
+            GRASS_BUFFER.put(256 * 256 * 2 + i, 0xFF000000 | Biome.getBiome(i, Biomes.PLAINS).getWaterColor());
         }
     }
 
@@ -136,11 +140,13 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
     public HeightmapTerrainRenderer(@NonNull WorldClient world) {
         Minecraft.getMinecraft().addScheduledTask(() -> {
             FloatBuffer biomeClimates = Constants.createFloatBuffer(256 * 2);
+
             for (int i = 0; i < 256; i++) {
                 Biome biome = Biome.getBiome(i, Biomes.PLAINS);
                 biomeClimates.put((i << 1), biome.getDefaultTemperature())
                         .put((i << 1) + 1, biome.getRainfall());
             }
+
             try (ShaderProgram shader = HEIGHT_SHADER.use()) {
                 glUniform2(shader.uniformLocation("biome_climate"), biomeClimates);
             }

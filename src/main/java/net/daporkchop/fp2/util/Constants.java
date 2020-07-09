@@ -51,6 +51,10 @@ public class Constants {
             PorkUtil.CPU_COUNT,
             new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Worker Thread #%d").build());
 
+    public static int convertARGB_ABGR(int in)  {
+        return (in & 0xFF00FF00) | ((in >>> 16) & 0xFF) | ((in & 0xFF) << 16);
+    }
+
     //the following methods are copied from LWJGL's BufferUtils in order to ensure their availability on the dedicated server as well
     public static ByteBuffer createByteBuffer(int size) {
         return ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder());
