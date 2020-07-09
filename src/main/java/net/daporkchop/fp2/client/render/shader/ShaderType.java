@@ -123,8 +123,6 @@ public enum ShaderType {
         }
     };
 
-    @Getter(AccessLevel.NONE)
-    protected final Map<String, Shader> compiledShaders = new ConcurrentHashMap<>();
     @NonNull
     protected final String extension;
     protected final int openGlId;

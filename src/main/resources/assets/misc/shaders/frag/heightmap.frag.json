@@ -3,6 +3,6 @@
   ],
   "requires": [
     "vert_color",
-    "vert_height"
+    "vert_pos"
   ]
 }

@@ -24,16 +24,13 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.lib.binary.oio.StreamUtil;
-import net.daporkchop.lib.common.function.io.IOFunction;
 import net.daporkchop.fp2.client.render.OpenGL;
+import net.daporkchop.lib.binary.oio.StreamUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages loaded shaders.
@@ -42,9 +39,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @UtilityClass
 public class ShaderManager {
-    protected final String                     BASE_PATH       = "/assets/misc/shaders";
-    protected final Map<String, ShaderProgram> LINKED_PROGRAMS = new ConcurrentHashMap<>();
-    protected       long                       RELOAD_COUNTER  = 0L;
+    protected final String BASE_PATH = "/assets/misc/shaders";
+    protected long RELOAD_COUNTER = 0L;
 
     /**
      * Obtains a shader program with the given name.
@@ -54,65 +50,33 @@ public class ShaderManager {
      */
     public ShaderProgram get(@NonNull String programName) {
         OpenGL.assertOpenGL();
-        ShaderProgram program = LINKED_PROGRAMS.computeIfAbsent(programName, (IOFunction<String, ShaderProgram>) ShaderManager::doGet);
-        program.usages++;
-        return program;
-    }
-
-    private ShaderProgram doGet(@NonNull String name) throws IOException {
-        return doGet(name, false);
-    }
-
-    private ShaderProgram doGet(@NonNull String name, boolean bypassCache) throws IOException {
-        String fileName = String.format("%s/prog/%s.json", BASE_PATH, name);
-        JsonObject meta;
-        try (InputStream in = ShaderManager.class.getResourceAsStream(fileName)) {
-            if (in == null) {
-                throw new IllegalStateException(String.format("Unable to find shader meta file: \"%s\"!", fileName));
-            }
-            meta = new JsonParser().parse(new InputStreamReader(in)).getAsJsonObject();
-        }
-        if (!meta.has("vert")) {
-            throw new IllegalStateException(String.format("Shader \"%s\" has no vertex shader!", name));
-        } else if (!meta.has("frag")) {
-            throw new IllegalStateException(String.format("Shader \"%s\" has no fragment shader!", name));
-        }
-        String cacheName = bypassCache ? "_reload_" + String.valueOf(RELOAD_COUNTER++) : null;
-        return new ShaderProgram(
-                name,
-                get(meta.get("vert").getAsString(), cacheName, ShaderType.VERTEX),
-                get(meta.get("frag").getAsString(), cacheName, ShaderType.FRAGMENT)
-        );
-    }
-
-    /**
-     * Reloads the given shader program. The program will be disposed, and then replaced with a freshly loaded version from disk.
-     * <p>
-     * This is only present for debug purposes, and is highly likely to break things.
-     *
-     * @param program the program to reload
-     * @return the reloaded shader program
-     */
-    public ShaderProgram reload(@NonNull ShaderProgram program) {
-        OpenGL.assertOpenGL();
-        program.release();
         try {
-            program = doGet(program.name, true);
+            String fileName = String.format("%s/prog/%s.json", BASE_PATH, programName);
+            JsonObject meta;
+            try (InputStream in = ShaderManager.class.getResourceAsStream(fileName)) {
+                if (in == null) {
+                    throw new IllegalStateException(String.format("Unable to find shader meta file: \"%s\"!", fileName));
+                }
+                meta = new JsonParser().parse(new InputStreamReader(in)).getAsJsonObject();
+            }
+            if (!meta.has("vert")) {
+                throw new IllegalStateException(String.format("Shader \"%s\" has no vertex shader!", programName));
+            } else if (!meta.has("frag")) {
+                throw new IllegalStateException(String.format("Shader \"%s\" has no fragment shader!", programName));
+            }
+            return new ShaderProgram(
+                    programName,
+                    get(meta.get("vert").getAsString(), ShaderType.VERTEX),
+                    get(meta.get("frag").getAsString(), ShaderType.FRAGMENT));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        LINKED_PROGRAMS.put(program.name, program);
-        return program.incrementUsages();
     }
 
-    protected Shader get(@NonNull String name, String cacheName, @NonNull ShaderType type) {
+    protected Shader get(@NonNull String name, @NonNull ShaderType type) {
         OpenGL.assertOpenGL();
-        if (cacheName == null) {
-            cacheName = name;
-        } else {
-            cacheName = name + cacheName;
-        }
-        return type.compiledShaders.computeIfAbsent(cacheName, (IOFunction<String, Shader>) aaaaaa_uselessParam -> {
+
+        try {
             String fileName = String.format("%s/%s/%s.%s", BASE_PATH, type.extension, name, type.extension);
             String metaFileName = fileName + ".json";
             JsonObject meta;
@@ -130,7 +94,9 @@ public class ShaderManager {
                 code = new String(StreamUtil.toByteArray(in), StandardCharsets.UTF_8);
             }
             return type.construct(name, code, meta);
-        });
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected void validate(@NonNull String name, int id, int type) {

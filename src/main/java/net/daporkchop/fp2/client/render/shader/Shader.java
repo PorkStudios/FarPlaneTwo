@@ -24,11 +24,12 @@ import com.google.gson.JsonObject;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.render.OpenGL;
+import net.daporkchop.lib.unsafe.PCleaner;
+import net.minecraft.client.Minecraft;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.Set;
+
+import static net.minecraft.client.renderer.OpenGlHelper.*;
 
 /**
  * A container for a vertex or fragment shader.
@@ -37,34 +38,27 @@ import java.util.Set;
  */
 @Getter
 abstract class Shader {
-    protected final Set<ShaderProgram> usages = Collections.newSetFromMap(new IdentityHashMap<>());
     protected final String name;
-    protected       int    id;
+    protected final int id;
 
     protected Shader(@NonNull String name, @NonNull String code, @NonNull JsonObject meta) {
         OpenGL.assertOpenGL();
         this.name = name;
-        this.id = -1;
 
         this.load(meta);
 
-        try {
-            //allocate shader
-            this.id = OpenGL.glCreateShader(this.type().openGlId);
+        //allocate shader
+        this.id = OpenGL.glCreateShader(this.type().openGlId);
 
-            //set shader source code
-            OpenGL.glShaderSource(this.id, code);
+        int id = this.id;
+        PCleaner.cleaner(this, () -> Minecraft.getMinecraft().addScheduledTask(() -> glDeleteShader(id)));
 
-            //compile and validate shader
-            OpenGL.glCompileShader(this.id);
-            ShaderManager.validate(name, this.id, OpenGL.GL_COMPILE_STATUS);
-        } catch (Exception e) {
-            e.printStackTrace();
-            if (this.id != -1) {
-                this.internal_dispose();
-            }
-            throw new RuntimeException(e);
-        }
+        //set shader source code
+        OpenGL.glShaderSource(this.id, code);
+
+        //compile and validate shader
+        OpenGL.glCompileShader(this.id);
+        ShaderManager.validate(name, this.id, OpenGL.GL_COMPILE_STATUS);
     }
 
     /**
@@ -116,63 +110,6 @@ abstract class Shader {
      */
     protected void attach(@NonNull ShaderProgram program) {
         OpenGL.assertOpenGL();
-        if (this.id == -1) {
-            throw new IllegalStateException("Already deleted!");
-        } else if (!this.usages.add(program)) {
-            throw new IllegalStateException("Already attached to the given shader!");
-        } else {
-            OpenGL.glAttachShader(program.id, this.id);
-        }
-    }
-
-    /**
-     * Detaches this shader from the given shader program.
-     *
-     * @param program the program from which to detach this shader
-     * @return whether or not this shader has been disposed
-     */
-    protected boolean detach(@NonNull ShaderProgram program) {
-        OpenGL.assertOpenGL();
-        if (this.id == -1) {
-            throw new IllegalStateException("Already deleted!");
-        } else if (!this.usages.remove(program)) {
-            throw new IllegalStateException("Not attached to the given shader!");
-        } else if (this.usages.isEmpty()) {
-            this.internal_dispose();
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * Less aggressive variant of {@link #detach(ShaderProgram)}.
-     *
-     * @see #detach(ShaderProgram)
-     */
-    protected boolean detachSoft(@NonNull ShaderProgram program) {
-        OpenGL.assertOpenGL();
-        if (this.id == -1) {
-            System.err.printf("Warning: Shader \"%s\" (%s) was not detached from program \"%s\" as it had already been disposed!\n", this.name, this.type(), program.name);
-        } else if (!this.usages.remove(program)) {
-            System.err.printf("Warning: Program \"%s\" incorrectly tried to detach shader \"%s\" (%s) from itself, but it wasn't attached!\n", program.name, this.name, this.type());
-        } else if (this.usages.isEmpty()) {
-            this.internal_dispose();
-            return true;
-        }
-        return false;
-    }
-
-    protected void internal_dispose() {
-        OpenGL.assertOpenGL();
-        if (this.id == -1) {
-            throw new IllegalStateException("Already disposed!");
-        } else {
-            OpenGL.glDeleteShader(this.id);
-            this.id = -1;
-            if (!this.type().compiledShaders.remove(this.name, this)) {
-                throw new IllegalStateException("Couldn't remove self from compiled shaders registry!");
-            }
-        }
+        OpenGL.glAttachShader(program.id, this.id);
     }
 }

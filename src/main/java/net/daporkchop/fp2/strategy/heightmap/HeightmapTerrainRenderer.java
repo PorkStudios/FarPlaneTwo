@@ -20,10 +20,12 @@
 
 package net.daporkchop.fp2.strategy.heightmap;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.render.MatrixHelper;
 import net.daporkchop.fp2.client.render.object.BufferTextureObject;
 import net.daporkchop.fp2.client.render.object.ElementArrayObject;
+import net.daporkchop.fp2.client.render.object.ShaderStorageBuffer;
 import net.daporkchop.fp2.client.render.object.VertexArrayObject;
 import net.daporkchop.fp2.client.render.object.VertexBufferObject;
 import net.daporkchop.fp2.client.render.shader.ShaderManager;
@@ -36,20 +38,29 @@ import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.init.Biomes;
+import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.gen.NoiseGeneratorPerlin;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.BufferUtils;
+import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.ARBShaderObjects;
 import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL43;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
+import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
@@ -58,6 +69,8 @@ import static org.lwjgl.opengl.GL15.glBufferData;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL20.glUniform2;
 import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.opengl.GL40.glUniform2d;
+import static org.lwjgl.opengl.GL43.GL_SHADER_STORAGE_BUFFER;
 
 /**
  * @author DaPorkchop_
@@ -71,8 +84,8 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
     public static final VertexBufferObject COORDS = new VertexBufferObject();
 
     static {
-        ShortBuffer meshData = BufferUtils.createShortBuffer(HeightmapConstants.HEIGHT_VERTS * HeightmapConstants.HEIGHT_VERTS * 2 + 1);
-        MESH_VERTEX_COUNT = genMesh(HeightmapConstants.HEIGHT_VERTS, HeightmapConstants.HEIGHT_VERTS, meshData);
+        ShortBuffer meshData = BufferUtils.createShortBuffer(HEIGHT_VERTS * HEIGHT_VERTS * 2 + 1);
+        MESH_VERTEX_COUNT = genMesh(HEIGHT_VERTS, HEIGHT_VERTS, meshData);
 
         try (ElementArrayObject mesh = MESH.bind()) {
             GL15.glBufferData(GL_ELEMENT_ARRAY_BUFFER, (ShortBuffer) meshData.flip(), GL_STATIC_DRAW);
@@ -80,9 +93,9 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
     }
 
     static {
-        FloatBuffer coordsData = BufferUtils.createFloatBuffer(HeightmapConstants.HEIGHT_VERTS * HeightmapConstants.HEIGHT_VERTS * 2);
-        for (int x = 0; x < HeightmapConstants.HEIGHT_VERTS; x++) {
-            for (int z = 0; z < HeightmapConstants.HEIGHT_VERTS; z++) {
+        FloatBuffer coordsData = BufferUtils.createFloatBuffer(HEIGHT_VERTS * HEIGHT_VERTS * 2);
+        for (int x = 0; x < HEIGHT_VERTS; x++) {
+            for (int z = 0; z < HEIGHT_VERTS; z++) {
                 coordsData.put(x).put(z);
             }
         }
@@ -137,20 +150,22 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
 
     private final Map<ChunkPos, VertexArrayObject> chunks = new HashMap<>();
 
+    private final Runnable uploadBiomeClimates = () -> {
+        FloatBuffer biomeClimates = Constants.createFloatBuffer(256 * 2);
+
+        for (int i = 0; i < 256; i++) {
+            Biome biome = Biome.getBiome(i, Biomes.PLAINS);
+            biomeClimates.put((i << 1), biome.getDefaultTemperature())
+                    .put((i << 1) + 1, biome.getRainfall());
+        }
+
+        try (ShaderProgram shader = HEIGHT_SHADER.use()) {
+            glUniform2(shader.uniformLocation("biome_climate"), biomeClimates);
+        }
+    };
+
     public HeightmapTerrainRenderer(@NonNull WorldClient world) {
-        Minecraft.getMinecraft().addScheduledTask(() -> {
-            FloatBuffer biomeClimates = Constants.createFloatBuffer(256 * 2);
-
-            for (int i = 0; i < 256; i++) {
-                Biome biome = Biome.getBiome(i, Biomes.PLAINS);
-                biomeClimates.put((i << 1), biome.getDefaultTemperature())
-                        .put((i << 1) + 1, biome.getRainfall());
-            }
-
-            try (ShaderProgram shader = HEIGHT_SHADER.use()) {
-                glUniform2(shader.uniformLocation("biome_climate"), biomeClimates);
-            }
-        });
+        Minecraft.getMinecraft().addScheduledTask(this.uploadBiomeClimates);
     }
 
     public void receiveRemoteChunk(@NonNull HeightmapChunk chunk) {
@@ -195,12 +210,25 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         });
     }
 
+    protected boolean pressedLastFrame = false;
+
     @Override
     public void render(float partialTicks, WorldClient world, Minecraft mc) {
         super.render(partialTicks, world, mc);
 
+        if (Keyboard.isKeyDown(Keyboard.KEY_0)) {
+            if (!this.pressedLastFrame) {
+                HEIGHT_SHADER = ShaderManager.get("heightmap");
+                this.uploadBiomeClimates.run();
+                System.out.println("Reloaded shaders");
+            }
+            this.pressedLastFrame = true;
+        } else {
+            this.pressedLastFrame = false;
+        }
+
         //GlStateManager.disableFog();
-        GlStateManager.disableAlpha();
+        //GlStateManager.disableAlpha();
         //GlStateManager.enableBlend();
         GlStateManager.disableCull();
 
@@ -210,36 +238,89 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         this.modelView = MatrixHelper.getMATRIX(GL_MODELVIEW_MATRIX, this.modelView);
         this.proj = MatrixHelper.getMATRIX(GL_PROJECTION_MATRIX, this.proj);
 
-        try (BufferTextureObject tex = MAP_COLORS.bind()) {
-            GlStateManager.setActiveTexture(OpenGlHelper.lightmapTexUnit);
-            GlStateManager.enableTexture2D();
-
-            try (BufferTextureObject tex2 = GRASS_COLORS.bind()) {
-                try (ShaderProgram shader = HEIGHT_SHADER.use()) {
-                    ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
-                    ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
-
-                    ARBShaderObjects.glUniform1iARB(shader.uniformLocation("palettePlusClimate"), 0);
-                    ARBShaderObjects.glUniform1iARB(shader.uniformLocation("grassBuffer"), 1);
-
-                    this.chunks.forEach((pos, o) -> {
-                        ARBShaderObjects.glUniform2fARB(shader.uniformLocation("camera_offset"), pos.x * HeightmapConstants.HEIGHT_VOXELS + .5f, pos.z * HeightmapConstants.HEIGHT_VOXELS + .5f);
-
-                        try (VertexArrayObject vao = o.bind()) {
-                            glDrawElements(GL_TRIANGLE_STRIP, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
-                        }
-                    });
+        try (ShaderStorageBuffer loadedBuffer = new ShaderStorageBuffer().bind())   {
+            BlockPos.MutableBlockPos min = new BlockPos.MutableBlockPos(Integer.MAX_VALUE, 0, Integer.MAX_VALUE);
+            BlockPos.MutableBlockPos max = new BlockPos.MutableBlockPos(Integer.MIN_VALUE, 16, Integer.MIN_VALUE);
+            world.getChunkProvider().loadedChunks.forEach((l, chunk) -> {
+                if (chunk.x < min.getX())   {
+                    min.setPos(chunk.x, 0, min.getZ());
                 }
+                if (chunk.z < min.getZ())   {
+                    min.setPos(min.getZ(), 16, chunk.z);
+                }
+                if (chunk.x > max.getX())   {
+                    max.setPos(chunk.x, 0, max.getZ());
+                }
+                if (chunk.z > max.getZ())   {
+                    max.setPos(max.getZ(), 16, chunk.z);
+                }
+            });
+            if (min.getX() == Integer.MAX_VALUE || min.getZ() == Integer.MAX_VALUE
+                    || max.getX() == Integer.MIN_VALUE || max.getZ() == Integer.MIN_VALUE)  {
+                return;
             }
-            GlStateManager.disableTexture2D();
-            GlStateManager.setActiveTexture(OpenGlHelper.defaultTexUnit);
+            int dx = max.getX() + 1 - min.getX();
+            int dz = max.getZ() + 1 - min.getZ();
+            //mc.player.sendMessage(new TextComponentString(String.format("min: %s, max: %s, dx: %d, dz: %d", min, max, dx, dz)));
+            IntBuffer buffer = Constants.createIntBuffer(3 * 2 + dx * dz * 16);
+            buffer.put(world.getChunkProvider().loadedChunks.size());
+            world.getChunkProvider().loadedChunks.forEach((l, chunk) -> buffer.put(chunk.x).put(chunk.z));
+            /*buffer.put(min.getX()).put(min.getY()).put(min.getZ());
+            buffer.put(dx).put(16).put(dz);
+            for (int x = min.getX(); x <= max.getX(); x++)   {
+                for (int y = 0; y < 16; y++) {
+                    for (int z = min.getZ(); z <= max.getZ(); z++) {
+                        if (world.getChunkProvider().isChunkGeneratedAt(x, z)) {
+                            buffer.put(1);
+                        } else {
+                            buffer.put(0);
+                        }
+                    }
+                }
+            }*/
+
+            /*IntBuffer buffer = Constants.createIntBuffer(10 * 16 * 10);
+            for (int x = 0; x < 10; x++)    {
+                for (int z = 0; z < 10; z++)    {
+                    int i = world.getChunkProvider().loadedChunks.containsKey(ChunkPos.asLong(x, z)) ? 1 : 0;
+                    for (int y = 0; y < 16; y++)    {
+                        buffer.put(i);
+                    }
+                }
+            }*/
+            buffer.flip();
+
+            glBufferData(GL_SHADER_STORAGE_BUFFER, buffer, GL_DYNAMIC_COPY);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, loadedBuffer.id());
+
+            try (BufferTextureObject tex = MAP_COLORS.bind()) {
+                GlStateManager.setActiveTexture(OpenGlHelper.lightmapTexUnit);
+                GlStateManager.enableTexture2D();
+
+                try (BufferTextureObject tex2 = GRASS_COLORS.bind()) {
+                    try (ShaderProgram shader = HEIGHT_SHADER.use()) {
+                        ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
+                        ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
+
+                        this.chunks.forEach((pos, o) -> {
+                            glUniform2d(shader.uniformLocation("camera_offset"), pos.x * HEIGHT_VOXELS + .5d, pos.z * HEIGHT_VOXELS + .5d);
+
+                            try (VertexArrayObject vao = o.bind()) {
+                                glDrawElements(GL_TRIANGLE_STRIP, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
+                            }
+                        });
+                    }
+                }
+                GlStateManager.disableTexture2D();
+                GlStateManager.setActiveTexture(OpenGlHelper.defaultTexUnit);
+            }
+        } finally {
+            glPopMatrix();
+
+            GlStateManager.enableCull();
+            //GlStateManager.disableBlend();
+            //GlStateManager.enableAlpha();
+            //GlStateManager.enableFog();
         }
-
-        glPopMatrix();
-
-        GlStateManager.enableCull();
-        //GlStateManager.disableBlend();
-        GlStateManager.enableAlpha();
-        //GlStateManager.enableFog();
     }
 }

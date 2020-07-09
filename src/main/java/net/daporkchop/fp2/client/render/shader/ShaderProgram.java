@@ -23,6 +23,10 @@ package net.daporkchop.fp2.client.render.shader;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.render.OpenGL;
+import net.daporkchop.lib.unsafe.PCleaner;
+import net.minecraft.client.Minecraft;
+
+import static org.lwjgl.opengl.GL20.*;
 
 /**
  * Basic wrapper around a shader.
@@ -34,8 +38,7 @@ public final class ShaderProgram implements AutoCloseable {
     protected final String name;
     protected final Shader vertex;
     protected final Shader fragment;
-    protected       int    id;
-    protected       int    usages;
+    protected final int id;
 
     /**
      * Creates a new shader program by attaching the given vertex shader with the given fragment shader.
@@ -49,64 +52,25 @@ public final class ShaderProgram implements AutoCloseable {
 
         OpenGL.assertOpenGL();
         this.name = name;
-        this.id = -1;
 
-        try {
-            //allocate program
-            this.id = OpenGL.glCreateProgram();
+        //allocate program
+        this.id = OpenGL.glCreateProgram();
 
-            //attach shaders
-            vertex.attach(this);
-            fragment.attach(this);
+        int id = this.id;
+        PCleaner.cleaner(this, () -> Minecraft.getMinecraft().addScheduledTask(() -> glDeleteProgram(id)));
 
-            //link and validate
-            OpenGL.glLinkProgram(this.id);
-            ShaderManager.validate(this.name, this.id, OpenGL.GL_LINK_STATUS);
-            OpenGL.glValidateProgram(this.id);
-            ShaderManager.validate(this.name, this.id, OpenGL.GL_VALIDATE_STATUS);
-        } catch (Exception e) {
-            vertex.detachSoft(this);
-            fragment.detachSoft(this);
-            this.release();
-        }
+        //attach shaders
+        vertex.attach(this);
+        fragment.attach(this);
+
+        //link and validate
+        OpenGL.glLinkProgram(this.id);
+        ShaderManager.validate(this.name, this.id, OpenGL.GL_LINK_STATUS);
+        OpenGL.glValidateProgram(this.id);
+        ShaderManager.validate(this.name, this.id, OpenGL.GL_VALIDATE_STATUS);
 
         this.vertex = vertex;
         this.fragment = fragment;
-    }
-
-    protected ShaderProgram incrementUsages() {
-        OpenGL.assertOpenGL();
-        if (this.id == -1) {
-            throw new IllegalStateException("Already deleted!");
-        } else {
-            this.usages++;
-            return this;
-        }
-    }
-
-    /**
-     * Decrements the shader's usage count by 1, deleting it if the usage count reaches 0.
-     * <p>
-     * This must only be called when you are no longer using the shader.
-     */
-    public void release() {
-        OpenGL.assertOpenGL();
-        if (this.id == -1) {
-            throw new IllegalStateException("Already deleted!");
-        } else {
-            if (this.vertex != null) {
-                this.vertex.detach(this);
-            }
-            if (this.fragment != null) {
-                this.fragment.detach(this);
-            }
-            OpenGL.glDeleteProgram(this.id);
-            this.id = -1;
-            ShaderManager.LINKED_PROGRAMS.remove(this.name, this);
-            /*if (!ShaderManager.LINKED_PROGRAMS.remove(this.name, this)) {
-                throw new IllegalStateException("Couldn't remove self from linked programs registry!");
-            }*/
-        }
     }
 
     /**
@@ -116,11 +80,7 @@ public final class ShaderProgram implements AutoCloseable {
      * @return the uniform's location
      */
     public int uniformLocation(@NonNull String name) {
-        if (this.id == -1) {
-            throw new IllegalStateException("Already deleted!");
-        } else {
-            return OpenGL.glGetUniformLocation(this.id, name);
-        }
+        return OpenGL.glGetUniformLocation(this.id, name);
     }
 
     /**
@@ -129,16 +89,12 @@ public final class ShaderProgram implements AutoCloseable {
      * This method returns itself, for use in a try-with-resources block.
      */
     public ShaderProgram use() {
-        if (this.id == -1) {
-            throw new IllegalStateException("Already deleted!");
-        } else {
-            OpenGL.glUseProgram(this.id);
-            return this;
-        }
+        OpenGL.glUseProgram(this.id);
+        return this;
     }
 
     @Override
-    public synchronized void close() {
+    public void close() {
         OpenGL.glUseProgram(0);
     }
 }

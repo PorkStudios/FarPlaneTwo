@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 
 #define PALETTE_OFFSET (0)
 #define GRASS_BUFFER_OFFSET (0)
@@ -17,21 +17,19 @@ layout(location = 3) in int biome;
 uniform mat4 camera_projection = mat4(1.0);
 uniform mat4 camera_modelview = mat4(1.0);
 
-uniform vec2 camera_offset = vec2(0.);
+uniform dvec2 camera_offset;
 
 uniform vec2 biome_climate[256];
 
-uniform samplerBuffer palettePlusClimate;
-uniform samplerBuffer grassBuffer;
+layout(binding = 0) uniform samplerBuffer palettePlusClimate;
+layout(binding = 1) uniform samplerBuffer grassBuffer;
 
-out float vert_height;
+out vec3 vert_pos;
 out vec4 vert_color;
 
-float getTemperature(vec3 pos) {
+float getTemperature(dvec3 pos) {
     if (pos.y > 64.)   {
-        //TODO: noise
-        float f = 0.;
-        return biome_climate[biome].x - (pos.y - 64. + f) * .05 / 30.;
+        return biome_climate[biome].x - float(pos.y - 64.) * .05 / 30.;
     } else {
         return biome_climate[biome].x;
     }
@@ -44,7 +42,7 @@ vec4 getGrassColor(float temperature, float humidity){
     return texelFetch(grassBuffer, GRASS_BUFFER_OFFSET + ((j << 8) | i));
 }
 
-vec4 getGrassColorAtPos(vec3 pos){
+vec4 getGrassColorAtPos(dvec3 pos){
     return getGrassColor(clamp(getTemperature(pos), 0., 1.), clamp(biome_climate[biome].y, 0., 1.));
 }
 
@@ -55,7 +53,7 @@ vec4 getFoliageColor(float temperature, float humidity){
     return texelFetch(grassBuffer, FOLIAGE_BUFFER_OFFSET + ((j << 8) | i));
 }
 
-vec4 getFoliageColorAtPos(vec3 pos){
+vec4 getFoliageColorAtPos(dvec3 pos){
     return getGrassColor(clamp(getTemperature(pos), 0., 1.), clamp(biome_climate[biome].y, 0., 1.));
 }
 
@@ -76,18 +74,15 @@ vec4 fromRGB(int rgb)   {
 }
 
 void main(){
-    float fheight = float(height);
-    vec3 pos = vec3(camera_offset.x + vertexPosition_modelspace.x, fheight + .5, camera_offset.y + vertexPosition_modelspace.y);
+    double fheight = double(height);
+    dvec3 pos = dvec3(camera_offset.x + vertexPosition_modelspace.x, fheight + .5, camera_offset.y + vertexPosition_modelspace.y);
+    vert_pos = vec3(pos);
 
     gl_Position = camera_projection * camera_modelview * vec4(pos, 1.);
 
-    vert_height = fheight;
     if (color == 1) { //grass
         if (IS_SWAMP) {
-            //TODO
-            //double d0 = GRASS_COLOR_NOISE.getValue((double)pos.getX() * 0.0225D, (double)pos.getZ() * 0.0225D);
-            //return getModdedBiomeGrassColor(d0 < -0.1D ? 5011004 : 6975545);
-            vert_color = fromRGB(true ? 5011004 : 6975545);
+            vert_color = fromRGB(-1. < -.1 ? 5011004 : 6975545);
         } else if (IS_ROOFED_FOREST)    {
             vec4 original = getGrassColorAtPos(pos);
             vert_color = vec4(((original + fromARGB(0x0028340A)) * .5).rgb, original.a);
@@ -110,5 +105,4 @@ void main(){
     } else {
         vert_color = texelFetch(palettePlusClimate, PALETTE_OFFSET + color);
     }
-    //vert_color = vec4(uvec4(color) >> uvec4(16, 8, 0, 24) & uint(0xFF)) / 255.;
 }
