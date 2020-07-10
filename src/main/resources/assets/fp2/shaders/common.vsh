@@ -4,6 +4,11 @@
 #define IS_ROOFED_FOREST (biome == 29 || biome == 157)
 #define IS_SWAMP (biome == 6 || biome == 134)
 
+struct TextureUV {
+    vec2 min;
+    vec2 max;
+};
+
 layout(binding = 1) buffer global_info {
     vec2 biome_climate[256];
     int biome_watercolor[256];
@@ -12,6 +17,8 @@ layout(binding = 1) buffer global_info {
     int colormap_foliage[256 * 256];
 
     int map_colors[64];
+
+    TextureUV tex_uvs[4096 * 16];
 };
 
 vec4 fromARGB(uint argb)   {

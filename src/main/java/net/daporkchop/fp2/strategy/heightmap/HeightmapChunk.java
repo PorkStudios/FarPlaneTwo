@@ -29,6 +29,7 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.nio.ShortBuffer;
 
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -52,6 +53,7 @@ public class HeightmapChunk implements IMessage {
     protected final IntBuffer height = Constants.createIntBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
     protected final IntBuffer color = Constants.createIntBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
     protected final ByteBuffer biome = Constants.createByteBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
+    protected final ShortBuffer block = Constants.createShortBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
 
     public int height(int x, int z) {
         checkCoords(x, z);
@@ -86,6 +88,12 @@ public class HeightmapChunk implements IMessage {
         return this;
     }
 
+    public HeightmapChunk block(int x, int z, int block) {
+        checkCoords(x, z);
+        this.block.put(x * HEIGHT_VERTS + z, (short) block);
+        return this;
+    }
+
     @Override
     public void fromBytes(ByteBuf buf) {
         for (int i = 0, capacity = this.height.capacity(); i < capacity; i++) {
@@ -97,11 +105,14 @@ public class HeightmapChunk implements IMessage {
         for (int i = 0, capacity = this.biome.capacity(); i < capacity; i++) {
             this.biome.put(i, buf.readByte());
         }
+        for (int i = 0, capacity = this.block.capacity(); i < capacity; i++) {
+            this.block.put(i, buf.readShort());
+        }
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.ensureWritable((this.height.capacity() + this.color.capacity()) * 4 + this.biome.capacity());
+        buf.ensureWritable((this.height.capacity() + this.color.capacity()) * 4 + this.block.capacity() * 2 + this.biome.capacity());
         for (int i = 0, capacity = this.height.capacity(); i < capacity; i++) {
             buf.writeInt(this.height.get(i));
         }
@@ -110,6 +121,9 @@ public class HeightmapChunk implements IMessage {
         }
         for (int i = 0, capacity = this.biome.capacity(); i < capacity; i++) {
             buf.writeByte(this.biome.get(i));
+        }
+        for (int i = 0, capacity = this.block.capacity(); i < capacity; i++) {
+            buf.writeShort(this.block.get(i));
         }
     }
 }

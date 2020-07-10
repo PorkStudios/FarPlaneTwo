@@ -28,17 +28,14 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureUtil;
 import net.minecraft.client.resources.IResourceManager;
+import net.minecraft.client.resources.IResourceManagerReloadListener;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.client.resource.IResourceType;
-import net.minecraftforge.client.resource.ISelectiveResourceReloadListener;
-import net.minecraftforge.client.resource.VanillaResourceType;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.function.Predicate;
 
 import static net.daporkchop.fp2.client.GlobalInfo.*;
 import static org.lwjgl.opengl.GL15.*;
@@ -48,34 +45,19 @@ import static org.lwjgl.opengl.GL43.*;
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public class FP2ResourceReloadListener implements ISelectiveResourceReloadListener {
+@SuppressWarnings("deprecation")
+public class FP2ResourceReloadListener implements IResourceManagerReloadListener {
     @Override
-    public void onResourceManagerReload(IResourceManager resourceManager, Predicate<IResourceType> resourcePredicate) {
-        if (resourcePredicate.test(VanillaResourceType.TEXTURES)) {
-            try (ShaderStorageBuffer globalInfo = GLOBAL_INFO.bind()) {
-                IntBuffer buffer = Constants.createIntBuffer(COLORMAP_FOLIAGE_SIZE >> 2);
-                buffer.put(TextureUtil.readImageData(resourceManager, new ResourceLocation("textures/colormap/foliage.png"))).clear();
-                glBufferSubData(GL_SHADER_STORAGE_BUFFER, COLORMAP_FOLIAGE_OFFSET, buffer);
+    public void onResourceManagerReload(IResourceManager resourceManager) {
+        try (ShaderStorageBuffer globalInfo = GLOBAL_INFO.bind()) {
+            IntBuffer buffer = Constants.createIntBuffer(COLORMAP_FOLIAGE_SIZE >> 2);
+            buffer.put(TextureUtil.readImageData(resourceManager, new ResourceLocation("textures/colormap/foliage.png"))).clear();
+            glBufferSubData(GL_SHADER_STORAGE_BUFFER, COLORMAP_FOLIAGE_OFFSET, buffer);
 
-                buffer = Constants.createIntBuffer(COLORMAP_GRASS_SIZE >> 2);
-                buffer.put(TextureUtil.readImageData(resourceManager, new ResourceLocation("textures/colormap/grass.png"))).clear();
-                glBufferSubData(GL_SHADER_STORAGE_BUFFER, COLORMAP_GRASS_OFFSET, buffer);
-            } catch (IOException e) {
-            }
-        } else if (resourcePredicate.test(VanillaResourceType.MODELS)) { //this is probably where i can get UVs
-            FloatBuffer buffer = Constants.createFloatBuffer(UVS_SIZE >> 2);
-            for (int id = 0; id < 4096; id++)   {
-                for (int meta = 0; meta < 16; meta++)   {
-                    IBlockState state = Block.getStateById((id << 4) | meta);
-                    TextureAtlasSprite texture = Minecraft.getMinecraft().getBlockRendererDispatcher().getBlockModelShapes().getTexture(state);
-                    buffer.put(texture.getMinU()).put(texture.getMinV())
-                            .put(texture.getMaxU()).put(texture.getMaxV());
-                }
-            }
-            buffer.clear();
-            try (ShaderStorageBuffer globalInfo = GLOBAL_INFO.bind()) {
-                glBufferSubData(GL_SHADER_STORAGE_BUFFER, UVS_OFFSET, buffer);
-            }
+            buffer = Constants.createIntBuffer(COLORMAP_GRASS_SIZE >> 2);
+            buffer.put(TextureUtil.readImageData(resourceManager, new ResourceLocation("textures/colormap/grass.png"))).clear();
+            glBufferSubData(GL_SHADER_STORAGE_BUFFER, COLORMAP_GRASS_OFFSET, buffer);
+        } catch (IOException e) {
         }
     }
 }

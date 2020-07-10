@@ -23,12 +23,22 @@ package net.daporkchop.fp2.client;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.render.object.ShaderStorageBuffer;
 import net.daporkchop.fp2.util.Constants;
+import net.minecraft.block.Block;
 import net.minecraft.block.material.MapColor;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.BlockModelShapes;
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.block.model.IBakedModel;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.init.Biomes;
+import net.minecraft.init.Blocks;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.world.biome.Biome;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.List;
 
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL43.*;
@@ -63,10 +73,10 @@ public class GlobalInfo {
     public static final long TOTAL_SIZE = UVS_OFFSET + UVS_SIZE;
 
     static {
-        primary_init();
+        init();
     }
 
-    public static void primary_init() {
+    public static void init() {
         try (ShaderStorageBuffer globalInfo = GLOBAL_INFO.bind()) {
             glBufferData(GL_SHADER_STORAGE_BUFFER, TOTAL_SIZE, GL_DYNAMIC_DRAW);
 
@@ -97,6 +107,34 @@ public class GlobalInfo {
                 buffer.clear();
                 glBufferSubData(GL_SHADER_STORAGE_BUFFER, MAPCOLORS_OFFSET, buffer);
             }
+        }
+    }
+
+    public static void reloadUVs() {
+        FloatBuffer buffer = Constants.createFloatBuffer(UVS_SIZE >> 2);
+        BlockModelShapes shapes = Minecraft.getMinecraft().getBlockRendererDispatcher().getBlockModelShapes();
+        for (Block block : Block.REGISTRY) {
+            TextureAtlasSprite t = null;
+            if (block == Blocks.WATER)  {
+                t = Minecraft.getMinecraft().getTextureMapBlocks().getAtlasSprite("minecraft:blocks/water_still");
+            }
+            for (IBlockState state : block.getBlockState().getValidStates()) {
+                int id = Block.getStateId(state);
+                buffer.position(id * 4);
+                //TextureAtlasSprite texture = shapes.getTexture(state);
+                IBakedModel model = shapes.getModelForState(state);
+                List<BakedQuad> quads = model.getQuads(state, EnumFacing.UP, 0L);
+                if (quads == null || quads.isEmpty())   {
+                    continue;
+                }
+                TextureAtlasSprite texture = t != null ? t : quads.get(0).getSprite();
+                buffer.put(texture.getMinU()).put(texture.getMinV())
+                        .put(texture.getMaxU()).put(texture.getMaxV());
+            }
+        }
+        buffer.clear();
+        try (ShaderStorageBuffer globalInfo = GLOBAL_INFO.bind()) {
+            glBufferSubData(GL_SHADER_STORAGE_BUFFER, UVS_OFFSET, buffer);
         }
     }
 }

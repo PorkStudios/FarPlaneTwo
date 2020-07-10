@@ -27,6 +27,7 @@ import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
@@ -68,6 +69,13 @@ public class ClientProxy extends ServerProxy {
     public void keyInput(InputEvent.KeyInputEvent event)    {
         if (KeyBindings.RELOAD_SHADERS.isPressed()) {
             ShaderManager.reload();
+        }
+    }
+
+    @SubscribeEvent
+    public void worldLoad(WorldEvent.Load event)    {
+        if (event.getWorld().isRemote)  {
+            GlobalInfo.reloadUVs();
         }
     }
 }

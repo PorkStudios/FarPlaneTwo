@@ -27,12 +27,12 @@ import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapChunk;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
+import net.minecraft.block.Block;
 import net.minecraft.block.material.MapColor;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.biome.Biome;
 import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
@@ -82,14 +82,17 @@ public class ServerProxy {
                     access.prefetch(new AxisAlignedBB(
                             chunkX * HEIGHT_VOXELS, 0, chunkZ * HEIGHT_VOXELS,
                             (chunkX + 1) * HEIGHT_VOXELS + 1, 255, (chunkZ + 1) * HEIGHT_VOXELS + 1));
-                    for (int x = 0; x < HEIGHT_VERTS; x++)  {
-                        for (int z = 0; z < HEIGHT_VERTS; z++)  {
+                    for (int x = 0; x < HEIGHT_VERTS; x++) {
+                        for (int z = 0; z < HEIGHT_VERTS; z++) {
                             int height = access.getTopBlockY(chunkX * HEIGHT_VOXELS + x, chunkZ * HEIGHT_VOXELS + z) - 1;
                             BlockPos pos = new BlockPos(chunkX * HEIGHT_VOXELS + x, height, chunkZ * HEIGHT_VOXELS + z);
                             Biome biome = access.getBiome(pos);
-                            MapColor color = access.getBlockState(pos).getMapColor(access, pos);
-                            chunk.height(x, z, height).color(x, z, color.colorIndex).biome(x, z, Biome.getIdForBiome(biome));
-                            //chunk.height(x, z, height).color(x, z, color.colorValue);
+                            IBlockState state = access.getBlockState(pos);
+                            MapColor color = state.getMapColor(access, pos);
+                            chunk.height(x, z, height)
+                                    .color(x, z, color.colorIndex)
+                                    .biome(x, z, Biome.getIdForBiome(biome))
+                                    .block(x, z, Block.getStateId(state));
                         }
                     }
                     NETWORK_WRAPPER.sendTo(new SPacketHeightmapData().chunk(chunk), (EntityPlayerMP) event.player);

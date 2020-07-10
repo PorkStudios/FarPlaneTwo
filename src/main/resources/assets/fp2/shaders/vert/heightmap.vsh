@@ -2,6 +2,7 @@ layout(location = 0) in vec2 vertexPosition_modelspace;
 layout(location = 1) in int height;
 layout(location = 2) in int color;
 layout(location = 3) in int biome;
+layout(location = 4) in int state;
 
 uniform mat4 camera_projection = mat4(1.0);
 uniform mat4 camera_modelview = mat4(1.0);
@@ -9,7 +10,8 @@ uniform mat4 camera_modelview = mat4(1.0);
 uniform dvec2 camera_offset;
 
 out vec3 vert_pos;
-out vec4 vert_color;
+out flat vec4 vert_color;
+out flat int vert_state;
 
 void main(){
     double fheight = double(height);
@@ -39,8 +41,10 @@ void main(){
         }
     } else if (color == 12)  { //water
         //constant color is taken from water_overlay.png, and should have an opacity of 179
-        vert_color = fromARGB(0xB3212FAB) * fromARGB(biome_watercolor[biome]);
+        vert_color = /*fromARGB(0xB3212FAB) * */fromARGB(biome_watercolor[biome]);
     } else {
-        vert_color = fromARGB(map_colors[color]);
+        vert_color = vec4(1.);
+        //vert_color = fromARGB(map_colors[color]);
     }
+    vert_state = state;
 }

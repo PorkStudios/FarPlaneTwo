@@ -31,9 +31,11 @@ import net.daporkchop.fp2.client.render.shader.ShaderManager;
 import net.daporkchop.fp2.client.render.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.relauncher.Side;
@@ -80,7 +82,8 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                 Minecraft.getMinecraft().player.sendMessage(new TextComponentString("§aheightmap shader successfully reloaded."));
             }
         }
-        GlobalInfo.primary_init();
+        GlobalInfo.init();
+        GlobalInfo.reloadUVs();
     }
 
     public static final ElementArrayObject MESH = new ElementArrayObject();
@@ -89,12 +92,28 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
     public static final VertexBufferObject COORDS = new VertexBufferObject();
 
     static {
-        ShortBuffer meshData = BufferUtils.createShortBuffer(HEIGHT_VERTS * HEIGHT_VERTS * 2 + 1);
+        ShortBuffer meshData = BufferUtils.createShortBuffer(HEIGHT_VERTS * HEIGHT_VERTS * 6 + 1);
         MESH_VERTEX_COUNT = genMesh(HEIGHT_VERTS, HEIGHT_VERTS, meshData);
 
         try (ElementArrayObject mesh = MESH.bind()) {
             GL15.glBufferData(GL_ELEMENT_ARRAY_BUFFER, (ShortBuffer) meshData.flip(), GL_STATIC_DRAW);
         }
+    }
+
+    private static int genMesh(int size, int edge, ShortBuffer out) {
+        int verts = 0;
+        for (int x = 0; x < size - 1; x++)  {
+            for (int z = 0; z < size - 1; z++)  {
+                out.put((short) ((x + 1) * edge + z))
+                        .put((short) ((x + 1) * edge + (z + 1)))
+                        .put((short) (x * edge + z));
+                out.put((short) (x * edge + (z + 1)))
+                        .put((short) ((x + 1) * edge + (z + 1)))
+                        .put((short) (x * edge + z));
+                verts += 6;
+            }
+        }
+        return verts;
     }
 
     static {
@@ -107,27 +126,6 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
 
         try (VertexBufferObject coords = COORDS.bind()) {
             GL15.glBufferData(GL_ARRAY_BUFFER, (FloatBuffer) coordsData.flip(), GL_STATIC_DRAW);
-        }
-    }
-
-    private static int genMesh(int size, int edge, ShortBuffer out) {
-        int verts = 0;
-        for (int x = 0; x < size - 1; x++) {
-            if ((x & 1) == 0) {
-                for (int z = 0; z < size; z++, verts += 2) {
-                    out.put((short) (x * edge + z)).put((short) ((x + 1) * edge + z));
-                }
-            } else {
-                for (int z = size - 1; z > 0; z--, verts += 2) {
-                    out.put((short) ((x + 1) * edge + z)).put((short) (x * edge + z - 1));
-                }
-            }
-        }
-        if ((size & 1) != 0 && size > 2) {
-            out.put((short) ((size - 1) * edge));
-            return verts + 1;
-        } else {
-            return verts;
         }
     }
 
@@ -144,6 +142,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                 glEnableVertexAttribArray(1);
                 glEnableVertexAttribArray(2);
                 glEnableVertexAttribArray(3);
+                glEnableVertexAttribArray(4);
 
                 try (VertexBufferObject coords = COORDS.bind()) {
                     glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0L);
@@ -164,6 +163,11 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                     glVertexAttribIPointer(3, 1, GL_UNSIGNED_BYTE, 0, 0L);
                     vao.putDependency(3, biomes);
                 }
+                try (VertexBufferObject blocks = new VertexBufferObject().bind()) {
+                    glBufferData(GL_ARRAY_BUFFER, chunk.block(), GL_STATIC_DRAW);
+                    glVertexAttribIPointer(4, 1, GL_UNSIGNED_SHORT, 0, 0L);
+                    vao.putDependency(4, blocks);
+                }
 
                 vao.putElementArray(MESH.bind());
 
@@ -173,6 +177,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                 glDisableVertexAttribArray(1);
                 glDisableVertexAttribArray(2);
                 glDisableVertexAttribArray(3);
+                glDisableVertexAttribArray(4);
 
                 MESH.close();
             }
@@ -197,6 +202,8 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         this.modelView = MatrixHelper.getMATRIX(GL_MODELVIEW_MATRIX, this.modelView);
         this.proj = MatrixHelper.getMATRIX(GL_PROJECTION_MATRIX, this.proj);
 
+        mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
+
         try {
             try (ShaderProgram shader = HEIGHT_SHADER.use()) {
                 ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
@@ -206,7 +213,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                     glUniform2d(shader.uniformLocation("camera_offset"), pos.x * HEIGHT_VOXELS + .5d, pos.z * HEIGHT_VOXELS + .5d);
 
                     try (VertexArrayObject vao = o.bind()) {
-                        glDrawElements(GL_TRIANGLE_STRIP, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
+                        glDrawElements(GL_TRIANGLES, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
                     }
                 });
             }

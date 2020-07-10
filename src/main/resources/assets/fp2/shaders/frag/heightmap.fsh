@@ -1,5 +1,8 @@
 in vec3 vert_pos;
-in vec4 vert_color;
+in flat vec4 vert_color;
+in flat int vert_state;
+
+layout(binding = 0) uniform sampler2D terrain_texture;
 
 layout(binding = 0) buffer loaded_chunks {
     ivec4 loaded_base; //using 4d vectors because apparently GLSL is too stupid to handle 3d ones
@@ -19,10 +22,11 @@ bool isLoaded(ivec3 chunk)  {
 }
 
 void main() {
-    if (isLoaded(ivec3(vert_pos) >> 4)) {
-        discard; //TODO: figure out the potential performance implications of this vs transparent output
+    if (true || isLoaded(ivec3(vert_pos) >> 4)) {
+        discard;//TODO: figure out the potential performance implications of this vs transparent output
         //color = vec4(0.);
     } else {
-        color = vert_color;
+        TextureUV uvs = tex_uvs[vert_state];
+        color = vert_color * texture(terrain_texture, uvs.min + (uvs.max - uvs.min) * fract(vert_pos.xz));
     }
 }
