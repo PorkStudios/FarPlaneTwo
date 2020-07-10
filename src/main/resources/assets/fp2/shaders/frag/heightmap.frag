@@ -22,7 +22,7 @@ bool isLoaded(ivec3 chunk)  {
 
 void main() {
     if (isLoaded(ivec3(vert_pos) >> 4)) {
-        discard;
+        discard; //TODO: figure out the potential performance implications of this vs transparent output
         //color = vec4(0.);
     } else {
         color = vert_color;

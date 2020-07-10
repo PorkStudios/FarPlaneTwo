@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.strategy.heightmap;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.client.GlobalInfo;
 import net.daporkchop.fp2.client.render.MatrixHelper;
-import net.daporkchop.fp2.client.render.object.BufferTextureObject;
 import net.daporkchop.fp2.client.render.object.ElementArrayObject;
 import net.daporkchop.fp2.client.render.object.ShaderStorageBuffer;
 import net.daporkchop.fp2.client.render.object.VertexArrayObject;
@@ -31,27 +31,24 @@ import net.daporkchop.fp2.client.render.shader.ShaderManager;
 import net.daporkchop.fp2.client.render.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.daporkchop.fp2.util.Constants;
-import net.minecraft.block.material.MapColor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.init.Biomes;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.text.TextComponentString;
-import net.minecraft.world.biome.Biome;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.ARBShaderObjects;
 import org.lwjgl.opengl.GL15;
 
-import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+import static net.daporkchop.fp2.client.GlobalInfo.*;
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL11.*;
@@ -83,7 +80,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                 Minecraft.getMinecraft().player.sendMessage(new TextComponentString("§aheightmap shader successfully reloaded."));
             }
         }
-        ((HeightmapTerrainRenderer) ((Holder) Minecraft.getMinecraft().world).fp2_terrainRenderer()).setupGlobalInfo.run();
+        GlobalInfo.primary_init();
     }
 
     public static final ElementArrayObject MESH = new ElementArrayObject();
@@ -134,53 +131,10 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         }
     }
 
-    public static final BufferTextureObject MAP_COLORS = new BufferTextureObject();
-    public static final BufferTextureObject GRASS_COLORS = new BufferTextureObject();
-    public static final IntBuffer GRASS_BUFFER = Constants.createIntBuffer(256 * 256 * 3);
-
-    static {
-        IntBuffer buffer = BufferUtils.createIntBuffer(MapColor.COLORS.length + 256);
-
-        try (VertexBufferObject vbo = new VertexBufferObject().bind()) {
-            glBufferData(GL_ARRAY_BUFFER, buffer, GL_STATIC_DRAW);
-
-            MAP_COLORS.useBuffer(vbo, GL_RGBA8);
-        }
-
-        for (int i = 0; i < 256; i++) {
-            GRASS_BUFFER.put(256 * 256 * 2 + i, 0xFF000000 | Biome.getBiome(i, Biomes.PLAINS).getWaterColor());
-        }
-    }
-
     protected final Map<ChunkPos, VertexArrayObject> chunks = new HashMap<>();
     protected IntBuffer renderableChunksMask;
-    protected ShaderStorageBuffer globalInfoBuffer;
-
-    protected final Runnable setupGlobalInfo = () -> {
-        ByteBuffer buffer = Constants.createByteBuffer(4 * (
-                256 * 2 + 65536 + 65536 + 256 + 64
-        ));
-
-        for (int i = 0; i < 256; i++) {
-            Biome biome = Biome.getBiome(i, Biomes.PLAINS);
-            buffer.putFloat(biome.getDefaultTemperature()).putFloat(biome.getRainfall());
-        }
-        for (int i = 0; i < 65536 + 65536 + 256; i++) {
-            buffer.putInt(GRASS_BUFFER.get(i));
-        }
-        for (int i = 0, l = MapColor.COLORS.length; i < l; i++) {
-            int color = MapColor.COLORS[i] != null ? MapColor.COLORS[i].colorValue : 0xFF00FF;
-            buffer.putInt(0xFF000000 | color);
-        }
-
-        try (ShaderStorageBuffer globalInfo = new ShaderStorageBuffer().bind()) {
-            glBufferData(GL_SHADER_STORAGE_BUFFER, (ByteBuffer) buffer.clear(), GL_DYNAMIC_DRAW);
-            this.globalInfoBuffer = globalInfo;
-        }
-    };
 
     public HeightmapTerrainRenderer(@NonNull WorldClient world) {
-        Minecraft.getMinecraft().addScheduledTask(this.setupGlobalInfo);
     }
 
     public void receiveRemoteChunk(@NonNull HeightmapChunk chunk) {
@@ -227,17 +181,13 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
 
     @Override
     public void render(float partialTicks, WorldClient world, Minecraft mc) {
-        if (this.globalInfoBuffer == null) {
-            return;
-        }
-
         super.render(partialTicks, world, mc);
 
         try (ShaderStorageBuffer loadedBuffer = new ShaderStorageBuffer().bind()) {
             glBufferData(GL_SHADER_STORAGE_BUFFER, this.renderableChunksMask = Constants.renderableChunksMask(mc, this.renderableChunksMask), GL_STATIC_DRAW);
             loadedBuffer.bindingIndex(0);
         }
-        this.globalInfoBuffer.bindingIndex(1);
+        GLOBAL_INFO.bindingIndex(1);
 
         GlStateManager.disableCull();
 
@@ -248,19 +198,17 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         this.proj = MatrixHelper.getMATRIX(GL_PROJECTION_MATRIX, this.proj);
 
         try {
-            try (BufferTextureObject tex = MAP_COLORS.bind()) {
-                try (ShaderProgram shader = HEIGHT_SHADER.use()) {
-                    ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
-                    ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
+            try (ShaderProgram shader = HEIGHT_SHADER.use()) {
+                ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
+                ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
 
-                    this.chunks.forEach((pos, o) -> {
-                        glUniform2d(shader.uniformLocation("camera_offset"), pos.x * HEIGHT_VOXELS + .5d, pos.z * HEIGHT_VOXELS + .5d);
+                this.chunks.forEach((pos, o) -> {
+                    glUniform2d(shader.uniformLocation("camera_offset"), pos.x * HEIGHT_VOXELS + .5d, pos.z * HEIGHT_VOXELS + .5d);
 
-                        try (VertexArrayObject vao = o.bind()) {
-                            glDrawElements(GL_TRIANGLE_STRIP, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
-                        }
-                    });
-                }
+                    try (VertexArrayObject vao = o.bind()) {
+                        glDrawElements(GL_TRIANGLE_STRIP, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
+                    }
+                });
             }
         } finally {
             glPopMatrix();

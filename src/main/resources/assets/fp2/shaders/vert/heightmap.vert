@@ -18,10 +18,11 @@ uniform dvec2 camera_offset;
 
 layout(binding = 1) buffer global_info {
     vec2 biome_climate[256];
+    int biome_watercolor[256];
 
     int colormap_grass[256 * 256];
     int colormap_foliage[256 * 256];
-    int biome_watercolor[256];
+
     int map_colors[64];
 };
 

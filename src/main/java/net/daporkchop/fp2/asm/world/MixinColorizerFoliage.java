@@ -20,20 +20,19 @@
 
 package net.daporkchop.fp2.asm.world;
 
-import net.daporkchop.fp2.client.render.object.VertexBufferObject;
-import net.minecraft.client.Minecraft;
+import net.daporkchop.fp2.client.render.object.ShaderStorageBuffer;
+import net.daporkchop.fp2.util.Constants;
 import net.minecraft.world.ColorizerFoliage;
-import net.minecraft.world.ColorizerGrass;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import static net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer.*;
-import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL15.glBufferData;
+import java.nio.IntBuffer;
+
+import static net.daporkchop.fp2.client.GlobalInfo.*;
+import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_
@@ -43,15 +42,11 @@ public abstract class MixinColorizerFoliage {
     @Inject(method = "Lnet/minecraft/world/ColorizerFoliage;setFoliageBiomeColorizer([I)V",
             at = @At("HEAD"))
     private static void setFoliageBiomeColorizer_head(int[] data, CallbackInfo ci) {
-        Minecraft.getMinecraft().addScheduledTask(() -> {
-            GRASS_BUFFER.position(256 * 256);
-            GRASS_BUFFER.put(data).clear();
+        IntBuffer buffer = Constants.createIntBuffer(COLORMAP_FOLIAGE_SIZE >> 2);
+        buffer.put(data).clear();
 
-            try (VertexBufferObject vbo = new VertexBufferObject().bind()) {
-                glBufferData(GL_ARRAY_BUFFER, GRASS_BUFFER, GL_STATIC_DRAW);
-
-                GRASS_COLORS.useBuffer(vbo, GL_RGBA8);
-            }
-        });
+        try (ShaderStorageBuffer globalInfo = GLOBAL_INFO.bind()) {
+            glBufferSubData(GL_SHADER_STORAGE_BUFFER, COLORMAP_FOLIAGE_OFFSET, buffer);
+        }
     }
 }
