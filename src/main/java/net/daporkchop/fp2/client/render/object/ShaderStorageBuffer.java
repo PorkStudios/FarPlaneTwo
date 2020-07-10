@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.client.render.object;
 
+import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.opengl.GL43.*;
 
 /**
@@ -37,5 +38,11 @@ public final class ShaderStorageBuffer extends GLBufferObject<ShaderStorageBuffe
     @Override
     protected int target() {
         return GL_SHADER_STORAGE_BUFFER;
+    }
+
+    public void bindingIndex(int index) {
+        try (ShaderStorageBuffer buffer = this.bind()) {
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, buffer.id());
+        }
     }
 }

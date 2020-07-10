@@ -48,8 +48,6 @@ public final class ShaderProgram implements AutoCloseable {
      * @param fragment fragment shader
      */
     protected ShaderProgram(@NonNull String name, @NonNull Shader vertex, @NonNull Shader fragment) {
-        fragment.assertCompatible(vertex);
-
         OpenGL.assertOpenGL();
         this.name = name;
 

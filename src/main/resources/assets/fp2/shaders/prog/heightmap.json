@@ -1,0 +1,8 @@
+{
+  "vert": [
+    "heightmap"
+  ],
+  "frag": [
+    "heightmap"
+  ]
+}

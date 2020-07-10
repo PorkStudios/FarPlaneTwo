@@ -18,40 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.client.render.shader;
+package net.daporkchop.fp2.client;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.Accessors;
-
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
-import static net.daporkchop.fp2.client.render.OpenGL.*;
+import lombok.experimental.UtilityClass;
+import net.minecraft.client.settings.KeyBinding;
+import net.minecraftforge.fml.client.registry.ClientRegistry;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
+import org.lwjgl.input.Keyboard;
 
 /**
- * The different types of shaders.
- *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public enum ShaderType {
-    VERTEX("vert", GL_VERTEX_SHADER),
-    FRAGMENT("frag", GL_FRAGMENT_SHADER);
+@SideOnly(Side.CLIENT)
+@UtilityClass
+public class KeyBindings {
+    public final KeyBinding RELOAD_SHADERS = new KeyBinding("key.fp2.debug.reloadShaders", Keyboard.KEY_0, "key.categories.fp2.debug");
 
-    @NonNull
-    protected final String extension;
-    protected final int openGlId;
-
-    protected Shader construct(@NonNull String name, @NonNull String code)  {
-        return new Shader(name, code, this);
+    void register() {
+        ClientRegistry.registerKeyBinding(RELOAD_SHADERS);
     }
 }

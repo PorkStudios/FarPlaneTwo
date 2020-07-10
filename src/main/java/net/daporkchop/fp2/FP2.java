@@ -41,6 +41,8 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 @Mod(modid = MODID,
+        useMetadata = true,
+        acceptedMinecraftVersions = "1.12.2",
         dependencies = "required:cubicchunks@[0.0.951.0,);")
 //dependencies = "required:cubicchunks@[0.0.951.0,);required:cubicgen@[0.0.54.0,);required:forge@[14.23.3.2658,)")
 public class FP2 {

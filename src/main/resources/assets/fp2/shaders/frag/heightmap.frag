@@ -7,8 +7,6 @@ layout(binding = 0) buffer loaded_chunks {
     ivec4 loaded_base; //using 4d vectors because apparently GLSL is too stupid to handle 3d ones
     ivec4 loaded_size;
     int loaded_data[];
-    /*int count;
-    int data[];*/
 };
 
 out vec4 color;

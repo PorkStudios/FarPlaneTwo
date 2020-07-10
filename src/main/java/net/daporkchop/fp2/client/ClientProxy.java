@@ -21,11 +21,15 @@
 package net.daporkchop.fp2.client;
 
 import net.daporkchop.fp2.client.render.OpenGL;
+import net.daporkchop.fp2.client.render.shader.ShaderManager;
 import net.daporkchop.fp2.server.ServerProxy;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
 import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -44,9 +48,23 @@ public class ClientProxy extends ServerProxy {
     }
 
     @Override
+    public void init(FMLInitializationEvent event) {
+        super.init(event);
+
+        KeyBindings.register();
+    }
+
+    @Override
     public void postInit(FMLPostInitializationEvent event) {
         super.postInit(event);
 
         HeightmapTerrainRenderer.MESH.id(); //load HeightmapTerrainRenderer on client thread
+    }
+
+    @SubscribeEvent
+    public void keyInput(InputEvent.KeyInputEvent event)    {
+        if (KeyBindings.RELOAD_SHADERS.isPressed()) {
+            ShaderManager.reload();
+        }
     }
 }

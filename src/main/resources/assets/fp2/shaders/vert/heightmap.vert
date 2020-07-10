@@ -1,9 +1,6 @@
 #version 430 core
 
 #define PALETTE_OFFSET (0)
-#define GRASS_BUFFER_OFFSET (0)
-#define FOLIAGE_BUFFER_OFFSET (GRASS_BUFFER_OFFSET + 256 * 256)
-#define WATER_BUFFER_OFFSET (FOLIAGE_BUFFER_OFFSET + 256 * 256)
 
 #define IS_MESA (biome == 37 || biome == 38 || biome == 39 || biome == 165 || biome == 166 || biome == 167)
 #define IS_ROOFED_FOREST (biome == 29 || biome == 157)
@@ -19,43 +16,17 @@ uniform mat4 camera_modelview = mat4(1.0);
 
 uniform dvec2 camera_offset;
 
-uniform vec2 biome_climate[256];
+layout(binding = 1) buffer global_info {
+    vec2 biome_climate[256];
 
-layout(binding = 0) uniform samplerBuffer palettePlusClimate;
-layout(binding = 1) uniform samplerBuffer grassBuffer;
+    int colormap_grass[256 * 256];
+    int colormap_foliage[256 * 256];
+    int biome_watercolor[256];
+    int map_colors[64];
+};
 
 out vec3 vert_pos;
 out vec4 vert_color;
-
-float getTemperature(dvec3 pos) {
-    if (pos.y > 64.)   {
-        return biome_climate[biome].x - float(pos.y - 64.) * .05 / 30.;
-    } else {
-        return biome_climate[biome].x;
-    }
-}
-
-vec4 getGrassColor(float temperature, float humidity){
-    humidity = humidity * temperature;
-    int i = int((1. - temperature) * 255.);
-    int j = int((1. - humidity) * 255.);
-    return texelFetch(grassBuffer, GRASS_BUFFER_OFFSET + ((j << 8) | i));
-}
-
-vec4 getGrassColorAtPos(dvec3 pos){
-    return getGrassColor(clamp(getTemperature(pos), 0., 1.), clamp(biome_climate[biome].y, 0., 1.));
-}
-
-vec4 getFoliageColor(float temperature, float humidity){
-    humidity = humidity * temperature;
-    int i = int((1. - temperature) * 255.);
-    int j = int((1. - humidity) * 255.);
-    return texelFetch(grassBuffer, FOLIAGE_BUFFER_OFFSET + ((j << 8) | i));
-}
-
-vec4 getFoliageColorAtPos(dvec3 pos){
-    return getGrassColor(clamp(getTemperature(pos), 0., 1.), clamp(biome_climate[biome].y, 0., 1.));
-}
 
 vec4 fromARGB(uint argb)   {
     return vec4(uvec4(argb) >> uvec4(16, 8, 0, 24) & uint(0xFF)) / 255.;
@@ -71,6 +42,36 @@ vec4 fromRGB(uint rgb)   {
 
 vec4 fromRGB(int rgb)   {
     return fromRGB(uint(rgb));
+}
+
+float getTemperature(dvec3 pos) {
+    if (pos.y > 64.)   {
+        return biome_climate[biome].x - float(pos.y - 64.) * .05 / 30.;
+    } else {
+        return biome_climate[biome].x;
+    }
+}
+
+vec4 getGrassColor(float temperature, float humidity){
+    humidity = humidity * temperature;
+    int i = int((1. - temperature) * 255.);
+    int j = int((1. - humidity) * 255.);
+    return fromARGB(colormap_grass[(j << 8) | i]);
+}
+
+vec4 getGrassColorAtPos(dvec3 pos){
+    return getGrassColor(clamp(getTemperature(pos), 0., 1.), clamp(biome_climate[biome].y, 0., 1.));
+}
+
+vec4 getFoliageColor(float temperature, float humidity){
+    humidity = humidity * temperature;
+    int i = int((1. - temperature) * 255.);
+    int j = int((1. - humidity) * 255.);
+    return fromARGB(colormap_foliage[(j << 8) | i]);
+}
+
+vec4 getFoliageColorAtPos(dvec3 pos){
+    return getGrassColor(clamp(getTemperature(pos), 0., 1.), clamp(biome_climate[biome].y, 0., 1.));
 }
 
 void main(){
@@ -101,8 +102,8 @@ void main(){
         }
     } else if (color == 12)  { //water
         //constant color is taken from water_overlay.png, and should have an opacity of 179
-        vert_color = fromARGB(0xB3212FAB) * texelFetch(grassBuffer, WATER_BUFFER_OFFSET + biome);
+        vert_color = fromARGB(0xB3212FAB) * fromARGB(biome_watercolor[biome]);
     } else {
-        vert_color = texelFetch(palettePlusClimate, PALETTE_OFFSET + color);
+        vert_color = fromARGB(map_colors[color]);
     }
 }

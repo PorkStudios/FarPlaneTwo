@@ -25,6 +25,7 @@ import com.google.gson.JsonParser;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.render.OpenGL;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
 import net.daporkchop.lib.binary.oio.StreamUtil;
 
 import java.io.IOException;
@@ -39,8 +40,7 @@ import java.nio.charset.StandardCharsets;
  */
 @UtilityClass
 public class ShaderManager {
-    protected final String BASE_PATH = "/assets/misc/shaders";
-    protected long RELOAD_COUNTER = 0L;
+    protected final String BASE_PATH = "/assets/fp2/shaders";
 
     /**
      * Obtains a shader program with the given name.
@@ -78,14 +78,6 @@ public class ShaderManager {
 
         try {
             String fileName = String.format("%s/%s/%s.%s", BASE_PATH, type.extension, name, type.extension);
-            String metaFileName = fileName + ".json";
-            JsonObject meta;
-            try (InputStream in = ShaderManager.class.getResourceAsStream(metaFileName)) {
-                if (in == null) {
-                    throw new IllegalStateException(String.format("Unable to find meta file: \"%s\"!", metaFileName));
-                }
-                meta = new JsonParser().parse(new InputStreamReader(in)).getAsJsonObject();
-            }
             String code;
             try (InputStream in = ShaderManager.class.getResourceAsStream(fileName)) {
                 if (in == null) {
@@ -93,7 +85,7 @@ public class ShaderManager {
                 }
                 code = new String(StreamUtil.toByteArray(in), StandardCharsets.UTF_8);
             }
-            return type.construct(name, code, meta);
+            return type.construct(name, code);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -105,5 +97,12 @@ public class ShaderManager {
             System.err.println(error);
             throw new IllegalStateException(error);
         }
+    }
+
+    public void reload()    {
+        OpenGL.assertOpenGL();
+
+        //TODO: actually reload all shaders rather than doing it manually
+        HeightmapTerrainRenderer.reloadHeightShader();
     }
 }

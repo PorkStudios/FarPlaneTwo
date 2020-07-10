@@ -31,4 +31,11 @@ public class Config {
             "The strategy that will be used for rendering distant terrain."
     })
     public static RenderStrategy renderStrategy = RenderStrategy.HEIGHTMAP;
+
+    @net.minecraftforge.common.config.Config.Comment({
+            "Toggles debug mode, which enables a number of features useful while developing the mod.",
+            "You're probably better off leaving this disabled."
+    })
+    @net.minecraftforge.common.config.Config.RequiresMcRestart
+    public static boolean debug = false;
 }

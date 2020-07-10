@@ -23,6 +23,7 @@ package net.daporkchop.fp2.client.render.shader;
 import com.google.gson.JsonObject;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 import net.daporkchop.fp2.client.render.OpenGL;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.minecraft.client.Minecraft;
@@ -37,15 +38,16 @@ import static net.minecraft.client.renderer.OpenGlHelper.*;
  * @author DaPorkchop_
  */
 @Getter
-abstract class Shader {
+class Shader {
     protected final String name;
+    @Accessors(fluent = true)
+    protected final ShaderType type;
     protected final int id;
 
-    protected Shader(@NonNull String name, @NonNull String code, @NonNull JsonObject meta) {
+    protected Shader(@NonNull String name, @NonNull String code, @NonNull ShaderType type) {
         OpenGL.assertOpenGL();
         this.name = name;
-
-        this.load(meta);
+        this.type = type;
 
         //allocate shader
         this.id = OpenGL.glCreateShader(this.type().openGlId);
@@ -59,48 +61,6 @@ abstract class Shader {
         //compile and validate shader
         OpenGL.glCompileShader(this.id);
         ShaderManager.validate(name, this.id, OpenGL.GL_COMPILE_STATUS);
-    }
-
-    /**
-     * @return this shader's type
-     */
-    protected abstract ShaderType type();
-
-    /**
-     * Loads shader metadata.
-     *
-     * @param meta the shader metadata
-     */
-    protected abstract void load(@NonNull JsonObject meta);
-
-    /**
-     * Gets the list of variables provided by this vertex shader.
-     *
-     * @return the list of variables provided by this vertex shader
-     * @throws UnsupportedOperationException if this shader is a fragment shader
-     */
-    protected abstract Collection<String> provides() throws UnsupportedOperationException;
-
-    /**
-     * Gets the list of variables required by this fragment shader.
-     *
-     * @return the list of variables required by this fragment shader
-     * @throws UnsupportedOperationException if this shader is a vertex shader
-     */
-    protected abstract Collection<String> requires() throws UnsupportedOperationException;
-
-    /**
-     * Asserts that this shader can be linked with another one.
-     *
-     * @param counterpart the shader to check for compatibility with
-     * @throws IllegalArgumentException if the shaders are not compatible
-     */
-    protected void assertCompatible(@NonNull Shader counterpart) throws IllegalArgumentException {
-        if (counterpart == this) {
-            throw new IllegalArgumentException("Cannot be linked to self!");
-        } else if (counterpart.type() == this.type()) {
-            throw new IllegalArgumentException("Cannot be linked with other shader of same type!");
-        }
     }
 
     /**

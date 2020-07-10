@@ -1,8 +1,0 @@
-{
-  "uniforms": [
-  ],
-  "requires": [
-    "vert_color",
-    "vert_pos"
-  ]
-}
