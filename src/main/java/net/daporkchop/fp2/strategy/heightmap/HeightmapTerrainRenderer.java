@@ -41,6 +41,7 @@ import net.minecraft.client.renderer.chunk.RenderChunk;
 import net.minecraft.init.Biomes;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
+import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.biome.Biome;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -52,6 +53,7 @@ import org.lwjgl.opengl.GL15;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -215,9 +217,18 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
 
         if (Keyboard.isKeyDown(Keyboard.KEY_0)) {
             if (!this.pressedLastFrame) {
-                HEIGHT_SHADER = ShaderManager.get("heightmap");
-                this.uploadBiomeClimates.run();
-                System.out.println("Reloaded shaders");
+                ShaderProgram shader = HEIGHT_SHADER;
+                try {
+                    HEIGHT_SHADER = ShaderManager.get("heightmap");
+                    this.uploadBiomeClimates.run();
+                } catch (Exception e)   {
+                } finally {
+                    if (HEIGHT_SHADER == shader)    {
+                        mc.player.sendMessage(new TextComponentString("§cheightmap shader reload failed (check console)."));
+                    } else {
+                        mc.player.sendMessage(new TextComponentString("§aheightmap shader successfully reloaded."));
+                    }
+                }
             }
             this.pressedLastFrame = true;
         } else {
@@ -231,11 +242,33 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                     .map(RenderChunk::getPosition)
                     .map(p -> new Vec3i(p.getX() >> 4, p.getY() >> 4, p.getZ() >> 4))
                     .collect(Collectors.toList());
-            IntBuffer buffer = Constants.createIntBuffer(positions.size() * 3 + 1);
-            buffer.put(positions.size());
-            positions.forEach(p -> buffer.put(p.getX()).put(p.getY()).put(p.getZ()));
-            buffer.flip();
+            
+            if (positions.isEmpty())    {
+                return;
+            }
 
+            int minX = positions.stream().mapToInt(Vec3i::getX).min().getAsInt();
+            int maxX = positions.stream().mapToInt(Vec3i::getX).max().getAsInt() + 1;
+            int minY = positions.stream().mapToInt(Vec3i::getY).min().getAsInt();
+            int maxY = positions.stream().mapToInt(Vec3i::getY).max().getAsInt() + 1;
+            int minZ = positions.stream().mapToInt(Vec3i::getZ).min().getAsInt();
+            int maxZ = positions.stream().mapToInt(Vec3i::getZ).max().getAsInt() + 1;
+            int dx = maxX - minX;
+            int dy = maxY - minY;
+            int dz = maxZ - minZ;
+            int volume = dx * dy * dz;
+
+            int offset = 2 * 4;
+            IntBuffer buffer = Constants.createIntBuffer(offset + volume);
+            buffer.put(minX).put(minY).put(minZ).put(0)
+                    .put(dx).put(dy).put(dz).put(0);
+            for (int i = 0, len = positions.size(); i < len; i++) {
+                Vec3i pos = positions.get(i);
+                int index = ((pos.getX() - minX) * dy + (pos.getY() - minY)) * dz + (pos.getZ() - minZ);
+                buffer.put(offset + (index >> 5), buffer.get(offset + (index >> 5)) | (1 << (index & 0x1F)));
+            }
+
+            buffer.clear();
             glBufferData(GL_SHADER_STORAGE_BUFFER, buffer, GL_DYNAMIC_COPY);
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, loadedBuffer.id());
         }
