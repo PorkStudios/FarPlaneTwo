@@ -21,7 +21,7 @@ bool isLoaded(ivec3 chunk)  {
     int index = (chunk.x * size.y + chunk.y) * size.z + chunk.z;
     return data[index] != 0;*/
     for (int i = 0; i < count; i++) {
-        if (data[i * 2] == chunk.x && data[i * 2 + 1] == chunk.z)    {
+        if (data[i * 3] == chunk.x && data[i * 3 + 1] == chunk.y && data[i * 3 + 2] == chunk.z)    {
             return true;
         }
     }
@@ -30,8 +30,7 @@ bool isLoaded(ivec3 chunk)  {
 
 void main() {
     if (isLoaded(ivec3(vert_pos) >> 4)) {
-        color = vec4(0.);
-    } else {
-        color = vert_color;
+        discard;
     }
+    color = vert_color;
 }

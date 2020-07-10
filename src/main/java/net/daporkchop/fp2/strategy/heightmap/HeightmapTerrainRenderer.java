@@ -20,7 +20,6 @@
 
 package net.daporkchop.fp2.strategy.heightmap;
 
-import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.render.MatrixHelper;
 import net.daporkchop.fp2.client.render.object.BufferTextureObject;
@@ -37,28 +36,26 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
+import net.minecraft.client.renderer.chunk.CompiledChunk;
+import net.minecraft.client.renderer.chunk.RenderChunk;
 import net.minecraft.init.Biomes;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.gen.NoiseGeneratorPerlin;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.ARBShaderObjects;
 import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL43;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.stream.Collectors;
 
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
@@ -69,8 +66,8 @@ import static org.lwjgl.opengl.GL15.glBufferData;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL20.glUniform2;
 import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL40.glUniform2d;
-import static org.lwjgl.opengl.GL43.GL_SHADER_STORAGE_BUFFER;
+import static org.lwjgl.opengl.GL40.*;
+import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_
@@ -227,9 +224,22 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
             this.pressedLastFrame = false;
         }
 
-        //GlStateManager.disableFog();
-        //GlStateManager.disableAlpha();
-        //GlStateManager.enableBlend();
+        try (ShaderStorageBuffer loadedBuffer = new ShaderStorageBuffer().bind()) {
+            List<Vec3i> positions = mc.renderGlobal.renderInfos.stream()
+                    .map(i -> i.renderChunk)
+                    .filter(r -> r.compiledChunk != CompiledChunk.DUMMY && !r.compiledChunk.isEmpty())
+                    .map(RenderChunk::getPosition)
+                    .map(p -> new Vec3i(p.getX() >> 4, p.getY() >> 4, p.getZ() >> 4))
+                    .collect(Collectors.toList());
+            IntBuffer buffer = Constants.createIntBuffer(positions.size() * 3 + 1);
+            buffer.put(positions.size());
+            positions.forEach(p -> buffer.put(p.getX()).put(p.getY()).put(p.getZ()));
+            buffer.flip();
+
+            glBufferData(GL_SHADER_STORAGE_BUFFER, buffer, GL_DYNAMIC_COPY);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, loadedBuffer.id());
+        }
+
         GlStateManager.disableCull();
 
         glPushMatrix();
@@ -238,61 +248,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         this.modelView = MatrixHelper.getMATRIX(GL_MODELVIEW_MATRIX, this.modelView);
         this.proj = MatrixHelper.getMATRIX(GL_PROJECTION_MATRIX, this.proj);
 
-        try (ShaderStorageBuffer loadedBuffer = new ShaderStorageBuffer().bind())   {
-            BlockPos.MutableBlockPos min = new BlockPos.MutableBlockPos(Integer.MAX_VALUE, 0, Integer.MAX_VALUE);
-            BlockPos.MutableBlockPos max = new BlockPos.MutableBlockPos(Integer.MIN_VALUE, 16, Integer.MIN_VALUE);
-            world.getChunkProvider().loadedChunks.forEach((l, chunk) -> {
-                if (chunk.x < min.getX())   {
-                    min.setPos(chunk.x, 0, min.getZ());
-                }
-                if (chunk.z < min.getZ())   {
-                    min.setPos(min.getZ(), 16, chunk.z);
-                }
-                if (chunk.x > max.getX())   {
-                    max.setPos(chunk.x, 0, max.getZ());
-                }
-                if (chunk.z > max.getZ())   {
-                    max.setPos(max.getZ(), 16, chunk.z);
-                }
-            });
-            if (min.getX() == Integer.MAX_VALUE || min.getZ() == Integer.MAX_VALUE
-                    || max.getX() == Integer.MIN_VALUE || max.getZ() == Integer.MIN_VALUE)  {
-                return;
-            }
-            int dx = max.getX() + 1 - min.getX();
-            int dz = max.getZ() + 1 - min.getZ();
-            //mc.player.sendMessage(new TextComponentString(String.format("min: %s, max: %s, dx: %d, dz: %d", min, max, dx, dz)));
-            IntBuffer buffer = Constants.createIntBuffer(3 * 2 + dx * dz * 16);
-            buffer.put(world.getChunkProvider().loadedChunks.size());
-            world.getChunkProvider().loadedChunks.forEach((l, chunk) -> buffer.put(chunk.x).put(chunk.z));
-            /*buffer.put(min.getX()).put(min.getY()).put(min.getZ());
-            buffer.put(dx).put(16).put(dz);
-            for (int x = min.getX(); x <= max.getX(); x++)   {
-                for (int y = 0; y < 16; y++) {
-                    for (int z = min.getZ(); z <= max.getZ(); z++) {
-                        if (world.getChunkProvider().isChunkGeneratedAt(x, z)) {
-                            buffer.put(1);
-                        } else {
-                            buffer.put(0);
-                        }
-                    }
-                }
-            }*/
-
-            /*IntBuffer buffer = Constants.createIntBuffer(10 * 16 * 10);
-            for (int x = 0; x < 10; x++)    {
-                for (int z = 0; z < 10; z++)    {
-                    int i = world.getChunkProvider().loadedChunks.containsKey(ChunkPos.asLong(x, z)) ? 1 : 0;
-                    for (int y = 0; y < 16; y++)    {
-                        buffer.put(i);
-                    }
-                }
-            }*/
-            buffer.flip();
-
-            glBufferData(GL_SHADER_STORAGE_BUFFER, buffer, GL_DYNAMIC_COPY);
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, loadedBuffer.id());
-
+        try {
             try (BufferTextureObject tex = MAP_COLORS.bind()) {
                 GlStateManager.setActiveTexture(OpenGlHelper.lightmapTexUnit);
                 GlStateManager.enableTexture2D();
@@ -318,9 +274,6 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
             glPopMatrix();
 
             GlStateManager.enableCull();
-            //GlStateManager.disableBlend();
-            //GlStateManager.enableAlpha();
-            //GlStateManager.enableFog();
         }
     }
 }
