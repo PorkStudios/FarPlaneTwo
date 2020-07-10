@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.client.render.shader;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import lombok.NonNull;
@@ -27,11 +28,16 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.render.OpenGL;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
 import net.daporkchop.lib.binary.oio.StreamUtil;
+import net.daporkchop.lib.common.function.io.IOFunction;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.stream.StreamSupport;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Manages loaded shaders.
@@ -66,29 +72,24 @@ public class ShaderManager {
             }
             return new ShaderProgram(
                     programName,
-                    get(meta.get("vert").getAsString(), ShaderType.VERTEX),
-                    get(meta.get("frag").getAsString(), ShaderType.FRAGMENT));
+                    get(StreamSupport.stream(meta.getAsJsonArray("vert").spliterator(), false).map(JsonElement::getAsString).toArray(String[]::new), ShaderType.VERTEX),
+                    get(StreamSupport.stream(meta.getAsJsonArray("frag").spliterator(), false).map(JsonElement::getAsString).toArray(String[]::new), ShaderType.FRAGMENT));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    protected Shader get(@NonNull String name, @NonNull ShaderType type) {
+    protected Shader get(@NonNull String[] names, @NonNull ShaderType type) {
         OpenGL.assertOpenGL();
 
-        try {
-            String fileName = String.format("%s/%s/%s.%s", BASE_PATH, type.extension, name, type.extension);
-            String code;
-            try (InputStream in = ShaderManager.class.getResourceAsStream(fileName)) {
-                if (in == null) {
-                    throw new IllegalStateException(String.format("Unable to find shader file: \"%s\"!", fileName));
-                }
-                code = new String(StreamUtil.toByteArray(in), StandardCharsets.UTF_8);
-            }
-            return type.construct(name, code);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return type.construct(names, Arrays.stream(names)
+                .map((IOFunction<String, String>) fileName -> {
+                    try (InputStream in = ShaderManager.class.getResourceAsStream(BASE_PATH + '/' + fileName)) {
+                        checkState(in != null, "Unable to find shader file: \"%s\"!", fileName);
+                        return new String(StreamUtil.toByteArray(in), StandardCharsets.UTF_8);
+                    }
+                })
+                .toArray(String[]::new));
     }
 
     protected void validate(@NonNull String name, int id, int type) {
@@ -99,7 +100,7 @@ public class ShaderManager {
         }
     }
 
-    public void reload()    {
+    public void reload() {
         OpenGL.assertOpenGL();
 
         //TODO: actually reload all shaders rather than doing it manually

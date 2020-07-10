@@ -24,6 +24,8 @@ import net.daporkchop.fp2.client.render.OpenGL;
 import net.daporkchop.fp2.client.render.shader.ShaderManager;
 import net.daporkchop.fp2.server.ServerProxy;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
@@ -45,6 +47,7 @@ public class ClientProxy extends ServerProxy {
         super.preInit(event);
 
         OpenGL.init(GLContext.getCapabilities());
+        ((IReloadableResourceManager) Minecraft.getMinecraft().getResourceManager()).registerReloadListener(new FP2ResourceReloadListener());
     }
 
     @Override

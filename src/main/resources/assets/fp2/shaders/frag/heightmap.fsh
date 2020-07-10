@@ -1,5 +1,3 @@
-#version 430 core
-
 in vec3 vert_pos;
 in vec4 vert_color;
 

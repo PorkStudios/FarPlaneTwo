@@ -20,15 +20,15 @@
 
 package net.daporkchop.fp2.client.render.shader;
 
-import com.google.gson.JsonObject;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import net.daporkchop.fp2.client.render.OpenGL;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.minecraft.client.Minecraft;
+import org.lwjgl.opengl.GL20;
 
-import java.util.Collection;
+import java.util.Arrays;
 
 import static net.minecraft.client.renderer.OpenGlHelper.*;
 
@@ -38,15 +38,13 @@ import static net.minecraft.client.renderer.OpenGlHelper.*;
  * @author DaPorkchop_
  */
 @Getter
+@Accessors(fluent = true)
 class Shader {
-    protected final String name;
-    @Accessors(fluent = true)
     protected final ShaderType type;
     protected final int id;
 
-    protected Shader(@NonNull String name, @NonNull String code, @NonNull ShaderType type) {
+    protected Shader(@NonNull String[] names, @NonNull String[] code, @NonNull ShaderType type) {
         OpenGL.assertOpenGL();
-        this.name = name;
         this.type = type;
 
         //allocate shader
@@ -56,11 +54,11 @@ class Shader {
         PCleaner.cleaner(this, () -> Minecraft.getMinecraft().addScheduledTask(() -> glDeleteShader(id)));
 
         //set shader source code
-        OpenGL.glShaderSource(this.id, code);
+        GL20.glShaderSource(this.id, code);
 
         //compile and validate shader
         OpenGL.glCompileShader(this.id);
-        ShaderManager.validate(name, this.id, OpenGL.GL_COMPILE_STATUS);
+        ShaderManager.validate(Arrays.toString(names), this.id, OpenGL.GL_COMPILE_STATUS);
     }
 
     /**

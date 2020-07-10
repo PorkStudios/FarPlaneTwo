@@ -51,7 +51,7 @@ public enum ShaderType {
     protected final String extension;
     protected final int openGlId;
 
-    protected Shader construct(@NonNull String name, @NonNull String code)  {
-        return new Shader(name, code, this);
+    protected Shader construct(@NonNull String[] names, @NonNull String[] code)  {
+        return new Shader(names, code, this);
     }
 }

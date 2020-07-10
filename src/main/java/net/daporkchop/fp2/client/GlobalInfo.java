@@ -57,13 +57,18 @@ public class GlobalInfo {
     public static final long MAPCOLORS_OFFSET = COLORMAP_FOLIAGE_OFFSET + COLORMAP_FOLIAGE_SIZE;
     public static final int MAPCOLORS_SIZE = 64 * 4;
 
+    public static final long UVS_OFFSET = MAPCOLORS_OFFSET + MAPCOLORS_SIZE;
+    public static final int UVS_SIZE = 4096 * 16 * 4 * 4; //4096 ids, 16 meta values, 4 floats
+
+    public static final long TOTAL_SIZE = UVS_OFFSET + UVS_SIZE;
+
     static {
         primary_init();
     }
 
     public static void primary_init() {
         try (ShaderStorageBuffer globalInfo = GLOBAL_INFO.bind()) {
-            glBufferData(GL_SHADER_STORAGE_BUFFER, MAPCOLORS_OFFSET + MAPCOLORS_SIZE, GL_DYNAMIC_DRAW);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, TOTAL_SIZE, GL_DYNAMIC_DRAW);
 
             {
                 FloatBuffer buffer = Constants.createFloatBuffer(BIOME_SIZE >> 2);
