@@ -26,8 +26,14 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
 import net.daporkchop.lib.common.util.PorkUtil;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.chunk.CompiledChunk;
+import net.minecraft.client.renderer.chunk.RenderChunk;
+import net.minecraft.util.math.Vec3i;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -37,6 +43,8 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Various constants and helper methods used throughout the mod.
@@ -53,6 +61,49 @@ public class Constants {
 
     public static int convertARGB_ABGR(int in)  {
         return (in & 0xFF00FF00) | ((in >>> 16) & 0xFF) | ((in & 0xFF) << 16);
+    }
+
+    @SideOnly(Side.CLIENT)
+    public static IntBuffer renderableChunksMask(Minecraft mc, IntBuffer buffer)  {
+        final int HEADER_SIZE = 2 * 4;
+
+        List<Vec3i> positions = mc.renderGlobal.renderInfos.stream()
+                .map(i -> i.renderChunk)
+                .filter(r -> r.compiledChunk != CompiledChunk.DUMMY && !r.compiledChunk.isEmpty())
+                .map(RenderChunk::getPosition)
+                .map(p -> new Vec3i(p.getX() >> 4, p.getY() >> 4, p.getZ() >> 4))
+                .collect(Collectors.toList());
+
+        int minX = positions.stream().mapToInt(Vec3i::getX).min().orElse(0);
+        int maxX = positions.stream().mapToInt(Vec3i::getX).max().orElse(0) + 1;
+        int minY = positions.stream().mapToInt(Vec3i::getY).min().orElse(0);
+        int maxY = positions.stream().mapToInt(Vec3i::getY).max().orElse(0) + 1;
+        int minZ = positions.stream().mapToInt(Vec3i::getZ).min().orElse(0);
+        int maxZ = positions.stream().mapToInt(Vec3i::getZ).max().orElse(0) + 1;
+        int dx = maxX - minX;
+        int dy = maxY - minY;
+        int dz = maxZ - minZ;
+        int volume = dx * dy * dz;
+
+        if (buffer == null || buffer.capacity() < HEADER_SIZE + volume * 3) {
+            buffer = createIntBuffer(HEADER_SIZE + volume * 3);
+        }
+        buffer.clear();
+
+        if (positions.isEmpty())    {
+            return buffer;
+        }
+
+        buffer.put(minX).put(minY).put(minZ).put(0)
+                .put(dx).put(dy).put(dz).put(0);
+        for (int i = 0, len = positions.size(); i < len; i++) {
+            Vec3i pos = positions.get(i);
+            int index = ((pos.getX() - minX) * dy + (pos.getY() - minY)) * dz + (pos.getZ() - minZ);
+            buffer.put(HEADER_SIZE + (index >> 5), buffer.get(HEADER_SIZE + (index >> 5)) | (1 << (index & 0x1F)));
+        }
+
+        buffer.clear();
+        return buffer;
     }
 
     //the following methods are copied from LWJGL's BufferUtils in order to ensure their availability on the dedicated server as well

@@ -36,11 +36,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
-import net.minecraft.client.renderer.chunk.CompiledChunk;
-import net.minecraft.client.renderer.chunk.RenderChunk;
 import net.minecraft.init.Biomes;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Vec3i;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.biome.Biome;
 import net.minecraftforge.fml.relauncher.Side;
@@ -53,11 +50,8 @@ import org.lwjgl.opengl.GL15;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
@@ -147,9 +141,10 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         }
     }
 
-    private final Map<ChunkPos, VertexArrayObject> chunks = new HashMap<>();
+    protected final Map<ChunkPos, VertexArrayObject> chunks = new HashMap<>();
+    protected IntBuffer renderableChunksMask;
 
-    private final Runnable uploadBiomeClimates = () -> {
+    protected final Runnable uploadBiomeClimates = () -> {
         FloatBuffer biomeClimates = Constants.createFloatBuffer(256 * 2);
 
         for (int i = 0; i < 256; i++) {
@@ -221,9 +216,10 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                 try {
                     HEIGHT_SHADER = ShaderManager.get("heightmap");
                     this.uploadBiomeClimates.run();
-                } catch (Exception e)   {
+                } catch (Exception e) {
+                    e.printStackTrace();
                 } finally {
-                    if (HEIGHT_SHADER == shader)    {
+                    if (HEIGHT_SHADER == shader) {
                         mc.player.sendMessage(new TextComponentString("§cheightmap shader reload failed (check console)."));
                     } else {
                         mc.player.sendMessage(new TextComponentString("§aheightmap shader successfully reloaded."));
@@ -236,40 +232,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         }
 
         try (ShaderStorageBuffer loadedBuffer = new ShaderStorageBuffer().bind()) {
-            List<Vec3i> positions = mc.renderGlobal.renderInfos.stream()
-                    .map(i -> i.renderChunk)
-                    .filter(r -> r.compiledChunk != CompiledChunk.DUMMY && !r.compiledChunk.isEmpty())
-                    .map(RenderChunk::getPosition)
-                    .map(p -> new Vec3i(p.getX() >> 4, p.getY() >> 4, p.getZ() >> 4))
-                    .collect(Collectors.toList());
-            
-            if (positions.isEmpty())    {
-                return;
-            }
-
-            int minX = positions.stream().mapToInt(Vec3i::getX).min().getAsInt();
-            int maxX = positions.stream().mapToInt(Vec3i::getX).max().getAsInt() + 1;
-            int minY = positions.stream().mapToInt(Vec3i::getY).min().getAsInt();
-            int maxY = positions.stream().mapToInt(Vec3i::getY).max().getAsInt() + 1;
-            int minZ = positions.stream().mapToInt(Vec3i::getZ).min().getAsInt();
-            int maxZ = positions.stream().mapToInt(Vec3i::getZ).max().getAsInt() + 1;
-            int dx = maxX - minX;
-            int dy = maxY - minY;
-            int dz = maxZ - minZ;
-            int volume = dx * dy * dz;
-
-            int offset = 2 * 4;
-            IntBuffer buffer = Constants.createIntBuffer(offset + volume);
-            buffer.put(minX).put(minY).put(minZ).put(0)
-                    .put(dx).put(dy).put(dz).put(0);
-            for (int i = 0, len = positions.size(); i < len; i++) {
-                Vec3i pos = positions.get(i);
-                int index = ((pos.getX() - minX) * dy + (pos.getY() - minY)) * dz + (pos.getZ() - minZ);
-                buffer.put(offset + (index >> 5), buffer.get(offset + (index >> 5)) | (1 << (index & 0x1F)));
-            }
-
-            buffer.clear();
-            glBufferData(GL_SHADER_STORAGE_BUFFER, buffer, GL_DYNAMIC_COPY);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, this.renderableChunksMask = Constants.renderableChunksMask(mc, this.renderableChunksMask), GL_DYNAMIC_COPY);
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, loadedBuffer.id());
         }
 

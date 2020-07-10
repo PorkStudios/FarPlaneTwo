@@ -24,6 +24,7 @@ import net.daporkchop.fp2.client.render.MatrixHelper;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
+import net.minecraft.profiler.Profiler;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -43,9 +44,10 @@ public abstract class MixinEntityRenderer {
 
     @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/RenderGlobal;setupTerrain(Lnet/minecraft/entity/Entity;DLnet/minecraft/client/renderer/culling/ICamera;IZ)V",
-                    shift = At.Shift.AFTER))
-    private void renderWorldPass_postSetupTerrain(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
+                    target = "Lnet/minecraft/profiler/Profiler;endStartSection(Ljava/lang/String;)V",
+                    ordinal = 5,
+                    shift = At.Shift.BEFORE))
+    private void renderWorldPass_postRenderBelowClouds(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
         this.mc.profiler.endStartSection("fp2_renderDistantTerrain");
         TerrainRenderer renderer = ((TerrainRenderer.Holder) this.mc.world).fp2_terrainRenderer();
         if (renderer != null) {
