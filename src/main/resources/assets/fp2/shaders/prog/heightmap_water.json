@@ -1,0 +1,10 @@
+{
+  "vert": [
+    "common.vsh",
+    "vert/heightmap_water.vsh"
+  ],
+  "frag": [
+    "common.vsh",
+    "frag/heightmap_water.fsh"
+  ]
+}

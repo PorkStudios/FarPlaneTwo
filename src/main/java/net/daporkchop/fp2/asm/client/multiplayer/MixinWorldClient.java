@@ -45,7 +45,8 @@ public abstract class MixinWorldClient extends World implements TerrainRenderer.
     }
 
     @Override
-    public void fp2_updateStrategy(@NonNull RenderStrategy strategy) {
+    public void fp2_updateStrategy(@NonNull RenderStrategy strategy, double seaLevel) {
         this.terrainRenderer = strategy.createTerrainRenderer((WorldClient) (Object) this);
+        this.terrainRenderer.init(seaLevel);
     }
 }

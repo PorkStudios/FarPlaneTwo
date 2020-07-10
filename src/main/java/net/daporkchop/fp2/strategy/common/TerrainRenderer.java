@@ -42,6 +42,8 @@ public abstract class TerrainRenderer {
     public FloatBuffer proj;
     public FloatBuffer modelView;
 
+    public abstract void init(double seaLevel);
+
     public void render(float partialTicks, WorldClient world, Minecraft mc) {
         Entity entity = mc.getRenderViewEntity();
         this.cameraX = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks;
@@ -57,6 +59,6 @@ public abstract class TerrainRenderer {
     public interface Holder {
         TerrainRenderer fp2_terrainRenderer();
 
-        void fp2_updateStrategy(@NonNull RenderStrategy strategy);
+        void fp2_updateStrategy(@NonNull RenderStrategy strategy, double seaLevel);
     }
 }

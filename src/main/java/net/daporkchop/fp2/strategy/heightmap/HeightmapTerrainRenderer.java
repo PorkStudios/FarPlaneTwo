@@ -35,6 +35,7 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.text.TextComponentString;
@@ -68,15 +69,18 @@ import static org.lwjgl.opengl.GL43.*;
 @SideOnly(Side.CLIENT)
 public class HeightmapTerrainRenderer extends TerrainRenderer {
     public static ShaderProgram HEIGHT_SHADER = ShaderManager.get("heightmap");
+    public static ShaderProgram WATER_SHADER = ShaderManager.get("heightmap_water");
 
     public static void reloadHeightShader() {
         ShaderProgram shader = HEIGHT_SHADER;
+        ShaderProgram shader2 = WATER_SHADER;
         try {
             HEIGHT_SHADER = ShaderManager.get("heightmap");
+            WATER_SHADER = ShaderManager.get("heightmap_water");
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            if (HEIGHT_SHADER == shader) {
+            if (HEIGHT_SHADER == shader || WATER_SHADER == shader2) {
                 Minecraft.getMinecraft().player.sendMessage(new TextComponentString("§cheightmap shader reload failed (check console)."));
             } else {
                 Minecraft.getMinecraft().player.sendMessage(new TextComponentString("§aheightmap shader successfully reloaded."));
@@ -132,7 +136,14 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
     protected final Map<ChunkPos, VertexArrayObject> chunks = new HashMap<>();
     protected IntBuffer renderableChunksMask;
 
+    public double seaLevel = Integer.MIN_VALUE;
+
     public HeightmapTerrainRenderer(@NonNull WorldClient world) {
+    }
+
+    @Override
+    public void init(double seaLevel) {
+        this.seaLevel = seaLevel;
     }
 
     public void receiveRemoteChunk(@NonNull HeightmapChunk chunk) {
@@ -195,6 +206,10 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         GLOBAL_INFO.bindingIndex(1);
 
         GlStateManager.disableCull();
+        GlStateManager.enableAlpha();
+
+        GlStateManager.enableBlend();
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         glPushMatrix();
         glTranslated(-this.cameraX, -this.cameraY, -this.cameraZ);
@@ -217,9 +232,29 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                     }
                 });
             }
+
+            // glTranslated(0.0d, this.seaLevel, 0.0d);
+
+            this.modelView = MatrixHelper.getMATRIX(GL_MODELVIEW_MATRIX, this.modelView);
+
+            try (ShaderProgram shader = WATER_SHADER.use()) {
+                ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
+                ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
+                glUniform1f(shader.uniformLocation("seaLevel"), (float) this.seaLevel);
+
+                this.chunks.forEach((pos, o) -> {
+                    glUniform2d(shader.uniformLocation("camera_offset"), pos.x * HEIGHT_VOXELS + .5d, pos.z * HEIGHT_VOXELS + .5d);
+
+                    try (VertexArrayObject vao = o.bind()) {
+                        glDrawElements(GL_TRIANGLES, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
+                    }
+                });
+            }
         } finally {
             glPopMatrix();
 
+            GlStateManager.disableBlend();
+            GlStateManager.disableAlpha();
             GlStateManager.enableCull();
         }
     }

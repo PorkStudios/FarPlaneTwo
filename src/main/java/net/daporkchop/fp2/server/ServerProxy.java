@@ -29,6 +29,7 @@ import net.daporkchop.fp2.util.threading.CachedBlockAccess;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.MapColor;
+import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -70,7 +71,10 @@ public class ServerProxy {
 
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy().strategy(Config.renderStrategy), (EntityPlayerMP) event.player);
+        int seaLevel = event.player.world.getSeaLevel();
+        NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy()
+                .strategy(Config.renderStrategy)
+                .seaLevel(seaLevel), (EntityPlayerMP) event.player);
 
         for (int _chunkX = 0; _chunkX < 10; _chunkX++) {
             for (int _chunkZ = 0; _chunkZ < 10; _chunkZ++) {
@@ -86,8 +90,14 @@ public class ServerProxy {
                         for (int z = 0; z < HEIGHT_VERTS; z++) {
                             int height = access.getTopBlockY(chunkX * HEIGHT_VOXELS + x, chunkZ * HEIGHT_VOXELS + z) - 1;
                             BlockPos pos = new BlockPos(chunkX * HEIGHT_VOXELS + x, height, chunkZ * HEIGHT_VOXELS + z);
-                            Biome biome = access.getBiome(pos);
                             IBlockState state = access.getBlockState(pos);
+
+                            while (height <= seaLevel && state.getMaterial() == Material.WATER)   {
+                                pos = new BlockPos(pos.getX(), --height, pos.getZ());
+                                state = access.getBlockState(pos);
+                            }
+
+                            Biome biome = access.getBiome(pos);
                             MapColor color = state.getMapColor(access, pos);
                             chunk.height(x, z, height)
                                     .color(x, z, color.colorIndex)

@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.net.server;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.NetUtil;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -43,21 +42,24 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 public class SPacketRenderingStrategy implements IMessage {
     @NonNull
     protected RenderStrategy strategy;
+    protected double seaLevel;
 
     @Override
     public void fromBytes(ByteBuf buf) {
         this.strategy = RenderStrategy.values()[buf.readInt()];
+        this.seaLevel = buf.readDouble();
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeInt(this.strategy.ordinal());
+        buf.writeInt(this.strategy.ordinal())
+                .writeDouble(this.seaLevel);
     }
 
-    public static class Handler implements IMessageHandler<SPacketRenderingStrategy, IMessage>  {
+    public static class Handler implements IMessageHandler<SPacketRenderingStrategy, IMessage> {
         @Override
         public IMessage onMessage(SPacketRenderingStrategy message, MessageContext ctx) {
-            ((TerrainRenderer.Holder) ctx.getClientHandler().world).fp2_updateStrategy(message.strategy);
+            ((TerrainRenderer.Holder) ctx.getClientHandler().world).fp2_updateStrategy(message.strategy, message.seaLevel);
             return null;
         }
     }
