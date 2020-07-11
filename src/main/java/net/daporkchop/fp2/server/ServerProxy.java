@@ -27,6 +27,7 @@ import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapChunk;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
+import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.MapColor;
 import net.minecraft.block.material.Material;
@@ -71,6 +72,8 @@ public class ServerProxy {
 
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        PorkUtil.sleep(2000L);
+
         int seaLevel = event.player.world.getSeaLevel();
         NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy()
                 .strategy(Config.renderStrategy)
@@ -92,7 +95,7 @@ public class ServerProxy {
                             BlockPos pos = new BlockPos(chunkX * HEIGHT_VOXELS + x, height, chunkZ * HEIGHT_VOXELS + z);
                             IBlockState state = access.getBlockState(pos);
 
-                            while (height <= seaLevel && state.getMaterial() == Material.WATER)   {
+                            while (height <= seaLevel && state.getMaterial() == Material.WATER) {
                                 pos = new BlockPos(pos.getX(), --height, pos.getZ());
                                 state = access.getBlockState(pos);
                             }
@@ -102,7 +105,8 @@ public class ServerProxy {
                             chunk.height(x, z, height)
                                     .color(x, z, color.colorIndex)
                                     .biome(x, z, Biome.getIdForBiome(biome))
-                                    .block(x, z, Block.getStateId(state));
+                                    .block(x, z, Block.getStateId(state))
+                                    .light(x, z, access.getCombinedLight(pos.add(0, 1, 0), 0) >> 4);
                         }
                     }
                     NETWORK_WRAPPER.sendTo(new SPacketHeightmapData().chunk(chunk), (EntityPlayerMP) event.player);

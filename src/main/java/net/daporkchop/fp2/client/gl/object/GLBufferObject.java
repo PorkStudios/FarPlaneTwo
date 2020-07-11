@@ -18,27 +18,40 @@
  *
  */
 
-package net.daporkchop.fp2.client.render.object;
+package net.daporkchop.fp2.client.gl.object;
 
-import static net.minecraft.client.renderer.OpenGlHelper.glBindBuffer;
-import static net.minecraft.client.renderer.OpenGlHelper.glDeleteBuffers;
-import static net.minecraft.client.renderer.OpenGlHelper.glGenBuffers;
-import static org.lwjgl.opengl.GL15.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
+import static net.minecraft.client.renderer.OpenGlHelper.*;
 
 /**
  * @author DaPorkchop_
  */
-public final class ElementArrayObject extends GLBufferObject<ElementArrayObject> {
-    public ElementArrayObject() {
-        super();
+public abstract class GLBufferObject<T extends GLBufferObject<T>> extends GLObject<T> {
+    protected final int target = this.target();
+
+    public GLBufferObject() {
+        this(glGenBuffers());
     }
 
-    public ElementArrayObject(int id) {
+    public GLBufferObject(int id) {
         super(id);
     }
 
+    protected abstract int target();
+
     @Override
-    protected int target() {
-        return GL_ELEMENT_ARRAY_BUFFER;
+    public T bind() {
+        glBindBuffer(this.target, this.id);
+        return uncheckedCast(this);
+    }
+
+    @Override
+    public void close() {
+        glBindBuffer(this.target, 0);
+    }
+
+    @Override
+    protected Runnable delete(int id) {
+        return () -> glDeleteBuffers(id);
     }
 }

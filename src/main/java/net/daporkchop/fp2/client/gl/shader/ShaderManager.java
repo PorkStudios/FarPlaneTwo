@@ -18,14 +18,14 @@
  *
  */
 
-package net.daporkchop.fp2.client.render.shader;
+package net.daporkchop.fp2.client.gl.shader;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.client.render.OpenGL;
+import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
 import net.daporkchop.lib.binary.oio.StreamUtil;
 import net.daporkchop.lib.common.function.io.IOFunction;

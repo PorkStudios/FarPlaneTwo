@@ -18,11 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.client.render.shader;
+package net.daporkchop.fp2.client.gl.shader;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.render.OpenGL;
+import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.minecraft.client.Minecraft;
 

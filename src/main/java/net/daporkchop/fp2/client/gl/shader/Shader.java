@@ -18,40 +18,56 @@
  *
  */
 
-package net.daporkchop.fp2.client.render.shader;
+package net.daporkchop.fp2.client.gl.shader;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
+import net.daporkchop.fp2.client.gl.OpenGL;
+import net.daporkchop.lib.unsafe.PCleaner;
+import net.minecraft.client.Minecraft;
+import org.lwjgl.opengl.GL20;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
+import java.util.Arrays;
 
-import static net.daporkchop.fp2.client.render.OpenGL.*;
+import static net.minecraft.client.renderer.OpenGlHelper.*;
 
 /**
- * The different types of shaders.
+ * A container for a vertex or fragment shader.
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Getter
-public enum ShaderType {
-    VERTEX("vert", GL_VERTEX_SHADER),
-    FRAGMENT("frag", GL_FRAGMENT_SHADER);
+@Accessors(fluent = true)
+class Shader {
+    protected final ShaderType type;
+    protected final int id;
 
-    @NonNull
-    protected final String extension;
-    protected final int openGlId;
+    protected Shader(@NonNull String[] names, @NonNull String[] code, @NonNull ShaderType type) {
+        OpenGL.assertOpenGL();
+        this.type = type;
 
-    protected Shader construct(@NonNull String[] names, @NonNull String[] code)  {
-        return new Shader(names, code, this);
+        //allocate shader
+        this.id = OpenGL.glCreateShader(this.type().openGlId);
+
+        int id = this.id;
+        PCleaner.cleaner(this, () -> Minecraft.getMinecraft().addScheduledTask(() -> glDeleteShader(id)));
+
+        //set shader source code
+        GL20.glShaderSource(this.id, code);
+
+        //compile and validate shader
+        OpenGL.glCompileShader(this.id);
+        ShaderManager.validate(Arrays.toString(names), this.id, OpenGL.GL_COMPILE_STATUS);
+    }
+
+    /**
+     * Attaches this shader to the given shader program.
+     *
+     * @param program the program to which to attach this shader
+     */
+    protected void attach(@NonNull ShaderProgram program) {
+        OpenGL.assertOpenGL();
+        OpenGL.glAttachShader(program.id, this.id);
     }
 }

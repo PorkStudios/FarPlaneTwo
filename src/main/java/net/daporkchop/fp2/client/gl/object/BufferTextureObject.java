@@ -18,40 +18,36 @@
  *
  */
 
-package net.daporkchop.fp2.client.render.object;
+package net.daporkchop.fp2.client.gl.object;
 
-import static net.daporkchop.lib.common.util.PorkUtil.*;
-import static net.minecraft.client.renderer.OpenGlHelper.*;
+import lombok.NonNull;
+
+import static org.lwjgl.opengl.GL31.*;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class GLBufferObject<T extends GLBufferObject<T>> extends GLObject<T> {
-    protected final int target = this.target();
+public final class BufferTextureObject extends GLTextureObject<BufferTextureObject> {
+    private VertexBufferObject dependency;
 
-    public GLBufferObject() {
-        this(glGenBuffers());
+    public BufferTextureObject() {
+        super();
     }
 
-    public GLBufferObject(int id) {
+    public BufferTextureObject(int id) {
         super(id);
     }
 
-    protected abstract int target();
-
     @Override
-    public T bind() {
-        glBindBuffer(this.target, this.id);
-        return uncheckedCast(this);
+    protected int target() {
+        return GL_TEXTURE_BUFFER;
     }
 
-    @Override
-    public void close() {
-        glBindBuffer(this.target, 0);
-    }
-
-    @Override
-    protected Runnable delete(int id) {
-        return () -> glDeleteBuffers(id);
+    public BufferTextureObject useBuffer(@NonNull VertexBufferObject data, int format)  {
+        try (BufferTextureObject buffer = this.bind())  {
+            glTexBuffer(GL_TEXTURE_BUFFER, format, data.id());
+        }
+        this.dependency = data;
+        return this;
     }
 }

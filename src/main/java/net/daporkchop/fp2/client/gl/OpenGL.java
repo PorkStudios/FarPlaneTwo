@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.client.render;
+package net.daporkchop.fp2.client.gl;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;

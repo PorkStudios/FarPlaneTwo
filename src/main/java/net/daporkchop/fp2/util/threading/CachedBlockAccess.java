@@ -60,6 +60,10 @@ public interface CachedBlockAccess extends IBlockAccess, IHeightMap {
     @Override
     int getCombinedLight(BlockPos pos, int lightValue);
 
+    int getBlockLight(BlockPos pos);
+
+    int getSkyLight(BlockPos pos);
+
     @Override
     IBlockState getBlockState(BlockPos pos);
 

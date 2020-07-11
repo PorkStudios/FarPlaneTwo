@@ -54,6 +54,7 @@ public class HeightmapChunk implements IMessage {
     protected final IntBuffer color = Constants.createIntBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
     protected final ByteBuffer biome = Constants.createByteBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
     protected final ShortBuffer block = Constants.createShortBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
+    protected final IntBuffer light = Constants.createIntBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
 
     public int height(int x, int z) {
         checkCoords(x, z);
@@ -94,6 +95,12 @@ public class HeightmapChunk implements IMessage {
         return this;
     }
 
+    public HeightmapChunk light(int x, int z, int light) {
+        checkCoords(x, z);
+        this.light.put(x * HEIGHT_VERTS + z, light);
+        return this;
+    }
+
     @Override
     public void fromBytes(ByteBuf buf) {
         for (int i = 0, capacity = this.height.capacity(); i < capacity; i++) {
@@ -107,6 +114,9 @@ public class HeightmapChunk implements IMessage {
         }
         for (int i = 0, capacity = this.block.capacity(); i < capacity; i++) {
             this.block.put(i, buf.readShort());
+        }
+        for (int i = 0, capacity = this.light.capacity(); i < capacity; i++) {
+            this.light.put(i, buf.readInt());
         }
     }
 
@@ -124,6 +134,9 @@ public class HeightmapChunk implements IMessage {
         }
         for (int i = 0, capacity = this.block.capacity(); i < capacity; i++) {
             buf.writeShort(this.block.get(i));
+        }
+        for (int i = 0, capacity = this.light.capacity(); i < capacity; i++) {
+            buf.writeInt(this.light.get(i));
         }
     }
 }

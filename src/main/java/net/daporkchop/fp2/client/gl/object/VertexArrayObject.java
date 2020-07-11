@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.client.render.object;
+package net.daporkchop.fp2.client.gl.object;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;

@@ -18,48 +18,39 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.common;
+package net.daporkchop.fp2.asm.client.renderer;
 
-import lombok.NonNull;
 import net.daporkchop.fp2.client.RenderPass;
-import net.daporkchop.fp2.strategy.RenderStrategy;
+import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
+import net.minecraft.client.renderer.RenderGlobal;
 import net.minecraft.entity.Entity;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-
-import java.nio.FloatBuffer;
+import net.minecraft.util.BlockRenderLayer;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public abstract class TerrainRenderer {
-    public double cameraX;
-    public double cameraY;
-    public double cameraZ;
+@Mixin(RenderGlobal.class)
+public abstract class MixinRenderGlobal {
+    @Shadow
+    @Final
+    public Minecraft mc;
 
-    public FloatBuffer proj;
-    public FloatBuffer modelView;
-
-    public abstract void init(double seaLevel);
-
-    public void render(RenderPass pass, float partialTicks, WorldClient world, Minecraft mc) {
-        Entity entity = mc.getRenderViewEntity();
-        this.cameraX = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks;
-        this.cameraY = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks;
-        this.cameraZ = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks;
-    }
-
-    /**
-     * Allows access to the {@link TerrainRenderer} belonging to a {@link WorldClient}.
-     *
-     * @author DaPorkchop_
-     */
-    public interface Holder {
-        TerrainRenderer fp2_terrainRenderer();
-
-        void fp2_updateStrategy(@NonNull RenderStrategy strategy, double seaLevel);
+    @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;DILnet/minecraft/entity/Entity;)I",
+            at = @At("HEAD"),
+            cancellable = true)
+    private void renderBlockLayer_head(BlockRenderLayer blockLayerIn, double partialTicks, int passI, Entity entityIn, CallbackInfoReturnable<Integer> ci) {
+        RenderPass pass = RenderPass.fromVanilla(blockLayerIn);
+        TerrainRenderer renderer = ((TerrainRenderer.Holder) this.mc.world).fp2_terrainRenderer();
+        if (renderer != null) {
+            this.mc.profiler.endStartSection(pass.profilerSectionName);
+            renderer.render(pass, (float) partialTicks, this.mc.world, this.mc);
+        }
     }
 }

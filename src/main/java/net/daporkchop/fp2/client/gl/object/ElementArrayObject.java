@@ -18,45 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.client.render;
+package net.daporkchop.fp2.client.gl.object;
 
-import lombok.experimental.UtilityClass;
-import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.GL11;
-
-import java.nio.FloatBuffer;
-
-import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL15.*;
 
 /**
  * @author DaPorkchop_
  */
-@UtilityClass
-public class MatrixHelper {
-    private final FloatBuffer MATRIX = BufferUtils.createFloatBuffer(16);
-    private final float[] EMPTY_MATRIX = new float[16];
-
-    public FloatBuffer getMATRIX(int id, FloatBuffer buffer) {
-        if (buffer == null) {
-            buffer = BufferUtils.createFloatBuffer(16);
-        }
-        GL11.glGetFloat(id, buffer);
-        return buffer;
+public final class ElementArrayObject extends GLBufferObject<ElementArrayObject> {
+    public ElementArrayObject() {
+        super();
     }
 
-    public void perspectiveInfinite(float fovy, float aspect, float zNear) {
-        //from http://dev.theomader.com/depth-precision/
-        float radians = (float) Math.toRadians(fovy);
-        float f = 1.0f / (float) Math.tan(radians * 0.5f);
+    public ElementArrayObject(int id) {
+        super(id);
+    }
 
-        MATRIX.put(EMPTY_MATRIX);
-
-        MATRIX.put(0 * 4 + 0, f / aspect);
-        MATRIX.put(1 * 4 + 1, f);
-        MATRIX.put(2 * 4 + 2, -1);
-        MATRIX.put(3 * 4 + 2, -zNear);
-        MATRIX.put(2 * 4 + 3, -1);
-
-        glMultMatrix((FloatBuffer) MATRIX.clear());
+    @Override
+    protected int target() {
+        return GL_ELEMENT_ARRAY_BUFFER;
     }
 }

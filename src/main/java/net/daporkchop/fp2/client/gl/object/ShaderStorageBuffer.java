@@ -18,41 +18,29 @@
  *
  */
 
-package net.daporkchop.fp2.client.render.object;
+package net.daporkchop.fp2.client.gl.object;
 
-import static net.daporkchop.lib.common.util.PorkUtil.*;
-import static net.minecraft.client.renderer.OpenGlHelper.*;
-import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class GLTextureObject<T extends GLTextureObject<T>> extends GLObject<T> {
-    protected final int target = this.target();
-
-    public GLTextureObject() {
-        this(glGenTextures());
+public final class ShaderStorageBuffer extends GLBufferObject<ShaderStorageBuffer> {
+    public ShaderStorageBuffer() {
+        super();
     }
 
-    public GLTextureObject(int id) {
+    public ShaderStorageBuffer(int id) {
         super(id);
     }
 
-    protected abstract int target();
-
     @Override
-    public T bind() {
-        glBindTexture(this.target, this.id);
-        return uncheckedCast(this);
+    protected int target() {
+        return GL_SHADER_STORAGE_BUFFER;
     }
 
-    @Override
-    public void close() {
-        glBindTexture(this.target, 0);
-    }
-
-    @Override
-    protected Runnable delete(int id) {
-        return () -> glDeleteTextures(id);
+    public void bindingIndex(int index) {
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, this.id);
     }
 }

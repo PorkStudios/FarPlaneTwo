@@ -18,9 +18,24 @@
  *
  */
 
+package net.daporkchop.fp2.client.gl.object;
+
+import static net.minecraft.client.renderer.OpenGlHelper.*;
+
 /**
- * All this stuff should really be moved to a PorkLib module at some point...
- *
  * @author DaPorkchop_
  */
-package net.daporkchop.fp2.client.render;
+public final class VertexBufferObject extends GLBufferObject<VertexBufferObject> {
+    public VertexBufferObject() {
+        super();
+    }
+
+    public VertexBufferObject(int id) {
+        super(id);
+    }
+
+    @Override
+    protected int target() {
+        return GL_ARRAY_BUFFER;
+    }
+}

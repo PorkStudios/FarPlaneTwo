@@ -22,20 +22,19 @@ package net.daporkchop.fp2.strategy.heightmap;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.GlobalInfo;
-import net.daporkchop.fp2.client.render.MatrixHelper;
-import net.daporkchop.fp2.client.render.object.ElementArrayObject;
-import net.daporkchop.fp2.client.render.object.ShaderStorageBuffer;
-import net.daporkchop.fp2.client.render.object.VertexArrayObject;
-import net.daporkchop.fp2.client.render.object.VertexBufferObject;
-import net.daporkchop.fp2.client.render.shader.ShaderManager;
-import net.daporkchop.fp2.client.render.shader.ShaderProgram;
+import net.daporkchop.fp2.client.RenderPass;
+import net.daporkchop.fp2.client.gl.MatrixHelper;
+import net.daporkchop.fp2.client.gl.object.ElementArrayObject;
+import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
+import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
+import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
+import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.text.TextComponentString;
@@ -154,6 +153,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                 glEnableVertexAttribArray(2);
                 glEnableVertexAttribArray(3);
                 glEnableVertexAttribArray(4);
+                glEnableVertexAttribArray(5);
 
                 try (VertexBufferObject coords = COORDS.bind()) {
                     glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0L);
@@ -179,6 +179,11 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                     glVertexAttribIPointer(4, 1, GL_UNSIGNED_SHORT, 0, 0L);
                     vao.putDependency(4, blocks);
                 }
+                try (VertexBufferObject light = new VertexBufferObject().bind()) {
+                    glBufferData(GL_ARRAY_BUFFER, chunk.light(), GL_STATIC_DRAW);
+                    glVertexAttribIPointer(5, 1, GL_INT, 0, 0L);
+                    vao.putDependency(5, light);
+                }
 
                 vao.putElementArray(MESH.bind());
 
@@ -189,6 +194,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                 glDisableVertexAttribArray(2);
                 glDisableVertexAttribArray(3);
                 glDisableVertexAttribArray(4);
+                glDisableVertexAttribArray(5);
 
                 MESH.close();
             }
@@ -196,66 +202,73 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
     }
 
     @Override
-    public void render(float partialTicks, WorldClient world, Minecraft mc) {
-        super.render(partialTicks, world, mc);
+    public void render(RenderPass pass, float partialTicks, WorldClient world, Minecraft mc) {
+        if (pass == RenderPass.PRE) {
+            super.render(pass, partialTicks, world, mc);
 
-        try (ShaderStorageBuffer loadedBuffer = new ShaderStorageBuffer().bind()) {
-            glBufferData(GL_SHADER_STORAGE_BUFFER, this.renderableChunksMask = Constants.renderableChunksMask(mc, this.renderableChunksMask), GL_STATIC_DRAW);
-            loadedBuffer.bindingIndex(0);
-        }
-        GLOBAL_INFO.bindingIndex(1);
-
-        GlStateManager.disableCull();
-        GlStateManager.enableAlpha();
-
-        GlStateManager.enableBlend();
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        glPushMatrix();
-        glTranslated(-this.cameraX, -this.cameraY, -this.cameraZ);
-
-        this.modelView = MatrixHelper.getMATRIX(GL_MODELVIEW_MATRIX, this.modelView);
-        this.proj = MatrixHelper.getMATRIX(GL_PROJECTION_MATRIX, this.proj);
-
-        mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
-
-        try {
-            try (ShaderProgram shader = HEIGHT_SHADER.use()) {
-                ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
-                ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
-
-                this.chunks.forEach((pos, o) -> {
-                    glUniform2d(shader.uniformLocation("camera_offset"), pos.x * HEIGHT_VOXELS + .5d, pos.z * HEIGHT_VOXELS + .5d);
-
-                    try (VertexArrayObject vao = o.bind()) {
-                        glDrawElements(GL_TRIANGLES, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
-                    }
-                });
+            try (ShaderStorageBuffer loadedBuffer = new ShaderStorageBuffer().bind()) {
+                glBufferData(GL_SHADER_STORAGE_BUFFER, this.renderableChunksMask = Constants.renderableChunksMask(mc, this.renderableChunksMask), GL_STATIC_DRAW);
+                loadedBuffer.bindingIndex(0);
             }
+            GLOBAL_INFO.bindingIndex(1);
 
-            // glTranslated(0.0d, this.seaLevel, 0.0d);
+            GlStateManager.disableCull();
+            GlStateManager.enableAlpha();
+
+            GlStateManager.enableBlend();
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+            glPushMatrix();
+            glTranslated(-this.cameraX, -this.cameraY, -this.cameraZ);
 
             this.modelView = MatrixHelper.getMATRIX(GL_MODELVIEW_MATRIX, this.modelView);
+            this.proj = MatrixHelper.getMATRIX(GL_PROJECTION_MATRIX, this.proj);
 
-            try (ShaderProgram shader = WATER_SHADER.use()) {
-                ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
-                ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
-                glUniform1f(shader.uniformLocation("seaLevel"), (float) this.seaLevel);
+            mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
 
-                this.chunks.forEach((pos, o) -> {
-                    glUniform2d(shader.uniformLocation("camera_offset"), pos.x * HEIGHT_VOXELS + .5d, pos.z * HEIGHT_VOXELS + .5d);
+            mc.entityRenderer.enableLightmap();
 
-                    try (VertexArrayObject vao = o.bind()) {
-                        glDrawElements(GL_TRIANGLES, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
-                    }
-                });
+            try {
+                try (ShaderProgram shader = HEIGHT_SHADER.use()) {
+                    ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
+                    ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
+
+                    this.chunks.forEach((pos, o) -> {
+                        glUniform2d(shader.uniformLocation("camera_offset"), pos.x * HEIGHT_VOXELS + .5d, pos.z * HEIGHT_VOXELS + .5d);
+
+                        try (VertexArrayObject vao = o.bind()) {
+                            glDrawElements(GL_TRIANGLES, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
+                        }
+                    });
+                }
+
+                //glTranslated(0.0d, this.seaLevel, 0.0d);
+
+                //this.modelView = MatrixHelper.getMATRIX(GL_MODELVIEW_MATRIX, this.modelView);
+
+                try (ShaderProgram shader = WATER_SHADER.use()) {
+                    ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
+                    ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
+                    glUniform1f(shader.uniformLocation("seaLevel"), (float) this.seaLevel);
+
+                    this.chunks.forEach((pos, o) -> {
+                        glUniform2d(shader.uniformLocation("camera_offset"), pos.x * HEIGHT_VOXELS + .5d, pos.z * HEIGHT_VOXELS + .5d);
+
+                        try (VertexArrayObject vao = o.bind()) {
+                            glDrawElements(GL_TRIANGLES, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
+                        }
+                    });
+                }
+            } finally {
+                mc.entityRenderer.disableLightmap();
+
+                glPopMatrix();
+
+                GlStateManager.disableBlend();
+                GlStateManager.disableAlpha();
+                GlStateManager.enableCull();
             }
-        } finally {
-            glPopMatrix();
-
-            GlStateManager.disableBlend();
-            GlStateManager.disableAlpha();
-            GlStateManager.enableCull();
+        } else if (pass == RenderPass.TRANSLUCENT)  {
         }
     }
 }

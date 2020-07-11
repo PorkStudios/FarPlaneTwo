@@ -116,6 +116,19 @@ public class VanillaCachedBlockAccessImpl implements CachedBlockAccess {
     }
 
     @Override
+    public int getBlockLight(BlockPos pos) {
+        return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4).getLightFor(EnumSkyBlock.BLOCK, pos);
+    }
+
+    @Override
+    public int getSkyLight(BlockPos pos) {
+        if (!this.world.provider.hasSkyLight()) {
+            return 0;
+        }
+        return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4).getLightFor(EnumSkyBlock.SKY, pos);
+    }
+
+    @Override
     public IBlockState getBlockState(BlockPos pos) {
         return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4).getBlockState(pos);
     }

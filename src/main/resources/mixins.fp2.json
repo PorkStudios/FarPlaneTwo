@@ -5,7 +5,8 @@
   "refmap": "mixins.fp2.refmap.json",
   "client": [
     "client.multiplayer.MixinWorldClient",
-    "client.renderer.MixinEntityRenderer"
+    "client.renderer.MixinEntityRenderer",
+    "client.renderer.MixinRenderGlobal"
   ],
   "mixins": [
     "world.MixinWorldServer"

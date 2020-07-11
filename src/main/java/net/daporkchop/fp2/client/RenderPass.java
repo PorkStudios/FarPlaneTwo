@@ -18,31 +18,52 @@
  *
  */
 
-package net.daporkchop.fp2.client.render.object;
+package net.daporkchop.fp2.client;
 
-import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL43.*;
+import lombok.NonNull;
+import net.minecraft.util.BlockRenderLayer;
 
 /**
+ * {@link BlockRenderLayer} with some additional values.
+ *
  * @author DaPorkchop_
  */
-public final class ShaderStorageBuffer extends GLBufferObject<ShaderStorageBuffer> {
-    public ShaderStorageBuffer() {
-        super();
+public enum RenderPass {
+    /**
+     * Called immediately before the {@code "prepareterrain"} profiler section begins.
+     */
+    PRE,
+    /**
+     * Called immediately before {@link BlockRenderLayer#SOLID} is rendered.
+     */
+    SOLID,
+    /**
+     * Called immediately before {@link BlockRenderLayer#CUTOUT_MIPPED} is rendered.
+     */
+    CUTOUT_MIPPED,
+    /**
+     * Called immediately before {@link BlockRenderLayer#CUTOUT} is rendered.
+     */
+    CUTOUT,
+    /**
+     * Called immediately before {@link BlockRenderLayer#TRANSLUCENT} is rendered.
+     */
+    TRANSLUCENT,
+    /**
+     * Called immediately before the check for whether or not the {@code "aboveClouds"} profiler section should run.
+     */
+    POST;
+
+    private static final RenderPass[] FROM_VANILLA = {
+            SOLID,
+            CUTOUT_MIPPED,
+            CUTOUT,
+            TRANSLUCENT
+    };
+
+    public static RenderPass fromVanilla(@NonNull BlockRenderLayer vanilla)   {
+        return FROM_VANILLA[vanilla.ordinal()];
     }
 
-    public ShaderStorageBuffer(int id) {
-        super(id);
-    }
-
-    @Override
-    protected int target() {
-        return GL_SHADER_STORAGE_BUFFER;
-    }
-
-    public void bindingIndex(int index) {
-        try (ShaderStorageBuffer buffer = this.bind()) {
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, buffer.id());
-        }
-    }
+    public final String profilerSectionName = ("fp2_render_" + this.name().toLowerCase()).intern();
 }
