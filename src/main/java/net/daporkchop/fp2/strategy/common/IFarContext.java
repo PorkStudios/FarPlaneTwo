@@ -55,8 +55,7 @@ public interface IFarContext {
     IFarPlayerTracker fp2_tracker();
 
     /**
-     * @return the current {@link TerrainRenderer}
-     * @throws IllegalStateException if this context has not yet been initialized
+     * @return the current {@link TerrainRenderer}, or {@code null} if this context has not yet been initialized
      */
     @SideOnly(Side.CLIENT)
     TerrainRenderer fp2_renderer();

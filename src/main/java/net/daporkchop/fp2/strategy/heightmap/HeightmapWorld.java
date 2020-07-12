@@ -23,10 +23,13 @@ package net.daporkchop.fp2.strategy.heightmap;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import net.daporkchop.fp2.strategy.common.IFarChunk;
 import net.daporkchop.fp2.strategy.common.IFarChunkPos;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.strategy.heightmap.vanilla.VanillaHeightmapGenerator;
+import net.daporkchop.fp2.util.threading.CachedBlockAccess;
+import net.daporkchop.lib.common.math.BinMath;
+import net.daporkchop.lib.primitive.map.LongObjMap;
+import net.daporkchop.lib.primitive.map.concurrent.LongObjConcurrentHashMap;
 import net.minecraft.world.WorldServer;
 
 /**
@@ -40,6 +43,8 @@ public class HeightmapWorld implements IFarWorld {
     protected final WorldServer world;
     protected final HeightmapGenerator generator;
 
+    protected final LongObjMap<HeightmapChunk> cache = new LongObjConcurrentHashMap<>();
+
     public HeightmapWorld(@NonNull WorldServer world) {
         this.world = world;
         this.generator = new VanillaHeightmapGenerator();
@@ -47,8 +52,21 @@ public class HeightmapWorld implements IFarWorld {
     }
 
     @Override
-    public IFarChunk chunk(@NonNull IFarChunkPos pos) {
-        return null;
+    public HeightmapChunk chunk(@NonNull IFarChunkPos posIn) {
+        HeightmapChunkPos pos = (HeightmapChunkPos) posIn;
+        return this.cache.computeIfAbsent(BinMath.packXY(pos.x(), pos.z()), l -> {
+            int x = BinMath.unpackX(l);
+            int z = BinMath.unpackY(l);
+            CachedBlockAccess world = ((CachedBlockAccess.Holder) this.world).fp2_cachedBlockAccess();
+            HeightmapChunk chunk = new HeightmapChunk(x, z);
+            chunk.writeLock().lock();
+            try {
+                this.generator.generateRough(world, chunk);
+            } finally {
+                chunk.writeLock().unlock();
+            }
+            return chunk;
+        });
     }
 
     @Override

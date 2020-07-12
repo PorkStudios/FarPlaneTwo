@@ -22,7 +22,6 @@ package net.daporkchop.fp2.strategy.heightmap;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
-import it.unimi.dsi.fastutil.longs.LongSets;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -56,7 +55,7 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker {
 
     @Override
     public void playerAdd(@NonNull EntityPlayerMP player) {
-        this.tracking.put(player, LongSets.EMPTY_SET);
+        this.tracking.put(player, new LongOpenHashSet());
     }
 
     @Override
@@ -78,6 +77,7 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker {
                 long l = BinMath.packXY(x, z);
                 if (!prev.remove(l)) {
                     //chunk wasn't loaded before, we should load and send it
+                    //TODO: this NEEDS to be asynchronous
                     NETWORK_WRAPPER.sendTo(new SPacketChunkData().chunk(this.world.chunk(new HeightmapChunkPos(x, z))), player);
                 }
                 next.add(l);
@@ -85,6 +85,7 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker {
         }
         for (long l : prev) {
             //unload all previously loaded chunks
+            //TODO: this should PROBABLY be asynchronous
             NETWORK_WRAPPER.sendTo(new SPacketUnloadChunk().pos(new HeightmapChunkPos(BinMath.unpackX(l), BinMath.unpackY(l))), player);
         }
         checkState(this.tracking.replace(player, prev, next));

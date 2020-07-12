@@ -102,13 +102,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly("org.spongepowered:mixin:$mixinVersion") {
-        exclude module: "launchwrapper"
-        exclude module: "guava"
-        exclude module: "gson"
-        exclude module: "commons-io"
-        exclude module: "log4j-core"
-    }
+    compileOnly("org.spongepowered:mixin:$mixinVersion")
     annotationProcessor("org.spongepowered:mixin:$mixinVersion")
 
     compile("net.daporkchop.lib:binary:$porklibVersion") { //TODO: shade these dependencies into a sub-package

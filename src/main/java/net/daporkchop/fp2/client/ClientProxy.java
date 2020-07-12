@@ -20,11 +20,14 @@
 
 package net.daporkchop.fp2.client;
 
+import net.daporkchop.fp2.Config;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.daporkchop.fp2.net.client.CPacketRenderingStrategy;
 import net.daporkchop.fp2.server.ServerProxy;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
+import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraftforge.common.config.ConfigManager;
@@ -35,9 +38,12 @@ import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
+import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.opengl.GLContext;
+
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -66,9 +72,10 @@ public class ClientProxy extends ServerProxy {
         HeightmapTerrainRenderer.MESH.id(); //load HeightmapTerrainRenderer on client thread
     }
 
-    @Override
+    @SubscribeEvent
     public void worldLoad(WorldEvent.Load event) {
         super.worldLoad(event);
+
         if (event.getWorld().isRemote) {
             GlobalInfo.reloadUVs();
         }

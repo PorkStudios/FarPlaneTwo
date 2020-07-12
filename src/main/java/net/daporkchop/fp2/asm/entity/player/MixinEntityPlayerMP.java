@@ -18,15 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.asm.client.multiplayer;
+package net.daporkchop.fp2.asm.entity.player;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.strategy.RenderStrategy;
-import net.daporkchop.fp2.strategy.common.IFarContext;
-import net.daporkchop.fp2.strategy.common.IFarWorld;
-import net.daporkchop.fp2.strategy.common.TerrainRenderer;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.world.World;
+import net.daporkchop.fp2.util.IFarPlayer;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import org.spongepowered.asm.mixin.Mixin;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -34,29 +30,22 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-@Mixin(WorldClient.class)
-public abstract class MixinWorldClient extends World implements IFarContext {
-    private RenderStrategy strategy;
-    private TerrainRenderer renderer;
+@Mixin(EntityPlayerMP.class)
+public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPlayer {
+    protected boolean ready;
 
-    protected MixinWorldClient() {
-        super(null, null, null, null, false);
+    public MixinEntityPlayerMP() {
+        super(null, null);
     }
 
     @Override
-    public void fp2_init(@NonNull RenderStrategy strategy) {
-        this.renderer = strategy.createTerrainRenderer((WorldClient) (Object) this);
-        this.strategy = strategy;
+    public boolean fp2_ready() {
+        return this.ready;
     }
 
     @Override
-    public RenderStrategy fp2_strategy() {
-        checkState(this.strategy != null);
-        return this.strategy;
-    }
-
-    @Override
-    public TerrainRenderer fp2_renderer() {
-        return this.renderer;
+    public synchronized void fp2_markReady() {
+        checkState(!this.ready, "already ready?!?");
+        this.ready = true;
     }
 }

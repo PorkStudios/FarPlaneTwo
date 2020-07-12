@@ -9,6 +9,7 @@
     "client.renderer.MixinRenderGlobal"
   ],
   "mixins": [
+    "entity.player.MixinEntityPlayerMP",
     "world.MixinWorldServer"
   ]
 }

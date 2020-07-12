@@ -18,45 +18,33 @@
  *
  */
 
-package net.daporkchop.fp2.asm.client.multiplayer;
+package net.daporkchop.fp2.net.server;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.strategy.RenderStrategy;
-import net.daporkchop.fp2.strategy.common.IFarContext;
-import net.daporkchop.fp2.strategy.common.IFarWorld;
-import net.daporkchop.fp2.strategy.common.TerrainRenderer;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.world.World;
-import org.spongepowered.asm.mixin.Mixin;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
+import io.netty.buffer.ByteBuf;
+import net.daporkchop.fp2.Config;
+import net.daporkchop.fp2.net.client.CPacketRenderingStrategy;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
+import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 /**
+ * Neat hack to ensure that the client doesn't send a packet until it's ready.
+ *
  * @author DaPorkchop_
  */
-@Mixin(WorldClient.class)
-public abstract class MixinWorldClient extends World implements IFarContext {
-    private RenderStrategy strategy;
-    private TerrainRenderer renderer;
-
-    protected MixinWorldClient() {
-        super(null, null, null, null, false);
+public class SPacketReady implements IMessage {
+    @Override
+    public void fromBytes(ByteBuf buf) {
     }
 
     @Override
-    public void fp2_init(@NonNull RenderStrategy strategy) {
-        this.renderer = strategy.createTerrainRenderer((WorldClient) (Object) this);
-        this.strategy = strategy;
+    public void toBytes(ByteBuf buf) {
     }
 
-    @Override
-    public RenderStrategy fp2_strategy() {
-        checkState(this.strategy != null);
-        return this.strategy;
-    }
-
-    @Override
-    public TerrainRenderer fp2_renderer() {
-        return this.renderer;
+    public static class Handler implements IMessageHandler<SPacketReady, IMessage> {
+        @Override
+        public IMessage onMessage(SPacketReady message, MessageContext ctx) {
+            return new CPacketRenderingStrategy().strategy(Config.renderStrategy);
+        }
     }
 }

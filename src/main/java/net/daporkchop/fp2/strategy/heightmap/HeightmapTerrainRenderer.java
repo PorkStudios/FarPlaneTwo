@@ -32,14 +32,12 @@ import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.common.IFarChunk;
 import net.daporkchop.fp2.strategy.common.IFarChunkPos;
-import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.daporkchop.fp2.util.Constants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.TextureMap;
-import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -137,7 +135,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         }
     }
 
-    protected final Map<ChunkPos, VertexArrayObject> chunks = new HashMap<>();
+    protected final Map<HeightmapChunkPos, VertexArrayObject> chunks = new HashMap<>();
     protected IntBuffer renderableChunksMask;
 
     public HeightmapTerrainRenderer(@NonNull WorldClient world) {
@@ -188,7 +186,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
 
                 vao.putElementArray(MESH.bind());
 
-                this.chunks.put(new ChunkPos(chunk.x(), chunk.z()), vao);
+                this.chunks.put(chunk.pos(), vao);
             } finally {
                 glDisableVertexAttribArray(0);
                 glDisableVertexAttribArray(1);
@@ -204,6 +202,10 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
 
     @Override
     public void unloadChunk(@NonNull IFarChunkPos pos) {
+        checkArg(pos instanceof HeightmapChunkPos, pos);
+        Minecraft.getMinecraft().addScheduledTask(() -> {
+            this.chunks.remove(pos);
+        });
     }
 
     @Override
@@ -239,7 +241,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                     ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
 
                     this.chunks.forEach((pos, o) -> {
-                        glUniform2d(shader.uniformLocation("camera_offset"), pos.x * HEIGHT_VOXELS + .5d, pos.z * HEIGHT_VOXELS + .5d);
+                        glUniform2d(shader.uniformLocation("camera_offset"), pos.x() * HEIGHT_VOXELS + .5d, pos.z() * HEIGHT_VOXELS + .5d);
 
                         try (VertexArrayObject vao = o.bind()) {
                             glDrawElements(GL_TRIANGLES, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
@@ -257,7 +259,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                     glUniform1f(shader.uniformLocation("seaLevel"), 63f);
 
                     this.chunks.forEach((pos, o) -> {
-                        glUniform2d(shader.uniformLocation("camera_offset"), pos.x * HEIGHT_VOXELS + .5d, pos.z * HEIGHT_VOXELS + .5d);
+                        glUniform2d(shader.uniformLocation("camera_offset"), pos.x() * HEIGHT_VOXELS + .5d, pos.z() * HEIGHT_VOXELS + .5d);
 
                         try (VertexArrayObject vao = o.bind()) {
                             glDrawElements(GL_TRIANGLES, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);

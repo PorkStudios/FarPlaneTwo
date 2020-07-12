@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.strategy.heightmap;
 
 import io.netty.buffer.ByteBuf;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -56,6 +57,7 @@ public class HeightmapChunk implements IFarChunk {
     protected final int x;
     protected final int z;
 
+    @Getter(AccessLevel.NONE)
     protected final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     protected final IntBuffer height = Constants.createIntBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
@@ -85,6 +87,7 @@ public class HeightmapChunk implements IFarChunk {
 
     @Override
     public void write(@NonNull ByteBuf buf) {
+        buf.writeInt(this.x).writeInt(this.z);
         for (int i = 0, capacity = this.height.capacity(); i < capacity; i++) {
             buf.writeInt(this.height.get(i));
         }
@@ -105,21 +108,6 @@ public class HeightmapChunk implements IFarChunk {
     @Override
     public RenderStrategy strategy() {
         return RenderStrategy.HEIGHTMAP;
-    }
-
-    public int height(int x, int z) {
-        checkCoords(x, z);
-        return this.height.get(x * HEIGHT_VERTS + z);
-    }
-
-    public int color(int x, int z) {
-        checkCoords(x, z);
-        return this.color.get(x * HEIGHT_VERTS + z);
-    }
-
-    public int biome(int x, int z) {
-        checkCoords(x, z);
-        return this.biome.get(x * HEIGHT_VERTS + z) & 0xFF;
     }
 
     public HeightmapChunk height(int x, int z, int height) {
@@ -153,7 +141,7 @@ public class HeightmapChunk implements IFarChunk {
     }
 
     @Override
-    public IFarChunkPos pos() {
+    public HeightmapChunkPos pos() {
         return new HeightmapChunkPos(this.x, this.z);
     }
 

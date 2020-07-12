@@ -21,10 +21,11 @@
 package net.daporkchop.fp2.server;
 
 import net.daporkchop.fp2.Config;
-import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
+import net.daporkchop.fp2.net.server.SPacketReady;
 import net.daporkchop.fp2.strategy.common.IFarContext;
+import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
+import net.daporkchop.fp2.util.IFarPlayer;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -36,7 +37,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
-import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.util.Constants.NETWORK_WRAPPER;
 
 /**
  * @author DaPorkchop_
@@ -69,8 +70,7 @@ public class ServerProxy {
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (!event.player.world.isRemote) {
-            NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy().strategy(Config.renderStrategy), (EntityPlayerMP) event.player);
-            ((IFarContext) event.player.world).fp2_tracker().playerAdd((EntityPlayerMP) event.player);
+            NETWORK_WRAPPER.sendTo(new SPacketReady(), (EntityPlayerMP) event.player);
         }
     }
 
@@ -83,7 +83,7 @@ public class ServerProxy {
 
     @SubscribeEvent
     public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
-        if (!event.player.world.isRemote) {
+        if (!event.player.world.isRemote && ((IFarPlayer) event.player).fp2_ready()) {
             ((IFarContext) event.player.getServer().getWorld(event.fromDim)).fp2_tracker().playerRemove((EntityPlayerMP) event.player);
             ((IFarContext) event.player.getServer().getWorld(event.toDim)).fp2_tracker().playerAdd((EntityPlayerMP) event.player);
         }
@@ -92,9 +92,11 @@ public class ServerProxy {
     @SubscribeEvent
     public void onWorldTick(TickEvent.WorldTickEvent event) {
         if (!event.world.isRemote) {
-            for (EntityPlayer player : event.world.playerEntities) {
-                ((IFarContext) event.world).fp2_tracker().playerMove((EntityPlayerMP) player);
-            }
+            IFarPlayerTracker tracker = ((IFarContext) event.world).fp2_tracker();
+            event.world.playerEntities.stream()
+                    .map(EntityPlayerMP.class::cast)
+                    .filter(player -> ((IFarPlayer) player).fp2_ready())
+                    .forEach(tracker::playerMove);
         }
     }
 }
