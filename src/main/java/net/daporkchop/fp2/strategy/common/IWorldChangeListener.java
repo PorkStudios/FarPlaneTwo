@@ -26,5 +26,5 @@ import lombok.NonNull;
  * @author DaPorkchop_
  */
 public interface IWorldChangeListener {
-    void onChanged(@NonNull IFarWorld world, @NonNull IFarChunkPos pos);
+    void onChanged(@NonNull IFarWorld world, @NonNull IFarPiecePos pos);
 }

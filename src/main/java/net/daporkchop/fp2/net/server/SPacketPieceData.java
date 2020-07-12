@@ -26,7 +26,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.daporkchop.fp2.strategy.RenderStrategy;
-import net.daporkchop.fp2.strategy.common.IFarChunkPos;
+import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -39,26 +39,26 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 @Getter
 @Setter
 @Accessors(fluent = true, chain = true)
-public class SPacketUnloadChunk implements IMessage {
+public class SPacketPieceData implements IMessage {
     @NonNull
-    protected IFarChunkPos pos;
+    protected IFarPiece chunk;
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.pos = RenderStrategy.fromOrdinal(buf.readInt()).readId(buf);
+        this.chunk = RenderStrategy.fromOrdinal(buf.readInt()).readPiece(buf);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeInt(this.pos.strategy().ordinal());
-        this.pos.write(buf);
+        buf.writeInt(this.chunk.strategy().ordinal());
+        this.chunk.write(buf);
     }
 
-    public static class Handler implements IMessageHandler<SPacketUnloadChunk, IMessage> {
+    public static class Handler implements IMessageHandler<SPacketPieceData, IMessage> {
         @Override
-        public IMessage onMessage(SPacketUnloadChunk message, MessageContext ctx) {
+        public IMessage onMessage(SPacketPieceData message, MessageContext ctx) {
             TerrainRenderer renderer = ((IFarContext) ctx.getClientHandler().world).fp2_renderer();
-            renderer.unloadChunk(message.pos);
+            renderer.receivePiece(message.chunk);
             return null;
         }
     }

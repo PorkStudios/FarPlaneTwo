@@ -29,13 +29,13 @@ import java.util.concurrent.locks.ReadWriteLock;
 /**
  * @author DaPorkchop_
  */
-public interface IFarChunk extends ReadWriteLock {
+public interface IFarPiece extends ReadWriteLock {
     RenderStrategy strategy();
 
     /**
      * @return this chunk's position
      */
-    IFarChunkPos pos();
+    IFarPiecePos pos();
 
     void write(@NonNull ByteBuf dst);
 }

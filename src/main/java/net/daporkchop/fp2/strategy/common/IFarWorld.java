@@ -30,22 +30,22 @@ public interface IFarWorld {
     WorldServer world();
 
     /**
-     * Gets the {@link IFarChunk} at the given position.
+     * Gets the {@link IFarPiece} at the given position.
      *
-     * @param pos the position of the chunk to get
-     * @return the chunk
+     * @param pos the position of the piece to get
+     * @return the piece
      */
-    IFarChunk chunk(@NonNull IFarChunkPos pos);
+    IFarPiece getPieceBlocking(@NonNull IFarPiecePos pos);
 
     /**
-     * Gets the {@link IFarChunk} at the given position.
+     * Gets the {@link IFarPiece} at the given position.
      * <p>
-     * If the chunk is already loaded, it is returned. Otherwise this method returns {@code null} and will be queued for loading asynchronously.
+     * If the piece is already loaded, it is returned. Otherwise this method returns {@code null} and will be queued for loading asynchronously.
      *
-     * @param pos the position of the chunk to get
-     * @return the chunk, or {@code null} if it isn't already loaded
+     * @param pos the position of the piece to get
+     * @return the piece, or {@code null} if it isn't already loaded
      */
-    IFarChunk getChunkNowOrLoadAsync(@NonNull IFarChunkPos pos);
+    IFarPiece getPieceNowOrLoadAsync(@NonNull IFarPiecePos pos);
 
     /**
      * Fired whenever a block state changes.

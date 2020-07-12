@@ -22,13 +22,13 @@ package net.daporkchop.fp2.strategy;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.common.IFarChunk;
-import net.daporkchop.fp2.strategy.common.IFarChunkPos;
+import net.daporkchop.fp2.strategy.common.IFarPiece;
+import net.daporkchop.fp2.strategy.common.IFarPiecePos;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapChunk;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapChunkPos;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPiecePos;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPlayerTracker;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapWorld;
@@ -61,13 +61,13 @@ public enum RenderStrategy {
         }
 
         @Override
-        public IFarChunkPos readId(@NonNull ByteBuf src) {
-            return new HeightmapChunkPos(src.readInt(), src.readInt());
+        public IFarPiece readPiece(@NonNull ByteBuf src) {
+            return new HeightmapPiece(src);
         }
 
         @Override
-        public IFarChunk readChunk(@NonNull ByteBuf src) {
-            return new HeightmapChunk(src);
+        public IFarPiecePos readPiecePos(@NonNull ByteBuf src) {
+            return new HeightmapPiecePos(src.readInt(), src.readInt());
         }
     },
     VOLUMETRIC {
@@ -88,12 +88,12 @@ public enum RenderStrategy {
         }
 
         @Override
-        public IFarChunkPos readId(@NonNull ByteBuf src) {
+        public IFarPiece readPiece(@NonNull ByteBuf src) {
             throw new UnsupportedOperationException(); //TODO
         }
 
         @Override
-        public IFarChunk readChunk(@NonNull ByteBuf src) {
+        public IFarPiecePos readPiecePos(@NonNull ByteBuf src) {
             throw new UnsupportedOperationException(); //TODO
         }
     };
@@ -111,7 +111,7 @@ public enum RenderStrategy {
     @SideOnly(Side.CLIENT)
     public abstract TerrainRenderer createTerrainRenderer(@NonNull WorldClient world);
 
-    public abstract IFarChunkPos readId(@NonNull ByteBuf src);
+    public abstract IFarPiece readPiece(@NonNull ByteBuf src);
 
-    public abstract IFarChunk readChunk(@NonNull ByteBuf src);
+    public abstract IFarPiecePos readPiecePos(@NonNull ByteBuf src);
 }

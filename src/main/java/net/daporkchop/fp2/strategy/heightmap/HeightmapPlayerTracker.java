@@ -26,8 +26,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import net.daporkchop.fp2.Config;
-import net.daporkchop.fp2.net.server.SPacketChunkData;
-import net.daporkchop.fp2.net.server.SPacketUnloadChunk;
+import net.daporkchop.fp2.net.server.SPacketPieceData;
+import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.lib.common.math.BinMath;
@@ -77,21 +77,21 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker {
                 int z = baseZ + dz;
                 long l = BinMath.packXY(x, z);
                 if (!prev.remove(l)) {
-                    //chunk wasn't loaded before, we should load and send it
-                    HeightmapChunk chunk = this.world.getChunkNowOrLoadAsync(new HeightmapChunkPos(x, z));
-                    if (chunk != null) {
-                        NETWORK_WRAPPER.sendTo(new SPacketChunkData().chunk(chunk), player);
+                    //piece wasn't loaded before, we should load and send it
+                    HeightmapPiece piece = this.world.getPieceNowOrLoadAsync(new HeightmapPiecePos(x, z));
+                    if (piece != null) {
+                        NETWORK_WRAPPER.sendTo(new SPacketPieceData().chunk(piece), player);
                     } else {
-                        continue; //don't add to next, to indicate that the chunk hasn't been sent yet
+                        continue; //don't add to next, to indicate that the piece hasn't been sent yet
                     }
                 }
                 next.add(l);
             }
         }
         for (long l : prev) {
-            //unload all previously loaded chunks
+            //unload all previously loaded pieces
             //TODO: this should PROBABLY be asynchronous
-            NETWORK_WRAPPER.sendTo(new SPacketUnloadChunk().pos(new HeightmapChunkPos(BinMath.unpackX(l), BinMath.unpackY(l))), player);
+            NETWORK_WRAPPER.sendTo(new SPacketUnloadPiece().pos(new HeightmapPiecePos(BinMath.unpackX(l), BinMath.unpackY(l))), player);
         }
         checkState(this.tracking.replace(player, prev, next));
     }

@@ -18,19 +18,48 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.common;
+package net.daporkchop.fp2.net.server;
 
 import io.netty.buffer.ByteBuf;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import net.daporkchop.fp2.strategy.RenderStrategy;
+import net.daporkchop.fp2.strategy.common.IFarPiecePos;
+import net.daporkchop.fp2.strategy.common.IFarContext;
+import net.daporkchop.fp2.strategy.common.TerrainRenderer;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
+import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 /**
- * An identifier for a {@link IFarChunk}.
- *
  * @author DaPorkchop_
  */
-public interface IFarChunkPos {
-    RenderStrategy strategy();
+@Getter
+@Setter
+@Accessors(fluent = true, chain = true)
+public class SPacketUnloadPiece implements IMessage {
+    @NonNull
+    protected IFarPiecePos pos;
 
-    void write(@NonNull ByteBuf dst);
+    @Override
+    public void fromBytes(ByteBuf buf) {
+        this.pos = RenderStrategy.fromOrdinal(buf.readInt()).readPiecePos(buf);
+    }
+
+    @Override
+    public void toBytes(ByteBuf buf) {
+        buf.writeInt(this.pos.strategy().ordinal());
+        this.pos.write(buf);
+    }
+
+    public static class Handler implements IMessageHandler<SPacketUnloadPiece, IMessage> {
+        @Override
+        public IMessage onMessage(SPacketUnloadPiece message, MessageContext ctx) {
+            TerrainRenderer renderer = ((IFarContext) ctx.getClientHandler().world).fp2_renderer();
+            renderer.unloadPiece(message.pos);
+            return null;
+        }
+    }
 }

@@ -18,48 +18,52 @@
  *
  */
 
-package net.daporkchop.fp2.net.server;
+package net.daporkchop.fp2.strategy.heightmap;
 
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import net.daporkchop.fp2.strategy.RenderStrategy;
-import net.daporkchop.fp2.strategy.common.IFarChunk;
-import net.daporkchop.fp2.strategy.common.IFarContext;
-import net.daporkchop.fp2.strategy.common.TerrainRenderer;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.daporkchop.fp2.strategy.common.IFarPiecePos;
+import net.daporkchop.lib.common.math.BinMath;
+import net.daporkchop.lib.common.math.PMath;
 
 /**
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
 @Getter
-@Setter
-@Accessors(fluent = true, chain = true)
-public class SPacketChunkData implements IMessage {
-    @NonNull
-    protected IFarChunk chunk;
+@Accessors(fluent = true)
+public class HeightmapPiecePos implements IFarPiecePos {
+    private final int x;
+    private final int z;
 
     @Override
-    public void fromBytes(ByteBuf buf) {
-        this.chunk = RenderStrategy.fromOrdinal(buf.readInt()).readChunk(buf);
+    public RenderStrategy strategy() {
+        return RenderStrategy.HEIGHTMAP;
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
-        buf.writeInt(this.chunk.strategy().ordinal());
-        this.chunk.write(buf);
+    public void write(@NonNull ByteBuf dst) {
+        dst.writeInt(this.x).writeInt(this.z);
     }
 
-    public static class Handler implements IMessageHandler<SPacketChunkData, IMessage> {
-        @Override
-        public IMessage onMessage(SPacketChunkData message, MessageContext ctx) {
-            TerrainRenderer renderer = ((IFarContext) ctx.getClientHandler().world).fp2_renderer();
-            renderer.receiveChunk(message.chunk);
-            return null;
+    @Override
+    public int hashCode() {
+        return PMath.mix32(BinMath.packXY(this.x, this.z));
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        } else if (obj instanceof HeightmapPiecePos) {
+            HeightmapPiecePos pos = (HeightmapPiecePos) obj;
+            return this.x == pos.x && this.z == pos.z;
+        } else {
+            return false;
         }
     }
 }

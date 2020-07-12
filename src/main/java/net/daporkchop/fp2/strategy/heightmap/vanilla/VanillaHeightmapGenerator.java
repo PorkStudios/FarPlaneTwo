@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.strategy.heightmap.vanilla;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapChunk;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapGenerator;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
 import net.minecraft.block.Block;
@@ -44,14 +44,14 @@ public class VanillaHeightmapGenerator implements HeightmapGenerator {
     }
 
     @Override
-    public void generateRough(@NonNull CachedBlockAccess world, @NonNull HeightmapChunk chunk) {
-        this.generateExact(world, chunk);
+    public void generateRough(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece) {
+        this.generateExact(world, piece);
     }
 
     @Override
-    public void generateExact(@NonNull CachedBlockAccess world, @NonNull HeightmapChunk chunk) {
-        int chunkX = chunk.x();
-        int chunkZ = chunk.z();
+    public void generateExact(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece) {
+        int chunkX = piece.x();
+        int chunkZ = piece.z();
         world.prefetch(new AxisAlignedBB(
                 chunkX * HEIGHT_VOXELS, 0, chunkZ * HEIGHT_VOXELS,
                 (chunkX + 1) * HEIGHT_VOXELS + 1, 255, (chunkZ + 1) * HEIGHT_VOXELS + 1));
@@ -68,7 +68,7 @@ public class VanillaHeightmapGenerator implements HeightmapGenerator {
 
                 Biome biome = world.getBiome(pos);
                 MapColor color = state.getMapColor(world, pos);
-                chunk.height(x, z, height)
+                piece.height(x, z, height)
                         .color(x, z, color.colorIndex)
                         .biome(x, z, Biome.getIdForBiome(biome))
                         .block(x, z, Block.getStateId(state))

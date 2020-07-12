@@ -49,7 +49,7 @@ public abstract class TerrainRenderer {
         this.cameraZ = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks;
     }
 
-    public abstract void receiveChunk(@NonNull IFarChunk chunk);
+    public abstract void receivePiece(@NonNull IFarPiece piece);
 
-    public abstract void unloadChunk(@NonNull IFarChunkPos pos);
+    public abstract void unloadPiece(@NonNull IFarPiecePos pos);
 }

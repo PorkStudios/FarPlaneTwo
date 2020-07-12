@@ -21,10 +21,10 @@
 package net.daporkchop.fp2;
 
 import net.daporkchop.fp2.net.client.CPacketRenderingStrategy;
-import net.daporkchop.fp2.net.server.SPacketChunkData;
+import net.daporkchop.fp2.net.server.SPacketPieceData;
 import net.daporkchop.fp2.net.server.SPacketReady;
 import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
-import net.daporkchop.fp2.net.server.SPacketUnloadChunk;
+import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
 import net.daporkchop.fp2.server.ServerProxy;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
@@ -90,7 +90,7 @@ public class FP2 {
         NETWORK_WRAPPER.registerMessage(CPacketRenderingStrategy.Handler.class, CPacketRenderingStrategy.class, id++, Side.SERVER);
         NETWORK_WRAPPER.registerMessage(SPacketReady.Handler.class, SPacketReady.class, id++, Side.CLIENT);
         NETWORK_WRAPPER.registerMessage(SPacketRenderingStrategy.Handler.class, SPacketRenderingStrategy.class, id++, Side.CLIENT);
-        NETWORK_WRAPPER.registerMessage(SPacketChunkData.Handler.class, SPacketChunkData.class, id++, Side.CLIENT);
-        NETWORK_WRAPPER.registerMessage(SPacketUnloadChunk.Handler.class, SPacketUnloadChunk.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(SPacketPieceData.Handler.class, SPacketPieceData.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(SPacketUnloadPiece.Handler.class, SPacketUnloadPiece.class, id++, Side.CLIENT);
     }
 }

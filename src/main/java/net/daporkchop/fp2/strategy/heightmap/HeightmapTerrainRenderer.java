@@ -30,8 +30,8 @@ import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
-import net.daporkchop.fp2.strategy.common.IFarChunk;
-import net.daporkchop.fp2.strategy.common.IFarChunkPos;
+import net.daporkchop.fp2.strategy.common.IFarPiece;
+import net.daporkchop.fp2.strategy.common.IFarPiecePos;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.daporkchop.fp2.util.Constants;
 import net.minecraft.client.Minecraft;
@@ -135,16 +135,16 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         }
     }
 
-    protected final Map<HeightmapChunkPos, VertexArrayObject> chunks = new HashMap<>();
+    protected final Map<HeightmapPiecePos, VertexArrayObject> pieces = new HashMap<>();
     protected IntBuffer renderableChunksMask;
 
     public HeightmapTerrainRenderer(@NonNull WorldClient world) {
     }
 
     @Override
-    public void receiveChunk(@NonNull IFarChunk chunkIn) {
-        checkArg(chunkIn instanceof HeightmapChunk, chunkIn);
-        HeightmapChunk chunk = (HeightmapChunk) chunkIn;
+    public void receivePiece(@NonNull IFarPiece pieceIn) {
+        checkArg(pieceIn instanceof HeightmapPiece, pieceIn);
+        HeightmapPiece piece = (HeightmapPiece) pieceIn;
         Minecraft.getMinecraft().addScheduledTask(() -> {
             try (VertexArrayObject vao = new VertexArrayObject().bind()) {
                 glEnableVertexAttribArray(0);
@@ -159,34 +159,34 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                     vao.putDependency(0, coords);
                 }
                 try (VertexBufferObject heights = new VertexBufferObject().bind()) {
-                    glBufferData(GL_ARRAY_BUFFER, chunk.height(), GL_STATIC_DRAW);
+                    glBufferData(GL_ARRAY_BUFFER, piece.height(), GL_STATIC_DRAW);
                     glVertexAttribIPointer(1, 1, GL_INT, 0, 0L);
                     vao.putDependency(1, heights);
                 }
                 try (VertexBufferObject colors = new VertexBufferObject().bind()) {
-                    glBufferData(GL_ARRAY_BUFFER, chunk.color(), GL_STATIC_DRAW);
+                    glBufferData(GL_ARRAY_BUFFER, piece.color(), GL_STATIC_DRAW);
                     glVertexAttribIPointer(2, 1, GL_INT, 0, 0L);
                     vao.putDependency(2, colors);
                 }
                 try (VertexBufferObject biomes = new VertexBufferObject().bind()) {
-                    glBufferData(GL_ARRAY_BUFFER, chunk.biome(), GL_STATIC_DRAW);
+                    glBufferData(GL_ARRAY_BUFFER, piece.biome(), GL_STATIC_DRAW);
                     glVertexAttribIPointer(3, 1, GL_UNSIGNED_BYTE, 0, 0L);
                     vao.putDependency(3, biomes);
                 }
                 try (VertexBufferObject blocks = new VertexBufferObject().bind()) {
-                    glBufferData(GL_ARRAY_BUFFER, chunk.block(), GL_STATIC_DRAW);
+                    glBufferData(GL_ARRAY_BUFFER, piece.block(), GL_STATIC_DRAW);
                     glVertexAttribIPointer(4, 1, GL_UNSIGNED_SHORT, 0, 0L);
                     vao.putDependency(4, blocks);
                 }
                 try (VertexBufferObject light = new VertexBufferObject().bind()) {
-                    glBufferData(GL_ARRAY_BUFFER, chunk.light(), GL_STATIC_DRAW);
+                    glBufferData(GL_ARRAY_BUFFER, piece.light(), GL_STATIC_DRAW);
                     glVertexAttribIPointer(5, 1, GL_INT, 0, 0L);
                     vao.putDependency(5, light);
                 }
 
                 vao.putElementArray(MESH.bind());
 
-                this.chunks.put(chunk.pos(), vao);
+                this.pieces.put(piece.pos(), vao);
             } finally {
                 glDisableVertexAttribArray(0);
                 glDisableVertexAttribArray(1);
@@ -201,10 +201,10 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
     }
 
     @Override
-    public void unloadChunk(@NonNull IFarChunkPos pos) {
-        checkArg(pos instanceof HeightmapChunkPos, pos);
+    public void unloadPiece(@NonNull IFarPiecePos pos) {
+        checkArg(pos instanceof HeightmapPiecePos, pos);
         Minecraft.getMinecraft().addScheduledTask(() -> {
-            this.chunks.remove(pos);
+            this.pieces.remove(pos);
         });
     }
 
@@ -240,7 +240,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                     ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
                     ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
 
-                    this.chunks.forEach((pos, o) -> {
+                    this.pieces.forEach((pos, o) -> {
                         glUniform2d(shader.uniformLocation("camera_offset"), pos.x() * HEIGHT_VOXELS + .5d, pos.z() * HEIGHT_VOXELS + .5d);
 
                         try (VertexArrayObject vao = o.bind()) {
@@ -258,7 +258,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                     ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
                     glUniform1f(shader.uniformLocation("seaLevel"), 63f);
 
-                    this.chunks.forEach((pos, o) -> {
+                    this.pieces.forEach((pos, o) -> {
                         glUniform2d(shader.uniformLocation("camera_offset"), pos.x() * HEIGHT_VOXELS + .5d, pos.z() * HEIGHT_VOXELS + .5d);
 
                         try (VertexArrayObject vao = o.bind()) {

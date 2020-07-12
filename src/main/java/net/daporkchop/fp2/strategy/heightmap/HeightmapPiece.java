@@ -27,8 +27,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import net.daporkchop.fp2.strategy.RenderStrategy;
-import net.daporkchop.fp2.strategy.common.IFarChunk;
-import net.daporkchop.fp2.strategy.common.IFarChunkPos;
+import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.util.Constants;
 
 import java.nio.ByteBuffer;
@@ -49,7 +48,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @RequiredArgsConstructor
 @Getter
 @Accessors(fluent = true)
-public class HeightmapChunk implements IFarChunk {
+public class HeightmapPiece implements IFarPiece {
     public static void checkCoords(int x, int z) {
         checkArg(x >= 0 && x < HEIGHT_VERTS && z >= 0 && z < HEIGHT_VERTS, "coordinates out of bounds (x=%d, z=%d)", x, z);
     }
@@ -66,7 +65,7 @@ public class HeightmapChunk implements IFarChunk {
     protected final ShortBuffer block = Constants.createShortBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
     protected final IntBuffer light = Constants.createIntBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
 
-    public HeightmapChunk(@NonNull ByteBuf buf) {
+    public HeightmapPiece(@NonNull ByteBuf buf) {
         this(buf.readInt(), buf.readInt());
         for (int i = 0, capacity = this.height.capacity(); i < capacity; i++) {
             this.height.put(i, buf.readInt());
@@ -110,39 +109,39 @@ public class HeightmapChunk implements IFarChunk {
         return RenderStrategy.HEIGHTMAP;
     }
 
-    public HeightmapChunk height(int x, int z, int height) {
+    public HeightmapPiece height(int x, int z, int height) {
         checkCoords(x, z);
         this.height.put(x * HEIGHT_VERTS + z, height);
         return this;
     }
 
-    public HeightmapChunk color(int x, int z, int color) {
+    public HeightmapPiece color(int x, int z, int color) {
         checkCoords(x, z);
         this.color.put(x * HEIGHT_VERTS + z, color);
         return this;
     }
 
-    public HeightmapChunk biome(int x, int z, int biome) {
+    public HeightmapPiece biome(int x, int z, int biome) {
         checkCoords(x, z);
         this.biome.put(x * HEIGHT_VERTS + z, (byte) biome);
         return this;
     }
 
-    public HeightmapChunk block(int x, int z, int block) {
+    public HeightmapPiece block(int x, int z, int block) {
         checkCoords(x, z);
         this.block.put(x * HEIGHT_VERTS + z, (short) block);
         return this;
     }
 
-    public HeightmapChunk light(int x, int z, int light) {
+    public HeightmapPiece light(int x, int z, int light) {
         checkCoords(x, z);
         this.light.put(x * HEIGHT_VERTS + z, light);
         return this;
     }
 
     @Override
-    public HeightmapChunkPos pos() {
-        return new HeightmapChunkPos(this.x, this.z);
+    public HeightmapPiecePos pos() {
+        return new HeightmapPiecePos(this.x, this.z);
     }
 
     @Override

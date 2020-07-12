@@ -42,30 +42,30 @@ public interface HeightmapGenerator {
     void init(@NonNull WorldServer world);
 
     /**
-     * Generates a rough estimate of the terrain in the given chunk.
+     * Generates a rough estimate of the terrain in the given piece.
      * <p>
      * This allows implementations to make an optimized, generator-specific estimation of what the terrain would look like once generated, without requiring
-     * the actual generation of said chunks.
+     * the actual generation of said pieces.
      * <p>
      * A {@link CachedBlockAccess} parameter is provided only for implementations do not implement this method, and instead choose to have it serve as a
-     * proxy to {@link #generateExact(CachedBlockAccess, HeightmapChunk)}.
+     * proxy to {@link #generateExact(CachedBlockAccess, HeightmapPiece)}.
      * <p>
-     * Note that this should only generate a square with side length {@link HeightmapConstants#HEIGHT_VOXELS}, centered on chunk coordinates 0,0. Any outer
-     * edges will be automatically filled in with data from the generated area, and later with height from neighboring chunks once it becomes available.
+     * Note that this should only generate a square with side length {@link HeightmapConstants#HEIGHT_VOXELS}, centered on piece coordinates 0,0. Any outer
+     * edges will be automatically filled in with data from the generated area, and later with height from neighboring pieces once it becomes available.
      *
      * @param world the {@link CachedBlockAccess} providing access to block/height data in the world
-     * @param chunk the chunk to generate
+     * @param piece the piece to generate
      */
-    void generateRough(@NonNull CachedBlockAccess world, @NonNull HeightmapChunk chunk);
+    void generateRough(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece);
 
     /**
-     * Generates the terrain for the given chunk based on the block data.
+     * Generates the terrain for the given piece based on the block data.
      * <p>
-     * Note that this should only generate a square with side length {@link HeightmapConstants#HEIGHT_VOXELS}, centered on chunk coordinates 0,0. Any outer
-     * edges will be automatically filled in with data from the generated area, and later with height from neighboring chunks once it becomes available.
+     * Note that this should only generate a square with side length {@link HeightmapConstants#HEIGHT_VOXELS}, centered on piece coordinates 0,0. Any outer
+     * edges will be automatically filled in with data from the generated area, and later with height from neighboring pieces once it becomes available.
      *
      * @param world the {@link CachedBlockAccess} providing access to block/height data in the world
-     * @param chunk the chunk to generate
+     * @param piece the piece to generate
      */
-    void generateExact(@NonNull CachedBlockAccess world, @NonNull HeightmapChunk chunk);
+    void generateExact(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece);
 }

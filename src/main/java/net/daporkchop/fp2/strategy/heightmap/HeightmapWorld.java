@@ -23,7 +23,7 @@ package net.daporkchop.fp2.strategy.heightmap;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import net.daporkchop.fp2.strategy.common.IFarChunkPos;
+import net.daporkchop.fp2.strategy.common.IFarPiecePos;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.strategy.heightmap.vanilla.VanillaHeightmapGenerator;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
@@ -51,7 +51,7 @@ public class HeightmapWorld implements IFarWorld {
 
     protected final Path storageRoot;
 
-    protected final LongObjMap<CompletableFuture<HeightmapChunk>> cache = new LongObjConcurrentHashMap<>();
+    protected final LongObjMap<CompletableFuture<HeightmapPiece>> cache = new LongObjConcurrentHashMap<>();
 
     public HeightmapWorld(@NonNull WorldServer world) {
         this.world = world;
@@ -61,32 +61,32 @@ public class HeightmapWorld implements IFarWorld {
         this.storageRoot = world.getChunkSaveLocation().toPath().resolveSibling("fp2/heightmap");
     }
 
-    protected CompletableFuture<HeightmapChunk> loadChunk(long key) {
+    protected CompletableFuture<HeightmapPiece> loadPiece(long key) {
         return this.cache.computeIfAbsent(key, l -> CompletableFuture.supplyAsync(() -> {
             int x = BinMath.unpackX(l);
             int z = BinMath.unpackY(l);
             CachedBlockAccess world = ((CachedBlockAccess.Holder) this.world).fp2_cachedBlockAccess();
-            HeightmapChunk chunk = new HeightmapChunk(x, z);
-            chunk.writeLock().lock();
+            HeightmapPiece piece = new HeightmapPiece(x, z);
+            piece.writeLock().lock();
             try {
-                this.generator.generateRough(world, chunk);
+                this.generator.generateRough(world, piece);
             } finally {
-                chunk.writeLock().unlock();
+                piece.writeLock().unlock();
             }
-            return chunk;
+            return piece;
         }, THREAD_POOL));
     }
 
     @Override
-    public HeightmapChunk chunk(@NonNull IFarChunkPos posIn) {
-        HeightmapChunkPos pos = (HeightmapChunkPos) posIn;
-        return this.loadChunk(BinMath.packXY(pos.x(), pos.z())).join();
+    public HeightmapPiece getPieceBlocking(@NonNull IFarPiecePos posIn) {
+        HeightmapPiecePos pos = (HeightmapPiecePos) posIn;
+        return this.loadPiece(BinMath.packXY(pos.x(), pos.z())).join();
     }
 
     @Override
-    public HeightmapChunk getChunkNowOrLoadAsync(@NonNull IFarChunkPos posIn) {
-        HeightmapChunkPos pos = (HeightmapChunkPos) posIn;
-        return this.loadChunk(BinMath.packXY(pos.x(), pos.z())).getNow(null);
+    public HeightmapPiece getPieceNowOrLoadAsync(@NonNull IFarPiecePos posIn) {
+        HeightmapPiecePos pos = (HeightmapPiecePos) posIn;
+        return this.loadPiece(BinMath.packXY(pos.x(), pos.z())).getNow(null);
     }
 
     @Override
