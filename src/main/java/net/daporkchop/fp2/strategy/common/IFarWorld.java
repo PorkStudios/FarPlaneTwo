@@ -20,33 +20,17 @@
 
 package net.daporkchop.fp2.strategy.common;
 
-import net.daporkchop.fp2.client.RenderPass;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.entity.Entity;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-
-import java.nio.FloatBuffer;
+import lombok.NonNull;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public abstract class TerrainRenderer {
-    public double cameraX;
-    public double cameraY;
-    public double cameraZ;
-
-    public FloatBuffer proj;
-    public FloatBuffer modelView;
-
-    public abstract void init(double seaLevel);
-
-    public void render(RenderPass pass, float partialTicks, WorldClient world, Minecraft mc) {
-        Entity entity = mc.getRenderViewEntity();
-        this.cameraX = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks;
-        this.cameraY = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks;
-        this.cameraZ = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks;
-    }
+public interface IFarWorld {
+    /**
+     * Gets the {@link IFarChunk} at the given position.
+     *
+     * @param pos the position of the chunk to get
+     * @return the chunk
+     */
+    IFarChunk chunk(@NonNull IFarChunkPos pos);
 }

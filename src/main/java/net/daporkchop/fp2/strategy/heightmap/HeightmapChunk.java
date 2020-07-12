@@ -24,12 +24,17 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
+import net.daporkchop.fp2.strategy.common.IFarChunk;
+import net.daporkchop.fp2.strategy.common.IFarChunkPos;
 import net.daporkchop.fp2.util.Constants;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -42,13 +47,15 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @RequiredArgsConstructor
 @Getter
 @Accessors(fluent = true)
-public class HeightmapChunk implements IMessage {
+public class HeightmapChunk implements IFarChunk, IMessage {
     public static void checkCoords(int x, int z) {
         checkArg(x >= 0 && x < HEIGHT_VERTS && z >= 0 && z < HEIGHT_VERTS, "coordinates out of bounds (x=%d, z=%d)", x, z);
     }
 
     protected final int x;
     protected final int z;
+
+    protected final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     protected final IntBuffer height = Constants.createIntBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
     protected final IntBuffer color = Constants.createIntBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
@@ -99,6 +106,21 @@ public class HeightmapChunk implements IMessage {
         checkCoords(x, z);
         this.light.put(x * HEIGHT_VERTS + z, light);
         return this;
+    }
+
+    @Override
+    public IFarChunkPos pos() {
+        return new HeightmapChunkPos(this.x, this.z);
+    }
+
+    @Override
+    public Lock readLock() {
+        return this.lock.readLock();
+    }
+
+    @Override
+    public Lock writeLock() {
+        return this.lock.writeLock();
     }
 
     @Override

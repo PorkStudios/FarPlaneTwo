@@ -36,7 +36,6 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 /**
  * @author DaPorkchop_
  */
-@NoArgsConstructor
 @Getter
 @Setter
 @Accessors(fluent = true, chain = true)

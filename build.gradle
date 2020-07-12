@@ -53,6 +53,7 @@ ext {
     //dependency things
     guavaVersion = "21.0"
     junitVersion = "4.12"
+    leveldbVersion = "0.0.8-SNAPSHOT"
     lombokVersion = "1.16.20"
     mixinVersion = "0.8.1-SNAPSHOT"
     porklibVersion = "0.5.5-SNAPSHOT"
@@ -92,6 +93,10 @@ repositories {
     maven {
         name = "SpongePowered"
         url = "http://repo.spongepowered.org/maven/"
+    }
+    maven {
+        name = "NukkitX"
+        url = "https://repo.nukkitx.com/snapshot/"
     }
     mavenCentral()
 }

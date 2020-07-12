@@ -20,8 +20,10 @@
 
 package net.daporkchop.fp2.util;
 
+import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
+import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
@@ -30,6 +32,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.chunk.CompiledChunk;
 import net.minecraft.client.renderer.chunk.RenderChunk;
 import net.minecraft.util.math.Vec3i;
+import net.minecraft.world.World;
+import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
@@ -59,12 +63,15 @@ public class Constants {
             PorkUtil.CPU_COUNT,
             new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Worker Thread #%d").build());
 
-    public static int convertARGB_ABGR(int in)  {
+    public static final boolean CC = Loader.isModLoaded("cubicchunks");
+    public static final boolean CWG = Loader.isModLoaded("cubicgen");
+
+    public static int convertARGB_ABGR(int in) {
         return (in & 0xFF00FF00) | ((in >>> 16) & 0xFF) | ((in & 0xFF) << 16);
     }
 
     @SideOnly(Side.CLIENT)
-    public static IntBuffer renderableChunksMask(Minecraft mc, IntBuffer buffer)  {
+    public static IntBuffer renderableChunksMask(Minecraft mc, IntBuffer buffer) {
         final int HEADER_SIZE = 2 * 4;
 
         List<Vec3i> positions = mc.renderGlobal.renderInfos.stream()
@@ -90,7 +97,7 @@ public class Constants {
         }
         buffer.clear();
 
-        if (positions.isEmpty())    {
+        if (positions.isEmpty()) {
             return buffer;
         }
 
@@ -104,6 +111,10 @@ public class Constants {
 
         buffer.clear();
         return buffer;
+    }
+
+    public static boolean isCubicWorld(@NonNull World world) {
+        return CC && world instanceof ICubicWorld && ((ICubicWorld) world).isCubicWorld();
     }
 
     //the following methods are copied from LWJGL's BufferUtils in order to ensure their availability on the dedicated server as well

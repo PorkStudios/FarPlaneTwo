@@ -18,35 +18,46 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.common;
+package net.daporkchop.fp2.strategy.heightmap;
 
-import net.daporkchop.fp2.client.RenderPass;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.entity.Entity;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-
-import java.nio.FloatBuffer;
+import io.netty.buffer.ByteBuf;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.Accessors;
+import net.daporkchop.fp2.strategy.common.IFarChunkPos;
+import net.daporkchop.lib.common.math.BinMath;
+import net.daporkchop.lib.common.math.PMath;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public abstract class TerrainRenderer {
-    public double cameraX;
-    public double cameraY;
-    public double cameraZ;
+@RequiredArgsConstructor
+@Getter
+@Accessors(fluent = true)
+public class HeightmapChunkPos implements IFarChunkPos {
+    private final int x;
+    private final int z;
 
-    public FloatBuffer proj;
-    public FloatBuffer modelView;
+    @Override
+    public void write(@NonNull ByteBuf dst) {
+        dst.writeInt(this.x).writeInt(this.z);
+    }
 
-    public abstract void init(double seaLevel);
+    @Override
+    public int hashCode() {
+        return PMath.mix32(BinMath.packXY(this.x, this.z));
+    }
 
-    public void render(RenderPass pass, float partialTicks, WorldClient world, Minecraft mc) {
-        Entity entity = mc.getRenderViewEntity();
-        this.cameraX = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks;
-        this.cameraY = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks;
-        this.cameraZ = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks;
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        } else if (obj instanceof HeightmapChunkPos) {
+            HeightmapChunkPos pos = (HeightmapChunkPos) obj;
+            return this.x == pos.x && this.z == pos.z;
+        } else {
+            return false;
+        }
     }
 }

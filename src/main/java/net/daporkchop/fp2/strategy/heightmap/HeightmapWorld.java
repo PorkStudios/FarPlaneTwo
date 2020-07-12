@@ -20,10 +20,19 @@
 
 package net.daporkchop.fp2.strategy.heightmap;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.strategy.common.IFarChunk;
+import net.daporkchop.fp2.strategy.common.IFarChunkPos;
+import net.daporkchop.fp2.strategy.common.IFarWorld;
+
 /**
  * Representation of a world used by the heightmap rendering strategy.
  *
  * @author DaPorkchop_
  */
-public class HeightmapWorld {
+public class HeightmapWorld implements IFarWorld {
+    @Override
+    public IFarChunk chunk(@NonNull IFarChunkPos pos) {
+        return null;
+    }
 }

@@ -18,54 +18,47 @@
  *
  */
 
-package net.daporkchop.fp2.asm.client.multiplayer;
+package net.daporkchop.fp2.net.client;
 
+import io.netty.buffer.ByteBuf;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import net.daporkchop.fp2.Config;
+import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
 import net.daporkchop.fp2.strategy.RenderStrategy;
-import net.daporkchop.fp2.strategy.common.IFarContext;
-import net.daporkchop.fp2.strategy.common.IFarWorld;
-import net.daporkchop.fp2.strategy.common.TerrainRenderer;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.world.World;
-import org.spongepowered.asm.mixin.Mixin;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
+import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 /**
  * @author DaPorkchop_
  */
-@Mixin(WorldClient.class)
-public abstract class MixinWorldClient extends World implements IFarContext {
-    private RenderStrategy strategy;
-    private IFarWorld world;
-    private TerrainRenderer renderer;
+@Setter
+@Getter
+@Accessors(fluent = true, chain = true)
+public class CPacketRenderingStrategy implements IMessage {
+    @NonNull
+    protected RenderStrategy strategy;
 
-    protected MixinWorldClient() {
-        super(null, null, null, null, false);
+    @Override
+    public void fromBytes(ByteBuf buf) {
+        this.strategy = RenderStrategy.fromOrdinal(buf.readInt());
     }
 
     @Override
-    public void fp2_init(@NonNull RenderStrategy strategy) {
-        this.world = strategy.createFarWorld((WorldClient) (Object) this);
-        this.renderer = strategy.createTerrainRenderer(this.world);
-        this.strategy = strategy;
+    public void toBytes(ByteBuf buf) {
+        buf.writeInt(this.strategy.ordinal());
     }
 
-    @Override
-    public RenderStrategy fp2_strategy() {
-        checkState(this.strategy != null);
-        return this.strategy;
-    }
-
-    @Override
-    public IFarWorld fp2_world() {
-        checkState(this.strategy != null);
-        return this.world;
-    }
-
-    @Override
-    public TerrainRenderer fp2_renderer() {
-        checkState(this.strategy != null);
-        return this.renderer;
+    public static class Handler implements IMessageHandler<CPacketRenderingStrategy, IMessage> {
+        @Override
+        public IMessage onMessage(CPacketRenderingStrategy message, MessageContext ctx) {
+            if (message.strategy == Config.renderStrategy) {
+                return new SPacketRenderingStrategy().strategy(message.strategy);
+            }
+            return null;
+        }
     }
 }

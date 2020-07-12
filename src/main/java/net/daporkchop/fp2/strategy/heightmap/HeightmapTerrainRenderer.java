@@ -30,6 +30,7 @@ import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.daporkchop.fp2.util.Constants;
 import net.minecraft.client.Minecraft;
@@ -54,6 +55,7 @@ import static net.daporkchop.fp2.client.GlobalInfo.*;
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL11.glBlendFunc;
 import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL15.glBufferData;
@@ -105,8 +107,8 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
 
     private static int genMesh(int size, int edge, ShortBuffer out) {
         int verts = 0;
-        for (int x = 0; x < size - 1; x++)  {
-            for (int z = 0; z < size - 1; z++)  {
+        for (int x = 0; x < size - 1; x++) {
+            for (int z = 0; z < size - 1; z++) {
                 out.put((short) ((x + 1) * edge + z))
                         .put((short) ((x + 1) * edge + (z + 1)))
                         .put((short) (x * edge + z));
@@ -137,7 +139,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
 
     public double seaLevel = Integer.MIN_VALUE;
 
-    public HeightmapTerrainRenderer(@NonNull WorldClient world) {
+    public HeightmapTerrainRenderer(@NonNull IFarWorld world) {
     }
 
     @Override
@@ -268,7 +270,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                 GlStateManager.disableAlpha();
                 GlStateManager.enableCull();
             }
-        } else if (pass == RenderPass.TRANSLUCENT)  {
+        } else if (pass == RenderPass.TRANSLUCENT) {
         }
     }
 }

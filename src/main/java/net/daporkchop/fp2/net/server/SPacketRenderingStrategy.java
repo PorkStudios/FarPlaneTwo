@@ -27,6 +27,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.daporkchop.fp2.strategy.RenderStrategy;
+import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -35,31 +36,27 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 /**
  * @author DaPorkchop_
  */
-@NoArgsConstructor
 @Setter
 @Getter
 @Accessors(fluent = true, chain = true)
 public class SPacketRenderingStrategy implements IMessage {
     @NonNull
     protected RenderStrategy strategy;
-    protected double seaLevel;
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.strategy = RenderStrategy.values()[buf.readInt()];
-        this.seaLevel = buf.readDouble();
+        this.strategy = RenderStrategy.fromOrdinal(buf.readInt());
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeInt(this.strategy.ordinal())
-                .writeDouble(this.seaLevel);
+        buf.writeInt(this.strategy.ordinal());
     }
 
     public static class Handler implements IMessageHandler<SPacketRenderingStrategy, IMessage> {
         @Override
         public IMessage onMessage(SPacketRenderingStrategy message, MessageContext ctx) {
-            ((TerrainRenderer.Holder) ctx.getClientHandler().world).fp2_updateStrategy(message.strategy, message.seaLevel);
+            ((IFarContext) ctx.getClientHandler().world).fp2_init(message.strategy);
             return null;
         }
     }

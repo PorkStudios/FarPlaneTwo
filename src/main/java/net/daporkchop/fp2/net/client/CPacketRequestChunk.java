@@ -18,35 +18,42 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.common;
+package net.daporkchop.fp2.net.client;
 
-import net.daporkchop.fp2.client.RenderPass;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.entity.Entity;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-
-import java.nio.FloatBuffer;
+import io.netty.buffer.ByteBuf;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import net.daporkchop.fp2.strategy.RenderStrategy;
+import net.daporkchop.fp2.strategy.common.IFarChunkPos;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
+import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public abstract class TerrainRenderer {
-    public double cameraX;
-    public double cameraY;
-    public double cameraZ;
+@Getter
+@Setter
+@Accessors(fluent = true, chain = true)
+public class CPacketRequestChunk implements IMessage {
+    @Getter
+    protected IFarChunkPos id;
 
-    public FloatBuffer proj;
-    public FloatBuffer modelView;
+    @Override
+    public void fromBytes(ByteBuf buf) {
+        RenderStrategy.fromOrdinal(buf.readInt()).readId(buf);
+    }
 
-    public abstract void init(double seaLevel);
+    @Override
+    public void toBytes(ByteBuf buf) {
+        this.id.write(buf);
+    }
 
-    public void render(RenderPass pass, float partialTicks, WorldClient world, Minecraft mc) {
-        Entity entity = mc.getRenderViewEntity();
-        this.cameraX = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks;
-        this.cameraY = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks;
-        this.cameraZ = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks;
+    public static class Handler implements IMessageHandler<CPacketRequestChunk, IMessage> {
+        @Override
+        public IMessage onMessage(CPacketRequestChunk message, MessageContext ctx) {
+            return null;
+        }
     }
 }

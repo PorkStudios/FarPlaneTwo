@@ -20,6 +20,10 @@
 
 package net.daporkchop.fp2.asm.world;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.strategy.RenderStrategy;
+import net.daporkchop.fp2.strategy.common.IFarContext;
+import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
 import net.daporkchop.fp2.util.vanilla.VanillaCachedBlockAccessImpl;
 import net.minecraft.world.World;
@@ -29,12 +33,17 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import static net.daporkchop.lib.common.util.PValidation.*;
+
 /**
  * @author DaPorkchop_
  */
 @Mixin(WorldServer.class)
-public abstract class MixinWorldServer extends World implements CachedBlockAccess.Holder {
+public abstract class MixinWorldServer extends World implements IFarContext, CachedBlockAccess.Holder {
     protected final CachedBlockAccess cachedBlockAccess = new VanillaCachedBlockAccessImpl((WorldServer) (Object) this);
+
+    protected RenderStrategy strategy;
+    protected IFarWorld world;
 
     protected MixinWorldServer() {
         super(null, null, null, null, false);
@@ -51,5 +60,23 @@ public abstract class MixinWorldServer extends World implements CachedBlockAcces
                     shift = At.Shift.AFTER))
     private void tick_postChunkProviderTick(CallbackInfo ci) {
         this.cachedBlockAccess.gc();
+    }
+
+    @Override
+    public void fp2_init(@NonNull RenderStrategy strategy) {
+        this.world = strategy.createFarWorld((WorldServer) (Object) this);
+        this.strategy = strategy;
+    }
+
+    @Override
+    public RenderStrategy fp2_strategy() {
+        checkState(this.strategy != null);
+        return this.strategy;
+    }
+
+    @Override
+    public IFarWorld fp2_world() {
+        checkState(this.strategy != null);
+        return this.world;
     }
 }

@@ -4,12 +4,7 @@
 #define IS_ROOFED_FOREST (biome == 29 || biome == 157)
 #define IS_SWAMP (biome == 6 || biome == 134)
 
-struct TextureUV {
-    vec2 min;
-    vec2 max;
-};
-
-layout(binding = 0) buffer loaded_chunks {
+layout(shared, binding = 0) buffer loaded_chunks {
     ivec4 loaded_base; //using 4d vectors because apparently GLSL is too stupid to handle 3d ones
     ivec4 loaded_size;
     int loaded_data[];
@@ -24,7 +19,12 @@ bool isLoaded(ivec3 chunk)  {
     return (loaded_data[index >> 5] & (1 << (index & 0x1F))) != 0;
 }
 
-layout(binding = 1) buffer global_info {
+struct TextureUV {
+    vec2 min;
+    vec2 max;
+};
+
+layout(shared, binding = 1) buffer global_info {
     vec2 biome_climate[256];
     int biome_watercolor[256];
 

@@ -20,33 +20,38 @@
 
 package net.daporkchop.fp2.strategy.common;
 
-import net.daporkchop.fp2.client.RenderPass;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.entity.Entity;
+import lombok.NonNull;
+import net.daporkchop.fp2.strategy.RenderStrategy;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-
-import java.nio.FloatBuffer;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public abstract class TerrainRenderer {
-    public double cameraX;
-    public double cameraY;
-    public double cameraZ;
+public interface IFarContext {
+    /**
+     * Initializes this context.
+     *
+     * @param strategy the new {@link RenderStrategy} to use
+     */
+    void fp2_init(@NonNull RenderStrategy strategy);
 
-    public FloatBuffer proj;
-    public FloatBuffer modelView;
+    /**
+     * @return the current {@link RenderStrategy}
+     * @throws IllegalStateException if this context has not yet been initialized
+     */
+    RenderStrategy fp2_strategy();
 
-    public abstract void init(double seaLevel);
+    /**
+     * @return the current {@link IFarWorld}
+     * @throws IllegalStateException if this context has not yet been initialized
+     */
+    IFarWorld fp2_world();
 
-    public void render(RenderPass pass, float partialTicks, WorldClient world, Minecraft mc) {
-        Entity entity = mc.getRenderViewEntity();
-        this.cameraX = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks;
-        this.cameraY = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks;
-        this.cameraZ = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks;
-    }
+    /**
+     * @return the current {@link TerrainRenderer}
+     * @throws IllegalStateException if this context has not yet been initialized
+     */
+    @SideOnly(Side.CLIENT)
+    TerrainRenderer fp2_renderer();
 }

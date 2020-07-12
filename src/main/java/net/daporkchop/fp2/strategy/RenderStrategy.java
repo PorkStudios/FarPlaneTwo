@@ -20,8 +20,12 @@
 
 package net.daporkchop.fp2.strategy;
 
+import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.strategy.common.IFarChunkPos;
+import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapChunkPos;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.World;
@@ -36,19 +40,49 @@ public enum RenderStrategy {
     @Config.Comment("Renders a simple 2D heightmap of the world. Overhangs are not supported.")
     HEIGHTMAP {
         @Override
+        public IFarWorld createFarWorld(@NonNull World world) {
+            return null;
+        }
+
+        @Override
         @SideOnly(Side.CLIENT)
-        public TerrainRenderer createTerrainRenderer(@NonNull WorldClient world) {
+        public TerrainRenderer createTerrainRenderer(@NonNull IFarWorld world) {
             return new HeightmapTerrainRenderer(world);
+        }
+
+        @Override
+        public IFarChunkPos readId(@NonNull ByteBuf src) {
+            return new HeightmapChunkPos(src.readInt(), src.readInt());
         }
     },
     VOLUMETRIC {
         @Override
+        public IFarWorld createFarWorld(@NonNull World world) {
+            throw new UnsupportedOperationException(); //TODO
+        }
+
+        @Override
         @SideOnly(Side.CLIENT)
-        public TerrainRenderer createTerrainRenderer(@NonNull WorldClient world) {
+        public TerrainRenderer createTerrainRenderer(@NonNull IFarWorld world) {
+            throw new UnsupportedOperationException(); //TODO
+        }
+
+        @Override
+        public IFarChunkPos readId(@NonNull ByteBuf src) {
             throw new UnsupportedOperationException(); //TODO
         }
     };
 
+    private static final RenderStrategy[] VALUES = values();
+
+    public static RenderStrategy fromOrdinal(int ordinal)   {
+        return VALUES[ordinal];
+    }
+
+    public abstract IFarWorld createFarWorld(@NonNull World world);
+
     @SideOnly(Side.CLIENT)
-    public abstract TerrainRenderer createTerrainRenderer(@NonNull WorldClient world);
+    public abstract TerrainRenderer createTerrainRenderer(@NonNull IFarWorld world);
+
+    public abstract IFarChunkPos readId(@NonNull ByteBuf src);
 }
