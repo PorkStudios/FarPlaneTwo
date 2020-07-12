@@ -98,12 +98,16 @@ repositories {
         name = "NukkitX"
         url = "https://repo.nukkitx.com/snapshot/"
     }
+    maven {
+        name = "elytradev"
+        url = "https://repo.elytradev.com"
+    }
     mavenCentral()
 }
 
 dependencies {
-    compileOnly("org.spongepowered:mixin:$mixinVersion")
-    annotationProcessor("org.spongepowered:mixin:$mixinVersion")
+    compileOnly "org.spongepowered:mixin:$mixinVersion"
+    annotationProcessor "org.spongepowered:mixin:$mixinVersion"
 
     compile("net.daporkchop.lib:binary:$porklibVersion") { //TODO: shade these dependencies into a sub-package
         exclude group: "io.netty"
@@ -116,6 +120,7 @@ dependencies {
     }
 
     deobfCompile "io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT"
+    deobfCompile "io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT"
 
     testCompile "junit:junit:$junitVersion"
 

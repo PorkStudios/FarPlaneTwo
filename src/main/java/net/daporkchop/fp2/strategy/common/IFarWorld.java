@@ -38,6 +38,16 @@ public interface IFarWorld {
     IFarChunk chunk(@NonNull IFarChunkPos pos);
 
     /**
+     * Gets the {@link IFarChunk} at the given position.
+     * <p>
+     * If the chunk is already loaded, it is returned. Otherwise this method returns {@code null} and will be queued for loading asynchronously.
+     *
+     * @param pos the position of the chunk to get
+     * @return the chunk, or {@code null} if it isn't already loaded
+     */
+    IFarChunk getChunkNowOrLoadAsync(@NonNull IFarChunkPos pos);
+
+    /**
      * Fired whenever a block state changes.
      *
      * @param x the X coordinate of the block that changed

@@ -70,6 +70,7 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker {
         int dist = Config.renderDistance / HeightmapConstants.HEIGHT_VOXELS;
         int baseX = floorI(player.posX) / HeightmapConstants.HEIGHT_VOXELS;
         int baseZ = floorI(player.posZ) / HeightmapConstants.HEIGHT_VOXELS;
+
         for (int dx = -dist; dx <= dist; dx++) {
             for (int dz = -dist; dz <= dist; dz++) {
                 int x = baseX + dx;
@@ -77,8 +78,12 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker {
                 long l = BinMath.packXY(x, z);
                 if (!prev.remove(l)) {
                     //chunk wasn't loaded before, we should load and send it
-                    //TODO: this NEEDS to be asynchronous
-                    NETWORK_WRAPPER.sendTo(new SPacketChunkData().chunk(this.world.chunk(new HeightmapChunkPos(x, z))), player);
+                    HeightmapChunk chunk = this.world.getChunkNowOrLoadAsync(new HeightmapChunkPos(x, z));
+                    if (chunk != null) {
+                        NETWORK_WRAPPER.sendTo(new SPacketChunkData().chunk(chunk), player);
+                    } else {
+                        continue; //don't add to next, to indicate that the chunk hasn't been sent yet
+                    }
                 }
                 next.add(l);
             }

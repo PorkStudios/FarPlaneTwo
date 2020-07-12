@@ -32,29 +32,37 @@ import net.daporkchop.lib.primitive.map.LongObjMap;
 import net.daporkchop.lib.primitive.map.concurrent.LongObjConcurrentHashMap;
 import net.minecraft.world.WorldServer;
 
+import java.nio.file.Path;
+import java.util.concurrent.CompletableFuture;
+
+import static net.daporkchop.fp2.util.Constants.*;
+
 /**
  * Representation of a world used by the heightmap rendering strategy.
  *
  * @author DaPorkchop_
  */
-@Getter
 @Accessors(fluent = true)
 public class HeightmapWorld implements IFarWorld {
+    @Getter
     protected final WorldServer world;
+    @Getter
     protected final HeightmapGenerator generator;
 
-    protected final LongObjMap<HeightmapChunk> cache = new LongObjConcurrentHashMap<>();
+    protected final Path storageRoot;
+
+    protected final LongObjMap<CompletableFuture<HeightmapChunk>> cache = new LongObjConcurrentHashMap<>();
 
     public HeightmapWorld(@NonNull WorldServer world) {
         this.world = world;
         this.generator = new VanillaHeightmapGenerator();
         this.generator.init(world);
+
+        this.storageRoot = world.getChunkSaveLocation().toPath().resolveSibling("fp2/heightmap");
     }
 
-    @Override
-    public HeightmapChunk chunk(@NonNull IFarChunkPos posIn) {
-        HeightmapChunkPos pos = (HeightmapChunkPos) posIn;
-        return this.cache.computeIfAbsent(BinMath.packXY(pos.x(), pos.z()), l -> {
+    protected CompletableFuture<HeightmapChunk> loadChunk(long key) {
+        return this.cache.computeIfAbsent(key, l -> CompletableFuture.supplyAsync(() -> {
             int x = BinMath.unpackX(l);
             int z = BinMath.unpackY(l);
             CachedBlockAccess world = ((CachedBlockAccess.Holder) this.world).fp2_cachedBlockAccess();
@@ -66,7 +74,19 @@ public class HeightmapWorld implements IFarWorld {
                 chunk.writeLock().unlock();
             }
             return chunk;
-        });
+        }, THREAD_POOL));
+    }
+
+    @Override
+    public HeightmapChunk chunk(@NonNull IFarChunkPos posIn) {
+        HeightmapChunkPos pos = (HeightmapChunkPos) posIn;
+        return this.loadChunk(BinMath.packXY(pos.x(), pos.z())).join();
+    }
+
+    @Override
+    public HeightmapChunk getChunkNowOrLoadAsync(@NonNull IFarChunkPos posIn) {
+        HeightmapChunkPos pos = (HeightmapChunkPos) posIn;
+        return this.loadChunk(BinMath.packXY(pos.x(), pos.z())).getNow(null);
     }
 
     @Override
