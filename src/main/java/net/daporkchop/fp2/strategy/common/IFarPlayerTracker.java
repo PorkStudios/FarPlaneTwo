@@ -18,42 +18,18 @@
  *
  */
 
-package net.daporkchop.fp2.net.client;
+package net.daporkchop.fp2.strategy.common;
 
-import io.netty.buffer.ByteBuf;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
-import net.daporkchop.fp2.strategy.RenderStrategy;
-import net.daporkchop.fp2.strategy.common.IFarChunkPos;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import lombok.NonNull;
+import net.minecraft.entity.player.EntityPlayerMP;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-@Setter
-@Accessors(fluent = true, chain = true)
-public class CPacketRequestChunk implements IMessage {
-    @Getter
-    protected IFarChunkPos id;
+public interface IFarPlayerTracker {
+    void playerAdd(@NonNull EntityPlayerMP player);
 
-    @Override
-    public void fromBytes(ByteBuf buf) {
-        RenderStrategy.fromOrdinal(buf.readInt()).readId(buf);
-    }
+    void playerRemove(@NonNull EntityPlayerMP player);
 
-    @Override
-    public void toBytes(ByteBuf buf) {
-        this.id.write(buf);
-    }
-
-    public static class Handler implements IMessageHandler<CPacketRequestChunk, IMessage> {
-        @Override
-        public IMessage onMessage(CPacketRequestChunk message, MessageContext ctx) {
-            return null;
-        }
-    }
+    void playerMove(@NonNull EntityPlayerMP player);
 }

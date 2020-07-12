@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.strategy.common;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.client.RenderPass;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
@@ -41,12 +42,14 @@ public abstract class TerrainRenderer {
     public FloatBuffer proj;
     public FloatBuffer modelView;
 
-    public abstract void init(double seaLevel);
-
     public void render(RenderPass pass, float partialTicks, WorldClient world, Minecraft mc) {
         Entity entity = mc.getRenderViewEntity();
         this.cameraX = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks;
         this.cameraY = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks;
         this.cameraZ = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks;
     }
+
+    public abstract void receiveChunk(@NonNull IFarChunk chunk);
+
+    public abstract void unloadChunk(@NonNull IFarChunkPos pos);
 }

@@ -22,12 +22,13 @@ package net.daporkchop.fp2.strategy.heightmap;
 
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
+import net.daporkchop.fp2.strategy.RenderStrategy;
 import net.daporkchop.fp2.strategy.common.IFarChunk;
 import net.daporkchop.fp2.strategy.common.IFarChunkPos;
 import net.daporkchop.fp2.util.Constants;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -47,7 +48,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @RequiredArgsConstructor
 @Getter
 @Accessors(fluent = true)
-public class HeightmapChunk implements IFarChunk, IMessage {
+public class HeightmapChunk implements IFarChunk {
     public static void checkCoords(int x, int z) {
         checkArg(x >= 0 && x < HEIGHT_VERTS && z >= 0 && z < HEIGHT_VERTS, "coordinates out of bounds (x=%d, z=%d)", x, z);
     }
@@ -62,6 +63,49 @@ public class HeightmapChunk implements IFarChunk, IMessage {
     protected final ByteBuffer biome = Constants.createByteBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
     protected final ShortBuffer block = Constants.createShortBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
     protected final IntBuffer light = Constants.createIntBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
+
+    public HeightmapChunk(@NonNull ByteBuf buf) {
+        this(buf.readInt(), buf.readInt());
+        for (int i = 0, capacity = this.height.capacity(); i < capacity; i++) {
+            this.height.put(i, buf.readInt());
+        }
+        for (int i = 0, capacity = this.color.capacity(); i < capacity; i++) {
+            this.color.put(i, buf.readInt());
+        }
+        for (int i = 0, capacity = this.biome.capacity(); i < capacity; i++) {
+            this.biome.put(i, buf.readByte());
+        }
+        for (int i = 0, capacity = this.block.capacity(); i < capacity; i++) {
+            this.block.put(i, buf.readShort());
+        }
+        for (int i = 0, capacity = this.light.capacity(); i < capacity; i++) {
+            this.light.put(i, buf.readInt());
+        }
+    }
+
+    @Override
+    public void write(@NonNull ByteBuf buf) {
+        for (int i = 0, capacity = this.height.capacity(); i < capacity; i++) {
+            buf.writeInt(this.height.get(i));
+        }
+        for (int i = 0, capacity = this.color.capacity(); i < capacity; i++) {
+            buf.writeInt(this.color.get(i));
+        }
+        for (int i = 0, capacity = this.biome.capacity(); i < capacity; i++) {
+            buf.writeByte(this.biome.get(i));
+        }
+        for (int i = 0, capacity = this.block.capacity(); i < capacity; i++) {
+            buf.writeShort(this.block.get(i));
+        }
+        for (int i = 0, capacity = this.light.capacity(); i < capacity; i++) {
+            buf.writeInt(this.light.get(i));
+        }
+    }
+
+    @Override
+    public RenderStrategy strategy() {
+        return RenderStrategy.HEIGHTMAP;
+    }
 
     public int height(int x, int z) {
         checkCoords(x, z);
@@ -121,44 +165,5 @@ public class HeightmapChunk implements IFarChunk, IMessage {
     @Override
     public Lock writeLock() {
         return this.lock.writeLock();
-    }
-
-    @Override
-    public void fromBytes(ByteBuf buf) {
-        for (int i = 0, capacity = this.height.capacity(); i < capacity; i++) {
-            this.height.put(i, buf.readInt());
-        }
-        for (int i = 0, capacity = this.color.capacity(); i < capacity; i++) {
-            this.color.put(i, buf.readInt());
-        }
-        for (int i = 0, capacity = this.biome.capacity(); i < capacity; i++) {
-            this.biome.put(i, buf.readByte());
-        }
-        for (int i = 0, capacity = this.block.capacity(); i < capacity; i++) {
-            this.block.put(i, buf.readShort());
-        }
-        for (int i = 0, capacity = this.light.capacity(); i < capacity; i++) {
-            this.light.put(i, buf.readInt());
-        }
-    }
-
-    @Override
-    public void toBytes(ByteBuf buf) {
-        buf.ensureWritable((this.height.capacity() + this.color.capacity()) * 4 + this.block.capacity() * 2 + this.biome.capacity());
-        for (int i = 0, capacity = this.height.capacity(); i < capacity; i++) {
-            buf.writeInt(this.height.get(i));
-        }
-        for (int i = 0, capacity = this.color.capacity(); i < capacity; i++) {
-            buf.writeInt(this.color.get(i));
-        }
-        for (int i = 0, capacity = this.biome.capacity(); i < capacity; i++) {
-            buf.writeByte(this.biome.get(i));
-        }
-        for (int i = 0, capacity = this.block.capacity(); i < capacity; i++) {
-            buf.writeShort(this.block.get(i));
-        }
-        for (int i = 0, capacity = this.light.capacity(); i < capacity; i++) {
-            buf.writeInt(this.light.get(i));
-        }
     }
 }

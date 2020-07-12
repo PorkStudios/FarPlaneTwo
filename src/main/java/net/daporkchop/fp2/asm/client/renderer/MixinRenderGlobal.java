@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.asm.client.renderer;
 
 import net.daporkchop.fp2.client.RenderPass;
+import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderGlobal;
@@ -47,7 +48,7 @@ public abstract class MixinRenderGlobal {
             cancellable = true)
     private void renderBlockLayer_head(BlockRenderLayer blockLayerIn, double partialTicks, int passI, Entity entityIn, CallbackInfoReturnable<Integer> ci) {
         RenderPass pass = RenderPass.fromVanilla(blockLayerIn);
-        TerrainRenderer renderer = ((TerrainRenderer.Holder) this.mc.world).fp2_terrainRenderer();
+        TerrainRenderer renderer = ((IFarContext) this.mc.world).fp2_renderer();
         if (renderer != null) {
             this.mc.profiler.endStartSection(pass.profilerSectionName);
             renderer.render(pass, (float) partialTicks, this.mc.world, this.mc);

@@ -20,13 +20,16 @@
 
 package net.daporkchop.fp2.client;
 
+import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.server.ServerProxy;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IReloadableResourceManager;
+import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
@@ -63,17 +66,25 @@ public class ClientProxy extends ServerProxy {
         HeightmapTerrainRenderer.MESH.id(); //load HeightmapTerrainRenderer on client thread
     }
 
+    @Override
+    public void worldLoad(WorldEvent.Load event) {
+        super.worldLoad(event);
+        if (event.getWorld().isRemote) {
+            GlobalInfo.reloadUVs();
+        }
+    }
+
     @SubscribeEvent
-    public void keyInput(InputEvent.KeyInputEvent event)    {
+    public void keyInput(InputEvent.KeyInputEvent event) {
         if (KeyBindings.RELOAD_SHADERS.isPressed()) {
             ShaderManager.reload();
         }
     }
 
     @SubscribeEvent
-    public void worldLoad(WorldEvent.Load event)    {
-        if (event.getWorld().isRemote)  {
-            GlobalInfo.reloadUVs();
+    public void onConfigChanged(ConfigChangedEvent.OnConfigChangedEvent event) {
+        if (event.getModID().equals(FP2.MODID)) {
+            ConfigManager.sync(FP2.MODID, net.minecraftforge.common.config.Config.Type.INSTANCE);
         }
     }
 }

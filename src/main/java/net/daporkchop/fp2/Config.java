@@ -33,6 +33,11 @@ public class Config {
     public static RenderStrategy renderStrategy = RenderStrategy.HEIGHTMAP;
 
     @net.minecraftforge.common.config.Config.Comment({
+            "The far plane render distance (in blocks)"
+    })
+    public static int renderDistance = 512;
+
+    @net.minecraftforge.common.config.Config.Comment({
             "Toggles debug mode, which enables a number of features useful while developing the mod.",
             "You're probably better off leaving this disabled."
     })

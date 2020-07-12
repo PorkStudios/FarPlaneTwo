@@ -22,13 +22,18 @@ package net.daporkchop.fp2.strategy;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.strategy.common.IFarChunk;
 import net.daporkchop.fp2.strategy.common.IFarChunkPos;
+import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapChunk;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapChunkPos;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPlayerTracker;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapWorld;
 import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -40,13 +45,18 @@ public enum RenderStrategy {
     @Config.Comment("Renders a simple 2D heightmap of the world. Overhangs are not supported.")
     HEIGHTMAP {
         @Override
-        public IFarWorld createFarWorld(@NonNull World world) {
-            return null;
+        public IFarWorld createFarWorld(@NonNull WorldServer world) {
+            return new HeightmapWorld(world);
+        }
+
+        @Override
+        public IFarPlayerTracker createFarTracker(@NonNull IFarWorld world) {
+            return new HeightmapPlayerTracker(world);
         }
 
         @Override
         @SideOnly(Side.CLIENT)
-        public TerrainRenderer createTerrainRenderer(@NonNull IFarWorld world) {
+        public TerrainRenderer createTerrainRenderer(@NonNull WorldClient world) {
             return new HeightmapTerrainRenderer(world);
         }
 
@@ -54,16 +64,26 @@ public enum RenderStrategy {
         public IFarChunkPos readId(@NonNull ByteBuf src) {
             return new HeightmapChunkPos(src.readInt(), src.readInt());
         }
+
+        @Override
+        public IFarChunk readChunk(@NonNull ByteBuf src) {
+            return new HeightmapChunk(src);
+        }
     },
     VOLUMETRIC {
         @Override
-        public IFarWorld createFarWorld(@NonNull World world) {
+        public IFarWorld createFarWorld(@NonNull WorldServer world) {
+            throw new UnsupportedOperationException(); //TODO
+        }
+
+        @Override
+        public IFarPlayerTracker createFarTracker(@NonNull IFarWorld world) {
             throw new UnsupportedOperationException(); //TODO
         }
 
         @Override
         @SideOnly(Side.CLIENT)
-        public TerrainRenderer createTerrainRenderer(@NonNull IFarWorld world) {
+        public TerrainRenderer createTerrainRenderer(@NonNull WorldClient world) {
             throw new UnsupportedOperationException(); //TODO
         }
 
@@ -71,18 +91,27 @@ public enum RenderStrategy {
         public IFarChunkPos readId(@NonNull ByteBuf src) {
             throw new UnsupportedOperationException(); //TODO
         }
+
+        @Override
+        public IFarChunk readChunk(@NonNull ByteBuf src) {
+            throw new UnsupportedOperationException(); //TODO
+        }
     };
 
     private static final RenderStrategy[] VALUES = values();
 
-    public static RenderStrategy fromOrdinal(int ordinal)   {
+    public static RenderStrategy fromOrdinal(int ordinal) {
         return VALUES[ordinal];
     }
 
-    public abstract IFarWorld createFarWorld(@NonNull World world);
+    public abstract IFarWorld createFarWorld(@NonNull WorldServer world);
+
+    public abstract IFarPlayerTracker createFarTracker(@NonNull IFarWorld world);
 
     @SideOnly(Side.CLIENT)
-    public abstract TerrainRenderer createTerrainRenderer(@NonNull IFarWorld world);
+    public abstract TerrainRenderer createTerrainRenderer(@NonNull WorldClient world);
 
     public abstract IFarChunkPos readId(@NonNull ByteBuf src);
+
+    public abstract IFarChunk readChunk(@NonNull ByteBuf src);
 }

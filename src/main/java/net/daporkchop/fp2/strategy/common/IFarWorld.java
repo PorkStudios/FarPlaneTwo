@@ -21,11 +21,14 @@
 package net.daporkchop.fp2.strategy.common;
 
 import lombok.NonNull;
+import net.minecraft.world.WorldServer;
 
 /**
  * @author DaPorkchop_
  */
 public interface IFarWorld {
+    WorldServer world();
+
     /**
      * Gets the {@link IFarChunk} at the given position.
      *
@@ -33,4 +36,13 @@ public interface IFarWorld {
      * @return the chunk
      */
     IFarChunk chunk(@NonNull IFarChunkPos pos);
+
+    /**
+     * Fired whenever a block state changes.
+     *
+     * @param x the X coordinate of the block that changed
+     * @param y the Y coordinate of the block that changed
+     * @param z the Z coordinate of the block that changed
+     */
+    void blockChanged(int x, int y, int z);
 }

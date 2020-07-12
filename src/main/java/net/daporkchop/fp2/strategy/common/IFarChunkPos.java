@@ -22,6 +22,7 @@ package net.daporkchop.fp2.strategy.common;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.strategy.RenderStrategy;
 
 /**
  * An identifier for a {@link IFarChunk}.
@@ -29,5 +30,7 @@ import lombok.NonNull;
  * @author DaPorkchop_
  */
 public interface IFarChunkPos {
+    RenderStrategy strategy();
+
     void write(@NonNull ByteBuf dst);
 }

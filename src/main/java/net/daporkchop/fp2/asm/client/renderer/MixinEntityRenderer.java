@@ -22,6 +22,7 @@ package net.daporkchop.fp2.asm.client.renderer;
 
 import net.daporkchop.fp2.client.RenderPass;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
+import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
@@ -48,7 +49,7 @@ public abstract class MixinEntityRenderer {
                     ordinal = 5,
                     shift = At.Shift.BEFORE))
     private void renderWorldPass_postRenderBelowClouds(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
-        TerrainRenderer renderer = ((TerrainRenderer.Holder) this.mc.world).fp2_terrainRenderer();
+        TerrainRenderer renderer = ((IFarContext) this.mc.world).fp2_renderer();
         if (renderer != null) {
             this.mc.profiler.endStartSection(RenderPass.PRE.profilerSectionName);
             renderer.render(RenderPass.PRE, partialTicks, this.mc.world, this.mc);
@@ -62,7 +63,7 @@ public abstract class MixinEntityRenderer {
                     shift = At.Shift.AFTER),
             allow = 1)
     private void renderWorldPass_preRenderAboveClouds(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
-        TerrainRenderer renderer = ((TerrainRenderer.Holder) this.mc.world).fp2_terrainRenderer();
+        TerrainRenderer renderer = ((IFarContext) this.mc.world).fp2_renderer();
         if (renderer != null) {
             this.mc.profiler.endStartSection(RenderPass.POST.profilerSectionName);
             renderer.render(RenderPass.POST, partialTicks, this.mc.world, this.mc);

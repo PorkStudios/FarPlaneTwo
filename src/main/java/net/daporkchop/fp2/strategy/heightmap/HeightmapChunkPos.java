@@ -25,6 +25,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
+import net.daporkchop.fp2.strategy.RenderStrategy;
 import net.daporkchop.fp2.strategy.common.IFarChunkPos;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.math.PMath;
@@ -38,6 +39,11 @@ import net.daporkchop.lib.common.math.PMath;
 public class HeightmapChunkPos implements IFarChunkPos {
     private final int x;
     private final int z;
+
+    @Override
+    public RenderStrategy strategy() {
+        return RenderStrategy.HEIGHTMAP;
+    }
 
     @Override
     public void write(@NonNull ByteBuf dst) {

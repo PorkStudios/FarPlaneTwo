@@ -30,6 +30,8 @@ import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.strategy.common.IFarChunk;
+import net.daporkchop.fp2.strategy.common.IFarChunkPos;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.daporkchop.fp2.util.Constants;
@@ -53,6 +55,7 @@ import java.util.Map;
 
 import static net.daporkchop.fp2.client.GlobalInfo.*;
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL11.glBlendFunc;
@@ -137,17 +140,13 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
     protected final Map<ChunkPos, VertexArrayObject> chunks = new HashMap<>();
     protected IntBuffer renderableChunksMask;
 
-    public double seaLevel = Integer.MIN_VALUE;
-
-    public HeightmapTerrainRenderer(@NonNull IFarWorld world) {
+    public HeightmapTerrainRenderer(@NonNull WorldClient world) {
     }
 
     @Override
-    public void init(double seaLevel) {
-        this.seaLevel = seaLevel;
-    }
-
-    public void receiveRemoteChunk(@NonNull HeightmapChunk chunk) {
+    public void receiveChunk(@NonNull IFarChunk chunkIn) {
+        checkArg(chunkIn instanceof HeightmapChunk, chunkIn);
+        HeightmapChunk chunk = (HeightmapChunk) chunkIn;
         Minecraft.getMinecraft().addScheduledTask(() -> {
             try (VertexArrayObject vao = new VertexArrayObject().bind()) {
                 glEnableVertexAttribArray(0);
@@ -204,6 +203,10 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
     }
 
     @Override
+    public void unloadChunk(@NonNull IFarChunkPos pos) {
+    }
+
+    @Override
     public void render(RenderPass pass, float partialTicks, WorldClient world, Minecraft mc) {
         if (pass == RenderPass.PRE) {
             super.render(pass, partialTicks, world, mc);
@@ -251,7 +254,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                 try (ShaderProgram shader = WATER_SHADER.use()) {
                     ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
                     ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
-                    glUniform1f(shader.uniformLocation("seaLevel"), (float) this.seaLevel);
+                    glUniform1f(shader.uniformLocation("seaLevel"), 63f);
 
                     this.chunks.forEach((pos, o) -> {
                         glUniform2d(shader.uniformLocation("camera_offset"), pos.x * HEIGHT_VOXELS + .5d, pos.z * HEIGHT_VOXELS + .5d);

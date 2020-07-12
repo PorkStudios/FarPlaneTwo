@@ -23,6 +23,7 @@ package net.daporkchop.fp2.asm.world;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.RenderStrategy;
 import net.daporkchop.fp2.strategy.common.IFarContext;
+import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
 import net.daporkchop.fp2.util.vanilla.VanillaCachedBlockAccessImpl;
@@ -44,6 +45,7 @@ public abstract class MixinWorldServer extends World implements IFarContext, Cac
 
     protected RenderStrategy strategy;
     protected IFarWorld world;
+    protected IFarPlayerTracker tracker;
 
     protected MixinWorldServer() {
         super(null, null, null, null, false);
@@ -65,6 +67,7 @@ public abstract class MixinWorldServer extends World implements IFarContext, Cac
     @Override
     public void fp2_init(@NonNull RenderStrategy strategy) {
         this.world = strategy.createFarWorld((WorldServer) (Object) this);
+        this.tracker = strategy.createFarTracker(this.world);
         this.strategy = strategy;
     }
 
@@ -78,5 +81,11 @@ public abstract class MixinWorldServer extends World implements IFarContext, Cac
     public IFarWorld fp2_world() {
         checkState(this.strategy != null);
         return this.world;
+    }
+
+    @Override
+    public IFarPlayerTracker fp2_tracker() {
+        checkState(this.strategy != null);
+        return this.tracker;
     }
 }

@@ -22,13 +22,13 @@ package net.daporkchop.fp2.net.server;
 
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.daporkchop.fp2.strategy.RenderStrategy;
+import net.daporkchop.fp2.strategy.common.IFarChunkPos;
+import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapChunk;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
@@ -39,27 +39,26 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 @Getter
 @Setter
 @Accessors(fluent = true, chain = true)
-public class SPacketHeightmapData implements IMessage {
+public class SPacketUnloadChunk implements IMessage {
     @NonNull
-    protected HeightmapChunk chunk;
+    protected IFarChunkPos pos;
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.chunk = new HeightmapChunk(buf.readInt(), buf.readInt());
-        this.chunk.fromBytes(buf);
+        this.pos = RenderStrategy.fromOrdinal(buf.readInt()).readId(buf);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeInt(this.chunk.x()).writeInt(this.chunk.z());
-        this.chunk.toBytes(buf);
+        buf.writeInt(this.pos.strategy().ordinal());
+        this.pos.write(buf);
     }
 
-    public static class Handler implements IMessageHandler<SPacketHeightmapData, IMessage> {
+    public static class Handler implements IMessageHandler<SPacketUnloadChunk, IMessage> {
         @Override
-        public IMessage onMessage(SPacketHeightmapData message, MessageContext ctx) {
-            HeightmapTerrainRenderer renderer = (HeightmapTerrainRenderer) ((TerrainRenderer.Holder) ctx.getClientHandler().world).fp2_terrainRenderer();
-            renderer.receiveRemoteChunk(message.chunk);
+        public IMessage onMessage(SPacketUnloadChunk message, MessageContext ctx) {
+            TerrainRenderer renderer = ((IFarContext) ctx.getClientHandler().world).fp2_renderer();
+            renderer.unloadChunk(message.pos);
             return null;
         }
     }

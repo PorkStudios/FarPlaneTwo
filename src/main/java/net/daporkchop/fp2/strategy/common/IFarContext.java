@@ -49,6 +49,12 @@ public interface IFarContext {
     IFarWorld fp2_world();
 
     /**
+     * @return the current {@link IFarPlayerTracker}
+     * @throws IllegalStateException if this context has not yet been initialized
+     */
+    IFarPlayerTracker fp2_tracker();
+
+    /**
      * @return the current {@link TerrainRenderer}
      * @throws IllegalStateException if this context has not yet been initialized
      */

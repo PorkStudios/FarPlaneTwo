@@ -18,40 +18,48 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap;
+package net.daporkchop.fp2.net.server;
 
+import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.daporkchop.fp2.strategy.RenderStrategy;
 import net.daporkchop.fp2.strategy.common.IFarChunk;
-import net.daporkchop.fp2.strategy.common.IFarChunkPos;
-import net.daporkchop.fp2.strategy.common.IFarWorld;
-import net.daporkchop.fp2.strategy.heightmap.vanilla.VanillaHeightmapGenerator;
-import net.minecraft.world.WorldServer;
+import net.daporkchop.fp2.strategy.common.IFarContext;
+import net.daporkchop.fp2.strategy.common.TerrainRenderer;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
+import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 /**
- * Representation of a world used by the heightmap rendering strategy.
- *
  * @author DaPorkchop_
  */
 @Getter
-@Accessors(fluent = true)
-public class HeightmapWorld implements IFarWorld {
-    protected final WorldServer world;
-    protected final HeightmapGenerator generator;
+@Setter
+@Accessors(fluent = true, chain = true)
+public class SPacketChunkData implements IMessage {
+    @NonNull
+    protected IFarChunk chunk;
 
-    public HeightmapWorld(@NonNull WorldServer world) {
-        this.world = world;
-        this.generator = new VanillaHeightmapGenerator();
-        this.generator.init(world);
+    @Override
+    public void fromBytes(ByteBuf buf) {
+        this.chunk = RenderStrategy.fromOrdinal(buf.readInt()).readChunk(buf);
     }
 
     @Override
-    public IFarChunk chunk(@NonNull IFarChunkPos pos) {
-        return null;
+    public void toBytes(ByteBuf buf) {
+        buf.writeInt(this.chunk.strategy().ordinal());
+        this.chunk.write(buf);
     }
 
-    @Override
-    public void blockChanged(int x, int y, int z) {
+    public static class Handler implements IMessageHandler<SPacketChunkData, IMessage> {
+        @Override
+        public IMessage onMessage(SPacketChunkData message, MessageContext ctx) {
+            TerrainRenderer renderer = ((IFarContext) ctx.getClientHandler().world).fp2_renderer();
+            renderer.receiveChunk(message.chunk);
+            return null;
+        }
     }
 }

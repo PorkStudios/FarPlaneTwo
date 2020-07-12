@@ -21,23 +21,12 @@
 package net.daporkchop.fp2.server;
 
 import net.daporkchop.fp2.Config;
-import net.daporkchop.fp2.FP2;
-import net.daporkchop.fp2.net.server.SPacketHeightmapData;
 import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapChunk;
-import net.daporkchop.fp2.util.threading.CachedBlockAccess;
+import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
-import net.daporkchop.lib.common.util.PorkUtil;
-import net.minecraft.block.Block;
-import net.minecraft.block.material.MapColor;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.biome.Biome;
-import net.minecraftforge.common.config.ConfigManager;
-import net.minecraftforge.fml.client.event.ConfigChangedEvent;
+import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
@@ -45,8 +34,8 @@ import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
-import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -71,54 +60,41 @@ public class ServerProxy {
     }
 
     @SubscribeEvent
-    public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        PorkUtil.sleep(2000L);
-
-        int seaLevel = event.player.world.getSeaLevel();
-        NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy()
-                .strategy(Config.renderStrategy)
-                .seaLevel(seaLevel), (EntityPlayerMP) event.player);
-
-        for (int _chunkX = 0; _chunkX < 10; _chunkX++) {
-            for (int _chunkZ = 0; _chunkZ < 10; _chunkZ++) {
-                int chunkX = _chunkX;
-                int chunkZ = _chunkZ;
-                THREAD_POOL.submit(() -> {
-                    HeightmapChunk chunk = new HeightmapChunk(chunkX, chunkZ);
-                    CachedBlockAccess access = ((CachedBlockAccess.Holder) ((EntityPlayerMP) event.player).world).fp2_cachedBlockAccess();
-                    access.prefetch(new AxisAlignedBB(
-                            chunkX * HEIGHT_VOXELS, 0, chunkZ * HEIGHT_VOXELS,
-                            (chunkX + 1) * HEIGHT_VOXELS + 1, 255, (chunkZ + 1) * HEIGHT_VOXELS + 1));
-                    for (int x = 0; x < HEIGHT_VERTS; x++) {
-                        for (int z = 0; z < HEIGHT_VERTS; z++) {
-                            int height = access.getTopBlockY(chunkX * HEIGHT_VOXELS + x, chunkZ * HEIGHT_VOXELS + z) - 1;
-                            BlockPos pos = new BlockPos(chunkX * HEIGHT_VOXELS + x, height, chunkZ * HEIGHT_VOXELS + z);
-                            IBlockState state = access.getBlockState(pos);
-
-                            while (height <= seaLevel && state.getMaterial() == Material.WATER) {
-                                pos = new BlockPos(pos.getX(), --height, pos.getZ());
-                                state = access.getBlockState(pos);
-                            }
-
-                            Biome biome = access.getBiome(pos);
-                            MapColor color = state.getMapColor(access, pos);
-                            chunk.height(x, z, height)
-                                    .color(x, z, color.colorIndex)
-                                    .biome(x, z, Biome.getIdForBiome(biome))
-                                    .block(x, z, Block.getStateId(state))
-                                    .light(x, z, access.getCombinedLight(pos.add(0, 1, 0), 0) >> 4);
-                        }
-                    }
-                    NETWORK_WRAPPER.sendTo(new SPacketHeightmapData().chunk(chunk), (EntityPlayerMP) event.player);
-                });
-            }
+    public void worldLoad(WorldEvent.Load event) {
+        if (!event.getWorld().isRemote) {
+            ((IFarContext) event.getWorld()).fp2_init(Config.renderStrategy);
         }
     }
 
     @SubscribeEvent
-    public void onConfigChanged(ConfigChangedEvent.OnConfigChangedEvent event) {
-        if (event.getModID().equals(FP2.MODID)) {
-            ConfigManager.sync(FP2.MODID, net.minecraftforge.common.config.Config.Type.INSTANCE);
+    public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!event.player.world.isRemote) {
+            NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy().strategy(Config.renderStrategy), (EntityPlayerMP) event.player);
+            ((IFarContext) event.player.world).fp2_tracker().playerAdd((EntityPlayerMP) event.player);
+        }
+    }
+
+    @SubscribeEvent
+    public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (!event.player.world.isRemote) {
+            ((IFarContext) event.player.world).fp2_tracker().playerRemove((EntityPlayerMP) event.player);
+        }
+    }
+
+    @SubscribeEvent
+    public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (!event.player.world.isRemote) {
+            ((IFarContext) event.player.getServer().getWorld(event.fromDim)).fp2_tracker().playerRemove((EntityPlayerMP) event.player);
+            ((IFarContext) event.player.getServer().getWorld(event.toDim)).fp2_tracker().playerAdd((EntityPlayerMP) event.player);
+        }
+    }
+
+    @SubscribeEvent
+    public void onWorldTick(TickEvent.WorldTickEvent event) {
+        if (!event.world.isRemote) {
+            for (EntityPlayer player : event.world.playerEntities) {
+                ((IFarContext) event.world).fp2_tracker().playerMove((EntityPlayerMP) player);
+            }
         }
     }
 }

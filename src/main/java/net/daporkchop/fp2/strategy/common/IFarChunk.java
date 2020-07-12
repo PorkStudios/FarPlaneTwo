@@ -20,14 +20,22 @@
 
 package net.daporkchop.fp2.strategy.common;
 
+import io.netty.buffer.ByteBuf;
+import lombok.NonNull;
+import net.daporkchop.fp2.strategy.RenderStrategy;
+
 import java.util.concurrent.locks.ReadWriteLock;
 
 /**
  * @author DaPorkchop_
  */
 public interface IFarChunk extends ReadWriteLock {
+    RenderStrategy strategy();
+
     /**
      * @return this chunk's position
      */
     IFarChunkPos pos();
+
+    void write(@NonNull ByteBuf dst);
 }

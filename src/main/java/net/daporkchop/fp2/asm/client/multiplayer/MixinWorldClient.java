@@ -37,7 +37,6 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Mixin(WorldClient.class)
 public abstract class MixinWorldClient extends World implements IFarContext {
     private RenderStrategy strategy;
-    private IFarWorld world;
     private TerrainRenderer renderer;
 
     protected MixinWorldClient() {
@@ -46,8 +45,7 @@ public abstract class MixinWorldClient extends World implements IFarContext {
 
     @Override
     public void fp2_init(@NonNull RenderStrategy strategy) {
-        this.world = strategy.createFarWorld((WorldClient) (Object) this);
-        this.renderer = strategy.createTerrainRenderer(this.world);
+        this.renderer = strategy.createTerrainRenderer((WorldClient) (Object) this);
         this.strategy = strategy;
     }
 
@@ -55,12 +53,6 @@ public abstract class MixinWorldClient extends World implements IFarContext {
     public RenderStrategy fp2_strategy() {
         checkState(this.strategy != null);
         return this.strategy;
-    }
-
-    @Override
-    public IFarWorld fp2_world() {
-        checkState(this.strategy != null);
-        return this.world;
     }
 
     @Override
