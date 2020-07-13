@@ -1,10 +1,10 @@
 {
   "vert": [
-    "common.vsh",
-    "vert/heightmap.vsh"
+    "common.glsl",
+    "vert/heightmap.vert"
   ],
   "frag": [
-    "common.vsh",
-    "frag/heightmap.fsh"
+    "common.glsl",
+    "frag/heightmap.frag"
   ]
 }

@@ -50,15 +50,15 @@ public class VanillaHeightmapGenerator implements HeightmapGenerator {
 
     @Override
     public void generateExact(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece) {
-        int chunkX = piece.x();
-        int chunkZ = piece.z();
+        int pieceX = piece.x();
+        int pieceZ = piece.z();
         world.prefetch(new AxisAlignedBB(
-                chunkX * HEIGHT_VOXELS, 0, chunkZ * HEIGHT_VOXELS,
-                (chunkX + 1) * HEIGHT_VOXELS + 1, 255, (chunkZ + 1) * HEIGHT_VOXELS + 1));
+                pieceX * HEIGHT_VOXELS, 0, pieceZ * HEIGHT_VOXELS,
+                (pieceX + 1) * HEIGHT_VOXELS, 255, (pieceZ + 1) * HEIGHT_VOXELS));
         for (int x = 0; x < HEIGHT_VERTS; x++) {
             for (int z = 0; z < HEIGHT_VERTS; z++) {
-                int height = world.getTopBlockY(chunkX * HEIGHT_VOXELS + x, chunkZ * HEIGHT_VOXELS + z) - 1;
-                BlockPos pos = new BlockPos(chunkX * HEIGHT_VOXELS + x, height, chunkZ * HEIGHT_VOXELS + z);
+                int height = world.getTopBlockY(pieceX * HEIGHT_VOXELS + x, pieceZ * HEIGHT_VOXELS + z) - 1;
+                BlockPos pos = new BlockPos(pieceX * HEIGHT_VOXELS + x, height, pieceZ * HEIGHT_VOXELS + z);
                 IBlockState state = world.getBlockState(pos);
 
                 while (height <= 63 && state.getMaterial() == Material.WATER) {

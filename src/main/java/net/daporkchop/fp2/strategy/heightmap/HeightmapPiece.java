@@ -109,6 +109,31 @@ public class HeightmapPiece implements IFarPiece {
         return RenderStrategy.HEIGHTMAP;
     }
 
+    public int height(int x, int z) {
+        checkCoords(x, z);
+        return this.height.get(x * HEIGHT_VERTS + z);
+    }
+
+    public int color(int x, int z) {
+        checkCoords(x, z);
+        return this.color.get(x * HEIGHT_VERTS + z);
+    }
+
+    public int biome(int x, int z) {
+        checkCoords(x, z);
+        return this.biome.get(x * HEIGHT_VERTS + z);
+    }
+
+    public int block(int x, int z) {
+        checkCoords(x, z);
+        return this.block.get(x * HEIGHT_VERTS + z);
+    }
+
+    public int light(int x, int z) {
+        checkCoords(x, z);
+        return this.light.get(x * HEIGHT_VERTS + z);
+    }
+
     public HeightmapPiece height(int x, int z, int height) {
         checkCoords(x, z);
         this.height.put(x * HEIGHT_VERTS + z, height);
@@ -137,6 +162,14 @@ public class HeightmapPiece implements IFarPiece {
         checkCoords(x, z);
         this.light.put(x * HEIGHT_VERTS + z, light);
         return this;
+    }
+
+    public void copyProperties(int x, int z, @NonNull HeightmapPiece dst, int dstX, int dstZ) {
+        dst.height(dstX, dstZ, this.height(x, z))
+                .color(dstX, dstZ, this.color(x, z))
+                .biome(dstX, dstZ, this.biome(x, z))
+                .block(dstX, dstZ, this.block(x, z))
+                .light(dstX, dstZ, this.light(x, z));
     }
 
     @Override
