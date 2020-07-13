@@ -41,7 +41,7 @@ import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * A "chunk" containing the data used by the heightmap rendering strategy.
+ * A "piece" containing the data used by the heightmap rendering strategy.
  *
  * @author DaPorkchop_
  */
@@ -106,7 +106,7 @@ public class HeightmapPiece implements IFarPiece {
 
     @Override
     public RenderStrategy strategy() {
-        return RenderStrategy.HEIGHTMAP;
+        return RenderStrategy.FLAT;
     }
 
     public int height(int x, int z) {

@@ -41,21 +41,21 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 @Accessors(fluent = true, chain = true)
 public class SPacketPieceData implements IMessage {
     @NonNull
-    protected IFarPiece chunk;
+    protected IFarPiece piece;
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.chunk = RenderStrategy.fromOrdinal(buf.readInt()).readPiece(buf);
+        this.piece = RenderStrategy.fromOrdinal(buf.readInt()).readPiece(buf);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        this.chunk.readLock().lock();
+        this.piece.readLock().lock();
         try {
-            buf.writeInt(this.chunk.strategy().ordinal());
-            this.chunk.write(buf);
+            buf.writeInt(this.piece.strategy().ordinal());
+            this.piece.write(buf);
         } finally {
-            this.chunk.readLock().unlock();
+            this.piece.readLock().unlock();
         }
     }
 
@@ -63,7 +63,7 @@ public class SPacketPieceData implements IMessage {
         @Override
         public IMessage onMessage(SPacketPieceData message, MessageContext ctx) {
             TerrainRenderer renderer = ((IFarContext) ctx.getClientHandler().world).fp2_renderer();
-            renderer.receivePiece(message.chunk);
+            renderer.receivePiece(message.piece);
             return null;
         }
     }

@@ -31,4 +31,6 @@ import lombok.experimental.UtilityClass;
 public class HeightmapConstants {
     public static final int HEIGHT_VOXELS = 64; //side length of a tile in voxels contained
     public static final int HEIGHT_VERTS = HEIGHT_VOXELS + 1; //side length of a tile in vertices
+
+    public static final int HEIGHT_STORAGE_VERSION = 0;
 }

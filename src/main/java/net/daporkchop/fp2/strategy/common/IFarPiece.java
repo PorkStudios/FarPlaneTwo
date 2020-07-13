@@ -33,7 +33,7 @@ public interface IFarPiece extends ReadWriteLock {
     RenderStrategy strategy();
 
     /**
-     * @return this chunk's position
+     * @return this piece's position
      */
     IFarPiecePos pos();
 

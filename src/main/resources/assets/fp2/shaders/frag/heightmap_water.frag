@@ -8,7 +8,7 @@ layout(binding = 1) uniform sampler2D lightmap_texture;
 out vec4 color;
 
 void main() {
-    if (isLoaded(ivec3(vert_pos) >> 4)) {
+    if (isLoaded(ivec3(floor(vert_pos)) >> 4)) {
         discard;//TODO: figure out the potential performance implications of this vs transparent output
         //color = vec4(0.);
     } else {

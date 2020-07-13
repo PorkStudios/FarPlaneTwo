@@ -91,8 +91,10 @@ public final class ServerThreadExecutor implements WorldWorkerManager.IWorker, E
         WorldWorkerManager.addWorker(this);
     }
 
-    public void shutdown() {
-        checkState(PUnsafe.compareAndSwapInt(this, ADDED_OFFSET, 1, 2), "not added?!?");
+    public void workOffQueue() {
+        checkState(this.added >= 1, "executor is not currently active!");
+        checkState(Thread.currentThread() == this.serverThread);
+
         //work off queue
         synchronized (this.tasks) {
             RuntimeException exception = null;
@@ -111,6 +113,16 @@ public final class ServerThreadExecutor implements WorldWorkerManager.IWorker, E
                 throw exception;
             }
         }
+    }
+
+    public void shutdown() {
+        checkState(Thread.currentThread() == this.serverThread);
+        checkState(PUnsafe.compareAndSwapInt(this, ADDED_OFFSET, 1, 2), "not added?!?");
+
+        synchronized (this.tasks) {
+            checkState(this.tasks.isEmpty());
+        }
+
         this.serverThread = null;
         this.added = 0; //mark as ready to be added again
     }

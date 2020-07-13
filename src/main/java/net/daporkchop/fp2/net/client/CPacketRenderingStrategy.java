@@ -25,7 +25,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.daporkchop.fp2.Config;
+import net.daporkchop.fp2.CommonConfig;
 import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
 import net.daporkchop.fp2.strategy.RenderStrategy;
 import net.daporkchop.fp2.strategy.common.IFarContext;
@@ -60,12 +60,12 @@ public class CPacketRenderingStrategy implements IMessage {
     public static class Handler implements IMessageHandler<CPacketRenderingStrategy, IMessage> {
         @Override
         public IMessage onMessage(CPacketRenderingStrategy message, MessageContext ctx) {
-            if (message.strategy == Config.renderStrategy) {
+            if (message.strategy == CommonConfig.renderStrategy) {
                 ServerThreadExecutor.INSTANCE.execute(() -> {
                     ((IFarPlayer) ctx.getServerHandler().player).fp2_markReady();
 
                     //send the packet here to ensure that it's sent before adding the player to the tracker
-                    NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy().strategy(Config.renderStrategy), ctx.getServerHandler().player);
+                    NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy().strategy(CommonConfig.renderStrategy), ctx.getServerHandler().player);
                     ((IFarContext) ctx.getServerHandler().player.world).fp2_tracker().playerAdd(ctx.getServerHandler().player);
                 });
             }

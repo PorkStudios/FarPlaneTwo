@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.client;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.Config;
+import net.daporkchop.fp2.CommonConfig;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.relauncher.Side;
@@ -37,7 +37,7 @@ public class KeyBindings {
     public final KeyBinding RELOAD_SHADERS = new KeyBinding("key.fp2.debug.reloadShaders", Keyboard.KEY_0, "key.categories.fp2.debug");
 
     void register() {
-        if (Config.debug)   {
+        if (CommonConfig.debug)   {
             ClientRegistry.registerKeyBinding(RELOAD_SHADERS);
         }
     }

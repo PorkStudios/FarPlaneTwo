@@ -25,15 +25,11 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.daporkchop.fp2.Config;
 import net.daporkchop.fp2.strategy.RenderStrategy;
 import net.daporkchop.fp2.strategy.common.IFarContext;
-import net.daporkchop.fp2.util.IFarPlayer;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
-
-import static net.daporkchop.fp2.util.Constants.NETWORK_WRAPPER;
 
 /**
  * @author DaPorkchop_

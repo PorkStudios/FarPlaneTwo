@@ -42,7 +42,7 @@ public class HeightmapPiecePos implements IFarPiecePos {
 
     @Override
     public RenderStrategy strategy() {
-        return RenderStrategy.HEIGHTMAP;
+        return RenderStrategy.FLAT;
     }
 
     @Override

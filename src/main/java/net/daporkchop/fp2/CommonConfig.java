@@ -21,26 +21,45 @@
 package net.daporkchop.fp2;
 
 import net.daporkchop.fp2.strategy.RenderStrategy;
+import net.daporkchop.lib.common.util.PorkUtil;
+import net.minecraftforge.common.config.Config;
+
+import static java.lang.Math.max;
 
 /**
  * @author DaPorkchop_
  */
-@net.minecraftforge.common.config.Config(modid = FP2.MODID, name = FP2.MODID + "/general")
-public class Config {
-    @net.minecraftforge.common.config.Config.Comment({
+@Config(modid = FP2.MODID)
+public class CommonConfig {
+    @Config.Comment({
             "The strategy that will be used for rendering distant terrain."
     })
-    public static RenderStrategy renderStrategy = RenderStrategy.HEIGHTMAP;
+    @Config.RequiresWorldRestart
+    public static RenderStrategy renderStrategy = RenderStrategy.FLAT;
 
-    @net.minecraftforge.common.config.Config.Comment({
+    @Config.Comment({
             "The far plane render distance (in blocks)"
     })
     public static int renderDistance = 512;
 
-    @net.minecraftforge.common.config.Config.Comment({
-            "Toggles debug mode, which enables a number of features useful while developing the mod.",
-            "You're probably better off leaving this disabled."
+    @Config.Comment({
+            "Toggles debug mode, which enables some features useful while developing the mod.",
+            "Default: false"
     })
-    @net.minecraftforge.common.config.Config.RequiresMcRestart
-    public static boolean debug = false;
+    @Config.RequiresMcRestart
+    public static boolean debug = Boolean.parseBoolean(System.getProperty("fp2.debug", "false"));
+
+    @Config.Comment({
+            "The number of threads that will be used for generating far plane terrain data.",
+            "Default: <cpu count> - 1 (and at least 1)"
+    })
+    @Config.RequiresWorldRestart
+    public static int generationThreads = max(PorkUtil.CPU_COUNT - 1, 1);
+
+    @Config.Comment({
+            "The number of threads that will be used for loading and saving of far plane terrain data.",
+            "Default: <cpu count>"
+    })
+    @Config.RequiresWorldRestart
+    public static int ioThreads = PorkUtil.CPU_COUNT;
 }

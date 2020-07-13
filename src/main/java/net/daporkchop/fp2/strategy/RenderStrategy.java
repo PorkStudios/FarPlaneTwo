@@ -43,7 +43,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  */
 public enum RenderStrategy {
     @Config.Comment("Renders a simple 2D heightmap of the world. Overhangs are not supported.")
-    HEIGHTMAP {
+    FLAT {
         @Override
         public IFarWorld createFarWorld(@NonNull WorldServer world) {
             return new HeightmapWorld(world);

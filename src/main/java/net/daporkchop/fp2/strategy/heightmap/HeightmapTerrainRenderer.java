@@ -33,7 +33,7 @@ import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPiecePos;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
-import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.client.ClientConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
@@ -214,7 +214,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
             super.render(pass, partialTicks, world, mc);
 
             try (ShaderStorageBuffer loadedBuffer = new ShaderStorageBuffer().bind()) {
-                glBufferData(GL_SHADER_STORAGE_BUFFER, this.renderableChunksMask = Constants.renderableChunksMask(mc, this.renderableChunksMask), GL_STATIC_DRAW);
+                glBufferData(GL_SHADER_STORAGE_BUFFER, this.renderableChunksMask = ClientConstants.renderableChunksMask(mc, this.renderableChunksMask), GL_STATIC_DRAW);
                 loadedBuffer.bindingIndex(0);
             }
             GLOBAL_INFO.bindingIndex(1);

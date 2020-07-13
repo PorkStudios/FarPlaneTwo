@@ -25,7 +25,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import net.daporkchop.fp2.Config;
+import net.daporkchop.fp2.CommonConfig;
 import net.daporkchop.fp2.net.server.SPacketPieceData;
 import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
@@ -67,7 +67,7 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker {
     public void playerMove(@NonNull EntityPlayerMP player) {
         LongSet prev = this.tracking.get(player);
         LongSet next = new LongOpenHashSet();
-        int dist = Config.renderDistance / HeightmapConstants.HEIGHT_VOXELS;
+        int dist = CommonConfig.renderDistance / HeightmapConstants.HEIGHT_VOXELS;
         int baseX = floorI(player.posX) / HeightmapConstants.HEIGHT_VOXELS;
         int baseZ = floorI(player.posZ) / HeightmapConstants.HEIGHT_VOXELS;
 
@@ -80,7 +80,7 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker {
                     //piece wasn't loaded before, we should load and send it
                     HeightmapPiece piece = this.world.getPieceNowOrLoadAsync(new HeightmapPiecePos(x, z));
                     if (piece != null) {
-                        NETWORK_WRAPPER.sendTo(new SPacketPieceData().chunk(piece), player);
+                        NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player);
                     } else {
                         continue; //don't add to next, to indicate that the piece hasn't been sent yet
                     }

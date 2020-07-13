@@ -22,11 +22,23 @@ package net.daporkchop.fp2.client;
 
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.strategy.RenderStrategy;
+import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraftforge.common.config.Config;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
+
+import static java.lang.Math.max;
 
 /**
  * @author DaPorkchop_
  */
-@Config(modid = FP2.MODID, name = FP2.MODID + "/client")
+@SideOnly(Side.CLIENT)
+@Config(modid = FP2.MODID, category = "client")
 public class ClientConfig {
+    @Config.Comment({
+            "The number of threads that will be used for preparing far plane terrain data for rendering.",
+            "Default: <cpu count> - 1 (and at least 1)"
+    })
+    @Config.RequiresWorldRestart
+    public static int renderThreads = max(PorkUtil.CPU_COUNT - 1, 1);
 }

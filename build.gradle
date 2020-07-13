@@ -118,6 +118,9 @@ dependencies {
     compile("net.daporkchop.lib:primitive:$porklibVersion") {
         exclude group: "io.netty"
     }
+    compile("net.daporkchop.lib:compression-zstd:$porklibVersion") {
+        exclude group: "io.netty"
+    }
 
     deobfCompile "io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT"
     deobfCompile "io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT"
@@ -143,6 +146,7 @@ minecraft {
             "-Dmixin.debug.export=true",
             "-Dmixin.debug.verbose=true",
             "-Dmixin.hotSwap=true",
+            "-Dfp2.debug=true",
             "-Xmx2G",
             "-XX:+UseG1GC",
             "-ea",

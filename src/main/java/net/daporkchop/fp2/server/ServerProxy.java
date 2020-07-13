@@ -20,12 +20,11 @@
 
 package net.daporkchop.fp2.server;
 
-import net.daporkchop.fp2.Config;
+import net.daporkchop.fp2.CommonConfig;
 import net.daporkchop.fp2.net.server.SPacketReady;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.util.IFarPlayer;
-import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -53,17 +52,17 @@ public class ServerProxy {
     }
 
     public void serverStarting(FMLServerStartingEvent event) {
-        ServerThreadExecutor.INSTANCE.startup();
+        ServerConstants.init();
     }
 
     public void serverStopping(FMLServerStoppingEvent event) {
-        ServerThreadExecutor.INSTANCE.shutdown();
+        ServerConstants.shutdown();
     }
 
     @SubscribeEvent
     public void worldLoad(WorldEvent.Load event) {
         if (!event.getWorld().isRemote) {
-            ((IFarContext) event.getWorld()).fp2_init(Config.renderStrategy);
+            ((IFarContext) event.getWorld()).fp2_init(CommonConfig.renderStrategy);
         }
     }
 
