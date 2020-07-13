@@ -27,11 +27,11 @@ import net.daporkchop.fp2.strategy.common.IFarPiecePos;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPiecePos;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPlayerTracker;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapWorld;
+import net.daporkchop.fp2.strategy.flat.FlatPiece;
+import net.daporkchop.fp2.strategy.flat.FlatPiecePos;
+import net.daporkchop.fp2.strategy.flat.FlatPlayerTracker;
+import net.daporkchop.fp2.strategy.flat.FlatTerrainRenderer;
+import net.daporkchop.fp2.strategy.flat.FlatWorld;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.config.Config;
@@ -46,28 +46,28 @@ public enum RenderStrategy {
     FLAT {
         @Override
         public IFarWorld createFarWorld(@NonNull WorldServer world) {
-            return new HeightmapWorld(world);
+            return new FlatWorld(world);
         }
 
         @Override
         public IFarPlayerTracker createFarTracker(@NonNull IFarWorld world) {
-            return new HeightmapPlayerTracker(world);
+            return new FlatPlayerTracker(world);
         }
 
         @Override
         @SideOnly(Side.CLIENT)
         public TerrainRenderer createTerrainRenderer(@NonNull WorldClient world) {
-            return new HeightmapTerrainRenderer(world);
+            return new FlatTerrainRenderer(world);
         }
 
         @Override
         public IFarPiece readPiece(@NonNull ByteBuf src) {
-            return new HeightmapPiece(src);
+            return new FlatPiece(src);
         }
 
         @Override
         public IFarPiecePos readPiecePos(@NonNull ByteBuf src) {
-            return new HeightmapPiecePos(src.readInt(), src.readInt());
+            return new FlatPiecePos(src.readInt(), src.readInt());
         }
     },
     VOLUMETRIC {

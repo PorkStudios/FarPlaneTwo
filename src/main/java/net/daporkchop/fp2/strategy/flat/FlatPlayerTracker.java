@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap;
+package net.daporkchop.fp2.strategy.flat;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -47,12 +47,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 @Accessors(fluent = true)
-public class HeightmapPlayerTracker implements IFarPlayerTracker {
-    protected final HeightmapWorld world;
+public class FlatPlayerTracker implements IFarPlayerTracker {
+    protected final FlatWorld world;
     protected final Map<EntityPlayerMP, LongSet> tracking = new IdentityHashMap<>();
 
-    public HeightmapPlayerTracker(@NonNull IFarWorld world) {
-        this.world = (HeightmapWorld) world;
+    public FlatPlayerTracker(@NonNull IFarWorld world) {
+        this.world = (FlatWorld) world;
     }
 
     @Override
@@ -69,9 +69,9 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker {
     public void playerMove(@NonNull EntityPlayerMP player) {
         LongSet prev = this.tracking.get(player);
         LongSet next = new LongOpenHashSet();
-        int dist = CommonConfig.renderDistance / HeightmapConstants.HEIGHT_VOXELS;
-        int baseX = floorI(player.posX) / HeightmapConstants.HEIGHT_VOXELS;
-        int baseZ = floorI(player.posZ) / HeightmapConstants.HEIGHT_VOXELS;
+        int dist = CommonConfig.renderDistance / FlatConstants.FLAT_VOXELS;
+        int baseX = floorI(player.posX) / FlatConstants.FLAT_VOXELS;
+        int baseZ = floorI(player.posZ) / FlatConstants.FLAT_VOXELS;
 
         for (int dx = -dist; dx <= dist; dx++) {
             for (int dz = -dist; dz <= dist; dz++) {
@@ -80,7 +80,7 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker {
                 long l = BinMath.packXY(x, z);
                 if (!prev.remove(l)) {
                     //piece wasn't loaded before, we should load and send it
-                    HeightmapPiece piece = this.world.getPieceNowOrLoadAsync(new HeightmapPiecePos(x, z));
+                    FlatPiece piece = this.world.getPieceNowOrLoadAsync(new FlatPiecePos(x, z));
                     if (piece != null) {
                         NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player);
                     } else {
@@ -92,14 +92,14 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker {
         }
         for (long l : prev) {
             //unload all previously loaded pieces
-            NETWORK_WRAPPER.sendTo(new SPacketUnloadPiece().pos(new HeightmapPiecePos(BinMath.unpackX(l), BinMath.unpackY(l))), player);
+            NETWORK_WRAPPER.sendTo(new SPacketUnloadPiece().pos(new FlatPiecePos(BinMath.unpackX(l), BinMath.unpackY(l))), player);
         }
         checkState(this.tracking.replace(player, prev, next));
     }
 
     @Override
     public void pieceChanged(@NonNull IFarPiece pieceIn) {
-        HeightmapPiece piece = (HeightmapPiece) pieceIn;
+        FlatPiece piece = (FlatPiece) pieceIn;
         long key = BinMath.packXY(piece.x(), piece.z());
         this.tracking.forEach((player, curr) -> {
             if (curr.contains(key)) {

@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap;
+package net.daporkchop.fp2.strategy.flat;
 
 import io.netty.buffer.ByteBuf;
 import lombok.AccessLevel;
@@ -38,7 +38,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
+import static net.daporkchop.fp2.strategy.flat.FlatConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -49,11 +49,11 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @RequiredArgsConstructor
 @Getter
 @Accessors(fluent = true)
-public class HeightmapPiece implements IFarPiece {
-    protected static final long DIRTY_OFFSET = PUnsafe.pork_getOffset(HeightmapPiece.class, "dirty");
+public class FlatPiece implements IFarPiece {
+    protected static final long DIRTY_OFFSET = PUnsafe.pork_getOffset(FlatPiece.class, "dirty");
 
     public static void checkCoords(int x, int z) {
-        checkArg(x >= 0 && x < HEIGHT_VERTS && z >= 0 && z < HEIGHT_VERTS, "coordinates out of bounds (x=%d, z=%d)", x, z);
+        checkArg(x >= 0 && x < FLAT_VERTS && z >= 0 && z < FLAT_VERTS, "coordinates out of bounds (x=%d, z=%d)", x, z);
     }
 
     protected final int x;
@@ -62,16 +62,16 @@ public class HeightmapPiece implements IFarPiece {
     @Getter(AccessLevel.NONE)
     protected final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    protected final IntBuffer height = Constants.createIntBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
-    protected final IntBuffer color = Constants.createIntBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
-    protected final ByteBuffer biome = Constants.createByteBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
-    protected final ShortBuffer block = Constants.createShortBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
-    protected final IntBuffer light = Constants.createIntBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
+    protected final IntBuffer height = Constants.createIntBuffer(FLAT_VERTS * FLAT_VERTS);
+    protected final IntBuffer color = Constants.createIntBuffer(FLAT_VERTS * FLAT_VERTS);
+    protected final ByteBuffer biome = Constants.createByteBuffer(FLAT_VERTS * FLAT_VERTS);
+    protected final ShortBuffer block = Constants.createShortBuffer(FLAT_VERTS * FLAT_VERTS);
+    protected final IntBuffer light = Constants.createIntBuffer(FLAT_VERTS * FLAT_VERTS);
 
     @Getter(AccessLevel.NONE)
     protected volatile int dirty = 0;
 
-    public HeightmapPiece(@NonNull ByteBuf buf) {
+    public FlatPiece(@NonNull ByteBuf buf) {
         this(buf.readInt(), buf.readInt());
         for (int i = 0, capacity = this.height.capacity(); i < capacity; i++) {
             this.height.put(i, buf.readInt());
@@ -117,65 +117,65 @@ public class HeightmapPiece implements IFarPiece {
 
     public int height(int x, int z) {
         checkCoords(x, z);
-        return this.height.get(x * HEIGHT_VERTS + z);
+        return this.height.get(x * FLAT_VERTS + z);
     }
 
     public int color(int x, int z) {
         checkCoords(x, z);
-        return this.color.get(x * HEIGHT_VERTS + z);
+        return this.color.get(x * FLAT_VERTS + z);
     }
 
     public int biome(int x, int z) {
         checkCoords(x, z);
-        return this.biome.get(x * HEIGHT_VERTS + z);
+        return this.biome.get(x * FLAT_VERTS + z);
     }
 
     public int block(int x, int z) {
         checkCoords(x, z);
-        return this.block.get(x * HEIGHT_VERTS + z);
+        return this.block.get(x * FLAT_VERTS + z);
     }
 
     public int light(int x, int z) {
         checkCoords(x, z);
-        return this.light.get(x * HEIGHT_VERTS + z);
+        return this.light.get(x * FLAT_VERTS + z);
     }
 
-    public HeightmapPiece height(int x, int z, int height) {
+    public FlatPiece height(int x, int z, int height) {
         checkCoords(x, z);
-        this.height.put(x * HEIGHT_VERTS + z, height);
+        this.height.put(x * FLAT_VERTS + z, height);
         this.markDirty();
         return this;
     }
 
-    public HeightmapPiece color(int x, int z, int color) {
+    public FlatPiece color(int x, int z, int color) {
         checkCoords(x, z);
-        this.color.put(x * HEIGHT_VERTS + z, color);
+        this.color.put(x * FLAT_VERTS + z, color);
         this.markDirty();
         return this;
     }
 
-    public HeightmapPiece biome(int x, int z, int biome) {
+    public FlatPiece biome(int x, int z, int biome) {
         checkCoords(x, z);
-        this.biome.put(x * HEIGHT_VERTS + z, (byte) biome);
+        this.biome.put(x * FLAT_VERTS + z, (byte) biome);
         this.markDirty();
         return this;
     }
 
-    public HeightmapPiece block(int x, int z, int block) {
+    public FlatPiece block(int x, int z, int block) {
         checkCoords(x, z);
-        this.block.put(x * HEIGHT_VERTS + z, (short) block);
+        this.block.put(x * FLAT_VERTS + z, (short) block);
         this.markDirty();
         return this;
     }
 
-    public HeightmapPiece light(int x, int z, int light) {
+    public FlatPiece light(int x, int z, int light) {
         checkCoords(x, z);
-        this.light.put(x * HEIGHT_VERTS + z, light);
+        this.light.put(x * FLAT_VERTS + z, light);
         this.markDirty();
         return this;
     }
 
-    public void copyProperties(int x, int z, @NonNull HeightmapPiece dst, int dstX, int dstZ) {
+    public void copyProperties(int x, int z, @NonNull FlatPiece dst, int dstX, int dstZ) {
         dst.height(dstX, dstZ, this.height(x, z))
                 .color(dstX, dstZ, this.color(x, z))
                 .biome(dstX, dstZ, this.biome(x, z))
@@ -184,8 +184,8 @@ public class HeightmapPiece implements IFarPiece {
     }
 
     @Override
-    public HeightmapPiecePos pos() {
-        return new HeightmapPiecePos(this.x, this.z);
+    public FlatPiecePos pos() {
+        return new FlatPiecePos(this.x, this.z);
     }
 
     @Override

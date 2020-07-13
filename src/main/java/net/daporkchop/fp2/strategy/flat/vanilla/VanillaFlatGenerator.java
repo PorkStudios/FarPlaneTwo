@@ -18,11 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.vanilla;
+package net.daporkchop.fp2.strategy.flat.vanilla;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapGenerator;
+import net.daporkchop.fp2.strategy.flat.FlatPiece;
+import net.daporkchop.fp2.strategy.flat.FlatGenerator;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.MapColor;
@@ -33,32 +33,32 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
-import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
+import static net.daporkchop.fp2.strategy.flat.FlatConstants.*;
 
 /**
  * @author DaPorkchop_
  */
-public class VanillaHeightmapGenerator implements HeightmapGenerator {
+public class VanillaFlatGenerator implements FlatGenerator {
     @Override
     public void init(@NonNull WorldServer world) {
     }
 
     @Override
-    public void generateRough(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece) {
+    public void generateRough(@NonNull CachedBlockAccess world, @NonNull FlatPiece piece) {
         this.generateExact(world, piece);
     }
 
     @Override
-    public void generateExact(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece) {
+    public void generateExact(@NonNull CachedBlockAccess world, @NonNull FlatPiece piece) {
         int pieceX = piece.x();
         int pieceZ = piece.z();
         world.prefetch(new AxisAlignedBB(
-                pieceX * HEIGHT_VOXELS, 0, pieceZ * HEIGHT_VOXELS,
-                (pieceX + 1) * HEIGHT_VOXELS, 255, (pieceZ + 1) * HEIGHT_VOXELS));
-        for (int x = 0; x < HEIGHT_VERTS; x++) {
-            for (int z = 0; z < HEIGHT_VERTS; z++) {
-                int height = world.getTopBlockY(pieceX * HEIGHT_VOXELS + x, pieceZ * HEIGHT_VOXELS + z) - 1;
-                BlockPos pos = new BlockPos(pieceX * HEIGHT_VOXELS + x, height, pieceZ * HEIGHT_VOXELS + z);
+                pieceX * FLAT_VOXELS, 0, pieceZ * FLAT_VOXELS,
+                (pieceX + 1) * FLAT_VOXELS, 255, (pieceZ + 1) * FLAT_VOXELS));
+        for (int x = 0; x < FLAT_VERTS; x++) {
+            for (int z = 0; z < FLAT_VERTS; z++) {
+                int height = world.getTopBlockY(pieceX * FLAT_VOXELS + x, pieceZ * FLAT_VOXELS + z) - 1;
+                BlockPos pos = new BlockPos(pieceX * FLAT_VOXELS + x, height, pieceZ * FLAT_VOXELS + z);
                 IBlockState state = world.getBlockState(pos);
 
                 while (height <= 63 && state.getMaterial() == Material.WATER) {

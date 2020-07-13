@@ -26,7 +26,7 @@ import com.google.gson.JsonParser;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gl.OpenGL;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
+import net.daporkchop.fp2.strategy.flat.FlatTerrainRenderer;
 import net.daporkchop.lib.binary.oio.StreamUtil;
 import net.daporkchop.lib.common.function.io.IOFunction;
 
@@ -104,6 +104,6 @@ public class ShaderManager {
         OpenGL.assertOpenGL();
 
         //TODO: actually reload all shaders rather than doing it manually
-        HeightmapTerrainRenderer.reloadHeightShader();
+        FlatTerrainRenderer.reloadHeightShader();
     }
 }

@@ -18,52 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap;
+package net.daporkchop.fp2.strategy.flat;
 
-import io.netty.buffer.ByteBuf;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.Accessors;
-import net.daporkchop.fp2.strategy.RenderStrategy;
-import net.daporkchop.fp2.strategy.common.IFarPiecePos;
+import lombok.experimental.UtilityClass;
 import net.daporkchop.lib.common.math.BinMath;
-import net.daporkchop.lib.common.math.PMath;
 
 /**
+ * Constant values used by the heightmap rendering strategy.
+ *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-@Accessors(fluent = true)
-public class HeightmapPiecePos implements IFarPiecePos {
-    private final int x;
-    private final int z;
+@UtilityClass
+public class FlatConstants {
+    public static final int FLAT_VOXELS = 64; //side length of a tile in voxels contained
+    public static final int FLAT_SHIFT = BinMath.getNumBitsNeededFor(FLAT_VOXELS - 1);
+    public static final int FLAT_VERTS = FLAT_VOXELS + 1; //side length of a tile in vertices
 
-    @Override
-    public RenderStrategy strategy() {
-        return RenderStrategy.FLAT;
-    }
-
-    @Override
-    public void write(@NonNull ByteBuf dst) {
-        dst.writeInt(this.x).writeInt(this.z);
-    }
-
-    @Override
-    public int hashCode() {
-        return PMath.mix32(BinMath.packXY(this.x, this.z));
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        } else if (obj instanceof HeightmapPiecePos) {
-            HeightmapPiecePos pos = (HeightmapPiecePos) obj;
-            return this.x == pos.x && this.z == pos.z;
-        } else {
-            return false;
-        }
-    }
+    public static final int FLAT_STORAGE_VERSION = 0;
 }

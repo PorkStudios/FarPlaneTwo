@@ -24,7 +24,7 @@ import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.server.ServerProxy;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
+import net.daporkchop.fp2.strategy.flat.FlatTerrainRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraftforge.common.config.ConfigManager;
@@ -64,7 +64,7 @@ public class ClientProxy extends ServerProxy {
     public void postInit(FMLPostInitializationEvent event) {
         super.postInit(event);
 
-        HeightmapTerrainRenderer.MESH.id(); //load HeightmapTerrainRenderer on client thread
+        FlatTerrainRenderer.MESH.id(); //load FlatTerrainRenderer on client thread
     }
 
     @SubscribeEvent

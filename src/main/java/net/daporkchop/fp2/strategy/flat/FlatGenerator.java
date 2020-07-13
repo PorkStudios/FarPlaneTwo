@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap;
+package net.daporkchop.fp2.strategy.flat;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
@@ -31,7 +31,7 @@ import net.minecraft.world.WorldServer;
  *
  * @author DaPorkchop_
  */
-public interface HeightmapGenerator {
+public interface FlatGenerator {
     /**
      * Initializes this instance.
      * <p>
@@ -48,24 +48,24 @@ public interface HeightmapGenerator {
      * the actual generation of said pieces.
      * <p>
      * A {@link CachedBlockAccess} parameter is provided only for implementations do not implement this method, and instead choose to have it serve as a
-     * proxy to {@link #generateExact(CachedBlockAccess, HeightmapPiece)}.
+     * proxy to {@link #generateExact(CachedBlockAccess, FlatPiece)}.
      * <p>
-     * Note that this should only generate a square with side length {@link HeightmapConstants#HEIGHT_VOXELS}, centered on piece coordinates 0,0. Any outer
+     * Note that this should only generate a square with side length {@link FlatConstants#FLAT_VOXELS}, centered on piece coordinates 0,0. Any outer
      * edges will be automatically filled in with data from the generated area, and later with height from neighboring pieces once it becomes available.
      *
      * @param world the {@link CachedBlockAccess} providing access to block/height data in the world
      * @param piece the piece to generate
      */
-    void generateRough(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece);
+    void generateRough(@NonNull CachedBlockAccess world, @NonNull FlatPiece piece);
 
     /**
      * Generates the terrain for the given piece based on the block data.
      * <p>
-     * Note that this should only generate a square with side length {@link HeightmapConstants#HEIGHT_VOXELS}, centered on piece coordinates 0,0. Any outer
+     * Note that this should only generate a square with side length {@link FlatConstants#FLAT_VOXELS}, centered on piece coordinates 0,0. Any outer
      * edges will be automatically filled in with data from the generated area, and later with height from neighboring pieces once it becomes available.
      *
      * @param world the {@link CachedBlockAccess} providing access to block/height data in the world
      * @param piece the piece to generate
      */
-    void generateExact(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece);
+    void generateExact(@NonNull CachedBlockAccess world, @NonNull FlatPiece piece);
 }
