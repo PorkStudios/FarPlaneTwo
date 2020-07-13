@@ -18,27 +18,43 @@
  *
  */
 
-package net.daporkchop.fp2.client;
+package net.daporkchop.fp2.asm.world.gen.layer;
 
-import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.Config;
-import net.minecraft.client.settings.KeyBinding;
-import net.minecraftforge.fml.client.registry.ClientRegistry;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-import org.lwjgl.input.Keyboard;
+import io.netty.util.concurrent.FastThreadLocal;
+import net.daporkchop.fp2.util.threading.DefaultFastThreadLocal;
+import net.daporkchop.fp2.util.threading.TLIntCache;
+import net.minecraft.world.gen.layer.IntCache;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-@UtilityClass
-public class KeyBindings {
-    public final KeyBinding RELOAD_SHADERS = new KeyBinding("key.fp2.debug.reloadShaders", Keyboard.KEY_0, "key.categories.fp2.debug");
+@Mixin(IntCache.class)
+public abstract class MixinIntCache {
+    private static final FastThreadLocal<TLIntCache> tl = new DefaultFastThreadLocal<>(TLIntCache::new);
 
-    void register() {
-        if (Config.debug)   {
-            ClientRegistry.registerKeyBinding(RELOAD_SHADERS);
-        }
+    /**
+     * @author DaPorkchop_
+     */
+    @Overwrite
+    public static int[] getIntCache(int size) {
+        return tl.get().getIntCache(size);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Overwrite
+    public static void resetIntCache() {
+        tl.get().resetIntCache();
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Overwrite
+    public static String getCacheSizes() {
+        return tl.get().getCacheSizes();
     }
 }

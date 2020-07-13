@@ -20,18 +20,17 @@
 
 package net.daporkchop.fp2.server;
 
-import net.daporkchop.fp2.CommonConfig;
+import net.daporkchop.fp2.Config;
 import net.daporkchop.fp2.net.server.SPacketReady;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.world.IWorldEventListener;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
+import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
@@ -52,7 +51,7 @@ public class ServerProxy {
     public void postInit(FMLPostInitializationEvent event) {
     }
 
-    public void serverStarting(FMLServerStartingEvent event) {
+    public void serverAboutToStart(FMLServerAboutToStartEvent event) {
         ServerConstants.init();
     }
 
@@ -63,7 +62,7 @@ public class ServerProxy {
     @SubscribeEvent
     public void worldLoad(WorldEvent.Load event) {
         if (!event.getWorld().isRemote) {
-            ((IFarContext) event.getWorld()).fp2_init(CommonConfig.renderStrategy);
+            ((IFarContext) event.getWorld()).fp2_init(Config.renderStrategy);
             event.getWorld().addEventListener(new FarWorldBlockChangeListener(((IFarContext) event.getWorld()).fp2_world()));
         }
     }

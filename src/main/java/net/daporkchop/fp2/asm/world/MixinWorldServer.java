@@ -25,7 +25,9 @@ import net.daporkchop.fp2.strategy.RenderStrategy;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
+import net.daporkchop.fp2.util.vanilla.CCCachedBlockAccessImpl;
 import net.daporkchop.fp2.util.vanilla.VanillaCachedBlockAccessImpl;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
@@ -41,7 +43,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Mixin(WorldServer.class)
 public abstract class MixinWorldServer extends World implements IFarContext, CachedBlockAccess.Holder {
-    protected final CachedBlockAccess cachedBlockAccess = new VanillaCachedBlockAccessImpl((WorldServer) (Object) this);
+    protected CachedBlockAccess cachedBlockAccess;
 
     protected RenderStrategy strategy;
     protected IFarWorld world;
@@ -66,6 +68,9 @@ public abstract class MixinWorldServer extends World implements IFarContext, Cac
 
     @Override
     public void fp2_init(@NonNull RenderStrategy strategy) {
+        this.cachedBlockAccess = Constants.isCubicWorld(this)
+                                 ? new CCCachedBlockAccessImpl((WorldServer) (Object) this)
+                                 : new VanillaCachedBlockAccessImpl((WorldServer) (Object) this);
         this.world = strategy.createFarWorld((WorldServer) (Object) this);
         this.tracker = strategy.createFarTracker(this.world);
         this.strategy = strategy;

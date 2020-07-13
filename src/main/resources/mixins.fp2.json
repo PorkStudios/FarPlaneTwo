@@ -10,6 +10,7 @@
   ],
   "mixins": [
     "entity.player.MixinEntityPlayerMP",
+    "world.gen.layer.MixinIntCache",
     "world.MixinWorldServer"
   ]
 }

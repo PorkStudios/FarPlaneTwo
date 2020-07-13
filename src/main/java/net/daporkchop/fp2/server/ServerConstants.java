@@ -24,7 +24,7 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.CommonConfig;
+import net.daporkchop.fp2.Config;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
@@ -42,10 +42,10 @@ public class ServerConstants {
         ServerThreadExecutor.INSTANCE.startup();
 
         GENERATION_WORKERS = new UnorderedThreadPoolEventExecutor(
-                CommonConfig.generationThreads,
+                Config.generationThreads,
                 new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Generation Thread #%d").priority(Thread.MIN_PRIORITY).build());
         IO_WORKERS = new UnorderedThreadPoolEventExecutor(
-                CommonConfig.ioThreads,
+                Config.ioThreads,
                 new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 IO Thread #%d").priority(Thread.MIN_PRIORITY).build());
     }
 

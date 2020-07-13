@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.net.server;
 
 import io.netty.buffer.ByteBuf;
-import net.daporkchop.fp2.CommonConfig;
+import net.daporkchop.fp2.Config;
 import net.daporkchop.fp2.net.client.CPacketRenderingStrategy;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -44,7 +44,7 @@ public class SPacketReady implements IMessage {
     public static class Handler implements IMessageHandler<SPacketReady, IMessage> {
         @Override
         public IMessage onMessage(SPacketReady message, MessageContext ctx) {
-            return new CPacketRenderingStrategy().strategy(CommonConfig.renderStrategy);
+            return new CPacketRenderingStrategy().strategy(Config.renderStrategy);
         }
     }
 }

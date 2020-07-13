@@ -29,7 +29,9 @@ import net.daporkchop.fp2.strategy.RenderStrategy;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPiecePos;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
+import net.daporkchop.fp2.strategy.flat.cwg.CWGFlatGenerator;
 import net.daporkchop.fp2.strategy.flat.vanilla.VanillaFlatGenerator;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
 import net.daporkchop.lib.binary.netty.PUnpooled;
 import net.daporkchop.lib.common.function.io.IORunnable;
@@ -77,7 +79,11 @@ public class FlatWorld implements IFarWorld {
 
     public FlatWorld(@NonNull WorldServer world) {
         this.world = world;
-        this.generator = new VanillaFlatGenerator();
+        if (Constants.isCubicWorld(world))  { //TODO: this
+            this.generator = new CWGFlatGenerator();
+        } else {
+            this.generator = new VanillaFlatGenerator();
+        }
         this.generator.init(world);
 
         this.storageRoot = world.getChunkSaveLocation().toPath().resolve("fp2/" + RenderStrategy.FLAT.name().toLowerCase());
@@ -103,8 +109,8 @@ public class FlatWorld implements IFarWorld {
         }
         this.loadFullPiece(key)
                 .thenApplyAsync(piece -> {
-                    CachedBlockAccess world = ((CachedBlockAccess.Holder) this.world).fp2_cachedBlockAccess();
                     if (this.dirtyChunks.replace(key, 1, 2)) {
+                        CachedBlockAccess world = ((CachedBlockAccess.Holder) this.world).fp2_cachedBlockAccess();
                         piece.writeLock().lock();
                         try {
                             this.generator.generateExact(world, piece);
@@ -171,7 +177,7 @@ public class FlatWorld implements IFarWorld {
     }
 
     protected void savePiece(@NonNull FlatPiece piece) {
-        if (!piece.isDirty()) {
+        if (true || !piece.isDirty()) { //TODO: remove this to re-enable saving
             return;
         }
         IO_WORKERS.submit((IORunnable) () -> {

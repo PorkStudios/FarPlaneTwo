@@ -57,7 +57,7 @@ public class VanillaFlatGenerator implements FlatGenerator {
                 (pieceX + 1) * FLAT_VOXELS, 255, (pieceZ + 1) * FLAT_VOXELS));
         for (int x = 0; x < FLAT_VERTS; x++) {
             for (int z = 0; z < FLAT_VERTS; z++) {
-                int height = world.getTopBlockY(pieceX * FLAT_VOXELS + x, pieceZ * FLAT_VOXELS + z) - 1;
+                int height = world.getTopBlockY(pieceX * FLAT_VOXELS + x, pieceZ * FLAT_VOXELS + z);
                 BlockPos pos = new BlockPos(pieceX * FLAT_VOXELS + x, height, pieceZ * FLAT_VOXELS + z);
                 IBlockState state = world.getBlockState(pos);
 

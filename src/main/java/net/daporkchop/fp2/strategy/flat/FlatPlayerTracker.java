@@ -25,7 +25,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import net.daporkchop.fp2.CommonConfig;
+import net.daporkchop.fp2.Config;
 import net.daporkchop.fp2.net.server.SPacketPieceData;
 import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
@@ -34,8 +34,11 @@ import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.lib.common.math.BinMath;
 import net.minecraft.entity.player.EntityPlayerMP;
 
+import java.util.ArrayList;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.server.ServerConstants.GENERATION_WORKERS;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -69,7 +72,7 @@ public class FlatPlayerTracker implements IFarPlayerTracker {
     public void playerMove(@NonNull EntityPlayerMP player) {
         LongSet prev = this.tracking.get(player);
         LongSet next = new LongOpenHashSet();
-        int dist = CommonConfig.renderDistance / FlatConstants.FLAT_VOXELS;
+        int dist = Config.renderDistance / FlatConstants.FLAT_VOXELS;
         int baseX = floorI(player.posX) / FlatConstants.FLAT_VOXELS;
         int baseZ = floorI(player.posZ) / FlatConstants.FLAT_VOXELS;
 
@@ -82,7 +85,7 @@ public class FlatPlayerTracker implements IFarPlayerTracker {
                     //piece wasn't loaded before, we should load and send it
                     FlatPiece piece = this.world.getPieceNowOrLoadAsync(new FlatPiecePos(x, z));
                     if (piece != null) {
-                        NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player);
+                        GENERATION_WORKERS.submit(() -> NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player));
                     } else {
                         continue; //don't add to next, to indicate that the piece hasn't been sent yet
                     }
@@ -90,6 +93,7 @@ public class FlatPlayerTracker implements IFarPlayerTracker {
                 next.add(l);
             }
         }
+
         for (long l : prev) {
             //unload all previously loaded pieces
             NETWORK_WRAPPER.sendTo(new SPacketUnloadPiece().pos(new FlatPiecePos(BinMath.unpackX(l), BinMath.unpackY(l))), player);

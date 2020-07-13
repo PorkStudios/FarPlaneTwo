@@ -24,6 +24,7 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.Config;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
@@ -52,7 +53,7 @@ public class ClientConstants {
         checkState(RENDER_WORKERS == null);
 
         RENDER_WORKERS = new UnorderedThreadPoolEventExecutor(
-                ClientConfig.renderThreads,
+                Config.ClientConfig.renderThreads,
                 new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Rendering Thread #%d").priority(Thread.MIN_PRIORITY).build());
     }
 

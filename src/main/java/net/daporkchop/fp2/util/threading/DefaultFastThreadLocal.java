@@ -18,27 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.client;
+package net.daporkchop.fp2.util.threading;
 
-import net.daporkchop.fp2.FP2;
-import net.daporkchop.fp2.strategy.RenderStrategy;
-import net.daporkchop.lib.common.util.PorkUtil;
-import net.minecraftforge.common.config.Config;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import io.netty.util.concurrent.FastThreadLocal;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
-import static java.lang.Math.max;
+import java.util.function.Supplier;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-@Config(modid = FP2.MODID, category = "client")
-public class ClientConfig {
-    @Config.Comment({
-            "The number of threads that will be used for preparing far plane terrain data for rendering.",
-            "Default: <cpu count> - 1 (and at least 1)"
-    })
-    @Config.RequiresWorldRestart
-    public static int renderThreads = max(PorkUtil.CPU_COUNT - 1, 1);
+@RequiredArgsConstructor
+public class DefaultFastThreadLocal<V> extends FastThreadLocal<V> {
+    @NonNull
+    protected final Supplier<V> defaultValue;
+
+    @Override
+    protected V initialValue() throws Exception {
+        return this.defaultValue.get();
+    }
 }

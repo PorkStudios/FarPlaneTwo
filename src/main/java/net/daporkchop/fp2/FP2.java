@@ -32,6 +32,7 @@ import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
 import net.minecraftforge.fml.relauncher.Side;
@@ -76,8 +77,8 @@ public class FP2 {
     }
 
     @Mod.EventHandler
-    public void serverStarting(FMLServerStartingEvent event) {
-        PROXY.serverStarting(event);
+    public void serverAboutToStart(FMLServerAboutToStartEvent event) {
+        PROXY.serverAboutToStart(event);
     }
 
     @Mod.EventHandler
