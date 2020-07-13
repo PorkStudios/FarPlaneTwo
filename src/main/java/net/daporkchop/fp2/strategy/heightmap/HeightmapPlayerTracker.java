@@ -28,6 +28,7 @@ import lombok.experimental.Accessors;
 import net.daporkchop.fp2.CommonConfig;
 import net.daporkchop.fp2.net.server.SPacketPieceData;
 import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
+import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.lib.common.math.BinMath;
@@ -36,6 +37,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
+import static net.daporkchop.fp2.server.ServerConstants.GENERATION_WORKERS;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -90,9 +92,19 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker {
         }
         for (long l : prev) {
             //unload all previously loaded pieces
-            //TODO: this should PROBABLY be asynchronous
             NETWORK_WRAPPER.sendTo(new SPacketUnloadPiece().pos(new HeightmapPiecePos(BinMath.unpackX(l), BinMath.unpackY(l))), player);
         }
         checkState(this.tracking.replace(player, prev, next));
+    }
+
+    @Override
+    public void pieceChanged(@NonNull IFarPiece pieceIn) {
+        HeightmapPiece piece = (HeightmapPiece) pieceIn;
+        long key = BinMath.packXY(piece.x(), piece.z());
+        this.tracking.forEach((player, curr) -> {
+            if (curr.contains(key)) {
+                GENERATION_WORKERS.submit(() -> NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player));
+            }
+        });
     }
 }

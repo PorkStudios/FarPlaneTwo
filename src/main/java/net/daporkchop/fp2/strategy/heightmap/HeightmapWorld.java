@@ -26,20 +26,23 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import net.daporkchop.fp2.strategy.RenderStrategy;
+import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPiecePos;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.strategy.heightmap.vanilla.VanillaHeightmapGenerator;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
+import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.lib.binary.netty.PUnpooled;
 import net.daporkchop.lib.common.function.io.IORunnable;
-import net.daporkchop.lib.common.function.io.IOSupplier;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
 import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.compression.zstd.ZstdDeflater;
 import net.daporkchop.lib.compression.zstd.ZstdInflater;
+import net.daporkchop.lib.primitive.map.LongIntMap;
 import net.daporkchop.lib.primitive.map.LongObjMap;
+import net.daporkchop.lib.primitive.map.concurrent.LongIntConcurrentHashMap;
 import net.daporkchop.lib.primitive.map.concurrent.LongObjConcurrentHashMap;
 import net.minecraft.world.WorldServer;
 
@@ -71,6 +74,7 @@ public class HeightmapWorld implements IFarWorld {
     protected final Path storageRoot;
 
     protected final LongObjMap<CompletableFuture<HeightmapPiece>> cache = new LongObjConcurrentHashMap<>();
+    protected final LongIntMap dirtyChunks = new LongIntConcurrentHashMap(0);
 
     public HeightmapWorld(@NonNull WorldServer world) {
         this.world = world;
@@ -94,6 +98,26 @@ public class HeightmapWorld implements IFarWorld {
 
     @Override
     public void blockChanged(int x, int y, int z) {
+        long key = BinMath.packXY(x >> HEIGHT_SHIFT, z >> HEIGHT_SHIFT);
+        if (this.dirtyChunks.put(key, 1) == 1) {
+            return;
+        }
+        this.loadFullPiece(key)
+                .thenApplyAsync(piece -> {
+                    CachedBlockAccess world = ((CachedBlockAccess.Holder) this.world).fp2_cachedBlockAccess();
+                    if (this.dirtyChunks.replace(key, 1, 2)) {
+                        piece.writeLock().lock();
+                        try {
+                            this.generator.generateExact(world, piece);
+                            this.savePiece(piece);
+                        } finally {
+                            piece.writeLock().unlock();
+                            this.dirtyChunks.remove(key, 2);
+                        }
+                    }
+                    return piece;
+                }, GENERATION_WORKERS)
+                .thenAcceptAsync(((IFarContext) this.world).fp2_tracker()::pieceChanged);
     }
 
     protected CompletableFuture<HeightmapPiece> loadFullPiece(long key) {
@@ -102,33 +126,31 @@ public class HeightmapWorld implements IFarWorld {
             int z = BinMath.unpackY(l);
             Path cachePath = this.storageRoot.resolve(String.format("%d/%d.%d.fp2", 0, x, z));
 
-            return CompletableFuture
-                    .supplyAsync((IOSupplier<HeightmapPiece>) () -> {
-                        //load piece if possible
-                        if (Files.exists(cachePath) && Files.isRegularFile(cachePath)) {
-                            try (FileChannel channel = FileChannel.open(cachePath, StandardOpenOption.READ)) {
-                                ByteBuf input = PUnpooled.wrap(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()), false);
-                                if (input.readableBytes() >= 8 && input.readInt() == HEIGHT_STORAGE_VERSION) {
-                                    ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(input.readInt());
-                                    try {
-                                        checkState(INFLATER_CACHE.get().decompress(input, buf));
-                                        return new HeightmapPiece(buf);
-                                    } finally {
-                                        buf.release();
-                                    }
+            CompletableFuture<HeightmapPiece> future = new CompletableFuture<>();
+            IO_WORKERS.submit(() -> {
+                //load piece if possible
+                try {
+                    if (Files.exists(cachePath) && Files.isRegularFile(cachePath)) {
+                        try (FileChannel channel = FileChannel.open(cachePath, StandardOpenOption.READ)) {
+                            ByteBuf input = PUnpooled.wrap(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()), false);
+                            if (input.readableBytes() >= 8 && input.readInt() == HEIGHT_STORAGE_VERSION) {
+                                ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(input.readInt());
+                                try {
+                                    checkState(INFLATER_CACHE.get().decompress(input, buf));
+                                    future.complete(new HeightmapPiece(buf));
+                                    return;
+                                } finally {
+                                    buf.release();
                                 }
                             }
                         }
-                        return null;
-                    }, IO_WORKERS)
-                    .handleAsync((pieceIn, e) -> {
-                        if (e != null) {
-                            e.printStackTrace();
-                        } else if (pieceIn != null) {
-                            return pieceIn;
-                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 
-                        //generate piece
+                GENERATION_WORKERS.submit(() -> { //piece couldn't be loaded, generate it
+                    try {
                         CachedBlockAccess world = ((CachedBlockAccess.Holder) this.world).fp2_cachedBlockAccess();
                         HeightmapPiece piece = new HeightmapPiece(x, z);
                         piece.writeLock().lock();
@@ -137,32 +159,52 @@ public class HeightmapWorld implements IFarWorld {
                         } finally {
                             piece.writeLock().unlock();
                         }
+                        future.complete(piece);
 
-                        //the piece was newly generated, so enqueue it to be saved
-                        IO_WORKERS.submit((IORunnable) () -> {
-                            Files.createDirectories(cachePath.getParent());
-                            ByteBuf raw = PooledByteBufAllocator.DEFAULT.ioBuffer();
-                            ByteBuf compressed = PooledByteBufAllocator.DEFAULT.ioBuffer();
-                            try (FileChannel channel = FileChannel.open(cachePath, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE)) {
-                                piece.readLock().lock();
-                                try {
-                                    piece.write(raw);
-                                } finally {
-                                    piece.readLock().unlock();
-                                }
-                                compressed.ensureWritable(8 + Zstd.PROVIDER.compressBound(raw.readableBytes()));
-                                compressed.writeInt(HEIGHT_STORAGE_VERSION).writeInt(raw.readableBytes());
-                                checkState(DEFLATER_CACHE.get().compress(raw, compressed));
-                                compressed.readBytes(channel, compressed.readableBytes());
-                                checkState(!compressed.isReadable());
-                            } finally {
-                                raw.release();
-                                compressed.release();
-                            }
-                        });
+                        this.savePiece(piece);
+                    } catch (Exception e1) {
+                        future.completeExceptionally(e1);
+                    }
+                });
+            });
+            return future;
+        });
+    }
 
-                        return piece;
-                    }, GENERATION_WORKERS);
+    protected void savePiece(@NonNull HeightmapPiece piece) {
+        if (!piece.isDirty()) {
+            return;
+        }
+        IO_WORKERS.submit((IORunnable) () -> {
+            piece.readLock().lock();
+            try {
+                if (!piece.clearDirty()) {
+                    return;
+                }
+
+                Path cachePath = this.storageRoot.resolve(String.format("%d/%d.%d.fp2", 0, piece.x(), piece.z()));
+                Files.createDirectories(cachePath.getParent());
+                ByteBuf raw = PooledByteBufAllocator.DEFAULT.ioBuffer();
+                ByteBuf compressed = PooledByteBufAllocator.DEFAULT.ioBuffer();
+                try (FileChannel channel = FileChannel.open(cachePath, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE)) {
+                    piece.readLock().lock();
+                    try {
+                        piece.write(raw);
+                    } finally {
+                        piece.readLock().unlock();
+                    }
+                    compressed.ensureWritable(8 + Zstd.PROVIDER.compressBound(raw.readableBytes()));
+                    compressed.writeInt(HEIGHT_STORAGE_VERSION).writeInt(raw.readableBytes());
+                    checkState(DEFLATER_CACHE.get().compress(raw, compressed));
+                    compressed.readBytes(channel, compressed.readableBytes());
+                    checkState(!compressed.isReadable());
+                } finally {
+                    raw.release();
+                    compressed.release();
+                }
+            } finally {
+                piece.readLock().unlock();
+            }
         });
     }
 }

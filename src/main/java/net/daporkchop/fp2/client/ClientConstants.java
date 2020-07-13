@@ -53,7 +53,7 @@ public class ClientConstants {
 
         RENDER_WORKERS = new UnorderedThreadPoolEventExecutor(
                 ClientConfig.renderThreads,
-                new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Rendering Thread #%d").build());
+                new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Rendering Thread #%d").priority(Thread.MIN_PRIORITY).build());
     }
 
     public void shutdown() {

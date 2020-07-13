@@ -29,6 +29,7 @@ import lombok.experimental.Accessors;
 import net.daporkchop.fp2.strategy.RenderStrategy;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -49,6 +50,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Getter
 @Accessors(fluent = true)
 public class HeightmapPiece implements IFarPiece {
+    protected static final long DIRTY_OFFSET = PUnsafe.pork_getOffset(HeightmapPiece.class, "dirty");
+
     public static void checkCoords(int x, int z) {
         checkArg(x >= 0 && x < HEIGHT_VERTS && z >= 0 && z < HEIGHT_VERTS, "coordinates out of bounds (x=%d, z=%d)", x, z);
     }
@@ -64,6 +67,9 @@ public class HeightmapPiece implements IFarPiece {
     protected final ByteBuffer biome = Constants.createByteBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
     protected final ShortBuffer block = Constants.createShortBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
     protected final IntBuffer light = Constants.createIntBuffer(HEIGHT_VERTS * HEIGHT_VERTS);
+
+    @Getter(AccessLevel.NONE)
+    protected volatile int dirty = 0;
 
     public HeightmapPiece(@NonNull ByteBuf buf) {
         this(buf.readInt(), buf.readInt());
@@ -137,30 +143,35 @@ public class HeightmapPiece implements IFarPiece {
     public HeightmapPiece height(int x, int z, int height) {
         checkCoords(x, z);
         this.height.put(x * HEIGHT_VERTS + z, height);
+        this.markDirty();
         return this;
     }
 
     public HeightmapPiece color(int x, int z, int color) {
         checkCoords(x, z);
         this.color.put(x * HEIGHT_VERTS + z, color);
+        this.markDirty();
         return this;
     }
 
     public HeightmapPiece biome(int x, int z, int biome) {
         checkCoords(x, z);
         this.biome.put(x * HEIGHT_VERTS + z, (byte) biome);
+        this.markDirty();
         return this;
     }
 
     public HeightmapPiece block(int x, int z, int block) {
         checkCoords(x, z);
         this.block.put(x * HEIGHT_VERTS + z, (short) block);
+        this.markDirty();
         return this;
     }
 
     public HeightmapPiece light(int x, int z, int light) {
         checkCoords(x, z);
         this.light.put(x * HEIGHT_VERTS + z, light);
+        this.markDirty();
         return this;
     }
 
@@ -185,5 +196,17 @@ public class HeightmapPiece implements IFarPiece {
     @Override
     public Lock writeLock() {
         return this.lock.writeLock();
+    }
+
+    public boolean isDirty() {
+        return this.dirty != 0;
+    }
+
+    public void markDirty() {
+        this.dirty = 1;
+    }
+
+    public boolean clearDirty() {
+        return PUnsafe.compareAndSwapInt(this, DIRTY_OFFSET, 1, 0);
     }
 }

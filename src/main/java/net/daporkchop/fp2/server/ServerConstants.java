@@ -43,10 +43,10 @@ public class ServerConstants {
 
         GENERATION_WORKERS = new UnorderedThreadPoolEventExecutor(
                 CommonConfig.generationThreads,
-                new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Generation Thread #%d").build());
+                new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Generation Thread #%d").priority(Thread.MIN_PRIORITY).build());
         IO_WORKERS = new UnorderedThreadPoolEventExecutor(
                 CommonConfig.ioThreads,
-                new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 IO Thread #%d").build());
+                new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 IO Thread #%d").priority(Thread.MIN_PRIORITY).build());
     }
 
     public void shutdown() {

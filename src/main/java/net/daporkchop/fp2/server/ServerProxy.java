@@ -26,6 +26,7 @@ import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.world.IWorldEventListener;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
@@ -63,6 +64,7 @@ public class ServerProxy {
     public void worldLoad(WorldEvent.Load event) {
         if (!event.getWorld().isRemote) {
             ((IFarContext) event.getWorld()).fp2_init(CommonConfig.renderStrategy);
+            event.getWorld().addEventListener(new FarWorldBlockChangeListener(((IFarContext) event.getWorld()).fp2_world()));
         }
     }
 

@@ -32,4 +32,6 @@ public interface IFarPlayerTracker {
     void playerRemove(@NonNull EntityPlayerMP player);
 
     void playerMove(@NonNull EntityPlayerMP player);
+
+    void pieceChanged(@NonNull IFarPiece piece);
 }
