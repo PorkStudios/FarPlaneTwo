@@ -95,8 +95,6 @@ public class FlatTerrainRenderer extends TerrainRenderer {
     public static final ElementArrayObject MESH = new ElementArrayObject();
     public static final int MESH_VERTEX_COUNT;
 
-    public static final VertexBufferObject COORDS = new VertexBufferObject();
-
     static {
         ShortBuffer meshData = BufferUtils.createShortBuffer(FLAT_VERTS * FLAT_VERTS * 6 + 1);
         MESH_VERTEX_COUNT = genMesh(FLAT_VERTS, FLAT_VERTS, meshData);
@@ -122,19 +120,6 @@ public class FlatTerrainRenderer extends TerrainRenderer {
         return verts;
     }
 
-    static {
-        FloatBuffer coordsData = BufferUtils.createFloatBuffer(FLAT_VERTS * FLAT_VERTS * 2);
-        for (int x = 0; x < FLAT_VERTS; x++) {
-            for (int z = 0; z < FLAT_VERTS; z++) {
-                coordsData.put(x).put(z);
-            }
-        }
-
-        try (VertexBufferObject coords = COORDS.bind()) {
-            GL15.glBufferData(GL_ARRAY_BUFFER, (FloatBuffer) coordsData.flip(), GL_STATIC_DRAW);
-        }
-    }
-
     protected final Map<FlatPiecePos, VertexArrayObject> pieces = new HashMap<>();
     protected IntBuffer renderableChunksMask;
 
@@ -152,36 +137,31 @@ public class FlatTerrainRenderer extends TerrainRenderer {
                 glEnableVertexAttribArray(2);
                 glEnableVertexAttribArray(3);
                 glEnableVertexAttribArray(4);
-                glEnableVertexAttribArray(5);
 
-                try (VertexBufferObject coords = COORDS.bind()) {
-                    glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0L);
-                    vao.putDependency(0, coords);
-                }
                 try (VertexBufferObject heights = new VertexBufferObject().bind()) {
                     glBufferData(GL_ARRAY_BUFFER, piece.height(), GL_STATIC_DRAW);
-                    glVertexAttribIPointer(1, 1, GL_INT, 0, 0L);
-                    vao.putDependency(1, heights);
+                    glVertexAttribIPointer(0, 1, GL_INT, 0, 0L);
+                    vao.putDependency(0, heights);
                 }
                 try (VertexBufferObject colors = new VertexBufferObject().bind()) {
                     glBufferData(GL_ARRAY_BUFFER, piece.color(), GL_STATIC_DRAW);
-                    glVertexAttribIPointer(2, 1, GL_INT, 0, 0L);
-                    vao.putDependency(2, colors);
+                    glVertexAttribIPointer(1, 1, GL_INT, 0, 0L);
+                    vao.putDependency(1, colors);
                 }
                 try (VertexBufferObject biomes = new VertexBufferObject().bind()) {
                     glBufferData(GL_ARRAY_BUFFER, piece.biome(), GL_STATIC_DRAW);
-                    glVertexAttribIPointer(3, 1, GL_UNSIGNED_BYTE, 0, 0L);
-                    vao.putDependency(3, biomes);
+                    glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, 0, 0L);
+                    vao.putDependency(2, biomes);
                 }
                 try (VertexBufferObject blocks = new VertexBufferObject().bind()) {
                     glBufferData(GL_ARRAY_BUFFER, piece.block(), GL_STATIC_DRAW);
-                    glVertexAttribIPointer(4, 1, GL_UNSIGNED_SHORT, 0, 0L);
-                    vao.putDependency(4, blocks);
+                    glVertexAttribIPointer(3, 1, GL_UNSIGNED_SHORT, 0, 0L);
+                    vao.putDependency(3, blocks);
                 }
                 try (VertexBufferObject light = new VertexBufferObject().bind()) {
                     glBufferData(GL_ARRAY_BUFFER, piece.light(), GL_STATIC_DRAW);
-                    glVertexAttribIPointer(5, 1, GL_INT, 0, 0L);
-                    vao.putDependency(5, light);
+                    glVertexAttribIPointer(4, 1, GL_INT, 0, 0L);
+                    vao.putDependency(4, light);
                 }
 
                 vao.putElementArray(MESH.bind());
@@ -193,7 +173,6 @@ public class FlatTerrainRenderer extends TerrainRenderer {
                 glDisableVertexAttribArray(2);
                 glDisableVertexAttribArray(3);
                 glDisableVertexAttribArray(4);
-                glDisableVertexAttribArray(5);
 
                 MESH.close();
             }

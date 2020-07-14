@@ -18,7 +18,6 @@
  *
  */
 
-layout(location = 0) in vec2 vertexPosition_modelspace;
 layout(location = 3) in int biome;
 layout(location = 4) in int state;
 layout(location = 5) in int light;
@@ -35,7 +34,8 @@ out vec2 vert_light;
 out flat vec4 vert_color;
 
 void main(){
-    dvec3 pos = dvec3(camera_offset.x + vertexPosition_modelspace.x, seaLevel - .125, camera_offset.y + vertexPosition_modelspace.y);
+    vec2 posXZ = vec2(ivec2(gl_VertexID) / ivec2(65, 1) % 65);
+    dvec3 pos = dvec3(camera_offset.x + posXZ.x, seaLevel - .125, camera_offset.y + posXZ.y);
     vert_pos = vec3(pos);
 
     gl_Position = camera_projection * camera_modelview * vec4(pos, 1.);

@@ -48,7 +48,6 @@ public class ClientProxy extends ServerProxy {
     public void preInit(FMLPreInitializationEvent event) {
         super.preInit(event);
 
-        OpenGL.init(GLContext.getCapabilities());
         ((IReloadableResourceManager) Minecraft.getMinecraft().getResourceManager()).registerReloadListener(new FP2ResourceReloadListener());
     }
 
