@@ -23,7 +23,6 @@ package net.daporkchop.fp2.client.gl.shader;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL20;
@@ -44,11 +43,10 @@ class Shader {
     protected final int id;
 
     protected Shader(@NonNull String[] names, @NonNull String[] code, @NonNull ShaderType type) {
-        OpenGL.assertOpenGL();
         this.type = type;
 
         //allocate shader
-        this.id = OpenGL.glCreateShader(this.type().openGlId);
+        this.id = glCreateShader(this.type().openGlId);
 
         int id = this.id;
         PCleaner.cleaner(this, () -> Minecraft.getMinecraft().addScheduledTask(() -> glDeleteShader(id)));
@@ -57,8 +55,8 @@ class Shader {
         GL20.glShaderSource(this.id, code);
 
         //compile and validate shader
-        OpenGL.glCompileShader(this.id);
-        ShaderManager.validate(Arrays.toString(names), this.id, OpenGL.GL_COMPILE_STATUS);
+        glCompileShader(this.id);
+        ShaderManager.validate(Arrays.toString(names), this.id, GL_COMPILE_STATUS);
     }
 
     /**
@@ -67,7 +65,6 @@ class Shader {
      * @param program the program to which to attach this shader
      */
     protected void attach(@NonNull ShaderProgram program) {
-        OpenGL.assertOpenGL();
-        OpenGL.glAttachShader(program.id, this.id);
+        glAttachShader(program.id, this.id);
     }
 }

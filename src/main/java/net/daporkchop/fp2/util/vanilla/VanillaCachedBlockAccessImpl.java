@@ -81,7 +81,7 @@ public class VanillaCachedBlockAccessImpl implements CachedBlockAccess {
     }
 
     @Override
-    public void prefetch(@NonNull AxisAlignedBB range) {
+    public void prefetch(@NonNull AxisAlignedBB range, boolean ignoreY) {
         int minX = (int) range.minX >> 4;
         int maxX = (int) range.maxX >> 4;
         int minZ = (int) range.minZ >> 4;

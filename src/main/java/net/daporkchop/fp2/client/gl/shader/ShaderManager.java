@@ -25,7 +25,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.strategy.flat.FlatTerrainRenderer;
 import net.daporkchop.lib.binary.oio.StreamUtil;
 import net.daporkchop.lib.common.function.io.IOFunction;
@@ -38,6 +37,8 @@ import java.util.Arrays;
 import java.util.stream.StreamSupport;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL20.*;
 
 /**
  * Manages loaded shaders.
@@ -55,7 +56,6 @@ public class ShaderManager {
      * @return the shader program with the given name
      */
     public ShaderProgram get(@NonNull String programName) {
-        OpenGL.assertOpenGL();
         try {
             String fileName = String.format("%s/prog/%s.json", BASE_PATH, programName);
             JsonObject meta;
@@ -73,6 +73,7 @@ public class ShaderManager {
             return new ShaderProgram(
                     programName,
                     get(StreamSupport.stream(meta.getAsJsonArray("vert").spliterator(), false).map(JsonElement::getAsString).toArray(String[]::new), ShaderType.VERTEX),
+                    meta.has("geom") ? get(StreamSupport.stream(meta.getAsJsonArray("vert").spliterator(), false).map(JsonElement::getAsString).toArray(String[]::new), ShaderType.VERTEX) : null,
                     get(StreamSupport.stream(meta.getAsJsonArray("frag").spliterator(), false).map(JsonElement::getAsString).toArray(String[]::new), ShaderType.FRAGMENT));
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -80,8 +81,6 @@ public class ShaderManager {
     }
 
     protected Shader get(@NonNull String[] names, @NonNull ShaderType type) {
-        OpenGL.assertOpenGL();
-
         return type.construct(names, Arrays.stream(names)
                 .map((IOFunction<String, String>) fileName -> {
                     try (InputStream in = ShaderManager.class.getResourceAsStream(BASE_PATH + '/' + fileName)) {
@@ -93,16 +92,14 @@ public class ShaderManager {
     }
 
     protected void validate(@NonNull String name, int id, int type) {
-        if (OpenGL.glGetShaderi(id, type) == OpenGL.GL_FALSE) {
-            String error = String.format("Couldn't compile shader \"%s\": %s", name, OpenGL.glGetLogInfo(id));
+        if (glGetShaderi(id, type) == GL_FALSE) {
+            String error = String.format("Couldn't compile shader \"%s\": %s", name, glGetProgramInfoLog(id, Integer.MAX_VALUE));
             System.err.println(error);
             throw new IllegalStateException(error);
         }
     }
 
     public void reload() {
-        OpenGL.assertOpenGL();
-
         //TODO: actually reload all shaders rather than doing it manually
         FlatTerrainRenderer.reloadHeightShader();
     }

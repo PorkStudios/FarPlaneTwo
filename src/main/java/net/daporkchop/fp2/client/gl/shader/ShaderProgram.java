@@ -22,7 +22,6 @@ package net.daporkchop.fp2.client.gl.shader;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.minecraft.client.Minecraft;
 
@@ -45,27 +44,30 @@ public final class ShaderProgram implements AutoCloseable {
      *
      * @param name     the program's name
      * @param vertex   the vertex shader
+     * @param geometry the geometry shader
      * @param fragment fragment shader
      */
-    protected ShaderProgram(@NonNull String name, @NonNull Shader vertex, @NonNull Shader fragment) {
-        OpenGL.assertOpenGL();
+    protected ShaderProgram(@NonNull String name, @NonNull Shader vertex, Shader geometry, @NonNull Shader fragment) {
         this.name = name;
 
         //allocate program
-        this.id = OpenGL.glCreateProgram();
+        this.id = glCreateProgram();
 
         int id = this.id;
         PCleaner.cleaner(this, () -> Minecraft.getMinecraft().addScheduledTask(() -> glDeleteProgram(id)));
 
         //attach shaders
         vertex.attach(this);
+        if (geometry != null) {
+            geometry.attach(this);
+        }
         fragment.attach(this);
 
         //link and validate
-        OpenGL.glLinkProgram(this.id);
-        ShaderManager.validate(this.name, this.id, OpenGL.GL_LINK_STATUS);
-        OpenGL.glValidateProgram(this.id);
-        ShaderManager.validate(this.name, this.id, OpenGL.GL_VALIDATE_STATUS);
+        glLinkProgram(this.id);
+        ShaderManager.validate(this.name, this.id, GL_LINK_STATUS);
+        glValidateProgram(this.id);
+        ShaderManager.validate(this.name, this.id, GL_VALIDATE_STATUS);
 
         this.vertex = vertex;
         this.fragment = fragment;
@@ -78,7 +80,7 @@ public final class ShaderProgram implements AutoCloseable {
      * @return the uniform's location
      */
     public int uniformLocation(@NonNull String name) {
-        return OpenGL.glGetUniformLocation(this.id, name);
+        return glGetUniformLocation(this.id, name);
     }
 
     /**
@@ -87,12 +89,12 @@ public final class ShaderProgram implements AutoCloseable {
      * This method returns itself, for use in a try-with-resources block.
      */
     public ShaderProgram use() {
-        OpenGL.glUseProgram(this.id);
+        glUseProgram(this.id);
         return this;
     }
 
     @Override
     public void close() {
-        OpenGL.glUseProgram(0);
+        glUseProgram(0);
     }
 }

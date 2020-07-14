@@ -24,7 +24,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL32.*;
 
 /**
  * The different types of shaders.
@@ -35,13 +36,14 @@ import static net.daporkchop.fp2.client.gl.OpenGL.*;
 @Getter
 public enum ShaderType {
     VERTEX("vert", GL_VERTEX_SHADER),
+    GEOMETRY("geom", GL_GEOMETRY_SHADER),
     FRAGMENT("frag", GL_FRAGMENT_SHADER);
 
     @NonNull
     protected final String extension;
     protected final int openGlId;
 
-    protected Shader construct(@NonNull String[] names, @NonNull String[] code)  {
+    protected Shader construct(@NonNull String[] names, @NonNull String[] code) {
         return new Shader(names, code, this);
     }
 }

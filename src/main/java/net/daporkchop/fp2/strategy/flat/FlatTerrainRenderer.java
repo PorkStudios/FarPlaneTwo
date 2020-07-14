@@ -241,8 +241,8 @@ public class FlatTerrainRenderer extends TerrainRenderer {
 
         glTranslated(-this.cameraX, -this.cameraY, -this.cameraZ);
 
-        this.modelView = MatrixHelper.getMATRIX(GL_MODELVIEW_MATRIX, this.modelView);
-        this.proj = MatrixHelper.getMATRIX(GL_PROJECTION_MATRIX, this.proj);
+        this.modelView = MatrixHelper.getMatrix(GL_MODELVIEW_MATRIX, this.modelView);
+        this.proj = MatrixHelper.getMatrix(GL_PROJECTION_MATRIX, this.proj);
 
         mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
 

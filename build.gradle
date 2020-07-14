@@ -37,6 +37,7 @@ buildscript {
         classpath "org.spongepowered:mixingradle:0.6-SNAPSHOT"
     }
 }
+
 apply plugin: "net.minecraftforge.gradle.forge"
 apply plugin: "org.spongepowered.mixin"
 
@@ -70,17 +71,6 @@ tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
 
-configurations {
-    //shade
-    //compile.extendsFrom shade
-
-    all {
-        resolutionStrategy {
-            force("com.google.guava:guava:$guavaVersion")
-        }
-    }
-}
-
 repositories {
     maven {
         name = "DaPorkchop_"
@@ -106,9 +96,6 @@ repositories {
 }
 
 dependencies {
-    compileOnly "org.spongepowered:mixin:$mixinVersion"
-    annotationProcessor "org.spongepowered:mixin:$mixinVersion"
-
     compile("net.daporkchop.lib:binary:$porklibVersion") { //TODO: shade these dependencies into a sub-package
         exclude group: "io.netty"
     }
@@ -125,12 +112,16 @@ dependencies {
     deobfCompile "io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT"
     deobfCompile "io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT"
 
+    annotationProcessor "com.google.code.gson:gson:2.8.0"
+    annotationProcessor "com.google.guava:guava:21.0"
+    annotationProcessor "org.apache.logging.log4j:log4j-core:2.8.1"
+    annotationProcessor "org.ow2.asm:asm-debug-all:5.2"
+    annotationProcessor "org.spongepowered:mixin:$mixinVersion"
+
     testCompile "junit:junit:$junitVersion"
 
     compileOnly "org.projectlombok:lombok:$lombokVersion"
-    testCompileOnly "org.projectlombok:lombok:$lombokVersion"
     annotationProcessor "org.projectlombok:lombok:$lombokVersion"
-    testAnnotationProcessor "org.projectlombok:lombok:$lombokVersion"
 }
 
 minecraft {

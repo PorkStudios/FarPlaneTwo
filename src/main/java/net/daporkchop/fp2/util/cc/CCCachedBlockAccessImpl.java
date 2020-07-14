@@ -24,7 +24,6 @@ import io.github.opencubicchunks.cubicchunks.api.util.CubePos;
 import io.github.opencubicchunks.cubicchunks.api.world.IColumn;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
-import io.github.opencubicchunks.cubicchunks.core.world.cube.Cube;
 import lombok.NonNull;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
@@ -45,7 +44,6 @@ import net.minecraft.world.chunk.Chunk;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 
@@ -115,7 +113,7 @@ public class CCCachedBlockAccessImpl implements CachedBlockAccess {
     }
 
     @Override
-    public void prefetch(@NonNull AxisAlignedBB range) {
+    public void prefetch(@NonNull AxisAlignedBB range, boolean ignoreY) {
         int minX = (int) range.minX >> 4;
         int maxX = (int) range.maxX >> 4;
         int minZ = (int) range.minZ >> 4;
@@ -127,8 +125,10 @@ public class CCCachedBlockAccessImpl implements CachedBlockAccess {
             for (int z = minZ; z <= maxZ; z++) {
                 this.fetchChunk(x, z); //worker threads will only create a future and submit it to the main thread without blocking
 
-                for (int y = minY; y <= maxY; y++)  {
-                    this.fetchCube(x, y, z);
+                if (!ignoreY) {
+                    for (int y = minY; y <= maxY; y++) {
+                        this.fetchCube(x, y, z);
+                    }
                 }
             }
         }

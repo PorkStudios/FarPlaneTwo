@@ -42,9 +42,10 @@ public interface CachedBlockAccess extends IBlockAccess, IHeightMap {
      * <p>
      * This can help prevent multiple consecutive cache misses when a large area is going to be accessed.
      *
-     * @param range a bounding box containing the region to prefetch
+     * @param range   a bounding box containing the region to prefetch
+     * @param ignoreY whether or not the Y value should be ignored
      */
-    void prefetch(@NonNull AxisAlignedBB range);
+    void prefetch(@NonNull AxisAlignedBB range, boolean ignoreY);
 
     /**
      * Drops some data from the cache.

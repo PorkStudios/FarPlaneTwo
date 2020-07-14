@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.client;
 
 import net.daporkchop.fp2.FP2;
-import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.server.ServerProxy;
 import net.daporkchop.fp2.strategy.flat.FlatTerrainRenderer;

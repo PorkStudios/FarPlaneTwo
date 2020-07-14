@@ -36,7 +36,7 @@ public class MatrixHelper {
     private final FloatBuffer MATRIX = BufferUtils.createFloatBuffer(16);
     private final float[] EMPTY_MATRIX = new float[16];
 
-    public FloatBuffer getMATRIX(int id, FloatBuffer buffer) {
+    public FloatBuffer getMatrix(int id, FloatBuffer buffer) {
         if (buffer == null) {
             buffer = BufferUtils.createFloatBuffer(16);
         }

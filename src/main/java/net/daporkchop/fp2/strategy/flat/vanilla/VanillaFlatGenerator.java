@@ -54,7 +54,7 @@ public class VanillaFlatGenerator implements FlatGenerator {
         int pieceZ = piece.z();
         world.prefetch(new AxisAlignedBB(
                 pieceX * FLAT_VOXELS, 0, pieceZ * FLAT_VOXELS,
-                (pieceX + 1) * FLAT_VOXELS, 255, (pieceZ + 1) * FLAT_VOXELS));
+                (pieceX + 1) * FLAT_VOXELS, 0, (pieceZ + 1) * FLAT_VOXELS), true);
         for (int x = 0; x < FLAT_VERTS; x++) {
             for (int z = 0; z < FLAT_VERTS; z++) {
                 int height = world.getTopBlockY(pieceX * FLAT_VOXELS + x, pieceZ * FLAT_VOXELS + z);
