@@ -64,6 +64,7 @@ import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.opengl.GL40.*;
 import static org.lwjgl.opengl.GL43.*;
+import static org.lwjgl.opengl.GL45.*;
 
 /**
  * @author DaPorkchop_
@@ -225,7 +226,21 @@ public class FlatTerrainRenderer extends TerrainRenderer {
             GlStateManager.enableBlend();
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            glPushMatrix();
+            //GlStateManager.clearDepth(0.0d);
+            //GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
+
+            /*GlStateManager.matrixMode(GL_PROJECTION);
+            GlStateManager.pushMatrix();
+            GlStateManager.loadIdentity();
+            MatrixHelper.reversedZ(mc.entityRenderer.getFOVModifier(partialTicks, true), (float) mc.displayWidth / (float) mc.displayHeight, 0.05f);
+            GlStateManager.matrixMode(GL_MODELVIEW);
+            GlStateManager.pushMatrix();*/
+            /*int prevDepthFunc = GlStateManager.depthState.depthFunc;
+            GlStateManager.depthFunc(GL_GREATER);*/
+            //GlStateManager.depthFunc(GL_LEQUAL);
+            //glDepthRange(1, 0);
+            //glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+
             glTranslated(-this.cameraX, -this.cameraY, -this.cameraZ);
 
             this.modelView = MatrixHelper.getMATRIX(GL_MODELVIEW_MATRIX, this.modelView);
@@ -269,7 +284,16 @@ public class FlatTerrainRenderer extends TerrainRenderer {
             } finally {
                 mc.entityRenderer.disableLightmap();
 
-                glPopMatrix();
+                //GlStateManager.depthFunc(prevDepthFunc);
+                //glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
+                //glDepthRange(0, 1);
+                /*GlStateManager.popMatrix();
+                GlStateManager.matrixMode(GL_PROJECTION);
+                GlStateManager.popMatrix();
+                GlStateManager.matrixMode(GL_MODELVIEW);*/
+
+                //GlStateManager.clearDepth(1.0d);
+                //GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
 
                 GlStateManager.disableBlend();
                 GlStateManager.disableAlpha();

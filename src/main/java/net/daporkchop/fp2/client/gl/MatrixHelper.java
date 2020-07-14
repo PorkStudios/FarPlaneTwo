@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.client.gl;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.client.ClientConstants;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 
@@ -45,25 +44,33 @@ public class MatrixHelper {
         return buffer;
     }
 
-    public void perspectiveInfinite(float fovy, float aspect, float zNear) {
+    public void infiniteZFar(float fovy, float aspect, float zNear) {
         //from http://dev.theomader.com/depth-precision/
         float radians = (float) Math.toRadians(fovy);
         float f = 1.0f / (float) Math.tan(radians * 0.5f);
 
         MATRIX.put(EMPTY_MATRIX);
 
-        if (false && !ClientConstants.reversedZ) { //infinite zFar
-            MATRIX.put(0 * 4 + 0, f / aspect);
-            MATRIX.put(1 * 4 + 1, f);
-            MATRIX.put(2 * 4 + 2, -1);
-            MATRIX.put(3 * 4 + 2, -zNear);
-            MATRIX.put(2 * 4 + 3, -1);
-        } else { //infinite reversed-Z
-            MATRIX.put(0 * 4 + 0, f / aspect);
-            MATRIX.put(1 * 4 + 1, f);
-            MATRIX.put(3 * 4 + 2, zNear);
-            MATRIX.put(2 * 4 + 3, -1);
-        }
+        MATRIX.put(0 * 4 + 0, f / aspect);
+        MATRIX.put(1 * 4 + 1, f);
+        MATRIX.put(2 * 4 + 2, -1);
+        MATRIX.put(3 * 4 + 2, -zNear);
+        MATRIX.put(2 * 4 + 3, -1);
+
+        glMultMatrix((FloatBuffer) MATRIX.clear());
+    }
+
+    public void reversedZ(float fovy, float aspect, float zNear) {
+        //from http://dev.theomader.com/depth-precision/
+        float radians = (float) Math.toRadians(fovy);
+        float f = 1.0f / (float) Math.tan(radians * 0.5f);
+
+        MATRIX.put(EMPTY_MATRIX);
+
+        MATRIX.put(0 * 4 + 0, f / aspect);
+        MATRIX.put(1 * 4 + 1, f);
+        MATRIX.put(3 * 4 + 2, zNear);
+        MATRIX.put(2 * 4 + 3, -1);
 
         glMultMatrix((FloatBuffer) MATRIX.clear());
     }

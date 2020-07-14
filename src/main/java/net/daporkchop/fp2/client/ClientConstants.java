@@ -42,6 +42,8 @@ import java.util.stream.Collectors;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL45.*;
 
 /**
  * @author DaPorkchop_
@@ -113,35 +115,37 @@ public class ClientConstants {
         return buffer;
     }
 
-    public void beginRenderWorld()  {
+    public void beginRenderWorld() {
         if (!reversedZ) {
             reversedZ = true;
+            //glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
             GlStateManager.clearDepth(0.0d);
             GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
-            //glDepthRange(1, 0);
+            glDepthRange(1, 0);
 
             int depthFunc = invertGlDepthFunction(GlStateManager.depthState.depthFunc);
-            if (depthFunc != GlStateManager.depthState.depthFunc)   {
+            if (depthFunc != GlStateManager.depthState.depthFunc) {
                 glDepthFunc(GlStateManager.depthState.depthFunc = depthFunc);
             }
         }
     }
 
-    public void endRenderWorld()  {
+    public void endRenderWorld() {
         if (reversedZ) {
             reversedZ = false;
+            //glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
             GlStateManager.clearDepth(1.0d);
             GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
-            //glDepthRange(0, 1);
+            glDepthRange(0, 1);
 
             int depthFunc = invertGlDepthFunction(GlStateManager.depthState.depthFunc);
-            if (depthFunc != GlStateManager.depthState.depthFunc)   {
+            if (depthFunc != GlStateManager.depthState.depthFunc) {
                 glDepthFunc(GlStateManager.depthState.depthFunc = depthFunc);
             }
         }
     }
 
-    public int invertGlDepthFunction(int in)    {
+    public int invertGlDepthFunction(int in) {
         switch (in) {
             case GL_LESS:
                 return GL_GREATER;
