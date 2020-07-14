@@ -18,81 +18,61 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.flat.cwg;
+package net.daporkchop.fp2.strategy.flat.cc;
 
-import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
-import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.BiomeSource;
-import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.IBuilder;
 import lombok.NonNull;
+import net.daporkchop.fp2.strategy.flat.FlatGenerator;
 import net.daporkchop.fp2.strategy.flat.FlatPiece;
-import net.daporkchop.fp2.strategy.flat.cc.CCFlatGenerator;
-import net.daporkchop.fp2.util.cwg.CWGContext;
-import net.daporkchop.fp2.util.cwg.CWGUtil;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
-import net.daporkchop.lib.common.ref.Ref;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.MapColor;
+import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.init.Blocks;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
-import java.util.List;
-
-import static java.lang.Math.*;
 import static net.daporkchop.fp2.strategy.flat.FlatConstants.*;
-import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
  * @author DaPorkchop_
  */
-public class CWGFlatGenerator extends CCFlatGenerator {
-    protected Ref<CWGContext> ctx;
-    protected int seaLevel;
-
+public class CCFlatGenerator implements FlatGenerator {
     @Override
     public void init(@NonNull WorldServer world) {
-        this.ctx = CWGUtil.tlCWGCtx(world);
-        this.seaLevel = world.getSeaLevel();
     }
 
     @Override
     public void generateRough(@NonNull CachedBlockAccess world, @NonNull FlatPiece piece) {
+        this.generateExact(world, piece);
+    }
+
+    @Override
+    public void generateExact(@NonNull CachedBlockAccess world, @NonNull FlatPiece piece) {
         int pieceX = piece.x();
         int pieceZ = piece.z();
-
-        CWGContext ctx = this.ctx.get();
-        Biome[] biomes = ctx.biomeCache
-                = ctx.biomeProvider().getBiomes(ctx.biomeCache, pieceX * FLAT_VOXELS, pieceZ * FLAT_VOXELS, FLAT_VERTS, FLAT_VERTS, false);
-
+        world.prefetch(new AxisAlignedBB(
+                pieceX * FLAT_VOXELS, 0, pieceZ * FLAT_VOXELS,
+                (pieceX + 1) * FLAT_VOXELS, 255, (pieceZ + 1) * FLAT_VOXELS));
         for (int x = 0; x < FLAT_VERTS; x++) {
             for (int z = 0; z < FLAT_VERTS; z++) {
-                int blockX = pieceX * FLAT_VOXELS + x;
-                int blockZ = pieceZ * FLAT_VOXELS + z;
+                int height = world.getTopBlockY(pieceX * FLAT_VOXELS + x, pieceZ * FLAT_VOXELS + z);
+                BlockPos pos = new BlockPos(pieceX * FLAT_VOXELS + x, height, pieceZ * FLAT_VOXELS + z);
+                IBlockState state = world.getBlockState(pos);
 
-                int height = CWGUtil.getHeight(ctx.terrainBuilder(), blockX, blockZ);
-                double density = ctx.terrainBuilder().get(blockX, height, blockZ);
-
-                double dx = ctx.terrainBuilder().get(blockX + 1, height, blockZ) - density;
-                double dy = ctx.terrainBuilder().get(blockX, height + 1, blockZ) - density;
-                double dz = ctx.terrainBuilder().get(blockX, height, blockZ + 1) - density;
-
-                //Biome biome = ctx.biomeSource().getBiome(blockX, height, blockZ).getBiome();
-                Biome biome = biomes[z * FLAT_VERTS + x];
-
-                IBlockState state = Blocks.AIR.getDefaultState();
-                List<IBiomeBlockReplacer> replacers = ctx.biomeBlockReplacers().get(biome);
-                for (int i = 0, size = replacers.size(); i < size; i++) {
-                    state = replacers.get(i).getReplacedBlock(state, blockX, height, blockZ, dx, dy, dz, density);
+                while (height <= 63 && state.getMaterial() == Material.WATER) {
+                    pos = new BlockPos(pos.getX(), --height, pos.getZ());
+                    state = world.getBlockState(pos);
                 }
 
-                MapColor color = state.getMapColor(world, new BlockPos(blockX, height, blockZ));
+                Biome biome = world.getBiome(pos);
+                MapColor color = state.getMapColor(world, pos);
                 piece.height(x, z, height)
                         .color(x, z, color.colorIndex)
                         .biome(x, z, Biome.getIdForBiome(biome))
                         .block(x, z, Block.getStateId(state))
-                        .light(x, z, (height < this.seaLevel ? max(15 - (this.seaLevel - height) * 3, 0) : 15) << 16);
+                        .light(x, z, world.getCombinedLight(pos.add(0, 1, 0), 0) >> 4);
             }
         }
     }

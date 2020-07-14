@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-$today.year DaPorkchop_
+ * Copyright (c) 2020-2020 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,29 +18,36 @@
  *
  */
 
-layout(location = 0) in vec2 vertexPosition_modelspace;
-layout(location = 3) in int biome;
-layout(location = 4) in int state;
-layout(location = 5) in int light;
+package net.daporkchop.fp2.util.cwg;
 
-uniform mat4 camera_projection = mat4(1.0);
-uniform mat4 camera_modelview = mat4(1.0);
+import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
+import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.BiomeSource;
+import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.IBuilder;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.Accessors;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.BiomeProvider;
 
-uniform dvec2 camera_offset;
+import java.util.List;
+import java.util.Map;
 
-uniform float seaLevel;
+/**
+ * @author DaPorkchop_
+ */
+@RequiredArgsConstructor
+@Getter
+@Accessors(fluent = true)
+public final class CWGContext {
+    @NonNull
+    protected final Map<Biome, List<IBiomeBlockReplacer>> biomeBlockReplacers;
+    @NonNull
+    protected final BiomeProvider biomeProvider;
+    @NonNull
+    protected final BiomeSource biomeSource;
+    @NonNull
+    protected final IBuilder terrainBuilder;
 
-out vec3 vert_pos;
-out vec2 vert_light;
-out flat vec4 vert_color;
-
-void main(){
-    dvec3 pos = dvec3(camera_offset.x + vertexPosition_modelspace.x, seaLevel - .125, camera_offset.y + vertexPosition_modelspace.y);
-    vert_pos = vec3(pos);
-
-    gl_Position = camera_projection * camera_modelview * vec4(pos, 1.);
-
-    vert_color = fromARGB(biome_watercolor[biome]);
-
-    vert_light = vec2(ivec2(light) >> ivec2(0, 16) & 0xF) / 16.;
+    public Biome[] biomeCache;
 }

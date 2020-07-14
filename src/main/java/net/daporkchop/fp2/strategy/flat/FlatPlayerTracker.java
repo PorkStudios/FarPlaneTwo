@@ -31,6 +31,7 @@ import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
+import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.lib.common.math.BinMath;
 import net.minecraft.entity.player.EntityPlayerMP;
 
@@ -85,7 +86,7 @@ public class FlatPlayerTracker implements IFarPlayerTracker {
                     //piece wasn't loaded before, we should load and send it
                     FlatPiece piece = this.world.getPieceNowOrLoadAsync(new FlatPiecePos(x, z));
                     if (piece != null) {
-                        GENERATION_WORKERS.submit(() -> NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player));
+                        ServerThreadExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player));
                     } else {
                         continue; //don't add to next, to indicate that the piece hasn't been sent yet
                     }
@@ -107,7 +108,7 @@ public class FlatPlayerTracker implements IFarPlayerTracker {
         long key = BinMath.packXY(piece.x(), piece.z());
         this.tracking.forEach((player, curr) -> {
             if (curr.contains(key)) {
-                GENERATION_WORKERS.submit(() -> NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player));
+                ServerThreadExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player));
             }
         });
     }

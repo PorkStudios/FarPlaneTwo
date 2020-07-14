@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.strategy.flat;
 
+import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomCubicWorldType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import lombok.Getter;
@@ -29,6 +30,7 @@ import net.daporkchop.fp2.strategy.RenderStrategy;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPiecePos;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
+import net.daporkchop.fp2.strategy.flat.cc.CCFlatGenerator;
 import net.daporkchop.fp2.strategy.flat.cwg.CWGFlatGenerator;
 import net.daporkchop.fp2.strategy.flat.vanilla.VanillaFlatGenerator;
 import net.daporkchop.fp2.util.Constants;
@@ -80,7 +82,11 @@ public class FlatWorld implements IFarWorld {
     public FlatWorld(@NonNull WorldServer world) {
         this.world = world;
         if (Constants.isCubicWorld(world))  { //TODO: this
-            this.generator = new CWGFlatGenerator();
+            if (Constants.CWG && world.getWorldType() instanceof CustomCubicWorldType) {
+                this.generator = new CWGFlatGenerator();
+            } else {
+                this.generator = new CCFlatGenerator();
+            }
         } else {
             this.generator = new VanillaFlatGenerator();
         }
