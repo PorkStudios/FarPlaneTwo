@@ -44,7 +44,6 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.ARBShaderObjects;
 import org.lwjgl.opengl.GL15;
 
-import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.HashMap;
@@ -96,6 +95,19 @@ public class FlatTerrainRenderer extends TerrainRenderer {
     public static final int MESH_VERTEX_COUNT;
 
     static {
+        ShortBuffer meshData = BufferUtils.createShortBuffer(FLAT_VOXELS * FLAT_VOXELS);
+        MESH_VERTEX_COUNT = meshData.capacity();
+
+        for (int i = 0; i < MESH_VERTEX_COUNT; i++) {
+            meshData.put((short) i);
+        }
+
+        try (ElementArrayObject mesh = MESH.bind()) {
+            GL15.glBufferData(GL_ELEMENT_ARRAY_BUFFER, (ShortBuffer) meshData.flip(), GL_STATIC_DRAW);
+        }
+    }
+
+    /*static {
         ShortBuffer meshData = BufferUtils.createShortBuffer(FLAT_VERTS * FLAT_VERTS * 6 + 1);
         MESH_VERTEX_COUNT = genMesh(FLAT_VERTS, FLAT_VERTS, meshData);
 
@@ -118,7 +130,7 @@ public class FlatTerrainRenderer extends TerrainRenderer {
             }
         }
         return verts;
-    }
+    }*/
 
     protected final Map<FlatPiecePos, VertexArrayObject> pieces = new HashMap<>();
     protected IntBuffer renderableChunksMask;
@@ -236,12 +248,12 @@ public class FlatTerrainRenderer extends TerrainRenderer {
                     glUniform2d(shader.uniformLocation("camera_offset"), pos.x() * FLAT_VOXELS + .5d, pos.z() * FLAT_VOXELS + .5d);
 
                     try (VertexArrayObject vao = o.bind()) {
-                        glDrawElements(GL_TRIANGLES, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
+                        glDrawElements(GL_POINTS, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
                     }
                 });
             }
 
-            try (ShaderProgram shader = WATER_SHADER.use()) {
+            /*try (ShaderProgram shader = WATER_SHADER.use()) {
                 ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
                 ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
                 glUniform1f(shader.uniformLocation("seaLevel"), 63f);
@@ -253,7 +265,7 @@ public class FlatTerrainRenderer extends TerrainRenderer {
                         glDrawElements(GL_TRIANGLES, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
                     }
                 });
-            }
+            }*/
         } finally {
             mc.entityRenderer.disableLightmap();
 

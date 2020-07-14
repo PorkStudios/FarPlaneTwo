@@ -183,7 +183,7 @@ public class FlatWorld implements IFarWorld {
     }
 
     protected void savePiece(@NonNull FlatPiece piece) {
-        if (!piece.isDirty()) {
+        if (true || !piece.isDirty()) {
             return;
         }
         IO_WORKERS.submit((IORunnable) () -> {

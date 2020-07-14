@@ -34,5 +34,5 @@ public class FlatConstants {
     public static final int FLAT_SHIFT = BinMath.getNumBitsNeededFor(FLAT_VOXELS - 1);
     public static final int FLAT_VERTS = FLAT_VOXELS + 1; //side length of a tile in vertices
 
-    public static final int FLAT_STORAGE_VERSION = 0;
+    public static final int FLAT_STORAGE_VERSION = 1;
 }
