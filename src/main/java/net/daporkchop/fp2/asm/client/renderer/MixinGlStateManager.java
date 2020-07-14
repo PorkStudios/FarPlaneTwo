@@ -36,6 +36,6 @@ public abstract class MixinGlStateManager {
             argsOnly = true,
             index = 0)
     private static int possiblyFlipDepthFunc(int in) {
-        return true && ClientConstants.reversedZ ? ClientConstants.invertGlDepthFunction(in) : in;
+        return false &&ClientConstants.reversedZ ? ClientConstants.invertGlDepthFunction(in) : in;
     }
 }

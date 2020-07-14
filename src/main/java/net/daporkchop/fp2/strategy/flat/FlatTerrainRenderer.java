@@ -241,6 +241,8 @@ public class FlatTerrainRenderer extends TerrainRenderer {
             //glDepthRange(1, 0);
             //glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
 
+            GlStateManager.pushMatrix();
+
             glTranslated(-this.cameraX, -this.cameraY, -this.cameraZ);
 
             this.modelView = MatrixHelper.getMATRIX(GL_MODELVIEW_MATRIX, this.modelView);
@@ -294,6 +296,8 @@ public class FlatTerrainRenderer extends TerrainRenderer {
 
                 //GlStateManager.clearDepth(1.0d);
                 //GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
+
+                GlStateManager.popMatrix();
 
                 GlStateManager.disableBlend();
                 GlStateManager.disableAlpha();

@@ -119,14 +119,14 @@ public class ClientConstants {
         if (!reversedZ) {
             reversedZ = true;
             //glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
-            GlStateManager.clearDepth(0.0d);
+            /*GlStateManager.clearDepth(0.0d);
             GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
             glDepthRange(1, 0);
 
             int depthFunc = invertGlDepthFunction(GlStateManager.depthState.depthFunc);
             if (depthFunc != GlStateManager.depthState.depthFunc) {
                 glDepthFunc(GlStateManager.depthState.depthFunc = depthFunc);
-            }
+            }*/
         }
     }
 
@@ -134,14 +134,14 @@ public class ClientConstants {
         if (reversedZ) {
             reversedZ = false;
             //glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
-            GlStateManager.clearDepth(1.0d);
+            /*GlStateManager.clearDepth(1.0d);
             GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
             glDepthRange(0, 1);
 
             int depthFunc = invertGlDepthFunction(GlStateManager.depthState.depthFunc);
             if (depthFunc != GlStateManager.depthState.depthFunc) {
                 glDepthFunc(GlStateManager.depthState.depthFunc = depthFunc);
-            }
+            }*/
         }
     }
 

@@ -41,6 +41,6 @@ public abstract class MixinMinecraft {
                     target = "Lnet/minecraft/client/renderer/OpenGlHelper;initializeTextures()V",
                     shift = At.Shift.BEFORE))
     private void init_setClipControl(CallbackInfo ci) {
-        glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+        //glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
     }
 }
