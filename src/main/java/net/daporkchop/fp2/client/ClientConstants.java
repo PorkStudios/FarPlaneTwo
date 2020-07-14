@@ -53,8 +53,6 @@ import static org.lwjgl.opengl.GL45.*;
 public class ClientConstants {
     public static EventExecutorGroup RENDER_WORKERS;
 
-    public static boolean reversedZ = false;
-
     public void init() {
         checkState(RENDER_WORKERS == null);
 
@@ -113,49 +111,5 @@ public class ClientConstants {
 
         buffer.clear();
         return buffer;
-    }
-
-    public void beginRenderWorld() {
-        if (!reversedZ) {
-            reversedZ = true;
-            //glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
-            /*GlStateManager.clearDepth(0.0d);
-            GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
-            glDepthRange(1, 0);
-
-            int depthFunc = invertGlDepthFunction(GlStateManager.depthState.depthFunc);
-            if (depthFunc != GlStateManager.depthState.depthFunc) {
-                glDepthFunc(GlStateManager.depthState.depthFunc = depthFunc);
-            }*/
-        }
-    }
-
-    public void endRenderWorld() {
-        if (reversedZ) {
-            reversedZ = false;
-            //glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
-            /*GlStateManager.clearDepth(1.0d);
-            GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
-            glDepthRange(0, 1);
-
-            int depthFunc = invertGlDepthFunction(GlStateManager.depthState.depthFunc);
-            if (depthFunc != GlStateManager.depthState.depthFunc) {
-                glDepthFunc(GlStateManager.depthState.depthFunc = depthFunc);
-            }*/
-        }
-    }
-
-    public int invertGlDepthFunction(int in) {
-        switch (in) {
-            case GL_LESS:
-                return GL_GREATER;
-            case GL_GREATER:
-                return GL_LESS;
-            case GL_LEQUAL:
-                return GL_GEQUAL;
-            case GL_GEQUAL:
-                return GL_LEQUAL;
-        }
-        return in;
     }
 }

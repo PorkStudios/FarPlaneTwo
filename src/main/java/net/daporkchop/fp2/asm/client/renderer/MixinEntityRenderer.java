@@ -50,8 +50,6 @@ public abstract class MixinEntityRenderer {
                     ordinal = 5,
                     shift = At.Shift.BEFORE))
     private void renderWorldPass_postRenderBelowClouds(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
-        ClientConstants.beginRenderWorld();
-
         TerrainRenderer renderer = ((IFarContext) this.mc.world).fp2_renderer();
         if (renderer != null) {
             this.mc.profiler.endStartSection(RenderPass.PRE.profilerSectionName);
@@ -70,8 +68,6 @@ public abstract class MixinEntityRenderer {
             this.mc.profiler.endStartSection(RenderPass.POST.profilerSectionName);
             renderer.render(RenderPass.POST, partialTicks, this.mc.world, this.mc);
         }
-
-        ClientConstants.endRenderWorld();
     }
 
     //use a projection with infinite zFar

@@ -211,99 +211,93 @@ public class FlatTerrainRenderer extends TerrainRenderer {
 
     @Override
     public void render(RenderPass pass, float partialTicks, WorldClient world, Minecraft mc) {
-        if (pass == RenderPass.PRE) {
-            super.render(pass, partialTicks, world, mc);
+        if (pass != RenderPass.PRE) {
+            return;
+        }
 
-            try (ShaderStorageBuffer loadedBuffer = new ShaderStorageBuffer().bind()) {
-                glBufferData(GL_SHADER_STORAGE_BUFFER, this.renderableChunksMask = ClientConstants.renderableChunksMask(mc, this.renderableChunksMask), GL_STATIC_DRAW);
-                loadedBuffer.bindingIndex(0);
+        super.render(pass, partialTicks, world, mc);
+
+        try (ShaderStorageBuffer loadedBuffer = new ShaderStorageBuffer().bind()) {
+            glBufferData(GL_SHADER_STORAGE_BUFFER, this.renderableChunksMask = ClientConstants.renderableChunksMask(mc, this.renderableChunksMask), GL_STATIC_DRAW);
+            loadedBuffer.bindingIndex(0);
+        }
+        GLOBAL_INFO.bindingIndex(1);
+
+        GlStateManager.disableCull();
+        GlStateManager.enableAlpha();
+
+        GlStateManager.enableBlend();
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        GlStateManager.matrixMode(GL_PROJECTION);
+        GlStateManager.pushMatrix();
+        GlStateManager.loadIdentity();
+        MatrixHelper.reversedZ(mc.entityRenderer.getFOVModifier(partialTicks, true), (float) mc.displayWidth / (float) mc.displayHeight, 0.05f);
+
+        GlStateManager.depthFunc(GL_GREATER);
+
+        glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+
+        GlStateManager.clearDepth(0.0d);
+        GlStateManager.clear(GL_DEPTH_BUFFER_BIT); //TODO: it might be better to use a separate depth buffer (maybe)
+
+        GlStateManager.matrixMode(GL_MODELVIEW);
+        GlStateManager.pushMatrix();
+
+        glTranslated(-this.cameraX, -this.cameraY, -this.cameraZ);
+
+        this.modelView = MatrixHelper.getMATRIX(GL_MODELVIEW_MATRIX, this.modelView);
+        this.proj = MatrixHelper.getMATRIX(GL_PROJECTION_MATRIX, this.proj);
+
+        mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
+
+        mc.entityRenderer.enableLightmap();
+
+        try {
+            try (ShaderProgram shader = HEIGHT_SHADER.use()) {
+                ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
+                ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
+
+                this.pieces.forEach((pos, o) -> {
+                    glUniform2d(shader.uniformLocation("camera_offset"), pos.x() * FLAT_VOXELS + .5d, pos.z() * FLAT_VOXELS + .5d);
+
+                    try (VertexArrayObject vao = o.bind()) {
+                        glDrawElements(GL_TRIANGLES, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
+                    }
+                });
             }
-            GLOBAL_INFO.bindingIndex(1);
 
-            GlStateManager.disableCull();
-            GlStateManager.enableAlpha();
+            try (ShaderProgram shader = WATER_SHADER.use()) {
+                ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
+                ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
+                glUniform1f(shader.uniformLocation("seaLevel"), 63f);
 
-            GlStateManager.enableBlend();
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                this.pieces.forEach((pos, o) -> {
+                    glUniform2d(shader.uniformLocation("camera_offset"), pos.x() * FLAT_VOXELS + .5d, pos.z() * FLAT_VOXELS + .5d);
 
-            //GlStateManager.clearDepth(0.0d);
-            //GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
+                    try (VertexArrayObject vao = o.bind()) {
+                        glDrawElements(GL_TRIANGLES, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
+                    }
+                });
+            }
+        } finally {
+            mc.entityRenderer.disableLightmap();
 
-            /*GlStateManager.matrixMode(GL_PROJECTION);
-            GlStateManager.pushMatrix();
-            GlStateManager.loadIdentity();
-            MatrixHelper.reversedZ(mc.entityRenderer.getFOVModifier(partialTicks, true), (float) mc.displayWidth / (float) mc.displayHeight, 0.05f);
+            glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
+            GlStateManager.depthFunc(GL_LEQUAL);
+
+            GlStateManager.clearDepth(1.0d);
+            GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
+
+            GlStateManager.matrixMode(GL_PROJECTION);
+            GlStateManager.popMatrix();
+
             GlStateManager.matrixMode(GL_MODELVIEW);
-            GlStateManager.pushMatrix();*/
-            /*int prevDepthFunc = GlStateManager.depthState.depthFunc;
-            GlStateManager.depthFunc(GL_GREATER);*/
-            //GlStateManager.depthFunc(GL_LEQUAL);
-            //glDepthRange(1, 0);
-            //glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+            GlStateManager.popMatrix();
 
-            GlStateManager.pushMatrix();
-
-            glTranslated(-this.cameraX, -this.cameraY, -this.cameraZ);
-
-            this.modelView = MatrixHelper.getMATRIX(GL_MODELVIEW_MATRIX, this.modelView);
-            this.proj = MatrixHelper.getMATRIX(GL_PROJECTION_MATRIX, this.proj);
-
-            mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
-
-            mc.entityRenderer.enableLightmap();
-
-            try {
-                try (ShaderProgram shader = HEIGHT_SHADER.use()) {
-                    ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
-                    ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
-
-                    this.pieces.forEach((pos, o) -> {
-                        glUniform2d(shader.uniformLocation("camera_offset"), pos.x() * FLAT_VOXELS + .5d, pos.z() * FLAT_VOXELS + .5d);
-
-                        try (VertexArrayObject vao = o.bind()) {
-                            glDrawElements(GL_TRIANGLES, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
-                        }
-                    });
-                }
-
-                //glTranslated(0.0d, this.seaLevel, 0.0d);
-
-                //this.modelView = MatrixHelper.getMATRIX(GL_MODELVIEW_MATRIX, this.modelView);
-
-                try (ShaderProgram shader = WATER_SHADER.use()) {
-                    ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
-                    ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
-                    glUniform1f(shader.uniformLocation("seaLevel"), 63f);
-
-                    this.pieces.forEach((pos, o) -> {
-                        glUniform2d(shader.uniformLocation("camera_offset"), pos.x() * FLAT_VOXELS + .5d, pos.z() * FLAT_VOXELS + .5d);
-
-                        try (VertexArrayObject vao = o.bind()) {
-                            glDrawElements(GL_TRIANGLES, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
-                        }
-                    });
-                }
-            } finally {
-                mc.entityRenderer.disableLightmap();
-
-                //GlStateManager.depthFunc(prevDepthFunc);
-                //glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
-                //glDepthRange(0, 1);
-                /*GlStateManager.popMatrix();
-                GlStateManager.matrixMode(GL_PROJECTION);
-                GlStateManager.popMatrix();
-                GlStateManager.matrixMode(GL_MODELVIEW);*/
-
-                //GlStateManager.clearDepth(1.0d);
-                //GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
-
-                GlStateManager.popMatrix();
-
-                GlStateManager.disableBlend();
-                GlStateManager.disableAlpha();
-                GlStateManager.enableCull();
-            }
-        } else if (pass == RenderPass.TRANSLUCENT) {
+            GlStateManager.disableBlend();
+            GlStateManager.disableAlpha();
+            GlStateManager.enableCull();
         }
     }
 }
