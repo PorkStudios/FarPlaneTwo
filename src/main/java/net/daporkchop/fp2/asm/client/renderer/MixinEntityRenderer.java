@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.asm.client.renderer;
 
+import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.RenderPass;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.strategy.common.IFarContext;
@@ -27,6 +28,7 @@ import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.client.renderer.GlStateManager;
+import org.lwjgl.util.glu.Project;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -52,6 +54,8 @@ public abstract class MixinEntityRenderer {
                     ordinal = 5,
                     shift = At.Shift.BEFORE))
     private void renderWorldPass_postRenderBelowClouds(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
+        ClientConstants.beginRenderWorld();
+
         TerrainRenderer renderer = ((IFarContext) this.mc.world).fp2_renderer();
         if (renderer != null) {
             this.mc.profiler.endStartSection(RenderPass.PRE.profilerSectionName);
@@ -71,6 +75,8 @@ public abstract class MixinEntityRenderer {
             this.mc.profiler.endStartSection(RenderPass.POST.profilerSectionName);
             renderer.render(RenderPass.POST, partialTicks, this.mc.world, this.mc);
         }
+
+        ClientConstants.endRenderWorld();
     }
 
     //use a projection with infinite zFar
@@ -87,6 +93,7 @@ public abstract class MixinEntityRenderer {
                     target = "Lorg/lwjgl/util/glu/Project;gluPerspective(FFFF)V"))
     private void renderHand_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar) {
         MatrixHelper.perspectiveInfinite(fov, aspect, zNear);
+        //Project.gluPerspective(fov, aspect, zNear, zFar);
     }
 
     @Redirect(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",

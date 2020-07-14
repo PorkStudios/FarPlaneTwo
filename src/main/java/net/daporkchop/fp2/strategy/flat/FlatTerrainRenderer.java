@@ -225,8 +225,6 @@ public class FlatTerrainRenderer extends TerrainRenderer {
             GlStateManager.enableBlend();
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            glDepthFunc(GL_GREATER);
-
             glPushMatrix();
             glTranslated(-this.cameraX, -this.cameraY, -this.cameraZ);
 

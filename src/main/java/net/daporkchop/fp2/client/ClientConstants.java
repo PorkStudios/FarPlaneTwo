@@ -29,6 +29,7 @@ import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.chunk.CompiledChunk;
 import net.minecraft.client.renderer.chunk.RenderChunk;
 import net.minecraft.util.math.Vec3i;
@@ -39,7 +40,8 @@ import java.nio.IntBuffer;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static net.daporkchop.lib.common.util.PValidation.checkState;
+import static net.daporkchop.lib.common.util.PValidation.*;
+import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author DaPorkchop_
@@ -48,6 +50,8 @@ import static net.daporkchop.lib.common.util.PValidation.checkState;
 @SideOnly(Side.CLIENT)
 public class ClientConstants {
     public static EventExecutorGroup RENDER_WORKERS;
+
+    public static boolean reversedZ = false;
 
     public void init() {
         checkState(RENDER_WORKERS == null);
@@ -107,5 +111,47 @@ public class ClientConstants {
 
         buffer.clear();
         return buffer;
+    }
+
+    public void beginRenderWorld()  {
+        if (!reversedZ) {
+            reversedZ = true;
+            GlStateManager.clearDepth(0.0d);
+            GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
+            //glDepthRange(1, 0);
+
+            int depthFunc = invertGlDepthFunction(GlStateManager.depthState.depthFunc);
+            if (depthFunc != GlStateManager.depthState.depthFunc)   {
+                glDepthFunc(GlStateManager.depthState.depthFunc = depthFunc);
+            }
+        }
+    }
+
+    public void endRenderWorld()  {
+        if (reversedZ) {
+            reversedZ = false;
+            GlStateManager.clearDepth(1.0d);
+            GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
+            //glDepthRange(0, 1);
+
+            int depthFunc = invertGlDepthFunction(GlStateManager.depthState.depthFunc);
+            if (depthFunc != GlStateManager.depthState.depthFunc)   {
+                glDepthFunc(GlStateManager.depthState.depthFunc = depthFunc);
+            }
+        }
+    }
+
+    public int invertGlDepthFunction(int in)    {
+        switch (in) {
+            case GL_LESS:
+                return GL_GREATER;
+            case GL_GREATER:
+                return GL_LESS;
+            case GL_LEQUAL:
+                return GL_GEQUAL;
+            case GL_GEQUAL:
+                return GL_LEQUAL;
+        }
+        return in;
     }
 }

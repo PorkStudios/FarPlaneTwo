@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.client.gl;
 
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.client.ClientConstants;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 
@@ -51,7 +52,7 @@ public class MatrixHelper {
 
         MATRIX.put(EMPTY_MATRIX);
 
-        if (false) { //infinite zFar
+        if (false && !ClientConstants.reversedZ) { //infinite zFar
             MATRIX.put(0 * 4 + 0, f / aspect);
             MATRIX.put(1 * 4 + 1, f);
             MATRIX.put(2 * 4 + 2, -1);

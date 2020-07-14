@@ -20,45 +20,22 @@
 
 package net.daporkchop.fp2.asm.client.renderer;
 
+import net.daporkchop.fp2.client.ClientConstants;
 import net.minecraft.client.renderer.GlStateManager;
-import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-
-import static org.lwjgl.opengl.GL11.*;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 /**
  * @author DaPorkchop_
  */
 @Mixin(GlStateManager.class)
 public abstract class MixinGlStateManager {
-    /**
-     * @author DaPorkchop_
-     */
-    @Overwrite
-    public static void clearDepth(double depth) {
-        GL11.glClearDepth(0.0d);
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    @Overwrite
-    public static void depthFunc(int depthFunc) {
-        switch (depthFunc)  {
-            case GL_LESS:
-                depthFunc = GL_GREATER;
-                break;
-            case GL_GREATER:
-                depthFunc = GL_LESS;
-                break;
-            case GL_LEQUAL:
-                depthFunc = GL_GEQUAL;
-                break;
-            case GL_GEQUAL:
-                depthFunc = GL_LEQUAL;
-                break;
-        }
-        GL11.glDepthFunc(depthFunc);
+    @ModifyVariable(method = "Lnet/minecraft/client/renderer/GlStateManager;depthFunc(I)V",
+            at = @At("HEAD"),
+            argsOnly = true,
+            index = 0)
+    private static int possiblyFlipDepthFunc(int in) {
+        return true && ClientConstants.reversedZ ? ClientConstants.invertGlDepthFunction(in) : in;
     }
 }
