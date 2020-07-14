@@ -137,7 +137,7 @@ public class FlatWorld implements IFarWorld {
                 try {
                     if (Files.exists(cachePath) && Files.isRegularFile(cachePath)) {
                         try (FileChannel channel = FileChannel.open(cachePath, StandardOpenOption.READ)) {
-                            ByteBuf input = PUnpooled.wrap(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()), false);
+                            ByteBuf input = PUnpooled.wrap(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()), true);
                             if (input.readableBytes() >= 8 && input.readInt() == FLAT_STORAGE_VERSION) {
                                 ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(input.readInt());
                                 try {
@@ -177,7 +177,7 @@ public class FlatWorld implements IFarWorld {
     }
 
     protected void savePiece(@NonNull FlatPiece piece) {
-        if (true || !piece.isDirty()) { //TODO: remove this to re-enable saving
+        if (!piece.isDirty()) {
             return;
         }
         IO_WORKERS.submit((IORunnable) () -> {

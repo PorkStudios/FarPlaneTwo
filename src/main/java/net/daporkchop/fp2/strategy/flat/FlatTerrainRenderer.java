@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.strategy.flat;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.GlobalInfo;
 import net.daporkchop.fp2.client.RenderPass;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
@@ -33,7 +34,6 @@ import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPiecePos;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
-import net.daporkchop.fp2.client.ClientConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
@@ -224,6 +224,8 @@ public class FlatTerrainRenderer extends TerrainRenderer {
 
             GlStateManager.enableBlend();
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+            glDepthFunc(GL_GREATER);
 
             glPushMatrix();
             glTranslated(-this.cameraX, -this.cameraY, -this.cameraZ);

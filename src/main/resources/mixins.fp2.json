@@ -6,7 +6,10 @@
   "client": [
     "client.multiplayer.MixinWorldClient",
     "client.renderer.MixinEntityRenderer",
-    "client.renderer.MixinRenderGlobal"
+    "client.renderer.MixinGlStateManager",
+    "client.renderer.MixinRenderGlobal",
+    "client.shader.MixinFramebuffer",
+    "client.MixinMinecraft"
   ],
   "mixins": [
     "entity.player.MixinEntityPlayerMP",

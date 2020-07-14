@@ -18,52 +18,47 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl;
+package net.daporkchop.fp2.asm.client.renderer;
 
-import lombok.experimental.UtilityClass;
-import org.lwjgl.BufferUtils;
+import net.minecraft.client.renderer.GlStateManager;
 import org.lwjgl.opengl.GL11;
-
-import java.nio.FloatBuffer;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
 
 import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author DaPorkchop_
  */
-@UtilityClass
-public class MatrixHelper {
-    private final FloatBuffer MATRIX = BufferUtils.createFloatBuffer(16);
-    private final float[] EMPTY_MATRIX = new float[16];
-
-    public FloatBuffer getMATRIX(int id, FloatBuffer buffer) {
-        if (buffer == null) {
-            buffer = BufferUtils.createFloatBuffer(16);
-        }
-        GL11.glGetFloat(id, buffer);
-        return buffer;
+@Mixin(GlStateManager.class)
+public abstract class MixinGlStateManager {
+    /**
+     * @author DaPorkchop_
+     */
+    @Overwrite
+    public static void clearDepth(double depth) {
+        GL11.glClearDepth(0.0d);
     }
 
-    public void perspectiveInfinite(float fovy, float aspect, float zNear) {
-        //from http://dev.theomader.com/depth-precision/
-        float radians = (float) Math.toRadians(fovy);
-        float f = 1.0f / (float) Math.tan(radians * 0.5f);
-
-        MATRIX.put(EMPTY_MATRIX);
-
-        if (false) { //infinite zFar
-            MATRIX.put(0 * 4 + 0, f / aspect);
-            MATRIX.put(1 * 4 + 1, f);
-            MATRIX.put(2 * 4 + 2, -1);
-            MATRIX.put(3 * 4 + 2, -zNear);
-            MATRIX.put(2 * 4 + 3, -1);
-        } else { //infinite reversed-Z
-            MATRIX.put(0 * 4 + 0, f / aspect);
-            MATRIX.put(1 * 4 + 1, f);
-            MATRIX.put(3 * 4 + 2, zNear);
-            MATRIX.put(2 * 4 + 3, -1);
+    /**
+     * @author DaPorkchop_
+     */
+    @Overwrite
+    public static void depthFunc(int depthFunc) {
+        switch (depthFunc)  {
+            case GL_LESS:
+                depthFunc = GL_GREATER;
+                break;
+            case GL_GREATER:
+                depthFunc = GL_LESS;
+                break;
+            case GL_LEQUAL:
+                depthFunc = GL_GEQUAL;
+                break;
+            case GL_GEQUAL:
+                depthFunc = GL_LEQUAL;
+                break;
         }
-
-        glMultMatrix((FloatBuffer) MATRIX.clear());
+        GL11.glDepthFunc(depthFunc);
     }
 }

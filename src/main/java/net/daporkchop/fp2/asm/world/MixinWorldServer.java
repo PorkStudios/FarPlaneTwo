@@ -27,7 +27,7 @@ import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
-import net.daporkchop.fp2.util.vanilla.CCCachedBlockAccessImpl;
+import net.daporkchop.fp2.util.cc.CCCachedBlockAccessImpl;
 import net.daporkchop.fp2.util.vanilla.VanillaCachedBlockAccessImpl;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;

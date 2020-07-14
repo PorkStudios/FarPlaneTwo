@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.util.vanilla;
+package net.daporkchop.fp2.util.cc;
 
 import io.github.opencubicchunks.cubicchunks.api.util.CubePos;
 import io.github.opencubicchunks.cubicchunks.api.world.IColumn;
