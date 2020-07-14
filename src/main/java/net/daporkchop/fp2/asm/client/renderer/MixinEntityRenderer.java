@@ -20,8 +20,6 @@
 
 package net.daporkchop.fp2.asm.client.renderer;
 
-import net.daporkchop.fp2.client.ClientConstants;
-import net.daporkchop.fp2.client.RenderPass;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
@@ -52,21 +50,8 @@ public abstract class MixinEntityRenderer {
     private void renderWorldPass_postRenderBelowClouds(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
         TerrainRenderer renderer = ((IFarContext) this.mc.world).fp2_renderer();
         if (renderer != null) {
-            this.mc.profiler.endStartSection(RenderPass.PRE.profilerSectionName);
-            renderer.render(RenderPass.PRE, partialTicks, this.mc.world, this.mc);
-        }
-    }
-
-    @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
-            at = @At(value = "FIELD",
-                    target = "Lnet/minecraft/client/renderer/EntityRenderer;renderHand:Z",
-                    shift = At.Shift.BEFORE),
-            allow = 1)
-    private void renderWorldPass_preRenderAboveClouds(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
-        TerrainRenderer renderer = ((IFarContext) this.mc.world).fp2_renderer();
-        if (renderer != null) {
-            this.mc.profiler.endStartSection(RenderPass.POST.profilerSectionName);
-            renderer.render(RenderPass.POST, partialTicks, this.mc.world, this.mc);
+            this.mc.profiler.endStartSection("fp2_render");
+            renderer.render(partialTicks, this.mc.world, this.mc);
         }
     }
 
@@ -84,7 +69,6 @@ public abstract class MixinEntityRenderer {
                     target = "Lorg/lwjgl/util/glu/Project;gluPerspective(FFFF)V"))
     private void renderHand_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar) {
         MatrixHelper.infiniteZFar(fov, aspect, zNear);
-        //Project.gluPerspective(fov, aspect, zNear, zFar);
     }
 
     @Redirect(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",

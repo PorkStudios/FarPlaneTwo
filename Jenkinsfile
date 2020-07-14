@@ -30,7 +30,7 @@ pipeline {
     stages {
         stage("Prepare workspace ") {
             steps {
-                sh "./gradlew setupCiWorkspace --no-daemon"
+                sh "./gradlew setupDecompWorkspace --no-daemon"
             }
         }
         stage("Build") {

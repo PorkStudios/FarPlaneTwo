@@ -23,7 +23,6 @@ package net.daporkchop.fp2.strategy.flat;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.GlobalInfo;
-import net.daporkchop.fp2.client.RenderPass;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.client.gl.object.ElementArrayObject;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
@@ -210,12 +209,8 @@ public class FlatTerrainRenderer extends TerrainRenderer {
     }
 
     @Override
-    public void render(RenderPass pass, float partialTicks, WorldClient world, Minecraft mc) {
-        if (pass != RenderPass.PRE) {
-            return;
-        }
-
-        super.render(pass, partialTicks, world, mc);
+    public void render(float partialTicks, WorldClient world, Minecraft mc) {
+        super.render(partialTicks, world, mc);
 
         try (ShaderStorageBuffer loadedBuffer = new ShaderStorageBuffer().bind()) {
             glBufferData(GL_SHADER_STORAGE_BUFFER, this.renderableChunksMask = ClientConstants.renderableChunksMask(mc, this.renderableChunksMask), GL_STATIC_DRAW);
