@@ -22,6 +22,8 @@ package net.daporkchop.fp2.client.gl.object;
 
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static net.minecraft.client.renderer.OpenGlHelper.*;
+import static org.lwjgl.opengl.GL30.glBindBufferBase;
+import static org.lwjgl.opengl.GL43.GL_SHADER_STORAGE_BUFFER;
 
 /**
  * @author DaPorkchop_
@@ -53,5 +55,9 @@ public abstract class GLBufferObject<T extends GLBufferObject<T>> extends GLObje
     @Override
     protected Runnable delete(int id) {
         return () -> glDeleteBuffers(id);
+    }
+
+    public void bindSSBO(int index) {
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, this.id);
     }
 }

@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap;
+package net.daporkchop.fp2.strategy.heightmap.render;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.ClientConstants;
@@ -33,6 +33,8 @@ import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPiecePos;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPiecePos;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
@@ -94,7 +96,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
     public static final ElementArrayObject MESH = new ElementArrayObject();
     public static final int MESH_VERTEX_COUNT;
 
-    static {
+    /*static {
         ShortBuffer meshData = BufferUtils.createShortBuffer(HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS);
         MESH_VERTEX_COUNT = meshData.capacity();
 
@@ -105,9 +107,9 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         try (ElementArrayObject mesh = MESH.bind()) {
             GL15.glBufferData(GL_ELEMENT_ARRAY_BUFFER, (ShortBuffer) meshData.flip(), GL_STATIC_DRAW);
         }
-    }
+    }*/
 
-    /*static {
+    static {
         ShortBuffer meshData = BufferUtils.createShortBuffer(HEIGHTMAP_VERTS * HEIGHTMAP_VERTS * 6 + 1);
         MESH_VERTEX_COUNT = genMesh(HEIGHTMAP_VERTS, HEIGHTMAP_VERTS, meshData);
 
@@ -130,7 +132,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
             }
         }
         return verts;
-    }*/
+    }
 
     protected final Map<HeightmapPiecePos, VertexArrayObject> pieces = new HashMap<>();
     protected IntBuffer renderableChunksMask;
@@ -150,30 +152,20 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                 glEnableVertexAttribArray(3);
                 glEnableVertexAttribArray(4);
 
-                try (VertexBufferObject heights = new VertexBufferObject().bind()) {
-                    glBufferData(GL_ARRAY_BUFFER, piece.height(), GL_STATIC_DRAW);
-                    glVertexAttribIPointer(0, 1, GL_INT, 0, 0L);
-                    vao.putDependency(0, heights);
-                }
-                try (VertexBufferObject colors = new VertexBufferObject().bind()) {
-                    glBufferData(GL_ARRAY_BUFFER, piece.color(), GL_STATIC_DRAW);
-                    glVertexAttribIPointer(1, 1, GL_INT, 0, 0L);
-                    vao.putDependency(1, colors);
-                }
-                try (VertexBufferObject biomes = new VertexBufferObject().bind()) {
-                    glBufferData(GL_ARRAY_BUFFER, piece.biome(), GL_STATIC_DRAW);
-                    glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, 0, 0L);
-                    vao.putDependency(2, biomes);
-                }
-                try (VertexBufferObject blocks = new VertexBufferObject().bind()) {
-                    glBufferData(GL_ARRAY_BUFFER, piece.block(), GL_STATIC_DRAW);
-                    glVertexAttribIPointer(3, 1, GL_UNSIGNED_SHORT, 0, 0L);
-                    vao.putDependency(3, blocks);
-                }
-                try (VertexBufferObject light = new VertexBufferObject().bind()) {
-                    glBufferData(GL_ARRAY_BUFFER, piece.light(), GL_STATIC_DRAW);
-                    glVertexAttribIPointer(4, 1, GL_INT, 0, 0L);
-                    vao.putDependency(4, light);
+                try (VertexBufferObject vbo = new VertexBufferObject().bind()) {
+                    glBufferData(GL_ARRAY_BUFFER, piece.data(), GL_STATIC_DRAW);
+
+                    glVertexAttribIPointer(0, 1, GL_INT, HeightmapPiece.ENTRY_SIZE, HeightmapPiece.HEIGHT_OFFSET);
+                    vao.putDependency(0, vbo);
+
+                    glVertexAttribIPointer(1, 1, GL_INT, HeightmapPiece.ENTRY_SIZE, HeightmapPiece.BLOCK_OFFSET);
+                    vao.putDependency(1, vbo);
+
+                    glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, HeightmapPiece.ENTRY_SIZE, HeightmapPiece.BIOME_OFFSET);
+                    vao.putDependency(2, vbo);
+
+                    glVertexAttribIPointer(3, 1, GL_UNSIGNED_BYTE, HeightmapPiece.ENTRY_SIZE, HeightmapPiece.LIGHT_OFFSET);
+                    vao.putDependency(3, vbo);
                 }
 
                 vao.putElementArray(MESH.bind());
@@ -205,9 +197,9 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
 
         try (ShaderStorageBuffer loadedBuffer = new ShaderStorageBuffer().bind()) {
             glBufferData(GL_SHADER_STORAGE_BUFFER, this.renderableChunksMask = ClientConstants.renderableChunksMask(mc, this.renderableChunksMask), GL_STATIC_DRAW);
-            loadedBuffer.bindingIndex(0);
+            loadedBuffer.bindSSBO(0);
         }
-        GLOBAL_INFO.bindingIndex(1);
+        GLOBAL_INFO.bindSSBO(1);
 
         GlStateManager.disableCull();
         GlStateManager.enableAlpha();
@@ -248,7 +240,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                     glUniform2d(shader.uniformLocation("camera_offset"), pos.x() * HEIGHTMAP_VOXELS + .5d, pos.z() * HEIGHTMAP_VOXELS + .5d);
 
                     try (VertexArrayObject vao = o.bind()) {
-                        glDrawElements(GL_POINTS, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
+                        glDrawElements(GL_TRIANGLES, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
                     }
                 });
             }

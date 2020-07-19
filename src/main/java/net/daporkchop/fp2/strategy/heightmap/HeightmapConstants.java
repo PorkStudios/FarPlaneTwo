@@ -34,5 +34,5 @@ public class HeightmapConstants {
     public static final int HEIGHTMAP_SHIFT = BinMath.getNumBitsNeededFor(HEIGHTMAP_VOXELS - 1);
     public static final int HEIGHTMAP_VERTS = HEIGHTMAP_VOXELS + 1; //side length of a tile in vertices
 
-    public static final int HEIGHTMAP_STORAGE_VERSION = 1;
+    public static final int HEIGHTMAP_STORAGE_VERSION = 2;
 }

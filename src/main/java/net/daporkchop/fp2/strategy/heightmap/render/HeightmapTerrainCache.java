@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-$today.year DaPorkchop_
+ * Copyright (c) 2020-2020 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,8 +18,12 @@
  *
  */
 
-uniform mat4 camera_projection = mat4(1.0);
-uniform mat4 camera_modelview = mat4(1.0);
+package net.daporkchop.fp2.strategy.heightmap.render;
 
-void main() {
+import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
+
+/**
+ * @author DaPorkchop_
+ */
+public class HeightmapTerrainCache {
 }

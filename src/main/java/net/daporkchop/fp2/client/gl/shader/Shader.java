@@ -56,7 +56,7 @@ class Shader {
 
         //compile and validate shader
         glCompileShader(this.id);
-        ShaderManager.validate(Arrays.toString(names), this.id, GL_COMPILE_STATUS);
+        ShaderManager.validateShaderCompile(Arrays.toString(names), this.id);
     }
 
     /**

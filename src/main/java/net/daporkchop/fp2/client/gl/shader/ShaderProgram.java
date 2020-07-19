@@ -65,9 +65,9 @@ public final class ShaderProgram implements AutoCloseable {
 
         //link and validate
         glLinkProgram(this.id);
-        ShaderManager.validate(this.name, this.id, GL_LINK_STATUS);
+        ShaderManager.validateProgramLink(this.name, this.id);
         glValidateProgram(this.id);
-        ShaderManager.validate(this.name, this.id, GL_VALIDATE_STATUS);
+        ShaderManager.validateProgramValidate(this.name, this.id);
 
         this.vertex = vertex;
         this.fragment = fragment;

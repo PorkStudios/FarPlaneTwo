@@ -25,7 +25,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
+import net.daporkchop.fp2.strategy.heightmap.render.HeightmapTerrainRenderer;
 import net.daporkchop.lib.binary.oio.StreamUtil;
 import net.daporkchop.lib.common.function.io.IOFunction;
 
@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.stream.StreamSupport;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static org.lwjgl.opengl.ARBShaderObjects.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 
@@ -91,9 +92,28 @@ public class ShaderManager {
                 .toArray(String[]::new));
     }
 
-    protected void validate(@NonNull String name, int id, int type) {
-        if (glGetShaderi(id, type) == GL_FALSE) {
-            String error = String.format("Couldn't compile shader \"%s\": %s", name, glGetProgramInfoLog(id, Integer.MAX_VALUE));
+    protected void validateShaderCompile(@NonNull String name, int id) {
+        if (glGetShaderi(id, GL_COMPILE_STATUS) == GL_FALSE) {
+            int size = glGetShaderi(id, GL_INFO_LOG_LENGTH);
+            String error = String.format("Couldn't compile shader \"%s\": %s", name, glGetShaderInfoLog(id, size));
+            System.err.println(error);
+            throw new IllegalStateException(error);
+        }
+    }
+
+    protected void validateProgramLink(@NonNull String name, int id) {
+        if (glGetProgrami(id, GL_LINK_STATUS) == GL_FALSE) {
+            int size = glGetProgrami(id, GL_INFO_LOG_LENGTH);
+            String error = String.format("Couldn't compile shader \"%s\": %s", name, glGetProgramInfoLog(id, size));
+            System.err.println(error);
+            throw new IllegalStateException(error);
+        }
+    }
+
+    protected void validateProgramValidate(@NonNull String name, int id) {
+        if (glGetProgrami(id, GL_VALIDATE_STATUS) == GL_FALSE) {
+            int size = glGetProgrami(id, GL_INFO_LOG_LENGTH);
+            String error = String.format("Couldn't compile shader \"%s\": %s", name, glGetProgramInfoLog(id, size));
             System.err.println(error);
             throw new IllegalStateException(error);
         }

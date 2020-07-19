@@ -70,6 +70,10 @@ public class Constants {
         return CC && world instanceof ICubicWorld && ((ICubicWorld) world).isCubicWorld();
     }
 
+    public static int packCombinedLight(int combinedLight)  {
+        return (combinedLight >> 16) | ((combinedLight >> 4) & 0xF);
+    }
+
     //the following methods are copied from LWJGL's BufferUtils in order to ensure their availability on the dedicated server as well
     public static ByteBuffer createByteBuffer(int size) {
         return ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder());

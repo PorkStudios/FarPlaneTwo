@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.strategy.heightmap.gen.vanilla;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapGenerator;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.MapColor;
@@ -34,6 +34,7 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -54,9 +55,9 @@ public class VanillaHeightmapGenerator implements HeightmapGenerator {
         int pieceZ = piece.z();
         world.prefetch(new AxisAlignedBB(
                 pieceX * HEIGHTMAP_VOXELS, 0, pieceZ * HEIGHTMAP_VOXELS,
-                (pieceX + 1) * HEIGHTMAP_VOXELS, 0, (pieceZ + 1) * HEIGHTMAP_VOXELS), true);
-        for (int x = 0; x < HEIGHTMAP_VERTS; x++) {
-            for (int z = 0; z < HEIGHTMAP_VERTS; z++) {
+                (pieceX + 1) * HEIGHTMAP_VOXELS - 1, 0, (pieceZ + 1) * HEIGHTMAP_VOXELS - 1), true);
+        for (int x = 0; x < HEIGHTMAP_VOXELS; x++) {
+            for (int z = 0; z < HEIGHTMAP_VOXELS; z++) {
                 int height = world.getTopBlockY(pieceX * HEIGHTMAP_VOXELS + x, pieceZ * HEIGHTMAP_VOXELS + z);
                 BlockPos pos = new BlockPos(pieceX * HEIGHTMAP_VOXELS + x, height, pieceZ * HEIGHTMAP_VOXELS + z);
                 IBlockState state = world.getBlockState(pos);
@@ -67,12 +68,11 @@ public class VanillaHeightmapGenerator implements HeightmapGenerator {
                 }
 
                 Biome biome = world.getBiome(pos);
-                MapColor color = state.getMapColor(world, pos);
-                piece.height(x, z, height)
-                        .color(x, z, color.colorIndex)
-                        .biome(x, z, Biome.getIdForBiome(biome))
-                        .block(x, z, Block.getStateId(state))
-                        .light(x, z, world.getCombinedLight(pos.add(0, 1, 0), 0) >> 4);
+                piece.set(x, z,
+                        height,
+                        Block.getStateId(state),
+                        Biome.getIdForBiome(biome),
+                        packCombinedLight(world.getCombinedLight(pos.add(0, 1, 0), 0)));
             }
         }
     }

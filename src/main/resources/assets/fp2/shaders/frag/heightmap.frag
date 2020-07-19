@@ -23,7 +23,7 @@ layout(binding = 1) uniform sampler2D lightmap_texture;
 
 out vec4 color;
 
-/*in vec3 vert_pos;
+in vec3 vert_pos;
 in vec2 vert_light;
 in flat vec4 vert_color;
 in flat int vert_state;
@@ -42,8 +42,4 @@ void main() {
         textured_color.a = 1.;
         color = texture(lightmap_texture, vert_light) * textured_color;
     }
-}*/
-
-void main() {
-    color = vec4(1., 0., 0., 1.);
 }

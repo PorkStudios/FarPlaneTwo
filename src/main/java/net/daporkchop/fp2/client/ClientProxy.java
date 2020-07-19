@@ -23,7 +23,7 @@ package net.daporkchop.fp2.client;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.server.ServerProxy;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
+import net.daporkchop.fp2.strategy.heightmap.render.HeightmapTerrainRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraftforge.common.config.ConfigManager;

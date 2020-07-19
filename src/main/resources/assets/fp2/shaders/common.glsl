@@ -44,7 +44,7 @@ struct TextureUV {
     vec2 max;
 };
 
-layout(shared, binding = 1) buffer global_info {
+layout(shared, binding = 1) buffer GlobalInfo {
     vec2 biome_climate[256];
     int biome_watercolor[256];
 

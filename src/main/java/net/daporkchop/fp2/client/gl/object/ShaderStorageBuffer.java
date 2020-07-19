@@ -39,8 +39,4 @@ public final class ShaderStorageBuffer extends GLBufferObject<ShaderStorageBuffe
     protected int target() {
         return GL_SHADER_STORAGE_BUFFER;
     }
-
-    public void bindingIndex(int index) {
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, this.id);
-    }
 }

@@ -61,10 +61,10 @@ public class CWGHeightmapGenerator extends CCHeightmapGenerator {
 
         CWGContext ctx = this.ctx.get();
         Biome[] biomes = ctx.biomeCache
-                = ctx.biomeProvider().getBiomes(ctx.biomeCache, pieceX * HEIGHTMAP_VOXELS, pieceZ * HEIGHTMAP_VOXELS, HEIGHTMAP_VERTS, HEIGHTMAP_VERTS, false);
+                = ctx.biomeProvider().getBiomes(ctx.biomeCache, pieceX * HEIGHTMAP_VOXELS, pieceZ * HEIGHTMAP_VOXELS, HEIGHTMAP_VOXELS, HEIGHTMAP_VOXELS, false);
 
-        for (int x = 0; x < HEIGHTMAP_VERTS; x++) {
-            for (int z = 0; z < HEIGHTMAP_VERTS; z++) {
+        for (int x = 0; x < HEIGHTMAP_VOXELS; x++) {
+            for (int z = 0; z < HEIGHTMAP_VOXELS; z++) {
                 int blockX = pieceX * HEIGHTMAP_VOXELS + x;
                 int blockZ = pieceZ * HEIGHTMAP_VOXELS + z;
 
@@ -76,7 +76,7 @@ public class CWGHeightmapGenerator extends CCHeightmapGenerator {
                 double dz = ctx.terrainBuilder().get(blockX, height, blockZ + 1) - density;
 
                 //Biome biome = ctx.biomeSource().getBiome(blockX, height, blockZ).getBiome();
-                Biome biome = biomes[z * HEIGHTMAP_VERTS + x];
+                Biome biome = biomes[z * HEIGHTMAP_VOXELS + x];
 
                 IBlockState state = Blocks.AIR.getDefaultState();
                 List<IBiomeBlockReplacer> replacers = ctx.biomeBlockReplacers().get(biome);
@@ -84,12 +84,11 @@ public class CWGHeightmapGenerator extends CCHeightmapGenerator {
                     state = replacers.get(i).getReplacedBlock(state, blockX, height, blockZ, dx, dy, dz, density);
                 }
 
-                MapColor color = state.getMapColor(world, new BlockPos(blockX, height, blockZ));
-                piece.height(x, z, height)
-                        .color(x, z, color.colorIndex)
-                        .biome(x, z, Biome.getIdForBiome(biome))
-                        .block(x, z, Block.getStateId(state))
-                        .light(x, z, (height < this.seaLevel ? max(15 - (this.seaLevel - height) * 3, 0) : 15) << 16);
+                piece.set(x, z,
+                        height,
+                        Block.getStateId(state),
+                        Biome.getIdForBiome(biome),
+                        (height < this.seaLevel ? max(15 - (this.seaLevel - height) * 3, 0) : 15) << 4);
             }
         }
     }

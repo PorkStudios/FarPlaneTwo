@@ -18,9 +18,10 @@
  *
  */
 
-layout(location = 3) in int biome;
-layout(location = 4) in int state;
-layout(location = 5) in int light;
+layout(location = 0) in int height;
+layout(location = 1) in int block;
+layout(location = 2) in int biome;
+layout(location = 3) in int light;
 
 uniform mat4 camera_projection = mat4(1.0);
 uniform mat4 camera_modelview = mat4(1.0);

@@ -30,7 +30,7 @@ import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiecePos;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPlayerTracker;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
+import net.daporkchop.fp2.strategy.heightmap.render.HeightmapTerrainRenderer;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapWorld;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.WorldServer;

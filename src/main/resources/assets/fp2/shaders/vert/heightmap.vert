@@ -18,11 +18,10 @@
  *
  */
 
-layout(location = 1) in int height;
-layout(location = 2) in int color;
-layout(location = 3) in int biome;
-layout(location = 4) in int state;
-layout(location = 5) in int light;
+layout(location = 0) in int height;
+layout(location = 1) in int block;
+layout(location = 2) in int biome;
+layout(location = 3) in int light;
 
 uniform mat4 camera_projection = mat4(1.0);
 uniform mat4 camera_modelview = mat4(1.0);
@@ -41,7 +40,7 @@ void main(){
 
     gl_Position = camera_projection * camera_modelview * vec4(pos, 1.);
 
-    if (color == 1) { //grass
+    /*if (color == 1) { //grass
         if (IS_SWAMP) {
             vert_color = fromRGB(-1. < -.1 ? 5011004 : 6975545);
         } else if (IS_ROOFED_FOREST)    {
@@ -61,13 +60,11 @@ void main(){
             vert_color = getFoliageColorAtPos(pos, biome);
         }
     } else if (color == 12)  { //water
-        //constant color is taken from water_overlay.png, and should have an opacity of 179
-        vert_color = /*fromARGB(0xB3212FAB) * */fromARGB(global_info.biome_watercolor[biome]);
-    } else {
+        vert_color = fromARGB(global_info.biome_watercolor[biome]);
+    } else {*/
         vert_color = vec4(1.);
-        //vert_color = fromARGB(global_info.map_colors[color]);
-    }
-    vert_state = state;
+    //}
+    vert_state = block;
 
-    vert_light = vec2(ivec2(light) >> ivec2(0, 16) & 0xF) / 16.;
+    vert_light = vec2(ivec2(light) >> ivec2(0, 4) & 0xF) / 16.;
 }
