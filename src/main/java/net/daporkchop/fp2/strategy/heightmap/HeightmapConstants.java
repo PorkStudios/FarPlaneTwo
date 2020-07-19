@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.flat;
+package net.daporkchop.fp2.strategy.heightmap;
 
 import lombok.experimental.UtilityClass;
 import net.daporkchop.lib.common.math.BinMath;
@@ -29,10 +29,10 @@ import net.daporkchop.lib.common.math.BinMath;
  * @author DaPorkchop_
  */
 @UtilityClass
-public class FlatConstants {
-    public static final int FLAT_VOXELS = 64; //side length of a tile in voxels contained
-    public static final int FLAT_SHIFT = BinMath.getNumBitsNeededFor(FLAT_VOXELS - 1);
-    public static final int FLAT_VERTS = FLAT_VOXELS + 1; //side length of a tile in vertices
+public class HeightmapConstants {
+    public static final int HEIGHTMAP_VOXELS = 64; //side length of a tile in voxels contained
+    public static final int HEIGHTMAP_SHIFT = BinMath.getNumBitsNeededFor(HEIGHTMAP_VOXELS - 1);
+    public static final int HEIGHTMAP_VERTS = HEIGHTMAP_VOXELS + 1; //side length of a tile in vertices
 
-    public static final int FLAT_STORAGE_VERSION = 1;
+    public static final int HEIGHTMAP_STORAGE_VERSION = 1;
 }

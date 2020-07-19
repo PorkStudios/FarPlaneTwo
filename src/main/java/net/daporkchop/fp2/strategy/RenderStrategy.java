@@ -27,11 +27,11 @@ import net.daporkchop.fp2.strategy.common.IFarPiecePos;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
-import net.daporkchop.fp2.strategy.flat.FlatPiece;
-import net.daporkchop.fp2.strategy.flat.FlatPiecePos;
-import net.daporkchop.fp2.strategy.flat.FlatPlayerTracker;
-import net.daporkchop.fp2.strategy.flat.FlatTerrainRenderer;
-import net.daporkchop.fp2.strategy.flat.FlatWorld;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPiecePos;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPlayerTracker;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapTerrainRenderer;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapWorld;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.config.Config;
@@ -43,31 +43,31 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  */
 public enum RenderStrategy {
     @Config.Comment("Renders a simple 2D heightmap of the world. Overhangs are not supported.")
-    FLAT {
+    HEIGHTMAP {
         @Override
         public IFarWorld createFarWorld(@NonNull WorldServer world) {
-            return new FlatWorld(world);
+            return new HeightmapWorld(world);
         }
 
         @Override
         public IFarPlayerTracker createFarTracker(@NonNull IFarWorld world) {
-            return new FlatPlayerTracker(world);
+            return new HeightmapPlayerTracker(world);
         }
 
         @Override
         @SideOnly(Side.CLIENT)
         public TerrainRenderer createTerrainRenderer(@NonNull WorldClient world) {
-            return new FlatTerrainRenderer(world);
+            return new HeightmapTerrainRenderer(world);
         }
 
         @Override
         public IFarPiece readPiece(@NonNull ByteBuf src) {
-            return new FlatPiece(src);
+            return new HeightmapPiece(src);
         }
 
         @Override
         public IFarPiecePos readPiecePos(@NonNull ByteBuf src) {
-            return new FlatPiecePos(src.readInt(), src.readInt());
+            return new HeightmapPiecePos(src.readInt(), src.readInt());
         }
     },
     VOLUMETRIC {

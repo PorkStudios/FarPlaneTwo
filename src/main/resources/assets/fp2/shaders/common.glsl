@@ -54,7 +54,7 @@ layout(shared, binding = 1) buffer global_info {
     int map_colors[64];
 
     TextureUV tex_uvs[];
-};
+} global_info;
 
 vec4 fromARGB(uint argb)   {
     return vec4(uvec4(argb) >> uvec4(16, 8, 0, 24) & uint(0xFF)) / 255.;
@@ -74,9 +74,9 @@ vec4 fromRGB(int rgb)   {
 
 float getTemperature(dvec3 pos, int biome) {
     if (pos.y > 64.)   {
-        return biome_climate[biome].x - float(pos.y - 64.) * .05 / 30.;
+        return global_info.biome_climate[biome].x - float(pos.y - 64.) * .05 / 30.;
     } else {
-        return biome_climate[biome].x;
+        return global_info.biome_climate[biome].x;
     }
 }
 
@@ -84,20 +84,20 @@ vec4 getGrassColor(float temperature, float humidity){
     humidity = humidity * temperature;
     int i = int((1. - temperature) * 255.);
     int j = int((1. - humidity) * 255.);
-    return fromARGB(colormap_grass[(j << 8) | i]);
+    return fromARGB(global_info.colormap_grass[(j << 8) | i]);
 }
 
 vec4 getGrassColorAtPos(dvec3 pos, int biome){
-    return getGrassColor(clamp(getTemperature(pos, biome), 0., 1.), clamp(biome_climate[biome].y, 0., 1.));
+    return getGrassColor(clamp(getTemperature(pos, biome), 0., 1.), clamp(global_info.biome_climate[biome].y, 0., 1.));
 }
 
 vec4 getFoliageColor(float temperature, float humidity){
     humidity = humidity * temperature;
     int i = int((1. - temperature) * 255.);
     int j = int((1. - humidity) * 255.);
-    return fromARGB(colormap_foliage[(j << 8) | i]);
+    return fromARGB(global_info.colormap_foliage[(j << 8) | i]);
 }
 
 vec4 getFoliageColorAtPos(dvec3 pos, int biome){
-    return getGrassColor(clamp(getTemperature(pos, biome), 0., 1.), clamp(biome_climate[biome].y, 0., 1.));
+    return getGrassColor(clamp(getTemperature(pos, biome), 0., 1.), clamp(global_info.biome_climate[biome].y, 0., 1.));
 }

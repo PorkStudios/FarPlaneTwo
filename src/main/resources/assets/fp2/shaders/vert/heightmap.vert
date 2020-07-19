@@ -62,10 +62,10 @@ void main(){
         }
     } else if (color == 12)  { //water
         //constant color is taken from water_overlay.png, and should have an opacity of 179
-        vert_color = /*fromARGB(0xB3212FAB) * */fromARGB(biome_watercolor[biome]);
+        vert_color = /*fromARGB(0xB3212FAB) * */fromARGB(global_info.biome_watercolor[biome]);
     } else {
         vert_color = vec4(1.);
-        //vert_color = fromARGB(map_colors[color]);
+        //vert_color = fromARGB(global_info.map_colors[color]);
     }
     vert_state = state;
 

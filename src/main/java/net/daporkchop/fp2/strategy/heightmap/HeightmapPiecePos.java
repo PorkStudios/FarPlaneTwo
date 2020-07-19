@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.flat;
+package net.daporkchop.fp2.strategy.heightmap;
 
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
@@ -36,13 +36,13 @@ import net.daporkchop.lib.common.math.PMath;
 @RequiredArgsConstructor
 @Getter
 @Accessors(fluent = true)
-public class FlatPiecePos implements IFarPiecePos {
+public class HeightmapPiecePos implements IFarPiecePos {
     private final int x;
     private final int z;
 
     @Override
     public RenderStrategy strategy() {
-        return RenderStrategy.FLAT;
+        return RenderStrategy.HEIGHTMAP;
     }
 
     @Override
@@ -59,8 +59,8 @@ public class FlatPiecePos implements IFarPiecePos {
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;
-        } else if (obj instanceof FlatPiecePos) {
-            FlatPiecePos pos = (FlatPiecePos) obj;
+        } else if (obj instanceof HeightmapPiecePos) {
+            HeightmapPiecePos pos = (HeightmapPiecePos) obj;
             return this.x == pos.x && this.z == pos.z;
         } else {
             return false;

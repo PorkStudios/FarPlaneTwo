@@ -36,7 +36,7 @@ public class Config {
             "The strategy that will be used for rendering distant terrain."
     })
     @net.minecraftforge.common.config.Config.RequiresWorldRestart
-    public static RenderStrategy renderStrategy = RenderStrategy.FLAT;
+    public static RenderStrategy renderStrategy = RenderStrategy.HEIGHTMAP;
 
     @net.minecraftforge.common.config.Config.Comment({
             "The far plane render distance (in blocks)"

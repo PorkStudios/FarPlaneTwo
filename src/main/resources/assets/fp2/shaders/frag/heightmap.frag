@@ -37,7 +37,7 @@ void main() {
         discard;//TODO: figure out the potential performance implications of this vs transparent output
         //color = vec4(0.);
     } else {
-        TextureUV uvs = tex_uvs[vert_state];
+        TextureUV uvs = global_info.tex_uvs[vert_state];
         vec4 textured_color = vert_color * texture(terrain_texture, uvs.min + (uvs.max - uvs.min) * fract(vert_pos.xz));
         textured_color.a = 1.;
         color = texture(lightmap_texture, vert_light) * textured_color;

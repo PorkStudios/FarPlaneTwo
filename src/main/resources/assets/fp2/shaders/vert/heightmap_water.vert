@@ -40,7 +40,7 @@ void main(){
 
     gl_Position = camera_projection * camera_modelview * vec4(pos, 1.);
 
-    vert_color = fromARGB(biome_watercolor[biome]);
+    vert_color = fromARGB(global_info.biome_watercolor[biome]);
 
     vert_light = vec2(ivec2(light) >> ivec2(0, 16) & 0xF) / 16.;
 }

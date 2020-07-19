@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.flat;
+package net.daporkchop.fp2.strategy.heightmap;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomCubicWorldType;
 import io.netty.buffer.ByteBuf;
@@ -30,9 +30,9 @@ import net.daporkchop.fp2.strategy.RenderStrategy;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPiecePos;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
-import net.daporkchop.fp2.strategy.flat.cc.CCFlatGenerator;
-import net.daporkchop.fp2.strategy.flat.cwg.CWGFlatGenerator;
-import net.daporkchop.fp2.strategy.flat.vanilla.VanillaFlatGenerator;
+import net.daporkchop.fp2.strategy.heightmap.gen.cc.CCHeightmapGenerator;
+import net.daporkchop.fp2.strategy.heightmap.gen.cwg.CWGHeightmapGenerator;
+import net.daporkchop.fp2.strategy.heightmap.gen.vanilla.VanillaHeightmapGenerator;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
 import net.daporkchop.lib.binary.netty.PUnpooled;
@@ -56,7 +56,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.concurrent.CompletableFuture;
 
 import static net.daporkchop.fp2.server.ServerConstants.*;
-import static net.daporkchop.fp2.strategy.flat.FlatConstants.*;
+import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -65,51 +65,51 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Accessors(fluent = true)
-public class FlatWorld implements IFarWorld {
+public class HeightmapWorld implements IFarWorld {
     private static final Ref<ZstdDeflater> DEFLATER_CACHE = ThreadRef.soft(() -> Zstd.PROVIDER.deflater(Zstd.PROVIDER.deflateOptions()));
     private static final Ref<ZstdInflater> INFLATER_CACHE = ThreadRef.soft(() -> Zstd.PROVIDER.inflater(Zstd.PROVIDER.inflateOptions()));
 
     @Getter
     protected final WorldServer world;
     @Getter
-    protected final FlatGenerator generator;
+    protected final HeightmapGenerator generator;
 
     protected final Path storageRoot;
 
-    protected final LongObjMap<CompletableFuture<FlatPiece>> cache = new LongObjConcurrentHashMap<>();
+    protected final LongObjMap<CompletableFuture<HeightmapPiece>> cache = new LongObjConcurrentHashMap<>();
     protected final LongIntMap dirtyChunks = new LongIntConcurrentHashMap(0);
 
-    public FlatWorld(@NonNull WorldServer world) {
+    public HeightmapWorld(@NonNull WorldServer world) {
         this.world = world;
         if (Constants.isCubicWorld(world))  { //TODO: this
             if (Constants.CWG && world.getWorldType() instanceof CustomCubicWorldType) {
-                this.generator = new CWGFlatGenerator();
+                this.generator = new CWGHeightmapGenerator();
             } else {
-                this.generator = new CCFlatGenerator();
+                this.generator = new CCHeightmapGenerator();
             }
         } else {
-            this.generator = new VanillaFlatGenerator();
+            this.generator = new VanillaHeightmapGenerator();
         }
         this.generator.init(world);
 
-        this.storageRoot = world.getChunkSaveLocation().toPath().resolve("fp2/" + RenderStrategy.FLAT.name().toLowerCase());
+        this.storageRoot = world.getChunkSaveLocation().toPath().resolve("fp2/" + RenderStrategy.HEIGHTMAP.name().toLowerCase());
     }
 
     @Override
-    public FlatPiece getPieceBlocking(@NonNull IFarPiecePos posIn) {
-        FlatPiecePos pos = (FlatPiecePos) posIn;
+    public HeightmapPiece getPieceBlocking(@NonNull IFarPiecePos posIn) {
+        HeightmapPiecePos pos = (HeightmapPiecePos) posIn;
         return this.loadFullPiece(BinMath.packXY(pos.x(), pos.z())).join();
     }
 
     @Override
-    public FlatPiece getPieceNowOrLoadAsync(@NonNull IFarPiecePos posIn) {
-        FlatPiecePos pos = (FlatPiecePos) posIn;
+    public HeightmapPiece getPieceNowOrLoadAsync(@NonNull IFarPiecePos posIn) {
+        HeightmapPiecePos pos = (HeightmapPiecePos) posIn;
         return this.loadFullPiece(BinMath.packXY(pos.x(), pos.z())).getNow(null);
     }
 
     @Override
     public void blockChanged(int x, int y, int z) {
-        long key = BinMath.packXY(x >> FLAT_SHIFT, z >> FLAT_SHIFT);
+        long key = BinMath.packXY(x >> HEIGHTMAP_SHIFT, z >> HEIGHTMAP_SHIFT);
         if (this.dirtyChunks.put(key, 1) == 1) {
             return;
         }
@@ -131,24 +131,24 @@ public class FlatWorld implements IFarWorld {
                 .thenAcceptAsync(((IFarContext) this.world).fp2_tracker()::pieceChanged);
     }
 
-    protected CompletableFuture<FlatPiece> loadFullPiece(long key) {
+    protected CompletableFuture<HeightmapPiece> loadFullPiece(long key) {
         return this.cache.computeIfAbsent(key, l -> {
             int x = BinMath.unpackX(l);
             int z = BinMath.unpackY(l);
             Path cachePath = this.storageRoot.resolve(String.format("%d/%d.%d.fp2", 0, x, z));
 
-            CompletableFuture<FlatPiece> future = new CompletableFuture<>();
+            CompletableFuture<HeightmapPiece> future = new CompletableFuture<>();
             IO_WORKERS.submit(() -> {
                 //load piece if possible
                 try {
                     if (Files.exists(cachePath) && Files.isRegularFile(cachePath)) {
                         try (FileChannel channel = FileChannel.open(cachePath, StandardOpenOption.READ)) {
                             ByteBuf input = PUnpooled.wrap(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()), true);
-                            if (input.readableBytes() >= 8 && input.readInt() == FLAT_STORAGE_VERSION) {
+                            if (input.readableBytes() >= 8 && input.readInt() == HEIGHTMAP_STORAGE_VERSION) {
                                 ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(input.readInt());
                                 try {
                                     checkState(INFLATER_CACHE.get().decompress(input, buf));
-                                    future.complete(new FlatPiece(buf));
+                                    future.complete(new HeightmapPiece(buf));
                                     return;
                                 } finally {
                                     buf.release();
@@ -163,7 +163,7 @@ public class FlatWorld implements IFarWorld {
                 GENERATION_WORKERS.submit(() -> { //piece couldn't be loaded, generate it
                     try {
                         CachedBlockAccess world = ((CachedBlockAccess.Holder) this.world).fp2_cachedBlockAccess();
-                        FlatPiece piece = new FlatPiece(x, z);
+                        HeightmapPiece piece = new HeightmapPiece(x, z);
                         piece.writeLock().lock();
                         try {
                             this.generator.generateRough(world, piece);
@@ -182,7 +182,7 @@ public class FlatWorld implements IFarWorld {
         });
     }
 
-    protected void savePiece(@NonNull FlatPiece piece) {
+    protected void savePiece(@NonNull HeightmapPiece piece) {
         if (true || !piece.isDirty()) {
             return;
         }
@@ -205,7 +205,7 @@ public class FlatWorld implements IFarWorld {
                         piece.readLock().unlock();
                     }
                     compressed.ensureWritable(8 + Zstd.PROVIDER.compressBound(raw.readableBytes()));
-                    compressed.writeInt(FLAT_STORAGE_VERSION).writeInt(raw.readableBytes());
+                    compressed.writeInt(HEIGHTMAP_STORAGE_VERSION).writeInt(raw.readableBytes());
                     checkState(DEFLATER_CACHE.get().compress(raw, compressed));
                     compressed.readBytes(channel, compressed.readableBytes());
                     checkState(!compressed.isReadable());

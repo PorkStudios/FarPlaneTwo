@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.flat;
+package net.daporkchop.fp2.strategy.heightmap;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.ClientConstants;
@@ -50,7 +50,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static net.daporkchop.fp2.client.GlobalInfo.*;
-import static net.daporkchop.fp2.strategy.flat.FlatConstants.*;
+import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL11.*;
@@ -68,7 +68,7 @@ import static org.lwjgl.opengl.GL45.*;
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public class FlatTerrainRenderer extends TerrainRenderer {
+public class HeightmapTerrainRenderer extends TerrainRenderer {
     public static ShaderProgram HEIGHT_SHADER = ShaderManager.get("heightmap");
     public static ShaderProgram WATER_SHADER = ShaderManager.get("heightmap_water");
 
@@ -95,7 +95,7 @@ public class FlatTerrainRenderer extends TerrainRenderer {
     public static final int MESH_VERTEX_COUNT;
 
     static {
-        ShortBuffer meshData = BufferUtils.createShortBuffer(FLAT_VOXELS * FLAT_VOXELS);
+        ShortBuffer meshData = BufferUtils.createShortBuffer(HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS);
         MESH_VERTEX_COUNT = meshData.capacity();
 
         for (int i = 0; i < MESH_VERTEX_COUNT; i++) {
@@ -108,8 +108,8 @@ public class FlatTerrainRenderer extends TerrainRenderer {
     }
 
     /*static {
-        ShortBuffer meshData = BufferUtils.createShortBuffer(FLAT_VERTS * FLAT_VERTS * 6 + 1);
-        MESH_VERTEX_COUNT = genMesh(FLAT_VERTS, FLAT_VERTS, meshData);
+        ShortBuffer meshData = BufferUtils.createShortBuffer(HEIGHTMAP_VERTS * HEIGHTMAP_VERTS * 6 + 1);
+        MESH_VERTEX_COUNT = genMesh(HEIGHTMAP_VERTS, HEIGHTMAP_VERTS, meshData);
 
         try (ElementArrayObject mesh = MESH.bind()) {
             GL15.glBufferData(GL_ELEMENT_ARRAY_BUFFER, (ShortBuffer) meshData.flip(), GL_STATIC_DRAW);
@@ -132,16 +132,16 @@ public class FlatTerrainRenderer extends TerrainRenderer {
         return verts;
     }*/
 
-    protected final Map<FlatPiecePos, VertexArrayObject> pieces = new HashMap<>();
+    protected final Map<HeightmapPiecePos, VertexArrayObject> pieces = new HashMap<>();
     protected IntBuffer renderableChunksMask;
 
-    public FlatTerrainRenderer(@NonNull WorldClient world) {
+    public HeightmapTerrainRenderer(@NonNull WorldClient world) {
     }
 
     @Override
     public void receivePiece(@NonNull IFarPiece pieceIn) {
-        checkArg(pieceIn instanceof FlatPiece, pieceIn);
-        FlatPiece piece = (FlatPiece) pieceIn;
+        checkArg(pieceIn instanceof HeightmapPiece, pieceIn);
+        HeightmapPiece piece = (HeightmapPiece) pieceIn;
         Minecraft.getMinecraft().addScheduledTask(() -> {
             try (VertexArrayObject vao = new VertexArrayObject().bind()) {
                 glEnableVertexAttribArray(0);
@@ -193,7 +193,7 @@ public class FlatTerrainRenderer extends TerrainRenderer {
 
     @Override
     public void unloadPiece(@NonNull IFarPiecePos pos) {
-        checkArg(pos instanceof FlatPiecePos, pos);
+        checkArg(pos instanceof HeightmapPiecePos, pos);
         Minecraft.getMinecraft().addScheduledTask(() -> {
             this.pieces.remove(pos);
         });
@@ -245,7 +245,7 @@ public class FlatTerrainRenderer extends TerrainRenderer {
                 ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
 
                 this.pieces.forEach((pos, o) -> {
-                    glUniform2d(shader.uniformLocation("camera_offset"), pos.x() * FLAT_VOXELS + .5d, pos.z() * FLAT_VOXELS + .5d);
+                    glUniform2d(shader.uniformLocation("camera_offset"), pos.x() * HEIGHTMAP_VOXELS + .5d, pos.z() * HEIGHTMAP_VOXELS + .5d);
 
                     try (VertexArrayObject vao = o.bind()) {
                         glDrawElements(GL_POINTS, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
@@ -259,7 +259,7 @@ public class FlatTerrainRenderer extends TerrainRenderer {
                 glUniform1f(shader.uniformLocation("seaLevel"), 63f);
 
                 this.pieces.forEach((pos, o) -> {
-                    glUniform2d(shader.uniformLocation("camera_offset"), pos.x() * FLAT_VOXELS + .5d, pos.z() * FLAT_VOXELS + .5d);
+                    glUniform2d(shader.uniformLocation("camera_offset"), pos.x() * HEIGHTMAP_VOXELS + .5d, pos.z() * HEIGHTMAP_VOXELS + .5d);
 
                     try (VertexArrayObject vao = o.bind()) {
                         glDrawElements(GL_TRIANGLES, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);

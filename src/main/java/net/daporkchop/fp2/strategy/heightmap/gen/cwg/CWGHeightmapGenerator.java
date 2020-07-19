@@ -18,14 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.flat.cwg;
+package net.daporkchop.fp2.strategy.heightmap.gen.cwg;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
-import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.BiomeSource;
-import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.IBuilder;
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.flat.FlatPiece;
-import net.daporkchop.fp2.strategy.flat.cc.CCFlatGenerator;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.strategy.heightmap.gen.cc.CCHeightmapGenerator;
 import net.daporkchop.fp2.util.cwg.CWGContext;
 import net.daporkchop.fp2.util.cwg.CWGUtil;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
@@ -41,13 +39,12 @@ import net.minecraft.world.biome.Biome;
 import java.util.List;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.strategy.flat.FlatConstants.*;
-import static net.daporkchop.lib.common.math.PMath.*;
+import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 
 /**
  * @author DaPorkchop_
  */
-public class CWGFlatGenerator extends CCFlatGenerator {
+public class CWGHeightmapGenerator extends CCHeightmapGenerator {
     protected Ref<CWGContext> ctx;
     protected int seaLevel;
 
@@ -58,18 +55,18 @@ public class CWGFlatGenerator extends CCFlatGenerator {
     }
 
     @Override
-    public void generateRough(@NonNull CachedBlockAccess world, @NonNull FlatPiece piece) {
+    public void generateRough(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece) {
         int pieceX = piece.x();
         int pieceZ = piece.z();
 
         CWGContext ctx = this.ctx.get();
         Biome[] biomes = ctx.biomeCache
-                = ctx.biomeProvider().getBiomes(ctx.biomeCache, pieceX * FLAT_VOXELS, pieceZ * FLAT_VOXELS, FLAT_VERTS, FLAT_VERTS, false);
+                = ctx.biomeProvider().getBiomes(ctx.biomeCache, pieceX * HEIGHTMAP_VOXELS, pieceZ * HEIGHTMAP_VOXELS, HEIGHTMAP_VERTS, HEIGHTMAP_VERTS, false);
 
-        for (int x = 0; x < FLAT_VERTS; x++) {
-            for (int z = 0; z < FLAT_VERTS; z++) {
-                int blockX = pieceX * FLAT_VOXELS + x;
-                int blockZ = pieceZ * FLAT_VOXELS + z;
+        for (int x = 0; x < HEIGHTMAP_VERTS; x++) {
+            for (int z = 0; z < HEIGHTMAP_VERTS; z++) {
+                int blockX = pieceX * HEIGHTMAP_VOXELS + x;
+                int blockZ = pieceZ * HEIGHTMAP_VOXELS + z;
 
                 int height = CWGUtil.getHeight(ctx.terrainBuilder(), blockX, blockZ);
                 double density = ctx.terrainBuilder().get(blockX, height, blockZ);
@@ -79,7 +76,7 @@ public class CWGFlatGenerator extends CCFlatGenerator {
                 double dz = ctx.terrainBuilder().get(blockX, height, blockZ + 1) - density;
 
                 //Biome biome = ctx.biomeSource().getBiome(blockX, height, blockZ).getBiome();
-                Biome biome = biomes[z * FLAT_VERTS + x];
+                Biome biome = biomes[z * HEIGHTMAP_VERTS + x];
 
                 IBlockState state = Blocks.AIR.getDefaultState();
                 List<IBiomeBlockReplacer> replacers = ctx.biomeBlockReplacers().get(biome);

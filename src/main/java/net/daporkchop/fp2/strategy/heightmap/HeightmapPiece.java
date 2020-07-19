@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.flat;
+package net.daporkchop.fp2.strategy.heightmap;
 
 import io.netty.buffer.ByteBuf;
 import lombok.AccessLevel;
@@ -38,7 +38,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static net.daporkchop.fp2.strategy.flat.FlatConstants.*;
+import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -49,11 +49,11 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @RequiredArgsConstructor
 @Getter
 @Accessors(fluent = true)
-public class FlatPiece implements IFarPiece {
-    protected static final long DIRTY_OFFSET = PUnsafe.pork_getOffset(FlatPiece.class, "dirty");
+public class HeightmapPiece implements IFarPiece {
+    protected static final long DIRTY_OFFSET = PUnsafe.pork_getOffset(HeightmapPiece.class, "dirty");
 
     public static void checkCoords(int x, int z) {
-        checkArg(x >= 0 && x < FLAT_VERTS && z >= 0 && z < FLAT_VERTS, "coordinates out of bounds (x=%d, z=%d)", x, z);
+        checkArg(x >= 0 && x < HEIGHTMAP_VERTS && z >= 0 && z < HEIGHTMAP_VERTS, "coordinates out of bounds (x=%d, z=%d)", x, z);
     }
 
     protected final int x;
@@ -62,16 +62,16 @@ public class FlatPiece implements IFarPiece {
     @Getter(AccessLevel.NONE)
     protected final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    protected final IntBuffer height = Constants.createIntBuffer(FLAT_VERTS * FLAT_VERTS);
-    protected final IntBuffer color = Constants.createIntBuffer(FLAT_VERTS * FLAT_VERTS);
-    protected final ByteBuffer biome = Constants.createByteBuffer(FLAT_VERTS * FLAT_VERTS);
-    protected final ShortBuffer block = Constants.createShortBuffer(FLAT_VERTS * FLAT_VERTS);
-    protected final IntBuffer light = Constants.createIntBuffer(FLAT_VERTS * FLAT_VERTS);
+    protected final IntBuffer height = Constants.createIntBuffer(HEIGHTMAP_VERTS * HEIGHTMAP_VERTS);
+    protected final IntBuffer color = Constants.createIntBuffer(HEIGHTMAP_VERTS * HEIGHTMAP_VERTS);
+    protected final ByteBuffer biome = Constants.createByteBuffer(HEIGHTMAP_VERTS * HEIGHTMAP_VERTS);
+    protected final ShortBuffer block = Constants.createShortBuffer(HEIGHTMAP_VERTS * HEIGHTMAP_VERTS);
+    protected final IntBuffer light = Constants.createIntBuffer(HEIGHTMAP_VERTS * HEIGHTMAP_VERTS);
 
     @Getter(AccessLevel.NONE)
     protected volatile int dirty = 0;
 
-    public FlatPiece(@NonNull ByteBuf buf) {
+    public HeightmapPiece(@NonNull ByteBuf buf) {
         this(buf.readInt(), buf.readInt());
         for (int i = 0, capacity = this.height.capacity(); i < capacity; i++) {
             this.height.put(i, buf.readInt());
@@ -112,70 +112,70 @@ public class FlatPiece implements IFarPiece {
 
     @Override
     public RenderStrategy strategy() {
-        return RenderStrategy.FLAT;
+        return RenderStrategy.HEIGHTMAP;
     }
 
     public int height(int x, int z) {
         checkCoords(x, z);
-        return this.height.get(x * FLAT_VERTS + z);
+        return this.height.get(x * HEIGHTMAP_VERTS + z);
     }
 
     public int color(int x, int z) {
         checkCoords(x, z);
-        return this.color.get(x * FLAT_VERTS + z);
+        return this.color.get(x * HEIGHTMAP_VERTS + z);
     }
 
     public int biome(int x, int z) {
         checkCoords(x, z);
-        return this.biome.get(x * FLAT_VERTS + z);
+        return this.biome.get(x * HEIGHTMAP_VERTS + z);
     }
 
     public int block(int x, int z) {
         checkCoords(x, z);
-        return this.block.get(x * FLAT_VERTS + z);
+        return this.block.get(x * HEIGHTMAP_VERTS + z);
     }
 
     public int light(int x, int z) {
         checkCoords(x, z);
-        return this.light.get(x * FLAT_VERTS + z);
+        return this.light.get(x * HEIGHTMAP_VERTS + z);
     }
 
-    public FlatPiece height(int x, int z, int height) {
+    public HeightmapPiece height(int x, int z, int height) {
         checkCoords(x, z);
-        this.height.put(x * FLAT_VERTS + z, height);
+        this.height.put(x * HEIGHTMAP_VERTS + z, height);
         this.markDirty();
         return this;
     }
 
-    public FlatPiece color(int x, int z, int color) {
+    public HeightmapPiece color(int x, int z, int color) {
         checkCoords(x, z);
-        this.color.put(x * FLAT_VERTS + z, color);
+        this.color.put(x * HEIGHTMAP_VERTS + z, color);
         this.markDirty();
         return this;
     }
 
-    public FlatPiece biome(int x, int z, int biome) {
+    public HeightmapPiece biome(int x, int z, int biome) {
         checkCoords(x, z);
-        this.biome.put(x * FLAT_VERTS + z, (byte) biome);
+        this.biome.put(x * HEIGHTMAP_VERTS + z, (byte) biome);
         this.markDirty();
         return this;
     }
 
-    public FlatPiece block(int x, int z, int block) {
+    public HeightmapPiece block(int x, int z, int block) {
         checkCoords(x, z);
-        this.block.put(x * FLAT_VERTS + z, (short) block);
+        this.block.put(x * HEIGHTMAP_VERTS + z, (short) block);
         this.markDirty();
         return this;
     }
 
-    public FlatPiece light(int x, int z, int light) {
+    public HeightmapPiece light(int x, int z, int light) {
         checkCoords(x, z);
-        this.light.put(x * FLAT_VERTS + z, light);
+        this.light.put(x * HEIGHTMAP_VERTS + z, light);
         this.markDirty();
         return this;
     }
 
-    public void copyProperties(int x, int z, @NonNull FlatPiece dst, int dstX, int dstZ) {
+    public void copyProperties(int x, int z, @NonNull HeightmapPiece dst, int dstX, int dstZ) {
         dst.height(dstX, dstZ, this.height(x, z))
                 .color(dstX, dstZ, this.color(x, z))
                 .biome(dstX, dstZ, this.biome(x, z))
@@ -184,8 +184,8 @@ public class FlatPiece implements IFarPiece {
     }
 
     @Override
-    public FlatPiecePos pos() {
-        return new FlatPiecePos(this.x, this.z);
+    public HeightmapPiecePos pos() {
+        return new HeightmapPiecePos(this.x, this.z);
     }
 
     @Override

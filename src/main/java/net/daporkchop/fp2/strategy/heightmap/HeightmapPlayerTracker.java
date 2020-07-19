@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.flat;
+package net.daporkchop.fp2.strategy.heightmap;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -35,13 +35,9 @@ import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.lib.common.math.BinMath;
 import net.minecraft.entity.player.EntityPlayerMP;
 
-import java.util.ArrayList;
 import java.util.IdentityHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.server.ServerConstants.GENERATION_WORKERS;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -51,12 +47,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 @Accessors(fluent = true)
-public class FlatPlayerTracker implements IFarPlayerTracker {
-    protected final FlatWorld world;
+public class HeightmapPlayerTracker implements IFarPlayerTracker {
+    protected final HeightmapWorld world;
     protected final Map<EntityPlayerMP, LongSet> tracking = new IdentityHashMap<>();
 
-    public FlatPlayerTracker(@NonNull IFarWorld world) {
-        this.world = (FlatWorld) world;
+    public HeightmapPlayerTracker(@NonNull IFarWorld world) {
+        this.world = (HeightmapWorld) world;
     }
 
     @Override
@@ -73,9 +69,9 @@ public class FlatPlayerTracker implements IFarPlayerTracker {
     public void playerMove(@NonNull EntityPlayerMP player) {
         LongSet prev = this.tracking.get(player);
         LongSet next = new LongOpenHashSet();
-        int dist = Config.renderDistance / FlatConstants.FLAT_VOXELS;
-        int baseX = floorI(player.posX) / FlatConstants.FLAT_VOXELS;
-        int baseZ = floorI(player.posZ) / FlatConstants.FLAT_VOXELS;
+        int dist = Config.renderDistance / HeightmapConstants.HEIGHTMAP_VOXELS;
+        int baseX = floorI(player.posX) / HeightmapConstants.HEIGHTMAP_VOXELS;
+        int baseZ = floorI(player.posZ) / HeightmapConstants.HEIGHTMAP_VOXELS;
 
         for (int dx = -dist; dx <= dist; dx++) {
             for (int dz = -dist; dz <= dist; dz++) {
@@ -84,7 +80,7 @@ public class FlatPlayerTracker implements IFarPlayerTracker {
                 long l = BinMath.packXY(x, z);
                 if (!prev.remove(l)) {
                     //piece wasn't loaded before, we should load and send it
-                    FlatPiece piece = this.world.getPieceNowOrLoadAsync(new FlatPiecePos(x, z));
+                    HeightmapPiece piece = this.world.getPieceNowOrLoadAsync(new HeightmapPiecePos(x, z));
                     if (piece != null) {
                         ServerThreadExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player));
                     } else {
@@ -97,14 +93,14 @@ public class FlatPlayerTracker implements IFarPlayerTracker {
 
         for (long l : prev) {
             //unload all previously loaded pieces
-            NETWORK_WRAPPER.sendTo(new SPacketUnloadPiece().pos(new FlatPiecePos(BinMath.unpackX(l), BinMath.unpackY(l))), player);
+            NETWORK_WRAPPER.sendTo(new SPacketUnloadPiece().pos(new HeightmapPiecePos(BinMath.unpackX(l), BinMath.unpackY(l))), player);
         }
         checkState(this.tracking.replace(player, prev, next));
     }
 
     @Override
     public void pieceChanged(@NonNull IFarPiece pieceIn) {
-        FlatPiece piece = (FlatPiece) pieceIn;
+        HeightmapPiece piece = (HeightmapPiece) pieceIn;
         long key = BinMath.packXY(piece.x(), piece.z());
         this.tracking.forEach((player, curr) -> {
             if (curr.contains(key)) {
