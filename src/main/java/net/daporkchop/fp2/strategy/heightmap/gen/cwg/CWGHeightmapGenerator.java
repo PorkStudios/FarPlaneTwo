@@ -84,11 +84,7 @@ public class CWGHeightmapGenerator extends CCHeightmapGenerator {
                     state = replacers.get(i).getReplacedBlock(state, blockX, height, blockZ, dx, dy, dz, density);
                 }
 
-                piece.set(x, z,
-                        height,
-                        Block.getStateId(state),
-                        Biome.getIdForBiome(biome),
-                        (height < this.seaLevel ? max(15 - (this.seaLevel - height) * 3, 0) : 15) << 4);
+                piece.set(x, z, height, state, biome, (height < this.seaLevel ? max(15 - (this.seaLevel - height) * 3, 0) : 15) << 20);
             }
         }
     }

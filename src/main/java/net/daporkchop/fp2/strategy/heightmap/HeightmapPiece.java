@@ -30,6 +30,11 @@ import net.daporkchop.fp2.strategy.RenderStrategy;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.block.Block;
+import net.minecraft.block.material.MapColor;
+import net.minecraft.block.material.Material;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.world.biome.Biome;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.locks.Lock;
@@ -37,6 +42,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -56,13 +62,10 @@ public class HeightmapPiece implements IFarPiece {
     public static final int BLOCK_SIZE = 4;
     public static final int BLOCK_OFFSET = HEIGHT_OFFSET + HEIGHT_SIZE;
 
-    public static final int BIOME_SIZE = 1;
-    public static final int BIOME_OFFSET = BLOCK_OFFSET + BLOCK_SIZE;
+    public static final int ATTRS_SIZE = 4;
+    public static final int ATTRS_OFFSET = BLOCK_OFFSET + BLOCK_SIZE;
 
-    public static final int LIGHT_SIZE = 1;
-    public static final int LIGHT_OFFSET = BIOME_OFFSET + BIOME_SIZE;
-
-    public static final int ENTRY_SIZE = LIGHT_OFFSET + LIGHT_SIZE;
+    public static final int ENTRY_SIZE = ATTRS_OFFSET + ATTRS_SIZE;
     public static final int ENTRY_COUNT = HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS;
 
     private static int base(int x, int z) {
@@ -86,8 +89,7 @@ public class HeightmapPiece implements IFarPiece {
         for (int i = 0; i < ENTRY_COUNT; i++) {
             this.data.putInt(i * ENTRY_SIZE + HEIGHT_OFFSET, buf.readInt())
                     .putInt(i * ENTRY_SIZE + BLOCK_OFFSET, buf.readInt())
-                    .put(i * ENTRY_SIZE + BIOME_OFFSET, buf.readByte())
-                    .put(i * ENTRY_SIZE + LIGHT_OFFSET, buf.readByte());
+                    .putInt(i * ENTRY_SIZE + ATTRS_OFFSET, buf.readInt());
         }
     }
 
@@ -98,8 +100,7 @@ public class HeightmapPiece implements IFarPiece {
         for (int i = 0; i < ENTRY_COUNT; i++) {
             buf.writeInt(this.data.getInt(i * ENTRY_SIZE + HEIGHT_OFFSET))
                     .writeInt(this.data.getInt(i * ENTRY_SIZE + BLOCK_OFFSET))
-                    .writeByte(this.data.get(i * ENTRY_SIZE + BIOME_OFFSET))
-                    .writeByte(this.data.get(i * ENTRY_SIZE + LIGHT_OFFSET));
+                    .writeInt(this.data.getInt(i * ENTRY_SIZE + ATTRS_OFFSET));
         }
     }
 
@@ -116,20 +117,26 @@ public class HeightmapPiece implements IFarPiece {
         return this.data.getInt(base(x, z) + BLOCK_OFFSET);
     }
 
-    public int biome(int x, int z) {
-        return this.data.get(base(x, z) + BIOME_OFFSET) & 0xFF;
+    public int attrs(int x, int z) {
+        return this.data.get(base(x, z) + ATTRS_OFFSET) & 0xFF;
     }
 
-    public int light(int x, int z) {
-        return this.data.get(base(x, z) + LIGHT_OFFSET) & 0xFF;
-    }
-
-    public HeightmapPiece set(int x, int z, int height, int block, int biome, int light) {
+    public HeightmapPiece set(int x, int z, int height, IBlockState state, Biome biome, int combinedLight) {
         int base = base(x, z);
+
+        int attrs = Biome.getIdForBiome(biome) | (packCombinedLight(combinedLight) << 6);
+        MapColor color = state.getMaterial().getMaterialMapColor();
+        if (color == MapColor.GRASS) {
+            attrs |= 1 << (6 + 8 + 0);
+        } else if (color == MapColor.FOLIAGE) {
+            attrs |= 1 << (6 + 8 + 1);
+        } else if (color == MapColor.WATER) {
+            attrs |= 1 << (6 + 8 + 2);
+        }
+
         this.data.putInt(base + HEIGHT_OFFSET, height)
-                .putInt(base + BLOCK_OFFSET, block)
-                .put(base + BIOME_OFFSET, (byte) biome)
-                .put(base + LIGHT_OFFSET, (byte) light);
+                .putInt(base + BLOCK_OFFSET, Block.getStateId(state))
+                .putInt(base + ATTRS_OFFSET, attrs);
         this.markDirty();
         return this;
     }

@@ -20,8 +20,7 @@
 
 layout(location = 0) in int height;
 layout(location = 1) in int block;
-layout(location = 2) in int biome;
-layout(location = 3) in int light;
+layout(location = 2) in int attrs;
 
 uniform mat4 camera_projection = mat4(1.0);
 uniform mat4 camera_modelview = mat4(1.0);
@@ -34,13 +33,16 @@ out flat vec4 vert_color;
 out flat int vert_state;
 
 void main(){
-    vec2 posXZ = vec2(ivec2(gl_VertexID) / ivec2(65, 1) % 65);
+    vec2 posXZ = vec2(ivec2(gl_VertexID) >> ivec2(6, 0) & 0x3F);
     dvec3 pos = dvec3(camera_offset.x + posXZ.x, double(height) + .5, camera_offset.y + posXZ.y);
     vert_pos = vec3(pos);
 
     gl_Position = camera_projection * camera_modelview * vec4(pos, 1.);
 
-    /*if (color == 1) { //grass
+    vert_light = vec2(ivec2(attrsToLight(attrs)) >> ivec2(0, 4) & 0xF) / 16.;
+
+    int biome = attrsToBiome(attrs);
+    if (isGrass(attrs)) { //grass
         if (IS_SWAMP) {
             vert_color = fromRGB(-1. < -.1 ? 5011004 : 6975545);
         } else if (IS_ROOFED_FOREST)    {
@@ -51,7 +53,7 @@ void main(){
         } else {
             vert_color = getGrassColorAtPos(pos, biome);
         }
-    } else if (color == 7)  { //foliage
+    } else if (isFoliage(attrs))  { //foliage
         if (IS_SWAMP) {
             vert_color = fromRGB(6975545);
         } else if (IS_MESA) {
@@ -59,12 +61,8 @@ void main(){
         } else {
             vert_color = getFoliageColorAtPos(pos, biome);
         }
-    } else if (color == 12)  { //water
-        vert_color = fromARGB(global_info.biome_watercolor[biome]);
-    } else {*/
+    } else {
         vert_color = vec4(1.);
-    //}
+    }
     vert_state = block;
-
-    vert_light = vec2(ivec2(light) >> ivec2(0, 4) & 0xF) / 16.;
 }

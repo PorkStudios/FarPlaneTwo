@@ -68,11 +68,7 @@ public class CCHeightmapGenerator implements HeightmapGenerator {
                 }
 
                 Biome biome = world.getBiome(pos);
-                piece.set(x, z,
-                        height,
-                        Block.getStateId(state),
-                        Biome.getIdForBiome(biome),
-                        packCombinedLight(world.getCombinedLight(pos.add(0, 1, 0), 0)));
+                piece.set(x, z, height, state, biome, world.getCombinedLight(pos.add(0, 1, 0), 0));
             }
         }
     }

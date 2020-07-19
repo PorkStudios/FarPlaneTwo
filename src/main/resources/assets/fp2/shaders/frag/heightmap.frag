@@ -28,10 +28,6 @@ in vec2 vert_light;
 in flat vec4 vert_color;
 in flat int vert_state;
 
-float rand(vec2 co){
-    return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
-}
-
 void main() {
     if (isLoaded(ivec3(floor(vert_pos)) >> 4)) {
         discard;//TODO: figure out the potential performance implications of this vs transparent output

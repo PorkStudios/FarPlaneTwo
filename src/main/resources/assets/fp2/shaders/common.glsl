@@ -101,3 +101,23 @@ vec4 getFoliageColor(float temperature, float humidity){
 vec4 getFoliageColorAtPos(dvec3 pos, int biome){
     return getGrassColor(clamp(getTemperature(pos, biome), 0., 1.), clamp(global_info.biome_climate[biome].y, 0., 1.));
 }
+
+int attrsToBiome(int attrs) {
+    return attrs & 0x3F;
+}
+
+int attrsToLight(int attrs) {
+    return (attrs >> 6) & 0xFF;
+}
+
+bool isGrass(int attrs) {
+    return (attrs & (1 << (6 + 8 + 0))) != 0;
+}
+
+bool isFoliage(int attrs) {
+    return (attrs & (1 << (6 + 8 + 1))) != 0;
+}
+
+bool isWater(int attrs) {
+    return (attrs & (1 << (6 + 8 + 2))) != 0;
+}

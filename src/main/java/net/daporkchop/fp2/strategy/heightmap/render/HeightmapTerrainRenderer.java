@@ -110,8 +110,8 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
     }*/
 
     static {
-        ShortBuffer meshData = BufferUtils.createShortBuffer(HEIGHTMAP_VERTS * HEIGHTMAP_VERTS * 6 + 1);
-        MESH_VERTEX_COUNT = genMesh(HEIGHTMAP_VERTS, HEIGHTMAP_VERTS, meshData);
+        ShortBuffer meshData = BufferUtils.createShortBuffer(HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS * 6 + 1);
+        MESH_VERTEX_COUNT = genMesh(HEIGHTMAP_VOXELS, HEIGHTMAP_VOXELS, meshData);
 
         try (ElementArrayObject mesh = MESH.bind()) {
             GL15.glBufferData(GL_ELEMENT_ARRAY_BUFFER, (ShortBuffer) meshData.flip(), GL_STATIC_DRAW);
@@ -161,11 +161,8 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                     glVertexAttribIPointer(1, 1, GL_INT, HeightmapPiece.ENTRY_SIZE, HeightmapPiece.BLOCK_OFFSET);
                     vao.putDependency(1, vbo);
 
-                    glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, HeightmapPiece.ENTRY_SIZE, HeightmapPiece.BIOME_OFFSET);
+                    glVertexAttribIPointer(2, 1, GL_INT, HeightmapPiece.ENTRY_SIZE, HeightmapPiece.ATTRS_OFFSET);
                     vao.putDependency(2, vbo);
-
-                    glVertexAttribIPointer(3, 1, GL_UNSIGNED_BYTE, HeightmapPiece.ENTRY_SIZE, HeightmapPiece.LIGHT_OFFSET);
-                    vao.putDependency(3, vbo);
                 }
 
                 vao.putElementArray(MESH.bind());
