@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-$today.year DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,22 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap;
+//
+//
+// MACROS
+//
+//
 
-import lombok.experimental.UtilityClass;
-import net.daporkchop.lib.common.math.BinMath;
-
-/**
- * Constant values used by the heightmap rendering strategy.
- *
- * @author DaPorkchop_
- */
-@UtilityClass
-public class HeightmapConstants {
-    public static final int HEIGHTMAP_SHIFT = 4;
-    public static final int HEIGHTMAP_MASK = (1 << HEIGHTMAP_SHIFT) - 1;
-    public static final int HEIGHTMAP_VOXELS = 1 << HEIGHTMAP_SHIFT; //side length of a tile in voxels contained
-    public static final int HEIGHTMAP_VERTS = HEIGHTMAP_VOXELS + 1; //side length of a tile in vertices
-
-    public static final int HEIGHTMAP_STORAGE_VERSION = 2;
-}
+#define HEIGHTMAP_SHIFT (4)
+#define HEIGHTMAP_MASK ((1 << HEIGHTMAP_SHIFT) - 1)
+#define HEIGHTMAP_VOXELS (1 << HEIGHTMAP_SHIFT)
+#define HEIGHTMAP_VERTS (HEIGHTMAP_VOXELS + 1)

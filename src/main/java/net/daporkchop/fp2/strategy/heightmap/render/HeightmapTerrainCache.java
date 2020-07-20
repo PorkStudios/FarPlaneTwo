@@ -20,12 +20,13 @@
 
 package net.daporkchop.fp2.strategy.heightmap.render;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.daporkchop.fp2.Config;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
@@ -34,22 +35,24 @@ import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiecePos;
-import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.minecraft.client.Minecraft;
 
-import java.nio.IntBuffer;
+import java.nio.ByteOrder;
 import java.util.BitSet;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.strategy.heightmap.render.HeightmapTerrainRenderer.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL11.glGetInteger;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.opengl.GL31.*;
 import static org.lwjgl.opengl.GL43.*;
 
 /**
@@ -62,10 +65,13 @@ public class HeightmapTerrainCache {
     protected final Map<HeightmapPiecePos, Tile> tiles = new HashMap<>();
 
     protected final ShaderStorageBuffer indexSSBO = new ShaderStorageBuffer();
+    protected final ShaderStorageBuffer positionSSBO = new ShaderStorageBuffer();
     protected final ShaderStorageBuffer dataSSBO = new ShaderStorageBuffer();
 
     protected final BitSet activeDataSlots = new BitSet();
     protected int dataSize = 1;
+
+    protected final VertexArrayObject vao = new VertexArrayObject();
 
     public HeightmapTerrainCache(@NonNull HeightmapTerrainRenderer renderer) {
         this.renderer = renderer;
@@ -77,6 +83,30 @@ public class HeightmapTerrainCache {
             OpenGL.checkGLError("pre allocate initial data buffer");
             glBufferData(GL_SHADER_STORAGE_BUFFER, this.dataSize * (long) HeightmapPiece.TOTAL_SIZE, GL_STATIC_DRAW);
             OpenGL.checkGLError("post allocate initial data buffer");
+        }
+
+        try (VertexArrayObject vao = this.vao.bind()) {
+            for (int i = 0; i <= 2; i++) {
+                glEnableVertexAttribArray(i);
+            }
+
+            try (VertexBufferObject vbo = this.renderer.coords.bind()) {
+                glVertexAttribIPointer(0, 2, GL_INT, 5 * 4, 0L);
+                glVertexAttribIPointer(1, 2, GL_INT, 5 * 4, 2 * 4L);
+                glVertexAttribIPointer(2, 1, GL_INT, 5 * 4, 4 * 4L);
+
+                for (int i = 0; i <= 2; i++) {
+                    vao.putDependency(i, vbo);
+                }
+            }
+
+            vao.putElementArray(this.renderer.mesh.bind());
+        } finally {
+            for (int i = 0; i <= 2; i++) {
+                glDisableVertexAttribArray(i);
+            }
+
+            this.renderer.mesh.close();
         }
     }
 
@@ -126,7 +156,7 @@ public class HeightmapTerrainCache {
                     OpenGL.checkGLError("post upload tile data");
                 }
 
-                try (VertexArrayObject vao = new VertexArrayObject().bind()) {
+                /*try (VertexArrayObject vao = new VertexArrayObject().bind()) {
                     for (int i = 0; i <= 2; i++) {
                         glEnableVertexAttribArray(i);
                     }
@@ -150,41 +180,9 @@ public class HeightmapTerrainCache {
                     }
 
                     this.renderer.mesh.close();
-                }
+                }*/
                 return tile;
             });
-            /*try (VertexArrayObject vao = new VertexArrayObject().bind()) {
-                glEnableVertexAttribArray(0);
-                glEnableVertexAttribArray(1);
-                glEnableVertexAttribArray(2);
-                glEnableVertexAttribArray(3);
-                glEnableVertexAttribArray(4);
-
-                try (VertexBufferObject vbo = new VertexBufferObject().bind()) {
-                    glBufferData(GL_ARRAY_BUFFER, piece.data(), GL_STATIC_DRAW);
-
-                    glVertexAttribIPointer(0, 1, GL_INT, HeightmapPiece.ENTRY_SIZE, HeightmapPiece.HEIGHT_OFFSET);
-                    vao.putDependency(0, vbo);
-
-                    glVertexAttribIPointer(1, 1, GL_INT, HeightmapPiece.ENTRY_SIZE, HeightmapPiece.BLOCK_OFFSET);
-                    vao.putDependency(1, vbo);
-
-                    glVertexAttribIPointer(2, 1, GL_INT, HeightmapPiece.ENTRY_SIZE, HeightmapPiece.ATTRS_OFFSET);
-                    vao.putDependency(2, vbo);
-                }
-
-                vao.putElementArray(mesh.bind());
-
-                this.pieces.put(piece.pos(), vao);
-            } finally {
-                glDisableVertexAttribArray(0);
-                glDisableVertexAttribArray(1);
-                glDisableVertexAttribArray(2);
-                glDisableVertexAttribArray(3);
-                glDisableVertexAttribArray(4);
-
-                mesh.close();
-            }*/
         });
     }
 
@@ -203,46 +201,25 @@ public class HeightmapTerrainCache {
         }
 
         this.generateAndUploadIndex();
+        int positions = this.generateAndUploadPositions();
 
-        OpenGL.checkGLError("pre bind SSBOs");
+        this.positionSSBO.bindSSBO(2);
+        this.indexSSBO.bindSSBO(3);
+        this.dataSSBO.bindSSBO(4);
 
-        this.indexSSBO.bindSSBO(2);
-        this.dataSSBO.bindSSBO(3);
+        try (VertexArrayObject vao = this.vao.bind()) {
+            try (ShaderProgram shader = TERRAIN_SHADER.use()) {
+                glDrawElementsInstanced(GL_TRIANGLES, this.renderer.meshVertexCount, GL_UNSIGNED_SHORT, 0L, positions);
+            }
+            try (ShaderProgram shader = WATER_SHADER.use()) {
+                glUniform1f(shader.uniformLocation("seaLevel"), 63.0f);
 
-        OpenGL.checkGLError("post bind SSBOs");
-
-        try (ShaderProgram shader = TERRAIN_SHADER.use()) {
-            this.tiles.forEach((pos, o) -> {
-                glUniform2i(TERRAIN_SHADER.uniformLocation("position_offset"), pos.x() * HEIGHTMAP_VOXELS, pos.z() * HEIGHTMAP_VOXELS);
-
-                OpenGL.checkGLError("pre bind VAO");
-                try (VertexArrayObject vao = o.vao().bind()) {
-                    OpenGL.checkGLError("pre render VAO");
-                    glDrawElements(GL_TRIANGLES, this.renderer.meshVertexCount, GL_UNSIGNED_SHORT, 0L);
-                    OpenGL.checkGLError("post render VAO");
-                }
-                OpenGL.checkGLError("post bind VAO");
-            });
-        }
-        try (ShaderProgram shader = WATER_SHADER.use()) {
-            glUniform1f(shader.uniformLocation("seaLevel"), 63f);
-
-            this.tiles.forEach((pos, o) -> {
-                glUniform2i(WATER_SHADER.uniformLocation("position_offset"), pos.x() * HEIGHTMAP_VOXELS, pos.z() * HEIGHTMAP_VOXELS);
-
-                OpenGL.checkGLError("pre bind VAO");
-                try (VertexArrayObject vao = o.vao().bind()) {
-                    OpenGL.checkGLError("pre render VAO");
-                    glDrawElements(GL_TRIANGLES, this.renderer.meshVertexCount, GL_UNSIGNED_SHORT, 0L);
-                    OpenGL.checkGLError("post render VAO");
-                }
-                OpenGL.checkGLError("post bind VAO");
-            });
+                glDrawElementsInstanced(GL_TRIANGLES, this.renderer.meshVertexCount, GL_UNSIGNED_SHORT, 0L, positions);
+            }
         }
     }
 
-    protected int lastCapacity = 0;
-
+    @SuppressWarnings("deprecation")
     protected void generateAndUploadIndex() {
         final int HEADER_SIZE = 2 * 2;
 
@@ -254,37 +231,54 @@ public class HeightmapTerrainCache {
         int dz = maxZ - minZ;
         int area = dx * dz;
 
-        IntBuffer buffer = Constants.createIntBuffer(HEADER_SIZE + area)
-                .put(minX).put(minZ)
-                .put(dx).put(dz);
+        ByteBuf buffer = PooledByteBufAllocator.DEFAULT.directBuffer((HEADER_SIZE + area) * 4)
+                .order(ByteOrder.nativeOrder())
+                .writeInt(minX).writeInt(minZ)
+                .writeInt(dx).writeInt(dz);
 
-        if (Config.debug.debug && buffer.capacity() != this.lastCapacity) {
-            int o = this.lastCapacity * 4;
-            int n = buffer.capacity() * 4;
-            FP2.LOGGER.info(PStrings.fastFormat(
-                    "tile index changed from %d bytes (%.2f MiB) to %d bytes (%.2f MiB)",
-                    o, o / (1024.0d * 1024.0d),
-                    n, n / (1024.0d * 1024.0d)
-            ));
-        }
-        this.lastCapacity = buffer.capacity();
-
-        while (buffer.hasRemaining()) {
-            buffer.put(-1);
-        }
-        buffer.clear();
-
-        this.tiles.values().forEach(tile -> {
-            if (tile.slot >= 0) {
-                int index = (tile.piece.x() - minX) * dz + tile.piece.z() - minZ;
-                buffer.put(HEADER_SIZE + index, tile.slot);
+        try {
+            for (int i = 0; i < area; i++) {
+                buffer.writeInt(-1);
             }
-        });
 
-        try (ShaderStorageBuffer ssbo = this.indexSSBO.bind()) {
-            OpenGL.checkGLError("pre upload tile index");
-            glBufferData(GL_SHADER_STORAGE_BUFFER, buffer, GL_STATIC_DRAW);
-            OpenGL.checkGLError("post upload tile index");
+            this.tiles.values().forEach(tile -> {
+                if (tile.slot >= 0) {
+                    int index = (tile.piece.x() - minX) * dz + tile.piece.z() - minZ;
+                    buffer.setInt((HEADER_SIZE + index) * 4, tile.slot);
+                }
+            });
+
+            try (ShaderStorageBuffer ssbo = this.indexSSBO.bind()) {
+                glBufferData(GL_SHADER_STORAGE_BUFFER, buffer.nioBuffer(), GL_STATIC_DRAW);
+            }
+        } finally {
+            buffer.release();
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    protected int generateAndUploadPositions() {
+        ByteBuf buffer = PooledByteBufAllocator.DEFAULT.directBuffer((this.tiles.size() * 2) * 4)
+                .order(ByteOrder.nativeOrder());
+
+        try {
+            int count = toInt(this.tiles.values().stream()
+                    .map(Tile::piece)
+                    .sorted(Comparator.comparingDouble(p -> {
+                        double dx = this.renderer.cameraX - p.x() * HEIGHTMAP_VOXELS;
+                        double dz = this.renderer.cameraZ - p.z() * HEIGHTMAP_VOXELS;
+                        return dx * dx + dz * dz;
+                    }))
+                    .peek(p -> buffer.writeInt(p.x() * HEIGHTMAP_VOXELS).writeInt(p.z() * HEIGHTMAP_VOXELS))
+                    .count());
+
+            try (ShaderStorageBuffer ssbo = this.positionSSBO.bind()) {
+                glBufferData(GL_SHADER_STORAGE_BUFFER, buffer.nioBuffer(), GL_STATIC_DRAW);
+            }
+
+            return count;
+        } finally {
+            buffer.release();
         }
     }
 
@@ -295,7 +289,6 @@ public class HeightmapTerrainCache {
     protected static class Tile {
         @NonNull
         protected HeightmapPiece piece;
-        protected VertexArrayObject vao;
         protected int slot = -1;
     }
 }

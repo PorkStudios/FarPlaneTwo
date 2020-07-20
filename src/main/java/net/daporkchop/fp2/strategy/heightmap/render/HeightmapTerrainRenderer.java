@@ -139,8 +139,8 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
             for (int x = 0; x < HEIGHTMAP_VERTS; x++) {
                 for (int z = 0; z < HEIGHTMAP_VERTS; z++) {
                     coordsData.put(x).put(z)
-                            .put(x & 0x3F).put(z & 0x3F)
-                            .put((x & 0x3F) * HEIGHTMAP_VOXELS + (z & 0x3F));
+                            .put(x & HEIGHTMAP_MASK).put(z & HEIGHTMAP_MASK)
+                            .put((x & HEIGHTMAP_MASK) * HEIGHTMAP_VOXELS + (z & HEIGHTMAP_MASK));
                 }
             }
             coordsData.flip();

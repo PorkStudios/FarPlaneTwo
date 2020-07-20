@@ -1,12 +1,14 @@
 {
   "vert": [
-    "common.glsl",
+    "prog/common.glsl",
+    "prog/heightmap/heightmap.glsl",
     "vert/common.vert",
     "vert/heightmap/heightmap.vert",
     "vert/heightmap/terrain.vert"
   ],
   "frag": [
-    "common.glsl",
+    "prog/common.glsl",
+    "prog/heightmap/heightmap.glsl",
     "frag/heightmap/heightmap.frag",
     "frag/heightmap/terrain.frag"
   ]

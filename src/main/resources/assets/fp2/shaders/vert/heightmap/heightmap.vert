@@ -55,8 +55,18 @@ out VS_OUT {
 //
 //
 
+//positions
+layout(std430, binding = 2) buffer INSTANCE_POSITIONS {
+    ivec2 data[];
+} instance_positions;
+
+ivec2 vertexPosXZ()   {
+    //return position_offset + in_offset_absolute;
+    return instance_positions.data[gl_InstanceID] + in_offset_absolute;
+}
+
 //tile index
-layout(shared, binding = 2) buffer TILE_INDEX {
+layout(shared, binding = 3) buffer TILE_INDEX {
     ivec2 base;
     ivec2 size;
     int data[];
@@ -72,12 +82,12 @@ int loadedTileIndex(ivec2 chunk)  {
 }
 
 //tile data
-layout(shared, binding = 3) buffer TILE_DATA {
-    HEIGHTMAP_TYPE data[][64 * 64];
+layout(shared, binding = 4) buffer TILE_DATA {
+    HEIGHTMAP_TYPE data[][HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS];
 } tile_data;
 
 HEIGHTMAP_TYPE sampleHeightmap(ivec2 pos)   {
-    int tileIndex = loadedTileIndex(pos >> 6);
+    int tileIndex = loadedTileIndex(pos >> HEIGHTMAP_SHIFT);
     if (tileIndex >= 0)  {
         vs_out.cancel = 0;
         return tile_data.data[tileIndex][in_vertexID_chunk];

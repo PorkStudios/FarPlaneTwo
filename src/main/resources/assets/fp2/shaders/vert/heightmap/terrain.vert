@@ -19,7 +19,7 @@
  */
 
 void main(){
-    ivec2 posXZ = position_offset + in_offset_absolute;
+    ivec2 posXZ = vertexPosXZ();
 
     HEIGHTMAP_TYPE center = sampleHeightmap(posXZ);
 
