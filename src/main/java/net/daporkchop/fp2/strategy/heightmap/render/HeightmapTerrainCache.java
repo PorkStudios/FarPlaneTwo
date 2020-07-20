@@ -25,11 +25,13 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.daporkchop.fp2.Config;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
+import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiecePos;
 import net.daporkchop.fp2.util.Constants;
@@ -111,6 +113,8 @@ public class HeightmapTerrainCache {
             this.tiles.compute(piece.pos(), (p, tile) -> {
                 if (tile == null) {
                     tile = new Tile(piece);
+                } else {
+                    tile.piece(piece);
                 }
                 if (tile.slot < 0) {
                     tile.slot(this.allocateSlot());
@@ -207,17 +211,34 @@ public class HeightmapTerrainCache {
 
         OpenGL.checkGLError("post bind SSBOs");
 
-        this.tiles.forEach((pos, o) -> {
-            glUniform2i(HEIGHT_SHADER.uniformLocation("position_offset"), pos.x() * HEIGHTMAP_VOXELS, pos.z() * HEIGHTMAP_VOXELS);
+        try (ShaderProgram shader = TERRAIN_SHADER.use()) {
+            this.tiles.forEach((pos, o) -> {
+                glUniform2i(TERRAIN_SHADER.uniformLocation("position_offset"), pos.x() * HEIGHTMAP_VOXELS, pos.z() * HEIGHTMAP_VOXELS);
 
-            OpenGL.checkGLError("pre bind VAO");
-            try (VertexArrayObject vao = o.vao().bind()) {
-                OpenGL.checkGLError("pre render VAO");
-                glDrawElements(GL_TRIANGLES, this.renderer.meshVertexCount, GL_UNSIGNED_SHORT, 0L);
-                OpenGL.checkGLError("post render VAO");
-            }
-            OpenGL.checkGLError("post bind VAO");
-        });
+                OpenGL.checkGLError("pre bind VAO");
+                try (VertexArrayObject vao = o.vao().bind()) {
+                    OpenGL.checkGLError("pre render VAO");
+                    glDrawElements(GL_TRIANGLES, this.renderer.meshVertexCount, GL_UNSIGNED_SHORT, 0L);
+                    OpenGL.checkGLError("post render VAO");
+                }
+                OpenGL.checkGLError("post bind VAO");
+            });
+        }
+        try (ShaderProgram shader = WATER_SHADER.use()) {
+            glUniform1f(shader.uniformLocation("seaLevel"), 63f);
+
+            this.tiles.forEach((pos, o) -> {
+                glUniform2i(WATER_SHADER.uniformLocation("position_offset"), pos.x() * HEIGHTMAP_VOXELS, pos.z() * HEIGHTMAP_VOXELS);
+
+                OpenGL.checkGLError("pre bind VAO");
+                try (VertexArrayObject vao = o.vao().bind()) {
+                    OpenGL.checkGLError("pre render VAO");
+                    glDrawElements(GL_TRIANGLES, this.renderer.meshVertexCount, GL_UNSIGNED_SHORT, 0L);
+                    OpenGL.checkGLError("post render VAO");
+                }
+                OpenGL.checkGLError("post bind VAO");
+            });
+        }
     }
 
     protected int lastCapacity = 0;
@@ -237,7 +258,7 @@ public class HeightmapTerrainCache {
                 .put(minX).put(minZ)
                 .put(dx).put(dz);
 
-        if (buffer.capacity() != this.lastCapacity) {
+        if (Config.debug.debug && buffer.capacity() != this.lastCapacity) {
             int o = this.lastCapacity * 4;
             int n = buffer.capacity() * 4;
             FP2.LOGGER.info(PStrings.fastFormat(

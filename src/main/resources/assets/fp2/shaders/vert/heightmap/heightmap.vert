@@ -82,6 +82,7 @@ HEIGHTMAP_TYPE sampleHeightmap(ivec2 pos)   {
         vs_out.cancel = 0;
         return tile_data.data[tileIndex][in_vertexID_chunk];
     } else {
+        vs_out.cancel = 1;
         return HEIGHTMAP_TYPE(0);
     }
 }

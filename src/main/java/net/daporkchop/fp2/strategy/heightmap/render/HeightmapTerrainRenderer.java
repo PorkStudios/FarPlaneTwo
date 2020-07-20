@@ -71,20 +71,20 @@ import static org.lwjgl.opengl.GL45.*;
  */
 @SideOnly(Side.CLIENT)
 public class HeightmapTerrainRenderer extends TerrainRenderer {
-    public static ShaderProgram HEIGHT_SHADER = ShaderManager.get("heightmap/terrain");
+    public static ShaderProgram TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
     public static ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
 
     public static void reloadHeightShader(boolean notify) {
-        ShaderProgram shader = HEIGHT_SHADER;
-        ShaderProgram shader2 = WATER_SHADER;
+        ShaderProgram terrain = TERRAIN_SHADER;
+        ShaderProgram water = WATER_SHADER;
         try {
-            HEIGHT_SHADER = ShaderManager.get("heightmap/terrain");
+            TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
             WATER_SHADER = ShaderManager.get("heightmap/water");
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
             if (notify) {
-                if (HEIGHT_SHADER == shader || WATER_SHADER == shader2) {
+                if (TERRAIN_SHADER == terrain || WATER_SHADER == water) {
                     Minecraft.getMinecraft().player.sendMessage(new TextComponentString("§cheightmap shader reload failed (check console)."));
                 } else {
                     Minecraft.getMinecraft().player.sendMessage(new TextComponentString("§aheightmap shader successfully reloaded."));
@@ -228,9 +228,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
 
             this.uniforms.bindUBO(0);
 
-            try (ShaderProgram shader = HEIGHT_SHADER.use()) {
-                this.cache.render(partialTicks, mc);
-            }
+            this.cache.render(partialTicks, mc);
 
             /*try (ShaderProgram shader = WATER_SHADER.use()) {
                 ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);

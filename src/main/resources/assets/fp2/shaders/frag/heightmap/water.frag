@@ -19,7 +19,7 @@
  */
 
 void main() {
-    if (shouldCancel()) {
+    if (shouldCancel() || isChunkSectionRenderable(ivec3(floor(fs_in.pos)) >> 4)) {
         discard;//TODO: figure out the potential performance implications of this vs transparent output
         //color = vec4(0.);
     } else {

@@ -25,7 +25,7 @@ import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import static java.lang.Math.max;
+import static java.lang.Math.*;
 
 /**
  * @author DaPorkchop_
@@ -58,6 +58,12 @@ public class Config {
     public static int ioThreads = PorkUtil.CPU_COUNT;
 
     @net.minecraftforge.common.config.Config.Comment({
+            "Config options available only on the client."
+    })
+    @SideOnly(Side.CLIENT)
+    public static Client client = new Client();
+
+    @net.minecraftforge.common.config.Config.Comment({
             "Config options useful while developing the mod."
     })
     public static Debug debug = new Debug();
@@ -66,14 +72,13 @@ public class Config {
      * @author DaPorkchop_
      */
     @SideOnly(Side.CLIENT)
-    @net.minecraftforge.common.config.Config(modid = FP2.MODID, category = "client")
     public static class Client {
         @net.minecraftforge.common.config.Config.Comment({
                 "The number of threads that will be used for preparing far plane terrain data for rendering.",
                 "Default: <cpu count> - 1 (and at least 1)"
         })
         @net.minecraftforge.common.config.Config.RequiresWorldRestart
-        public static int renderThreads = max(PorkUtil.CPU_COUNT - 1, 1);
+        public int renderThreads = max(PorkUtil.CPU_COUNT - 1, 1);
     }
 
     /**
