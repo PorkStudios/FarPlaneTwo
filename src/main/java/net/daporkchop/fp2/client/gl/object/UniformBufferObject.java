@@ -20,49 +20,22 @@
 
 package net.daporkchop.fp2.client.gl.object;
 
-import static net.daporkchop.lib.common.util.PorkUtil.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.opengl.GL31.*;
-import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class GLBufferObject<T extends GLBufferObject<T>> extends GLObject<T> {
-    protected final int target = this.target();
-
-    public GLBufferObject() {
-        this(glGenBuffers());
+public final class UniformBufferObject extends GLBufferObject<UniformBufferObject> {
+    public UniformBufferObject() {
+        super();
     }
 
-    public GLBufferObject(int id) {
+    public UniformBufferObject(int id) {
         super(id);
     }
 
-    protected abstract int target();
-
     @Override
-    public T bind() {
-        glBindBuffer(this.target, this.id);
-        return uncheckedCast(this);
-    }
-
-    @Override
-    public void close() {
-        glBindBuffer(this.target, 0);
-    }
-
-    @Override
-    protected Runnable delete(int id) {
-        return () -> glDeleteBuffers(id);
-    }
-
-    public void bindSSBO(int index) {
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, this.id);
-    }
-
-    public void bindUBO(int index) {
-        glBindBufferBase(GL_UNIFORM_BUFFER, index, this.id);
+    protected int target() {
+        return GL_UNIFORM_BUFFER;
     }
 }

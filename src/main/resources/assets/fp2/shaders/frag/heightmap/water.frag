@@ -18,19 +18,13 @@
  *
  */
 
-in vec3 vert_pos;
-in vec2 vert_light;
-in flat vec4 vert_color;
-
-out vec4 color;
-
 void main() {
-    if (isLoaded(ivec3(floor(vert_pos)) >> 4)) {
+    if (shouldCancel()) {
         discard;//TODO: figure out the potential performance implications of this vs transparent output
         //color = vec4(0.);
     } else {
         TextureUV uvs = global_info.tex_uvs[9];
         //color = vert_color * texture(terrain_texture, uvs.min + (uvs.max - uvs.min) * fract(vert_pos.xz));
-        color = vert_color * texture(lightmap_texture, vec2(0., 1.)) * texture(terrain_texture, uvs.min + (uvs.max - uvs.min) * fract(vert_pos.xz));
+        color = fs_in.color * texture(lightmap_texture, vec2(0., 1.)) * texture(terrain_texture, uvs.min + (uvs.max - uvs.min) * fract(fs_in.pos.xz));
     }
 }

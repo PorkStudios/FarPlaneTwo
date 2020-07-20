@@ -18,19 +18,8 @@
  *
  */
 
-in VS_OUT {
-    vec3 pos;
-    vec2 light;
-
-    flat vec4 color;
-    flat int state;
-    flat int cancel;
-} fs_in;
-
-out vec4 color;
-
 void main() {
-    if (fs_in.cancel != 0 || isLoaded(ivec3(floor(fs_in.pos)) >> 4)) {
+    if (shouldCancel()) {
         discard;//TODO: figure out the potential performance implications of this vs transparent output
         //color = vec4(0.);
     } else {

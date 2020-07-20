@@ -27,7 +27,7 @@ import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.client.gl.object.ElementArrayObject;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
+import net.daporkchop.fp2.client.gl.object.UniformBufferObject;
 import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
@@ -36,6 +36,8 @@ import net.daporkchop.fp2.strategy.common.IFarPiecePos;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiecePos;
+import net.daporkchop.lib.common.pool.handle.Handle;
+import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
@@ -44,8 +46,9 @@ import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.GL15;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
@@ -55,10 +58,11 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL11.glBlendFunc;
+import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL15.glBufferData;
 import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL40.*;
+import static org.lwjgl.opengl.GL31.*;
 import static org.lwjgl.opengl.GL43.*;
 import static org.lwjgl.opengl.GL45.*;
 
@@ -67,15 +71,15 @@ import static org.lwjgl.opengl.GL45.*;
  */
 @SideOnly(Side.CLIENT)
 public class HeightmapTerrainRenderer extends TerrainRenderer {
-    public static ShaderProgram HEIGHT_SHADER = ShaderManager.get("heightmap");
-    public static ShaderProgram WATER_SHADER = ShaderManager.get("heightmap_water");
+    public static ShaderProgram HEIGHT_SHADER = ShaderManager.get("heightmap/terrain");
+    public static ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
 
     public static void reloadHeightShader(boolean notify) {
         ShaderProgram shader = HEIGHT_SHADER;
         ShaderProgram shader2 = WATER_SHADER;
         try {
-            HEIGHT_SHADER = ShaderManager.get("heightmap");
-            WATER_SHADER = ShaderManager.get("heightmap_water");
+            HEIGHT_SHADER = ShaderManager.get("heightmap/terrain");
+            WATER_SHADER = ShaderManager.get("heightmap/water");
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -115,6 +119,8 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
 
     public final VertexBufferObject coords = new VertexBufferObject();
 
+    public final UniformBufferObject uniforms = new UniformBufferObject();
+
     public HeightmapTerrainRenderer(@NonNull WorldClient world) {
         {
             ShortBuffer meshData = BufferUtils.createShortBuffer(HEIGHTMAP_VERTS * HEIGHTMAP_VERTS * 6 + 1);
@@ -130,8 +136,8 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
 
         {
             IntBuffer coordsData = BufferUtils.createIntBuffer(HEIGHTMAP_VERTS * HEIGHTMAP_VERTS * 5);
-            for (int x = 0; x < HEIGHTMAP_VERTS; x++)   {
-                for (int z = 0; z < HEIGHTMAP_VERTS; z++)   {
+            for (int x = 0; x < HEIGHTMAP_VERTS; x++) {
+                for (int z = 0; z < HEIGHTMAP_VERTS; z++) {
                     coordsData.put(x).put(z)
                             .put(x & 0x3F).put(z & 0x3F)
                             .put((x & 0x3F) * HEIGHTMAP_VOXELS + (z & 0x3F));
@@ -139,11 +145,15 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
             }
             coordsData.flip();
 
-            try (VertexBufferObject coords = this.coords.bind())   {
+            try (VertexBufferObject coords = this.coords.bind()) {
                 OpenGL.checkGLError("pre upload coords");
                 glBufferData(GL_ARRAY_BUFFER, coordsData, GL_STATIC_DRAW);
                 OpenGL.checkGLError("post upload coords");
             }
+        }
+
+        try (UniformBufferObject uniforms = this.uniforms.bind()) {
+            glBufferData(GL_UNIFORM_BUFFER, 16L * 4L * 2L + 8L * 4L, GL_STATIC_DRAW);
         }
 
         this.cache = new HeightmapTerrainCache(this);
@@ -196,30 +206,30 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         GlStateManager.matrixMode(GL_MODELVIEW);
         GlStateManager.pushMatrix();
 
-        glTranslated(-this.cameraX, -this.cameraY, -this.cameraZ);
-
-        this.modelView = MatrixHelper.getMatrix(GL_MODELVIEW_MATRIX, this.modelView);
         this.proj = MatrixHelper.getMatrix(GL_PROJECTION_MATRIX, this.proj);
+        this.modelView = MatrixHelper.getMatrix(GL_MODELVIEW_MATRIX, this.modelView);
 
         mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
 
         mc.entityRenderer.enableLightmap();
 
         try {
+            try (UniformBufferObject uniforms = this.uniforms.bind()) {
+                glBufferSubData(GL_UNIFORM_BUFFER, 0L, this.proj);
+                glBufferSubData(GL_UNIFORM_BUFFER, 16L * 4L, this.modelView);
+
+                try (Handle<ByteBuffer> handle = PorkUtil.DIRECT_TINY_BUFFER_POOL.get()) {
+                    ByteBuffer buffer = handle.get();
+                    buffer.order(ByteOrder.nativeOrder()).clear();
+                    buffer.putDouble(this.cameraX).putDouble(this.cameraY).putDouble(this.cameraZ).putDouble(0.0d).clear();
+                    glBufferSubData(GL_UNIFORM_BUFFER, 16L * 4L * 2L, buffer);
+                }
+            }
+
+            this.uniforms.bindUBO(0);
+
             try (ShaderProgram shader = HEIGHT_SHADER.use()) {
-                glUniformMatrix4(shader.uniformLocation("camera_projection"), false, this.proj);
-                glUniformMatrix4(shader.uniformLocation("camera_modelview"), false, this.modelView);
-                glUniform3d(shader.uniformLocation("player_position"), this.cameraX, this.cameraY, this.cameraZ);
-
                 this.cache.render(partialTicks, mc);
-
-                /*this.pieces.forEach((pos, o) -> {
-                    glUniform2d(shader.uniformLocation("camera_offset"), pos.x() * HEIGHTMAP_VOXELS + .5d, pos.z() * HEIGHTMAP_VOXELS + .5d);
-
-                    try (VertexArrayObject vao = o.bind()) {
-                        glDrawElements(GL_TRIANGLES, meshVertexCount, GL_UNSIGNED_SHORT, 0L);
-                    }
-                });*/
             }
 
             /*try (ShaderProgram shader = WATER_SHADER.use()) {

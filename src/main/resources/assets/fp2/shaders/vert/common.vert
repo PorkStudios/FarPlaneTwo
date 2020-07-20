@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-$today.year DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,51 +18,30 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.object;
+//
+//
+// INPUTS
+//
+//
 
-import static net.daporkchop.lib.common.util.PorkUtil.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL31.*;
-import static org.lwjgl.opengl.GL43.*;
+//uniforms
+layout(std140, binding = 0) uniform CAMERA {
+    mat4 projection;
+    mat4 modelview;
 
-/**
- * @author DaPorkchop_
- */
-public abstract class GLBufferObject<T extends GLBufferObject<T>> extends GLObject<T> {
-    protected final int target = this.target();
+    dvec3 position;
+} camera;
 
-    public GLBufferObject() {
-        this(glGenBuffers());
-    }
+//
+//
+// UTILITIES
+//
+//
 
-    public GLBufferObject(int id) {
-        super(id);
-    }
+vec4 transformPoint(vec4 point)   {
+    return camera.projection * camera.modelview * point;
+}
 
-    protected abstract int target();
-
-    @Override
-    public T bind() {
-        glBindBuffer(this.target, this.id);
-        return uncheckedCast(this);
-    }
-
-    @Override
-    public void close() {
-        glBindBuffer(this.target, 0);
-    }
-
-    @Override
-    protected Runnable delete(int id) {
-        return () -> glDeleteBuffers(id);
-    }
-
-    public void bindSSBO(int index) {
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, this.id);
-    }
-
-    public void bindUBO(int index) {
-        glBindBufferBase(GL_UNIFORM_BUFFER, index, this.id);
-    }
+vec4 transformPoint(vec3 point)   {
+    return transformPoint(vec4(point, 1.));
 }

@@ -18,30 +18,23 @@
  *
  */
 
-layout(location = 0) in int height;
-layout(location = 1) in int block;
-layout(location = 2) in int biome;
-layout(location = 3) in int light;
-
-/*uniform mat4 camera_projection = mat4(1.0);
-uniform mat4 camera_modelview = mat4(1.0);*/
-
-uniform dvec2 camera_offset;
-
 uniform float seaLevel;
 
-out vec3 vert_pos;
-out vec2 vert_light;
-out flat vec4 vert_color;
-
 void main(){
-    vec2 posXZ = vec2(ivec2(gl_VertexID) / ivec2(65, 1) % 65);
-    dvec3 pos = dvec3(camera_offset.x + posXZ.x, seaLevel - .125, camera_offset.y + posXZ.y);
-    vert_pos = vec3(pos);
+    ivec2 posXZ = position_offset + in_offset_absolute;
 
-    gl_Position = camera_projection * camera_modelview * vec4(pos, 1.);
+    HEIGHTMAP_TYPE center = sampleHeightmap(posXZ);
 
-    vert_color = fromARGB(global_info.biome_watercolor[biome]);
+    dvec3 pos = dvec3(double(posXZ.x), seaLevel - .125, double(posXZ.y));
 
-    vert_light = vec2(ivec2(light) >> ivec2(0, 16) & 0xF) / 16.;
+    //give raw position to fragment shader
+    vs_out.pos = vec3(pos);
+
+    //translate vertex position
+    gl_Position = transformPoint(vec3(pos - camera.position));
+
+    //decode sky and block light
+    vs_out.light = vec2(ivec2(unpackLight(center)) >> ivec2(0, 4) & 0xF) / 16.;
+
+    vs_out.color = fromARGB(global_info.biome_watercolor[unpackBiome(center)]);
 }

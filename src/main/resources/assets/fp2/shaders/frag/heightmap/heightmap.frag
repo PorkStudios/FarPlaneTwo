@@ -18,5 +18,41 @@
  *
  */
 
+//
+//
+// INPUTS
+//
+//
+
+//textures
 layout(binding = 0) uniform sampler2D terrain_texture;
 layout(binding = 1) uniform sampler2D lightmap_texture;
+
+//vertex shader inputs
+in VS_OUT {
+    vec3 pos;
+    vec2 light;
+
+    flat vec4 color;
+    flat int state;
+    flat int cancel;
+} fs_in;
+
+//
+//
+// OUTPUTS
+//
+//
+
+out vec4 color;
+
+//
+//
+// UTILITIES
+//
+//
+
+bool shouldCancel() {
+    //return fs_in.cancel < 0 || isChunkSectionRenderable(ivec3(floor(fs_in.pos)) >> 4);
+    return fs_in.cancel != 0;
+}

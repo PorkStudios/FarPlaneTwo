@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.client.gl.object;
 
-import static net.minecraft.client.renderer.OpenGlHelper.*;
+import static org.lwjgl.opengl.GL15.*;
 
 /**
  * @author DaPorkchop_

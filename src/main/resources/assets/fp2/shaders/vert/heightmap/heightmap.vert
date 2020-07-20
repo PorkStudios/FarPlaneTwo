@@ -20,12 +20,108 @@
 
 #define HEIGHTMAP_TYPE ivec4
 
+//
+//
+// INPUTS
+//
+//
+
+//vertex attributes
 layout(location = 0) in ivec2 in_offset_absolute;
 layout(location = 1) in ivec2 in_offset_chunk;
 layout(location = 2) in int in_vertexID_chunk;
 
-uniform mat4 camera_projection = mat4(1.0);
-uniform mat4 camera_modelview = mat4(1.0);
-
+//uniforms
 uniform ivec2 position_offset;
-uniform dvec3 player_position;
+
+//
+//
+// OUTPUTS
+//
+//
+
+out VS_OUT {
+    vec3 pos;
+    vec2 light;
+
+    flat vec4 color;
+    flat int state;
+    flat int cancel;
+} vs_out;
+
+//
+//
+// DATA ACCESS
+//
+//
+
+//tile index
+layout(shared, binding = 2) buffer TILE_INDEX {
+    ivec2 base;
+    ivec2 size;
+    int data[];
+} tile_index;
+
+int loadedTileIndex(ivec2 chunk)  {
+    chunk -= tile_index.base;
+    if (any(lessThan(chunk, ivec2(0))) || any(greaterThanEqual(chunk, tile_index.size)))    {
+        return -1;
+    }
+    int index = chunk.x * tile_index.size.y + chunk.y;
+    return tile_index.data[index];
+}
+
+//tile data
+layout(shared, binding = 3) buffer TILE_DATA {
+    HEIGHTMAP_TYPE data[][64 * 64];
+} tile_data;
+
+HEIGHTMAP_TYPE sampleHeightmap(ivec2 pos)   {
+    int tileIndex = loadedTileIndex(pos >> 6);
+    if (tileIndex >= 0)  {
+        vs_out.cancel = 0;
+        return tile_data.data[tileIndex][in_vertexID_chunk];
+    } else {
+        return HEIGHTMAP_TYPE(0);
+    }
+}
+
+//
+//
+// UTILITIES
+//
+//
+
+//heightmap data unpacking
+
+int unpackHeight(HEIGHTMAP_TYPE p)  {
+    return p.x;
+}
+
+int unpackBlock(HEIGHTMAP_TYPE p)   {
+    return p.y;
+}
+
+int unpackBiome(HEIGHTMAP_TYPE p)   {
+    return p.z & 0x3F;
+}
+
+int unpackLight(HEIGHTMAP_TYPE p)   {
+    return (p.z >> 6) & 0xFF;
+}
+
+int unpackFlags(HEIGHTMAP_TYPE p)    {
+    return p.z >> 14;
+}
+
+bool isGrass(int flags) {
+    return (flags & 1) != 0;
+}
+
+bool isFoliage(int flags) {
+    return (flags & 2) != 0;
+}
+
+bool isWater(int flags) {
+    return (flags & 4) != 0;
+}

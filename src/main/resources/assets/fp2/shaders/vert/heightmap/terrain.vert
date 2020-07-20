@@ -18,108 +18,20 @@
  *
  */
 
-out VS_OUT {
-    vec3 pos;
-    vec2 light;
-
-    flat vec4 color;
-    flat int state;
-    flat int cancel;
-} vs_out;
-
-/*struct HeightmapData {
-    int height;
-    int block;
-    int biome;
-    int light;
-    int flags;
-};
-
-HeightmapData unpackData(ivec3 p)  {
-    HeightmapData data;
-    data.height = p.x;
-    data.block = p.y;
-    data.biome = p.z & 0x3F;
-    data.light = (p.z >> 6) & 0xFF;
-    data.flags = p.z >> 14;
-    return data;
-}*/
-
-int unpackHeight(HEIGHTMAP_TYPE p)  {
-    return p.x;
-}
-
-int unpackBlock(HEIGHTMAP_TYPE p)   {
-    return p.y;
-}
-
-int unpackBiome(HEIGHTMAP_TYPE p)   {
-    return p.z & 0x3F;
-}
-
-int unpackLight(HEIGHTMAP_TYPE p)   {
-    return (p.z >> 6) & 0xFF;
-}
-
-int unpackFlags(HEIGHTMAP_TYPE p)    {
-    return p.z >> 14;
-}
-
-bool isGrass(int flags) {
-    return (flags & 1) != 0;
-}
-
-bool isFoliage(int flags) {
-    return (flags & 2) != 0;
-}
-
-bool isWater(int flags) {
-    return (flags & 4) != 0;
-}
-
-layout(shared, binding = 2) buffer TileIndex {
-    ivec2 base;
-    ivec2 size;
-    int data[];
-} tile_index;
-
-int tileIndex(ivec2 chunk)  {
-    chunk -= tile_index.base;
-    if (any(lessThan(chunk, ivec2(0))) || any(greaterThanEqual(chunk, tile_index.size)))    {
-        return -1;
-    }
-    int index = chunk.x * tile_index.size.y + chunk.y;
-    return tile_index.data[index];
-}
-
-layout(shared, binding = 3) buffer TileData {
-    HEIGHTMAP_TYPE data[][64 * 64];
-} tile_data;
-
 void main(){
-    //ivec2 posXZ = position_offset + (ivec2(gl_VertexID) / ivec2(65, 1) % 65);
     ivec2 posXZ = position_offset + in_offset_absolute;
 
-    int tile_Index = tileIndex(posXZ >> 6);
-    if (tile_Index < 0)  {
-        vs_out.cancel = 1;
-    } else {
-        vs_out.cancel = 0;
-    }
-
-    //HeightmapData center = unpackData(center_in);
-    //ivec3 center = tile_data.slots[tile_Index][0];
-    int blockIndex = in_vertexID_chunk;
-    HEIGHTMAP_TYPE center = tile_data.data[tile_Index][blockIndex];
+    HEIGHTMAP_TYPE center = sampleHeightmap(posXZ);
 
     dvec3 pos = dvec3(double(posXZ.x), double(unpackHeight(center)) + .5, double(posXZ.y));
+
     //give raw position to fragment shader
     vs_out.pos = vec3(pos);
 
     //translate vertex position
-    gl_Position = camera_projection * camera_modelview * vec4(pos, 1.);
+    gl_Position = transformPoint(vec3(pos - camera.position));
 
-    //decode block and sky light
+    //decode sky and block light
     vs_out.light = vec2(ivec2(unpackLight(center)) >> ivec2(0, 4) & 0xF) / 16.;
 
     //store block state

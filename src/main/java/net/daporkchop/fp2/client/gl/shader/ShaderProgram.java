@@ -22,6 +22,7 @@ package net.daporkchop.fp2.client.gl.shader;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.minecraft.client.Minecraft;
 
@@ -32,10 +33,12 @@ import static org.lwjgl.opengl.GL20.*;
  *
  * @author DaPorkchop_
  */
+@Getter
+@Accessors(fluent = true)
 public final class ShaderProgram implements AutoCloseable {
-    @Getter
     protected final String name;
     protected final Shader vertex;
+    protected final Shader geometry;
     protected final Shader fragment;
     protected final int id;
 
@@ -70,6 +73,7 @@ public final class ShaderProgram implements AutoCloseable {
         ShaderManager.validateProgramValidate(this.name, this.id);
 
         this.vertex = vertex;
+        this.geometry = geometry;
         this.fragment = fragment;
     }
 

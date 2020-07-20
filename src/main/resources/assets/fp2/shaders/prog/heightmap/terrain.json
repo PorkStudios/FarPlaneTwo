@@ -1,6 +1,7 @@
 {
   "vert": [
     "common.glsl",
+    "vert/common.vert",
     "vert/heightmap/heightmap.vert",
     "vert/heightmap/terrain.vert"
   ],
