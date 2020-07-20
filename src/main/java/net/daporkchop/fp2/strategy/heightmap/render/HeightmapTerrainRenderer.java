@@ -134,7 +134,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         return verts;
     }
 
-    protected final Map<HeightmapPiecePos, VertexArrayObject> pieces = new HashMap<>();
+    protected final HeightmapTerrainCache cache = new HeightmapTerrainCache();
     protected IntBuffer renderableChunksMask;
 
     public HeightmapTerrainRenderer(@NonNull WorldClient world) {
@@ -143,49 +143,13 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
     @Override
     public void receivePiece(@NonNull IFarPiece pieceIn) {
         checkArg(pieceIn instanceof HeightmapPiece, pieceIn);
-        HeightmapPiece piece = (HeightmapPiece) pieceIn;
-        Minecraft.getMinecraft().addScheduledTask(() -> {
-            try (VertexArrayObject vao = new VertexArrayObject().bind()) {
-                glEnableVertexAttribArray(0);
-                glEnableVertexAttribArray(1);
-                glEnableVertexAttribArray(2);
-                glEnableVertexAttribArray(3);
-                glEnableVertexAttribArray(4);
-
-                try (VertexBufferObject vbo = new VertexBufferObject().bind()) {
-                    glBufferData(GL_ARRAY_BUFFER, piece.data(), GL_STATIC_DRAW);
-
-                    glVertexAttribIPointer(0, 1, GL_INT, HeightmapPiece.ENTRY_SIZE, HeightmapPiece.HEIGHT_OFFSET);
-                    vao.putDependency(0, vbo);
-
-                    glVertexAttribIPointer(1, 1, GL_INT, HeightmapPiece.ENTRY_SIZE, HeightmapPiece.BLOCK_OFFSET);
-                    vao.putDependency(1, vbo);
-
-                    glVertexAttribIPointer(2, 1, GL_INT, HeightmapPiece.ENTRY_SIZE, HeightmapPiece.ATTRS_OFFSET);
-                    vao.putDependency(2, vbo);
-                }
-
-                vao.putElementArray(MESH.bind());
-
-                this.pieces.put(piece.pos(), vao);
-            } finally {
-                glDisableVertexAttribArray(0);
-                glDisableVertexAttribArray(1);
-                glDisableVertexAttribArray(2);
-                glDisableVertexAttribArray(3);
-                glDisableVertexAttribArray(4);
-
-                MESH.close();
-            }
-        });
+        this.cache.receivePiece((HeightmapPiece) pieceIn);
     }
 
     @Override
     public void unloadPiece(@NonNull IFarPiecePos pos) {
         checkArg(pos instanceof HeightmapPiecePos, pos);
-        Minecraft.getMinecraft().addScheduledTask(() -> {
-            this.pieces.remove(pos);
-        });
+        this.cache.unloadPiece((HeightmapPiecePos) pos);
     }
 
     @Override
@@ -230,16 +194,19 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
 
         try {
             try (ShaderProgram shader = HEIGHT_SHADER.use()) {
-                ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
-                ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
+                glUniformMatrix4(shader.uniformLocation("camera_projection"), false, this.proj);
+                glUniformMatrix4(shader.uniformLocation("camera_modelview"), false, this.modelView);
+                glUniform3d(shader.uniformLocation("player_position"), this.cameraX, this.cameraY, this.cameraZ);
 
-                this.pieces.forEach((pos, o) -> {
+                this.cache.render(partialTicks, mc);
+
+                /*this.pieces.forEach((pos, o) -> {
                     glUniform2d(shader.uniformLocation("camera_offset"), pos.x() * HEIGHTMAP_VOXELS + .5d, pos.z() * HEIGHTMAP_VOXELS + .5d);
 
                     try (VertexArrayObject vao = o.bind()) {
                         glDrawElements(GL_TRIANGLES, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
                     }
-                });
+                });*/
             }
 
             /*try (ShaderProgram shader = WATER_SHADER.use()) {

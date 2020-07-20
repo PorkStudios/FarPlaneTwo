@@ -68,6 +68,8 @@ public class HeightmapPiece implements IFarPiece {
     public static final int ENTRY_SIZE = ATTRS_OFFSET + ATTRS_SIZE;
     public static final int ENTRY_COUNT = HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS;
 
+    public static final int TOTAL_SIZE = ENTRY_COUNT * ENTRY_SIZE;
+
     private static int base(int x, int z) {
         checkArg(x >= 0 && x < HEIGHTMAP_VOXELS && z >= 0 && z < HEIGHTMAP_VOXELS, "coordinates out of bounds (x=%d, z=%d)", x, z);
         return (x * HEIGHTMAP_VOXELS + z) * ENTRY_SIZE;
@@ -79,7 +81,7 @@ public class HeightmapPiece implements IFarPiece {
     @Getter(AccessLevel.NONE)
     protected final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    protected final ByteBuffer data = Constants.createByteBuffer(ENTRY_COUNT * ENTRY_SIZE);
+    protected final ByteBuffer data = Constants.createByteBuffer(TOTAL_SIZE);
 
     @Getter(AccessLevel.NONE)
     protected volatile int dirty = 0;
@@ -95,7 +97,7 @@ public class HeightmapPiece implements IFarPiece {
 
     @Override
     public void write(@NonNull ByteBuf buf) {
-        buf.ensureWritable(8 + ENTRY_SIZE * ENTRY_COUNT);
+        buf.ensureWritable(8 + TOTAL_SIZE);
         buf.writeInt(this.x).writeInt(this.z);
         for (int i = 0; i < ENTRY_COUNT; i++) {
             buf.writeInt(this.data.getInt(i * ENTRY_SIZE + HEIGHT_OFFSET))

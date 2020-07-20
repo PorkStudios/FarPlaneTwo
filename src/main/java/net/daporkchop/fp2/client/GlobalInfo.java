@@ -78,7 +78,7 @@ public class GlobalInfo {
 
     public static void init() {
         try (ShaderStorageBuffer globalInfo = GLOBAL_INFO.bind()) {
-            glBufferData(GL_SHADER_STORAGE_BUFFER, TOTAL_SIZE, GL_STATIC_DRAW); //GL_DYNAMIC_DRAW
+            glBufferData(GL_SHADER_STORAGE_BUFFER, TOTAL_SIZE, GL_STATIC_DRAW);
 
             {
                 FloatBuffer buffer = Constants.createFloatBuffer(BIOME_SIZE >> 2);
