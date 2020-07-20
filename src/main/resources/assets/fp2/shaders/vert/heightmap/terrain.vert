@@ -37,7 +37,7 @@ void main(){
     //store block state
     vs_out.state = unpackBlock(center);
 
-    int biome = unpackBiome(center);
+    /*int biome = unpackBiome(center);
     if (isGrass(unpackFlags(center))) { //grass
         if (IS_SWAMP) {
             vs_out.color = fromRGB(-1. < -.1 ? 0x4C763C : 0x6A7039);
@@ -59,5 +59,7 @@ void main(){
         }
     } else {
         vs_out.color = vec4(1.);
-    }
+    }*/
+    //vs_out.color = vec4(1.);
+    vs_out.color = fromRGB(center.z);
 }

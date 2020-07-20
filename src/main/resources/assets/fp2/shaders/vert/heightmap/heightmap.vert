@@ -34,6 +34,8 @@ layout(location = 2) in int in_vertexID_chunk;
 //uniforms
 uniform ivec2 position_offset;
 
+uniform int current_layer;
+
 //
 //
 // OUTPUTS
@@ -83,14 +85,14 @@ int loadedTileIndex(ivec2 chunk)  {
 
 //tile data
 layout(shared, binding = 4) buffer TILE_DATA {
-    HEIGHTMAP_TYPE data[][HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS];
+    HEIGHTMAP_TYPE data[][HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS][2];
 } tile_data;
 
 HEIGHTMAP_TYPE sampleHeightmap(ivec2 pos)   {
     int tileIndex = loadedTileIndex(pos >> HEIGHTMAP_SHIFT);
     if (tileIndex >= 0)  {
         vs_out.cancel = 0;
-        return tile_data.data[tileIndex][in_vertexID_chunk];
+        return tile_data.data[tileIndex][in_vertexID_chunk][current_layer];
     } else {
         vs_out.cancel = 1;
         return HEIGHTMAP_TYPE(0);
@@ -110,7 +112,7 @@ int unpackHeight(HEIGHTMAP_TYPE p)  {
 }
 
 int unpackBlock(HEIGHTMAP_TYPE p)   {
-    return p.y;
+    return p.y & 0xFFFFFF;
 }
 
 int unpackBiome(HEIGHTMAP_TYPE p)   {
@@ -118,11 +120,11 @@ int unpackBiome(HEIGHTMAP_TYPE p)   {
 }
 
 int unpackLight(HEIGHTMAP_TYPE p)   {
-    return (p.z >> 6) & 0xFF;
+    return p.y >> 24;
 }
 
 int unpackFlags(HEIGHTMAP_TYPE p)    {
-    return p.z >> 14;
+    return p.z >> 6;
 }
 
 bool isGrass(int flags) {

@@ -35,15 +35,22 @@ import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiecePos;
+import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.daporkchop.lib.common.misc.string.PStrings;
+import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.math.BlockPos;
 
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.BitSet;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
+import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.strategy.heightmap.render.HeightmapTerrainRenderer.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -117,28 +124,85 @@ public class HeightmapTerrainCache {
             this.dataSize <<= 1;
             try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
                 //grow data SSBO
-                OpenGL.checkGLError("pre grow data buffer");
 
-                long size = this.dataSize * (long) HeightmapPiece.TOTAL_SIZE;
+                long size = this.dataSize * (long) HeightmapPiece.TOTAL_SIZE * 2;
                 FP2.LOGGER.info(PStrings.fastFormat("Growing data SSBO to %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
 
-                glBufferData(GL_SHADER_STORAGE_BUFFER, this.dataSize * (long) HeightmapPiece.TOTAL_SIZE, GL_STATIC_DRAW);
-                OpenGL.checkGLError("post grow data buffer");
+                //ByteBuf buffer = PooledByteBufAllocator.DEFAULT.directBuffer((int) size >> 1).writerIndex((int) size >> 1);
+                ByteBuffer buf = Constants.createByteBuffer((this.dataSize >> 1) * HeightmapPiece.TOTAL_SIZE * 2);
+                try {
+                    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0L, buf);
 
-                //re-upload tiles
-                this.tiles.forEach((pos, tile) -> {
-                    if (tile.slot >= 0) {
-                        OpenGL.checkGLError("pre re-upload tile data");
-                        glBufferSubData(GL_SHADER_STORAGE_BUFFER, tile.slot * (long) HeightmapPiece.TOTAL_SIZE, tile.piece.data());
-                        OpenGL.checkGLError("post re-upload tile data");
-                    }
-                });
+                    glBufferData(GL_SHADER_STORAGE_BUFFER, this.dataSize * (long) HeightmapPiece.TOTAL_SIZE * 2, GL_STATIC_DRAW);
+
+                    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0L, buf);
+                } finally {
+                    //buffer.release();
+                }
             }
         }
         return slot;
     }
 
     public void receivePiece(@NonNull HeightmapPiece piece) {
+        CompletableFuture.supplyAsync(() -> {
+            ByteBuf buffer = PooledByteBufAllocator.DEFAULT.directBuffer(HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS * 4 * 4 * 2)
+                    .order(ByteOrder.nativeOrder());
+
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
+            for (int x = 0; x < HEIGHTMAP_VOXELS; x++) {
+                for (int z = 0; z < HEIGHTMAP_VOXELS; z++) {
+                    int height = piece.height(x, z);
+                    int block = piece.block(x, z);
+
+                    pos.setPos(piece.x() * HEIGHTMAP_VOXELS + x, height, piece.z() * HEIGHTMAP_VOXELS + z);
+
+                    buffer.writeInt(height)
+                            .writeInt((piece.light(x, z) << 24) | block)
+                            .writeInt(Minecraft.getMinecraft().getBlockColors().colorMultiplier(Block.getStateById(block), piece, pos, 0))
+                            .writeInt(0);
+
+                    height = piece.height2(x, z);
+                    block = piece.block2(x, z);
+
+                    pos.setY(height);
+
+                    buffer.writeInt(height)
+                            .writeInt((piece.light2(x, z) << 24) | block)
+                            .writeInt(Minecraft.getMinecraft().getBlockColors().colorMultiplier(Block.getStateById(block), piece, pos, 0))
+                            .writeInt(0);
+                }
+            }
+            return buffer;
+        }, RENDER_WORKERS)
+                .thenAcceptAsync(buffer -> {
+                    try {
+                        this.tiles.compute(piece.pos(), (p, tile) -> {
+                            if (tile == null) {
+                                tile = new Tile(piece);
+                            } else {
+                                tile.piece(piece);
+                            }
+                            if (tile.slot < 0) {
+                                tile.slot(this.allocateSlot());
+                            }
+
+                            try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
+                                glBufferSubData(GL_SHADER_STORAGE_BUFFER, tile.slot * (long) HeightmapPiece.TOTAL_SIZE * 2, buffer.nioBuffer());
+                            }
+
+                            return tile;
+                        });
+                    } finally {
+                        buffer.release();
+                    }
+                }, ClientThreadExecutor.INSTANCE);
+
+        if (true) {
+            return;
+        }
+
         Minecraft.getMinecraft().addScheduledTask(() -> {
             this.tiles.compute(piece.pos(), (p, tile) -> {
                 if (tile == null) {
@@ -209,6 +273,10 @@ public class HeightmapTerrainCache {
 
         try (VertexArrayObject vao = this.vao.bind()) {
             try (ShaderProgram shader = TERRAIN_SHADER.use()) {
+                glUniform1i(shader.uniformLocation("current_layer"), 0);
+                glDrawElementsInstanced(GL_TRIANGLES, this.renderer.meshVertexCount, GL_UNSIGNED_SHORT, 0L, positions);
+
+                glUniform1i(shader.uniformLocation("current_layer"), 1);
                 glDrawElementsInstanced(GL_TRIANGLES, this.renderer.meshVertexCount, GL_UNSIGNED_SHORT, 0L, positions);
             }
             try (ShaderProgram shader = WATER_SHADER.use()) {

@@ -54,21 +54,43 @@ public class VanillaHeightmapGenerator implements HeightmapGenerator {
         int pieceX = piece.x();
         int pieceZ = piece.z();
         world.prefetch(new AxisAlignedBB(
-                pieceX * HEIGHTMAP_VOXELS, 0, pieceZ * HEIGHTMAP_VOXELS,
-                (pieceX + 1) * HEIGHTMAP_VOXELS - 1, 0, (pieceZ + 1) * HEIGHTMAP_VOXELS - 1), true);
+                pieceX * HEIGHTMAP_VOXELS - 1, 0, pieceZ * HEIGHTMAP_VOXELS - 1,
+                (pieceX + 1) * HEIGHTMAP_VOXELS, 0, (pieceZ + 1) * HEIGHTMAP_VOXELS), true);
+
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
         for (int x = 0; x < HEIGHTMAP_VOXELS; x++) {
             for (int z = 0; z < HEIGHTMAP_VOXELS; z++) {
-                int height = world.getTopBlockY(pieceX * HEIGHTMAP_VOXELS + x, pieceZ * HEIGHTMAP_VOXELS + z);
-                BlockPos pos = new BlockPos(pieceX * HEIGHTMAP_VOXELS + x, height, pieceZ * HEIGHTMAP_VOXELS + z);
-                IBlockState state = world.getBlockState(pos);
+                int height2 = world.getTopBlockY(pieceX * HEIGHTMAP_VOXELS + x, pieceZ * HEIGHTMAP_VOXELS + z);
+                pos.setPos(pieceX * HEIGHTMAP_VOXELS + x, height2, pieceZ * HEIGHTMAP_VOXELS + z);
 
-                while (height <= 63 && state.getMaterial() == Material.WATER) {
-                    pos = new BlockPos(pos.getX(), --height, pos.getZ());
+                IBlockState state2 = world.getBlockState(pos);
+
+                while (state2.getMaterial().isLiquid()) {
+                    pos.setY(--height2);
+                    state2 = world.getBlockState(pos);
+                }
+
+                int light2 = world.getCombinedLight(pos.add(0, 1, 0), 0);
+
+                int height = height2;
+                IBlockState state = state2;
+
+                while (!state.getMaterial().isOpaque()) {
+                    pos.setY(--height);
                     state = world.getBlockState(pos);
                 }
 
-                Biome biome = world.getBiome(pos);
-                piece.set(x, z, height, state, biome, world.getCombinedLight(pos.add(0, 1, 0), 0));
+                int light = world.getCombinedLight(pos.add(0, 1, 0), 0);
+
+                piece.set(x, z, height, state, light, height2, state2, light2);
+            }
+        }
+
+        for (int x = -1; x <= HEIGHTMAP_VOXELS; x++) {
+            for (int z = -1; z <= HEIGHTMAP_VOXELS; z++) {
+                pos.setPos(pieceX * HEIGHTMAP_VOXELS + x, 0, pieceZ * HEIGHTMAP_VOXELS + z);
+                piece.setBiome(x, z, world.getBiome(pos));
             }
         }
     }

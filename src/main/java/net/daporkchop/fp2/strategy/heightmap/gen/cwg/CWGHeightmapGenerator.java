@@ -61,7 +61,7 @@ public class CWGHeightmapGenerator extends CCHeightmapGenerator {
 
         CWGContext ctx = this.ctx.get();
         Biome[] biomes = ctx.biomeCache
-                = ctx.biomeProvider().getBiomes(ctx.biomeCache, pieceX * HEIGHTMAP_VOXELS, pieceZ * HEIGHTMAP_VOXELS, HEIGHTMAP_VOXELS, HEIGHTMAP_VOXELS, false);
+                = ctx.biomeProvider().getBiomes(ctx.biomeCache, pieceX * HEIGHTMAP_VOXELS - 1, pieceZ * HEIGHTMAP_VOXELS - 1, HEIGHTMAP_VOXELS + 2, HEIGHTMAP_VOXELS + 2, false);
 
         for (int x = 0; x < HEIGHTMAP_VOXELS; x++) {
             for (int z = 0; z < HEIGHTMAP_VOXELS; z++) {
@@ -76,7 +76,7 @@ public class CWGHeightmapGenerator extends CCHeightmapGenerator {
                 double dz = ctx.terrainBuilder().get(blockX, height, blockZ + 1) - density;
 
                 //Biome biome = ctx.biomeSource().getBiome(blockX, height, blockZ).getBiome();
-                Biome biome = biomes[z * HEIGHTMAP_VOXELS + x];
+                Biome biome = biomes[(z + 1) * (HEIGHTMAP_VOXELS + 2) + x + 1];
 
                 IBlockState state = Blocks.AIR.getDefaultState();
                 List<IBiomeBlockReplacer> replacers = ctx.biomeBlockReplacers().get(biome);
@@ -84,7 +84,13 @@ public class CWGHeightmapGenerator extends CCHeightmapGenerator {
                     state = replacers.get(i).getReplacedBlock(state, blockX, height, blockZ, dx, dy, dz, density);
                 }
 
-                piece.set(x, z, height, state, biome, (height < this.seaLevel ? max(15 - (this.seaLevel - height) * 3, 0) : 15) << 20);
+                piece.set(x, z, height, state, (height < this.seaLevel ? max(15 - (this.seaLevel - height) * 3, 0) : 15) << 20);
+            }
+        }
+
+        for (int x = 0; x < HEIGHTMAP_VOXELS + 2; x++) {
+            for (int z = 0; z < HEIGHTMAP_VOXELS + 2; z++) {
+                piece.setBiome(x - 1, z - 1, biomes[z * (HEIGHTMAP_VOXELS + 2) + x]);
             }
         }
     }

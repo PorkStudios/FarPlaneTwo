@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-$today.year DaPorkchop_
+ * Copyright (c) 2020-2020 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,14 +18,35 @@
  *
  */
 
-void main() {
-    if (shouldCancel()) {
-        discard;//TODO: figure out the potential performance implications of this vs transparent output
-        //color = vec4(0.);
-    } else {
-        TextureUV uvs = global_info.tex_uvs[fs_in.state];
-        vec4 textured_color = fs_in.color * texture(terrain_texture, uvs.min + (uvs.max - uvs.min) * fract(fs_in.pos.xz));
-        //textured_color.a = 1.;
-        color = texture(lightmap_texture, fs_in.light) * textured_color;
+package net.daporkchop.fp2.util.threading;
+
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.client.Minecraft;
+import net.minecraftforge.common.WorldWorkerManager;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
+
+import java.util.ArrayDeque;
+import java.util.Queue;
+import java.util.concurrent.Executor;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
+
+/**
+ * An {@link Executor} which executes submitted tasks on the client thread.
+ *
+ * @author DaPorkchop_
+ */
+@SideOnly(Side.CLIENT)
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public final class ClientThreadExecutor implements Executor {
+    public static final ClientThreadExecutor INSTANCE = new ClientThreadExecutor();
+
+    @Override
+    public void execute(Runnable command) {
+        Minecraft.getMinecraft().addScheduledTask(command);
     }
 }
