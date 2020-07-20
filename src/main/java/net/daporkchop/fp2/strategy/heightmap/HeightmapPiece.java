@@ -32,7 +32,6 @@ import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.MapColor;
-import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.world.biome.Biome;
 
@@ -65,7 +64,10 @@ public class HeightmapPiece implements IFarPiece {
     public static final int ATTRS_SIZE = 4;
     public static final int ATTRS_OFFSET = BLOCK_OFFSET + BLOCK_SIZE;
 
-    public static final int ENTRY_SIZE = ATTRS_OFFSET + ATTRS_SIZE;
+    public static final int PADDING_SIZE = 4;
+    public static final int PADDING_OFFSET = ATTRS_OFFSET + ATTRS_SIZE;
+
+    public static final int ENTRY_SIZE = PADDING_OFFSET + PADDING_SIZE;
     public static final int ENTRY_COUNT = HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS;
 
     public static final int TOTAL_SIZE = ENTRY_COUNT * ENTRY_SIZE;
@@ -91,7 +93,8 @@ public class HeightmapPiece implements IFarPiece {
         for (int i = 0; i < ENTRY_COUNT; i++) {
             this.data.putInt(i * ENTRY_SIZE + HEIGHT_OFFSET, buf.readInt())
                     .putInt(i * ENTRY_SIZE + BLOCK_OFFSET, buf.readInt())
-                    .putInt(i * ENTRY_SIZE + ATTRS_OFFSET, buf.readInt());
+                    .putInt(i * ENTRY_SIZE + ATTRS_OFFSET, buf.readInt())
+                    .putInt(i * ENTRY_SIZE + PADDING_OFFSET, buf.readInt());
         }
     }
 
@@ -102,7 +105,8 @@ public class HeightmapPiece implements IFarPiece {
         for (int i = 0; i < ENTRY_COUNT; i++) {
             buf.writeInt(this.data.getInt(i * ENTRY_SIZE + HEIGHT_OFFSET))
                     .writeInt(this.data.getInt(i * ENTRY_SIZE + BLOCK_OFFSET))
-                    .writeInt(this.data.getInt(i * ENTRY_SIZE + ATTRS_OFFSET));
+                    .writeInt(this.data.getInt(i * ENTRY_SIZE + ATTRS_OFFSET))
+                    .writeInt(this.data.getInt(i * ENTRY_SIZE + PADDING_OFFSET));
         }
     }
 
@@ -120,7 +124,7 @@ public class HeightmapPiece implements IFarPiece {
     }
 
     public int attrs(int x, int z) {
-        return this.data.get(base(x, z) + ATTRS_OFFSET) & 0xFF;
+        return this.data.getInt(base(x, z) + ATTRS_OFFSET);
     }
 
     public HeightmapPiece set(int x, int z, int height, IBlockState state, Biome biome, int combinedLight) {
@@ -138,7 +142,8 @@ public class HeightmapPiece implements IFarPiece {
 
         this.data.putInt(base + HEIGHT_OFFSET, height)
                 .putInt(base + BLOCK_OFFSET, Block.getStateId(state))
-                .putInt(base + ATTRS_OFFSET, attrs);
+                .putInt(base + ATTRS_OFFSET, attrs)
+                .putInt(base + PADDING_OFFSET, 0);
         this.markDirty();
         return this;
     }

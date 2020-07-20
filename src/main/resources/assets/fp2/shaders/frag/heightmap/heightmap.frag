@@ -20,22 +20,3 @@
 
 layout(binding = 0) uniform sampler2D terrain_texture;
 layout(binding = 1) uniform sampler2D lightmap_texture;
-
-out vec4 color;
-
-in vec3 vert_pos;
-in vec2 vert_light;
-in flat vec4 vert_color;
-in flat int vert_state;
-
-void main() {
-    if (isLoaded(ivec3(floor(vert_pos)) >> 4)) {
-        discard;//TODO: figure out the potential performance implications of this vs transparent output
-        //color = vec4(0.);
-    } else {
-        TextureUV uvs = global_info.tex_uvs[vert_state];
-        vec4 textured_color = vert_color * texture(terrain_texture, uvs.min + (uvs.max - uvs.min) * fract(vert_pos.xz));
-        textured_color.a = 1.;
-        color = texture(lightmap_texture, vert_light) * textured_color;
-    }
-}

@@ -37,7 +37,6 @@ import java.util.Arrays;
 import java.util.stream.StreamSupport;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static org.lwjgl.opengl.ARBShaderObjects.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 
@@ -121,6 +120,6 @@ public class ShaderManager {
 
     public void reload() {
         //TODO: actually reload all shaders rather than doing it manually
-        HeightmapTerrainRenderer.reloadHeightShader();
+        HeightmapTerrainRenderer.reloadHeightShader(true);
     }
 }

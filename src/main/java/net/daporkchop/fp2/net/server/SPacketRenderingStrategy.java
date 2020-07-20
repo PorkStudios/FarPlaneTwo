@@ -54,7 +54,7 @@ public class SPacketRenderingStrategy implements IMessage {
     public static class Handler implements IMessageHandler<SPacketRenderingStrategy, IMessage> {
         @Override
         public IMessage onMessage(SPacketRenderingStrategy message, MessageContext ctx) {
-            ((IFarContext) ctx.getClientHandler().world).fp2_init(message.strategy);
+            ctx.getClientHandler().client.addScheduledTask(() -> ((IFarContext) ctx.getClientHandler().world).fp2_init(message.strategy));
             return null;
         }
     }

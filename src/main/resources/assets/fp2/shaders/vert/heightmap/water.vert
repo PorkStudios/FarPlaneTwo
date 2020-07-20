@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-$today.year DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,27 +18,30 @@
  *
  */
 
-package net.daporkchop.fp2.client;
+layout(location = 0) in int height;
+layout(location = 1) in int block;
+layout(location = 2) in int biome;
+layout(location = 3) in int light;
 
-import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.Config;
-import net.minecraft.client.settings.KeyBinding;
-import net.minecraftforge.fml.client.registry.ClientRegistry;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-import org.lwjgl.input.Keyboard;
+/*uniform mat4 camera_projection = mat4(1.0);
+uniform mat4 camera_modelview = mat4(1.0);*/
 
-/**
- * @author DaPorkchop_
- */
-@SideOnly(Side.CLIENT)
-@UtilityClass
-public class KeyBindings {
-    public final KeyBinding RELOAD_SHADERS = new KeyBinding("key.fp2.debug.reloadShaders", Keyboard.KEY_0, "key.categories.fp2.debug");
+uniform dvec2 camera_offset;
 
-    void register() {
-        if (Config.debug.debug)   {
-            ClientRegistry.registerKeyBinding(RELOAD_SHADERS);
-        }
-    }
+uniform float seaLevel;
+
+out vec3 vert_pos;
+out vec2 vert_light;
+out flat vec4 vert_color;
+
+void main(){
+    vec2 posXZ = vec2(ivec2(gl_VertexID) / ivec2(65, 1) % 65);
+    dvec3 pos = dvec3(camera_offset.x + posXZ.x, seaLevel - .125, camera_offset.y + posXZ.y);
+    vert_pos = vec3(pos);
+
+    gl_Position = camera_projection * camera_modelview * vec4(pos, 1.);
+
+    vert_color = fromARGB(global_info.biome_watercolor[biome]);
+
+    vert_light = vec2(ivec2(light) >> ivec2(0, 16) & 0xF) / 16.;
 }

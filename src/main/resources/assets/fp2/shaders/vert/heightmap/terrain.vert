@@ -18,19 +18,14 @@
  *
  */
 
-layout(location = 0) in ivec3 center_in;
-layout(location = 1) in ivec3 detail_in[4];
+out VS_OUT {
+    vec3 pos;
+    vec2 light;
 
-uniform mat4 camera_projection = mat4(1.0);
-uniform mat4 camera_modelview = mat4(1.0);
-
-uniform ivec2 position_offset;
-uniform dvec3 player_position;
-
-out vec3 vert_pos;
-out vec2 vert_light;
-out flat vec4 vert_color;
-out flat int vert_state;
+    flat vec4 color;
+    flat int state;
+    flat int cancel;
+} vs_out;
 
 /*struct HeightmapData {
     int height;
@@ -50,24 +45,24 @@ HeightmapData unpackData(ivec3 p)  {
     return data;
 }*/
 
-int unpackHeight(in ivec3 p)  {
+int unpackHeight(HEIGHTMAP_TYPE p)  {
     return p.x;
 }
 
-int unpackBlock(in ivec3 p)   {
+int unpackBlock(HEIGHTMAP_TYPE p)   {
     return p.y;
 }
 
-int unpackBiome(in ivec3 p)   {
+int unpackBiome(HEIGHTMAP_TYPE p)   {
     return p.z & 0x3F;
 }
 
-int unpackLight(in ivec3 p)   {
+int unpackLight(HEIGHTMAP_TYPE p)   {
     return (p.z >> 6) & 0xFF;
 }
 
-int unpackFlags(in ivec3 p)    {
-    return p.z >> 4;
+int unpackFlags(HEIGHTMAP_TYPE p)    {
+    return p.z >> 14;
 }
 
 bool isGrass(int flags) {
@@ -98,49 +93,59 @@ int tileIndex(ivec2 chunk)  {
 }
 
 layout(shared, binding = 3) buffer TileData {
-    ivec3 slots[][64 * 64];
+    HEIGHTMAP_TYPE data[][64 * 64];
 } tile_data;
 
 void main(){
-    ivec2 posXZ = position_offset + (ivec2(gl_VertexID) / ivec2(65, 1) % 65);
+    //ivec2 posXZ = position_offset + (ivec2(gl_VertexID) / ivec2(65, 1) % 65);
+    ivec2 posXZ = position_offset + in_offset_absolute;
 
     int tile_Index = tileIndex(posXZ >> 6);
     if (tile_Index < 0)  {
-        return;
+        vs_out.cancel = 1;
+    } else {
+        vs_out.cancel = 0;
     }
 
     //HeightmapData center = unpackData(center_in);
-    ivec3 center = tile_data[tile_Index][gl_VertexID];
+    //ivec3 center = tile_data.slots[tile_Index][0];
+    int blockIndex = in_vertexID_chunk;
+    HEIGHTMAP_TYPE center = tile_data.data[tile_Index][blockIndex];
 
     dvec3 pos = dvec3(double(posXZ.x), double(unpackHeight(center)) + .5, double(posXZ.y));
-    vert_pos = vec3(pos);
+    //give raw position to fragment shader
+    vs_out.pos = vec3(pos);
 
+    //translate vertex position
     gl_Position = camera_projection * camera_modelview * vec4(pos, 1.);
 
-    vert_light = vec2(ivec2(unpackLight(center)) >> ivec2(0, 4) & 0xF) / 16.;
-    vert_state = unpackBlock(center);
+    //decode block and sky light
+    vs_out.light = vec2(ivec2(unpackLight(center)) >> ivec2(0, 4) & 0xF) / 16.;
+
+    //store block state
+    vs_out.state = unpackBlock(center);
 
     int biome = unpackBiome(center);
     if (isGrass(unpackFlags(center))) { //grass
         if (IS_SWAMP) {
-            vert_color = fromRGB(-1. < -.1 ? 5011004 : 6975545);
+            vs_out.color = fromRGB(-1. < -.1 ? 0x4C763C : 0x6A7039);
         } else if (IS_ROOFED_FOREST)    {
             vec4 original = getGrassColorAtPos(pos, biome);
-            vert_color = vec4(((original + fromARGB(0x0028340A)) * .5).rgb, original.a);
+            vs_out.color = vec4(((original + fromARGB(0x0028340A)) * .5).rgb, original.a);
         } else if (IS_MESA) {
-            vert_color = fromRGB(9470285);
+            vs_out.color = fromRGB(0x90814D);
         } else {
-            vert_color = getGrassColorAtPos(pos, biome);
+            vs_out.color = getGrassColorAtPos(pos, biome);
         }
     } else if (isFoliage(unpackFlags(center)))  { //foliage
         if (IS_SWAMP) {
-            vert_color = fromRGB(6975545);
+            vs_out.color = fromRGB(0x6A7039);
         } else if (IS_MESA) {
-            vert_color = fromRGB(10387789);
+            vs_out.color = fromRGB(0x9E814D);
         } else {
-            vert_color = getFoliageColorAtPos(pos, biome);
+            vs_out.color = getFoliageColorAtPos(pos, biome);
         }
     } else {
-        vert_color = vec4(1.);
+        vs_out.color = vec4(1.);
     }
 }

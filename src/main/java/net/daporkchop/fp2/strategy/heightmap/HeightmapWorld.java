@@ -26,6 +26,7 @@ import io.netty.buffer.PooledByteBufAllocator;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
+import net.daporkchop.fp2.Config;
 import net.daporkchop.fp2.strategy.RenderStrategy;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPiecePos;
@@ -141,7 +142,7 @@ public class HeightmapWorld implements IFarWorld {
             IO_WORKERS.submit(() -> {
                 //load piece if possible
                 try {
-                    if (Files.exists(cachePath) && Files.isRegularFile(cachePath)) {
+                    if (!Config.debug.disablePersistence && Files.exists(cachePath) && Files.isRegularFile(cachePath)) {
                         try (FileChannel channel = FileChannel.open(cachePath, StandardOpenOption.READ)) {
                             ByteBuf input = PUnpooled.wrap(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()), true);
                             if (input.readableBytes() >= 8 && input.readInt() == HEIGHTMAP_STORAGE_VERSION) {
@@ -183,7 +184,7 @@ public class HeightmapWorld implements IFarWorld {
     }
 
     protected void savePiece(@NonNull HeightmapPiece piece) {
-        if (true || !piece.isDirty()) {
+        if (Config.debug.disablePersistence || !piece.isDirty()) {
             return;
         }
         IO_WORKERS.submit((IORunnable) () -> {

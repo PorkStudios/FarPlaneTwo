@@ -1,10 +1,12 @@
 {
   "vert": [
     "common.glsl",
-    "vert/heightmap_water.vert"
+    "vert/heightmap/heightmap.vert",
+    "vert/heightmap/water.vert"
   ],
   "frag": [
     "common.glsl",
-    "frag/heightmap_water.frag"
+    "frag/heightmap/heightmap.frag",
+    "frag/heightmap/water.frag"
   ]
 }

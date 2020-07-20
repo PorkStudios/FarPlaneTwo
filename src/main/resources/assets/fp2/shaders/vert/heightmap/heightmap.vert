@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-$today.year DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,27 +18,14 @@
  *
  */
 
-package net.daporkchop.fp2.client;
+#define HEIGHTMAP_TYPE ivec4
 
-import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.Config;
-import net.minecraft.client.settings.KeyBinding;
-import net.minecraftforge.fml.client.registry.ClientRegistry;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-import org.lwjgl.input.Keyboard;
+layout(location = 0) in ivec2 in_offset_absolute;
+layout(location = 1) in ivec2 in_offset_chunk;
+layout(location = 2) in int in_vertexID_chunk;
 
-/**
- * @author DaPorkchop_
- */
-@SideOnly(Side.CLIENT)
-@UtilityClass
-public class KeyBindings {
-    public final KeyBinding RELOAD_SHADERS = new KeyBinding("key.fp2.debug.reloadShaders", Keyboard.KEY_0, "key.categories.fp2.debug");
+uniform mat4 camera_projection = mat4(1.0);
+uniform mat4 camera_modelview = mat4(1.0);
 
-    void register() {
-        if (Config.debug.debug)   {
-            ClientRegistry.registerKeyBinding(RELOAD_SHADERS);
-        }
-    }
-}
+uniform ivec2 position_offset;
+uniform dvec3 player_position;

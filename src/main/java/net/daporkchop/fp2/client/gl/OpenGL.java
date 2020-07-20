@@ -18,27 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.client;
+package net.daporkchop.fp2.client.gl;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.Config;
-import net.minecraft.client.settings.KeyBinding;
-import net.minecraftforge.fml.client.registry.ClientRegistry;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-import org.lwjgl.input.Keyboard;
+import net.daporkchop.fp2.FP2;
+
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.util.glu.GLU.*;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
 @UtilityClass
-public class KeyBindings {
-    public final KeyBinding RELOAD_SHADERS = new KeyBinding("key.fp2.debug.reloadShaders", Keyboard.KEY_0, "key.categories.fp2.debug");
-
-    void register() {
-        if (Config.debug.debug)   {
-            ClientRegistry.registerKeyBinding(RELOAD_SHADERS);
+public class OpenGL {
+    public void checkGLError(String message) {
+        for (int error; (error = glGetError()) != GL_NO_ERROR; ) {
+            FP2.LOGGER.error("########## GL ERROR ##########");
+            FP2.LOGGER.error("@ {}", message);
+            FP2.LOGGER.error("{}: {}", error, gluErrorString(error));
         }
     }
 }

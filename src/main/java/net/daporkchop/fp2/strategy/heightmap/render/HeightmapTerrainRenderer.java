@@ -24,6 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.GlobalInfo;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
+import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.client.gl.object.ElementArrayObject;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
@@ -43,13 +44,10 @@ import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.ARBShaderObjects;
 import org.lwjgl.opengl.GL15;
 
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
-import java.util.HashMap;
-import java.util.Map;
 
 import static net.daporkchop.fp2.client.GlobalInfo.*;
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
@@ -57,11 +55,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL11.glBlendFunc;
-import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL15.glBufferData;
 import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.opengl.GL40.*;
 import static org.lwjgl.opengl.GL43.*;
 import static org.lwjgl.opengl.GL45.*;
@@ -74,7 +70,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
     public static ShaderProgram HEIGHT_SHADER = ShaderManager.get("heightmap");
     public static ShaderProgram WATER_SHADER = ShaderManager.get("heightmap_water");
 
-    public static void reloadHeightShader() {
+    public static void reloadHeightShader(boolean notify) {
         ShaderProgram shader = HEIGHT_SHADER;
         ShaderProgram shader2 = WATER_SHADER;
         try {
@@ -83,39 +79,16 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            if (HEIGHT_SHADER == shader || WATER_SHADER == shader2) {
-                Minecraft.getMinecraft().player.sendMessage(new TextComponentString("§cheightmap shader reload failed (check console)."));
-            } else {
-                Minecraft.getMinecraft().player.sendMessage(new TextComponentString("§aheightmap shader successfully reloaded."));
+            if (notify) {
+                if (HEIGHT_SHADER == shader || WATER_SHADER == shader2) {
+                    Minecraft.getMinecraft().player.sendMessage(new TextComponentString("§cheightmap shader reload failed (check console)."));
+                } else {
+                    Minecraft.getMinecraft().player.sendMessage(new TextComponentString("§aheightmap shader successfully reloaded."));
+                }
             }
         }
         GlobalInfo.init();
         GlobalInfo.reloadUVs();
-    }
-
-    public static final ElementArrayObject MESH = new ElementArrayObject();
-    public static final int MESH_VERTEX_COUNT;
-
-    /*static {
-        ShortBuffer meshData = BufferUtils.createShortBuffer(HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS);
-        MESH_VERTEX_COUNT = meshData.capacity();
-
-        for (int i = 0; i < MESH_VERTEX_COUNT; i++) {
-            meshData.put((short) i);
-        }
-
-        try (ElementArrayObject mesh = MESH.bind()) {
-            GL15.glBufferData(GL_ELEMENT_ARRAY_BUFFER, (ShortBuffer) meshData.flip(), GL_STATIC_DRAW);
-        }
-    }*/
-
-    static {
-        ShortBuffer meshData = BufferUtils.createShortBuffer(HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS * 6 + 1);
-        MESH_VERTEX_COUNT = genMesh(HEIGHTMAP_VOXELS, HEIGHTMAP_VOXELS, meshData);
-
-        try (ElementArrayObject mesh = MESH.bind()) {
-            GL15.glBufferData(GL_ELEMENT_ARRAY_BUFFER, (ShortBuffer) meshData.flip(), GL_STATIC_DRAW);
-        }
     }
 
     private static int genMesh(int size, int edge, ShortBuffer out) {
@@ -134,10 +107,46 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         return verts;
     }
 
-    protected final HeightmapTerrainCache cache = new HeightmapTerrainCache();
+    protected final HeightmapTerrainCache cache;
     protected IntBuffer renderableChunksMask;
 
+    public final ElementArrayObject mesh = new ElementArrayObject();
+    public final int meshVertexCount;
+
+    public final VertexBufferObject coords = new VertexBufferObject();
+
     public HeightmapTerrainRenderer(@NonNull WorldClient world) {
+        {
+            ShortBuffer meshData = BufferUtils.createShortBuffer(HEIGHTMAP_VERTS * HEIGHTMAP_VERTS * 6 + 1);
+            this.meshVertexCount = genMesh(HEIGHTMAP_VERTS, HEIGHTMAP_VERTS, meshData);
+            meshData.flip();
+
+            try (ElementArrayObject mesh = this.mesh.bind()) {
+                OpenGL.checkGLError("pre upload mesh");
+                glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshData, GL_STATIC_DRAW);
+                OpenGL.checkGLError("post upload mesh");
+            }
+        }
+
+        {
+            IntBuffer coordsData = BufferUtils.createIntBuffer(HEIGHTMAP_VERTS * HEIGHTMAP_VERTS * 5);
+            for (int x = 0; x < HEIGHTMAP_VERTS; x++)   {
+                for (int z = 0; z < HEIGHTMAP_VERTS; z++)   {
+                    coordsData.put(x).put(z)
+                            .put(x & 0x3F).put(z & 0x3F)
+                            .put((x & 0x3F) * HEIGHTMAP_VOXELS + (z & 0x3F));
+                }
+            }
+            coordsData.flip();
+
+            try (VertexBufferObject coords = this.coords.bind())   {
+                OpenGL.checkGLError("pre upload coords");
+                glBufferData(GL_ARRAY_BUFFER, coordsData, GL_STATIC_DRAW);
+                OpenGL.checkGLError("post upload coords");
+            }
+        }
+
+        this.cache = new HeightmapTerrainCache(this);
     }
 
     @Override
@@ -156,8 +165,12 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
     public void render(float partialTicks, WorldClient world, Minecraft mc) {
         super.render(partialTicks, world, mc);
 
+        OpenGL.checkGLError("pre fp2 render");
+
         try (ShaderStorageBuffer loadedBuffer = new ShaderStorageBuffer().bind()) {
+            OpenGL.checkGLError("pre upload renderable chunks mask");
             glBufferData(GL_SHADER_STORAGE_BUFFER, this.renderableChunksMask = ClientConstants.renderableChunksMask(mc, this.renderableChunksMask), GL_STATIC_DRAW);
+            OpenGL.checkGLError("post upload renderable chunks mask");
             loadedBuffer.bindSSBO(0);
         }
         GLOBAL_INFO.bindSSBO(1);
@@ -204,7 +217,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                     glUniform2d(shader.uniformLocation("camera_offset"), pos.x() * HEIGHTMAP_VOXELS + .5d, pos.z() * HEIGHTMAP_VOXELS + .5d);
 
                     try (VertexArrayObject vao = o.bind()) {
-                        glDrawElements(GL_TRIANGLES, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
+                        glDrawElements(GL_TRIANGLES, meshVertexCount, GL_UNSIGNED_SHORT, 0L);
                     }
                 });*/
             }
@@ -218,7 +231,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
                     glUniform2d(shader.uniformLocation("camera_offset"), pos.x() * HEIGHTMAP_VOXELS + .5d, pos.z() * HEIGHTMAP_VOXELS + .5d);
 
                     try (VertexArrayObject vao = o.bind()) {
-                        glDrawElements(GL_TRIANGLES, MESH_VERTEX_COUNT, GL_UNSIGNED_SHORT, 0L);
+                        glDrawElements(GL_TRIANGLES, meshVertexCount, GL_UNSIGNED_SHORT, 0L);
                     }
                 });
             }*/
@@ -240,6 +253,8 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
             GlStateManager.disableBlend();
             GlStateManager.disableAlpha();
             GlStateManager.enableCull();
+
+            OpenGL.checkGLError("post fp2 render");
         }
     }
 }

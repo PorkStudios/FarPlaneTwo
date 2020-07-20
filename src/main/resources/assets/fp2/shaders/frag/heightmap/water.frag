@@ -22,9 +22,6 @@ in vec3 vert_pos;
 in vec2 vert_light;
 in flat vec4 vert_color;
 
-layout(binding = 0) uniform sampler2D terrain_texture;
-layout(binding = 1) uniform sampler2D lightmap_texture;
-
 out vec4 color;
 
 void main() {

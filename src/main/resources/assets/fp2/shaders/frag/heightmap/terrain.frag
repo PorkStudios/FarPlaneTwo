@@ -18,30 +18,25 @@
  *
  */
 
-layout(location = 0) in int height;
-layout(location = 1) in int block;
-layout(location = 2) in int biome;
-layout(location = 3) in int light;
+in VS_OUT {
+    vec3 pos;
+    vec2 light;
 
-uniform mat4 camera_projection = mat4(1.0);
-uniform mat4 camera_modelview = mat4(1.0);
+    flat vec4 color;
+    flat int state;
+    flat int cancel;
+} fs_in;
 
-uniform dvec2 camera_offset;
+out vec4 color;
 
-uniform float seaLevel;
-
-out vec3 vert_pos;
-out vec2 vert_light;
-out flat vec4 vert_color;
-
-void main(){
-    vec2 posXZ = vec2(ivec2(gl_VertexID) / ivec2(65, 1) % 65);
-    dvec3 pos = dvec3(camera_offset.x + posXZ.x, seaLevel - .125, camera_offset.y + posXZ.y);
-    vert_pos = vec3(pos);
-
-    gl_Position = camera_projection * camera_modelview * vec4(pos, 1.);
-
-    vert_color = fromARGB(global_info.biome_watercolor[biome]);
-
-    vert_light = vec2(ivec2(light) >> ivec2(0, 16) & 0xF) / 16.;
+void main() {
+    if (fs_in.cancel != 0 || isLoaded(ivec3(floor(fs_in.pos)) >> 4)) {
+        discard;//TODO: figure out the potential performance implications of this vs transparent output
+        //color = vec4(0.);
+    } else {
+        TextureUV uvs = global_info.tex_uvs[fs_in.state];
+        vec4 textured_color = fs_in.color * texture(terrain_texture, uvs.min + (uvs.max - uvs.min) * fract(fs_in.pos.xz));
+        textured_color.a = 1.;
+        color = texture(lightmap_texture, fs_in.light) * textured_color;
+    }
 }

@@ -61,7 +61,7 @@ public class ClientProxy extends ServerProxy {
     public void postInit(FMLPostInitializationEvent event) {
         super.postInit(event);
 
-        HeightmapTerrainRenderer.MESH.id(); //load HeightmapTerrainRenderer on client thread
+        HeightmapTerrainRenderer.reloadHeightShader(false); //load HeightmapTerrainRenderer on client thread
     }
 
     @SubscribeEvent

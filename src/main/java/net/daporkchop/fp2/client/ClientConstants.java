@@ -29,7 +29,6 @@ import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.chunk.CompiledChunk;
 import net.minecraft.client.renderer.chunk.RenderChunk;
 import net.minecraft.util.math.Vec3i;
@@ -41,9 +40,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL45.*;
 
 /**
  * @author DaPorkchop_
@@ -57,7 +53,7 @@ public class ClientConstants {
         checkState(RENDER_WORKERS == null);
 
         RENDER_WORKERS = new UnorderedThreadPoolEventExecutor(
-                Config.ClientConfig.renderThreads,
+                Config.Client.renderThreads,
                 new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Rendering Thread #%d").priority(Thread.MIN_PRIORITY).build());
     }
 
