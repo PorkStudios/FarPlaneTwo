@@ -20,8 +20,7 @@
 
 void main() {
     if (shouldCancel() || isChunkSectionRenderable(ivec3(floor(fs_in.pos)) >> 4)) {
-        discard;//TODO: figure out the potential performance implications of this vs transparent output
-        //color = vec4(0.);
+        discard;
     } else {
         TextureUV uvs = global_info.tex_uvs[9];
         //color = vert_color * texture(terrain_texture, uvs.min + (uvs.max - uvs.min) * fract(vert_pos.xz));

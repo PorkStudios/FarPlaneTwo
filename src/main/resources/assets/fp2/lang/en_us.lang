@@ -1,2 +1,23 @@
+#
+# Keybinds
+#
+
 key.categories.fp2.debug=FarPlaneTwo Debug
 key.fp2.debug.reloadShaders=Reload Shaders
+
+#
+# Config options
+#
+
+config.fp2.renderStrategy=Render strategy
+config.fp2.renderDistance=Render distance
+config.fp2.generationThreads=Generation threads
+config.fp2.ioThreads=I/O Threads
+
+config.fp2.client=Client options
+config.fp2.client.renderThreads=Render threads
+config.fp2.client.heightmap=Heightmap options
+
+config.fp2.debug=Debug options
+config.fp2.debug.debug=Debug mode
+config.fp2.debug.disablePersistence=Disable persistence

@@ -35,31 +35,12 @@ void main(){
     vs_out.light = vec2(ivec2(unpackLight(center)) >> ivec2(0, 4) & 0xF) / 16.;
 
     //store block state
-    vs_out.state = unpackBlock(center);
+    int state = unpackBlock(center);
+    vs_out.state = state;
 
-    /*int biome = unpackBiome(center);
-    if (isGrass(unpackFlags(center))) { //grass
-        if (IS_SWAMP) {
-            vs_out.color = fromRGB(-1. < -.1 ? 0x4C763C : 0x6A7039);
-        } else if (IS_ROOFED_FOREST)    {
-            vec4 original = getGrassColorAtPos(pos, biome);
-            vs_out.color = vec4(((original + fromARGB(0x0028340A)) * .5).rgb, original.a);
-        } else if (IS_MESA) {
-            vs_out.color = fromRGB(0x90814D);
-        } else {
-            vs_out.color = getGrassColorAtPos(pos, biome);
-        }
-    } else if (isFoliage(unpackFlags(center)))  { //foliage
-        if (IS_SWAMP) {
-            vs_out.color = fromRGB(0x6A7039);
-        } else if (IS_MESA) {
-            vs_out.color = fromRGB(0x9E814D);
-        } else {
-            vs_out.color = getFoliageColorAtPos(pos, biome);
-        }
+    if (state != 0) {
+        vs_out.color = fromRGB(center.z);
     } else {
-        vs_out.color = vec4(1.);
-    }*/
-    //vs_out.color = vec4(1.);
-    vs_out.color = fromRGB(center.z);
+        vs_out.color = vec4(0.);
+    }
 }

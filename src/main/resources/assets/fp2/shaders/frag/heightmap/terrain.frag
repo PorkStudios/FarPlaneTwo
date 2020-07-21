@@ -20,12 +20,10 @@
 
 void main() {
     if (shouldCancel()) {
-        discard;//TODO: figure out the potential performance implications of this vs transparent output
-        //color = vec4(0.);
+        discard;
     } else {
         TextureUV uvs = global_info.tex_uvs[fs_in.state];
         vec4 textured_color = fs_in.color * texture(terrain_texture, uvs.min + (uvs.max - uvs.min) * fract(fs_in.pos.xz));
-        //textured_color.a = 1.;
         color = texture(lightmap_texture, fs_in.light) * textured_color;
     }
 }

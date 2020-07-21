@@ -107,7 +107,9 @@ public class HeightmapPiece implements IFarPiece, IBlockAccess {
     public HeightmapPiece(@NonNull ByteBuf buf) {
         this(buf.readInt(), buf.readInt());
 
-        buf.readBytes((ByteBuffer) this.biome.clear());
+        for (int i = 0; i < (HEIGHTMAP_VOXELS + 2) * (HEIGHTMAP_VOXELS + 2); i++)   {
+            this.biome.put(i, buf.readByte());
+        }
 
         for (int i = 0; i < ENTRY_COUNT * 4; i++) {
             this.data.put(i, buf.readInt());
@@ -116,8 +118,11 @@ public class HeightmapPiece implements IFarPiece, IBlockAccess {
 
     @Override
     public void write(@NonNull ByteBuf buf) {
-        buf.writeInt(this.x).writeInt(this.z)
-        .writeBytes((ByteBuffer) this.biome.clear());
+        buf.writeInt(this.x).writeInt(this.z);
+
+        for (int i = 0; i < (HEIGHTMAP_VOXELS + 2) * (HEIGHTMAP_VOXELS + 2); i++)   {
+            buf.writeByte(this.biome.get(i));
+        }
 
         for (int i = 0; i < ENTRY_COUNT * 4; i++) {
             buf.writeInt(this.data.get(i));
@@ -141,16 +146,8 @@ public class HeightmapPiece implements IFarPiece, IBlockAccess {
         return this.data.get(index(x, z) + 1) >>> 24;
     }
 
-    public int height2(int x, int z) {
-        return this.data.get(index(x, z) + 2);
-    }
-
-    public int block2(int x, int z) {
-        return this.data.get(index(x, z) + 3) & 0x00FFFFFF;
-    }
-
-    public int light2(int x, int z) {
-        return this.data.get(index(x, z) + 3) >>> 24;
+    public int biome(int x, int z)  {
+        return this.biome.get(biomeIndex(x, z)) & 0xFF;
     }
 
     public HeightmapPiece set(int x, int z, int height, IBlockState state, int light) {
@@ -160,17 +157,6 @@ public class HeightmapPiece implements IFarPiece, IBlockAccess {
                 .put(base + 1, (packCombinedLight(light) << 24) | Block.getStateId(state))
                 .put(base + 2, 0)
                 .put(base + 3, 0);
-        this.markDirty();
-        return this;
-    }
-
-    public HeightmapPiece set(int x, int z, int height, IBlockState state, int light, int height2, IBlockState state2, int light2) {
-        int base = index(x, z);
-
-        this.data.put(base + 0, height)
-                .put(base + 1, (packCombinedLight(light) << 24) | Block.getStateId(state))
-                .put(base + 2, height2)
-                .put(base + 3, (packCombinedLight(light2) << 24) | Block.getStateId(state2));
         this.markDirty();
         return this;
     }

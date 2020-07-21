@@ -35,18 +35,21 @@ public class Config {
     @net.minecraftforge.common.config.Config.Comment({
             "The strategy that will be used for rendering distant terrain."
     })
+    @net.minecraftforge.common.config.Config.LangKey("config.fp2.renderStrategy")
     @net.minecraftforge.common.config.Config.RequiresWorldRestart
     public static RenderStrategy renderStrategy = RenderStrategy.HEIGHTMAP;
 
     @net.minecraftforge.common.config.Config.Comment({
             "The far plane render distance (in blocks)"
     })
+    @net.minecraftforge.common.config.Config.LangKey("config.fp2.renderDistance")
     public static int renderDistance = 512;
 
     @net.minecraftforge.common.config.Config.Comment({
             "The number of threads that will be used for generating far plane terrain data.",
             "Default: <cpu count> - 1 (and at least 1)"
     })
+    @net.minecraftforge.common.config.Config.LangKey("config.fp2.generationThreads")
     @net.minecraftforge.common.config.Config.RequiresWorldRestart
     public static int generationThreads = max(PorkUtil.CPU_COUNT - 1, 1);
 
@@ -54,18 +57,21 @@ public class Config {
             "The number of threads that will be used for loading and saving of far plane terrain data.",
             "Default: <cpu count>"
     })
+    @net.minecraftforge.common.config.Config.LangKey("config.fp2.ioThreads")
     @net.minecraftforge.common.config.Config.RequiresWorldRestart
     public static int ioThreads = PorkUtil.CPU_COUNT;
 
     @net.minecraftforge.common.config.Config.Comment({
             "Config options available only on the client."
     })
+    @net.minecraftforge.common.config.Config.LangKey("config.fp2.client")
     @SideOnly(Side.CLIENT)
     public static Client client = new Client();
 
     @net.minecraftforge.common.config.Config.Comment({
             "Config options useful while developing the mod."
     })
+    @net.minecraftforge.common.config.Config.LangKey("config.fp2.debug")
     public static Debug debug = new Debug();
 
     /**
@@ -77,8 +83,22 @@ public class Config {
                 "The number of threads that will be used for preparing far plane terrain data for rendering.",
                 "Default: <cpu count> - 1 (and at least 1)"
         })
+        @net.minecraftforge.common.config.Config.LangKey("config.fp2.client.renderThreads")
         @net.minecraftforge.common.config.Config.RequiresWorldRestart
         public int renderThreads = max(PorkUtil.CPU_COUNT - 1, 1);
+
+        @net.minecraftforge.common.config.Config.Comment({
+                "Config options specific to the heightmap render strategy."
+        })
+        @net.minecraftforge.common.config.Config.LangKey("config.fp2.client.heightmap")
+        public Heightmap heightmap = new Heightmap();
+
+        /**
+         * @author DaPorkchop_
+         */
+        @SideOnly(Side.CLIENT)
+        public static class Heightmap {
+        }
     }
 
     /**
@@ -89,6 +109,7 @@ public class Config {
                 "Toggles debug mode, which enables some features useful while developing the mod.",
                 "Default: false"
         })
+        @net.minecraftforge.common.config.Config.LangKey("config.fp2.debug.debug")
         @net.minecraftforge.common.config.Config.RequiresMcRestart
         public boolean debug = Boolean.parseBoolean(System.getProperty("fp2.debug", "false"));
 
@@ -97,6 +118,7 @@ public class Config {
                 "Far terrain data will never be written to or read from disk.",
                 "Default: false"
         })
+        @net.minecraftforge.common.config.Config.LangKey("config.fp2.debug.disablePersistence")
         public boolean disablePersistence = false;
     }
 }

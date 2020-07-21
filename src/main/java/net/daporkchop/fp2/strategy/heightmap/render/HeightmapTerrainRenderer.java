@@ -41,6 +41,8 @@ import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.OpenGlHelper;
+import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.relauncher.Side;
@@ -188,9 +190,6 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         GlStateManager.disableCull();
         GlStateManager.enableAlpha();
 
-        GlStateManager.enableBlend();
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
         GlStateManager.matrixMode(GL_PROJECTION);
         GlStateManager.pushMatrix();
         GlStateManager.loadIdentity();
@@ -210,6 +209,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         this.modelView = MatrixHelper.getMatrix(GL_MODELVIEW_MATRIX, this.modelView);
 
         mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
+        //mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, false);
 
         mc.entityRenderer.enableLightmap();
 
@@ -229,22 +229,10 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
             this.uniforms.bindUBO(0);
 
             this.cache.render(partialTicks, mc);
-
-            /*try (ShaderProgram shader = WATER_SHADER.use()) {
-                ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_projection"), false, this.proj);
-                ARBShaderObjects.glUniformMatrix4ARB(shader.uniformLocation("camera_modelview"), false, this.modelView);
-                glUniform1f(shader.uniformLocation("seaLevel"), 63f);
-
-                this.pieces.forEach((pos, o) -> {
-                    glUniform2d(shader.uniformLocation("camera_offset"), pos.x() * HEIGHTMAP_VOXELS + .5d, pos.z() * HEIGHTMAP_VOXELS + .5d);
-
-                    try (VertexArrayObject vao = o.bind()) {
-                        glDrawElements(GL_TRIANGLES, meshVertexCount, GL_UNSIGNED_SHORT, 0L);
-                    }
-                });
-            }*/
         } finally {
             mc.entityRenderer.disableLightmap();
+
+            //mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
 
             glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
             GlStateManager.depthFunc(GL_LEQUAL);
@@ -258,7 +246,6 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
             GlStateManager.matrixMode(GL_MODELVIEW);
             GlStateManager.popMatrix();
 
-            GlStateManager.disableBlend();
             GlStateManager.disableAlpha();
             GlStateManager.enableCull();
 

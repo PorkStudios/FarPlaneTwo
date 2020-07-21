@@ -36,5 +36,5 @@ void main(){
     //decode sky and block light
     vs_out.light = vec2(ivec2(unpackLight(center)) >> ivec2(0, 4) & 0xF) / 16.;
 
-    vs_out.color = fromARGB(global_info.biome_watercolor[unpackBiome(center)]);
+    vs_out.color = fromRGB(center.w);
 }

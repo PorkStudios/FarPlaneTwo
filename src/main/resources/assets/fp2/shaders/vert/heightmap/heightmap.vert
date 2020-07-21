@@ -34,8 +34,6 @@ layout(location = 2) in int in_vertexID_chunk;
 //uniforms
 uniform ivec2 position_offset;
 
-uniform int current_layer;
-
 //
 //
 // OUTPUTS
@@ -85,14 +83,14 @@ int loadedTileIndex(ivec2 chunk)  {
 
 //tile data
 layout(shared, binding = 4) buffer TILE_DATA {
-    HEIGHTMAP_TYPE data[][HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS][2];
+    HEIGHTMAP_TYPE data[][HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS];
 } tile_data;
 
 HEIGHTMAP_TYPE sampleHeightmap(ivec2 pos)   {
     int tileIndex = loadedTileIndex(pos >> HEIGHTMAP_SHIFT);
     if (tileIndex >= 0)  {
         vs_out.cancel = 0;
-        return tile_data.data[tileIndex][in_vertexID_chunk][current_layer];
+        return tile_data.data[tileIndex][in_vertexID_chunk];
     } else {
         vs_out.cancel = 1;
         return HEIGHTMAP_TYPE(0);

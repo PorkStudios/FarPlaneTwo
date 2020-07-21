@@ -28,6 +28,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.material.MapColor;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.init.Blocks;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
@@ -61,29 +62,20 @@ public class VanillaHeightmapGenerator implements HeightmapGenerator {
 
         for (int x = 0; x < HEIGHTMAP_VOXELS; x++) {
             for (int z = 0; z < HEIGHTMAP_VOXELS; z++) {
-                int height2 = world.getTopBlockY(pieceX * HEIGHTMAP_VOXELS + x, pieceZ * HEIGHTMAP_VOXELS + z);
-                pos.setPos(pieceX * HEIGHTMAP_VOXELS + x, height2, pieceZ * HEIGHTMAP_VOXELS + z);
+                int height = world.getTopBlockY(pieceX * HEIGHTMAP_VOXELS + x, pieceZ * HEIGHTMAP_VOXELS + z);
+                pos.setPos(pieceX * HEIGHTMAP_VOXELS + x, height, pieceZ * HEIGHTMAP_VOXELS + z);
 
-                IBlockState state2 = world.getBlockState(pos);
+                IBlockState state = world.getBlockState(pos);
 
-                while (state2.getMaterial().isLiquid()) {
-                    pos.setY(--height2);
-                    state2 = world.getBlockState(pos);
-                }
-
-                int light2 = world.getCombinedLight(pos.add(0, 1, 0), 0);
-
-                int height = height2;
-                IBlockState state = state2;
-
-                while (!state.getMaterial().isOpaque()) {
+                while (state.getMaterial().isLiquid()) {
                     pos.setY(--height);
                     state = world.getBlockState(pos);
                 }
 
-                int light = world.getCombinedLight(pos.add(0, 1, 0), 0);
+                pos.setY(height + 1);
+                int light = world.getCombinedLight(pos, 0);
 
-                piece.set(x, z, height, state, light, height2, state2, light2);
+                piece.set(x, z, height, state, light);
             }
         }
 
