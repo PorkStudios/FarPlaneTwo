@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-$today.year DaPorkchop_
+ * Copyright (c) 2020-2020 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,22 +18,29 @@
  *
  */
 
-void main() {
-    if (shouldCancel()) {
-        discard;
-    } else {
-        TextureUV uvs = global_info.tex_uvs[fs_in.state];
-        vec2 uv = uvs.min + (uvs.max - uvs.min) * fract(fs_in.pos.xz);
+package net.daporkchop.fp2.asm.client.renderer;
 
-        //initial block texture sample
-        vec4 frag_color = fs_in.color * texture(terrain_texture, uv);
+import net.daporkchop.fp2.client.FogHelper;
+import net.minecraft.client.renderer.GlStateManager;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-        //block/sky light
-        frag_color *= texture(lightmap_texture, fs_in.light);
+import java.nio.FloatBuffer;
 
-        //fog
-        frag_color = addFog(frag_color);
+import static org.lwjgl.opengl.GL11.GL_FOG_COLOR;
 
-        color = frag_color;
+/**
+ * @author DaPorkchop_
+ */
+@Mixin(GlStateManager.class)
+public abstract class MixinGlStateManager {
+    @Inject(method = "Lnet/minecraft/client/renderer/GlStateManager;glFog(ILjava/nio/FloatBuffer;)V",
+            at = @At("HEAD"))
+    private static void glFog_head(int id, FloatBuffer data, CallbackInfo ci) {
+        if (id == GL_FOG_COLOR) {
+            FogHelper._setColor(data);
+        }
     }
 }

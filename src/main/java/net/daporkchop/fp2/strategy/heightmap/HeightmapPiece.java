@@ -95,9 +95,6 @@ public class HeightmapPiece implements IFarPiece, IBlockAccess {
     protected final int x;
     protected final int z;
 
-    @Getter(AccessLevel.NONE)
-    protected final ReadWriteLock lock = new ReentrantReadWriteLock();
-
     protected final ByteBuffer biome = Constants.createByteBuffer((HEIGHTMAP_VOXELS + 2) * (HEIGHTMAP_VOXELS + 2));
     protected final IntBuffer data = Constants.createIntBuffer(ENTRY_COUNT * 4);
 
@@ -170,16 +167,6 @@ public class HeightmapPiece implements IFarPiece, IBlockAccess {
     @Override
     public HeightmapPiecePos pos() {
         return new HeightmapPiecePos(this.x, this.z);
-    }
-
-    @Override
-    public Lock readLock() {
-        return this.lock.readLock();
-    }
-
-    @Override
-    public Lock writeLock() {
-        return this.lock.writeLock();
     }
 
     public boolean isDirty() {

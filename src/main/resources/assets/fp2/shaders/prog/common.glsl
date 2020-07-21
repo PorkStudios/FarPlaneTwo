@@ -33,23 +33,37 @@
 
 //
 //
-// DATA ACCESS
+// UNIFORMS
 //
 //
 
-layout(shared, binding = 0) buffer RENDERABLE_CHUNKS {
+//camera
+layout(std140, binding = 0) uniform CAMERA {
+    mat4 projection;
+    mat4 modelview;
+
+    dvec3 position;
+} camera;
+
+//
+//
+// BUFFERS
+//
+//
+
+layout(std430, binding = 0) buffer RENDERABLE_CHUNKS {
     ivec4 base; //using 4d vectors because apparently GLSL is too stupid to handle 3d ones
     ivec4 size;
     int data[];
 } renderable_chunks;
 
-bool isChunkSectionRenderable(ivec3 chunk, int layersMask)  {
+bool isChunkSectionRenderable(ivec3 chunk)  {
     chunk -= renderable_chunks.base.xyz;
     if (any(lessThan(chunk, ivec3(0))) || any(greaterThanEqual(chunk, renderable_chunks.size.xyz)))    {
         return false;
     }
     int index = (chunk.x * renderable_chunks.size.y + chunk.y) * renderable_chunks.size.z + chunk.z;
-    return (renderable_chunks.data[index >> 3] & (layersMask << ((index << 2) & 0xC))) != 0;
+    return (renderable_chunks.data[index >> 5] & (1 << (index & 0x1F))) != 0;
 }
 
 struct TextureUV {
@@ -57,7 +71,7 @@ struct TextureUV {
     vec2 max;
 };
 
-layout(shared, binding = 1) buffer GLOBAL_INFO {
+layout(std430, binding = 1) buffer GLOBAL_INFO {
     vec2 biome_climate[256];
     int biome_watercolor[256];
 
@@ -123,4 +137,14 @@ vec4 getFoliageColor(float temperature, float humidity){
 
 vec4 getFoliageColorAtPos(dvec3 pos, int biome){
     return getGrassColor(clamp(getTemperature(pos, biome), 0., 1.), clamp(global_info.biome_climate[biome].y, 0., 1.));
+}
+
+// vertex transformation
+
+vec4 transformPoint(vec4 point)   {
+    return camera.projection * camera.modelview * point;
+}
+
+vec4 transformPoint(vec3 point)   {
+    return transformPoint(vec4(point, 1.));
 }

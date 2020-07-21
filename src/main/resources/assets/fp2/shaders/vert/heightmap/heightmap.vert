@@ -18,21 +18,23 @@
  *
  */
 
+//
+//
+// MACROS
+//
+//
+
 #define HEIGHTMAP_TYPE ivec4
 
 //
 //
-// INPUTS
+// VERTEX ATTRIBUTES
 //
 //
 
-//vertex attributes
 layout(location = 0) in ivec2 in_offset_absolute;
 layout(location = 1) in ivec2 in_offset_chunk;
 layout(location = 2) in int in_vertexID_chunk;
-
-//uniforms
-uniform ivec2 position_offset;
 
 //
 //
@@ -51,7 +53,7 @@ out VS_OUT {
 
 //
 //
-// DATA ACCESS
+// BUFFERS
 //
 //
 
@@ -61,12 +63,11 @@ layout(std430, binding = 2) buffer INSTANCE_POSITIONS {
 } instance_positions;
 
 ivec2 vertexPosXZ()   {
-    //return position_offset + in_offset_absolute;
     return instance_positions.data[gl_InstanceID] + in_offset_absolute;
 }
 
 //tile index
-layout(shared, binding = 3) buffer TILE_INDEX {
+layout(std430, binding = 3) buffer TILE_INDEX {
     ivec2 base;
     ivec2 size;
     int data[];
@@ -82,7 +83,7 @@ int loadedTileIndex(ivec2 chunk)  {
 }
 
 //tile data
-layout(shared, binding = 4) buffer TILE_DATA {
+layout(std430, binding = 4) buffer TILE_DATA {
     HEIGHTMAP_TYPE data[][HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS];
 } tile_data;
 

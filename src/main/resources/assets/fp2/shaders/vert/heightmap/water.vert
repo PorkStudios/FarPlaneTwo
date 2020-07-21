@@ -26,12 +26,16 @@ void main(){
     HEIGHTMAP_TYPE center = sampleHeightmap(posXZ);
 
     dvec3 pos = dvec3(double(posXZ.x), seaLevel - .125, double(posXZ.y));
+    vec3 relativePos = vec3(pos - camera.position); //convert to vec3 afterwards to minimize precision loss
 
     //give raw position to fragment shader
     vs_out.pos = vec3(pos);
 
+    //set fog depth
+    fog_out.depth = length(relativePos);
+
     //translate vertex position
-    gl_Position = transformPoint(vec3(pos - camera.position));
+    gl_Position = transformPoint(relativePos);
 
     //decode sky and block light
     vs_out.light = unpackWaterLight(center);

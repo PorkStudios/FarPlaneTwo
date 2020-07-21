@@ -69,33 +69,17 @@ public class ClientConstants {
         RENDER_WORKERS = null;
     }
 
-    public static final BlockRenderLayer[] BLOCK_RENDER_LAYERS = BlockRenderLayer.values();
-
-    static {
-        checkState(BLOCK_RENDER_LAYERS.length == 4, BLOCK_RENDER_LAYERS.length);
-    }
-
     public static IntBuffer renderableChunksMask(Minecraft mc, IntBuffer buffer) {
         final int HEADER_SIZE = 2 * 4;
 
-        CompiledChunkMask[] masks = mc.renderGlobal.renderInfos.stream()
+        Vec3i[] positions = mc.renderGlobal.renderInfos.stream()
                 .map(i -> i.renderChunk)
-                .filter(r -> !r.compiledChunk.isEmpty())
-                .map(r -> {
-                    CompiledChunk compiledChunk = r.compiledChunk;
-                    int layers = 0;
-                    for (int i = 0; i < 4; i++)  {
-                        if (!compiledChunk.isLayerEmpty(BLOCK_RENDER_LAYERS[i]))    {
-                            layers |= 1 << i;
-                        }
-                    }
+                .filter(r -> r.compiledChunk != CompiledChunk.DUMMY && !r.compiledChunk.isEmpty())
+                .map(RenderChunk::getPosition)
+                .map(p -> new Vec3i(p.getX() >> 4, p.getY() >> 4, p.getZ() >> 4))
+                .toArray(Vec3i[]::new);
 
-                    BlockPos pos = r.position;
-                    return new CompiledChunkMask(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4, layers);
-                })
-                .toArray(CompiledChunkMask[]::new);
-
-        if (masks.length == 0)  {
+        if (positions.length == 0)  {
             if (buffer == null) {
                 buffer = Constants.createIntBuffer(HEADER_SIZE);
             }
@@ -109,25 +93,25 @@ public class ClientConstants {
         int minZ = Integer.MAX_VALUE;
         int maxZ = Integer.MIN_VALUE;
 
-        for (int i = 0, len = masks.length; i < len; i++)   {
-            CompiledChunkMask mask = masks[i];
-            if (mask.x < minX)  {
-                minX = mask.x;
+        for (int i = 0, len = positions.length; i < len; i++)   {
+            Vec3i pos = positions[i];
+            if (pos.getX() < minX)  {
+                minX = pos.getX();
             }
-            if (mask.x > maxX)  {
-                maxX = mask.x;
+            if (pos.getX() > maxX)  {
+                maxX = pos.getX();
             }
-            if (mask.y < minY)  {
-                minY = mask.y;
+            if (pos.getY() < minY)  {
+                minY = pos.getY();
             }
-            if (mask.y > maxY)  {
-                maxY = mask.y;
+            if (pos.getY() > maxY)  {
+                maxY = pos.getY();
             }
-            if (mask.z < minZ)  {
-                minZ = mask.z;
+            if (pos.getZ() < minZ)  {
+                minZ = pos.getZ();
             }
-            if (mask.z > maxZ)  {
-                maxZ = mask.z;
+            if (pos.getZ() > maxZ)  {
+                maxZ = pos.getZ();
             }
         }
 
@@ -136,8 +120,8 @@ public class ClientConstants {
         int dz = ++maxZ - minZ;
         int volume = dx * dy * dz;
 
-        if (buffer == null || buffer.capacity() < HEADER_SIZE + volume * 3) {
-            buffer = Constants.createIntBuffer(HEADER_SIZE + volume * 3);
+        if (buffer == null || buffer.capacity() < HEADER_SIZE + volume) {
+            buffer = Constants.createIntBuffer(HEADER_SIZE + volume);
         }
         buffer.clear();
         PUnsafe.setMemory(PUnsafe.pork_directBufferAddress(buffer), buffer.capacity() * 4, (byte) 0);
@@ -145,22 +129,13 @@ public class ClientConstants {
         buffer.put(minX).put(minY).put(minZ).put(0)
                 .put(dx).put(dy).put(dz).put(0);
 
-        for (int i = 0, len = masks.length; i < len; i++) {
-            CompiledChunkMask mask = masks[i];
-            int index = ((mask.x - minX) * dy + (mask.y - minY)) * dz + (mask.z - minZ);
-            int arrayIndex = HEADER_SIZE + (index >> 3);
-            buffer.put(arrayIndex, buffer.get(arrayIndex) | (mask.layers << ((index << 2) & 0xC)));
+        for (int i = 0, len = positions.length; i < len; i++) {
+            Vec3i pos = positions[i];
+            int index = ((pos.getX() - minX) * dy + (pos.getY() - minY)) * dz + (pos.getZ() - minZ);
+            buffer.put(HEADER_SIZE + (index >> 5), buffer.get(HEADER_SIZE + (index >> 5)) | (1 << (index & 0x1F)));
         }
 
         buffer.clear();
         return buffer;
-    }
-
-    @AllArgsConstructor
-    private static final class CompiledChunkMask {
-        private final int x;
-        private final int y;
-        private final int z;
-        private final int layers;
     }
 }

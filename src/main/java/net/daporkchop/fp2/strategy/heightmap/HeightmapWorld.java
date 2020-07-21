@@ -41,7 +41,6 @@ import net.daporkchop.lib.common.function.io.IORunnable;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
-import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.compression.zstd.ZstdDeflater;
 import net.daporkchop.lib.compression.zstd.ZstdInflater;
@@ -83,7 +82,7 @@ public class HeightmapWorld implements IFarWorld {
 
     public HeightmapWorld(@NonNull WorldServer world) {
         this.world = world;
-        if (Constants.isCubicWorld(world))  { //TODO: this
+        if (Constants.isCubicWorld(world)) { //TODO: this
             if (Constants.CWG && world.getWorldType() instanceof CustomCubicWorldType) {
                 this.generator = new CWGHeightmapGenerator();
             } else {
@@ -119,12 +118,10 @@ public class HeightmapWorld implements IFarWorld {
                 .thenApplyAsync(piece -> {
                     if (this.dirtyChunks.replace(key, 1, 2)) {
                         CachedBlockAccess world = ((CachedBlockAccess.Holder) this.world).fp2_cachedBlockAccess();
-                        piece.writeLock().lock();
                         try {
                             this.generator.generateExact(world, piece);
                             this.savePiece(piece);
                         } finally {
-                            piece.writeLock().unlock();
                             this.dirtyChunks.remove(key, 2);
                         }
                     }
@@ -166,12 +163,7 @@ public class HeightmapWorld implements IFarWorld {
                     try {
                         CachedBlockAccess world = ((CachedBlockAccess.Holder) this.world).fp2_cachedBlockAccess();
                         HeightmapPiece piece = new HeightmapPiece(x, z);
-                        piece.writeLock().lock();
-                        try {
-                            this.generator.generateRough(world, piece);
-                        } finally {
-                            piece.writeLock().unlock();
-                        }
+                        this.generator.generateRough(world, piece);
                         future.complete(piece);
 
                         this.savePiece(piece);
@@ -189,34 +181,25 @@ public class HeightmapWorld implements IFarWorld {
             return;
         }
         IO_WORKERS.submit((IORunnable) () -> {
-            piece.readLock().lock();
-            try {
-                if (!piece.clearDirty()) {
-                    return;
-                }
+            if (!piece.clearDirty()) {
+                return;
+            }
 
-                Path cachePath = this.storageRoot.resolve(String.format("%d/%d.%d.fp2", 0, piece.x(), piece.z()));
-                Files.createDirectories(cachePath.getParent());
-                ByteBuf raw = PooledByteBufAllocator.DEFAULT.ioBuffer();
-                ByteBuf compressed = PooledByteBufAllocator.DEFAULT.ioBuffer();
-                try (FileChannel channel = FileChannel.open(cachePath, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE)) {
-                    piece.readLock().lock();
-                    try {
-                        piece.write(raw);
-                    } finally {
-                        piece.readLock().unlock();
-                    }
-                    compressed.ensureWritable(8 + Zstd.PROVIDER.compressBound(raw.readableBytes()));
-                    compressed.writeInt(HEIGHTMAP_STORAGE_VERSION).writeInt(raw.readableBytes());
-                    checkState(DEFLATER_CACHE.get().compress(raw, compressed));
-                    compressed.readBytes(channel, compressed.readableBytes());
-                    checkState(!compressed.isReadable());
-                } finally {
-                    raw.release();
-                    compressed.release();
-                }
+            Path cachePath = this.storageRoot.resolve(String.format("%d/%d.%d.fp2", 0, piece.x(), piece.z()));
+            Files.createDirectories(cachePath.getParent());
+            ByteBuf raw = PooledByteBufAllocator.DEFAULT.ioBuffer();
+            ByteBuf compressed = PooledByteBufAllocator.DEFAULT.ioBuffer();
+            try (FileChannel channel = FileChannel.open(cachePath, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE)) {
+                piece.write(raw);
+
+                compressed.ensureWritable(8 + Zstd.PROVIDER.compressBound(raw.readableBytes()));
+                compressed.writeInt(HEIGHTMAP_STORAGE_VERSION).writeInt(raw.readableBytes());
+                checkState(DEFLATER_CACHE.get().compress(raw, compressed));
+                compressed.readBytes(channel, compressed.readableBytes());
+                checkState(!compressed.isReadable());
             } finally {
-                piece.readLock().unlock();
+                raw.release();
+                compressed.release();
             }
         });
     }

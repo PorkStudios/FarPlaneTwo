@@ -28,6 +28,7 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.strategy.heightmap.render.HeightmapTerrainRenderer;
 import net.daporkchop.lib.binary.oio.StreamUtil;
 import net.daporkchop.lib.common.function.io.IOFunction;
+import net.daporkchop.lib.common.misc.string.PStrings;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,18 +58,18 @@ public class ShaderManager {
      */
     public ShaderProgram get(@NonNull String programName) {
         try {
-            String fileName = String.format("%s/prog/%s.json", BASE_PATH, programName);
+            String fileName = PStrings.fastFormat("%s/prog/%s.json", BASE_PATH, programName);
             JsonObject meta;
             try (InputStream in = ShaderManager.class.getResourceAsStream(fileName)) {
                 if (in == null) {
-                    throw new IllegalStateException(String.format("Unable to find shader meta file: \"%s\"!", fileName));
+                    throw new IllegalStateException(PStrings.fastFormat("Unable to find shader meta file: \"%s\"!", fileName));
                 }
                 meta = new JsonParser().parse(new InputStreamReader(in)).getAsJsonObject();
             }
             if (!meta.has("vert")) {
-                throw new IllegalStateException(String.format("Shader \"%s\" has no vertex shader!", programName));
+                throw new IllegalStateException(PStrings.fastFormat("Shader \"%s\" has no vertex shader!", programName));
             } else if (!meta.has("frag")) {
-                throw new IllegalStateException(String.format("Shader \"%s\" has no fragment shader!", programName));
+                throw new IllegalStateException(PStrings.fastFormat("Shader \"%s\" has no fragment shader!", programName));
             }
             return new ShaderProgram(
                     programName,
@@ -94,7 +95,7 @@ public class ShaderManager {
     protected void validateShaderCompile(@NonNull String name, int id) {
         if (glGetShaderi(id, GL_COMPILE_STATUS) == GL_FALSE) {
             int size = glGetShaderi(id, GL_INFO_LOG_LENGTH);
-            String error = String.format("Couldn't compile shader \"%s\": %s", name, glGetShaderInfoLog(id, size));
+            String error = PStrings.fastFormat("Couldn't compile shader \"%s\":\n%s", name, glGetShaderInfoLog(id, size));
             System.err.println(error);
             throw new IllegalStateException(error);
         }
@@ -103,7 +104,7 @@ public class ShaderManager {
     protected void validateProgramLink(@NonNull String name, int id) {
         if (glGetProgrami(id, GL_LINK_STATUS) == GL_FALSE) {
             int size = glGetProgrami(id, GL_INFO_LOG_LENGTH);
-            String error = String.format("Couldn't compile shader \"%s\": %s", name, glGetProgramInfoLog(id, size));
+            String error = PStrings.fastFormat("Couldn't compile shader \"%s\":\n%s", name, glGetProgramInfoLog(id, size));
             System.err.println(error);
             throw new IllegalStateException(error);
         }
@@ -112,7 +113,7 @@ public class ShaderManager {
     protected void validateProgramValidate(@NonNull String name, int id) {
         if (glGetProgrami(id, GL_VALIDATE_STATUS) == GL_FALSE) {
             int size = glGetProgrami(id, GL_INFO_LOG_LENGTH);
-            String error = String.format("Couldn't compile shader \"%s\": %s", name, glGetProgramInfoLog(id, size));
+            String error = PStrings.fastFormat("Couldn't compile shader \"%s\":\n%s", name, glGetProgramInfoLog(id, size));
             System.err.println(error);
             throw new IllegalStateException(error);
         }

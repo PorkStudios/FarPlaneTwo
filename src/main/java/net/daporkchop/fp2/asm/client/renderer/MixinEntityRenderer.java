@@ -20,11 +20,13 @@
 
 package net.daporkchop.fp2.asm.client.renderer;
 
+import net.daporkchop.fp2.Config;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -41,6 +43,9 @@ public abstract class MixinEntityRenderer {
     @Shadow
     @Final
     private Minecraft mc;
+
+    @Shadow
+    private float farPlaneDistance;
 
     @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
             at = @At(value = "INVOKE",
@@ -83,5 +88,15 @@ public abstract class MixinEntityRenderer {
                     target = "Lorg/lwjgl/util/glu/Project;gluPerspective(FFFF)V"))
     private void setupCameraTransform_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar) {
         MatrixHelper.infiniteZFar(fov, aspect, zNear);
+    }
+
+    //set farPlaneDistance to the value in config
+
+    @Redirect(method = "Lnet/minecraft/client/renderer/EntityRenderer;setupCameraTransform(FI)V",
+            at = @At(value = "FIELD",
+                    target = "Lnet/minecraft/client/renderer/EntityRenderer;farPlaneDistance:F",
+                    opcode = Opcodes.PUTFIELD))
+    private void setupCameraTransform_increaseFarPlaneDistance(EntityRenderer renderer, float prev) {
+        this.farPlaneDistance = Config.renderDistance;
     }
 }

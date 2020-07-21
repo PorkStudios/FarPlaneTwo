@@ -18,22 +18,56 @@
  *
  */
 
-void main() {
-    if (shouldCancel()) {
-        discard;
+//
+//
+// MACROS
+//
+//
+
+#define GL_LINEAR (9729)
+#define GL_EXP (2048)
+#define GL_EXP2 (2049)
+
+//
+//
+// UNIFORMS
+//
+//
+
+//fog
+layout(std140, binding = 1) uniform FOG {
+    vec4 color;
+    int mode;
+    float density;
+    float start;
+    float end;
+    float scale;
+} fog;
+
+//
+//
+// INPUTS
+//
+//
+
+in FOG {
+    float depth;
+} fog_in;
+
+//
+//
+// UTILITIES
+//
+//
+
+float getFogFactor()    {
+    if (fog.mode == GL_LINEAR) {
+        return clamp((fog.end - fog_in.depth) * fog.scale, 0., 1.);
     } else {
-        TextureUV uvs = global_info.tex_uvs[fs_in.state];
-        vec2 uv = uvs.min + (uvs.max - uvs.min) * fract(fs_in.pos.xz);
-
-        //initial block texture sample
-        vec4 frag_color = fs_in.color * texture(terrain_texture, uv);
-
-        //block/sky light
-        frag_color *= texture(lightmap_texture, fs_in.light);
-
-        //fog
-        frag_color = addFog(frag_color);
-
-        color = frag_color;
+        return 1.;
     }
+}
+
+vec4 addFog(vec4 color) {
+    return mix(fog.color, color, getFogFactor());
 }

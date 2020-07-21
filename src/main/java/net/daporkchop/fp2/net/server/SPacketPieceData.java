@@ -28,7 +28,6 @@ import lombok.experimental.Accessors;
 import net.daporkchop.fp2.strategy.RenderStrategy;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
-import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -51,13 +50,8 @@ public class SPacketPieceData implements IMessage {
 
     @Override
     public void toBytes(ByteBuf buf) {
-        this.piece.readLock().lock();
-        try {
-            buf.writeInt(this.piece.strategy().ordinal());
-            this.piece.write(buf);
-        } finally {
-            this.piece.readLock().unlock();
-        }
+        buf.writeInt(this.piece.strategy().ordinal());
+        this.piece.write(buf);
     }
 
     public static class Handler implements IMessageHandler<SPacketPieceData, IMessage> {

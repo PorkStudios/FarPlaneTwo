@@ -22,6 +22,7 @@ package net.daporkchop.fp2.strategy.heightmap.render;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.ClientConstants;
+import net.daporkchop.fp2.client.FogHelper;
 import net.daporkchop.fp2.client.GlobalInfo;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.client.gl.OpenGL;
@@ -226,6 +227,8 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
             }
 
             this.uniforms.bindUBO(0);
+
+            FogHelper.prepare();
 
             this.cache.render(partialTicks, mc);
         } finally {

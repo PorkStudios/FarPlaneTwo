@@ -6,6 +6,7 @@
   "client": [
     "client.multiplayer.MixinWorldClient",
     "client.renderer.MixinEntityRenderer",
+    "client.renderer.MixinGlStateManager",
     "client.shader.MixinFramebuffer"
   ],
   "mixins": [

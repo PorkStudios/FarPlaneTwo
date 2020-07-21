@@ -20,31 +20,9 @@
 
 //
 //
-// INPUTS
-//
-//
-
-//uniforms
-layout(std140, binding = 0) uniform CAMERA {
-    mat4 projection;
-    mat4 modelview;
-
-    dvec3 position;
-} camera;
-
-//
-//
 // UTILITIES
 //
 //
-
-vec4 transformPoint(vec4 point)   {
-    return camera.projection * camera.modelview * point;
-}
-
-vec4 transformPoint(vec3 point)   {
-    return transformPoint(vec4(point, 1.));
-}
 
 vec2 unpackCombinedLight(int packedCombinedLight)   {
     return vec2(ivec2(packedCombinedLight) >> ivec2(0, 4) & 0xF) / 16.;

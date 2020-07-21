@@ -29,7 +29,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 /**
  * @author DaPorkchop_
  */
-public interface IFarPiece extends ReadWriteLock {
+public interface IFarPiece {
     RenderStrategy strategy();
 
     /**

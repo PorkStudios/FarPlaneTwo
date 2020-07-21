@@ -3,12 +3,15 @@
     "prog/common.glsl",
     "prog/heightmap/heightmap.glsl",
     "vert/common.vert",
+    "vert/fog.vert",
     "vert/heightmap/heightmap.vert",
     "vert/heightmap/terrain.vert"
   ],
   "frag": [
     "prog/common.glsl",
     "prog/heightmap/heightmap.glsl",
+    "frag/common.frag",
+    "frag/fog.frag",
     "frag/heightmap/heightmap.frag",
     "frag/heightmap/terrain.frag"
   ]

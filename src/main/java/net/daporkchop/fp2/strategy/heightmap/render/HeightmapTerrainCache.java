@@ -162,7 +162,11 @@ public class HeightmapTerrainCache {
     public void unloadPiece(@NonNull HeightmapPiecePos pos) {
         ClientThreadExecutor.INSTANCE.execute(() -> {
             Tile tile = this.tiles.remove(pos);
-            if (tile != null && tile.slot >= 0) {
+            if (tile != null) {
+                if (tile.renderData != null)    {
+                    tile.renderData.release();
+                    tile.renderData = null;
+                }
                 this.activeDataSlots.clear(tile.slot);
             }
         });

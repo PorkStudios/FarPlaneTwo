@@ -83,7 +83,7 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker {
                     //piece wasn't loaded before, we should load and send it
                     HeightmapPiece piece = this.world.getPieceNowOrLoadAsync(new HeightmapPiecePos(x, z));
                     if (piece != null) {
-                        ServerThreadExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player));
+                        NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player);
                     } else {
                         continue; //don't add to next, to indicate that the piece hasn't been sent yet
                     }
@@ -105,7 +105,7 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker {
         long key = BinMath.packXY(piece.x(), piece.z());
         this.tracking.forEach((player, curr) -> {
             if (curr.contains(key)) {
-                ServerThreadExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player));
+                NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player);
             }
         });
     }
