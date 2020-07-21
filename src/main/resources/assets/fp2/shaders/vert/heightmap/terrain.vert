@@ -32,15 +32,9 @@ void main(){
     gl_Position = transformPoint(vec3(pos - camera.position));
 
     //decode sky and block light
-    vs_out.light = vec2(ivec2(unpackLight(center)) >> ivec2(0, 4) & 0xF) / 16.;
+    vs_out.light = unpackBlockLight(center);
 
     //store block state
-    int state = unpackBlock(center);
-    vs_out.state = state;
-
-    if (state != 0) {
-        vs_out.color = fromRGB(center.z);
-    } else {
-        vs_out.color = vec4(0.);
-    }
+    vs_out.state = unpackBlock(center);
+    vs_out.color = unpackBlockColor(center);
 }

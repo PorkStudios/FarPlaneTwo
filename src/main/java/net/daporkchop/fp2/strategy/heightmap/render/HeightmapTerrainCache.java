@@ -35,17 +35,15 @@ import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiecePos;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.daporkchop.lib.common.misc.string.PStrings;
-import net.minecraft.block.Block;
+import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.init.Blocks;
-import net.minecraft.util.math.BlockPos;
 
 import java.nio.ByteOrder;
 import java.util.BitSet;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -67,7 +65,7 @@ public class HeightmapTerrainCache {
     protected final HeightmapTerrainRenderer renderer;
 
     //protected final Map<HeightmapPiecePos, VertexArrayObject> pieces = new HashMap<>();
-    protected final Map<HeightmapPiecePos, Tile> tiles = new HashMap<>();
+    protected final Map<HeightmapPiecePos, Tile> tiles = new ObjObjOpenHashMap<>();
 
     protected final ShaderStorageBuffer indexSSBO = new ShaderStorageBuffer();
     protected final ShaderStorageBuffer positionSSBO = new ShaderStorageBuffer();
@@ -85,9 +83,7 @@ public class HeightmapTerrainCache {
         FP2.LOGGER.info(PStrings.fastFormat("Max SSBO size: %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
 
         try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
-            OpenGL.checkGLError("pre allocate initial data buffer");
             glBufferData(GL_SHADER_STORAGE_BUFFER, this.dataSize * (long) HeightmapPiece.TOTAL_SIZE, GL_STATIC_DRAW);
-            OpenGL.checkGLError("post allocate initial data buffer");
         }
 
         try (VertexArrayObject vao = this.vao.bind()) {
@@ -126,121 +122,45 @@ public class HeightmapTerrainCache {
                 long size = this.dataSize * (long) HeightmapPiece.TOTAL_SIZE;
                 FP2.LOGGER.info(PStrings.fastFormat("Growing data SSBO to %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
 
-                ByteBuf buffer = PooledByteBufAllocator.DEFAULT.directBuffer((int) size >> 1).writerIndex((int) size >> 1);
-                try {
-                    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0L, buffer.nioBuffer());
+                glBufferData(GL_SHADER_STORAGE_BUFFER, this.dataSize * (long) HeightmapPiece.TOTAL_SIZE, GL_STATIC_DRAW);
 
-                    glBufferData(GL_SHADER_STORAGE_BUFFER, this.dataSize * (long) HeightmapPiece.TOTAL_SIZE, GL_STATIC_DRAW);
-
-                    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0L, buffer.nioBuffer());
-                } finally {
-                    buffer.release();
-                }
+                //re-upload old tiles
+                this.tiles.values().forEach(tile -> {
+                    glBufferSubData(GL_SHADER_STORAGE_BUFFER, tile.slot * (long) HeightmapPiece.TOTAL_SIZE, tile.renderData.nioBuffer());
+                });
             }
         }
         return slot;
     }
 
-    @SuppressWarnings("deprecation")
     public void receivePiece(@NonNull HeightmapPiece piece) {
-        CompletableFuture.supplyAsync(
-                () -> {
-                    ByteBuf buffer = PooledByteBufAllocator.DEFAULT.directBuffer(HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS * 4 * 4)
-                            .order(ByteOrder.nativeOrder());
+        CompletableFuture
+                .supplyAsync(() -> HeightmapRenderHelper.bakePiece(piece), RENDER_WORKERS)
+                .thenAcceptAsync(buffer -> this.storePiece(piece, buffer), ClientThreadExecutor.INSTANCE);
+    }
 
-                    BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+    protected void storePiece(@NonNull HeightmapPiece piece, @NonNull ByteBuf buf) {
+        this.tiles.compute(piece.pos(), (pos, tile) -> {
+            if (tile == null) {
+                tile = new Tile(pos.x(), pos.z(), this.allocateSlot());
+            }
 
-                    for (int x = 0; x < HEIGHTMAP_VOXELS; x++) {
-                        for (int z = 0; z < HEIGHTMAP_VOXELS; z++) {
-                            int height = piece.height(x, z);
-                            int block = piece.block(x, z);
+            if (tile.renderData != null) {
+                tile.renderData.release();
+                tile.renderData = null;
+            }
 
-                            pos.setPos(piece.x() * HEIGHTMAP_VOXELS + x, height, piece.z() * HEIGHTMAP_VOXELS + z);
+            try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
+                glBufferSubData(GL_SHADER_STORAGE_BUFFER, tile.slot * (long) HeightmapPiece.TOTAL_SIZE, buf.nioBuffer());
+                tile.renderData = buf;
+            }
 
-                            buffer.writeInt(height)
-                                    .writeInt((piece.light(x, z) << 24) | block)
-                                    .writeInt(Minecraft.getMinecraft().getBlockColors().colorMultiplier(Block.getStateById(block), piece, pos, 0))
-                                    .writeInt(Minecraft.getMinecraft().getBlockColors().colorMultiplier(Blocks.WATER.getDefaultState(), piece, pos, 0));
-                        }
-                    }
-                    return buffer;
-                }, RENDER_WORKERS)
-                .thenAcceptAsync(buffer -> {
-                    try {
-                        this.tiles.compute(piece.pos(), (p, tile) -> {
-                            if (tile == null) {
-                                tile = new Tile(piece);
-                            } else {
-                                tile.piece(piece);
-                            }
-                            if (tile.slot < 0) {
-                                tile.slot(this.allocateSlot());
-                            }
-
-                            try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
-                                glBufferSubData(GL_SHADER_STORAGE_BUFFER, tile.slot * (long) HeightmapPiece.TOTAL_SIZE, buffer.nioBuffer());
-                            }
-
-                            return tile;
-                        });
-                    } finally {
-                        buffer.release();
-                    }
-                }, ClientThreadExecutor.INSTANCE);
-
-        if (true) {
-            return;
-        }
-
-        Minecraft.getMinecraft().addScheduledTask(() -> {
-            this.tiles.compute(piece.pos(), (p, tile) -> {
-                if (tile == null) {
-                    tile = new Tile(piece);
-                } else {
-                    tile.piece(piece);
-                }
-                if (tile.slot < 0) {
-                    tile.slot(this.allocateSlot());
-                }
-
-                try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
-                    OpenGL.checkGLError("pre upload tile data");
-                    glBufferSubData(GL_SHADER_STORAGE_BUFFER, tile.slot * (long) HeightmapPiece.TOTAL_SIZE, tile.piece.data());
-                    OpenGL.checkGLError("post upload tile data");
-                }
-
-                /*try (VertexArrayObject vao = new VertexArrayObject().bind()) {
-                    for (int i = 0; i <= 2; i++) {
-                        glEnableVertexAttribArray(i);
-                    }
-
-                    try (VertexBufferObject vbo = this.renderer.coords.bind()) {
-                        glVertexAttribIPointer(0, 2, GL_INT, 5 * 4, 0L);
-                        glVertexAttribIPointer(1, 2, GL_INT, 5 * 4, 2 * 4L);
-                        glVertexAttribIPointer(2, 1, GL_INT, 5 * 4, 4 * 4L);
-
-                        for (int i = 0; i <= 2; i++) {
-                            vao.putDependency(i, vbo);
-                        }
-                    }
-
-                    vao.putElementArray(this.renderer.mesh.bind());
-
-                    tile.vao(vao);
-                } finally {
-                    for (int i = 0; i <= 2; i++) {
-                        glDisableVertexAttribArray(i);
-                    }
-
-                    this.renderer.mesh.close();
-                }*/
-                return tile;
-            });
+            return tile;
         });
     }
 
     public void unloadPiece(@NonNull HeightmapPiecePos pos) {
-        Minecraft.getMinecraft().addScheduledTask(() -> {
+        ClientThreadExecutor.INSTANCE.execute(() -> {
             Tile tile = this.tiles.remove(pos);
             if (tile != null && tile.slot >= 0) {
                 this.activeDataSlots.clear(tile.slot);
@@ -253,8 +173,10 @@ public class HeightmapTerrainCache {
             return;
         }
 
-        this.generateAndUploadIndex();
-        int positions = this.generateAndUploadPositions();
+        Tile[] tiles = this.tiles.values().toArray(new Tile[this.tiles.size()]);
+
+        this.generateAndUploadIndex(tiles);
+        int positions = this.generateAndUploadPositions(tiles);
 
         this.positionSSBO.bindSSBO(2);
         this.indexSSBO.bindSSBO(3);
@@ -281,7 +203,7 @@ public class HeightmapTerrainCache {
     }
 
     @SuppressWarnings("deprecation")
-    protected void generateAndUploadIndex() {
+    protected void generateAndUploadIndex(@NonNull Tile[] tiles) {
         final int HEADER_SIZE = 2 * 2;
 
         int minX = Integer.MAX_VALUE;
@@ -289,20 +211,19 @@ public class HeightmapTerrainCache {
         int minZ = Integer.MAX_VALUE;
         int maxZ = Integer.MIN_VALUE;
 
-        for (Tile tile : this.tiles.values()) {
-            int i = tile.piece.x();
-            if (i < minX) {
-                minX = i;
+        for (int i = 0, len = tiles.length; i < len; i++) {
+            Tile tile = tiles[i];
+            if (tile.x < minX) {
+                minX = tile.x;
             }
-            if (i > maxX) {
-                maxX = i;
+            if (tile.x > maxX) {
+                maxX = tile.x;
             }
-            i = tile.piece.z();
-            if (i < minZ) {
-                minZ = i;
+            if (tile.z < minZ) {
+                minZ = tile.z;
             }
-            if (i > maxZ) {
-                maxZ = i;
+            if (tile.z > maxZ) {
+                maxZ = tile.z;
             }
         }
 
@@ -310,8 +231,7 @@ public class HeightmapTerrainCache {
         int dz = ++maxZ - minZ;
         int area = dx * dz;
 
-        ByteBuf buffer = PooledByteBufAllocator.DEFAULT.directBuffer((HEADER_SIZE + area) * 4)
-                .order(ByteOrder.nativeOrder())
+        ByteBuf buffer = Constants.allocateByteBuf((HEADER_SIZE + area) * 4)
                 .writeInt(minX).writeInt(minZ)
                 .writeInt(dx).writeInt(dz);
 
@@ -320,14 +240,11 @@ public class HeightmapTerrainCache {
                 buffer.writeInt(-1);
             }
 
-            int _minX = minX;
-            int _minZ = minZ;
-            this.tiles.values().forEach(tile -> {
-                if (tile.slot >= 0) {
-                    int index = (tile.piece.x() - _minX) * dz + tile.piece.z() - _minZ;
-                    buffer.setInt((HEADER_SIZE + index) * 4, tile.slot);
-                }
-            });
+            for (int i = 0, len = tiles.length; i < len; i++) {
+                Tile tile = tiles[i];
+                int index = (tile.x - minX) * dz + tile.z - minZ;
+                buffer.setInt((HEADER_SIZE + index) * 4, tile.slot);
+            }
 
             try (ShaderStorageBuffer ssbo = this.indexSSBO.bind()) {
                 glBufferData(GL_SHADER_STORAGE_BUFFER, buffer.nioBuffer(), GL_STATIC_DRAW);
@@ -338,16 +255,17 @@ public class HeightmapTerrainCache {
     }
 
     @SuppressWarnings("deprecation")
-    protected int generateAndUploadPositions() {
+    protected int generateAndUploadPositions(@NonNull Tile[] tiles) {
         ByteBuf buffer = PooledByteBufAllocator.DEFAULT.directBuffer((this.tiles.size() * 2) * 4)
                 .order(ByteOrder.nativeOrder());
 
         try {
             int count = this.tiles.size();
 
-            this.tiles.values().forEach(tile -> {
-                buffer.writeInt(tile.piece.x() * HEIGHTMAP_VOXELS).writeInt(tile.piece.z() * HEIGHTMAP_VOXELS);
-            });
+            for (int i = 0, len = tiles.length; i < len; i++) {
+                Tile tile = tiles[i];
+                buffer.writeInt(tile.x * HEIGHTMAP_VOXELS).writeInt(tile.z * HEIGHTMAP_VOXELS);
+            }
 
             try (ShaderStorageBuffer ssbo = this.positionSSBO.bind()) {
                 glBufferData(GL_SHADER_STORAGE_BUFFER, buffer.nioBuffer(), GL_STATIC_DRAW);
@@ -364,8 +282,10 @@ public class HeightmapTerrainCache {
     @Setter
     @Accessors(fluent = true, chain = true)
     protected static class Tile {
-        @NonNull
-        protected HeightmapPiece piece;
-        protected int slot = -1;
+        protected final int x;
+        protected final int z;
+        protected final int slot;
+
+        protected ByteBuf renderData;
     }
 }

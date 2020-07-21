@@ -46,7 +46,12 @@ public final class ClientThreadExecutor implements Executor {
     public static final ClientThreadExecutor INSTANCE = new ClientThreadExecutor();
 
     @Override
-    public void execute(Runnable command) {
-        Minecraft.getMinecraft().addScheduledTask(command);
+    public void execute(@NonNull Runnable task) {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.isCallingFromMinecraftThread())  {
+            task.run();
+        } else {
+            Minecraft.getMinecraft().addScheduledTask(task);
+        }
     }
 }

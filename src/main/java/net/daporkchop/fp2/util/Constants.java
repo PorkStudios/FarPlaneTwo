@@ -21,6 +21,8 @@
 package net.daporkchop.fp2.util;
 
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
 import lombok.NonNull;
@@ -101,5 +103,11 @@ public class Constants {
 
     public static DoubleBuffer createDoubleBuffer(int size) {
         return createByteBuffer(size << 3).asDoubleBuffer();
+    }
+
+    @SuppressWarnings("deprecation")
+    public static ByteBuf allocateByteBuf(int capacity) {
+        return PooledByteBufAllocator.DEFAULT.directBuffer(capacity, capacity)
+                .order(ByteOrder.nativeOrder());
     }
 }

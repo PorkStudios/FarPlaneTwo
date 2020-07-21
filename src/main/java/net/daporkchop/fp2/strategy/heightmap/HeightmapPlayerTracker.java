@@ -67,11 +67,12 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker {
 
     @Override
     public void playerMove(@NonNull EntityPlayerMP player) {
-        LongSet prev = this.tracking.get(player);
-        LongSet next = new LongOpenHashSet();
         int dist = Config.renderDistance / HeightmapConstants.HEIGHTMAP_VOXELS;
         int baseX = floorI(player.posX) / HeightmapConstants.HEIGHTMAP_VOXELS;
         int baseZ = floorI(player.posZ) / HeightmapConstants.HEIGHTMAP_VOXELS;
+
+        LongSet prev = this.tracking.get(player);
+        LongSet next = new LongOpenHashSet((dist * 2 + 2) * (dist * 2 + 2));
 
         for (int dx = -dist; dx <= dist; dx++) {
             for (int dz = -dist; dz <= dist; dz++) {

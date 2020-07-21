@@ -19,7 +19,7 @@
  */
 
 void main() {
-    if (shouldCancel()) {
+    if (shouldCancel(LAYER_SOLID)) {
         discard;
     } else {
         TextureUV uvs = global_info.tex_uvs[fs_in.state];

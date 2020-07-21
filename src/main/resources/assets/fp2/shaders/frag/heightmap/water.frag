@@ -19,7 +19,7 @@
  */
 
 void main() {
-    if (shouldCancel() || isChunkSectionRenderable(ivec3(floor(fs_in.pos)) >> 4)) {
+    if (shouldCancel(LAYER_TRANSLUCENT)) {
         discard;
     } else {
         TextureUV uvs = global_info.tex_uvs[9];

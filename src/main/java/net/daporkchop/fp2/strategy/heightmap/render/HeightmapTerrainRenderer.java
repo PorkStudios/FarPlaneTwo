@@ -188,7 +188,6 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         GLOBAL_INFO.bindSSBO(1);
 
         GlStateManager.disableCull();
-        GlStateManager.enableAlpha();
 
         GlStateManager.matrixMode(GL_PROJECTION);
         GlStateManager.pushMatrix();
@@ -209,7 +208,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         this.modelView = MatrixHelper.getMatrix(GL_MODELVIEW_MATRIX, this.modelView);
 
         mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
-        //mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, false);
+        mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
 
         mc.entityRenderer.enableLightmap();
 
@@ -232,7 +231,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         } finally {
             mc.entityRenderer.disableLightmap();
 
-            //mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
+            mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
 
             glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
             GlStateManager.depthFunc(GL_LEQUAL);
@@ -246,7 +245,6 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
             GlStateManager.matrixMode(GL_MODELVIEW);
             GlStateManager.popMatrix();
 
-            GlStateManager.disableAlpha();
             GlStateManager.enableCull();
 
             OpenGL.checkGLError("post fp2 render");

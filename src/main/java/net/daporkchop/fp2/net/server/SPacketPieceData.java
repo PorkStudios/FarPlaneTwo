@@ -29,6 +29,7 @@ import net.daporkchop.fp2.strategy.RenderStrategy;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
+import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
@@ -62,8 +63,8 @@ public class SPacketPieceData implements IMessage {
     public static class Handler implements IMessageHandler<SPacketPieceData, IMessage> {
         @Override
         public IMessage onMessage(SPacketPieceData message, MessageContext ctx) {
-            TerrainRenderer renderer = ((IFarContext) ctx.getClientHandler().world).fp2_renderer();
-            renderer.receivePiece(message.piece);
+            IFarContext farContext = (IFarContext) ctx.getClientHandler().world;
+            ClientThreadExecutor.INSTANCE.execute(() -> farContext.fp2_renderer().receivePiece(message.piece));
             return null;
         }
     }

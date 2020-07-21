@@ -106,33 +106,25 @@ HEIGHTMAP_TYPE sampleHeightmap(ivec2 pos)   {
 //heightmap data unpacking
 
 int unpackHeight(HEIGHTMAP_TYPE p)  {
-    return p.x;
+    return p[0];
 }
 
 int unpackBlock(HEIGHTMAP_TYPE p)   {
-    return p.y & 0xFFFFFF;
+    return p[1] & 0xFFFFFF;
 }
 
-int unpackBiome(HEIGHTMAP_TYPE p)   {
-    return p.z & 0x3F;
+vec2 unpackBlockLight(HEIGHTMAP_TYPE p)   {
+    return unpackCombinedLight(p[1] >> 24);
 }
 
-int unpackLight(HEIGHTMAP_TYPE p)   {
-    return p.y >> 24;
+vec4 unpackBlockColor(HEIGHTMAP_TYPE p)  {
+    return fromARGB(p[2]);
 }
 
-int unpackFlags(HEIGHTMAP_TYPE p)    {
-    return p.z >> 6;
+vec2 unpackWaterLight(HEIGHTMAP_TYPE p) {
+    return unpackCombinedLight(p[3] >> 24);
 }
 
-bool isGrass(int flags) {
-    return (flags & 1) != 0;
-}
-
-bool isFoliage(int flags) {
-    return (flags & 2) != 0;
-}
-
-bool isWater(int flags) {
-    return (flags & 4) != 0;
+vec4 unpackWaterColor(HEIGHTMAP_TYPE p) {
+    return fromRGB(p[3]);
 }

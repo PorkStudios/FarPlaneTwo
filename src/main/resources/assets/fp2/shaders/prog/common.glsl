@@ -25,11 +25,11 @@
 // MACROS
 //
 //
-//TODO: probably just remove these lol
 
-#define IS_MESA (biome == 37 || biome == 38 || biome == 39 || biome == 165 || biome == 166 || biome == 167)
-#define IS_ROOFED_FOREST (biome == 29 || biome == 157)
-#define IS_SWAMP (biome == 6 || biome == 134)
+#define LAYER_SOLID (1 << 0)
+#define LAYER_CUTOUT_MIPPED (1 << 1)
+#define LAYER_CUTOUT (1 << 2)
+#define LAYER_TRANSLUCENT (1 << 3)
 
 //
 //
@@ -43,13 +43,13 @@ layout(shared, binding = 0) buffer RENDERABLE_CHUNKS {
     int data[];
 } renderable_chunks;
 
-bool isChunkSectionRenderable(ivec3 chunk)  {
+bool isChunkSectionRenderable(ivec3 chunk, int layersMask)  {
     chunk -= renderable_chunks.base.xyz;
     if (any(lessThan(chunk, ivec3(0))) || any(greaterThanEqual(chunk, renderable_chunks.size.xyz)))    {
         return false;
     }
     int index = (chunk.x * renderable_chunks.size.y + chunk.y) * renderable_chunks.size.z + chunk.z;
-    return (renderable_chunks.data[index >> 5] & (1 << (index & 0x1F))) != 0;
+    return (renderable_chunks.data[index >> 3] & (layersMask << ((index << 2) & 0xC))) != 0;
 }
 
 struct TextureUV {

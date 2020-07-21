@@ -52,7 +52,6 @@ out vec4 color;
 //
 //
 
-bool shouldCancel() {
-    //return fs_in.cancel != 0 || isChunkSectionRenderable(ivec3(floor(fs_in.pos)) >> 4);
-    return fs_in.cancel != 0;
+bool shouldCancel(int layersMask) {
+    return fs_in.cancel != 0 || isChunkSectionRenderable(ivec3(floor(fs_in.pos)) >> 4, layersMask);
 }

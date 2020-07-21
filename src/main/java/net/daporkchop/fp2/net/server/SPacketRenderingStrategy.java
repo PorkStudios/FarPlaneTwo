@@ -27,6 +27,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.daporkchop.fp2.strategy.RenderStrategy;
 import net.daporkchop.fp2.strategy.common.IFarContext;
+import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
@@ -54,7 +55,8 @@ public class SPacketRenderingStrategy implements IMessage {
     public static class Handler implements IMessageHandler<SPacketRenderingStrategy, IMessage> {
         @Override
         public IMessage onMessage(SPacketRenderingStrategy message, MessageContext ctx) {
-            ctx.getClientHandler().client.addScheduledTask(() -> ((IFarContext) ctx.getClientHandler().world).fp2_init(message.strategy));
+            IFarContext farContext = (IFarContext) ctx.getClientHandler().world;
+            ClientThreadExecutor.INSTANCE.execute(() -> farContext.fp2_init(message.strategy));
             return null;
         }
     }

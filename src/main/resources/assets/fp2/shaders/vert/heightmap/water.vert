@@ -34,7 +34,7 @@ void main(){
     gl_Position = transformPoint(vec3(pos - camera.position));
 
     //decode sky and block light
-    vs_out.light = vec2(ivec2(unpackLight(center)) >> ivec2(0, 4) & 0xF) / 16.;
+    vs_out.light = unpackWaterLight(center);
 
-    vs_out.color = fromRGB(center.w);
+    vs_out.color = unpackWaterColor(center);
 }

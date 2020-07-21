@@ -62,11 +62,11 @@ public class CPacketRenderingStrategy implements IMessage {
         public IMessage onMessage(CPacketRenderingStrategy message, MessageContext ctx) {
             if (message.strategy == Config.renderStrategy) {
                 ServerThreadExecutor.INSTANCE.execute(() -> {
-                    ((IFarPlayer) ctx.getServerHandler().player).fp2_markReady();
-
                     //send the packet here to ensure that it's sent before adding the player to the tracker
                     NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy().strategy(Config.renderStrategy), ctx.getServerHandler().player);
+
                     ((IFarContext) ctx.getServerHandler().player.world).fp2_tracker().playerAdd(ctx.getServerHandler().player);
+                    ((IFarPlayer) ctx.getServerHandler().player).fp2_markReady();
                 });
             }
             return null;

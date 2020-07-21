@@ -45,3 +45,7 @@ vec4 transformPoint(vec4 point)   {
 vec4 transformPoint(vec3 point)   {
     return transformPoint(vec4(point, 1.));
 }
+
+vec2 unpackCombinedLight(int packedCombinedLight)   {
+    return vec2(ivec2(packedCombinedLight) >> ivec2(0, 4) & 0xF) / 16.;
+}
