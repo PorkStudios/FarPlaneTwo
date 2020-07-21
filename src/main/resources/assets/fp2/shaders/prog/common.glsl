@@ -148,3 +148,9 @@ vec4 transformPoint(vec4 point)   {
 vec4 transformPoint(vec3 point)   {
     return transformPoint(vec4(point, 1.));
 }
+
+// lighting
+
+float diffuseLight(vec3 normal) {
+    return min(normal.x * normal.x * .6 + normal.y * normal.y * ((3. + normal.y) / 4.) + normal.z * normal.z * .8, 1.);
+}

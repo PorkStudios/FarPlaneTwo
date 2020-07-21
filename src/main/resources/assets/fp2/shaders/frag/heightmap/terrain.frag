@@ -31,6 +31,9 @@ void main() {
         //block/sky light
         frag_color *= texture(lightmap_texture, fs_in.light);
 
+        //shading
+        frag_color.rgb *= diffuseLight(normalVector());
+
         //fog
         frag_color = addFog(frag_color);
 
