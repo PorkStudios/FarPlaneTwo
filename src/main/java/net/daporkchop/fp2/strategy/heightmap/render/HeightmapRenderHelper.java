@@ -26,6 +26,7 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.init.Blocks;
@@ -41,10 +42,10 @@ import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.HEIGHTMAP
  */
 @UtilityClass
 public class HeightmapRenderHelper {
-    public static final int HEIGHTMAP_RENDER_SIZE = HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS * IVEC4_SIZE * 4;
+    public static final int HEIGHTMAP_RENDER_SIZE = HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS * IVEC4_SIZE;
 
     public static ByteBuf bakePiece(@NonNull HeightmapPiece piece)  {
-        ByteBuf buffer = Constants.allocateByteBuf(HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS * 4 * 4);
+        ByteBuf buffer = Constants.allocateByteBuf(HEIGHTMAP_RENDER_SIZE);
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
@@ -53,7 +54,7 @@ public class HeightmapRenderHelper {
                 int height = piece.height(x, z);
                 int block = piece.block(x, z);
 
-                pos.setPos(piece.blockX() + x, height, piece.blockZ() + z);
+                pos.setPos(piece.blockX() + (x << piece.level()), height, piece.blockZ() + (z << piece.level()));
 
                 buffer.writeInt(height)
                         .writeInt((piece.light(x, z) << 24) | block)

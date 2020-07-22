@@ -61,7 +61,7 @@ public class HeightmapTerrainCache {
 
     protected Tile[] tiles = new Tile[0];
 
-    protected final HeightmapRenderLevel[] levels = new HeightmapRenderLevel[Config.maxLevels];
+    protected final HeightmapRenderLevel[] levels = new HeightmapRenderLevel[Config.maxLevels + 1];
 
     protected final VertexArrayObject vao = new VertexArrayObject();
 

@@ -22,6 +22,7 @@ package net.daporkchop.fp2.strategy.heightmap.render;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
@@ -35,6 +36,7 @@ import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 
 import java.nio.ByteOrder;
 import java.util.BitSet;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -83,7 +85,8 @@ public class HeightmapRenderLevel {
     }
 
     protected void storePiece(@NonNull HeightmapPiece piece, @NonNull ByteBuf buf) {
-        this.tiles.compute(new HeightmapPos(piece.x(), piece.z(), piece.level()), (pos, tile) -> {
+        //FP2.LOGGER.info(PStrings.fastFormat("Storing piece %d,%d@%d", piece.x(), piece.z(), piece.level()));
+        this.tiles.compute(piece.pos(), (pos, tile) -> {
             if (tile == null) {
                 tile = new Tile(pos.x(), pos.z(), pos.level(), this.allocateSlot());
             }
@@ -94,7 +97,7 @@ public class HeightmapRenderLevel {
             }
 
             try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
-                glBufferSubData(GL_SHADER_STORAGE_BUFFER, tile.slot * (long) HeightmapPiece.TOTAL_SIZE, buf.nioBuffer());
+                glBufferSubData(GL_SHADER_STORAGE_BUFFER, (long) tile.slot * HEIGHTMAP_RENDER_SIZE, buf.nioBuffer());
                 tile.renderData = buf;
             }
 
@@ -103,6 +106,7 @@ public class HeightmapRenderLevel {
     }
 
     public void unloadPiece(@NonNull HeightmapPos pos) {
+        //FP2.LOGGER.info(PStrings.fastFormat("Unloading piece %d,%d@%d", pos.x(), pos.z(), pos.level()));
         ClientThreadExecutor.INSTANCE.execute(() -> {
             Tile tile = this.tiles.remove(pos);
             if (tile != null) {
@@ -117,8 +121,8 @@ public class HeightmapRenderLevel {
 
     public Tile[] prepare(@NonNull Tile[] tiles) {
         if (!this.tiles.isEmpty()) {
-            tiles = this.tiles.values().toArray(tiles);
             int len = this.tiles.size();
+            tiles = this.tiles.values().toArray(tiles);
 
             this.generateAndUploadIndex(tiles, len);
             this.generateAndUploadPositions(tiles, len);
@@ -232,7 +236,7 @@ public class HeightmapRenderLevel {
 
                 //re-upload old tiles
                 this.tiles.values().forEach(tile -> {
-                    glBufferSubData(GL_SHADER_STORAGE_BUFFER, tile.slot * HEIGHTMAP_RENDER_SIZE, tile.renderData.nioBuffer());
+                    glBufferSubData(GL_SHADER_STORAGE_BUFFER, (long) tile.slot * HEIGHTMAP_RENDER_SIZE, tile.renderData.nioBuffer());
                 });
             }
         }

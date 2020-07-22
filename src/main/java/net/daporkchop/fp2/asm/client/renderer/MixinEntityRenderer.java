@@ -97,6 +97,7 @@ public abstract class MixinEntityRenderer {
                     target = "Lnet/minecraft/client/renderer/EntityRenderer;farPlaneDistance:F",
                     opcode = Opcodes.PUTFIELD))
     private void setupCameraTransform_increaseFarPlaneDistance(EntityRenderer renderer, float prev) {
-        this.farPlaneDistance = Config.renderDistance;
+        //this.farPlaneDistance = Config.renderDistance;
+        this.farPlaneDistance = Config.levelCutoffDistance << Config.maxLevels; //TODO
     }
 }

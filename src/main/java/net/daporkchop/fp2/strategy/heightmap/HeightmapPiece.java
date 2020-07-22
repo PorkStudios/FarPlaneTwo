@@ -209,8 +209,8 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece, IBlockAcc
 
     @Override
     public Biome getBiome(BlockPos pos) {
-        int x = pos.getX() - this.blockX();
-        int z = pos.getZ() - this.blockZ();
+        int x = (pos.getX() - this.blockX()) >> this.level;
+        int z = (pos.getZ() - this.blockZ()) >> this.level;
         return Biome.getBiome(this.biome.get(biomeIndex(x, z)) & 0xFF, Biomes.PLAINS);
     }
 

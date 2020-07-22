@@ -32,10 +32,12 @@ import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.minecraft.entity.player.EntityPlayerMP;
 
+import java.util.BitSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static java.lang.Math.abs;
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
@@ -73,23 +75,67 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker {
         Set<HeightmapPos> prev = this.tracking.get(player);
         Set<HeightmapPos> next = new ObjectOpenHashSet<>((dist * 2 + 2) * (dist * 2 + 2));
 
-        int level = 0;
-        for (int dx = -dist; dx <= dist; dx += 1 << level) {
-            for (int dz = -dist; dz <= dist; dz += 1 << level) {
-                int x = baseX + dx;
-                int z = baseZ + dz;
-                HeightmapPos pos = new HeightmapPos(x >> level, z >> level, level);
-                if (!prev.remove(pos)) {
-                    //piece wasn't loaded before, we should load and send it
-                    HeightmapPiece piece = this.world.getPieceNowOrLoadAsync(pos);
-                    if (piece != null) {
-                        //FP2.LOGGER.info(PStrings.fastFormat("Sending piece %d,%d@%d", piece.x(), piece.z(), piece.level()));
-                        NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player);
-                    } else {
-                        continue; //don't add to next, to indicate that the piece hasn't been sent yet
+        //dist = 0;
+        if (false) {
+            int level = 1;
+            for (int dx = -dist; dx <= dist; dx += 1 << level) {
+                for (int dz = -dist; dz <= dist; dz += 1 << level) {
+                    int x = baseX + dx;
+                    int z = baseZ + dz;
+                    HeightmapPos pos = new HeightmapPos(x >> level, z >> level, level);
+                    if (!prev.remove(pos)) {
+                        //piece wasn't loaded before, we should load and send it
+                        HeightmapPiece piece = this.world.getPieceNowOrLoadAsync(pos);
+                        if (piece != null) {
+                            //FP2.LOGGER.info(PStrings.fastFormat("Sending piece %d,%d@%d", piece.x(), piece.z(), piece.level()));
+                            NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player);
+                        } else {
+                            continue; //don't add to next, to indicate that the piece hasn't been sent yet
+                        }
+                    }
+                    next.add(pos);
+                }
+            }
+        } else {
+            int levels = Config.maxLevels;
+            int d = Config.levelCutoffDistance >> HEIGHTMAP_SHIFT;
+
+            int xMinPrev = 0;
+            int xMaxPrev = 0;
+            int zMinPrev = 0;
+            int zMaxPrev = 0;
+
+            for (int lvl = 0; lvl <= levels; lvl++)  {
+                int xMin = ((baseX >> lvl) - d) & ~1;
+                int xMax = ((baseX >> lvl) + d) | 1;
+                int zMin = ((baseZ >> lvl) - d) & ~1;
+                int zMax = ((baseZ >> lvl) + d) | 1;
+
+                for (int x = xMin; x <= xMax; x++) {
+                    for (int z = zMin; z <= zMax; z++) {
+                        if (lvl > 0 && x << 1 >= xMinPrev && z << 1 >= zMinPrev && ((x << 1)) < xMaxPrev && ((z << 1)) < zMaxPrev)  {
+                            continue;
+                        }
+
+                        HeightmapPos pos = new HeightmapPos(x, z, lvl);
+                        if (!prev.remove(pos)) {
+                            //piece wasn't loaded before, we should load and send it
+                            HeightmapPiece piece = this.world.getPieceNowOrLoadAsync(pos);
+                            if (piece != null) {
+                                //FP2.LOGGER.info(PStrings.fastFormat("Sending piece %d,%d@%d", piece.x(), piece.z(), piece.level()));
+                                NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player);
+                            } else {
+                                continue; //don't add to next, to indicate that the piece hasn't been sent yet
+                            }
+                        }
+                        next.add(pos);
                     }
                 }
-                next.add(pos);
+
+                xMinPrev = xMin;
+                xMaxPrev = xMax;
+                zMinPrev = zMin;
+                zMaxPrev = zMax;
             }
         }
 
