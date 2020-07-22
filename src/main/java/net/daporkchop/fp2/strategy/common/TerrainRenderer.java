@@ -33,22 +33,10 @@ import java.nio.FloatBuffer;
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public abstract class TerrainRenderer {
-    public double cameraX;
-    public double cameraY;
-    public double cameraZ;
+public interface TerrainRenderer {
+    void render(float partialTicks, WorldClient world, Minecraft mc);
 
-    public FloatBuffer proj;
-    public FloatBuffer modelView;
+    void receivePiece(@NonNull IFarPiece piece);
 
-    public void render(float partialTicks, WorldClient world, Minecraft mc) {
-        Entity entity = mc.getRenderViewEntity();
-        this.cameraX = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks;
-        this.cameraY = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks;
-        this.cameraZ = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks;
-    }
-
-    public abstract void receivePiece(@NonNull IFarPiece piece);
-
-    public abstract void unloadPiece(@NonNull IFarPos pos);
+    void unloadPiece(@NonNull IFarPos pos);
 }

@@ -19,24 +19,20 @@
  */
 
 void main() {
-    if (shouldCancel()) {
-        discard;
-    } else {
-        TextureUV uvs = global_info.tex_uvs[fs_in.state];
-        vec2 uv = uvs.min + (uvs.max - uvs.min) * fract(fs_in.pos.xz);
+    TextureUV uvs = global_info.tex_uvs[fs_in.state];
+    vec2 uv = uvs.min + (uvs.max - uvs.min) * fract(fs_in.pos.xz);
 
-        //initial block texture sample
-        vec4 frag_color = fs_in.color * texture(terrain_texture, uv);
+    //initial block texture sample
+    vec4 frag_color = fs_in.color * texture(terrain_texture, uv);
 
-        //block/sky light
-        frag_color *= texture(lightmap_texture, fs_in.light);
+    //block/sky light
+    frag_color *= texture(lightmap_texture, fs_in.light);
 
-        //shading
-        frag_color.rgb *= diffuseLight(normalVector());
+    //shading
+    frag_color.rgb *= diffuseLight(normalVector());
 
-        //fog
-        frag_color = addFog(frag_color);
+    //fog
+    frag_color = addFog(frag_color);
 
-        color = frag_color;
-    }
+    color = frag_color;
 }

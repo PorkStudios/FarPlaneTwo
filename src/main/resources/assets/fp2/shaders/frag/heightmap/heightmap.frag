@@ -54,7 +54,3 @@ vec3 normalVector() {
     vec3 fdy = dFdy(fs_in.pos);
     return normalize(cross(fdx, fdy));
 }
-
-bool shouldCancel() {
-    return fs_in.cancel != 0 || isChunkSectionRenderable(ivec3(floor(fs_in.pos)) >> 4);
-}

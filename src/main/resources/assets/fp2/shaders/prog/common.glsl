@@ -31,19 +31,40 @@
 #define LAYER_CUTOUT (1 << 2)
 #define LAYER_TRANSLUCENT (1 << 3)
 
+#define GL_LINEAR (9729)
+#define GL_EXP (2048)
+#define GL_EXP2 (2049)
+
 //
 //
 // UNIFORMS
 //
 //
 
-//camera
-layout(std140, binding = 0) uniform CAMERA {
+//OpenGL state
+
+struct Camera {
     mat4 projection;
     mat4 modelview;
 
     dvec3 position;
-} camera;
+};
+
+struct Fog {
+    vec4 color;
+
+    float density;
+    float start;
+    float end;
+    float scale;
+
+    int mode;
+};
+
+layout(std140, binding = 0) uniform GL_STATE {
+    Camera camera;
+    Fog fog;
+} gl_state;
 
 //
 //
@@ -52,7 +73,7 @@ layout(std140, binding = 0) uniform CAMERA {
 //
 
 layout(std430, binding = 0) buffer RENDERABLE_CHUNKS {
-    ivec4 base; //using 4d vectors because apparently GLSL is too stupid to handle 3d ones
+    ivec4 base;//using 4d vectors because apparently GLSL is too stupid to handle 3d ones
     ivec4 size;
     int data[];
 } renderable_chunks;
@@ -141,12 +162,12 @@ vec4 getFoliageColorAtPos(dvec3 pos, int biome){
 
 // vertex transformation
 
-vec4 transformPoint(vec4 point)   {
-    return camera.projection * camera.modelview * point;
+vec4 cameraTransform(vec4 point) {
+    return gl_state.camera.projection * gl_state.camera.modelview * point;
 }
 
-vec4 transformPoint(vec3 point)   {
-    return transformPoint(vec4(point, 1.));
+vec4 cameraTransform(vec3 point)   {
+    return cameraTransform(vec4(point, 1.));
 }
 
 // lighting

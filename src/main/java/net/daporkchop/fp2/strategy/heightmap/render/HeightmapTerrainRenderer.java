@@ -22,8 +22,8 @@ package net.daporkchop.fp2.strategy.heightmap.render;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.ClientConstants;
-import net.daporkchop.fp2.client.FogHelper;
 import net.daporkchop.fp2.client.GlobalInfo;
+import net.daporkchop.fp2.client.ShaderGlStateHelper;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.client.gl.object.ElementArrayObject;
@@ -37,8 +37,6 @@ import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
-import net.daporkchop.lib.common.pool.handle.Handle;
-import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
@@ -48,8 +46,6 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.BufferUtils;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
@@ -70,7 +66,7 @@ import static org.lwjgl.opengl.GL45.*;
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public class HeightmapTerrainRenderer extends TerrainRenderer {
+public class HeightmapTerrainRenderer implements TerrainRenderer {
     public static ShaderProgram TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
     public static ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
 
@@ -173,8 +169,6 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
 
     @Override
     public void render(float partialTicks, WorldClient world, Minecraft mc) {
-        super.render(partialTicks, world, mc);
-
         OpenGL.checkGLError("pre fp2 render");
 
         try (ShaderStorageBuffer loadedBuffer = new ShaderStorageBuffer().bind()) {
@@ -202,30 +196,14 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
         GlStateManager.matrixMode(GL_MODELVIEW);
         GlStateManager.pushMatrix();
 
-        this.proj = MatrixHelper.getMatrix(GL_PROJECTION_MATRIX, this.proj);
-        this.modelView = MatrixHelper.getMatrix(GL_MODELVIEW_MATRIX, this.modelView);
-
         mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
         mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
 
         mc.entityRenderer.enableLightmap();
 
         try {
-            try (UniformBufferObject uniforms = this.uniforms.bind()) {
-                glBufferSubData(GL_UNIFORM_BUFFER, 0L, this.proj);
-                glBufferSubData(GL_UNIFORM_BUFFER, 16L * 4L, this.modelView);
-
-                try (Handle<ByteBuffer> handle = PorkUtil.DIRECT_TINY_BUFFER_POOL.get()) {
-                    ByteBuffer buffer = handle.get();
-                    buffer.order(ByteOrder.nativeOrder()).clear();
-                    buffer.putDouble(this.cameraX).putDouble(this.cameraY).putDouble(this.cameraZ).putDouble(0.0d).clear();
-                    glBufferSubData(GL_UNIFORM_BUFFER, 16L * 4L * 2L, buffer);
-                }
-            }
-
-            this.uniforms.bindUBO(0);
-
-            FogHelper.prepare(mc);
+            ShaderGlStateHelper.update(partialTicks, mc);
+            ShaderGlStateHelper.UBO.bindUBO(0);
 
             this.cache.render(partialTicks, mc);
         } finally {

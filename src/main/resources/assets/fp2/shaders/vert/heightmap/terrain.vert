@@ -25,7 +25,7 @@ void main(){
     HEIGHTMAP_TYPE center = sampleHeightmap(posXZ, vertex.level);
 
     dvec3 pos = dvec3(double(posXZ.x), double(unpackHeight(center)) + .5, double(posXZ.y));
-    vec3 relativePos = vec3(pos - camera.position); //convert to vec3 afterwards to minimize precision loss
+    vec3 relativePos = vec3(pos - gl_state.camera.position); //convert to vec3 afterwards to minimize precision loss
 
     //give raw position to fragment shader
     vs_out.pos = vec3(pos);
@@ -34,7 +34,7 @@ void main(){
     fog_out.depth = length(relativePos);
 
     //translate vertex position
-    gl_Position = transformPoint(relativePos);
+    gl_Position = cameraTransform(relativePos);
 
     //decode sky and block light
     vs_out.light = unpackBlockLight(center);

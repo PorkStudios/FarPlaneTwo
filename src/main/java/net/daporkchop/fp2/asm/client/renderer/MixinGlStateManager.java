@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.asm.client.renderer;
 
-import net.daporkchop.fp2.client.FogHelper;
+import net.daporkchop.fp2.client.ShaderGlStateHelper;
 import net.minecraft.client.renderer.GlStateManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -40,7 +40,7 @@ public abstract class MixinGlStateManager {
             at = @At("HEAD"))
     private static void glFog_head(int id, FloatBuffer data, CallbackInfo ci) {
         if (id == GL_FOG_COLOR) {
-            FogHelper._setColor(data);
+            ShaderGlStateHelper.updateFogColor(data);
         }
     }
 }

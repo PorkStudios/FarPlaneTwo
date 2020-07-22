@@ -20,32 +20,6 @@
 
 //
 //
-// MACROS
-//
-//
-
-#define GL_LINEAR (9729)
-#define GL_EXP (2048)
-#define GL_EXP2 (2049)
-
-//
-//
-// UNIFORMS
-//
-//
-
-//fog
-layout(std140, binding = 1) uniform FOG {
-    vec4 color;
-    int mode;
-    float density;
-    float start;
-    float end;
-    float scale;
-} fog;
-
-//
-//
 // INPUTS
 //
 //
@@ -60,14 +34,18 @@ in FOG {
 //
 //
 
-float getFogFactor()    {
-    if (fog.mode == GL_LINEAR) {
-        return clamp((fog.end - fog_in.depth) * fog.scale, 0., 1.);
+float getFogFactor()    { //this shouldn't cause any significant performance drop because the result is constant for every invocation
+    if (gl_state.fog.mode == GL_LINEAR) {
+        return clamp((gl_state.fog.end - fog_in.depth) * gl_state.fog.scale, 0., 1.);
+    } else if (gl_state.fog.mode == GL_EXP)  {
+        return clamp(exp(-gl_state.fog.end * fog_in.depth), 0., 1.);
+    } else if (gl_state.fog.mode == GL_EXP2)  {
+        return clamp(exp(-gl_state.fog.end * pow(fog_in.depth, 2.)), 0., 1.);
     } else {
         return 1.;
     }
 }
 
 vec4 addFog(vec4 color) {
-    return mix(fog.color, color, getFogFactor());
+    return mix(gl_state.fog.color, color, getFogFactor());
 }

@@ -31,6 +31,28 @@ import static org.lwjgl.util.glu.GLU.*;
  */
 @UtilityClass
 public class OpenGL {
+    public final int FLOAT_SIZE = Float.BYTES;
+    public final int INT_SIZE = Integer.BYTES;
+    public final int DOUBLE_SIZE = Double.BYTES;
+
+    public final int VEC2_ELEMENTS = 2;
+    public final int VEC2_SIZE = VEC2_ELEMENTS * FLOAT_SIZE;
+    public final int IVEC2_SIZE = VEC2_ELEMENTS * INT_SIZE;
+    public final int DVEC2_SIZE = VEC2_ELEMENTS * DOUBLE_SIZE;
+
+    public final int VEC3_ELEMENTS = 3;
+    public final int VEC3_SIZE = (VEC3_ELEMENTS + 1) * FLOAT_SIZE;
+    public final int IVEC3_SIZE = (VEC3_ELEMENTS + 1) * INT_SIZE;
+    public final int DVEC3_SIZE = (VEC3_ELEMENTS + 1) * DOUBLE_SIZE;
+
+    public final int VEC4_ELEMENTS = 4;
+    public final int VEC4_SIZE = VEC4_ELEMENTS * FLOAT_SIZE;
+    public final int IVEC4_SIZE = VEC4_ELEMENTS * INT_SIZE;
+    public final int DVEC4_SIZE = VEC4_ELEMENTS * DOUBLE_SIZE;
+
+    public final int MAT4_ELEMENTS = 4 * 4;
+    public final int MAT4_SIZE = MAT4_ELEMENTS * FLOAT_SIZE;
+
     public void checkGLError(String message) {
         for (int error; (error = glGetError()) != GL_NO_ERROR; ) {
             FP2.LOGGER.error("########## GL ERROR ##########");

@@ -21,11 +21,14 @@
 package net.daporkchop.fp2.client.gl;
 
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.util.DirectBufferReuse;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 
 import java.nio.FloatBuffer;
 
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static org.lwjgl.opengl.GL11.*;
 
 /**
@@ -33,15 +36,14 @@ import static org.lwjgl.opengl.GL11.*;
  */
 @UtilityClass
 public class MatrixHelper {
-    private final FloatBuffer MATRIX = BufferUtils.createFloatBuffer(16);
-    private final float[] EMPTY_MATRIX = new float[16];
+    private final long MATRIX = PUnsafe.allocateMemory(MAT4_SIZE);
 
-    public FloatBuffer getMatrix(int id, FloatBuffer buffer) {
-        if (buffer == null) {
-            buffer = BufferUtils.createFloatBuffer(16);
-        }
-        GL11.glGetFloat(id, buffer);
-        return buffer;
+    public int matrixIndex(int x, int y) {
+        return x * 4 + y;
+    }
+
+    public long matrixOffset(int x, int y)  {
+        return matrixIndex(x, y) << 2L;
     }
 
     public void infiniteZFar(float fovy, float aspect, float zNear) {
@@ -49,15 +51,15 @@ public class MatrixHelper {
         float radians = (float) Math.toRadians(fovy);
         float f = 1.0f / (float) Math.tan(radians * 0.5f);
 
-        MATRIX.put(EMPTY_MATRIX);
+        PUnsafe.setMemory(MATRIX, MAT4_SIZE, (byte) 0);
 
-        MATRIX.put(0 * 4 + 0, f / aspect);
-        MATRIX.put(1 * 4 + 1, f);
-        MATRIX.put(2 * 4 + 2, -1);
-        MATRIX.put(3 * 4 + 2, -zNear);
-        MATRIX.put(2 * 4 + 3, -1);
+        PUnsafe.putFloat(MATRIX + matrixOffset(0, 0), f / aspect);
+        PUnsafe.putFloat(MATRIX + matrixOffset(1, 1), f);
+        PUnsafe.putFloat(MATRIX + matrixOffset(2, 2), -1.0f);
+        PUnsafe.putFloat(MATRIX + matrixOffset(3, 2), -zNear);
+        PUnsafe.putFloat(MATRIX + matrixOffset(2, 3), -1.0f);
 
-        glMultMatrix((FloatBuffer) MATRIX.clear());
+        glMultMatrix(DirectBufferReuse.wrapFloat(MATRIX, MAT4_ELEMENTS));
     }
 
     public void reversedZ(float fovy, float aspect, float zNear) {
@@ -65,13 +67,13 @@ public class MatrixHelper {
         float radians = (float) Math.toRadians(fovy);
         float f = 1.0f / (float) Math.tan(radians * 0.5f);
 
-        MATRIX.put(EMPTY_MATRIX);
+        PUnsafe.setMemory(MATRIX, MAT4_SIZE, (byte) 0);
 
-        MATRIX.put(0 * 4 + 0, f / aspect);
-        MATRIX.put(1 * 4 + 1, f);
-        MATRIX.put(3 * 4 + 2, zNear);
-        MATRIX.put(2 * 4 + 3, -1);
+        PUnsafe.putFloat(MATRIX + matrixOffset(0, 0), f / aspect);
+        PUnsafe.putFloat(MATRIX + matrixOffset(1, 1), f);
+        PUnsafe.putFloat(MATRIX + matrixOffset(3, 2), zNear);
+        PUnsafe.putFloat(MATRIX + matrixOffset(2, 3), -1.0f);
 
-        glMultMatrix((FloatBuffer) MATRIX.clear());
+        glMultMatrix(DirectBufferReuse.wrapFloat(MATRIX, MAT4_ELEMENTS));
     }
 }
