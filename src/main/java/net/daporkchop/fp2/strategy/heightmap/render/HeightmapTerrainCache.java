@@ -22,11 +22,8 @@ package net.daporkchop.fp2.strategy.heightmap.render;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
-import lombok.experimental.Accessors;
+import net.daporkchop.fp2.Config;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
@@ -62,14 +59,9 @@ import static org.lwjgl.opengl.GL43.*;
 public class HeightmapTerrainCache {
     protected final HeightmapRenderer renderer;
 
-    protected final Map<HeightmapPos, Tile> tiles = new ObjObjOpenHashMap<>();
+    protected Tile[] tiles = new Tile[0];
 
-    protected final ShaderStorageBuffer indexSSBO = new ShaderStorageBuffer();
-    protected final ShaderStorageBuffer positionSSBO = new ShaderStorageBuffer();
-    protected final ShaderStorageBuffer dataSSBO = new ShaderStorageBuffer();
-
-    protected final BitSet activeDataSlots = new BitSet();
-    protected int dataSize = 1;
+    protected final HeightmapRenderLevel[] levels = new HeightmapRenderLevel[Config.maxLevels];
 
     protected final VertexArrayObject vao = new VertexArrayObject();
 
@@ -79,8 +71,8 @@ public class HeightmapTerrainCache {
         int size = glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
         FP2.LOGGER.info(PStrings.fastFormat("Max SSBO size: %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
 
-        try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
-            glBufferData(GL_SHADER_STORAGE_BUFFER, this.dataSize * (long) HeightmapPiece.TOTAL_SIZE, GL_STATIC_DRAW);
+        for (int l = this.levels.length - 1; l >= 0; l--)   {
+            this.levels[l] = new HeightmapRenderLevel(l, l == this.levels.length - 1 ? null : this.levels[l + 1]);
         }
 
         try (VertexArrayObject vao = this.vao.bind()) {
@@ -108,93 +100,26 @@ public class HeightmapTerrainCache {
         }
     }
 
-    protected int allocateSlot() {
-        int slot = this.activeDataSlots.nextClearBit(0);
-        this.activeDataSlots.set(slot);
-        if (slot >= this.dataSize) {
-            this.dataSize <<= 1;
-            try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
-                //grow data SSBO
-
-                long size = this.dataSize * (long) HeightmapPiece.TOTAL_SIZE;
-                FP2.LOGGER.info(PStrings.fastFormat("Growing data SSBO to %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
-
-                glBufferData(GL_SHADER_STORAGE_BUFFER, this.dataSize * (long) HeightmapPiece.TOTAL_SIZE, GL_STATIC_DRAW);
-
-                //re-upload old tiles
-                this.tiles.values().forEach(tile -> {
-                    glBufferSubData(GL_SHADER_STORAGE_BUFFER, tile.slot * (long) HeightmapPiece.TOTAL_SIZE, tile.renderData.nioBuffer());
-                });
-            }
-        }
-        return slot;
-    }
-
     public void receivePiece(@NonNull HeightmapPiece piece) {
-        //FP2.LOGGER.info(PStrings.fastFormat("Received piece %d,%d@%d", piece.x(), piece.z(), piece.level()));
-        CompletableFuture
-                .supplyAsync(() -> HeightmapRenderHelper.bakePiece(piece), RENDER_WORKERS)
-                .thenAcceptAsync(buffer -> this.storePiece(piece, buffer), ClientThreadExecutor.INSTANCE)
-                .whenComplete((v, t) -> {
-                    if (t != null) {
-                        FP2.LOGGER.error("", t);
-                    }
-                });
-    }
-
-    protected void storePiece(@NonNull HeightmapPiece piece, @NonNull ByteBuf buf) {
-        this.tiles.compute(new HeightmapPos(piece.x(), piece.z(), piece.level()), (pos, tile) -> {
-            if (tile == null) {
-                tile = new Tile(pos.x(), pos.z(), pos.level(), this.allocateSlot());
-            }
-
-            if (tile.renderData != null) {
-                tile.renderData.release();
-                tile.renderData = null;
-            }
-
-            try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
-                glBufferSubData(GL_SHADER_STORAGE_BUFFER, tile.slot * (long) HeightmapPiece.TOTAL_SIZE, buf.nioBuffer());
-                tile.renderData = buf;
-            }
-
-            return tile;
-        });
+        this.levels[piece.level()].receivePiece(piece);
     }
 
     public void unloadPiece(@NonNull HeightmapPos pos) {
-        //FP2.LOGGER.info(PStrings.fastFormat("Unloading piece %d,%d@%d", pos.x(), pos.z(), pos.level()));
-        ClientThreadExecutor.INSTANCE.execute(() -> {
-            Tile tile = this.tiles.remove(pos);
-            if (tile != null) {
-                if (tile.renderData != null) {
-                    tile.renderData.release();
-                    tile.renderData = null;
-                }
-                this.activeDataSlots.clear(tile.slot);
-            }
-        });
+        this.levels[pos.level()].unloadPiece(pos);
     }
 
     public void render(float partialTicks, Minecraft mc) {
-        if (this.tiles.isEmpty()) {
-            return;
+        for (HeightmapRenderLevel lvl : this.levels)    {
+            this.tiles = lvl.prepare(this.tiles);
         }
-
-        Tile[] tiles = this.tiles.values().toArray(new Tile[this.tiles.size()]);
-
-        this.generateAndUploadIndex(tiles);
-        int positions = this.generateAndUploadPositions(tiles);
-
-        this.positionSSBO.bindSSBO(2);
-        this.indexSSBO.bindSSBO(3);
-        this.dataSSBO.bindSSBO(4);
 
         try (VertexArrayObject vao = this.vao.bind()) {
             try (ShaderProgram shader = TERRAIN_SHADER.use()) {
                 GlStateManager.disableAlpha();
 
-                glDrawElementsInstanced(GL_TRIANGLES, this.renderer.meshVertexCount, GL_UNSIGNED_SHORT, 0L, positions);
+                for (HeightmapRenderLevel lvl : this.levels)    {
+                    lvl.render(shader, this.renderer.meshVertexCount);
+                }
 
                 GlStateManager.enableAlpha();
             }
@@ -203,99 +128,13 @@ public class HeightmapTerrainCache {
                 GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
                 glUniform1f(shader.uniformLocation("seaLevel"), 63.0f);
-                glDrawElementsInstanced(GL_TRIANGLES, this.renderer.meshVertexCount, GL_UNSIGNED_SHORT, 0L, positions);
+
+                for (HeightmapRenderLevel lvl : this.levels)    {
+                    lvl.render(shader, this.renderer.meshVertexCount);
+                }
 
                 GlStateManager.disableBlend();
             }
         }
-    }
-
-    @SuppressWarnings("deprecation")
-    protected void generateAndUploadIndex(@NonNull Tile[] tiles) {
-        final int HEADER_SIZE = 2 * 2;
-
-        int minX = Integer.MAX_VALUE;
-        int maxX = Integer.MIN_VALUE;
-        int minZ = Integer.MAX_VALUE;
-        int maxZ = Integer.MIN_VALUE;
-
-        for (int i = 0, len = tiles.length; i < len; i++) {
-            Tile tile = tiles[i];
-            if (tile.x < minX) {
-                minX = tile.x;
-            }
-            if (tile.x > maxX) {
-                maxX = tile.x;
-            }
-            if (tile.z < minZ) {
-                minZ = tile.z;
-            }
-            if (tile.z > maxZ) {
-                maxZ = tile.z;
-            }
-        }
-
-        int dx = ++maxX - minX;
-        int dz = ++maxZ - minZ;
-        int area = dx * dz;
-
-        ByteBuf buffer = Constants.allocateByteBuf((HEADER_SIZE + area) * 4)
-                .writeInt(minX).writeInt(minZ)
-                .writeInt(dx).writeInt(dz);
-
-        try {
-            for (int i = 0; i < area; i++) {
-                buffer.writeInt(-1);
-            }
-
-            for (int i = 0, len = tiles.length; i < len; i++) {
-                Tile tile = tiles[i];
-                int index = (tile.x - minX) * dz + tile.z - minZ;
-                buffer.setInt((HEADER_SIZE + index) * 4, tile.slot);
-            }
-
-            try (ShaderStorageBuffer ssbo = this.indexSSBO.bind()) {
-                glBufferData(GL_SHADER_STORAGE_BUFFER, buffer.nioBuffer(), GL_STATIC_DRAW);
-            }
-        } finally {
-            buffer.release();
-        }
-    }
-
-    @SuppressWarnings("deprecation")
-    protected int generateAndUploadPositions(@NonNull Tile[] tiles) {
-        ByteBuf buffer = PooledByteBufAllocator.DEFAULT.directBuffer((this.tiles.size() * 4) * 4)
-                .order(ByteOrder.nativeOrder());
-
-        try {
-            int count = this.tiles.size();
-
-            for (int i = 0, len = tiles.length; i < len; i++) {
-                Tile tile = tiles[i];
-                buffer.writeInt(tile.x).writeInt(tile.z).writeInt(tile.level)
-                        .writeInt(0); //padding
-            }
-
-            try (ShaderStorageBuffer ssbo = this.positionSSBO.bind()) {
-                glBufferData(GL_SHADER_STORAGE_BUFFER, buffer.nioBuffer(), GL_STATIC_DRAW);
-            }
-
-            return count;
-        } finally {
-            buffer.release();
-        }
-    }
-
-    @RequiredArgsConstructor
-    @Getter
-    @Setter
-    @Accessors(fluent = true, chain = true)
-    protected static class Tile {
-        protected final int x;
-        protected final int z;
-        protected final int level;
-        protected final int slot;
-
-        protected ByteBuf renderData;
     }
 }

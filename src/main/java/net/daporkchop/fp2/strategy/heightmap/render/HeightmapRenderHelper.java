@@ -33,6 +33,7 @@ import net.minecraft.util.math.BlockPos;
 
 import java.nio.ByteOrder;
 
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.HEIGHTMAP_VOXELS;
 
 /**
@@ -40,6 +41,8 @@ import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.HEIGHTMAP
  */
 @UtilityClass
 public class HeightmapRenderHelper {
+    public static final int HEIGHTMAP_RENDER_SIZE = HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS * IVEC4_SIZE * 4;
+
     public static ByteBuf bakePiece(@NonNull HeightmapPiece piece)  {
         ByteBuf buffer = Constants.allocateByteBuf(HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS * 4 * 4);
 

@@ -20,16 +20,24 @@
 
 package net.daporkchop.fp2.strategy.heightmap.render;
 
-import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
-
-import java.util.BitSet;
+import io.netty.buffer.ByteBuf;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
 /**
  * @author DaPorkchop_
  */
-public class HeightmapRenderLayer {
-    protected final ShaderStorageBuffer dataSSBO = new ShaderStorageBuffer();
+@RequiredArgsConstructor
+@Getter
+@Setter
+@Accessors(fluent = true, chain = true)
+class Tile {
+    protected final int x;
+    protected final int z;
+    protected final int level;
+    protected final int slot;
 
-    protected final BitSet activeDataSlots = new BitSet();
-    protected int dataSize = 1;
+    protected ByteBuf renderData;
 }

@@ -21,7 +21,7 @@
 uniform float seaLevel;
 
 void main(){
-    VertexPosition vertex = vertexPos();
+    VertexPosition vertex = vertexPos(0);
     ivec2 posXZ = toWorldPos(vertex);
 
     HEIGHTMAP_TYPE center = sampleHeightmap(posXZ, vertex.level);

@@ -73,7 +73,7 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker {
         Set<HeightmapPos> prev = this.tracking.get(player);
         Set<HeightmapPos> next = new ObjectOpenHashSet<>((dist * 2 + 2) * (dist * 2 + 2));
 
-        int level = 3;
+        int level = 0;
         for (int dx = -dist; dx <= dist; dx += 1 << level) {
             for (int dz = -dist; dz <= dist; dz += 1 << level) {
                 int x = baseX + dx;

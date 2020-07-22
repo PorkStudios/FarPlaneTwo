@@ -52,6 +52,7 @@ public class Config {
     @net.minecraftforge.common.config.Config.RangeInt(min = 1, max = 32)
     @net.minecraftforge.common.config.Config.SlidingOption
     @net.minecraftforge.common.config.Config.LangKey("config.fp2.maxLevels")
+    @net.minecraftforge.common.config.Config.RequiresWorldRestart
     public static int maxLevels = 8;
 
     @net.minecraftforge.common.config.Config.Comment({

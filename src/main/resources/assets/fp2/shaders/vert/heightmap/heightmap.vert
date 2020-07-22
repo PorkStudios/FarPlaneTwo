@@ -38,6 +38,14 @@ layout(location = 2) in int in_vertexID_chunk;
 
 //
 //
+// UNIFORMS
+//
+//
+
+uniform int current_base_level;
+
+//
+//
 // OUTPUTS
 //
 //
@@ -66,43 +74,42 @@ struct VertexPosition {
 
 layout(std430, binding = 2) buffer INSTANCE_POSITIONS {
     VertexPosition data[];
-} instance_positions;
+} instance_positions[2];
 
-VertexPosition vertexPos()   {
-    return instance_positions.data[gl_InstanceID];
+VertexPosition vertexPos(int relativeLevel)   {
+    return instance_positions[relativeLevel].data[gl_InstanceID];
 }
 
 ivec2 toWorldPos(VertexPosition vertex) {
     return (vertex.tilePos * HEIGHTMAP_VOXELS + in_offset_absolute) << vertex.level;
-    //return ((vertex.tilePos * HEIGHTMAP_VOXELS)) + in_offset_absolute;
 }
 
 //tile index
-layout(std430, binding = 3) buffer TILE_INDEX {
+layout(std430, binding = 4) buffer TILE_INDEX {
     ivec2 base;
     ivec2 size;
     int data[];
-} tile_index;
+} tile_index[2];
 
-int loadedTileIndex(ivec2 chunk)  {
-    chunk -= tile_index.base;
-    if (any(lessThan(chunk, ivec2(0))) || any(greaterThanEqual(chunk, tile_index.size)))    {
+int loadedTileIndex(ivec2 chunk, int relativeLevel)  {
+    chunk -= tile_index[relativeLevel].base;
+    if (any(lessThan(chunk, ivec2(0))) || any(greaterThanEqual(chunk, tile_index[relativeLevel].size)))    {
         return -1;
     }
-    int index = chunk.x * tile_index.size.y + chunk.y;
-    return tile_index.data[index];
+    int index = chunk.x * tile_index[relativeLevel].size.y + chunk.y;
+    return tile_index[relativeLevel].data[index];
 }
 
 //tile data
-layout(std430, binding = 4) buffer TILE_DATA {
+layout(std430, binding = 6) buffer TILE_DATA {
     HEIGHTMAP_TYPE data[][HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS];
-} tile_data;
+} tile_data[2];
 
 HEIGHTMAP_TYPE sampleHeightmap(ivec2 worldPos, int level)   {
-    int tileIndex = loadedTileIndex(worldPos >> (HEIGHTMAP_SHIFT + level));
+    int tileIndex = loadedTileIndex(worldPos >> (HEIGHTMAP_SHIFT + level), level - current_base_level);
     if (tileIndex >= 0)  {
         vs_out.cancel = 0;
-        return tile_data.data[tileIndex][in_vertexID_chunk];
+        return tile_data[level - current_base_level].data[tileIndex][in_vertexID_chunk];
     } else {
         vs_out.cancel = 1;
         return HEIGHTMAP_TYPE(0);
