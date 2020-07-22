@@ -26,9 +26,11 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import net.daporkchop.fp2.strategy.RenderStrategy;
-import net.daporkchop.fp2.strategy.common.IFarPiecePos;
+import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.math.PMath;
+
+import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.HEIGHTMAP_VOXELS;
 
 /**
  * @author DaPorkchop_
@@ -36,9 +38,10 @@ import net.daporkchop.lib.common.math.PMath;
 @RequiredArgsConstructor
 @Getter
 @Accessors(fluent = true)
-public class HeightmapPiecePos implements IFarPiecePos {
-    private final int x;
-    private final int z;
+public class HeightmapPos implements IFarPos {
+    protected final int x;
+    protected final int z;
+    protected final int level;
 
     @Override
     public RenderStrategy strategy() {
@@ -46,24 +49,32 @@ public class HeightmapPiecePos implements IFarPiecePos {
     }
 
     @Override
-    public void write(@NonNull ByteBuf dst) {
-        dst.writeInt(this.x).writeInt(this.z);
+    public void writePos(@NonNull ByteBuf dst) {
+        dst.writeInt(this.x).writeInt(this.z).writeInt(this.level);
     }
 
     @Override
     public int hashCode() {
-        return PMath.mix32(BinMath.packXY(this.x, this.z));
+        return PMath.mix32(BinMath.packXY(this.x, this.z) ^ this.level);
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;
-        } else if (obj instanceof HeightmapPiecePos) {
-            HeightmapPiecePos pos = (HeightmapPiecePos) obj;
-            return this.x == pos.x && this.z == pos.z;
+        } else if (obj instanceof HeightmapPos) {
+            HeightmapPos pos = (HeightmapPos) obj;
+            return this.x == pos.x && this.z == pos.z && this.level == pos.level;
         } else {
             return false;
         }
+    }
+
+    public int blockX() {
+        return this.x * HEIGHTMAP_VOXELS << this.level;
+    }
+
+    public int blockZ() {
+        return this.x * HEIGHTMAP_VOXELS << this.level;
     }
 }

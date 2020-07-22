@@ -33,17 +33,15 @@ import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
-import net.daporkchop.fp2.strategy.common.IFarPiecePos;
+import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPiecePos;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.daporkchop.lib.common.pool.handle.Handle;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.OpenGlHelper;
-import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.relauncher.Side;
@@ -60,7 +58,6 @@ import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL11.glBlendFunc;
 import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL15.glBufferData;
@@ -169,9 +166,9 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
     }
 
     @Override
-    public void unloadPiece(@NonNull IFarPiecePos pos) {
-        checkArg(pos instanceof HeightmapPiecePos, pos);
-        this.cache.unloadPiece((HeightmapPiecePos) pos);
+    public void unloadPiece(@NonNull IFarPos pos) {
+        checkArg(pos instanceof HeightmapPos, pos);
+        this.cache.unloadPiece((HeightmapPos) pos);
     }
 
     @Override

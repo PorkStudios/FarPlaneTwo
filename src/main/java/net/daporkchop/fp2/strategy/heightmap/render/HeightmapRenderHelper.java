@@ -50,7 +50,7 @@ public class HeightmapRenderHelper {
                 int height = piece.height(x, z);
                 int block = piece.block(x, z);
 
-                pos.setPos(piece.x() * HEIGHTMAP_VOXELS + x, height, piece.z() * HEIGHTMAP_VOXELS + z);
+                pos.setPos(piece.blockX() + x, height, piece.blockZ() + z);
 
                 buffer.writeInt(height)
                         .writeInt((piece.light(x, z) << 24) | block)

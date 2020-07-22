@@ -28,13 +28,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.daporkchop.fp2.FP2;
-import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPiecePos;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.daporkchop.lib.common.misc.string.PStrings;
@@ -64,8 +63,7 @@ import static org.lwjgl.opengl.GL43.*;
 public class HeightmapTerrainCache {
     protected final HeightmapTerrainRenderer renderer;
 
-    //protected final Map<HeightmapPiecePos, VertexArrayObject> pieces = new HashMap<>();
-    protected final Map<HeightmapPiecePos, Tile> tiles = new ObjObjOpenHashMap<>();
+    protected final Map<HeightmapPos, Tile> tiles = new ObjObjOpenHashMap<>();
 
     protected final ShaderStorageBuffer indexSSBO = new ShaderStorageBuffer();
     protected final ShaderStorageBuffer positionSSBO = new ShaderStorageBuffer();
@@ -134,15 +132,16 @@ public class HeightmapTerrainCache {
     }
 
     public void receivePiece(@NonNull HeightmapPiece piece) {
+        //FP2.LOGGER.info(PStrings.fastFormat("Received piece %d,%d@%d", piece.x(), piece.z(), piece.level()));
         CompletableFuture
                 .supplyAsync(() -> HeightmapRenderHelper.bakePiece(piece), RENDER_WORKERS)
                 .thenAcceptAsync(buffer -> this.storePiece(piece, buffer), ClientThreadExecutor.INSTANCE);
     }
 
     protected void storePiece(@NonNull HeightmapPiece piece, @NonNull ByteBuf buf) {
-        this.tiles.compute(piece.pos(), (pos, tile) -> {
+        this.tiles.compute(new HeightmapPos(piece.x(), piece.z(), piece.level()), (pos, tile) -> {
             if (tile == null) {
-                tile = new Tile(pos.x(), pos.z(), this.allocateSlot());
+                tile = new Tile(pos.x(), pos.z(), pos.level(), this.allocateSlot());
             }
 
             if (tile.renderData != null) {
@@ -159,7 +158,8 @@ public class HeightmapTerrainCache {
         });
     }
 
-    public void unloadPiece(@NonNull HeightmapPiecePos pos) {
+    public void unloadPiece(@NonNull HeightmapPos pos) {
+        //FP2.LOGGER.info(PStrings.fastFormat("Unloading piece %d,%d@%d", pos.x(), pos.z(), pos.level()));
         ClientThreadExecutor.INSTANCE.execute(() -> {
             Tile tile = this.tiles.remove(pos);
             if (tile != null) {
@@ -260,7 +260,7 @@ public class HeightmapTerrainCache {
 
     @SuppressWarnings("deprecation")
     protected int generateAndUploadPositions(@NonNull Tile[] tiles) {
-        ByteBuf buffer = PooledByteBufAllocator.DEFAULT.directBuffer((this.tiles.size() * 2) * 4)
+        ByteBuf buffer = PooledByteBufAllocator.DEFAULT.directBuffer((this.tiles.size() * 4) * 4)
                 .order(ByteOrder.nativeOrder());
 
         try {
@@ -268,7 +268,10 @@ public class HeightmapTerrainCache {
 
             for (int i = 0, len = tiles.length; i < len; i++) {
                 Tile tile = tiles[i];
-                buffer.writeInt(tile.x * HEIGHTMAP_VOXELS).writeInt(tile.z * HEIGHTMAP_VOXELS);
+                buffer.writeInt(tile.x).writeInt(tile.z).writeInt(tile.level).writeInt(0);
+                if (tile.level != 0)    {
+                    int j = 1;
+                }
             }
 
             try (ShaderStorageBuffer ssbo = this.positionSSBO.bind()) {
@@ -288,6 +291,7 @@ public class HeightmapTerrainCache {
     protected static class Tile {
         protected final int x;
         protected final int z;
+        protected final int level;
         protected final int slot;
 
         protected ByteBuf renderData;

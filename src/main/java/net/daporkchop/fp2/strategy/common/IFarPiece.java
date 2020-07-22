@@ -24,8 +24,6 @@ import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.RenderStrategy;
 
-import java.util.concurrent.locks.ReadWriteLock;
-
 /**
  * @author DaPorkchop_
  */
@@ -35,7 +33,7 @@ public interface IFarPiece {
     /**
      * @return this piece's position
      */
-    IFarPiecePos pos();
+    IFarPos pos();
 
     void write(@NonNull ByteBuf dst);
 }

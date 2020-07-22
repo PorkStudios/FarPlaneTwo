@@ -21,20 +21,17 @@
 package net.daporkchop.fp2.strategy.heightmap.gen.cc;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapGenerator;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.strategy.heightmap.gen.HeightmapGenerator;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
-import net.minecraft.block.Block;
-import net.minecraft.block.material.MapColor;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
-import net.minecraft.world.biome.Biome;
 
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
-import static net.daporkchop.fp2.util.Constants.packCombinedLight;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -70,7 +67,7 @@ public class CCHeightmapGenerator implements HeightmapGenerator {
                     state = world.getBlockState(pos);
                 }
 
-                piece.set(x, z, height, state, world.getCombinedLight(pos.add(0, 1, 0), 0));
+                piece.set(x, z, height, state, packCombinedLight(world.getCombinedLight(pos.add(0, 1, 0), 0)));
             }
         }
 

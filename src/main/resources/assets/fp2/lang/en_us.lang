@@ -11,6 +11,8 @@ key.fp2.debug.reloadShaders=Reload Shaders
 
 config.fp2.renderStrategy=Render strategy
 config.fp2.renderDistance=Render distance
+config.fp2.maxLevels=Max LoD levels
+config.fp2.levelCutoffDistance=LoD level cutoff distance
 config.fp2.generationThreads=Generation threads
 config.fp2.ioThreads=I/O Threads
 

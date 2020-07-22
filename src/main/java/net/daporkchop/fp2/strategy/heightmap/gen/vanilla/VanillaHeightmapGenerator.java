@@ -21,18 +21,13 @@
 package net.daporkchop.fp2.strategy.heightmap.gen.vanilla;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapGenerator;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.strategy.heightmap.gen.HeightmapGenerator;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
-import net.minecraft.block.Block;
-import net.minecraft.block.material.MapColor;
-import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.init.Blocks;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
-import net.minecraft.world.biome.Biome;
 
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -75,7 +70,7 @@ public class VanillaHeightmapGenerator implements HeightmapGenerator {
                 pos.setY(height + 1);
                 int light = world.getCombinedLight(pos, 0);
 
-                piece.set(x, z, height, state, light);
+                piece.set(x, z, height, state, packCombinedLight(light));
             }
         }
 

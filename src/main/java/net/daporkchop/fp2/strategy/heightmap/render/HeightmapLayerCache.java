@@ -18,37 +18,18 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.common;
+package net.daporkchop.fp2.strategy.heightmap.render;
 
-import lombok.NonNull;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.entity.Entity;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
 
-import java.nio.FloatBuffer;
+import java.util.BitSet;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public abstract class TerrainRenderer {
-    public double cameraX;
-    public double cameraY;
-    public double cameraZ;
+public class HeightmapLayerCache {
+    protected final ShaderStorageBuffer dataSSBO = new ShaderStorageBuffer();
 
-    public FloatBuffer proj;
-    public FloatBuffer modelView;
-
-    public void render(float partialTicks, WorldClient world, Minecraft mc) {
-        Entity entity = mc.getRenderViewEntity();
-        this.cameraX = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks;
-        this.cameraY = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks;
-        this.cameraZ = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks;
-    }
-
-    public abstract void receivePiece(@NonNull IFarPiece piece);
-
-    public abstract void unloadPiece(@NonNull IFarPos pos);
+    protected final BitSet activeDataSlots = new BitSet();
+    protected int dataSize = 1;
 }

@@ -29,8 +29,8 @@ import net.daporkchop.fp2.strategy.RenderStrategy;
  *
  * @author DaPorkchop_
  */
-public interface IFarPiecePos {
+public interface IFarPos {
     RenderStrategy strategy();
 
-    void write(@NonNull ByteBuf dst);
+    void writePos(@NonNull ByteBuf dst);
 }

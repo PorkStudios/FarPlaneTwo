@@ -31,7 +31,6 @@ import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.block.Block;
-import net.minecraft.block.material.MapColor;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Biomes;
 import net.minecraft.tileentity.TileEntity;
@@ -44,12 +43,8 @@ import net.minecraft.world.biome.Biome;
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -57,10 +52,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Getter
 @Accessors(fluent = true)
-public class HeightmapPiece implements IFarPiece, IBlockAccess {
+public class HeightmapPiece extends HeightmapPos implements IFarPiece, IBlockAccess {
     protected static final long DIRTY_OFFSET = PUnsafe.pork_getOffset(HeightmapPiece.class, "dirty");
 
     public static final int HEIGHT_SIZE = 4;
@@ -92,19 +86,23 @@ public class HeightmapPiece implements IFarPiece, IBlockAccess {
         return (x * HEIGHTMAP_VOXELS + z) * 4;
     }
 
-    protected final int x;
-    protected final int z;
-
     protected final ByteBuffer biome = Constants.createByteBuffer((HEIGHTMAP_VOXELS + 2) * (HEIGHTMAP_VOXELS + 2));
     protected final IntBuffer data = Constants.createIntBuffer(ENTRY_COUNT * 4);
 
     @Getter(AccessLevel.NONE)
     protected volatile int dirty = 0;
 
-    public HeightmapPiece(@NonNull ByteBuf buf) {
-        this(buf.readInt(), buf.readInt());
+    public HeightmapPiece(int x, int z, int level) {
+        super(x, z, level);
+    }
 
-        for (int i = 0; i < (HEIGHTMAP_VOXELS + 2) * (HEIGHTMAP_VOXELS + 2); i++)   {
+    public HeightmapPiece(@NonNull ByteBuf buf) {
+        super(buf.readInt(), buf.readInt(), buf.readInt());
+
+        buf.readLong();
+        buf.readLong(); //placeholder
+
+        for (int i = 0; i < (HEIGHTMAP_VOXELS + 2) * (HEIGHTMAP_VOXELS + 2); i++) {
             this.biome.put(i, buf.readByte());
         }
 
@@ -115,9 +113,11 @@ public class HeightmapPiece implements IFarPiece, IBlockAccess {
 
     @Override
     public void write(@NonNull ByteBuf buf) {
-        buf.writeInt(this.x).writeInt(this.z);
+        buf.writeInt(this.x).writeInt(this.z).writeInt(this.level);
 
-        for (int i = 0; i < (HEIGHTMAP_VOXELS + 2) * (HEIGHTMAP_VOXELS + 2); i++)   {
+        buf.writeLong(0L).writeLong(0L); //placeholder
+
+        for (int i = 0; i < (HEIGHTMAP_VOXELS + 2) * (HEIGHTMAP_VOXELS + 2); i++) {
             buf.writeByte(this.biome.get(i));
         }
 
@@ -143,15 +143,19 @@ public class HeightmapPiece implements IFarPiece, IBlockAccess {
         return this.data.get(index(x, z) + 1) >>> 24;
     }
 
-    public int biome(int x, int z)  {
+    public int biome(int x, int z) {
         return this.biome.get(biomeIndex(x, z)) & 0xFF;
     }
 
     public HeightmapPiece set(int x, int z, int height, IBlockState state, int light) {
+        return this.set(x, z, height, Block.getStateId(state), light);
+    }
+
+    public HeightmapPiece set(int x, int z, int height, int state, int light) {
         int base = index(x, z);
 
         this.data.put(base + 0, height)
-                .put(base + 1, (packCombinedLight(light) << 24) | Block.getStateId(state))
+                .put(base + 1, (light << 24) | state)
                 .put(base + 2, 0)
                 .put(base + 3, 0);
         this.markDirty();
@@ -159,14 +163,18 @@ public class HeightmapPiece implements IFarPiece, IBlockAccess {
     }
 
     public HeightmapPiece setBiome(int x, int z, Biome biome) {
-        this.biome.put(biomeIndex(x, z), (byte) Biome.getIdForBiome(biome));
+        return this.setBiome(x, z, Biome.getIdForBiome(biome));
+    }
+
+    public HeightmapPiece setBiome(int x, int z, int biome) {
+        this.biome.put(biomeIndex(x, z), (byte) biome);
         this.markDirty();
         return this;
     }
 
     @Override
-    public HeightmapPiecePos pos() {
-        return new HeightmapPiecePos(this.x, this.z);
+    public HeightmapPos pos() {
+        return this;
     }
 
     public boolean isDirty() {

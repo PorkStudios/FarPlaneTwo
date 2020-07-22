@@ -18,9 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap;
+package net.daporkchop.fp2.strategy.heightmap.gen;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapConstants;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
 import net.minecraft.world.WorldServer;
 

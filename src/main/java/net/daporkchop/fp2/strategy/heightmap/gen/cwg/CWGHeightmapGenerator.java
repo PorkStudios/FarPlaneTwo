@@ -28,11 +28,8 @@ import net.daporkchop.fp2.util.cwg.CWGContext;
 import net.daporkchop.fp2.util.cwg.CWGUtil;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
 import net.daporkchop.lib.common.ref.Ref;
-import net.minecraft.block.Block;
-import net.minecraft.block.material.MapColor;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
@@ -40,6 +37,7 @@ import java.util.List;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -84,7 +82,7 @@ public class CWGHeightmapGenerator extends CCHeightmapGenerator {
                     state = replacers.get(i).getReplacedBlock(state, blockX, height, blockZ, dx, dy, dz, density);
                 }
 
-                piece.set(x, z, height, state, (height < this.seaLevel ? max(15 - (this.seaLevel - height) * 3, 0) : 15) << 20);
+                piece.set(x, z, height, state, packCombinedLight((height < this.seaLevel ? max(15 - (this.seaLevel - height) * 3, 0) : 15) << 20));
             }
         }
 

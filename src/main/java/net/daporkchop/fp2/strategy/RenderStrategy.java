@@ -23,12 +23,12 @@ package net.daporkchop.fp2.strategy;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
-import net.daporkchop.fp2.strategy.common.IFarPiecePos;
+import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPiecePos;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPlayerTracker;
 import net.daporkchop.fp2.strategy.heightmap.render.HeightmapTerrainRenderer;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapWorld;
@@ -66,8 +66,8 @@ public enum RenderStrategy {
         }
 
         @Override
-        public IFarPiecePos readPiecePos(@NonNull ByteBuf src) {
-            return new HeightmapPiecePos(src.readInt(), src.readInt());
+        public IFarPos readPiecePos(@NonNull ByteBuf src) {
+            return new HeightmapPos(src.readInt(), src.readInt(), src.readInt());
         }
     },
     VOLUMETRIC {
@@ -93,7 +93,7 @@ public enum RenderStrategy {
         }
 
         @Override
-        public IFarPiecePos readPiecePos(@NonNull ByteBuf src) {
+        public IFarPos readPiecePos(@NonNull ByteBuf src) {
             throw new UnsupportedOperationException(); //TODO
         }
     };
@@ -113,5 +113,5 @@ public enum RenderStrategy {
 
     public abstract IFarPiece readPiece(@NonNull ByteBuf src);
 
-    public abstract IFarPiecePos readPiecePos(@NonNull ByteBuf src);
+    public abstract IFarPos readPiecePos(@NonNull ByteBuf src);
 }

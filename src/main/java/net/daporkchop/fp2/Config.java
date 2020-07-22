@@ -42,8 +42,25 @@ public class Config {
     @net.minecraftforge.common.config.Config.Comment({
             "The far plane render distance (in blocks)"
     })
+    @net.minecraftforge.common.config.Config.RangeInt(min = 1)
     @net.minecraftforge.common.config.Config.LangKey("config.fp2.renderDistance")
     public static int renderDistance = 512;
+
+    @net.minecraftforge.common.config.Config.Comment({
+            "The number of LoD levels to use."
+    })
+    @net.minecraftforge.common.config.Config.RangeInt(min = 1, max = 32)
+    @net.minecraftforge.common.config.Config.SlidingOption
+    @net.minecraftforge.common.config.Config.LangKey("config.fp2.maxLevels")
+    public static int maxLevels = 8;
+
+    @net.minecraftforge.common.config.Config.Comment({
+            "The distance (in blocks) between LoD transitions.",
+            "Note that this value is doubled for each level, so a setting of 64 will mean 64 blocks for the first layer, 128 blocks for the second layer, etc."
+    })
+    @net.minecraftforge.common.config.Config.RangeInt(min = 16)
+    @net.minecraftforge.common.config.Config.LangKey("config.fp2.levelCutoffDistance")
+    public static int levelCutoffDistance = 64;
 
     @net.minecraftforge.common.config.Config.Comment({
             "The number of threads that will be used for generating far plane terrain data.",

@@ -26,9 +26,8 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.daporkchop.fp2.strategy.RenderStrategy;
-import net.daporkchop.fp2.strategy.common.IFarPiecePos;
+import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.IFarContext;
-import net.daporkchop.fp2.strategy.common.TerrainRenderer;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -42,7 +41,7 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 @Accessors(fluent = true, chain = true)
 public class SPacketUnloadPiece implements IMessage {
     @NonNull
-    protected IFarPiecePos pos;
+    protected IFarPos pos;
 
     @Override
     public void fromBytes(ByteBuf buf) {
@@ -52,7 +51,7 @@ public class SPacketUnloadPiece implements IMessage {
     @Override
     public void toBytes(ByteBuf buf) {
         buf.writeInt(this.pos.strategy().ordinal());
-        this.pos.write(buf);
+        this.pos.writePos(buf);
     }
 
     public static class Handler implements IMessageHandler<SPacketUnloadPiece, IMessage> {

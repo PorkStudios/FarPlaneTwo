@@ -35,7 +35,7 @@ public interface IFarWorld {
      * @param pos the position of the piece to get
      * @return the piece
      */
-    IFarPiece getPieceBlocking(@NonNull IFarPiecePos pos);
+    IFarPiece getPieceBlocking(@NonNull IFarPos pos);
 
     /**
      * Gets the {@link IFarPiece} at the given position.
@@ -45,7 +45,7 @@ public interface IFarWorld {
      * @param pos the position of the piece to get
      * @return the piece, or {@code null} if it isn't already loaded
      */
-    IFarPiece getPieceNowOrLoadAsync(@NonNull IFarPiecePos pos);
+    IFarPiece getPieceNowOrLoadAsync(@NonNull IFarPos pos);
 
     /**
      * Fired whenever a block state changes.
