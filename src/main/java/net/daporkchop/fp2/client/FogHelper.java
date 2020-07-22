@@ -25,11 +25,13 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gl.object.UniformBufferObject;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
+import static net.daporkchop.fp2.client.compat.OptifineCompat.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL31.*;
 
@@ -48,12 +50,15 @@ public class FogHelper {
                 16L);
     }
 
-    public static void update() {
-        BUFFER.putInt(16, GlStateManager.fogState.mode)
-                .putFloat(16 + 4, GlStateManager.fogState.density)
-                .putFloat(16 + 8, GlStateManager.fogState.start)
-                .putFloat(16 + 12, GlStateManager.fogState.end)
-                .putFloat(16 + 16, 1.0f / (GlStateManager.fogState.end - GlStateManager.fogState.start));
+    public static void update(@NonNull Minecraft mc) {
+        GlStateManager.FogState fogState = GlStateManager.fogState;
+        boolean fogEnabled = fogState.fog.currentState
+                && (!OF || PUnsafe.getInt(mc.gameSettings, OF_FOGTYPE_OFFSET) != OF_OFF);
+        BUFFER.putInt(16, fogEnabled ? fogState.mode : 0)
+                .putFloat(16 + 4, fogState.density)
+                .putFloat(16 + 8, fogState.start)
+                .putFloat(16 + 12, fogState.end)
+                .putFloat(16 + 16, 1.0f / (fogState.end - fogState.start));
     }
 
     public static void upload() {
@@ -66,8 +71,8 @@ public class FogHelper {
         UBO.bindUBO(1);
     }
 
-    public static void prepare() {
-        update();
+    public static void prepare(@NonNull Minecraft mc) {
+        update(mc);
         upload();
         bind();
     }

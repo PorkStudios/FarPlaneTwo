@@ -58,16 +58,22 @@ out VS_OUT {
 //
 
 //positions
+
+struct VertexPosition {
+    ivec2 tilePos;
+    int level;
+};
+
 layout(std430, binding = 2) buffer INSTANCE_POSITIONS {
-    ivec4 data[];
+    VertexPosition data[];
 } instance_positions;
 
-ivec3 vertexPos()   {
-    return instance_positions.data[gl_InstanceID].xyz;
+VertexPosition vertexPos()   {
+    return instance_positions.data[gl_InstanceID];
 }
 
-ivec2 getBlockOffset(ivec3 vertex)  {
-    return vertex.xy * (HEIGHTMAP_VOXELS << vertex.z) + in_offset_absolute;
+ivec2 toWorldPos(VertexPosition vertex) {
+    return (vertex.tilePos * HEIGHTMAP_VOXELS + in_offset_absolute) << vertex.level;
 }
 
 //tile index
@@ -91,15 +97,14 @@ layout(std430, binding = 4) buffer TILE_DATA {
     HEIGHTMAP_TYPE data[][HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS];
 } tile_data;
 
-HEIGHTMAP_TYPE sampleHeightmap(ivec3 pos)   {
-    int tileIndex = loadedTileIndex(pos.xy);
+HEIGHTMAP_TYPE sampleHeightmap(ivec2 worldPos, int level)   {
+    int tileIndex = loadedTileIndex(worldPos >> (HEIGHTMAP_SHIFT + level));
     if (tileIndex >= 0)  {
         vs_out.cancel = 0;
         return tile_data.data[tileIndex][in_vertexID_chunk];
     } else {
         vs_out.cancel = 1;
         return HEIGHTMAP_TYPE(0);
-        //return tile_data.data[0][in_vertexID_chunk];
     }
 }
 

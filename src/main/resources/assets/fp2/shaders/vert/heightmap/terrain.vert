@@ -19,10 +19,10 @@
  */
 
 void main(){
-    ivec3 fullPos = vertexPos();
-    ivec2 posXZ = getBlockOffset(fullPos);
+    VertexPosition vertex = vertexPos();
+    ivec2 posXZ = toWorldPos(vertex);
 
-    HEIGHTMAP_TYPE center = sampleHeightmap(fullPos);
+    HEIGHTMAP_TYPE center = sampleHeightmap(posXZ, vertex.level);
 
     dvec3 pos = dvec3(double(posXZ.x), double(unpackHeight(center)) + .5, double(posXZ.y));
     vec3 relativePos = vec3(pos - camera.position); //convert to vec3 afterwards to minimize precision loss

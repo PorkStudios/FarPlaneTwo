@@ -23,7 +23,6 @@ package net.daporkchop.fp2.client;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
-import lombok.AllArgsConstructor;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.Config;
 import net.daporkchop.fp2.FP2;
@@ -33,13 +32,15 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.chunk.CompiledChunk;
 import net.minecraft.client.renderer.chunk.RenderChunk;
-import net.minecraft.util.BlockRenderLayer;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.client.settings.GameSettings;
 import net.minecraft.util.math.Vec3i;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.IntBuffer;
+import java.util.Arrays;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -79,7 +80,7 @@ public class ClientConstants {
                 .map(p -> new Vec3i(p.getX() >> 4, p.getY() >> 4, p.getZ() >> 4))
                 .toArray(Vec3i[]::new);
 
-        if (positions.length == 0)  {
+        if (positions.length == 0) {
             if (buffer == null) {
                 buffer = Constants.createIntBuffer(HEADER_SIZE);
             }
@@ -93,24 +94,24 @@ public class ClientConstants {
         int minZ = Integer.MAX_VALUE;
         int maxZ = Integer.MIN_VALUE;
 
-        for (int i = 0, len = positions.length; i < len; i++)   {
+        for (int i = 0, len = positions.length; i < len; i++) {
             Vec3i pos = positions[i];
-            if (pos.getX() < minX)  {
+            if (pos.getX() < minX) {
                 minX = pos.getX();
             }
-            if (pos.getX() > maxX)  {
+            if (pos.getX() > maxX) {
                 maxX = pos.getX();
             }
-            if (pos.getY() < minY)  {
+            if (pos.getY() < minY) {
                 minY = pos.getY();
             }
-            if (pos.getY() > maxY)  {
+            if (pos.getY() > maxY) {
                 maxY = pos.getY();
             }
-            if (pos.getZ() < minZ)  {
+            if (pos.getZ() < minZ) {
                 minZ = pos.getZ();
             }
-            if (pos.getZ() > maxZ)  {
+            if (pos.getZ() > maxZ) {
                 maxZ = pos.getZ();
             }
         }

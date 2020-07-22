@@ -67,7 +67,7 @@ public enum RenderStrategy {
 
         @Override
         public IFarPos readPiecePos(@NonNull ByteBuf src) {
-            return new HeightmapPos(src.readInt(), src.readInt(), src.readInt());
+            return new HeightmapPos(src);
         }
     },
     VOLUMETRIC {

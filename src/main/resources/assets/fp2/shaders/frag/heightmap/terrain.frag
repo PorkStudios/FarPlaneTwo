@@ -19,9 +19,7 @@
  */
 
 void main() {
-    color = vec4(1., 0., 0., 1.);
-
-    /*if (shouldCancel()) {
+    if (shouldCancel()) {
         discard;
     } else {
         TextureUV uvs = global_info.tex_uvs[fs_in.state];
@@ -37,8 +35,8 @@ void main() {
         frag_color.rgb *= diffuseLight(normalVector());
 
         //fog
-        //frag_color = addFog(frag_color);
+        frag_color = addFog(frag_color);
 
         color = frag_color;
-    }*/
+    }
 }

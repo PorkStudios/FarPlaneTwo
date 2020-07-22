@@ -43,9 +43,12 @@ public class HeightmapPos implements IFarPos {
     protected final int z;
     protected final int level;
 
-    @Override
-    public RenderStrategy strategy() {
-        return RenderStrategy.HEIGHTMAP;
+    public HeightmapPos(@NonNull ByteBuf buf)   {
+        this(buf.readInt(), buf.readInt(), buf.readInt());
+    }
+
+    public HeightmapPos(@NonNull HeightmapPiece piece)  {
+        this(piece.x, piece.z, piece.level);
     }
 
     @Override
@@ -75,6 +78,11 @@ public class HeightmapPos implements IFarPos {
     }
 
     public int blockZ() {
-        return this.x * HEIGHTMAP_VOXELS << this.level;
+        return this.z * HEIGHTMAP_VOXELS << this.level;
+    }
+
+    @Override
+    public RenderStrategy strategy() {
+        return RenderStrategy.HEIGHTMAP;
     }
 }

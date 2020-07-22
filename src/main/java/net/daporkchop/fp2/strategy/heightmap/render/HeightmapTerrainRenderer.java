@@ -225,7 +225,7 @@ public class HeightmapTerrainRenderer extends TerrainRenderer {
 
             this.uniforms.bindUBO(0);
 
-            FogHelper.prepare();
+            FogHelper.prepare(mc);
 
             this.cache.render(partialTicks, mc);
         } finally {

@@ -47,7 +47,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
-import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.strategy.heightmap.render.HeightmapTerrainRenderer.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL11.glGetInteger;
@@ -163,7 +162,7 @@ public class HeightmapTerrainCache {
         ClientThreadExecutor.INSTANCE.execute(() -> {
             Tile tile = this.tiles.remove(pos);
             if (tile != null) {
-                if (tile.renderData != null)    {
+                if (tile.renderData != null) {
                     tile.renderData.release();
                     tile.renderData = null;
                 }
@@ -268,10 +267,8 @@ public class HeightmapTerrainCache {
 
             for (int i = 0, len = tiles.length; i < len; i++) {
                 Tile tile = tiles[i];
-                buffer.writeInt(tile.x).writeInt(tile.z).writeInt(tile.level).writeInt(0);
-                if (tile.level != 0)    {
-                    int j = 1;
-                }
+                buffer.writeInt(tile.x).writeInt(tile.z).writeInt(tile.level)
+                        .writeInt(0); //padding
             }
 
             try (ShaderStorageBuffer ssbo = this.positionSSBO.bind()) {

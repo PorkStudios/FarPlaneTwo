@@ -97,7 +97,7 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece, IBlockAcc
     }
 
     public HeightmapPiece(@NonNull ByteBuf buf) {
-        super(buf.readInt(), buf.readInt(), buf.readInt());
+        super(buf);
 
         buf.readLong();
         buf.readLong(); //placeholder
@@ -112,23 +112,18 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece, IBlockAcc
     }
 
     @Override
-    public void write(@NonNull ByteBuf buf) {
-        buf.writeInt(this.x).writeInt(this.z).writeInt(this.level);
+    public void write(@NonNull ByteBuf dst) {
+        this.writePos(dst);
 
-        buf.writeLong(0L).writeLong(0L); //placeholder
+        dst.writeLong(0L).writeLong(0L); //placeholder
 
         for (int i = 0; i < (HEIGHTMAP_VOXELS + 2) * (HEIGHTMAP_VOXELS + 2); i++) {
-            buf.writeByte(this.biome.get(i));
+            dst.writeByte(this.biome.get(i));
         }
 
         for (int i = 0; i < ENTRY_COUNT * 4; i++) {
-            buf.writeInt(this.data.get(i));
+            dst.writeInt(this.data.get(i));
         }
-    }
-
-    @Override
-    public RenderStrategy strategy() {
-        return RenderStrategy.HEIGHTMAP;
     }
 
     public int height(int x, int z) {
@@ -174,7 +169,7 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece, IBlockAcc
 
     @Override
     public HeightmapPos pos() {
-        return this;
+        return new HeightmapPos(this);
     }
 
     public boolean isDirty() {
