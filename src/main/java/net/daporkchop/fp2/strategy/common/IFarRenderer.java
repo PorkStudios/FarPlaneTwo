@@ -18,18 +18,25 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.render;
+package net.daporkchop.fp2.strategy.common;
 
-import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
+import lombok.NonNull;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.WorldClient;
+import net.minecraft.entity.Entity;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
-import java.util.BitSet;
+import java.nio.FloatBuffer;
 
 /**
  * @author DaPorkchop_
  */
-public class HeightmapLayerCache {
-    protected final ShaderStorageBuffer dataSSBO = new ShaderStorageBuffer();
+@SideOnly(Side.CLIENT)
+public interface IFarRenderer {
+    void render(float partialTicks, WorldClient world, Minecraft mc);
 
-    protected final BitSet activeDataSlots = new BitSet();
-    protected int dataSize = 1;
+    void receivePiece(@NonNull IFarPiece piece);
+
+    void unloadPiece(@NonNull IFarPos pos);
 }

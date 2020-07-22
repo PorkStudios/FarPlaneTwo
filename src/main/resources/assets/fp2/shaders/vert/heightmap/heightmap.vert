@@ -74,6 +74,7 @@ VertexPosition vertexPos()   {
 
 ivec2 toWorldPos(VertexPosition vertex) {
     return (vertex.tilePos * HEIGHTMAP_VOXELS + in_offset_absolute) << vertex.level;
+    //return ((vertex.tilePos * HEIGHTMAP_VOXELS)) + in_offset_absolute;
 }
 
 //tile index

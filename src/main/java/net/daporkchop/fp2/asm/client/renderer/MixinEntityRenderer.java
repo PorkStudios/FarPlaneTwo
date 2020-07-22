@@ -23,7 +23,7 @@ package net.daporkchop.fp2.asm.client.renderer;
 import net.daporkchop.fp2.Config;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.strategy.common.IFarContext;
-import net.daporkchop.fp2.strategy.common.TerrainRenderer;
+import net.daporkchop.fp2.strategy.common.IFarRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
 import org.objectweb.asm.Opcodes;
@@ -53,7 +53,7 @@ public abstract class MixinEntityRenderer {
                     ordinal = 5,
                     shift = At.Shift.BEFORE))
     private void renderWorldPass_postRenderBelowClouds(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
-        TerrainRenderer renderer = ((IFarContext) this.mc.world).fp2_renderer();
+        IFarRenderer renderer = ((IFarContext) this.mc.world).fp2_renderer();
         if (renderer != null) {
             this.mc.profiler.endStartSection("fp2_render");
             renderer.render(partialTicks, this.mc.world, this.mc);

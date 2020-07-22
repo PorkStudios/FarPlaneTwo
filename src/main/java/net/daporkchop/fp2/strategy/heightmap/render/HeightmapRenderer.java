@@ -34,7 +34,7 @@ import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
-import net.daporkchop.fp2.strategy.common.TerrainRenderer;
+import net.daporkchop.fp2.strategy.common.IFarRenderer;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.minecraft.client.Minecraft;
@@ -66,7 +66,7 @@ import static org.lwjgl.opengl.GL45.*;
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public class HeightmapTerrainRenderer implements TerrainRenderer {
+public class HeightmapRenderer implements IFarRenderer {
     public static ShaderProgram TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
     public static ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
 
@@ -117,7 +117,7 @@ public class HeightmapTerrainRenderer implements TerrainRenderer {
 
     public final UniformBufferObject uniforms = new UniformBufferObject();
 
-    public HeightmapTerrainRenderer(@NonNull WorldClient world) {
+    public HeightmapRenderer(@NonNull WorldClient world) {
         {
             ShortBuffer meshData = BufferUtils.createShortBuffer(HEIGHTMAP_VERTS * HEIGHTMAP_VERTS * 6 + 1);
             this.meshVertexCount = genMesh(HEIGHTMAP_VERTS, HEIGHTMAP_VERTS, meshData);

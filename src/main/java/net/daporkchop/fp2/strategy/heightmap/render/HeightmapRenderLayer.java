@@ -18,44 +18,18 @@
  *
  */
 
-package net.daporkchop.fp2.asm.client.multiplayer;
+package net.daporkchop.fp2.strategy.heightmap.render;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.strategy.RenderStrategy;
-import net.daporkchop.fp2.strategy.common.IFarContext;
-import net.daporkchop.fp2.strategy.common.IFarRenderer;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.world.World;
-import org.spongepowered.asm.mixin.Mixin;
+import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
 
-import static net.daporkchop.lib.common.util.PValidation.*;
+import java.util.BitSet;
 
 /**
  * @author DaPorkchop_
  */
-@Mixin(WorldClient.class)
-public abstract class MixinWorldClient extends World implements IFarContext {
-    private RenderStrategy strategy;
-    private IFarRenderer renderer;
+public class HeightmapRenderLayer {
+    protected final ShaderStorageBuffer dataSSBO = new ShaderStorageBuffer();
 
-    protected MixinWorldClient() {
-        super(null, null, null, null, false);
-    }
-
-    @Override
-    public void fp2_init(@NonNull RenderStrategy strategy) {
-        this.renderer = strategy.createTerrainRenderer((WorldClient) (Object) this);
-        this.strategy = strategy;
-    }
-
-    @Override
-    public RenderStrategy fp2_strategy() {
-        checkState(this.strategy != null);
-        return this.strategy;
-    }
-
-    @Override
-    public IFarRenderer fp2_renderer() {
-        return this.renderer;
-    }
+    protected final BitSet activeDataSlots = new BitSet();
+    protected int dataSize = 1;
 }

@@ -26,11 +26,11 @@ import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
-import net.daporkchop.fp2.strategy.common.TerrainRenderer;
+import net.daporkchop.fp2.strategy.common.IFarRenderer;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPlayerTracker;
-import net.daporkchop.fp2.strategy.heightmap.render.HeightmapTerrainRenderer;
+import net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderer;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapWorld;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.WorldServer;
@@ -56,8 +56,8 @@ public enum RenderStrategy {
 
         @Override
         @SideOnly(Side.CLIENT)
-        public TerrainRenderer createTerrainRenderer(@NonNull WorldClient world) {
-            return new HeightmapTerrainRenderer(world);
+        public IFarRenderer createTerrainRenderer(@NonNull WorldClient world) {
+            return new HeightmapRenderer(world);
         }
 
         @Override
@@ -83,7 +83,7 @@ public enum RenderStrategy {
 
         @Override
         @SideOnly(Side.CLIENT)
-        public TerrainRenderer createTerrainRenderer(@NonNull WorldClient world) {
+        public IFarRenderer createTerrainRenderer(@NonNull WorldClient world) {
             throw new UnsupportedOperationException(); //TODO
         }
 
@@ -109,7 +109,7 @@ public enum RenderStrategy {
     public abstract IFarPlayerTracker createFarTracker(@NonNull IFarWorld world);
 
     @SideOnly(Side.CLIENT)
-    public abstract TerrainRenderer createTerrainRenderer(@NonNull WorldClient world);
+    public abstract IFarRenderer createTerrainRenderer(@NonNull WorldClient world);
 
     public abstract IFarPiece readPiece(@NonNull ByteBuf src);
 

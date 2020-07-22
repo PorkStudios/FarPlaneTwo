@@ -47,7 +47,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
-import static net.daporkchop.fp2.strategy.heightmap.render.HeightmapTerrainRenderer.*;
+import static net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderer.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL11.glGetInteger;
 import static org.lwjgl.opengl.GL15.*;
@@ -60,7 +60,7 @@ import static org.lwjgl.opengl.GL43.*;
  * @author DaPorkchop_
  */
 public class HeightmapTerrainCache {
-    protected final HeightmapTerrainRenderer renderer;
+    protected final HeightmapRenderer renderer;
 
     protected final Map<HeightmapPos, Tile> tiles = new ObjObjOpenHashMap<>();
 
@@ -73,7 +73,7 @@ public class HeightmapTerrainCache {
 
     protected final VertexArrayObject vao = new VertexArrayObject();
 
-    public HeightmapTerrainCache(@NonNull HeightmapTerrainRenderer renderer) {
+    public HeightmapTerrainCache(@NonNull HeightmapRenderer renderer) {
         this.renderer = renderer;
 
         int size = glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
@@ -134,7 +134,12 @@ public class HeightmapTerrainCache {
         //FP2.LOGGER.info(PStrings.fastFormat("Received piece %d,%d@%d", piece.x(), piece.z(), piece.level()));
         CompletableFuture
                 .supplyAsync(() -> HeightmapRenderHelper.bakePiece(piece), RENDER_WORKERS)
-                .thenAcceptAsync(buffer -> this.storePiece(piece, buffer), ClientThreadExecutor.INSTANCE);
+                .thenAcceptAsync(buffer -> this.storePiece(piece, buffer), ClientThreadExecutor.INSTANCE)
+                .whenComplete((v, t) -> {
+                    if (t != null) {
+                        FP2.LOGGER.error("", t);
+                    }
+                });
     }
 
     protected void storePiece(@NonNull HeightmapPiece piece, @NonNull ByteBuf buf) {

@@ -25,7 +25,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.strategy.heightmap.render.HeightmapTerrainRenderer;
+import net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderer;
 import net.daporkchop.lib.binary.oio.StreamUtil;
 import net.daporkchop.lib.common.function.io.IOFunction;
 import net.daporkchop.lib.common.misc.string.PStrings;
@@ -121,6 +121,6 @@ public class ShaderManager {
 
     public void reload() {
         //TODO: actually reload all shaders rather than doing it manually
-        HeightmapTerrainRenderer.reloadHeightShader(true);
+        HeightmapRenderer.reloadHeightShader(true);
     }
 }
