@@ -31,6 +31,7 @@ import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.minecraft.entity.player.EntityPlayerMP;
 
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -125,6 +126,14 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, H
             if (curr.contains(piece)) { //HeightmapPiece is also a HeightmapPos
                 NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player);
             }
+        });
+    }
+
+    @Override
+    public void debug_dropAllPieces(@NonNull EntityPlayerMP player) {
+        this.tracking.computeIfPresent(player, (p, positions) -> {
+            positions.forEach(pos -> NETWORK_WRAPPER.sendTo(new SPacketUnloadPiece().pos(pos), p));
+            return new ObjectOpenHashSet<>();
         });
     }
 }

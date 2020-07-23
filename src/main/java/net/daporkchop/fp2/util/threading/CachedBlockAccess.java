@@ -105,6 +105,6 @@ public interface CachedBlockAccess extends IBlockAccess, IHeightMap {
      * @author DaPorkchop_
      */
     interface Holder {
-        CachedBlockAccess fp2_cachedBlockAccess();
+        CachedBlockAccess cachedBlockAccess();
     }
 }

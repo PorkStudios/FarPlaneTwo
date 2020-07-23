@@ -63,8 +63,8 @@ public class CPacketRenderingStrategy implements IMessage {
                     //send the packet here to ensure that it's sent before adding the player to the tracker
                     NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy().strategy(FP2Config.renderMode), ctx.getServerHandler().player);
 
-                    ((IFarContext) ctx.getServerHandler().player.world).fp2_tracker().playerAdd(ctx.getServerHandler().player);
-                    ((IFarPlayer) ctx.getServerHandler().player).fp2_markReady();
+                    ((IFarContext) ctx.getServerHandler().player.world).tracker().playerAdd(ctx.getServerHandler().player);
+                    ((IFarPlayer) ctx.getServerHandler().player).markReady();
                 });
             }
             return null;

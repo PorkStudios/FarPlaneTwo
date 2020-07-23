@@ -31,6 +31,8 @@ import net.daporkchop.fp2.util.cc.CCCachedBlockAccessImpl;
 import net.daporkchop.fp2.util.vanilla.VanillaCachedBlockAccessImpl;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
+import org.spongepowered.asm.mixin.Implements;
+import org.spongepowered.asm.mixin.Interface;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -42,6 +44,10 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Mixin(WorldServer.class)
+@Implements({
+        @Interface(iface = IFarContext.class, prefix = "fp2_world$", unique = true),
+        @Interface(iface = CachedBlockAccess.Holder.class, prefix = "fp2_cachedBlockAccess$", unique = true)
+})
 public abstract class MixinWorldServer extends World implements IFarContext, CachedBlockAccess.Holder {
     protected CachedBlockAccess cachedBlockAccess;
 
@@ -54,7 +60,7 @@ public abstract class MixinWorldServer extends World implements IFarContext, Cac
     }
 
     @Override
-    public CachedBlockAccess fp2_cachedBlockAccess() {
+    public CachedBlockAccess cachedBlockAccess() {
         return this.cachedBlockAccess;
     }
 
@@ -67,7 +73,7 @@ public abstract class MixinWorldServer extends World implements IFarContext, Cac
     }
 
     @Override
-    public void fp2_init(@NonNull RenderMode mode) {
+    public void init(@NonNull RenderMode mode) {
         this.cachedBlockAccess = Constants.isCubicWorld(this)
                                  ? new CCCachedBlockAccessImpl((WorldServer) (Object) this)
                                  : new VanillaCachedBlockAccessImpl((WorldServer) (Object) this);
@@ -77,19 +83,24 @@ public abstract class MixinWorldServer extends World implements IFarContext, Cac
     }
 
     @Override
-    public RenderMode fp2_mode() {
+    public boolean isInitialized() {
+        return this.mode != null;
+    }
+
+    @Override
+    public RenderMode mode() {
         checkState(this.mode != null);
         return this.mode;
     }
 
     @Override
-    public IFarWorld fp2_world() {
+    public IFarWorld world() {
         checkState(this.mode != null);
         return this.world;
     }
 
     @Override
-    public IFarPlayerTracker fp2_tracker() {
+    public IFarPlayerTracker tracker() {
         checkState(this.mode != null);
         return this.tracker;
     }

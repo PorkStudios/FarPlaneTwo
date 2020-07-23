@@ -49,14 +49,20 @@ public class SPacketPieceData implements IMessage {
     @Override
     public void toBytes(ByteBuf buf) {
         buf.writeInt(this.piece.mode().ordinal());
-        this.piece.writePiece(buf);
+
+        this.piece.readLock().lock();
+        try {
+            this.piece.writePiece(buf);
+        } finally {
+            this.piece.readLock().unlock();
+        }
     }
 
     public static class Handler implements IMessageHandler<SPacketPieceData, IMessage> {
         @Override
         public IMessage onMessage(SPacketPieceData message, MessageContext ctx) {
             IFarContext farContext = (IFarContext) ctx.getClientHandler().world;
-            ClientThreadExecutor.INSTANCE.execute(() -> farContext.fp2_renderer().receivePiece(message.piece));
+            ClientThreadExecutor.INSTANCE.execute(() -> farContext.renderer().receivePiece(message.piece));
             return null;
         }
     }

@@ -28,6 +28,7 @@ import lombok.experimental.Accessors;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -42,6 +43,9 @@ import net.minecraft.world.biome.Biome;
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -53,6 +57,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapPos>, IBlockAccess {
+    protected static final long TIMESTAMP_OFFSET = PUnsafe.pork_getOffset(HeightmapPiece.class, "timestamp");
     protected static final long DIRTY_OFFSET = PUnsafe.pork_getOffset(HeightmapPiece.class, "dirty");
 
     public static final int HEIGHT_SIZE = 4;
@@ -84,11 +89,15 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapP
         return (x * HEIGHTMAP_VOXELS + z) * 4;
     }
 
+    protected final ReadWriteLock lock = new ReentrantReadWriteLock();
+
     protected final ByteBuffer biome = Constants.createByteBuffer((HEIGHTMAP_VOXELS + 2) * (HEIGHTMAP_VOXELS + 2));
     protected final IntBuffer data = Constants.createIntBuffer(ENTRY_COUNT * 4);
 
+    protected volatile long timestamp = -1L;
+
     @Getter(AccessLevel.NONE)
-    protected volatile int dirty = 0;
+    protected transient volatile int dirty = 0;
 
     public HeightmapPiece(int x, int z, int level) {
         super(x, z, level);
@@ -97,7 +106,8 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapP
     public HeightmapPiece(@NonNull ByteBuf buf) {
         super(buf);
 
-        buf.readLong();
+        this.timestamp = buf.readLong();
+
         buf.readLong(); //placeholder
 
         for (int i = 0; i < (HEIGHTMAP_VOXELS + 2) * (HEIGHTMAP_VOXELS + 2); i++) {
@@ -111,9 +121,12 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapP
 
     @Override
     public void writePiece(@NonNull ByteBuf dst) {
+        checkState(this.timestamp >= 0L, "piece does not contain any data!");
         this.writePos(dst);
 
-        dst.writeLong(0L).writeLong(0L); //placeholder
+        dst.writeLong(this.timestamp);
+
+        dst.writeLong(0L); //placeholder
 
         for (int i = 0; i < (HEIGHTMAP_VOXELS + 2) * (HEIGHTMAP_VOXELS + 2); i++) {
             dst.writeByte(this.biome.get(i));
@@ -122,6 +135,25 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapP
         for (int i = 0; i < ENTRY_COUNT * 4; i++) {
             dst.writeInt(this.data.get(i));
         }
+    }
+
+    @Override
+    public void updateTimestamp(long timestamp) throws IllegalArgumentException {
+        long current;
+        do {
+            current = PUnsafe.getLongVolatile(this, TIMESTAMP_OFFSET);
+            checkArg(timestamp > current, "new timestamp (%d) must be greater than current timestamp (%d)!", timestamp, current);
+        } while (!PUnsafe.compareAndSwapLong(this, TIMESTAMP_OFFSET, current, timestamp));
+    }
+
+    @Override
+    public Lock readLock() {
+        return this.lock.readLock();
+    }
+
+    @Override
+    public Lock writeLock() {
+        return this.lock.writeLock();
     }
 
     public int height(int x, int z) {
@@ -180,6 +212,11 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapP
 
     public boolean clearDirty() {
         return PUnsafe.compareAndSwapInt(this, DIRTY_OFFSET, 1, 0);
+    }
+
+    @Override
+    public String toString() {
+        return PStrings.fastFormat("HeightmapPiece(x=%d, z=%d, level=%d, timestamp=%d, dirty=%b)", this.x, this.z, this.level, this.timestamp, this.isDirty());
     }
 
     //IBlockAccess implementations

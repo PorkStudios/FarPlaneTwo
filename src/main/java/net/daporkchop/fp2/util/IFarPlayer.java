@@ -24,7 +24,7 @@ package net.daporkchop.fp2.util;
  * @author DaPorkchop_
  */
 public interface IFarPlayer {
-    boolean fp2_ready();
+    boolean isReady();
 
-    void fp2_markReady();
+    void markReady();
 }

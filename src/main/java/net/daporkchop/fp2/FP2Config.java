@@ -73,14 +73,6 @@ public class FP2Config {
     public static int generationThreads = max(PorkUtil.CPU_COUNT - 1, 1);
 
     @Config.Comment({
-            "The number of threads that will be used for loading and saving of far plane terrain data.",
-            "Default: <cpu count>"
-    })
-    @Config.LangKey("config.fp2.ioThreads")
-    @Config.RequiresWorldRestart
-    public static int ioThreads = PorkUtil.CPU_COUNT;
-
-    @Config.Comment({
             "Config options available only on the client."
     })
     @Config.LangKey("config.fp2.client")

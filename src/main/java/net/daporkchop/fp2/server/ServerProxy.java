@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.server;
 
+import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.net.server.SPacketReady;
 import net.daporkchop.fp2.strategy.common.IFarContext;
@@ -35,6 +36,8 @@ import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
+
+import java.io.IOException;
 
 import static net.daporkchop.fp2.util.Constants.NETWORK_WRAPPER;
 
@@ -62,8 +65,19 @@ public class ServerProxy {
     @SubscribeEvent
     public void worldLoad(WorldEvent.Load event) {
         if (!event.getWorld().isRemote) {
-            ((IFarContext) event.getWorld()).fp2_init(FP2Config.renderMode);
-            event.getWorld().addEventListener(new FarWorldBlockChangeListener(((IFarContext) event.getWorld()).fp2_world()));
+            ((IFarContext) event.getWorld()).init(FP2Config.renderMode);
+            event.getWorld().addEventListener(new FarWorldBlockChangeListener(((IFarContext) event.getWorld()).world()));
+        }
+    }
+
+    @SubscribeEvent
+    public void worldUnload(WorldEvent.Unload event)    {
+        if (!event.getWorld().isRemote && ((IFarContext) event.getWorld()).isInitialized()) {
+            try {
+                ((IFarContext) event.getWorld()).world().storage().close();
+            } catch (IOException e) {
+                FP2.LOGGER.fatal("Unable to close far world storage!", e);
+            }
         }
     }
 
@@ -77,25 +91,25 @@ public class ServerProxy {
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (!event.player.world.isRemote) {
-            ((IFarContext) event.player.world).fp2_tracker().playerRemove((EntityPlayerMP) event.player);
+            ((IFarContext) event.player.world).tracker().playerRemove((EntityPlayerMP) event.player);
         }
     }
 
     @SubscribeEvent
     public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
-        if (!event.player.world.isRemote && ((IFarPlayer) event.player).fp2_ready()) {
-            ((IFarContext) event.player.getServer().getWorld(event.fromDim)).fp2_tracker().playerRemove((EntityPlayerMP) event.player);
-            ((IFarContext) event.player.getServer().getWorld(event.toDim)).fp2_tracker().playerAdd((EntityPlayerMP) event.player);
+        if (!event.player.world.isRemote && ((IFarPlayer) event.player).isReady()) {
+            ((IFarContext) event.player.getServer().getWorld(event.fromDim)).tracker().playerRemove((EntityPlayerMP) event.player);
+            ((IFarContext) event.player.getServer().getWorld(event.toDim)).tracker().playerAdd((EntityPlayerMP) event.player);
         }
     }
 
     @SubscribeEvent
     public void onWorldTick(TickEvent.WorldTickEvent event) {
         if (!event.world.isRemote) {
-            IFarPlayerTracker tracker = ((IFarContext) event.world).fp2_tracker();
+            IFarPlayerTracker tracker = ((IFarContext) event.world).tracker();
             event.world.playerEntities.stream()
                     .map(EntityPlayerMP.class::cast)
-                    .filter(player -> ((IFarPlayer) player).fp2_ready())
+                    .filter(player -> ((IFarPlayer) player).isReady())
                     .forEach(tracker::playerMove);
         }
     }

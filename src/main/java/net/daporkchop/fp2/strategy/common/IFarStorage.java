@@ -18,39 +18,41 @@
  *
  */
 
-package net.daporkchop.fp2.asm.entity.player;
+package net.daporkchop.fp2.strategy.common;
 
-import net.daporkchop.fp2.util.IFarPlayer;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
-import org.spongepowered.asm.mixin.Implements;
-import org.spongepowered.asm.mixin.Interface;
-import org.spongepowered.asm.mixin.Mixin;
+import io.netty.buffer.ByteBuf;
+import lombok.NonNull;
 
-import static net.daporkchop.lib.common.util.PValidation.*;
+import java.io.Closeable;
+import java.io.IOException;
 
 /**
+ * Handles reading and writing of far terrain data.
+ *
  * @author DaPorkchop_
  */
-@Mixin(EntityPlayerMP.class)
-@Implements({
-        @Interface(iface = IFarPlayer.class, prefix = "fp2_player$", unique = true)
-})
-public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPlayer {
-    protected boolean ready;
+public interface IFarStorage<POS extends IFarPos> extends Closeable {
+    /**
+     * Loads the data at the given position.
+     *
+     * @param pos the position of the data to load
+     * @return the loaded data, or {@code null} if it doesn't exist
+     */
+    ByteBuf load(@NonNull POS pos);
 
-    public MixinEntityPlayerMP() {
-        super(null, null);
-    }
+    /**
+     * Stores the given data at the given position, atomically replacing any existing data.
+     *
+     * @param pos  the position to save the data at
+     * @param data the data to save
+     */
+    void store(@NonNull POS pos, @NonNull ByteBuf data);
 
+    /**
+     * Closes this storage.
+     * <p>
+     * If write operations are queued, this method will block until they are completed.
+     */
     @Override
-    public boolean isReady() {
-        return this.ready;
-    }
-
-    @Override
-    public synchronized void markReady() {
-        checkState(!this.ready, "already ready?!?");
-        this.ready = true;
-    }
+    void close() throws IOException;
 }

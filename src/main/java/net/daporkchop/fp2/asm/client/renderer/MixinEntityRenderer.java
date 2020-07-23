@@ -53,7 +53,7 @@ public abstract class MixinEntityRenderer {
                     ordinal = 5,
                     shift = At.Shift.BEFORE))
     private void renderWorldPass_postRenderBelowClouds(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
-        IFarRenderer renderer = ((IFarContext) this.mc.world).fp2_renderer();
+        IFarRenderer renderer = ((IFarContext) this.mc.world).renderer();
         if (renderer != null) {
             this.mc.profiler.endStartSection("fp2_render");
             renderer.render(partialTicks, this.mc.world, this.mc);
@@ -96,8 +96,12 @@ public abstract class MixinEntityRenderer {
             at = @At(value = "FIELD",
                     target = "Lnet/minecraft/client/renderer/EntityRenderer;farPlaneDistance:F",
                     opcode = Opcodes.PUTFIELD))
-    private void setupCameraTransform_increaseFarPlaneDistance(EntityRenderer renderer, float prev) {
-        //this.farPlaneDistance = FP2Config.renderDistance;
-        this.farPlaneDistance = FP2Config.levelCutoffDistance << (FP2Config.maxLevels + 1); //TODO
+    private void setupCameraTransform_increaseFarPlaneDistance(EntityRenderer renderer, float farPlaneDistance) {
+        if (((IFarContext) this.mc.world).isInitialized()) {
+            //farPlaneDistance = FP2Config.renderDistance;
+            farPlaneDistance = FP2Config.levelCutoffDistance << (FP2Config.maxLevels + 1);
+            //TODO: i think i need a better system for computing this
+        }
+        this.farPlaneDistance = farPlaneDistance;
     }
 }

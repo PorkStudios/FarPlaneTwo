@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2;
 
+import net.daporkchop.fp2.net.client.CPacketDropAllPieces;
 import net.daporkchop.fp2.net.client.CPacketRenderingStrategy;
 import net.daporkchop.fp2.net.server.SPacketPieceData;
 import net.daporkchop.fp2.net.server.SPacketReady;
@@ -46,8 +47,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  */
 @Mod(modid = MODID,
         useMetadata = true,
-        acceptedMinecraftVersions = "1.12.2",
-        dependencies = "after:cubicchunks@[0.0.951.0,);after:cubicgen@[0.0.54.0,)")
+        acceptedMinecraftVersions = "1.12.2")
 public class FP2 {
     public static final String MODID = "fp2";
 
@@ -89,6 +89,7 @@ public class FP2 {
     protected void registerPackets() {
         int id = 0;
         NETWORK_WRAPPER.registerMessage(CPacketRenderingStrategy.Handler.class, CPacketRenderingStrategy.class, id++, Side.SERVER);
+        NETWORK_WRAPPER.registerMessage(CPacketDropAllPieces.Handler.class, CPacketDropAllPieces.class, id++, Side.SERVER);
         NETWORK_WRAPPER.registerMessage(SPacketReady.Handler.class, SPacketReady.class, id++, Side.CLIENT);
         NETWORK_WRAPPER.registerMessage(SPacketRenderingStrategy.Handler.class, SPacketRenderingStrategy.class, id++, Side.CLIENT);
         NETWORK_WRAPPER.registerMessage(SPacketPieceData.Handler.class, SPacketPieceData.class, id++, Side.CLIENT);

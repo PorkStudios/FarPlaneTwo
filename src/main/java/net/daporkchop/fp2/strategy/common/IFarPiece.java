@@ -24,10 +24,12 @@ import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.RenderMode;
 
+import java.util.concurrent.locks.ReadWriteLock;
+
 /**
  * @author DaPorkchop_
  */
-public interface IFarPiece<POS extends IFarPos> {
+public interface IFarPiece<POS extends IFarPos> extends ReadWriteLock {
     /**
      * @return the {@link RenderMode} that this piece is used for
      */
@@ -37,6 +39,26 @@ public interface IFarPiece<POS extends IFarPos> {
      * @return this piece's position
      */
     POS pos();
+
+    /**
+     * Gets this piece's timestamp.
+     * <p>
+     * A timestamp serves as a revision number to indicate the most recently updated data point contained by this piece. The value itself is an arbitrary
+     * positive global value that is guaranteed never to decrease. Negative values indicate that the piece does not yet contain any data, and {@code 0L}
+     * value indicate that the piece's data was produced by a rough {@link IFarGenerator}, and as such does not represent the contents of the world as it
+     * was at ANY point in time.
+     *
+     * @return this piece's timestamp
+     */
+    long timestamp();
+
+    /**
+     * Atomically updates this piece's timestamp.
+     *
+     * @param timestamp the new timestamp
+     * @throws IllegalArgumentException if the new timestamp is not greater than the current timestamp
+     */
+    void updateTimestamp(long timestamp) throws IllegalArgumentException;
 
     /**
      * Writes this piece to the given {@link ByteBuf}.

@@ -26,6 +26,7 @@ import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.util.threading.PriorityThreadFactory;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
 import net.daporkchop.lib.common.util.PorkUtil;
@@ -36,32 +37,28 @@ import net.daporkchop.lib.common.util.PorkUtil;
 @UtilityClass
 public class ServerConstants {
     public static EventExecutorGroup GENERATION_WORKERS;
-    public static EventExecutorGroup IO_WORKERS;
 
     public void init() {
         ServerThreadExecutor.INSTANCE.startup();
 
         GENERATION_WORKERS = new UnorderedThreadPoolEventExecutor(
                 FP2Config.generationThreads,
-                new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Generation Thread #%d").priority(Thread.MIN_PRIORITY).build());
-        IO_WORKERS = new UnorderedThreadPoolEventExecutor(
-                FP2Config.ioThreads,
-                new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 IO Thread #%d").priority(Thread.MIN_PRIORITY).build());
+                new PriorityThreadFactory(
+                        new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Generation Thread #%d").priority(Thread.MIN_PRIORITY).build(),
+                        Thread.MIN_PRIORITY));
     }
 
     public void shutdown() {
         Future<?> gen = GENERATION_WORKERS.shutdownGracefully();
-        Future<?> io = IO_WORKERS.shutdownGracefully();
 
-        FP2.LOGGER.info("Shutting down generation and IO worker pools...");
+        FP2.LOGGER.info("Shutting down generation worker pool...");
         do {
             PorkUtil.sleep(5L);
             ServerThreadExecutor.INSTANCE.workOffQueue();
-        } while (!gen.isDone() || !io.isDone());
+        } while (!gen.isDone());
         FP2.LOGGER.info("Done.");
 
         GENERATION_WORKERS = null;
-        IO_WORKERS = null;
 
         ServerThreadExecutor.INSTANCE.shutdown();
     }

@@ -18,13 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.gen.cwg;
+package net.daporkchop.fp2.strategy.heightmap.gen.rough;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.gen.HeightmapGenerator;
-import net.daporkchop.fp2.strategy.heightmap.gen.block.CCHeightmapGenerator;
 import net.daporkchop.fp2.util.cwg.CWGContext;
 import net.daporkchop.fp2.util.cwg.CWGUtil;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;

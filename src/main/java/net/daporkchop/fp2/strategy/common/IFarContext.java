@@ -34,29 +34,34 @@ public interface IFarContext<POS extends IFarPos, P extends IFarPiece<POS>, W ex
      *
      * @param mode the new {@link RenderMode} to use
      */
-    void fp2_init(@NonNull RenderMode mode);
+    void init(@NonNull RenderMode mode);
+
+    /**
+     * @return whether or not this context has been initialized
+     */
+    boolean isInitialized();
 
     /**
      * @return the current {@link RenderMode}
      * @throws IllegalStateException if this context has not yet been initialized
      */
-    RenderMode fp2_mode();
+    RenderMode mode();
 
     /**
      * @return the current {@link IFarWorld}
      * @throws IllegalStateException if this context has not yet been initialized
      */
-    W fp2_world();
+    W world();
 
     /**
      * @return the current {@link IFarPlayerTracker}
      * @throws IllegalStateException if this context has not yet been initialized
      */
-    T fp2_tracker();
+    T tracker();
 
     /**
      * @return the current {@link IFarRenderer}, or {@code null} if this context has not yet been initialized
      */
     @SideOnly(Side.CLIENT)
-    R fp2_renderer();
+    R renderer();
 }

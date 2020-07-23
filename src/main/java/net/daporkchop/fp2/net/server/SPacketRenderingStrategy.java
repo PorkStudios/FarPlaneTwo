@@ -24,7 +24,6 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import lombok.experimental.Accessors;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
@@ -55,7 +54,7 @@ public class SPacketRenderingStrategy implements IMessage {
         @Override
         public IMessage onMessage(SPacketRenderingStrategy message, MessageContext ctx) {
             IFarContext farContext = (IFarContext) ctx.getClientHandler().world;
-            ClientThreadExecutor.INSTANCE.execute(() -> farContext.fp2_init(message.strategy));
+            ClientThreadExecutor.INSTANCE.execute(() -> farContext.init(message.strategy));
             return null;
         }
     }

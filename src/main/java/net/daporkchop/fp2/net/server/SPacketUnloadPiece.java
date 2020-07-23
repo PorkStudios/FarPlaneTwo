@@ -56,7 +56,7 @@ public class SPacketUnloadPiece implements IMessage {
         @Override
         public IMessage onMessage(SPacketUnloadPiece message, MessageContext ctx) {
             IFarContext farContext = (IFarContext) ctx.getClientHandler().world;
-            ClientThreadExecutor.INSTANCE.execute(() -> farContext.fp2_renderer().unloadPiece(message.pos));
+            ClientThreadExecutor.INSTANCE.execute(() -> farContext.renderer().unloadPiece(message.pos));
             return null;
         }
     }

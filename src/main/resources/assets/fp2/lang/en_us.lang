@@ -4,6 +4,7 @@
 
 key.categories.fp2.debug=FarPlaneTwo Debug
 key.fp2.debug.reloadShaders=Reload Shaders
+key.fp2.debug.dropPieces=Drop all loaded pieces
 
 #
 # Config options
@@ -25,3 +26,9 @@ config.fp2.debug.debug=Debug mode
 config.fp2.debug.disableRead=Disable read
 config.fp2.debug.disableWrite=Disable write
 config.fp2.debug.disablePersistence=Disable persistence
+
+#
+# Misc. Debug
+#
+
+fp2.debug.debugModeNotEnabled=FP2 debug mode is not enabled on the server!

@@ -18,39 +18,41 @@
  *
  */
 
-package net.daporkchop.fp2.asm.entity.player;
+package net.daporkchop.fp2.net.client;
 
-import net.daporkchop.fp2.util.IFarPlayer;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
-import org.spongepowered.asm.mixin.Implements;
-import org.spongepowered.asm.mixin.Interface;
-import org.spongepowered.asm.mixin.Mixin;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
+import io.netty.buffer.ByteBuf;
+import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.strategy.common.IFarContext;
+import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
+import net.minecraft.util.text.TextComponentTranslation;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
+import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 /**
  * @author DaPorkchop_
  */
-@Mixin(EntityPlayerMP.class)
-@Implements({
-        @Interface(iface = IFarPlayer.class, prefix = "fp2_player$", unique = true)
-})
-public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPlayer {
-    protected boolean ready;
-
-    public MixinEntityPlayerMP() {
-        super(null, null);
+public class CPacketDropAllPieces implements IMessage {
+    @Override
+    public void fromBytes(ByteBuf buf) {
     }
 
     @Override
-    public boolean isReady() {
-        return this.ready;
+    public void toBytes(ByteBuf buf) {
     }
 
-    @Override
-    public synchronized void markReady() {
-        checkState(!this.ready, "already ready?!?");
-        this.ready = true;
+    public static class Handler implements IMessageHandler<CPacketDropAllPieces, IMessage>  {
+        @Override
+        public IMessage onMessage(CPacketDropAllPieces message, MessageContext ctx) {
+            if (!FP2Config.debug.debug) {
+                ctx.getServerHandler().disconnect(new TextComponentTranslation("fp2.debug.debugModeNotEnabled"));
+                return null;
+            }
+            IFarContext context = (IFarContext) ctx.getServerHandler().player.world;
+            ServerThreadExecutor.INSTANCE.execute(() -> {
+                context.tracker().debug_dropAllPieces(ctx.getServerHandler().player);
+            });
+            return null;
+        }
     }
 }

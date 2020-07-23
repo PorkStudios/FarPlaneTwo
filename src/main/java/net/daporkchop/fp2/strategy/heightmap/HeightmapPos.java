@@ -24,10 +24,12 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.math.PMath;
+import net.daporkchop.lib.common.misc.string.PStrings;
 
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 
@@ -87,5 +89,10 @@ public class HeightmapPos implements IFarPos {
     @Override
     public RenderMode mode() {
         return RenderMode.HEIGHTMAP;
+    }
+
+    @Override
+    public String toString() {
+        return PStrings.fastFormat("HeightmapPos(x=%d, z=%d, level=%d)", this.x, this.z, this.level);
     }
 }

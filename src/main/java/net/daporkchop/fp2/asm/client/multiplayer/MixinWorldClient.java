@@ -26,6 +26,8 @@ import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarRenderer;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.World;
+import org.spongepowered.asm.mixin.Implements;
+import org.spongepowered.asm.mixin.Interface;
 import org.spongepowered.asm.mixin.Mixin;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -34,6 +36,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Mixin(WorldClient.class)
+@Implements({
+        @Interface(iface = IFarContext.class, prefix = "fp2_world$", unique = true)
+})
 public abstract class MixinWorldClient extends World implements IFarContext {
     private RenderMode mode;
     private IFarRenderer renderer;
@@ -43,19 +48,24 @@ public abstract class MixinWorldClient extends World implements IFarContext {
     }
 
     @Override
-    public void fp2_init(@NonNull RenderMode mode) {
+    public void init(@NonNull RenderMode mode) {
         this.renderer = mode.createTerrainRenderer((WorldClient) (Object) this);
         this.mode = mode;
     }
 
     @Override
-    public RenderMode fp2_mode() {
+    public boolean isInitialized() {
+        return this.mode != null;
+    }
+
+    @Override
+    public RenderMode mode() {
         checkState(this.mode != null);
         return this.mode;
     }
 
     @Override
-    public IFarRenderer fp2_renderer() {
+    public IFarRenderer renderer() {
         return this.renderer;
     }
 }

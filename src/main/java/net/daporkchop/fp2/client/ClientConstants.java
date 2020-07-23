@@ -27,6 +27,7 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.util.threading.PriorityThreadFactory;
 import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
@@ -53,7 +54,9 @@ public class ClientConstants {
 
         RENDER_WORKERS = new UnorderedThreadPoolEventExecutor(
                 FP2Config.client.renderThreads,
-                new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Rendering Thread #%d").priority(Thread.MIN_PRIORITY).build());
+                new PriorityThreadFactory(
+                        new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Rendering Thread #%d").priority(Thread.MIN_PRIORITY).build(),
+                        Thread.MIN_PRIORITY));
     }
 
     public static void shutdown() {

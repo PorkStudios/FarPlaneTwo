@@ -22,6 +22,7 @@ package net.daporkchop.fp2.client;
 
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.daporkchop.fp2.net.client.CPacketDropAllPieces;
 import net.daporkchop.fp2.server.ServerProxy;
 import net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderer;
 import net.minecraft.client.Minecraft;
@@ -37,6 +38,8 @@ import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -74,12 +77,12 @@ public class ClientProxy extends ServerProxy {
     }
 
     @SubscribeEvent
-    public void connectedToServer(FMLNetworkEvent.ClientConnectedToServerEvent event)   {
+    public void connectedToServer(FMLNetworkEvent.ClientConnectedToServerEvent event) {
         ClientConstants.init();
     }
 
     @SubscribeEvent
-    public void disconnectedFromServer(FMLNetworkEvent.ClientDisconnectionFromServerEvent event)   {
+    public void disconnectedFromServer(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
         ClientConstants.shutdown();
     }
 
@@ -87,6 +90,8 @@ public class ClientProxy extends ServerProxy {
     public void keyInput(InputEvent.KeyInputEvent event) {
         if (KeyBindings.RELOAD_SHADERS.isPressed()) {
             ShaderManager.reload();
+        } else if (KeyBindings.DROP_PIECES.isPressed()) {
+            NETWORK_WRAPPER.sendToServer(new CPacketDropAllPieces());
         }
     }
 

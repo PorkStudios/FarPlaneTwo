@@ -70,4 +70,9 @@ public interface IFarWorld<POS extends IFarPos, P extends IFarPiece<POS>> {
      * @return the {@link IFarScaler} used for downscaling the far terrain pieces
      */
     IFarScaler<POS, P> scaler();
+
+    /**
+     * @return the {@link IFarStorage} used for persistence of far terrain pieces
+     */
+    IFarStorage<POS> storage();
 }
