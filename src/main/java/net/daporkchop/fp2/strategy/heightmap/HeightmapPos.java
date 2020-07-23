@@ -25,7 +25,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
-import net.daporkchop.fp2.strategy.RenderStrategy;
+import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.math.PMath;
@@ -37,7 +37,6 @@ import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.HEIGHTMAP
  */
 @RequiredArgsConstructor
 @Getter
-@Accessors(fluent = true)
 public class HeightmapPos implements IFarPos {
     protected final int x;
     protected final int z;
@@ -82,7 +81,7 @@ public class HeightmapPos implements IFarPos {
     }
 
     @Override
-    public RenderStrategy strategy() {
-        return RenderStrategy.HEIGHTMAP;
+    public RenderMode strategy() {
+        return RenderMode.HEIGHTMAP;
     }
 }

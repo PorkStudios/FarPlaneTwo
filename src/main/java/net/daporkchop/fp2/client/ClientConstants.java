@@ -24,23 +24,19 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.Config;
 import net.daporkchop.fp2.FP2;
+import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.chunk.CompiledChunk;
 import net.minecraft.client.renderer.chunk.RenderChunk;
-import net.minecraft.client.settings.GameSettings;
 import net.minecraft.util.math.Vec3i;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.nio.IntBuffer;
-import java.util.Arrays;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -56,7 +52,7 @@ public class ClientConstants {
         checkState(RENDER_WORKERS == null);
 
         RENDER_WORKERS = new UnorderedThreadPoolEventExecutor(
-                Config.client.renderThreads,
+                FP2Config.client.renderThreads,
                 new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Rendering Thread #%d").priority(Thread.MIN_PRIORITY).build());
     }
 

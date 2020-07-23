@@ -22,7 +22,7 @@ package net.daporkchop.fp2.strategy.common;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.RenderStrategy;
+import net.daporkchop.fp2.strategy.RenderMode;
 
 /**
  * An identifier for a {@link IFarPiece}.
@@ -30,7 +30,7 @@ import net.daporkchop.fp2.strategy.RenderStrategy;
  * @author DaPorkchop_
  */
 public interface IFarPos {
-    RenderStrategy strategy();
+    RenderMode strategy();
 
     void writePos(@NonNull ByteBuf dst);
 }

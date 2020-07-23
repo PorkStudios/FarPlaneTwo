@@ -9,7 +9,7 @@ key.fp2.debug.reloadShaders=Reload Shaders
 # Config options
 #
 
-config.fp2.renderStrategy=Render strategy
+config.fp2.renderMode=Render mode
 config.fp2.renderDistance=Render distance
 config.fp2.maxLevels=Max LoD levels
 config.fp2.levelCutoffDistance=LoD level cutoff distance
@@ -22,4 +22,6 @@ config.fp2.client.heightmap=Heightmap options
 
 config.fp2.debug=Debug options
 config.fp2.debug.debug=Debug mode
+config.fp2.debug.disableRead=Disable read
+config.fp2.debug.disableWrite=Disable write
 config.fp2.debug.disablePersistence=Disable persistence

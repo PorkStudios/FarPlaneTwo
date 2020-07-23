@@ -22,13 +22,13 @@ package net.daporkchop.fp2.strategy.common;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.RenderStrategy;
+import net.daporkchop.fp2.strategy.RenderMode;
 
 /**
  * @author DaPorkchop_
  */
 public interface IFarPiece {
-    RenderStrategy strategy();
+    RenderMode strategy();
 
     /**
      * @return this piece's position

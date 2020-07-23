@@ -23,27 +23,31 @@ package net.daporkchop.fp2.strategy;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
-import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
-import net.daporkchop.fp2.strategy.common.IFarWorld;
+import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.IFarRenderer;
+import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPlayerTracker;
-import net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderer;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapWorld;
+import net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderer;
+import net.daporkchop.lib.common.misc.string.PUnsafeStrings;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.WorldServer;
-import net.minecraftforge.common.config.Config;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 /**
+ * Defines the different modes that may be used for rendering terrain.
+ * <p>
+ * Note that the enum {@link #name()} values are not the same as the enum field names. The field value names are used internally, while the name values
+ * themselves are shown to users.
+ *
  * @author DaPorkchop_
  */
-public enum RenderStrategy {
-    @Config.Comment("Renders a simple 2D heightmap of the world. Overhangs are not supported.")
-    HEIGHTMAP {
+public enum RenderMode {
+    HEIGHTMAP("2D") {
         @Override
         public IFarWorld createFarWorld(@NonNull WorldServer world) {
             return new HeightmapWorld(world);
@@ -70,7 +74,7 @@ public enum RenderStrategy {
             return new HeightmapPos(src);
         }
     },
-    VOLUMETRIC {
+    SURFACE("3D") {
         @Override
         public IFarWorld createFarWorld(@NonNull WorldServer world) {
             throw new UnsupportedOperationException(); //TODO
@@ -98,10 +102,20 @@ public enum RenderStrategy {
         }
     };
 
-    private static final RenderStrategy[] VALUES = values();
+    private static final RenderMode[] VALUES = values();
 
-    public static RenderStrategy fromOrdinal(int ordinal) {
+    /**
+     * Gets a {@link RenderMode} from it's ordinal value without causing any allocations.
+     *
+     * @param ordinal the ordinal of the {@link RenderMode} to get
+     * @return the {@link RenderMode} with the given ordinal
+     */
+    public static RenderMode fromOrdinal(int ordinal) {
         return VALUES[ordinal];
+    }
+
+    RenderMode(@NonNull String name) {
+        PUnsafeStrings.setEnumName(this, name.intern());
     }
 
     public abstract IFarWorld createFarWorld(@NonNull WorldServer world);

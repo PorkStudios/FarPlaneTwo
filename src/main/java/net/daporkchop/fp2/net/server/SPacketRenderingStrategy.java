@@ -25,7 +25,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.daporkchop.fp2.strategy.RenderStrategy;
+import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -37,14 +37,13 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
  */
 @Setter
 @Getter
-@Accessors(fluent = true, chain = true)
 public class SPacketRenderingStrategy implements IMessage {
     @NonNull
-    protected RenderStrategy strategy;
+    protected RenderMode strategy;
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.strategy = RenderStrategy.fromOrdinal(buf.readInt());
+        this.strategy = RenderMode.fromOrdinal(buf.readInt());
     }
 
     @Override

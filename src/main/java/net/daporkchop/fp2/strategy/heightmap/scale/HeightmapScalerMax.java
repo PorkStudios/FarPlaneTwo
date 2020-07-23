@@ -37,13 +37,15 @@ public class HeightmapScalerMax implements HeightmapScaler {
         for (int subX = 0; subX < 2; subX++) {
             for (int subZ = 0; subZ < 2; subZ++) {
                 HeightmapPiece src = srcs[subX * 2 + subZ];
-
                 int baseX = subX * (HEIGHTMAP_VOXELS >> 1);
                 int baseZ = subZ * (HEIGHTMAP_VOXELS >> 1);
 
                 for (int x = 0; x < HEIGHTMAP_VOXELS; x += 2) {
                     for (int z = 0; z < HEIGHTMAP_VOXELS; z += 2) {
-                        this.scaleSample(src, x, z, dst, baseX + (x >> 1), baseZ + (z >> 1));
+                        int dstX = baseX + (x >> 1);
+                        int dstZ = baseZ + (z >> 1);
+
+                        this.scaleSample(src, x, z, dst, dstX, dstZ);
                     }
                 }
             }
@@ -62,14 +64,43 @@ public class HeightmapScalerMax implements HeightmapScaler {
         int d2 = abs(height2 - avgHeight);
         int d3 = abs(height3 - avgHeight);
 
+        int height;
+        int block;
+        int light;
+        int biome;
         if (d0 > d1 && d0 > d2 && d0 > d3) {
-            dst.set(dstX, dstZ, height0, src.block(srcX, srcZ), src.light(srcX, srcZ));
+            height = height0;
+            block = src.block(srcX, srcZ);
+            light = src.light(srcX, srcZ);
+            biome = src.biome(srcX, srcZ);
         } else if (d1 > d0 && d1 > d2 && d1 > d3) {
-            dst.set(dstX, dstZ, height1, src.block(srcX, srcZ + 1), src.light(srcX, srcZ + 1));
+            height = height1;
+            block = src.block(srcX, srcZ+ 1);
+            light = src.light(srcX, srcZ+ 1);
+            biome = src.biome(srcX, srcZ+ 1);
         } else if (d2 > d0 && d2 > d1 && d2 > d3) {
-            dst.set(dstX, dstZ, height2, src.block(srcX + 1, srcZ), src.light(srcX + 1, srcZ));
+            height = height2;
+            block = src.block(srcX+ 1, srcZ);
+            light = src.light(srcX+ 1, srcZ);
+            biome = src.biome(srcX+ 1, srcZ);
         } else {
-            dst.set(dstX, dstZ, height3, src.block(srcX + 1, srcZ + 1), src.light(srcX + 1, srcZ + 1));
+            height = height3;
+            block = src.block(srcX+ 1, srcZ+ 1);
+            light = src.light(srcX+ 1, srcZ+ 1);
+            biome = src.biome(srcX+ 1, srcZ+ 1);
+        }
+
+        dst.set(dstX, dstZ, height, block, light);
+        dst.setBiome(dstX, dstZ, biome);
+        if (dstX == 0)  {
+            dst.setBiome(-1, dstZ, biome);
+        } else if (dstZ == HEIGHTMAP_VOXELS - 1)    {
+            dst.setBiome(HEIGHTMAP_VOXELS, dstZ, biome);
+        }
+        if (dstZ == 0)  {
+            dst.setBiome(dstX, -1, biome);
+        } else if (dstZ == HEIGHTMAP_VOXELS - 1)    {
+            dst.setBiome(dstX, HEIGHTMAP_VOXELS, biome);
         }
     }
 }

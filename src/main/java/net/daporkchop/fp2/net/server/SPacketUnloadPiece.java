@@ -25,7 +25,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.daporkchop.fp2.strategy.RenderStrategy;
+import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
@@ -38,14 +38,13 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
  */
 @Getter
 @Setter
-@Accessors(fluent = true, chain = true)
 public class SPacketUnloadPiece implements IMessage {
     @NonNull
     protected IFarPos pos;
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.pos = RenderStrategy.fromOrdinal(buf.readInt()).readPiecePos(buf);
+        this.pos = RenderMode.fromOrdinal(buf.readInt()).readPiecePos(buf);
     }
 
     @Override

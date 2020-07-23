@@ -33,7 +33,6 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-@Accessors(fluent = true)
 public abstract class GLObject<T extends GLObject<T>> implements AutoCloseable {
     protected final int id;
 

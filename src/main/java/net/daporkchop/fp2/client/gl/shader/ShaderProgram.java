@@ -34,7 +34,6 @@ import static org.lwjgl.opengl.GL20.*;
  * @author DaPorkchop_
  */
 @Getter
-@Accessors(fluent = true)
 public final class ShaderProgram implements AutoCloseable {
     protected final String name;
     protected final Shader vertex;

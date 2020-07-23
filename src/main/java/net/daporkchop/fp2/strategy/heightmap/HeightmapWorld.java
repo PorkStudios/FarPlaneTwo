@@ -25,9 +25,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.experimental.Accessors;
-import net.daporkchop.fp2.Config;
-import net.daporkchop.fp2.strategy.RenderStrategy;
+import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.strategy.heightmap.gen.HeightmapGenerator;
@@ -40,7 +39,6 @@ import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
 import net.daporkchop.lib.binary.netty.PUnpooled;
 import net.daporkchop.lib.common.function.io.IORunnable;
-import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
@@ -67,7 +65,6 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  *
  * @author DaPorkchop_
  */
-@Accessors(fluent = true)
 public class HeightmapWorld implements IFarWorld {
     private static final Ref<ZstdDeflater> DEFLATER_CACHE = ThreadRef.soft(() -> Zstd.PROVIDER.deflater(Zstd.PROVIDER.deflateOptions()));
     private static final Ref<ZstdInflater> INFLATER_CACHE = ThreadRef.soft(() -> Zstd.PROVIDER.inflater(Zstd.PROVIDER.inflateOptions()));
@@ -98,7 +95,7 @@ public class HeightmapWorld implements IFarWorld {
 
         this.scaler = new HeightmapScalerMax();
 
-        this.storageRoot = world.getChunkSaveLocation().toPath().resolve("fp2/" + RenderStrategy.HEIGHTMAP.name().toLowerCase());
+        this.storageRoot = world.getChunkSaveLocation().toPath().resolve("fp2/" + RenderMode.HEIGHTMAP.name().toLowerCase());
     }
 
     @Override
@@ -203,7 +200,7 @@ public class HeightmapWorld implements IFarWorld {
     protected HeightmapPiece tryLoadPiece(HeightmapPos pos) {
         try {
             Path path = this.storagePath(pos);
-            if (!Config.debug.disablePersistence && Files.exists(path) && Files.isRegularFile(path)) {
+            if (!FP2Config.debug.disableRead && !FP2Config.debug.disablePersistence && Files.exists(path) && Files.isRegularFile(path)) {
                 try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
                     ByteBuf input = PUnpooled.wrap(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()), true);
                     if (input.readableBytes() >= 8 && input.readInt() == HEIGHTMAP_STORAGE_VERSION) {
@@ -236,7 +233,7 @@ public class HeightmapWorld implements IFarWorld {
     }
 
     protected void savePiece(@NonNull HeightmapPiece piece) {
-        if (Config.debug.disablePersistence || !piece.isDirty()) {
+        if (FP2Config.debug.disableWrite || FP2Config.debug.disablePersistence || !piece.isDirty()) {
             return;
         }
         IO_WORKERS.submit((IORunnable) () -> {

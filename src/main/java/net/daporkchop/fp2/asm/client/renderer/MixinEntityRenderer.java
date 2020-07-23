@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.asm.client.renderer;
 
-import net.daporkchop.fp2.Config;
+import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarRenderer;
@@ -97,7 +97,7 @@ public abstract class MixinEntityRenderer {
                     target = "Lnet/minecraft/client/renderer/EntityRenderer;farPlaneDistance:F",
                     opcode = Opcodes.PUTFIELD))
     private void setupCameraTransform_increaseFarPlaneDistance(EntityRenderer renderer, float prev) {
-        //this.farPlaneDistance = Config.renderDistance;
-        this.farPlaneDistance = Config.levelCutoffDistance << Config.maxLevels; //TODO
+        //this.farPlaneDistance = FP2Config.renderDistance;
+        this.farPlaneDistance = FP2Config.levelCutoffDistance << (FP2Config.maxLevels + 1); //TODO
     }
 }

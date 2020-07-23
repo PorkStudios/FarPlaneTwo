@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.strategy.common;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.RenderStrategy;
+import net.daporkchop.fp2.strategy.RenderMode;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -32,15 +32,15 @@ public interface IFarContext {
     /**
      * Initializes this context.
      *
-     * @param strategy the new {@link RenderStrategy} to use
+     * @param strategy the new {@link RenderMode} to use
      */
-    void fp2_init(@NonNull RenderStrategy strategy);
+    void fp2_init(@NonNull RenderMode strategy);
 
     /**
-     * @return the current {@link RenderStrategy}
+     * @return the current {@link RenderMode}
      * @throws IllegalStateException if this context has not yet been initialized
      */
-    RenderStrategy fp2_strategy();
+    RenderMode fp2_strategy();
 
     /**
      * @return the current {@link IFarWorld}

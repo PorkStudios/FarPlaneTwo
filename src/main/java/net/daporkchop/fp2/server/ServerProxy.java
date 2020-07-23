@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.server;
 
-import net.daporkchop.fp2.Config;
+import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.net.server.SPacketReady;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
@@ -62,7 +62,7 @@ public class ServerProxy {
     @SubscribeEvent
     public void worldLoad(WorldEvent.Load event) {
         if (!event.getWorld().isRemote) {
-            ((IFarContext) event.getWorld()).fp2_init(Config.renderStrategy);
+            ((IFarContext) event.getWorld()).fp2_init(FP2Config.renderMode);
             event.getWorld().addEventListener(new FarWorldBlockChangeListener(((IFarContext) event.getWorld()).fp2_world()));
         }
     }

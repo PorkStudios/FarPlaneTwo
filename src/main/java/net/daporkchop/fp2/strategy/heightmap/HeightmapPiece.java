@@ -24,9 +24,7 @@ import io.netty.buffer.ByteBuf;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
-import net.daporkchop.fp2.strategy.RenderStrategy;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -53,7 +51,6 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-@Accessors(fluent = true)
 public class HeightmapPiece extends HeightmapPos implements IFarPiece, IBlockAccess {
     protected static final long DIRTY_OFFSET = PUnsafe.pork_getOffset(HeightmapPiece.class, "dirty");
 

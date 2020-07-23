@@ -38,7 +38,6 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 @Getter
-@Accessors(fluent = true)
 public final class CWGContext {
     @NonNull
     protected final Map<Biome, List<IBiomeBlockReplacer>> biomeBlockReplacers;

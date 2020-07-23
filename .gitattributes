@@ -13,3 +13,4 @@
 *.html text=auto eol=lf
 *.settings text=auto eol=lf
 *.properties text=auto eol=lf
+*.config text=auto eol=lf

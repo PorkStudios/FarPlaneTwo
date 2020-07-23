@@ -20,8 +20,9 @@
 
 package net.daporkchop.fp2;
 
-import net.daporkchop.fp2.strategy.RenderStrategy;
+import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.lib.common.util.PorkUtil;
+import net.minecraftforge.common.config.Config;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -30,66 +31,66 @@ import static java.lang.Math.*;
 /**
  * @author DaPorkchop_
  */
-@net.minecraftforge.common.config.Config(modid = FP2.MODID)
-public class Config {
-    @net.minecraftforge.common.config.Config.Comment({
-            "The strategy that will be used for rendering distant terrain."
+@Config(modid = FP2.MODID)
+public class FP2Config {
+    @Config.Comment({
+            "The mode that will be used for rendering distant terrain."
     })
-    @net.minecraftforge.common.config.Config.LangKey("config.fp2.renderStrategy")
-    @net.minecraftforge.common.config.Config.RequiresWorldRestart
-    public static RenderStrategy renderStrategy = RenderStrategy.HEIGHTMAP;
+    @Config.LangKey("config.fp2.renderMode")
+    @Config.RequiresWorldRestart
+    public static RenderMode renderMode = RenderMode.HEIGHTMAP;
 
-    @net.minecraftforge.common.config.Config.Comment({
+    @Config.Comment({
             "The far plane render distance (in blocks)"
     })
-    @net.minecraftforge.common.config.Config.RangeInt(min = 1)
-    @net.minecraftforge.common.config.Config.LangKey("config.fp2.renderDistance")
+    @Config.RangeInt(min = 1)
+    @Config.LangKey("config.fp2.renderDistance")
     public static int renderDistance = 512;
 
-    @net.minecraftforge.common.config.Config.Comment({
+    @Config.Comment({
             "The number of LoD levels to use."
     })
-    @net.minecraftforge.common.config.Config.RangeInt(min = 1, max = 32)
-    @net.minecraftforge.common.config.Config.SlidingOption
-    @net.minecraftforge.common.config.Config.LangKey("config.fp2.maxLevels")
-    @net.minecraftforge.common.config.Config.RequiresWorldRestart
+    @Config.RangeInt(min = 1, max = 32)
+    @Config.SlidingOption
+    @Config.LangKey("config.fp2.maxLevels")
+    @Config.RequiresWorldRestart
     public static int maxLevels = 8;
 
-    @net.minecraftforge.common.config.Config.Comment({
+    @Config.Comment({
             "The distance (in blocks) between LoD transitions.",
             "Note that this value is doubled for each level, so a setting of 64 will mean 64 blocks for the first layer, 128 blocks for the second layer, etc."
     })
-    @net.minecraftforge.common.config.Config.RangeInt(min = 16)
-    @net.minecraftforge.common.config.Config.LangKey("config.fp2.levelCutoffDistance")
+    @Config.RangeInt(min = 16)
+    @Config.LangKey("config.fp2.levelCutoffDistance")
     public static int levelCutoffDistance = 64;
 
-    @net.minecraftforge.common.config.Config.Comment({
+    @Config.Comment({
             "The number of threads that will be used for generating far plane terrain data.",
             "Default: <cpu count> - 1 (and at least 1)"
     })
-    @net.minecraftforge.common.config.Config.LangKey("config.fp2.generationThreads")
-    @net.minecraftforge.common.config.Config.RequiresWorldRestart
+    @Config.LangKey("config.fp2.generationThreads")
+    @Config.RequiresWorldRestart
     public static int generationThreads = max(PorkUtil.CPU_COUNT - 1, 1);
 
-    @net.minecraftforge.common.config.Config.Comment({
+    @Config.Comment({
             "The number of threads that will be used for loading and saving of far plane terrain data.",
             "Default: <cpu count>"
     })
-    @net.minecraftforge.common.config.Config.LangKey("config.fp2.ioThreads")
-    @net.minecraftforge.common.config.Config.RequiresWorldRestart
+    @Config.LangKey("config.fp2.ioThreads")
+    @Config.RequiresWorldRestart
     public static int ioThreads = PorkUtil.CPU_COUNT;
 
-    @net.minecraftforge.common.config.Config.Comment({
+    @Config.Comment({
             "Config options available only on the client."
     })
-    @net.minecraftforge.common.config.Config.LangKey("config.fp2.client")
+    @Config.LangKey("config.fp2.client")
     @SideOnly(Side.CLIENT)
     public static Client client = new Client();
 
-    @net.minecraftforge.common.config.Config.Comment({
+    @Config.Comment({
             "Config options useful while developing the mod."
     })
-    @net.minecraftforge.common.config.Config.LangKey("config.fp2.debug")
+    @Config.LangKey("config.fp2.debug")
     public static Debug debug = new Debug();
 
     /**
@@ -97,46 +98,49 @@ public class Config {
      */
     @SideOnly(Side.CLIENT)
     public static class Client {
-        @net.minecraftforge.common.config.Config.Comment({
+        @Config.Comment({
                 "The number of threads that will be used for preparing far plane terrain data for rendering.",
                 "Default: <cpu count> - 1 (and at least 1)"
         })
-        @net.minecraftforge.common.config.Config.LangKey("config.fp2.client.renderThreads")
-        @net.minecraftforge.common.config.Config.RequiresWorldRestart
+        @Config.LangKey("config.fp2.client.renderThreads")
+        @Config.RequiresWorldRestart
         public int renderThreads = max(PorkUtil.CPU_COUNT - 1, 1);
-
-        @net.minecraftforge.common.config.Config.Comment({
-                "Config options specific to the heightmap render strategy."
-        })
-        @net.minecraftforge.common.config.Config.LangKey("config.fp2.client.heightmap")
-        public Heightmap heightmap = new Heightmap();
-
-        /**
-         * @author DaPorkchop_
-         */
-        @SideOnly(Side.CLIENT)
-        public static class Heightmap {
-        }
     }
 
     /**
      * @author DaPorkchop_
      */
     public static class Debug {
-        @net.minecraftforge.common.config.Config.Comment({
+        @Config.Comment({
                 "Toggles debug mode, which enables some features useful while developing the mod.",
                 "Default: false"
         })
-        @net.minecraftforge.common.config.Config.LangKey("config.fp2.debug.debug")
-        @net.minecraftforge.common.config.Config.RequiresMcRestart
+        @Config.LangKey("config.fp2.debug.debug")
+        @Config.RequiresMcRestart
         public boolean debug = Boolean.parseBoolean(System.getProperty("fp2.debug", "false"));
 
-        @net.minecraftforge.common.config.Config.Comment({
+        @Config.Comment({
+                "If true, disables reading of heightmap tiles from disk.",
+                "Overridden by disablePersistence.",
+                "Default: false"
+        })
+        @Config.LangKey("config.fp2.debug.disableRead")
+        public boolean disableRead = false;
+
+        @Config.Comment({
+                "If true, disables writing of heightmap tiles to disk.",
+                "Overridden by disablePersistence.",
+                "Default: false"
+        })
+        @Config.LangKey("config.fp2.debug.disableWrite")
+        public boolean disableWrite = false;
+
+        @Config.Comment({
                 "If true, completely disables disk persistence.",
                 "Far terrain data will never be written to or read from disk.",
                 "Default: false"
         })
-        @net.minecraftforge.common.config.Config.LangKey("config.fp2.debug.disablePersistence")
+        @Config.LangKey("config.fp2.debug.disablePersistence")
         public boolean disablePersistence = false;
     }
 }

@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.asm.world;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.RenderStrategy;
+import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
@@ -45,7 +45,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public abstract class MixinWorldServer extends World implements IFarContext, CachedBlockAccess.Holder {
     protected CachedBlockAccess cachedBlockAccess;
 
-    protected RenderStrategy strategy;
+    protected RenderMode strategy;
     protected IFarWorld world;
     protected IFarPlayerTracker tracker;
 
@@ -67,7 +67,7 @@ public abstract class MixinWorldServer extends World implements IFarContext, Cac
     }
 
     @Override
-    public void fp2_init(@NonNull RenderStrategy strategy) {
+    public void fp2_init(@NonNull RenderMode strategy) {
         this.cachedBlockAccess = Constants.isCubicWorld(this)
                                  ? new CCCachedBlockAccessImpl((WorldServer) (Object) this)
                                  : new VanillaCachedBlockAccessImpl((WorldServer) (Object) this);
@@ -77,7 +77,7 @@ public abstract class MixinWorldServer extends World implements IFarContext, Cac
     }
 
     @Override
-    public RenderStrategy fp2_strategy() {
+    public RenderMode fp2_strategy() {
         checkState(this.strategy != null);
         return this.strategy;
     }

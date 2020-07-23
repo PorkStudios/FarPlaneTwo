@@ -20,37 +20,23 @@
 
 package net.daporkchop.fp2.strategy.heightmap.render;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
 import lombok.NonNull;
-import net.daporkchop.fp2.Config;
 import net.daporkchop.fp2.FP2;
-import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
+import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
-import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.daporkchop.lib.common.misc.string.PStrings;
-import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 
-import java.nio.ByteOrder;
-import java.util.BitSet;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-
-import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderer.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL11.glGetInteger;
-import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL31.*;
 import static org.lwjgl.opengl.GL43.*;
 
 /**
@@ -61,7 +47,7 @@ public class HeightmapTerrainCache {
 
     protected Tile[] tiles = new Tile[0];
 
-    protected final HeightmapRenderLevel[] levels = new HeightmapRenderLevel[Config.maxLevels + 1];
+    protected final HeightmapRenderLevel[] levels = new HeightmapRenderLevel[FP2Config.maxLevels];
 
     protected final VertexArrayObject vao = new VertexArrayObject();
 
@@ -71,7 +57,7 @@ public class HeightmapTerrainCache {
         int size = glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
         FP2.LOGGER.info(PStrings.fastFormat("Max SSBO size: %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
 
-        for (int l = this.levels.length - 1; l >= 0; l--)   {
+        for (int l = this.levels.length - 1; l >= 0; l--) {
             this.levels[l] = new HeightmapRenderLevel(l, l == this.levels.length - 1 ? null : this.levels[l + 1]);
         }
 
@@ -109,7 +95,7 @@ public class HeightmapTerrainCache {
     }
 
     public void render(float partialTicks, Minecraft mc) {
-        for (HeightmapRenderLevel lvl : this.levels)    {
+        for (HeightmapRenderLevel lvl : this.levels) {
             this.tiles = lvl.prepare(this.tiles);
         }
 
@@ -117,7 +103,7 @@ public class HeightmapTerrainCache {
             try (ShaderProgram shader = TERRAIN_SHADER.use()) {
                 GlStateManager.disableAlpha();
 
-                for (HeightmapRenderLevel lvl : this.levels)    {
+                for (HeightmapRenderLevel lvl : this.levels) {
                     lvl.render(shader, this.renderer.meshVertexCount);
                 }
 
@@ -129,7 +115,7 @@ public class HeightmapTerrainCache {
 
                 glUniform1f(shader.uniformLocation("seaLevel"), 63.0f);
 
-                for (HeightmapRenderLevel lvl : this.levels)    {
+                for (HeightmapRenderLevel lvl : this.levels) {
                     lvl.render(shader, this.renderer.meshVertexCount);
                 }
 

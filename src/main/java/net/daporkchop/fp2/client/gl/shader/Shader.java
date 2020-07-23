@@ -37,7 +37,6 @@ import static net.minecraft.client.renderer.OpenGlHelper.*;
  * @author DaPorkchop_
  */
 @Getter
-@Accessors(fluent = true)
 class Shader {
     protected final ShaderType type;
     protected final int id;

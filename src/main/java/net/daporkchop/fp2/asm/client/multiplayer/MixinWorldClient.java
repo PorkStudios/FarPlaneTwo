@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.asm.client.multiplayer;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.RenderStrategy;
+import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarRenderer;
 import net.minecraft.client.multiplayer.WorldClient;
@@ -35,7 +35,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Mixin(WorldClient.class)
 public abstract class MixinWorldClient extends World implements IFarContext {
-    private RenderStrategy strategy;
+    private RenderMode strategy;
     private IFarRenderer renderer;
 
     protected MixinWorldClient() {
@@ -43,13 +43,13 @@ public abstract class MixinWorldClient extends World implements IFarContext {
     }
 
     @Override
-    public void fp2_init(@NonNull RenderStrategy strategy) {
+    public void fp2_init(@NonNull RenderMode strategy) {
         this.renderer = strategy.createTerrainRenderer((WorldClient) (Object) this);
         this.strategy = strategy;
     }
 
     @Override
-    public RenderStrategy fp2_strategy() {
+    public RenderMode fp2_strategy() {
         checkState(this.strategy != null);
         return this.strategy;
     }

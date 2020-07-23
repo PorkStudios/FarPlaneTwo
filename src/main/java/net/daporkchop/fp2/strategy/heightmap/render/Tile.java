@@ -32,7 +32,6 @@ import lombok.experimental.Accessors;
 @RequiredArgsConstructor
 @Getter
 @Setter
-@Accessors(fluent = true, chain = true)
 class Tile {
     protected final int x;
     protected final int z;
