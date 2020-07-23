@@ -24,7 +24,6 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import lombok.experimental.Accessors;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.IFarContext;
@@ -44,12 +43,12 @@ public class SPacketUnloadPiece implements IMessage {
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.pos = RenderMode.fromOrdinal(buf.readInt()).readPiecePos(buf);
+        this.pos = RenderMode.fromOrdinal(buf.readInt()).readPos(buf);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeInt(this.pos.strategy().ordinal());
+        buf.writeInt(this.pos.mode().ordinal());
         this.pos.writePos(buf);
     }
 

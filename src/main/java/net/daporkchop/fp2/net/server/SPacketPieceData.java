@@ -24,7 +24,6 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import lombok.experimental.Accessors;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
@@ -49,8 +48,8 @@ public class SPacketPieceData implements IMessage {
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeInt(this.piece.strategy().ordinal());
-        this.piece.write(buf);
+        buf.writeInt(this.piece.mode().ordinal());
+        this.piece.writePiece(buf);
     }
 
     public static class Handler implements IMessageHandler<SPacketPieceData, IMessage> {

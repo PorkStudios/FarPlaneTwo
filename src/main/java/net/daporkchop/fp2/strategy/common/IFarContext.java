@@ -28,35 +28,35 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 /**
  * @author DaPorkchop_
  */
-public interface IFarContext {
+public interface IFarContext<POS extends IFarPos, P extends IFarPiece<POS>, W extends IFarWorld<POS, P>, T extends IFarPlayerTracker<POS, P>, R extends IFarRenderer<POS, P>> {
     /**
      * Initializes this context.
      *
-     * @param strategy the new {@link RenderMode} to use
+     * @param mode the new {@link RenderMode} to use
      */
-    void fp2_init(@NonNull RenderMode strategy);
+    void fp2_init(@NonNull RenderMode mode);
 
     /**
      * @return the current {@link RenderMode}
      * @throws IllegalStateException if this context has not yet been initialized
      */
-    RenderMode fp2_strategy();
+    RenderMode fp2_mode();
 
     /**
      * @return the current {@link IFarWorld}
      * @throws IllegalStateException if this context has not yet been initialized
      */
-    IFarWorld fp2_world();
+    W fp2_world();
 
     /**
      * @return the current {@link IFarPlayerTracker}
      * @throws IllegalStateException if this context has not yet been initialized
      */
-    IFarPlayerTracker fp2_tracker();
+    T fp2_tracker();
 
     /**
      * @return the current {@link IFarRenderer}, or {@code null} if this context has not yet been initialized
      */
     @SideOnly(Side.CLIENT)
-    IFarRenderer fp2_renderer();
+    R fp2_renderer();
 }

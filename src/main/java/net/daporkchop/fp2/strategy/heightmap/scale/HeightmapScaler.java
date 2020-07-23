@@ -20,14 +20,12 @@
 
 package net.daporkchop.fp2.strategy.heightmap.scale;
 
-import lombok.NonNull;
+import net.daporkchop.fp2.strategy.common.IFarScaler;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 
 /**
- * Scales down a heightmap tile.
- *
  * @author DaPorkchop_
  */
-public interface HeightmapScaler {
-    void scale(@NonNull HeightmapPiece[] srcs, @NonNull HeightmapPiece dst);
+public interface HeightmapScaler extends IFarScaler<HeightmapPos, HeightmapPiece> {
 }

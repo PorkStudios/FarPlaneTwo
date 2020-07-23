@@ -66,7 +66,7 @@ import static org.lwjgl.opengl.GL45.*;
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public class HeightmapRenderer implements IFarRenderer {
+public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPiece> {
     public static ShaderProgram TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
     public static ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
 
@@ -156,15 +156,13 @@ public class HeightmapRenderer implements IFarRenderer {
     }
 
     @Override
-    public void receivePiece(@NonNull IFarPiece pieceIn) {
-        checkArg(pieceIn instanceof HeightmapPiece, pieceIn);
-        this.cache.receivePiece((HeightmapPiece) pieceIn);
+    public void receivePiece(@NonNull HeightmapPiece piece) {
+        this.cache.receivePiece(piece);
     }
 
     @Override
-    public void unloadPiece(@NonNull IFarPos pos) {
-        checkArg(pos instanceof HeightmapPos, pos);
-        this.cache.unloadPiece((HeightmapPos) pos);
+    public void unloadPiece(@NonNull HeightmapPos pos) {
+        this.cache.unloadPiece(pos);
     }
 
     @Override

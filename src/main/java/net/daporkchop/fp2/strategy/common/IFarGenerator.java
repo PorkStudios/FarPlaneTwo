@@ -21,22 +21,31 @@
 package net.daporkchop.fp2.strategy.common;
 
 import lombok.NonNull;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.entity.Entity;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-
-import java.nio.FloatBuffer;
+import net.daporkchop.fp2.util.threading.CachedBlockAccess;
+import net.minecraft.world.WorldServer;
 
 /**
+ * Extracts height and color information from a world for use by a rendering mode.
+ * <p>
+ * Once initialized, instances of this class are expected to be safely usable by multiple concurrent threads.
+ *
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public interface IFarRenderer<POS extends IFarPos, P extends IFarPiece<POS>> {
-    void render(float partialTicks, WorldClient world, Minecraft mc);
+public interface IFarGenerator<POS extends IFarPos, P extends IFarPiece<POS>> {
+    /**
+     * Initializes this instance.
+     * <p>
+     * An instance is only initialized once. No other methods will be called on this instance until initialization is complete.
+     *
+     * @param world the world that the heightmap will be generated for
+     */
+    void init(@NonNull WorldServer world);
 
-    void receivePiece(@NonNull P piece);
-
-    void unloadPiece(@NonNull POS pos);
+    /**
+     * Generates a rough estimate of the terrain in the given piece.
+     *
+     * @param world the {@link CachedBlockAccess} providing access to block/height data in the world
+     * @param piece the piece to generate
+     */
+    void generate(@NonNull CachedBlockAccess world, @NonNull P piece);
 }

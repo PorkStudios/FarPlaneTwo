@@ -23,16 +23,17 @@ package net.daporkchop.fp2.strategy.heightmap;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomCubicWorldType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.RenderMode;
-import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.strategy.heightmap.gen.HeightmapGenerator;
-import net.daporkchop.fp2.strategy.heightmap.gen.cc.CCHeightmapGenerator;
+import net.daporkchop.fp2.strategy.heightmap.gen.block.CCHeightmapGenerator;
+import net.daporkchop.fp2.strategy.heightmap.gen.block.VanillaHeightmapGenerator;
 import net.daporkchop.fp2.strategy.heightmap.gen.cwg.CWGHeightmapGenerator;
-import net.daporkchop.fp2.strategy.heightmap.gen.vanilla.VanillaHeightmapGenerator;
 import net.daporkchop.fp2.strategy.heightmap.scale.HeightmapScaler;
 import net.daporkchop.fp2.strategy.heightmap.scale.HeightmapScalerMax;
 import net.daporkchop.fp2.util.Constants;
@@ -61,37 +62,53 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Representation of a world used by the heightmap rendering strategy.
+ * Representation of a world used by the heightmap rendering mode.
  *
  * @author DaPorkchop_
  */
-public class HeightmapWorld implements IFarWorld {
+@Getter
+public class HeightmapWorld implements IFarWorld<HeightmapPos, HeightmapPiece> {
     private static final Ref<ZstdDeflater> DEFLATER_CACHE = ThreadRef.soft(() -> Zstd.PROVIDER.deflater(Zstd.PROVIDER.deflateOptions()));
     private static final Ref<ZstdInflater> INFLATER_CACHE = ThreadRef.soft(() -> Zstd.PROVIDER.inflater(Zstd.PROVIDER.inflateOptions()));
 
-    @Getter
     protected final WorldServer world;
-    @Getter
-    protected final HeightmapGenerator generator;
-    @Getter
-    protected final HeightmapScaler scaler;
 
     protected final Path storageRoot;
 
+    protected final HeightmapGenerator generatorRough;
+    protected final HeightmapGenerator generatorExact;
+    protected final HeightmapScaler scaler;
+
+    @Getter(AccessLevel.NONE)
     protected final Map<HeightmapPos, CompletableFuture<HeightmapPiece>> cache = new ObjObjConcurrentHashMap<>();
 
     public HeightmapWorld(@NonNull WorldServer world) {
         this.world = world;
-        if (Constants.isCubicWorld(world)) { //TODO: this
+
+        //TODO: this entire section should be re-done to utilize some form of registry so other mods can add their own rough generators
+
+        //rough generator
+        HeightmapGenerator roughGenerator = null;
+        if (Constants.isCubicWorld(world)) {
             if (Constants.CWG && world.getWorldType() instanceof CustomCubicWorldType) {
-                this.generator = new CWGHeightmapGenerator();
-            } else {
-                this.generator = new CCHeightmapGenerator();
+                roughGenerator = new CWGHeightmapGenerator();
             }
-        } else {
-            this.generator = new VanillaHeightmapGenerator();
         }
-        this.generator.init(world);
+
+        //exact generator
+        if (Constants.isCubicWorld(world)) {
+            this.generatorExact = new CCHeightmapGenerator();
+        } else {
+            this.generatorExact = new VanillaHeightmapGenerator();
+        }
+
+        if (roughGenerator != null) { //rough generator has been set, so use it
+            (this.generatorRough = roughGenerator).init(world);
+        } else { //rough generator wasn't set, use the exact generator for this as well
+            FP2.LOGGER.warn("No rough generator exists for world {} (type: {})! Falling back to exact generator, this will have serious performance implications.", world, world.getWorldType());
+            this.generatorRough = this.generatorExact;
+        }
+        this.generatorExact.init(world);
 
         this.scaler = new HeightmapScalerMax();
 
@@ -99,14 +116,12 @@ public class HeightmapWorld implements IFarWorld {
     }
 
     @Override
-    public HeightmapPiece getPieceBlocking(@NonNull IFarPos posIn) {
-        HeightmapPos pos = (HeightmapPos) posIn;
+    public HeightmapPiece getPieceBlocking(@NonNull HeightmapPos pos) {
         return this.loadFullPiece(pos).join();
     }
 
     @Override
-    public HeightmapPiece getPieceNowOrLoadAsync(@NonNull IFarPos posIn) {
-        HeightmapPos pos = (HeightmapPos) posIn;
+    public HeightmapPiece getPieceNowOrLoadAsync(@NonNull HeightmapPos pos) {
         return this.loadFullPiece(pos).getNow(null);
     }
 
@@ -133,8 +148,7 @@ public class HeightmapWorld implements IFarWorld {
         return this.cache.computeIfAbsent(key, pos -> {
             CompletableFuture<HeightmapPiece> future = new CompletableFuture<>();
             IO_WORKERS.submit(() -> {
-                //load piece if possible
-                {
+                { //load piece if possible
                     HeightmapPiece piece = this.tryLoadPiece(pos);
                     if (piece != null) {
                         future.complete(piece);
@@ -145,44 +159,28 @@ public class HeightmapWorld implements IFarWorld {
                 if (pos.level() == 0) { //root level, generate piece
                     GENERATION_WORKERS.submit(() -> {
                         try {
-                            future.complete(this.generatePiece(pos.x(), pos.z()));
+                            future.complete(this.generatePiece(pos.x(), pos.z(), this.generatorRough));
                         } catch (Exception e) {
                             future.completeExceptionally(e);
                         }
                     });
-                } else { //higher level, generate all four pieces below it
-                    CompletableFuture<HeightmapPiece>[] belowFutures = uncheckedCast(new CompletableFuture[]{
-                            this.loadFullPiece(new HeightmapPos(pos.x() << 1, pos.z() << 1, pos.level() - 1)),
-                            this.loadFullPiece(new HeightmapPos((pos.x() << 1), (pos.z() << 1) + 1, pos.level() - 1)),
-                            this.loadFullPiece(new HeightmapPos((pos.x() << 1) + 1, (pos.z() << 1), pos.level() - 1)),
-                            this.loadFullPiece(new HeightmapPos((pos.x() << 1) + 1, (pos.z() << 1) + 1, pos.level() - 1))
-                    });
+                } else {
+                    CompletableFuture<HeightmapPiece>[] srcFutures = uncheckedCast(this.scaler.inputs(pos)
+                            .map(this::loadFullPiece)
+                            .toArray(CompletableFuture[]::new));
 
-                    CompletableFuture.completedFuture(new HeightmapPiece[4])
-                            .thenCombine(belowFutures[0], (a, p) -> {
-                                a[0] = p;
-                                return a;
-                            })
-                            .thenCombine(belowFutures[1], (a, p) -> {
-                                a[1] = p;
-                                return a;
-                            })
-                            .thenCombine(belowFutures[2], (a, p) -> {
-                                a[2] = p;
-                                return a;
-                            })
-                            .thenCombine(belowFutures[3], (a, p) -> {
-                                a[3] = p;
-                                return a;
-                            })
-                            .thenApplyAsync(a -> {
-                                HeightmapPiece piece = new HeightmapPiece(pos.x(), pos.z(), pos.level());
-                                this.scaler.scale(a, piece);
-                                try {
-                                    return piece;
-                                } finally {
-                                    this.savePiece(piece);
+                    CompletableFuture.allOf(srcFutures)
+                            .thenApplyAsync(v -> {
+                                HeightmapPiece[] srcs = new HeightmapPiece[srcFutures.length];
+                                for (int i = 0, len = srcs.length; i < len; i++)    {
+                                    srcs[i] = srcFutures[i].join();
                                 }
+
+                                HeightmapPiece dst = new HeightmapPiece(pos.x(), pos.z(), pos.level());
+
+                                this.scaler.scale(srcs, dst);
+                                this.savePiece(dst);
+                                return dst;
                             }, GENERATION_WORKERS)
                             .whenComplete((v, t) -> {
                                 if (t != null) {
@@ -220,10 +218,10 @@ public class HeightmapWorld implements IFarWorld {
         return null;
     }
 
-    protected HeightmapPiece generatePiece(int x, int z) {
+    protected HeightmapPiece generatePiece(int x, int z, @NonNull HeightmapGenerator generator) {
         CachedBlockAccess world = ((CachedBlockAccess.Holder) this.world).fp2_cachedBlockAccess();
         HeightmapPiece piece = new HeightmapPiece(x, z, 0);
-        this.generator.generateRough(world, piece);
+        generator.generate(world, piece);
 
         try {
             return piece;
@@ -236,6 +234,7 @@ public class HeightmapWorld implements IFarWorld {
         if (FP2Config.debug.disableWrite || FP2Config.debug.disablePersistence || !piece.isDirty()) {
             return;
         }
+
         IO_WORKERS.submit((IORunnable) () -> {
             if (!piece.clearDirty()) {
                 return;
@@ -246,7 +245,7 @@ public class HeightmapWorld implements IFarWorld {
             ByteBuf raw = PooledByteBufAllocator.DEFAULT.ioBuffer();
             ByteBuf compressed = PooledByteBufAllocator.DEFAULT.ioBuffer();
             try (FileChannel channel = FileChannel.open(cachePath, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE)) {
-                piece.write(raw);
+                piece.writePiece(raw);
 
                 compressed.ensureWritable(8 + Zstd.PROVIDER.compressBound(raw.readableBytes()));
                 compressed.writeInt(HEIGHTMAP_STORAGE_VERSION).writeInt(raw.readableBytes());

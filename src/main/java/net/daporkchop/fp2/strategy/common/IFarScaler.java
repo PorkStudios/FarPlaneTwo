@@ -21,53 +21,41 @@
 package net.daporkchop.fp2.strategy.common;
 
 import lombok.NonNull;
-import net.minecraft.world.WorldServer;
+
+import java.util.stream.Stream;
 
 /**
+ * Merges the content of multiple high-detail pieces into a single lower-detail piece.
+ *
  * @author DaPorkchop_
  */
-public interface IFarWorld<POS extends IFarPos, P extends IFarPiece<POS>> {
-    WorldServer world();
-
+public interface IFarScaler<POS extends IFarPos, P extends IFarPiece<POS>> {
     /**
-     * Gets the {@link IFarPiece} at the given position.
-     *
-     * @param pos the position of the piece to get
-     * @return the piece
-     */
-    P getPieceBlocking(@NonNull POS pos);
-
-    /**
-     * Gets the {@link IFarPiece} at the given position.
+     * Gets the positions of all the low-detail pieces whose contents are affected by the content of the given high-detail piece.
      * <p>
-     * If the piece is already loaded, it is returned. Otherwise this method returns {@code null} and will be queued for loading asynchronously.
+     * The returned {@link Stream} must be sequential!
      *
-     * @param pos the position of the piece to get
-     * @return the piece, or {@code null} if it isn't already loaded
+     * @param srcPos the position of the high-detail piece
+     * @return the positions of all the low-detail pieces whose contents are affected by the content of the given high-detail piece
      */
-    P getPieceNowOrLoadAsync(@NonNull POS pos);
+    Stream<POS> outputs(@NonNull POS srcPos);
 
     /**
-     * Fired whenever a block state changes.
+     * Gets the positions of all the high-detail pieces needed to create the given low-detail piece.
+     * <p>
+     * The returned {@link Stream} must be sequential!
      *
-     * @param x the X coordinate of the block that changed
-     * @param y the Y coordinate of the block that changed
-     * @param z the Z coordinate of the block that changed
+     * @param dstPos the position of the low-detail piece to generate
+     * @return the positions of all the high-detail pieces needed to create the given low-detail piece
      */
-    void blockChanged(int x, int y, int z);
+    Stream<POS> inputs(@NonNull POS dstPos);
 
     /**
-     * @return the {@link IFarGenerator} used for initial generation of far terrain
+     * Merges the content of the given high-detail pieces into the given low-detail piece.
+     *
+     * @param srcs an array containing the high-detail pieces. Pieces are in the same order as provided by the {@link Stream} returned by
+     *             {@link #inputs(IFarPos)}.
+     * @param dst  the low-detail piece to merge the content into
      */
-    IFarGenerator<POS, P> generatorRough();
-
-    /**
-     * @return the {@link IFarGenerator} used for block-accurate generation of far terrain
-     */
-    IFarGenerator<POS, P> generatorExact();
-
-    /**
-     * @return the {@link IFarScaler} used for downscaling the far terrain pieces
-     */
-    IFarScaler<POS, P> scaler();
+    void scale(@NonNull P[] srcs, @NonNull P dst);
 }

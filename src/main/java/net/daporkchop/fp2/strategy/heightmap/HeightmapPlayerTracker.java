@@ -44,7 +44,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class HeightmapPlayerTracker implements IFarPlayerTracker {
+public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, HeightmapPiece> {
     protected final HeightmapWorld world;
     protected final Map<EntityPlayerMP, Set<HeightmapPos>> tracking = new IdentityHashMap<>();
 
@@ -120,11 +120,9 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker {
     }
 
     @Override
-    public void pieceChanged(@NonNull IFarPiece pieceIn) {
-        HeightmapPiece piece = (HeightmapPiece) pieceIn;
-        HeightmapPos pos = piece.pos();
+    public void pieceChanged(@NonNull HeightmapPiece piece) {
         this.tracking.forEach((player, curr) -> {
-            if (curr.contains(pos)) {
+            if (curr.contains(piece)) { //HeightmapPiece is also a HeightmapPos
                 NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player);
             }
         });

@@ -30,7 +30,27 @@ import net.daporkchop.fp2.strategy.RenderMode;
  * @author DaPorkchop_
  */
 public interface IFarPos {
-    RenderMode strategy();
+    /**
+     * @return the level of detail at this position
+     */
+    int level();
 
+    /**
+     * @return the {@link IFarPos} containing this position at a lower level of detail
+     */
+    IFarPos up();
+
+    /**
+     * @return the {@link RenderMode} that this position is used for
+     */
+    RenderMode mode();
+
+    /**
+     * Writes this position to the given {@link ByteBuf}.
+     * <p>
+     * The written data must be deserializable by this position's render mode's {@link RenderMode#readPos(ByteBuf)} method.
+     *
+     * @param dst the {@link ByteBuf} to write to
+     */
     void writePos(@NonNull ByteBuf dst);
 }

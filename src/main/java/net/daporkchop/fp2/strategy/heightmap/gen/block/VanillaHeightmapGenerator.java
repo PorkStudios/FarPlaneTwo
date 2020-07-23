@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.gen.vanilla;
+package net.daporkchop.fp2.strategy.heightmap.gen.block;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
@@ -41,14 +41,10 @@ public class VanillaHeightmapGenerator implements HeightmapGenerator {
     }
 
     @Override
-    public void generateRough(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece) {
-        this.generateExact(world, piece);
-    }
-
-    @Override
-    public void generateExact(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece) {
+    public void generate(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece) {
         int pieceX = piece.x();
         int pieceZ = piece.z();
+
         world.prefetch(new AxisAlignedBB(
                 pieceX * HEIGHTMAP_VOXELS - 1, 0, pieceZ * HEIGHTMAP_VOXELS - 1,
                 (pieceX + 1) * HEIGHTMAP_VOXELS, 0, (pieceZ + 1) * HEIGHTMAP_VOXELS), true);

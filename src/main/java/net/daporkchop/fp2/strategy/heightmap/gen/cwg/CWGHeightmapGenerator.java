@@ -23,7 +23,8 @@ package net.daporkchop.fp2.strategy.heightmap.gen.cwg;
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
-import net.daporkchop.fp2.strategy.heightmap.gen.cc.CCHeightmapGenerator;
+import net.daporkchop.fp2.strategy.heightmap.gen.HeightmapGenerator;
+import net.daporkchop.fp2.strategy.heightmap.gen.block.CCHeightmapGenerator;
 import net.daporkchop.fp2.util.cwg.CWGContext;
 import net.daporkchop.fp2.util.cwg.CWGUtil;
 import net.daporkchop.fp2.util.threading.CachedBlockAccess;
@@ -42,7 +43,7 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public class CWGHeightmapGenerator extends CCHeightmapGenerator {
+public class CWGHeightmapGenerator implements HeightmapGenerator {
     protected Ref<CWGContext> ctx;
     protected int seaLevel;
 
@@ -53,7 +54,7 @@ public class CWGHeightmapGenerator extends CCHeightmapGenerator {
     }
 
     @Override
-    public void generateRough(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece) {
+    public void generate(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece) {
         int pieceX = piece.x();
         int pieceZ = piece.z();
 

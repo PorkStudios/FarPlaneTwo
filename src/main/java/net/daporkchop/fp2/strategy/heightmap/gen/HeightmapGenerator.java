@@ -20,54 +20,14 @@
 
 package net.daporkchop.fp2.strategy.heightmap.gen;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapConstants;
+import net.daporkchop.fp2.strategy.common.IFarGenerator;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
-import net.daporkchop.fp2.util.threading.CachedBlockAccess;
-import net.minecraft.world.WorldServer;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 
 /**
- * Extracts height and color information from a world for use by the heightmap rendering strategy.
- * <p>
- * Once initialized, instances of this class are expected to be safely usable by multiple concurrent threads.
+ * Extracts height and color information from a world for use by the heightmap rendering mode.
  *
  * @author DaPorkchop_
  */
-public interface HeightmapGenerator {
-    /**
-     * Initializes this instance.
-     * <p>
-     * An instance is only initialized once. No other methods will be called on this instance until initialization is complete.
-     *
-     * @param world the world that the heightmap will be generated for
-     */
-    void init(@NonNull WorldServer world);
-
-    /**
-     * Generates a rough estimate of the terrain in the given piece.
-     * <p>
-     * This allows implementations to make an optimized, generator-specific estimation of what the terrain would look like once generated, without requiring
-     * the actual generation of said pieces.
-     * <p>
-     * A {@link CachedBlockAccess} parameter is provided only for implementations do not implement this method, and instead choose to have it serve as a
-     * proxy to {@link #generateExact(CachedBlockAccess, HeightmapPiece)}.
-     * <p>
-     * Note that this should only generate a square with side length {@link HeightmapConstants#HEIGHTMAP_VOXELS}, centered on piece coordinates 0,0. Any outer
-     * edges will be automatically filled in with data from the generated area, and later with height from neighboring pieces once it becomes available.
-     *
-     * @param world the {@link CachedBlockAccess} providing access to block/height data in the world
-     * @param piece the piece to generate
-     */
-    void generateRough(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece);
-
-    /**
-     * Generates the terrain for the given piece based on the block data.
-     * <p>
-     * Note that this should only generate a square with side length {@link HeightmapConstants#HEIGHTMAP_VOXELS}, centered on piece coordinates 0,0. Any outer
-     * edges will be automatically filled in with data from the generated area, and later with height from neighboring pieces once it becomes available.
-     *
-     * @param world the {@link CachedBlockAccess} providing access to block/height data in the world
-     * @param piece the piece to generate
-     */
-    void generateExact(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece);
+public interface HeightmapGenerator extends IFarGenerator<HeightmapPos, HeightmapPiece> {
 }

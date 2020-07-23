@@ -70,7 +70,7 @@ public enum RenderMode {
         }
 
         @Override
-        public IFarPos readPiecePos(@NonNull ByteBuf src) {
+        public IFarPos readPos(@NonNull ByteBuf src) {
             return new HeightmapPos(src);
         }
     },
@@ -97,7 +97,7 @@ public enum RenderMode {
         }
 
         @Override
-        public IFarPos readPiecePos(@NonNull ByteBuf src) {
+        public IFarPos readPos(@NonNull ByteBuf src) {
             throw new UnsupportedOperationException(); //TODO
         }
     };
@@ -127,5 +127,5 @@ public enum RenderMode {
 
     public abstract IFarPiece readPiece(@NonNull ByteBuf src);
 
-    public abstract IFarPos readPiecePos(@NonNull ByteBuf src);
+    public abstract IFarPos readPos(@NonNull ByteBuf src);
 }

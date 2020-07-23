@@ -27,13 +27,23 @@ import net.daporkchop.fp2.strategy.RenderMode;
 /**
  * @author DaPorkchop_
  */
-public interface IFarPiece {
-    RenderMode strategy();
+public interface IFarPiece<POS extends IFarPos> {
+    /**
+     * @return the {@link RenderMode} that this piece is used for
+     */
+    RenderMode mode();
 
     /**
      * @return this piece's position
      */
-    IFarPos pos();
+    POS pos();
 
-    void write(@NonNull ByteBuf dst);
+    /**
+     * Writes this piece to the given {@link ByteBuf}.
+     * <p>
+     * The written data must be deserializable by this piece's render mode's {@link RenderMode#readPiece(ByteBuf)} method.
+     *
+     * @param dst the {@link ByteBuf} to write to
+     */
+    void writePiece(@NonNull ByteBuf dst);
 }

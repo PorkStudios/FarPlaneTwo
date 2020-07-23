@@ -45,7 +45,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public abstract class MixinWorldServer extends World implements IFarContext, CachedBlockAccess.Holder {
     protected CachedBlockAccess cachedBlockAccess;
 
-    protected RenderMode strategy;
+    protected RenderMode mode;
     protected IFarWorld world;
     protected IFarPlayerTracker tracker;
 
@@ -67,30 +67,30 @@ public abstract class MixinWorldServer extends World implements IFarContext, Cac
     }
 
     @Override
-    public void fp2_init(@NonNull RenderMode strategy) {
+    public void fp2_init(@NonNull RenderMode mode) {
         this.cachedBlockAccess = Constants.isCubicWorld(this)
                                  ? new CCCachedBlockAccessImpl((WorldServer) (Object) this)
                                  : new VanillaCachedBlockAccessImpl((WorldServer) (Object) this);
-        this.world = strategy.createFarWorld((WorldServer) (Object) this);
-        this.tracker = strategy.createFarTracker(this.world);
-        this.strategy = strategy;
+        this.world = mode.createFarWorld((WorldServer) (Object) this);
+        this.tracker = mode.createFarTracker(this.world);
+        this.mode = mode;
     }
 
     @Override
-    public RenderMode fp2_strategy() {
-        checkState(this.strategy != null);
-        return this.strategy;
+    public RenderMode fp2_mode() {
+        checkState(this.mode != null);
+        return this.mode;
     }
 
     @Override
     public IFarWorld fp2_world() {
-        checkState(this.strategy != null);
+        checkState(this.mode != null);
         return this.world;
     }
 
     @Override
     public IFarPlayerTracker fp2_tracker() {
-        checkState(this.strategy != null);
+        checkState(this.mode != null);
         return this.tracker;
     }
 }

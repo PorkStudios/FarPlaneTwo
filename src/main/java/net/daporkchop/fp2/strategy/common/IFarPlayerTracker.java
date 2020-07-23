@@ -26,12 +26,12 @@ import net.minecraft.entity.player.EntityPlayerMP;
 /**
  * @author DaPorkchop_
  */
-public interface IFarPlayerTracker {
+public interface IFarPlayerTracker<POS extends IFarPos, P extends IFarPiece<POS>> {
     void playerAdd(@NonNull EntityPlayerMP player);
 
     void playerRemove(@NonNull EntityPlayerMP player);
 
     void playerMove(@NonNull EntityPlayerMP player);
 
-    void pieceChanged(@NonNull IFarPiece piece);
+    void pieceChanged(@NonNull P piece);
 }

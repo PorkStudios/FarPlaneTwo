@@ -24,7 +24,7 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.lib.common.math.BinMath;
 
 /**
- * Constant values used by the heightmap rendering strategy.
+ * Constant values used by the heightmap rendering mode.
  *
  * @author DaPorkchop_
  */

@@ -22,9 +22,13 @@ package net.daporkchop.fp2.strategy.heightmap.scale;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
+
+import java.util.stream.Stream;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Scales heightmaps based on the highest sample.
@@ -32,6 +36,22 @@ import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
  * @author DaPorkchop_
  */
 public class HeightmapScalerMax implements HeightmapScaler {
+    @Override
+    public Stream<HeightmapPos> outputs(@NonNull HeightmapPos srcPos) {
+        return Stream.of(srcPos.up());
+    }
+
+    @Override
+    public Stream<HeightmapPos> inputs(@NonNull HeightmapPos dstPos) {
+        checkArg(dstPos.level() > 0, "cannot generate inputs for level 0!");
+        return Stream.of(
+                new HeightmapPos(dstPos.x() << 1, dstPos.z() << 1, dstPos.level() - 1),
+                new HeightmapPos(dstPos.x() << 1, (dstPos.z() << 1) + 1, dstPos.level() - 1),
+                new HeightmapPos((dstPos.x() << 1) + 1, dstPos.z() << 1, dstPos.level() - 1),
+                new HeightmapPos((dstPos.x() << 1) + 1, (dstPos.z() << 1) + 1, dstPos.level() - 1)
+        );
+    }
+
     @Override
     public void scale(@NonNull HeightmapPiece[] srcs, @NonNull HeightmapPiece dst) {
         for (int subX = 0; subX < 2; subX++) {
@@ -75,31 +95,31 @@ public class HeightmapScalerMax implements HeightmapScaler {
             biome = src.biome(srcX, srcZ);
         } else if (d1 > d0 && d1 > d2 && d1 > d3) {
             height = height1;
-            block = src.block(srcX, srcZ+ 1);
-            light = src.light(srcX, srcZ+ 1);
-            biome = src.biome(srcX, srcZ+ 1);
+            block = src.block(srcX, srcZ + 1);
+            light = src.light(srcX, srcZ + 1);
+            biome = src.biome(srcX, srcZ + 1);
         } else if (d2 > d0 && d2 > d1 && d2 > d3) {
             height = height2;
-            block = src.block(srcX+ 1, srcZ);
-            light = src.light(srcX+ 1, srcZ);
-            biome = src.biome(srcX+ 1, srcZ);
+            block = src.block(srcX + 1, srcZ);
+            light = src.light(srcX + 1, srcZ);
+            biome = src.biome(srcX + 1, srcZ);
         } else {
             height = height3;
-            block = src.block(srcX+ 1, srcZ+ 1);
-            light = src.light(srcX+ 1, srcZ+ 1);
-            biome = src.biome(srcX+ 1, srcZ+ 1);
+            block = src.block(srcX + 1, srcZ + 1);
+            light = src.light(srcX + 1, srcZ + 1);
+            biome = src.biome(srcX + 1, srcZ + 1);
         }
 
         dst.set(dstX, dstZ, height, block, light);
         dst.setBiome(dstX, dstZ, biome);
-        if (dstX == 0)  {
+        if (dstX == 0) {
             dst.setBiome(-1, dstZ, biome);
-        } else if (dstZ == HEIGHTMAP_VOXELS - 1)    {
+        } else if (dstZ == HEIGHTMAP_VOXELS - 1) {
             dst.setBiome(HEIGHTMAP_VOXELS, dstZ, biome);
         }
-        if (dstZ == 0)  {
+        if (dstZ == 0) {
             dst.setBiome(dstX, -1, biome);
-        } else if (dstZ == HEIGHTMAP_VOXELS - 1)    {
+        } else if (dstZ == HEIGHTMAP_VOXELS - 1) {
             dst.setBiome(dstX, HEIGHTMAP_VOXELS, biome);
         }
     }

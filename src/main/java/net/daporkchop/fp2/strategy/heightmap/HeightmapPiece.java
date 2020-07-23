@@ -26,6 +26,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
+import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.block.Block;
@@ -46,12 +47,12 @@ import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * A "piece" containing the data used by the heightmap rendering strategy.
+ * A "piece" containing the data used by the heightmap rendering mode.
  *
  * @author DaPorkchop_
  */
 @Getter
-public class HeightmapPiece extends HeightmapPos implements IFarPiece, IBlockAccess {
+public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapPos>, IBlockAccess {
     protected static final long DIRTY_OFFSET = PUnsafe.pork_getOffset(HeightmapPiece.class, "dirty");
 
     public static final int HEIGHT_SIZE = 4;
@@ -109,7 +110,7 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece, IBlockAcc
     }
 
     @Override
-    public void write(@NonNull ByteBuf dst) {
+    public void writePiece(@NonNull ByteBuf dst) {
         this.writePos(dst);
 
         dst.writeLong(0L).writeLong(0L); //placeholder
