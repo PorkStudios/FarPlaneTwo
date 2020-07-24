@@ -40,7 +40,7 @@ import java.util.Map;
 @Getter
 public final class CWGContext {
     @NonNull
-    protected final Map<Biome, List<IBiomeBlockReplacer>> biomeBlockReplacers;
+    protected final Map<Biome, IBiomeBlockReplacer[]> biomeBlockReplacers;
     @NonNull
     protected final BiomeProvider biomeProvider;
     @NonNull

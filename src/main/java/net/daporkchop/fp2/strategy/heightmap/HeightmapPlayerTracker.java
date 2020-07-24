@@ -95,7 +95,7 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, H
                     HeightmapPos pos = new HeightmapPos(x, z, lvl);
                     if (!prev.remove(pos)) {
                         //piece wasn't loaded before, we should load and send it
-                        HeightmapPiece piece = this.world.getPieceNowOrLoadAsync(pos);
+                        HeightmapPiece piece = this.world.getPiece(pos).getNow(null);
                         if (piece != null) {
                             //FP2.LOGGER.info(PStrings.fastFormat("Sending piece %d,%d@%d", piece.x(), piece.z(), piece.level()));
                             NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player);

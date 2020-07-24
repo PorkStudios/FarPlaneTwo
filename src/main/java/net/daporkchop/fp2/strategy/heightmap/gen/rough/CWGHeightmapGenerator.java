@@ -38,6 +38,7 @@ import java.util.List;
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
  * @author DaPorkchop_
@@ -73,13 +74,11 @@ public class CWGHeightmapGenerator implements HeightmapGenerator {
                 double dy = ctx.terrainBuilder().get(blockX, height + 1, blockZ) - density;
                 double dz = ctx.terrainBuilder().get(blockX, height, blockZ + 1) - density;
 
-                //Biome biome = ctx.biomeSource().getBiome(blockX, height, blockZ).getBiome();
                 Biome biome = biomes[(z + 1) * (HEIGHTMAP_VOXELS + 2) + x + 1];
 
                 IBlockState state = Blocks.AIR.getDefaultState();
-                List<IBiomeBlockReplacer> replacers = ctx.biomeBlockReplacers().get(biome);
-                for (int i = 0, size = replacers.size(); i < size; i++) {
-                    state = replacers.get(i).getReplacedBlock(state, blockX, height, blockZ, dx, dy, dz, density);
+                for (IBiomeBlockReplacer replacer : ctx.biomeBlockReplacers().get(biome)) {
+                    state = replacer.getReplacedBlock(state, blockX, height, blockZ, dx, dy, dz, density);
                 }
 
                 piece.set(x, z, height, state, packCombinedLight((height < this.seaLevel ? max(15 - (this.seaLevel - height) * 3, 0) : 15) << 20));

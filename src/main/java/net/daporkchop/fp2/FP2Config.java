@@ -73,6 +73,14 @@ public class FP2Config {
     public static int generationThreads = max(PorkUtil.CPU_COUNT - 1, 1);
 
     @Config.Comment({
+            "The number of threads that will be used for downscaling far plane terrain data.",
+            "Default: <cpu count> - 1 (and at least 1)"
+    })
+    @Config.LangKey("config.fp2.scaleThreads")
+    @Config.RequiresWorldRestart
+    public static int scaleThreads = max(PorkUtil.CPU_COUNT - 1, 1);
+
+    @Config.Comment({
             "Config options available only on the client."
     })
     @Config.LangKey("config.fp2.client")

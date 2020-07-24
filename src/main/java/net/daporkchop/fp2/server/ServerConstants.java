@@ -37,6 +37,7 @@ import net.daporkchop.lib.common.util.PorkUtil;
 @UtilityClass
 public class ServerConstants {
     public static EventExecutorGroup GENERATION_WORKERS;
+    public static EventExecutorGroup SCALE_WORKERS;
 
     public void init() {
         ServerThreadExecutor.INSTANCE.startup();
@@ -46,19 +47,27 @@ public class ServerConstants {
                 new PriorityThreadFactory(
                         new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Generation Thread #%d").priority(Thread.MIN_PRIORITY).build(),
                         Thread.MIN_PRIORITY));
+
+        SCALE_WORKERS = new UnorderedThreadPoolEventExecutor(
+                FP2Config.scaleThreads,
+                new PriorityThreadFactory(
+                        new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Scale Thread #%d").priority(Thread.MIN_PRIORITY).build(),
+                        Thread.MIN_PRIORITY));
     }
 
     public void shutdown() {
         Future<?> gen = GENERATION_WORKERS.shutdownGracefully();
+        Future<?> scale = SCALE_WORKERS.shutdownGracefully();
 
-        FP2.LOGGER.info("Shutting down generation worker pool...");
+        FP2.LOGGER.info("Shutting down generation and scale worker pools...");
         do {
             PorkUtil.sleep(5L);
             ServerThreadExecutor.INSTANCE.workOffQueue();
-        } while (!gen.isDone());
+        } while (!gen.isDone() && !scale.isDone());
         FP2.LOGGER.info("Done.");
 
         GENERATION_WORKERS = null;
+        SCALE_WORKERS = null;
 
         ServerThreadExecutor.INSTANCE.shutdown();
     }

@@ -39,8 +39,10 @@ import net.daporkchop.fp2.util.threading.CachedBlockAccess;
 import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
 import net.minecraft.world.WorldServer;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
 
 import static net.daporkchop.fp2.server.ServerConstants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -97,16 +99,6 @@ public class HeightmapWorld implements IFarWorld<HeightmapPos, HeightmapPiece> {
     }
 
     @Override
-    public HeightmapPiece getPieceBlocking(@NonNull HeightmapPos pos) {
-        return this.loadFullPiece(pos).join();
-    }
-
-    @Override
-    public HeightmapPiece getPieceNowOrLoadAsync(@NonNull HeightmapPos pos) {
-        return this.loadFullPiece(pos).getNow(null);
-    }
-
-    @Override
     public void blockChanged(int x, int y, int z) {
         //TODO: this whole thing is not really concurrency-safe
         /*this.loadFullPiece(key)
@@ -125,45 +117,46 @@ public class HeightmapWorld implements IFarWorld<HeightmapPos, HeightmapPiece> {
                 .thenAcceptAsync(((IFarContext) this.world).fp2_tracker()::pieceChanged);*/
     }
 
-    protected CompletableFuture<HeightmapPiece> loadFullPiece(HeightmapPos key) {
+    @Override
+    public CompletableFuture<HeightmapPiece> getPiece(HeightmapPos key) {
         return this.cache.computeIfAbsent(key, pos -> {
             CompletableFuture<HeightmapPiece> future = new CompletableFuture<>();
-            GENERATION_WORKERS.submit(() -> {
+            ForkJoinPool.commonPool().submit(() -> {
                 //load piece if possible
                 HeightmapPiece piece = this.storage.loadAndUnpack(pos);
-                if (piece != null) {
+                if (piece != null) { //piece was loaded from disk, use it
                     future.complete(piece);
                 } else if (pos.level() == 0) { //root level, generate piece
-                    try {
-                        future.complete(this.generatePiece(pos.x(), pos.z(), this.generatorRough));
-                    } catch (Exception e) {
-                        future.completeExceptionally(e);
-                    }
+                    GENERATION_WORKERS.submit(() -> {
+                        try {
+                            future.complete(this.generatePiece(pos.x(), pos.z(), this.generatorRough));
+                        } catch (Exception e) {
+                            future.completeExceptionally(e);
+                        }
+                    });
                 } else {
                     CompletableFuture<HeightmapPiece>[] srcFutures = uncheckedCast(this.scaler.inputs(pos)
-                            .map(this::loadFullPiece)
+                            .map(this::getPiece)
                             .toArray(CompletableFuture[]::new));
 
                     CompletableFuture.allOf(srcFutures)
-                            .thenApplyAsync(v -> {
-                                HeightmapPiece[] srcs = new HeightmapPiece[srcFutures.length];
-                                for (int i = 0, len = srcs.length; i < len; i++) {
-                                    srcs[i] = srcFutures[i].join();
-                                }
+                            .thenAcceptAsync(v -> {
+                                try {
+                                    HeightmapPiece[] srcs = new HeightmapPiece[srcFutures.length];
+                                    for (int i = 0, len = srcs.length; i < len; i++) {
+                                        srcs[i] = srcFutures[i].join();
+                                    }
 
-                                HeightmapPiece dst = new HeightmapPiece(pos.x(), pos.z(), pos.level());
+                                    HeightmapPiece dst = new HeightmapPiece(pos.x(), pos.z(), pos.level());
+                                    this.scaler.scale(srcs, dst);
+                                    dst.updateTimestamp(0L);
 
-                                this.scaler.scale(srcs, dst);
-                                this.savePiece(dst);
-                                return dst;
-                            }, GENERATION_WORKERS)
-                            .whenComplete((v, t) -> {
-                                if (t != null) {
-                                    future.completeExceptionally(t);
-                                } else {
-                                    future.complete(v);
+                                    this.savePiece(dst);
+                                    future.complete(dst);
+                                } catch (Exception e){
+                                    future.completeExceptionally(e);
                                 }
-                            });
+                            }, SCALE_WORKERS);
                 }
             });
             return future;
@@ -174,6 +167,7 @@ public class HeightmapWorld implements IFarWorld<HeightmapPos, HeightmapPiece> {
         CachedBlockAccess world = ((CachedBlockAccess.Holder) this.world).cachedBlockAccess();
         HeightmapPiece piece = new HeightmapPiece(x, z, 0);
         generator.generate(world, piece);
+        piece.updateTimestamp(0L);
 
         try {
             return piece;
@@ -203,5 +197,10 @@ public class HeightmapWorld implements IFarWorld<HeightmapPos, HeightmapPiece> {
                 packed.release();
             }
         }
+    }
+
+    @Override
+    public void close() throws IOException {
+        this.storage.close();
     }
 }

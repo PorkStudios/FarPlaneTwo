@@ -23,29 +23,23 @@ package net.daporkchop.fp2.strategy.common;
 import lombok.NonNull;
 import net.minecraft.world.WorldServer;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+
 /**
  * @author DaPorkchop_
  */
-public interface IFarWorld<POS extends IFarPos, P extends IFarPiece<POS>> {
+public interface IFarWorld<POS extends IFarPos, P extends IFarPiece<POS>> extends Closeable {
     WorldServer world();
 
     /**
      * Gets the {@link IFarPiece} at the given position.
      *
      * @param pos the position of the piece to get
-     * @return the piece
+     * @return a {@link CompletableFuture} which will be completed with the piece as soon as it is available
      */
-    P getPieceBlocking(@NonNull POS pos);
-
-    /**
-     * Gets the {@link IFarPiece} at the given position.
-     * <p>
-     * If the piece is already loaded, it is returned. Otherwise this method returns {@code null} and will be queued for loading asynchronously.
-     *
-     * @param pos the position of the piece to get
-     * @return the piece, or {@code null} if it isn't already loaded
-     */
-    P getPieceNowOrLoadAsync(@NonNull POS pos);
+    CompletableFuture<P> getPiece(@NonNull POS pos);
 
     /**
      * Fired whenever a block state changes.
@@ -75,4 +69,7 @@ public interface IFarWorld<POS extends IFarPos, P extends IFarPiece<POS>> {
      * @return the {@link IFarStorage} used for persistence of far terrain pieces
      */
     IFarStorage<POS> storage();
+
+    @Override
+    void close() throws IOException;
 }

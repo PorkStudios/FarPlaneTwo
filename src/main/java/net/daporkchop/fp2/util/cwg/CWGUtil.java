@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.util.cwg;
 
+import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.BiomeSource;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.IBuilder;
@@ -28,13 +29,17 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
+import net.daporkchop.lib.primitive.lambda.IntDoubleFunction;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
 
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
-
-import static net.daporkchop.lib.common.math.PMath.*;
+import java.util.stream.Collectors;
 
 /**
  * @author DaPorkchop_
@@ -94,11 +99,30 @@ public class CWGUtil {
                     .lerp(low, high).add(randomHeight2d).mul(volatility).add(height)
                     .sub(volatility.signum().mul((x, y, z) -> y));
 
-            return new CWGContext(PUnsafe.getObject(biomeSource, BIOMEBLOCKREPLACERS_OFFSET), PUnsafe.getObject(biomeSource, BIOMEGEN_OFFSET), biomeSource, terrainBuilder);
+            Map<Biome, List<IBiomeBlockReplacer>> oldMap = PUnsafe.getObject(biomeSource, BIOMEBLOCKREPLACERS_OFFSET);
+            Map<Biome, IBiomeBlockReplacer[]> newMap = new IdentityHashMap<>();
+            oldMap.forEach((biome, list) -> newMap.put(biome, list.toArray(new IBiomeBlockReplacer[list.size()])));
+
+            return new CWGContext(
+                    newMap,
+                    PUnsafe.getObject(biomeSource, BIOMEGEN_OFFSET),
+                    biomeSource,
+                    new CWGBuilderFast(world, conf, biomeSource));
         });
     }
 
     public static int getHeight(@NonNull IBuilder builder, int x, int z) {
-        return floorI(builder.get(x, 0, z));
+        int y = Integer.MIN_VALUE;
+        int step = Integer.MAX_VALUE >> 1;
+
+        do {
+            for (int yyPrev = y, yy = y + step; yy > yyPrev; yyPrev = yy, yy += step)   {
+                if (builder.get(x, yy, z) <= 0.0d)  { //non-solid
+                    y = yyPrev;
+                    break;
+                }
+            }
+        } while ((step >>= 1) != 0);
+        return y;
     }
 }
