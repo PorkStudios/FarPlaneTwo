@@ -121,7 +121,7 @@ public class HeightmapWorld implements IFarWorld<HeightmapPos, HeightmapPiece> {
     public CompletableFuture<HeightmapPiece> getPiece(HeightmapPos key) {
         return this.cache.computeIfAbsent(key, pos -> {
             CompletableFuture<HeightmapPiece> future = new CompletableFuture<>();
-            ForkJoinPool.commonPool().submit(() -> {
+            GENERATION_WORKERS.submit(() -> {
                 //load piece if possible
                 HeightmapPiece piece = this.storage.loadAndUnpack(pos);
                 if (piece != null) { //piece was loaded from disk, use it

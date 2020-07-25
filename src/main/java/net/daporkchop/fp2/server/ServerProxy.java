@@ -75,6 +75,7 @@ public class ServerProxy {
         if (!event.getWorld().isRemote && ((IFarContext) event.getWorld()).isInitialized()) {
             try {
                 ((IFarContext) event.getWorld()).world().close();
+                FP2.LOGGER.info("Closed far world storage.");
             } catch (IOException e) {
                 FP2.LOGGER.fatal("Unable to close far world storage!", e);
             }

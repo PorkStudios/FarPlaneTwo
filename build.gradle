@@ -54,7 +54,7 @@ ext {
     //dependency things
     guavaVersion = "21.0"
     junitVersion = "4.12"
-    leveldbVersion = "0.0.8-SNAPSHOT"
+    leveldbVersion = "0.0.10-SNAPSHOT"
     lombokVersion = "1.16.20"
     mixinVersion = "0.8.1-SNAPSHOT"
     porklibVersion = "0.5.5-SNAPSHOT"
@@ -109,6 +109,10 @@ dependencies {
         exclude group: "io.netty"
     }
     compile("net.daporkchop.lib:primitive:$porklibVersion") {
+        exclude group: "io.netty"
+    }
+
+    compile("net.daporkchop:leveldb-mcpe-jni:$leveldbVersion")  {
         exclude group: "io.netty"
     }
 

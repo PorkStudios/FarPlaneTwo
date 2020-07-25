@@ -25,6 +25,8 @@ import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+import org.iq80.leveldb.CompressionType;
+import org.iq80.leveldb.Options;
 
 import static java.lang.Math.*;
 
@@ -88,6 +90,12 @@ public class FP2Config {
     public static Client client = new Client();
 
     @Config.Comment({
+            "Options for storage of far terrain tiles."
+    })
+    @Config.LangKey("config.fp2.storage")
+    public static Storage storage = new Storage();
+
+    @Config.Comment({
             "Config options useful while developing the mod."
     })
     @Config.LangKey("config.fp2.debug")
@@ -105,6 +113,20 @@ public class FP2Config {
         @Config.LangKey("config.fp2.client.renderThreads")
         @Config.RequiresWorldRestart
         public int renderThreads = max(PorkUtil.CPU_COUNT - 1, 1);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public static class Storage {
+        @Config.Comment({
+                "The options used by the leveldb databases for storing far terrain data.",
+                "Don't touch this unless you know what you're doing!"
+        })
+        @Config.LangKey("config.fp2.storage.leveldb")
+        @Config.RequiresWorldRestart
+        public Options leveldbOptions = new Options()
+                .compressionType(CompressionType.NONE);
     }
 
     /**

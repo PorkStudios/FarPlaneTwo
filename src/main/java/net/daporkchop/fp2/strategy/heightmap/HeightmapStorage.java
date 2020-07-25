@@ -27,13 +27,18 @@ import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarStorage;
+import net.daporkchop.ldbjni.LevelDB;
+import net.daporkchop.ldbjni.direct.DirectDB;
 import net.daporkchop.lib.common.function.io.IOBiFunction;
 import net.daporkchop.lib.common.function.io.IOFunction;
 import net.daporkchop.lib.common.function.io.IOPredicate;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.compression.zstd.Zstd;
+import net.daporkchop.lib.primitive.map.IntObjMap;
+import net.daporkchop.lib.primitive.map.concurrent.IntObjConcurrentHashMap;
 import net.minecraft.world.WorldServer;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -42,6 +47,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.IntFunction;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
@@ -52,28 +58,23 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public class HeightmapStorage implements IFarStorage<HeightmapPos> {
-    protected final Map<HeightmapPos, Object> effectivelyAMutex = new ConcurrentHashMap<>(FP2Config.generationThreads << 8); //really big to avoid contention
-    protected final Path storageRoot;
+    protected final IntObjMap<DirectDB> dbs = new IntObjConcurrentHashMap<>();
+    protected final File storageRoot;
 
-    protected final ThreadLocal<ByteBuf> loadCache = new ThreadLocal<>();
+    protected final IntFunction<DirectDB> dbOpenFunction;
 
     public HeightmapStorage(@NonNull WorldServer world) {
-        this.storageRoot = world.getChunkSaveLocation().toPath().resolve("fp2/" + RenderMode.HEIGHTMAP.name().toLowerCase());
+        this.storageRoot = new File(world.getChunkSaveLocation(), "fp2/" + RenderMode.HEIGHTMAP.name().toLowerCase());
 
-        if (Files.isDirectory(this.storageRoot)) {
+        checkState(LevelDB.PROVIDER.isNative());
+
+        this.dbOpenFunction = i -> {
             try {
-                long count = Files.list(this.storageRoot).parallel()
-                        .filter(Files::isDirectory)
-                        .flatMap((IOFunction<Path, Stream<Path>>) Files::list)
-                        .filter(Files::isRegularFile)
-                        .filter(p -> p.getFileName().toString().endsWith(".tmp"))
-                        .filter((IOPredicate<Path>) Files::deleteIfExists)
-                        .count();
-                FP2.LOGGER.info("Deleted {} leftover temporary files.", count);
+                return LevelDB.PROVIDER.open(new File(this.storageRoot, String.valueOf(i)), FP2Config.storage.leveldbOptions);
             } catch (IOException e) {
-                FP2.LOGGER.error("Unable to delete temp files", e);
+                throw new RuntimeException(e);
             }
-        }
+        };
     }
 
     @Override
@@ -82,33 +83,13 @@ public class HeightmapStorage implements IFarStorage<HeightmapPos> {
             return null;
         }
 
-        this.effectivelyAMutex.compute(posIn, (pos, o) -> {
-            Path storagePath = this.storagePath(pos);
-
-            if (Files.isRegularFile(storagePath)) {
-                ByteBuf buf = null;
-                try (FileChannel channel = FileChannel.open(storagePath, StandardOpenOption.READ)) {
-                    int size = toInt(channel.size(), "file size");
-                    buf = PooledByteBufAllocator.DEFAULT.ioBuffer(size, size);
-                    buf.writeBytes(channel, size);
-
-                    checkState(buf.readableBytes() == size, "only read %d/%d bytes!", buf.readableBytes(), size);
-                    this.loadCache.set(buf.retain());
-                } catch (IOException e) {
-                    FP2.LOGGER.warn("I/O exception while loading tile at " + pos, e);
-                } finally {
-                    if (buf != null) {
-                        buf.release();
-                    }
-                }
-            }
-
-            return null; //return null to release lock without actually modifying the map
-        });
-
-        ByteBuf data = this.loadCache.get();
-        this.loadCache.set(null);
-        return data;
+        ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer();
+        try {
+            buf.writeInt(posIn.x).writeInt(posIn.z);
+            return this.dbs.computeIfAbsent(posIn.level, this.dbOpenFunction).get(buf);
+        } finally {
+            buf.release();
+        }
     }
 
     @Override
@@ -117,26 +98,20 @@ public class HeightmapStorage implements IFarStorage<HeightmapPos> {
             return;
         }
 
-        this.effectivelyAMutex.compute(posIn, (IOBiFunction<HeightmapPos, Object, Object>) (pos, o) -> {
-            Path storagePath = this.storagePath(pos);
-            Path tmpPath = storagePath.resolveSibling(storagePath.getFileName() + ".tmp");
-
-            Files.createDirectories(tmpPath.getParent());
-
-            //write data to temporary file
-            try (FileChannel channel = FileChannel.open(tmpPath, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE)) {
-                data.readBytes(channel, data.readableBytes());
-            }
-
-            //replace real file with temporary one
-            Files.move(tmpPath, storagePath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-
-            return null; //return null to release lock without actually modifying the map
-        });
+        ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer();
+        try {
+            buf.writeInt(posIn.x).writeInt(posIn.z);
+            this.dbs.computeIfAbsent(posIn.level, this.dbOpenFunction).put(buf, data);
+        } finally {
+            buf.release();
+        }
     }
 
     @Override
     public void close() throws IOException {
+        for (DirectDB db : this.dbs.values())   {
+            db.close();
+        }
     }
 
     public HeightmapPiece unpack(@NonNull ByteBuf packed, boolean release) {
@@ -174,26 +149,13 @@ public class HeightmapStorage implements IFarStorage<HeightmapPos> {
             piece.writePiece(buf);
 
             ByteBuf packed = PooledByteBufAllocator.DEFAULT.ioBuffer(8 + Zstd.PROVIDER.compressBound(buf.readableBytes()))
-                    .writeInt(buf.readableBytes())
-                    .writeInt(HEIGHTMAP_STORAGE_VERSION);
+                    .writeInt(HEIGHTMAP_STORAGE_VERSION)
+                    .writeInt(buf.readableBytes());
             checkState(DEFLATER_CACHE.get().compress(buf, packed));
 
             return packed;
         } finally {
             buf.release();
         }
-    }
-
-    public void packAndStore(@NonNull HeightmapPiece piece) {
-        ByteBuf packed = this.pack(piece);
-        try {
-            this.store(piece, packed);
-        } finally {
-            packed.release();
-        }
-    }
-
-    protected Path storagePath(@NonNull HeightmapPos pos) {
-        return this.storageRoot.resolve(PStrings.fastFormat("%d/%d.%d.fp2", pos.level(), pos.x(), pos.z()));
     }
 }

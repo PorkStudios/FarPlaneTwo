@@ -37,6 +37,7 @@ import net.daporkchop.lib.common.util.PorkUtil;
 @UtilityClass
 public class ServerConstants {
     public static EventExecutorGroup GENERATION_WORKERS;
+    @Deprecated
     public static EventExecutorGroup SCALE_WORKERS;
 
     public void init() {

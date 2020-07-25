@@ -99,8 +99,8 @@ public abstract class MixinEntityRenderer {
     private void setupCameraTransform_increaseFarPlaneDistance(EntityRenderer renderer, float farPlaneDistance) {
         if (((IFarContext) this.mc.world).isInitialized()) {
             //farPlaneDistance = FP2Config.renderDistance;
-            farPlaneDistance = FP2Config.levelCutoffDistance << (FP2Config.maxLevels + 1);
-            //TODO: i think i need a better system for computing this
+            farPlaneDistance = FP2Config.levelCutoffDistance << FP2Config.maxLevels >> 1;
+            //TODO: i need a better system for computing this
         }
         this.farPlaneDistance = farPlaneDistance;
     }

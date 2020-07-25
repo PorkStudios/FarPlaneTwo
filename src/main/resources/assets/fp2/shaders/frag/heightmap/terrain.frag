@@ -20,18 +20,18 @@
 
 void main() {
     //TODO: i really need a good solution for this
-    /*if (isChunkSectionRenderable(ivec3(fs_in.pos) >> 4))    {
+    if (isChunkSectionRenderable(ivec3(fs_in.pos) >> 4))    {
         discard;
-    }*/
+    }
 
-    if (all(bvec4(
+    /*if (all(bvec4(
     isChunkSectionRenderable((ivec3(fs_in.pos) >> 4) - ivec3(0, 0, 0)),
     isChunkSectionRenderable((ivec3(fs_in.pos) >> 4) - ivec3(0, 0, 1)),
     isChunkSectionRenderable((ivec3(fs_in.pos) >> 4) - ivec3(1, 0, 0)),
     isChunkSectionRenderable((ivec3(fs_in.pos) >> 4) - ivec3(1, 0, 1))
     )))    {
         discard;
-    }
+    }*/
 
     TextureUV uvs = global_info.tex_uvs[fs_in.state];
     vec2 uv = uvs.min + (uvs.max - uvs.min) * fract(fs_in.pos.xz);
