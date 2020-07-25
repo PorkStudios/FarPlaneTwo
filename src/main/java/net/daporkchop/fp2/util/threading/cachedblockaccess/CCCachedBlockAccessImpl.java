@@ -18,14 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.util.cc;
+package net.daporkchop.fp2.util.threading.cachedblockaccess;
 
 import io.github.opencubicchunks.cubicchunks.api.util.CubePos;
 import io.github.opencubicchunks.cubicchunks.api.world.IColumn;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import lombok.NonNull;
-import net.daporkchop.fp2.util.threading.CachedBlockAccess;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.util.PorkUtil;

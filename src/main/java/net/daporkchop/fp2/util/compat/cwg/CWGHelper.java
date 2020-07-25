@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.util.cwg;
+package net.daporkchop.fp2.util.compat.cwg;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
@@ -29,7 +29,6 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
-import net.daporkchop.lib.primitive.lambda.IntDoubleFunction;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
@@ -39,13 +38,12 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.stream.Collectors;
 
 /**
  * @author DaPorkchop_
  */
 @UtilityClass
-public class CWGUtil {
+public class CWGHelper {
     protected static final long BIOMEBLOCKREPLACERS_OFFSET = PUnsafe.pork_getOffset(BiomeSource.class, "biomeBlockReplacers");
     protected static final long BIOMEGEN_OFFSET = PUnsafe.pork_getOffset(BiomeSource.class, "biomeGen");
 

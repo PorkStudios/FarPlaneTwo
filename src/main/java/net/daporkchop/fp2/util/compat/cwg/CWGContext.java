@@ -18,26 +18,33 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.common;
+package net.daporkchop.fp2.util.compat.cwg;
 
+import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
+import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.BiomeSource;
+import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.IBuilder;
+import lombok.Getter;
 import lombok.NonNull;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.client.renderer.culling.ICamera;
-import net.minecraft.entity.Entity;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import lombok.RequiredArgsConstructor;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.BiomeProvider;
 
-import java.nio.FloatBuffer;
+import java.util.Map;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public interface IFarRenderer<POS extends IFarPos, P extends IFarPiece<POS>> {
-    void render(float partialTicks, WorldClient world, Minecraft mc, ICamera frustum);
+@RequiredArgsConstructor
+@Getter
+public final class CWGContext {
+    @NonNull
+    protected final Map<Biome, IBiomeBlockReplacer[]> biomeBlockReplacers;
+    @NonNull
+    protected final BiomeProvider biomeProvider;
+    @NonNull
+    protected final BiomeSource biomeSource;
+    @NonNull
+    protected final IBuilder terrainBuilder;
 
-    void receivePiece(@NonNull P piece);
-
-    void unloadPiece(@NonNull POS pos);
+    public Biome[] biomeCache;
 }

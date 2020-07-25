@@ -32,7 +32,7 @@ import net.minecraft.entity.Entity;
 
 import java.nio.FloatBuffer;
 
-import static net.daporkchop.fp2.client.compat.OptifineCompat.*;
+import static net.daporkchop.fp2.util.compat.OFHelper.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;

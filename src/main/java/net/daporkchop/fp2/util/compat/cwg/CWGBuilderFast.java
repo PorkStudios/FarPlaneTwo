@@ -18,10 +18,9 @@
  *
  */
 
-package net.daporkchop.fp2.util.cwg;
+package net.daporkchop.fp2.util.compat.cwg;
 
 import com.flowpowered.noise.module.Module;
-import io.github.opencubicchunks.cubicchunks.cubicgen.ConversionUtils;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.BiomeSource;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.IBuilder;
@@ -30,7 +29,6 @@ import lombok.NonNull;
 import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
 
 import java.lang.reflect.Field;
 import java.util.Random;

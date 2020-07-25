@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.strategy.common;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.threading.CachedBlockAccess;
+import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
 import net.minecraft.world.WorldServer;
 
 /**
@@ -48,4 +48,9 @@ public interface IFarGenerator<POS extends IFarPos, P extends IFarPiece<POS>> {
      * @param piece the piece to generate
      */
     void generate(@NonNull CachedBlockAccess world, @NonNull P piece);
+
+    /**
+     * @return whether or not this generator can generate pieces at low resolution
+     */
+    boolean supportsLowResolution();
 }

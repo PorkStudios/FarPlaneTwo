@@ -23,7 +23,7 @@ package net.daporkchop.fp2.strategy.heightmap.gen.exact;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.gen.HeightmapGenerator;
-import net.daporkchop.fp2.util.threading.CachedBlockAccess;
+import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -76,5 +76,10 @@ public class VanillaHeightmapGenerator implements HeightmapGenerator {
                 piece.setBiome(x, z, world.getBiome(pos));
             }
         }
+    }
+
+    @Override
+    public boolean supportsLowResolution() {
+        return false;
     }
 }

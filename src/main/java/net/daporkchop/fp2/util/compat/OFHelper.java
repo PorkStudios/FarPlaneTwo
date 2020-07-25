@@ -18,20 +18,25 @@
  *
  */
 
-package net.daporkchop.fp2.client.compat;
+package net.daporkchop.fp2.util.compat;
 
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.settings.GameSettings;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.lang.reflect.Method;
 
 /**
+ * Optifine compatibility code.
+ *
  * @author DaPorkchop_
  */
 @UtilityClass
-public class OptifineCompat {
+@SideOnly(Side.CLIENT)
+public class OFHelper {
     public static final boolean OF;
     public static final String OF_VERSION;
 
@@ -49,7 +54,7 @@ public class OptifineCompat {
             FP2.LOGGER.info("No Optifine detected");
         } catch (Exception e) {
             ofVersion = "E1";
-            FP2.LOGGER.error("Optifine detected, but could not detect version. It may not work. Assuming OptifineCompat E1...", e);
+            FP2.LOGGER.error("Optifine detected, but could not detect version. It may not work. Assuming Optifine E1...", e);
         } finally {
             OF_VERSION = ofVersion;
             OF = ofVersion != null;

@@ -18,35 +18,9 @@
  *
  */
 
-package net.daporkchop.fp2.util.cwg;
-
-import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
-import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.BiomeSource;
-import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.IBuilder;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.Accessors;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeProvider;
-
-import java.util.List;
-import java.util.Map;
-
 /**
+ * TODO: move this to PorkLib
+ *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public final class CWGContext {
-    @NonNull
-    protected final Map<Biome, IBiomeBlockReplacer[]> biomeBlockReplacers;
-    @NonNull
-    protected final BiomeProvider biomeProvider;
-    @NonNull
-    protected final BiomeSource biomeSource;
-    @NonNull
-    protected final IBuilder terrainBuilder;
-
-    public Biome[] biomeCache;
-}
+package net.daporkchop.fp2.util.alloc;

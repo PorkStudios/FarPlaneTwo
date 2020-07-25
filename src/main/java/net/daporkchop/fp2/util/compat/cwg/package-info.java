@@ -18,26 +18,9 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.common;
-
-import lombok.NonNull;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.client.renderer.culling.ICamera;
-import net.minecraft.entity.Entity;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-
-import java.nio.FloatBuffer;
-
 /**
+ * Shared code for emulating the behavior of Barteks2x's CubicWorldGen.
+ *
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public interface IFarRenderer<POS extends IFarPos, P extends IFarPiece<POS>> {
-    void render(float partialTicks, WorldClient world, Minecraft mc, ICamera frustum);
-
-    void receivePiece(@NonNull P piece);
-
-    void unloadPiece(@NonNull POS pos);
-}
+package net.daporkchop.fp2.util.compat.cwg;

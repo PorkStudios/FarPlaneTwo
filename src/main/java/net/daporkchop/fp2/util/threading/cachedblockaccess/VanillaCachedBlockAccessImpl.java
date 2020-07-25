@@ -18,10 +18,9 @@
  *
  */
 
-package net.daporkchop.fp2.util.vanilla;
+package net.daporkchop.fp2.util.threading.cachedblockaccess;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.threading.CachedBlockAccess;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.util.PorkUtil;

@@ -35,14 +35,13 @@ import net.daporkchop.fp2.strategy.heightmap.gen.rough.CWGHeightmapGenerator;
 import net.daporkchop.fp2.strategy.heightmap.scale.HeightmapScaler;
 import net.daporkchop.fp2.strategy.heightmap.scale.HeightmapScalerMax;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.CachedBlockAccess;
+import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
 import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
 import net.minecraft.world.WorldServer;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ForkJoinPool;
 
 import static net.daporkchop.fp2.server.ServerConstants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;

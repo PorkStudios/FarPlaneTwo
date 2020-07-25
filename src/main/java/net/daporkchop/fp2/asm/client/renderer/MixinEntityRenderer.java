@@ -26,10 +26,12 @@ import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
+import net.minecraft.client.renderer.culling.ICamera;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -47,16 +49,29 @@ public abstract class MixinEntityRenderer {
     @Shadow
     private float farPlaneDistance;
 
+    @Unique
+    private ICamera frustum;
+
+    @Redirect(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/culling/ICamera;setPosition(DDD)V"),
+            require = 1, allow = 1)
+    private void renderWorldPass_storeFrustum(ICamera frustum, double x, double y, double z)    {
+        frustum.setPosition(x, y, z);
+        this.frustum = frustum; //this allows me to avoid duplicate initialization of the Frustum instance
+    }
+
     @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/profiler/Profiler;endStartSection(Ljava/lang/String;)V",
                     ordinal = 5,
-                    shift = At.Shift.BEFORE))
-    private void renderWorldPass_postRenderBelowClouds(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
+                    shift = At.Shift.BEFORE),
+            require = 1)
+    private void renderWorldPass_doFarPlaneRender(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
         IFarRenderer renderer = ((IFarContext) this.mc.world).renderer();
         if (renderer != null) {
             this.mc.profiler.endStartSection("fp2_render");
-            renderer.render(partialTicks, this.mc.world, this.mc);
+            renderer.render(partialTicks, this.mc.world, this.mc, this.frustum);
         }
     }
 

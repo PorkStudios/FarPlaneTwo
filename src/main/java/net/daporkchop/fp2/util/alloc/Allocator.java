@@ -18,26 +18,34 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.common;
-
-import lombok.NonNull;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.client.renderer.culling.ICamera;
-import net.minecraft.entity.Entity;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-
-import java.nio.FloatBuffer;
+package net.daporkchop.fp2.util.alloc;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public interface IFarRenderer<POS extends IFarPos, P extends IFarPiece<POS>> {
-    void render(float partialTicks, WorldClient world, Minecraft mc, ICamera frustum);
+public interface Allocator extends AutoCloseable {
+    /**
+     * Allocates a region of the given size.
+     *
+     * @param size the size of the region to allocate
+     * @return the address of the allocated region
+     */
+    long alloc(long size);
 
-    void receivePiece(@NonNull P piece);
+    /**
+     * Frees an allocated region.
+     * <p>
+     * If the same region is freed multiple times, the behavior is undefined.
+     *
+     * @param address the address of the region to free (as returned by {@link #alloc(long)})
+     */
+    void free(long address);
 
-    void unloadPiece(@NonNull POS pos);
+    /**
+     * Closes this allocator, releasing all allocated resources.
+     * <p>
+     * Any regions which were not freed previously will be invalidated after return of this method.
+     */
+    @Override
+    void close();
 }

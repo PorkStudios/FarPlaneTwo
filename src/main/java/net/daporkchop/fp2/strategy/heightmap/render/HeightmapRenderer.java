@@ -29,35 +29,36 @@ import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.client.gl.object.ElementArrayObject;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
 import net.daporkchop.fp2.client.gl.object.UniformBufferObject;
+import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
-import net.daporkchop.fp2.strategy.common.IFarPiece;
-import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.IFarRenderer;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.BufferUtils;
 
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
 import static net.daporkchop.fp2.client.GlobalInfo.*;
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL15.glBufferData;
 import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL30.glVertexAttribIPointer;
 import static org.lwjgl.opengl.GL31.*;
 import static org.lwjgl.opengl.GL43.*;
 import static org.lwjgl.opengl.GL45.*;
@@ -107,7 +108,7 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
         return verts;
     }
 
-    protected final HeightmapTerrainCache cache;
+    protected final HeightmapRenderCache cache;
     protected IntBuffer renderableChunksMask;
 
     public final ElementArrayObject mesh = new ElementArrayObject();
@@ -116,6 +117,8 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
     public final VertexBufferObject coords = new VertexBufferObject();
 
     public final UniformBufferObject uniforms = new UniformBufferObject();
+
+    protected final VertexArrayObject vao = new VertexArrayObject();
 
     public HeightmapRenderer(@NonNull WorldClient world) {
         {
@@ -131,12 +134,12 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
         }
 
         {
-            IntBuffer coordsData = BufferUtils.createIntBuffer(HEIGHTMAP_VERTS * HEIGHTMAP_VERTS * 5);
+            ByteBuffer coordsData = BufferUtils.createByteBuffer(HEIGHTMAP_VERTS * HEIGHTMAP_VERTS * 5);
             for (int x = 0; x < HEIGHTMAP_VERTS; x++) {
                 for (int z = 0; z < HEIGHTMAP_VERTS; z++) {
-                    coordsData.put(x).put(z)
-                            .put(x & HEIGHTMAP_MASK).put(z & HEIGHTMAP_MASK)
-                            .put((x & HEIGHTMAP_MASK) * HEIGHTMAP_VOXELS + (z & HEIGHTMAP_MASK));
+                    coordsData.put((byte) x).put((byte) z)
+                            .put((byte) (x & HEIGHTMAP_MASK)).put((byte) (z & HEIGHTMAP_MASK))
+                            .put((byte) ((x & HEIGHTMAP_MASK) * HEIGHTMAP_VOXELS + (z & HEIGHTMAP_MASK)));
                 }
             }
             coordsData.flip();
@@ -152,7 +155,31 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
             glBufferData(GL_UNIFORM_BUFFER, 16L * 4L * 2L + 8L * 4L, GL_STATIC_DRAW);
         }
 
-        this.cache = new HeightmapTerrainCache(this);
+        try (VertexArrayObject vao = this.vao.bind()) {
+            for (int i = 0; i <= 2; i++) {
+                glEnableVertexAttribArray(i);
+            }
+
+            try (VertexBufferObject vbo = this.coords.bind()) {
+                glVertexAttribIPointer(0, 2, GL_UNSIGNED_BYTE, 5, 0L);
+                glVertexAttribIPointer(1, 2, GL_UNSIGNED_BYTE, 5, 2L);
+                glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, 5, 4L);
+
+                for (int i = 0; i <= 2; i++) {
+                    vao.putDependency(i, vbo);
+                }
+            }
+
+            vao.putElementArray(this.mesh.bind());
+        } finally {
+            for (int i = 0; i <= 2; i++) {
+                glDisableVertexAttribArray(i);
+            }
+
+            this.mesh.close();
+        }
+
+        this.cache = new HeightmapRenderCache(this);
     }
 
     @Override
@@ -166,7 +193,7 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
     }
 
     @Override
-    public void render(float partialTicks, WorldClient world, Minecraft mc) {
+    public void render(float partialTicks, WorldClient world, Minecraft mc, ICamera frustum) {
         OpenGL.checkGLError("pre fp2 render");
 
         try (ShaderStorageBuffer loadedBuffer = new ShaderStorageBuffer().bind()) {

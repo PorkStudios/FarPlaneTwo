@@ -24,21 +24,18 @@ import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockRe
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.gen.HeightmapGenerator;
-import net.daporkchop.fp2.util.cwg.CWGContext;
-import net.daporkchop.fp2.util.cwg.CWGUtil;
-import net.daporkchop.fp2.util.threading.CachedBlockAccess;
+import net.daporkchop.fp2.util.compat.cwg.CWGContext;
+import net.daporkchop.fp2.util.compat.cwg.CWGHelper;
+import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
 import net.daporkchop.lib.common.ref.Ref;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
-import java.util.List;
-
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
  * @author DaPorkchop_
@@ -49,7 +46,7 @@ public class CWGHeightmapGenerator implements HeightmapGenerator {
 
     @Override
     public void init(@NonNull WorldServer world) {
-        this.ctx = CWGUtil.tlCWGCtx(world);
+        this.ctx = CWGHelper.tlCWGCtx(world);
         this.seaLevel = world.getSeaLevel();
     }
 
@@ -67,7 +64,7 @@ public class CWGHeightmapGenerator implements HeightmapGenerator {
                 int blockX = pieceX * HEIGHTMAP_VOXELS + x;
                 int blockZ = pieceZ * HEIGHTMAP_VOXELS + z;
 
-                int height = CWGUtil.getHeight(ctx.terrainBuilder(), blockX, blockZ);
+                int height = CWGHelper.getHeight(ctx.terrainBuilder(), blockX, blockZ);
                 double density = ctx.terrainBuilder().get(blockX, height, blockZ);
 
                 double dx = ctx.terrainBuilder().get(blockX + 1, height, blockZ) - density;
@@ -90,5 +87,10 @@ public class CWGHeightmapGenerator implements HeightmapGenerator {
                 piece.setBiome(x - 1, z - 1, biomes[z * (HEIGHTMAP_VOXELS + 2) + x]);
             }
         }
+    }
+
+    @Override
+    public boolean supportsLowResolution() {
+        return false; //TODO
     }
 }

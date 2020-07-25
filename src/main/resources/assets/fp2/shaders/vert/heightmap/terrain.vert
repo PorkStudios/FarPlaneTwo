@@ -23,8 +23,22 @@ void main(){
     ivec2 posXZ = toWorldPos(vertex);
 
     HEIGHTMAP_TYPE center = sampleHeightmap(posXZ, vertex.level);
-
     dvec3 pos = dvec3(double(posXZ.x), double(unpackHeight(center)), double(posXZ.y));
+
+    /*int aboveTileIndex = loadedTileIndex(posXZ >> (HEIGHTMAP_SHIFT + 1), 1);
+    if (aboveTileIndex >= 0)    {
+        ivec2 i = posXZ >> (vertex.level + 1);
+        HEIGHTMAP_TYPE above = tile_data[1].data[aboveTileIndex][((i.x & HEIGHTMAP_MASK) << HEIGHTMAP_SHIFT) | (i.y & HEIGHTMAP_MASK)];
+        aboveTileIndex = 0;
+        dvec3 abovePos = dvec3(double(i.x << (vertex.level + 1)), double(unpackHeight(above)), double(i.y << (vertex.level + 1)));
+
+        float depth = float(distance(abovePos.xz, gl_state.camera.position.xz));
+        float end = float(256 << vertex.level);
+        float start = end * .7;
+        float scale = 1. / (end - start);
+        pos = mix(abovePos, pos, clamp((end - depth) * scale, 0., 1.));
+    }*/
+
     vec3 relativePos = vec3(pos - gl_state.camera.position);//convert to vec3 afterwards to minimize precision loss
 
     //give raw position to fragment shader
@@ -42,4 +56,8 @@ void main(){
     //store block state
     vs_out.state = unpackBlock(center);
     vs_out.color = unpackBlockColor(center);
+
+    //vs_out.cancel = (center.z >> 24) | -aboveTileIndex;
+    //vs_out.cancel = ~center.z >> 24;
+    //vs_out.cancel = 0;
 }

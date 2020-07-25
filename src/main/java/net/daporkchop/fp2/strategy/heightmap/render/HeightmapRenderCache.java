@@ -29,8 +29,12 @@ import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.daporkchop.lib.common.misc.string.PStrings;
+import net.daporkchop.lib.primitive.map.ObjLongMap;
+import net.daporkchop.lib.primitive.map.open.ObjLongOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
+
+import java.util.Map;
 
 import static net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderer.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -42,16 +46,16 @@ import static org.lwjgl.opengl.GL43.*;
 /**
  * @author DaPorkchop_
  */
-public class HeightmapTerrainCache {
+public class HeightmapRenderCache {
     protected final HeightmapRenderer renderer;
 
     protected Tile[] tiles = new Tile[0];
 
     protected final HeightmapRenderLevel[] levels = new HeightmapRenderLevel[FP2Config.maxLevels];
 
-    protected final VertexArrayObject vao = new VertexArrayObject();
+    protected final ObjLongMap<HeightmapPos> renderablePieceAddresses = new ObjLongOpenHashMap<>();
 
-    public HeightmapTerrainCache(@NonNull HeightmapRenderer renderer) {
+    public HeightmapRenderCache(@NonNull HeightmapRenderer renderer) {
         this.renderer = renderer;
 
         int size = glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
@@ -59,30 +63,6 @@ public class HeightmapTerrainCache {
 
         for (int l = this.levels.length - 1; l >= 0; l--) {
             this.levels[l] = new HeightmapRenderLevel(l, l == this.levels.length - 1 ? null : this.levels[l + 1]);
-        }
-
-        try (VertexArrayObject vao = this.vao.bind()) {
-            for (int i = 0; i <= 2; i++) {
-                glEnableVertexAttribArray(i);
-            }
-
-            try (VertexBufferObject vbo = this.renderer.coords.bind()) {
-                glVertexAttribIPointer(0, 2, GL_INT, 5 * 4, 0L);
-                glVertexAttribIPointer(1, 2, GL_INT, 5 * 4, 2 * 4L);
-                glVertexAttribIPointer(2, 1, GL_INT, 5 * 4, 4 * 4L);
-
-                for (int i = 0; i <= 2; i++) {
-                    vao.putDependency(i, vbo);
-                }
-            }
-
-            vao.putElementArray(this.renderer.mesh.bind());
-        } finally {
-            for (int i = 0; i <= 2; i++) {
-                glDisableVertexAttribArray(i);
-            }
-
-            this.renderer.mesh.close();
         }
     }
 
@@ -99,7 +79,7 @@ public class HeightmapTerrainCache {
             this.tiles = lvl.prepare(this.tiles);
         }
 
-        try (VertexArrayObject vao = this.vao.bind()) {
+        try (VertexArrayObject vao = this.renderer.vao.bind()) {
             try (ShaderProgram shader = TERRAIN_SHADER.use()) {
                 GlStateManager.disableAlpha();
 
