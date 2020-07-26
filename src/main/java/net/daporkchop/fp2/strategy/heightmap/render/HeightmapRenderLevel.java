@@ -87,7 +87,7 @@ public class HeightmapRenderLevel {
     protected void storePiece(@NonNull HeightmapPiece piece, @NonNull ByteBuf buf) {
         //FP2.LOGGER.info(PStrings.fastFormat("Storing piece %d,%d@%d", piece.x(), piece.z(), piece.level()));
         this.tiles.compute(piece.pos(), (pos, tile) -> {
-            if (tile == null) {
+            /*if (tile == null) {
                 tile = new Tile(pos.x(), pos.z(), pos.level(), this.allocateSlot());
             }
 
@@ -99,7 +99,7 @@ public class HeightmapRenderLevel {
             try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
                 glBufferSubData(GL_SHADER_STORAGE_BUFFER, (long) tile.slot * HEIGHTMAP_RENDER_SIZE, buf.nioBuffer());
                 tile.renderData = buf;
-            }
+            }*/
 
             return tile;
         });
@@ -110,11 +110,11 @@ public class HeightmapRenderLevel {
         ClientThreadExecutor.INSTANCE.execute(() -> {
             Tile tile = this.tiles.remove(pos);
             if (tile != null) {
-                if (tile.renderData != null) {
+                /*if (tile.renderData != null) {
                     tile.renderData.release();
                     tile.renderData = null;
                 }
-                this.activeDataSlots.clear(tile.slot);
+                this.activeDataSlots.clear(tile.slot);*/
             }
         });
     }
@@ -190,7 +190,7 @@ public class HeightmapRenderLevel {
             for (int i = 0; i < len; i++) {
                 Tile tile = tiles[i];
                 int index = (tile.x - minX) * dz + tile.z - minZ;
-                buffer.setInt((HEADER_SIZE + index) * 4, tile.slot);
+                //buffer.setInt((HEADER_SIZE + index) * 4, tile.slot);
             }
 
             try (ShaderStorageBuffer ssbo = this.indexSSBO.bind()) {
@@ -236,7 +236,7 @@ public class HeightmapRenderLevel {
 
                 //re-upload old tiles
                 this.tiles.values().forEach(tile -> {
-                    glBufferSubData(GL_SHADER_STORAGE_BUFFER, (long) tile.slot * HEIGHTMAP_RENDER_SIZE, tile.renderData.nioBuffer());
+                    //glBufferSubData(GL_SHADER_STORAGE_BUFFER, (long) tile.slot * HEIGHTMAP_RENDER_SIZE, tile.renderData.nioBuffer());
                 });
             }
         }

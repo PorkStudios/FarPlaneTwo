@@ -23,28 +23,20 @@ package net.daporkchop.fp2.util;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.util.concurrent.EventExecutorGroup;
-import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2;
-import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
+import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
-import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.compression.zstd.ZstdDeflater;
 import net.daporkchop.lib.compression.zstd.ZstdInflater;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.chunk.CompiledChunk;
-import net.minecraft.client.renderer.chunk.RenderChunk;
-import net.minecraft.util.math.Vec3i;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -54,8 +46,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Arrays;
 
 /**
  * Various constants and helper methods used throughout the mod.
@@ -80,7 +71,7 @@ public class Constants {
         return CC && world instanceof ICubicWorld && ((ICubicWorld) world).isCubicWorld();
     }
 
-    public static int packCombinedLight(int combinedLight)  {
+    public static int packCombinedLight(int combinedLight) {
         return (combinedLight >> 16) | ((combinedLight >> 4) & 0xF);
     }
 
@@ -117,5 +108,15 @@ public class Constants {
     public static ByteBuf allocateByteBuf(int capacity) {
         return PooledByteBufAllocator.DEFAULT.directBuffer(capacity, capacity)
                 .order(ByteOrder.nativeOrder());
+    }
+
+    public static long fieldOffset(@NonNull Class<?> clazz, @NonNull String... names) {
+        for (String name : names) {
+            try {
+                return PUnsafe.objectFieldOffset(clazz.getField(name));
+            } catch (NoSuchFieldException e) {
+            }
+        }
+        throw new IllegalArgumentException(PStrings.fastFormat("Unable to find field in class %s with names %s", clazz.getCanonicalName(), Arrays.toString(names)));
     }
 }

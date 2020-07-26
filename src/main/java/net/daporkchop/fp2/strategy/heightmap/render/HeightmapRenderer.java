@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.strategy.heightmap.render;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.GlobalInfo;
 import net.daporkchop.fp2.client.ShaderGlStateHelper;
@@ -36,11 +37,14 @@ import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.common.IFarRenderer;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
+import net.daporkchop.fp2.util.math.Sphere;
+import net.daporkchop.fp2.util.threading.KeyedTaskScheduler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.client.renderer.texture.TextureMap;
+import net.minecraft.entity.Entity;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -50,6 +54,7 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
+import static net.daporkchop.fp2.client.ClientConstants.RENDER_WORKERS;
 import static net.daporkchop.fp2.client.GlobalInfo.*;
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
@@ -108,6 +113,8 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
         return verts;
     }
 
+    protected final int maxLevel = FP2Config.maxLevels;
+
     protected final HeightmapRenderCache cache;
     protected IntBuffer renderableChunksMask;
 
@@ -119,6 +126,8 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
     public final UniformBufferObject uniforms = new UniformBufferObject();
 
     protected final VertexArrayObject vao = new VertexArrayObject();
+
+    protected final KeyedTaskScheduler<HeightmapPos> scheduler = new KeyedTaskScheduler<>(RENDER_WORKERS);
 
     public HeightmapRenderer(@NonNull WorldClient world) {
         {
@@ -184,16 +193,16 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
 
     @Override
     public void receivePiece(@NonNull HeightmapPiece piece) {
-        this.cache.receivePiece(piece);
+        this.scheduler.submit(piece.pos(), () -> this.cache.receivePiece(piece));
     }
 
     @Override
     public void unloadPiece(@NonNull HeightmapPos pos) {
-        this.cache.unloadPiece(pos);
+        this.scheduler.submit(pos, () -> this.cache.unloadPiece(pos));
     }
 
     @Override
-    public void render(float partialTicks, WorldClient world, Minecraft mc, ICamera frustum) {
+    public void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum) {
         OpenGL.checkGLError("pre fp2 render");
 
         try (ShaderStorageBuffer loadedBuffer = new ShaderStorageBuffer().bind()) {
@@ -230,7 +239,16 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
             ShaderGlStateHelper.update(partialTicks, mc);
             ShaderGlStateHelper.UBO.bindUBO(0);
 
-            this.cache.render(partialTicks, mc);
+            Sphere[] ranges = new Sphere[this.maxLevel];
+            Entity entity = mc.getRenderViewEntity();
+            double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
+            double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks;
+            double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
+            for (int i = 0; i < this.maxLevel; i++)    {
+                ranges[i] = new Sphere(x, y, z, FP2Config.levelCutoffDistance << i);
+            }
+
+            this.cache.render(ranges, frustum);
         } finally {
             mc.entityRenderer.disableLightmap();
 

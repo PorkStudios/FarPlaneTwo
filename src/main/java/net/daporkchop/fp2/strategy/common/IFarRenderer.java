@@ -35,7 +35,7 @@ import java.nio.FloatBuffer;
  */
 @SideOnly(Side.CLIENT)
 public interface IFarRenderer<POS extends IFarPos, P extends IFarPiece<POS>> {
-    void render(float partialTicks, WorldClient world, Minecraft mc, ICamera frustum);
+    void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum);
 
     void receivePiece(@NonNull P piece);
 
