@@ -19,10 +19,10 @@
  */
 
 void main(){
-    VertexPosition vertex = vertexPos(0);
-    ivec2 posXZ = toWorldPos(vertex);
+    TileIndexEntry entry = indexEntry();
+    ivec2 posXZ = toWorldPos(entry);
 
-    HEIGHTMAP_TYPE center = sampleHeightmap(posXZ, vertex.level);
+    HEIGHTMAP_TYPE center = sampleHeightmap(entry);
     dvec3 pos = dvec3(double(posXZ.x), double(unpackHeight(center)), double(posXZ.y));
 
     /*int aboveTileIndex = loadedTileIndex(posXZ >> (HEIGHTMAP_SHIFT + 1), 1);

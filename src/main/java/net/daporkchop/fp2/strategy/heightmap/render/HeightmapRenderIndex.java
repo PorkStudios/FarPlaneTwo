@@ -66,7 +66,11 @@ class HeightmapRenderIndex {
     }
 
     public void upload(int slot) {
-        this.buffer.flip();
-        glBufferData(slot, this.buffer, GL_STREAM_DRAW);
+        if (this.size > 0) {
+            this.buffer.flip();
+            glBufferData(slot, this.buffer, GL_STREAM_DRAW);
+        } else {
+            glBufferData(slot, 0L, GL_STREAM_DRAW);
+        }
     }
 }

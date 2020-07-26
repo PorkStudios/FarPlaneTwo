@@ -54,7 +54,7 @@ class Tile extends AxisAlignedBB {
     public boolean doesSelfOrAnyChildrenHaveAddress = false;
 
     public Tile(Tile parent, int x, int z, int level) {
-        super(x << HEIGHTMAP_SHIFT << level, 0.0d, z << HEIGHTMAP_SHIFT << level, (x + 1) << HEIGHTMAP_SHIFT << level, 0.0d, (z + 1) << HEIGHTMAP_SHIFT << level);
+        super(x << HEIGHTMAP_SHIFT << level, Integer.MIN_VALUE, z << HEIGHTMAP_SHIFT << level, (x + 1) << HEIGHTMAP_SHIFT << level, Integer.MAX_VALUE, (z + 1) << HEIGHTMAP_SHIFT << level);
 
         this.parent = parent;
         this.x = x;
@@ -72,7 +72,7 @@ class Tile extends AxisAlignedBB {
     public Tile findOrCreateChild(int x, int z, int level) {
         Tile next = this.findChildStep(x, z, level);
         if (next == null) {
-            next = new Tile(this, x >> (level - this.level - 1), z >> (level - this.level - 1), this.level - 1);
+            next = new Tile(this, x >> (this.level - level - 1), z >> (this.level - level - 1), this.level - 1);
             this.children[this.childIndex(x, z, level)] = next;
         }
         return next == this ? next : next.findOrCreateChild(x, z, level);
@@ -83,12 +83,12 @@ class Tile extends AxisAlignedBB {
             return this;
         }
         checkState(this.level > level);
-        checkState((x >> (level - this.level)) == this.x && (z >> (level - this.level)) == this.z);
+        checkState((x >> (this.level - level)) == this.x && (z >> (this.level - level)) == this.z);
         return this.children[this.childIndex(x, z, level)];
     }
 
     private int childIndex(int x, int z, int level) {
-        return (((x >> (level - this.level - 1)) & 1) << 1) | ((z >> (level - this.level - 1)) & 1);
+        return (((x >> (this.level - level - 1)) & 1) << 1) | ((z >> (this.level - level - 1)) & 1);
     }
 
     public void forEach(@NonNull Consumer<Tile> callback) {
@@ -170,33 +170,33 @@ class Tile extends AxisAlignedBB {
             return false;
         }
 
-        if (this.children == null) {
-            //level 0 tiles have no children to be considered during selection
-            index.add(this, parent);
-            return true;
-        } else {
-            if (ranges[this.level - 1].intersects(this)) {
-                //this tile intersects with the view distance for tiles below it, consider selecting them as well
-                //currently there is no mechanism for rendering part of a tile, so we only do the actual selection at the next level
-                // if all of the children could be selectable
-                boolean childrenSelectable = true;
-                for (int i = 0, len = this.children.length; childrenSelectable && i < len; i++) {
-                    if (this.children[i] != null) {
-                        childrenSelectable = this.children[i].considerForSelection(ranges, frustum);
-                    } else {
-                        childrenSelectable = false;
-                    }
-                }
-                if (childrenSelectable) {
-                    //if all children are selectable, select all of them
-                    for (int i = 0, len = this.children.length; i < len; i++) {
-                        this.children[i].select(this, ranges, frustum, index);
-                    }
-                    return true;
+        if (this.children != null && ranges[this.level - 1].intersects(this)) {
+            //this tile intersects with the view distance for tiles below it, consider selecting them as well
+            //currently there is no mechanism for rendering part of a tile, so we only do the actual selection at the next level
+            // if all of the children could be selectable
+            boolean childrenSelectable = true;
+            for (int i = 0, len = this.children.length; childrenSelectable && i < len; i++) {
+                if (this.children[i] != null) {
+                    childrenSelectable = this.children[i].considerForSelection(ranges, frustum);
+                } else {
+                    childrenSelectable = false;
                 }
             }
+            if (childrenSelectable) {
+                //if all children are selectable, select all of them
+                for (int i = 0, len = this.children.length; i < len; i++) {
+                    checkState(this.children[i].select(this, ranges, frustum, index));
+                }
+                return true;
+            }
+        }
+
+        if (this.hasAddress()) {
+            //add self to render output
             index.add(this, parent);
             return true;
         }
+
+        return false;
     }
 }

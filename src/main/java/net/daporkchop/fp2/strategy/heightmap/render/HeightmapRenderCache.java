@@ -23,6 +23,7 @@ package net.daporkchop.fp2.strategy.heightmap.render;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2;
+import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
@@ -87,11 +88,11 @@ public class HeightmapRenderCache {
         Minecraft.getMinecraft().addScheduledTask(() -> {
             try {
                 int maxLevel = this.renderer.maxLevel;
-                long rootKey = BinMath.packXY(pos.x() >> maxLevel, pos.z() >> maxLevel);
+                long rootKey = BinMath.packXY(pos.x() >> (maxLevel - pos.level()), pos.z() >> (maxLevel - pos.level()));
                 Tile rootTile = this.roots.get(rootKey);
                 if (rootTile == null) {
                     //create root tile if absent
-                    this.roots.put(rootKey, rootTile = new Tile(null, pos.x() >> maxLevel, pos.z() >> maxLevel, maxLevel));
+                    this.roots.put(rootKey, rootTile = new Tile(null, pos.x() >> (maxLevel - pos.level()), pos.z() >> (maxLevel - pos.level()), maxLevel));
                 }
                 Tile tile = rootTile.findOrCreateChild(pos.x(), pos.z(), pos.level());
                 if (!tile.hasAddress()) {
@@ -99,9 +100,7 @@ public class HeightmapRenderCache {
                     tile.assignAddress(this.dataAllocator.alloc(HEIGHTMAP_RENDER_SIZE));
                 }
 
-                //TODO: some sort of "piece attributes" would be good here
-                PUnsafe.putDouble(piece, Tile.MINY_OFFSET, Integer.MIN_VALUE);
-                PUnsafe.putDouble(piece, Tile.MINY_OFFSET, Integer.MAX_VALUE);
+                //TODO: set tile min- and maxY
 
                 //copy baked data into tile and upload to GPU
                 bakedData.readBytes(tile.renderData);
@@ -117,7 +116,8 @@ public class HeightmapRenderCache {
 
     public void unloadPiece(@NonNull HeightmapPos pos) {
         Minecraft.getMinecraft().addScheduledTask(() -> {
-            long rootKey = BinMath.packXY(pos.x() >> pos.level(), pos.z() >> pos.level());
+            int maxLevel = this.renderer.maxLevel;
+            long rootKey = BinMath.packXY(pos.x() >> (maxLevel - pos.level()), pos.z() >> (maxLevel - pos.level()));
             Tile rootTile = this.roots.get(rootKey);
             if (rootTile != null) {
                 Tile unloadedTile = rootTile.findChild(pos.x(), pos.z(), pos.level());
@@ -140,12 +140,22 @@ public class HeightmapRenderCache {
         //rebuild and upload index
         this.index.reset();
         this.roots.forEach((l, tile) -> tile.select(null, ranges, frustum, this.index));
-        try (ShaderStorageBuffer ssbo = this.indexSSBO.bind()) {
-            this.index.upload(GL_SHADER_STORAGE_BUFFER);
+        if (this.index.size == 0)   {
+            return;
         }
+
+        try (ShaderStorageBuffer ssbo = this.indexSSBO.bind()) {
+            OpenGL.checkGLError("pre upload index");
+            this.index.upload(GL_SHADER_STORAGE_BUFFER);
+            OpenGL.checkGLError("post upload index");
+        }
+
+        //bind SSBOs
         this.indexSSBO.bindSSBO(2);
+        this.dataSSBO.bindSSBO(3);
 
         //do the rendering stuff
+
         try (VertexArrayObject vao = this.renderer.vao.bind()) {
             try (ShaderProgram shader = TERRAIN_SHADER.use()) {
                 GlStateManager.disableAlpha();

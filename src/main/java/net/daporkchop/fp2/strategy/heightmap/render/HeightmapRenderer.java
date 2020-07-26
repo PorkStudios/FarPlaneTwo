@@ -113,7 +113,7 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
         return verts;
     }
 
-    protected final int maxLevel = FP2Config.maxLevels;
+    protected final int maxLevel = FP2Config.maxLevels - 1;
 
     protected final HeightmapRenderCache cache;
     protected IntBuffer renderableChunksMask;
@@ -239,12 +239,12 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
             ShaderGlStateHelper.update(partialTicks, mc);
             ShaderGlStateHelper.UBO.bindUBO(0);
 
-            Sphere[] ranges = new Sphere[this.maxLevel];
+            Sphere[] ranges = new Sphere[this.maxLevel + 1];
             Entity entity = mc.getRenderViewEntity();
             double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
             double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks;
             double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
-            for (int i = 0; i < this.maxLevel; i++)    {
+            for (int i = 0; i < ranges.length; i++)    {
                 ranges[i] = new Sphere(x, y, z, FP2Config.levelCutoffDistance << i);
             }
 

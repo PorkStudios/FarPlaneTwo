@@ -89,7 +89,7 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, H
             for (int x = xMin; x <= xMax; x++) {
                 for (int z = zMin; z <= zMax; z++) {
                     if (lvl > 0 && x << 1 >= xMinPrev && z << 1 >= zMinPrev && ((x << 1)) < xMaxPrev && ((z << 1)) < zMaxPrev) {
-                        continue;
+                        //continue;
                     }
 
                     HeightmapPos pos = new HeightmapPos(x, z, lvl);
