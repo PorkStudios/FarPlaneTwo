@@ -29,20 +29,23 @@ import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.alloc.Allocator;
 import net.daporkchop.fp2.util.alloc.FixedSizeAllocator;
-import net.daporkchop.fp2.util.math.Sphere;
+import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.primitive.map.LongObjMap;
 import net.daporkchop.lib.primitive.map.open.LongObjOpenHashMap;
-import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.culling.ICamera;
 
+import java.nio.ByteBuffer;
+
 import static net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderHelper.*;
 import static net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderer.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
@@ -58,11 +61,14 @@ public class HeightmapRenderCache {
     protected final LongObjMap<Tile> roots = new LongObjOpenHashMap<>();
 
     protected final ShaderStorageBuffer dataSSBO = new ShaderStorageBuffer();
+    protected final ByteBuffer zeroData = Constants.createByteBuffer(HEIGHTMAP_RENDER_SIZE);
     protected final Allocator dataAllocator = new FixedSizeAllocator(HEIGHTMAP_RENDER_SIZE, (oldSize, newSize) -> {
         try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
             //grow SSBO
             glBufferData(GL_SHADER_STORAGE_BUFFER, newSize, GL_STATIC_DRAW);
 
+            //re-upload data
+            glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0L, this.zeroData);
             this.roots.forEach((l, root) -> root.forEach(tile -> {
                 if (tile.hasAddress()) {
                     glBufferSubData(GL_SHADER_STORAGE_BUFFER, tile.address, tile.renderData);
@@ -79,6 +85,9 @@ public class HeightmapRenderCache {
 
         int size = glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
         FP2.LOGGER.info(PStrings.fastFormat("Max SSBO size: %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
+
+        //allocate zero block
+        checkState(this.dataAllocator.alloc(HEIGHTMAP_RENDER_SIZE) == 0L);
     }
 
     public void receivePiece(@NonNull HeightmapPiece piece) {
@@ -92,7 +101,7 @@ public class HeightmapRenderCache {
                 Tile rootTile = this.roots.get(rootKey);
                 if (rootTile == null) {
                     //create root tile if absent
-                    this.roots.put(rootKey, rootTile = new Tile(null, pos.x() >> (maxLevel - pos.level()), pos.z() >> (maxLevel - pos.level()), maxLevel));
+                    this.roots.put(rootKey, rootTile = new Tile(this,null, pos.x() >> (maxLevel - pos.level()), pos.z() >> (maxLevel - pos.level()), maxLevel));
                 }
                 Tile tile = rootTile.findOrCreateChild(pos.x(), pos.z(), pos.level());
                 if (!tile.hasAddress()) {
@@ -136,11 +145,52 @@ public class HeightmapRenderCache {
         });
     }
 
-    public void render(Sphere[] ranges, ICamera frustum) {
+    public Tile getTile(int x, int z, int level) {
+        int maxLevel = this.renderer.maxLevel;
+        Tile rootTile = this.roots.get(BinMath.packXY(x >> (maxLevel - level), z >> (maxLevel - level)));
+        return rootTile != null ? rootTile.findChild(x, z, level) : null;
+    }
+
+    public void tileAdded(@NonNull Tile tile) {
+        tile.neighbors[0] = tile;
+        tile.neighbors[1] = this.getTile(tile.x, tile.z + 1, tile.level);
+        tile.neighbors[2] = this.getTile(tile.x + 1, tile.z, tile.level);
+        tile.neighbors[3] = this.getTile(tile.x + 1, tile.z + 1, tile.level);
+
+        Tile t = this.getTile(tile.x, tile.z - 1, tile.level);
+        if (t != null) {
+            t.neighbors[1] = tile;
+        }
+        t = this.getTile(tile.x - 1, tile.z, tile.level);
+        if (t != null) {
+            t.neighbors[2] = tile;
+        }
+        t = this.getTile(tile.x - 1, tile.z - 1, tile.level);
+        if (t != null) {
+            t.neighbors[3] = tile;
+        }
+    }
+
+    public void tileRemoved(@NonNull Tile tile) {
+        Tile t = this.getTile(tile.x, tile.z - 1, tile.level);
+        if (t != null) {
+            t.neighbors[1] = null;
+        }
+        t = this.getTile(tile.x - 1, tile.z, tile.level);
+        if (t != null) {
+            t.neighbors[2] = null;
+        }
+        t = this.getTile(tile.x - 1, tile.z - 1, tile.level);
+        if (t != null) {
+            t.neighbors[3] = null;
+        }
+    }
+
+    public void render(Volume[] ranges, ICamera frustum) {
         //rebuild and upload index
         this.index.reset();
-        this.roots.forEach((l, tile) -> tile.select(null, ranges, frustum, this.index));
-        if (this.index.size == 0)   {
+        this.roots.forEach((l, tile) -> tile.select(ranges, frustum, this.index));
+        if (this.index.size == 0) {
             return;
         }
 

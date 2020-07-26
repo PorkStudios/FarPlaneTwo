@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.util.math;
 
+import lombok.AllArgsConstructor;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
@@ -29,18 +30,15 @@ import static net.daporkchop.lib.common.math.PMath.*;
 /**
  * @author DaPorkchop_
  */
-public class Sphere extends Vec3d implements Volume {
+@AllArgsConstructor
+public class Cylinder implements Volume {
     private static double sq(double d) {
         return d * d;
     }
 
+    public final double x;
+    public final double z;
     public final double radius;
-
-    public Sphere(double xIn, double yIn, double zIn, double radius) {
-        super(xIn, yIn, zIn);
-
-        this.radius = radius;
-    }
 
     @Override
     public boolean intersects(AxisAlignedBB bb) {
@@ -49,11 +47,6 @@ public class Sphere extends Vec3d implements Volume {
             dist -= sq(this.x - bb.minX);
         } else if (this.x > bb.maxX) {
             dist -= sq(this.x - bb.maxX);
-        }
-        if (this.y < bb.minY) {
-            dist -= sq(this.y - bb.minY);
-        } else if (this.x > bb.maxY) {
-            dist -= sq(this.y - bb.maxY);
         }
         if (this.z < bb.minZ) {
             dist -= sq(this.z - bb.minZ);
@@ -65,28 +58,24 @@ public class Sphere extends Vec3d implements Volume {
 
     @Override
     public boolean contains(AxisAlignedBB bb) {
-        return this.contains(bb.minX, bb.minY, bb.minZ)
-                && this.contains(bb.minX, bb.minY, bb.maxZ)
-                && this.contains(bb.minX, bb.maxY, bb.minZ)
-                && this.contains(bb.minX, bb.maxY, bb.maxZ)
-                && this.contains(bb.maxX, bb.minY, bb.minZ)
-                && this.contains(bb.maxX, bb.minY, bb.maxZ)
-                && this.contains(bb.maxX, bb.maxY, bb.minZ)
-                && this.contains(bb.maxX, bb.maxY, bb.maxZ);
+        return this.contains(bb.minX, 0.0d, bb.minZ)
+                && this.contains(bb.minX, 0.0d, bb.maxZ)
+                && this.contains(bb.minX, 0.0d, bb.minZ)
+                && this.contains(bb.minX, 0.0d, bb.maxZ);
     }
 
     @Override
     public boolean contains(double x, double y, double z) {
-        return sq(this.x - x) + sq(this.y - y) + sq(this.z - z) < sq(this.radius);
+        return sq(this.x - x) + sq(this.z - z) < sq(this.radius);
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;
-        } else if (obj instanceof Sphere) {
-            Sphere s = (Sphere) obj;
-            return Double.compare(this.x, s.x) == 0 && Double.compare(this.y, s.y) == 0 && Double.compare(this.z, s.z) == 0 && Double.compare(this.radius, s.radius) == 0;
+        } else if (obj instanceof Cylinder) {
+            Cylinder s = (Cylinder) obj;
+            return Double.compare(this.x, s.x) == 0 && Double.compare(this.z, s.z) == 0 && Double.compare(this.radius, s.radius) == 0;
         } else {
             return false;
         }
@@ -94,11 +83,11 @@ public class Sphere extends Vec3d implements Volume {
 
     @Override
     public int hashCode() {
-        return mix32(mix64(mix64(mix64(Double.doubleToLongBits(this.x)) + Double.doubleToLongBits(this.y)) + Double.doubleToLongBits(this.z)) + Double.doubleToLongBits(this.radius));
+        return mix32(mix64(mix64(Double.doubleToLongBits(this.x)) + Double.doubleToLongBits(this.z)) + Double.doubleToLongBits(this.radius));
     }
 
     @Override
     public String toString() {
-        return PStrings.fastFormat("sphere[x=%f,y=%f,z=%f,r=%f]", this.x, this.y, this.z, this.radius);
+        return PStrings.fastFormat("cylinder[x=%f,z=%f,r=%f]", this.x, this.z, this.radius);
     }
 }

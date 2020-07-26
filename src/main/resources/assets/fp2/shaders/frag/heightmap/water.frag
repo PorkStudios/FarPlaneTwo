@@ -19,7 +19,7 @@
  */
 
 void main() {
-    if (isChunkSectionRenderable(ivec3(floor(fs_in.pos)) >> 4)) {
+    if (fs_in.cancel == 0 || isChunkSectionRenderable(ivec3(floor(fs_in.pos)) >> 4)) {
         discard;
     } else {
         TextureUV uvs = global_info.tex_uvs[9];

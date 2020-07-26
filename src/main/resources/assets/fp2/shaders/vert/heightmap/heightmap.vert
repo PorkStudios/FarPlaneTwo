@@ -66,12 +66,15 @@ out VS_OUT {
 //
 
 //positions
-struct TileIndexEntry {
+struct TileIndex {
     ivec2 tilePos;
     int level;
     int index;
+};
 
-    ivec4 _padding;
+struct TileIndexEntry {
+    TileIndex low[4];
+    TileIndex high[4];
 };
 
 layout(std430, binding = 2) buffer TILE_INDEX {
@@ -82,8 +85,8 @@ TileIndexEntry indexEntry()   {
     return tile_index.data[gl_InstanceID];
 }
 
-ivec2 toWorldPos(TileIndexEntry entry) {
-    return (entry.tilePos * HEIGHTMAP_VOXELS + in_offset_absolute) << entry.level;
+ivec2 toWorldPos(TileIndex index) {
+    return (index.tilePos * HEIGHTMAP_VOXELS + in_offset_absolute) << index.level;
 }
 
 //tile data
@@ -91,22 +94,9 @@ layout(std430, binding = 3) buffer TILE_DATA {
     HEIGHTMAP_TYPE data[][HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS];
 } tile_data;
 
-HEIGHTMAP_TYPE sampleHeightmap(TileIndexEntry entry)   {
-    if (all(lessThan(in_offset_absolute, ivec2(16))))  {
-        vs_out.cancel = 0;
-        return tile_data.data[entry.index][in_vertexID_chunk];
-    } else {
-        vs_out.cancel = 1;
-        return HEIGHTMAP_TYPE(0);
-    }
-    /*int tileIndex = loadedTileIndex(worldPos >> (HEIGHTMAP_SHIFT + level), level - current_base_level);
-    if (tileIndex >= 0)  {
-        vs_out.cancel = 0;
-        return tile_data[level - current_base_level].data[tileIndex][in_vertexID_chunk];
-    } else {
-        vs_out.cancel = 1;
-        return HEIGHTMAP_TYPE(0);
-    }*/
+HEIGHTMAP_TYPE sampleHeightmap(TileIndex index)   {
+    vs_out.cancel = index.index;
+    return tile_data.data[index.index][in_vertexID_chunk];
 }
 
 //

@@ -37,7 +37,9 @@ import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.common.IFarRenderer;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
+import net.daporkchop.fp2.util.math.Cylinder;
 import net.daporkchop.fp2.util.math.Sphere;
+import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.fp2.util.threading.KeyedTaskScheduler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
@@ -78,15 +80,18 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
 
     public static void reloadHeightShader(boolean notify) {
         ShaderProgram terrain = TERRAIN_SHADER;
+        boolean skipWater = true;
         ShaderProgram water = WATER_SHADER;
         try {
             TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
-            WATER_SHADER = ShaderManager.get("heightmap/water");
+            if (!skipWater)   {
+                WATER_SHADER = ShaderManager.get("heightmap/water");
+            }
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
             if (notify) {
-                if (TERRAIN_SHADER == terrain || WATER_SHADER == water) {
+                if (TERRAIN_SHADER == terrain || (!skipWater && WATER_SHADER == water)) {
                     Minecraft.getMinecraft().player.sendMessage(new TextComponentString("§cheightmap shader reload failed (check console)."));
                 } else {
                     Minecraft.getMinecraft().player.sendMessage(new TextComponentString("§aheightmap shader successfully reloaded."));
@@ -239,13 +244,12 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
             ShaderGlStateHelper.update(partialTicks, mc);
             ShaderGlStateHelper.UBO.bindUBO(0);
 
-            Sphere[] ranges = new Sphere[this.maxLevel + 1];
+            Volume[] ranges = new Volume[this.maxLevel + 1];
             Entity entity = mc.getRenderViewEntity();
             double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
-            double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks;
             double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
             for (int i = 0; i < ranges.length; i++)    {
-                ranges[i] = new Sphere(x, y, z, FP2Config.levelCutoffDistance << i);
+                ranges[i] = new Cylinder(x, z, FP2Config.levelCutoffDistance << i);
             }
 
             this.cache.render(ranges, frustum);

@@ -75,11 +75,6 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, H
         int levels = FP2Config.maxLevels;
         int d = FP2Config.levelCutoffDistance >> HEIGHTMAP_SHIFT;
 
-        int xMinPrev = 0;
-        int xMaxPrev = 0;
-        int zMinPrev = 0;
-        int zMaxPrev = 0;
-
         for (int lvl = 0; lvl < levels; lvl++) {
             int xMin = ((baseX >> lvl) - d) & ~1;
             int xMax = ((baseX >> lvl) + d) | 1;
@@ -88,10 +83,6 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, H
 
             for (int x = xMin; x <= xMax; x++) {
                 for (int z = zMin; z <= zMax; z++) {
-                    if (lvl > 0 && x << 1 >= xMinPrev && z << 1 >= zMinPrev && ((x << 1)) < xMaxPrev && ((z << 1)) < zMaxPrev) {
-                        //continue;
-                    }
-
                     HeightmapPos pos = new HeightmapPos(x, z, lvl);
                     if (!prev.remove(pos)) {
                         //piece wasn't loaded before, we should load and send it
@@ -106,11 +97,6 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, H
                     next.add(pos);
                 }
             }
-
-            xMinPrev = xMin;
-            xMaxPrev = xMax;
-            zMinPrev = zMin;
-            zMaxPrev = zMax;
         }
 
         for (HeightmapPos pos : prev) {//unload all previously loaded pieces

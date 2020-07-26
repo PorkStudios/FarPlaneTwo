@@ -22,9 +22,10 @@ uniform float seaLevel;
 
 void main(){
     TileIndexEntry entry = indexEntry();
-    ivec2 posXZ = toWorldPos(entry);
+    TileIndex index = entry.low[0];
+    ivec2 posXZ = toWorldPos(index);
 
-    HEIGHTMAP_TYPE center = sampleHeightmap(entry);
+    HEIGHTMAP_TYPE center = sampleHeightmap(index);
 
     dvec3 pos = dvec3(double(posXZ.x), seaLevel - .125, double(posXZ.y));
     vec3 relativePos = vec3(pos - gl_state.camera.position); //convert to vec3 afterwards to minimize precision loss

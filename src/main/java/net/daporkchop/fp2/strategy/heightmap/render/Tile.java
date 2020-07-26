@@ -22,7 +22,7 @@ package net.daporkchop.fp2.strategy.heightmap.render;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.math.Sphere;
+import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -45,23 +45,28 @@ class Tile extends AxisAlignedBB {
     protected final int z;
     protected final int level;
 
+    protected final HeightmapRenderCache cache;
     protected final Tile parent;
     protected final Tile[] children; //non-null for levels above 0
+    protected final Tile[] neighbors = new Tile[4];
 
     protected long address = -1L;
     protected ByteBuffer renderData;
 
     public boolean doesSelfOrAnyChildrenHaveAddress = false;
 
-    public Tile(Tile parent, int x, int z, int level) {
+    public Tile(HeightmapRenderCache cache, Tile parent, int x, int z, int level) {
         super(x << HEIGHTMAP_SHIFT << level, Integer.MIN_VALUE, z << HEIGHTMAP_SHIFT << level, (x + 1) << HEIGHTMAP_SHIFT << level, Integer.MAX_VALUE, (z + 1) << HEIGHTMAP_SHIFT << level);
 
+        this.cache = cache;
         this.parent = parent;
         this.x = x;
         this.z = z;
         this.level = level;
 
         this.children = level > 0 ? new Tile[4] : null;
+
+        cache.tileAdded(this);
     }
 
     public Tile findChild(int x, int z, int level) {
@@ -72,7 +77,7 @@ class Tile extends AxisAlignedBB {
     public Tile findOrCreateChild(int x, int z, int level) {
         Tile next = this.findChildStep(x, z, level);
         if (next == null) {
-            next = new Tile(this, x >> (this.level - level - 1), z >> (this.level - level - 1), this.level - 1);
+            next = new Tile(this.cache,this, x >> (this.level - level - 1), z >> (this.level - level - 1), this.level - 1);
             this.children[this.childIndex(x, z, level)] = next;
         }
         return next == this ? next : next.findOrCreateChild(x, z, level);
@@ -137,6 +142,8 @@ class Tile extends AxisAlignedBB {
         }
         this.doesSelfOrAnyChildrenHaveAddress = hasAddress;
         if (!hasAddress) {
+            this.cache.tileRemoved(this);
+
             //neither this tile nor any of its children has an address
             if (this.parent != null) {
                 //this tile has a parent, remove it from the parent
@@ -152,7 +159,7 @@ class Tile extends AxisAlignedBB {
         return false;
     }
 
-    public boolean considerForSelection(@NonNull Sphere[] ranges, @NonNull ICamera frustum) {
+    public boolean considerForSelection(@NonNull Volume[] ranges, @NonNull ICamera frustum) {
         if (!ranges[this.level].intersects(this)) {
             //the view range for this level doesn't intersect this tile's bounding box,
             // so we can be certain that neither this tile nor any of its children would be contained
@@ -165,7 +172,7 @@ class Tile extends AxisAlignedBB {
         return true;
     }
 
-    public boolean select(Tile parent, @NonNull Sphere[] ranges, @NonNull ICamera frustum, @NonNull HeightmapRenderIndex index) {
+    public boolean select(@NonNull Volume[] ranges, @NonNull ICamera frustum, @NonNull HeightmapRenderIndex index) {
         if (!this.considerForSelection(ranges, frustum)) {
             return false;
         }
@@ -185,7 +192,7 @@ class Tile extends AxisAlignedBB {
             if (childrenSelectable) {
                 //if all children are selectable, select all of them
                 for (int i = 0, len = this.children.length; i < len; i++) {
-                    checkState(this.children[i].select(this, ranges, frustum, index));
+                    checkState(this.children[i].select(ranges, frustum, index));
                 }
                 return true;
             }
@@ -193,7 +200,7 @@ class Tile extends AxisAlignedBB {
 
         if (this.hasAddress()) {
             //add self to render output
-            index.add(this, parent);
+            index.add(this);
             return true;
         }
 

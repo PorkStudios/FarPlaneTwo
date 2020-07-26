@@ -37,17 +37,31 @@ class HeightmapRenderIndex {
     protected IntBuffer buffer = Constants.createIntBuffer(256);
     protected int size = 0;
 
-    public void add(@NonNull Tile tile, Tile parent) {
-        this.ensureWritable(8);
+    public void add(@NonNull Tile tile) {
+        this.ensureWritable(4 * 8);
 
-        this.buffer.put(tile.x).put(tile.z).put(tile.level).put(toInt(tile.address / HEIGHTMAP_RENDER_SIZE));
-        if (parent != null) {
-            this.buffer.put(parent.x).put(parent.z).put(parent.level).put(toInt(parent.address / HEIGHTMAP_RENDER_SIZE));
+        for (Tile t : tile.neighbors)   {
+            this.writeTile(t);
+        }
+        if (tile.parent != null)    {
+            for (Tile t : tile.parent.neighbors)   {
+                this.writeTile(t);
+            }
         } else {
-            this.buffer.put(0).put(0).put(0).put(0);
+            for (int i = 0; i < 4; i++) {
+                this.writeTile(null);
+            }
         }
 
         this.size++;
+    }
+
+    private void writeTile(Tile tile)   {
+        if (tile != null && tile.hasAddress())   {
+            this.buffer.put(tile.x).put(tile.z).put(tile.level).put(toInt(tile.address / HEIGHTMAP_RENDER_SIZE));
+        } else {
+            this.buffer.put(0).put(0).put(0).put(0);
+        }
     }
 
     private void ensureWritable(int count) {

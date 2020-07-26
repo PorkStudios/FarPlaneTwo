@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-$today.year DaPorkchop_
+ * Copyright (c) 2020-2020 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,39 +18,26 @@
  *
  */
 
-void main() {
-    if (fs_in.cancel == 0)  {
-        discard;
-    }
+package net.daporkchop.fp2.util.math;
 
-    //TODO: i really need a good solution for this
-    if (isChunkSectionRenderable(ivec3(fs_in.pos) >> 4))    {
-        discard;
-    }
+import net.minecraft.util.math.AxisAlignedBB;
 
-    /*if (all(bvec4(
-    isChunkSectionRenderable((ivec3(fs_in.pos) >> 4) - ivec3(0, 0, 0)),
-    isChunkSectionRenderable((ivec3(fs_in.pos) >> 4) - ivec3(0, 0, 1)),
-    isChunkSectionRenderable((ivec3(fs_in.pos) >> 4) - ivec3(1, 0, 0)),
-    isChunkSectionRenderable((ivec3(fs_in.pos) >> 4) - ivec3(1, 0, 1))
-    )))    {
-        discard;
-    }*/
+/**
+ * @author DaPorkchop_
+ */
+public interface Volume {
+    /**
+     * @return whether or not this volume intersects with the given bounding box
+     */
+    boolean intersects(AxisAlignedBB bb);
 
-    TextureUV uvs = global_info.tex_uvs[fs_in.state];
-    vec2 uv = uvs.min + (uvs.max - uvs.min) * fract(fs_in.pos.xz);
+    /**
+     * @return whether or not this volume contains the entire bounding box
+     */
+    boolean contains(AxisAlignedBB bb);
 
-    //initial block texture sample
-    vec4 frag_color = fs_in.color * texture(terrain_texture, uv);
-
-    //block/sky light
-    frag_color *= texture(lightmap_texture, fs_in.light);
-
-    //shading
-    frag_color.rgb *= diffuseLight(normalVector());
-
-    //fog
-    frag_color = addFog(frag_color);
-
-    color = frag_color;
+    /**
+     * @return whether or not this volume contains the given point
+     */
+    boolean contains(double x, double y, double z);
 }
