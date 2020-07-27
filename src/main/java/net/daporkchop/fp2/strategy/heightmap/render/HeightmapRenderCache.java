@@ -35,6 +35,7 @@ import net.daporkchop.fp2.util.alloc.FixedSizeAllocator;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.misc.string.PStrings;
+import net.daporkchop.lib.common.util.PArrays;
 import net.daporkchop.lib.primitive.map.LongObjMap;
 import net.daporkchop.lib.primitive.map.open.LongObjOpenHashMap;
 import net.minecraft.client.Minecraft;
@@ -48,7 +49,7 @@ import static net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderer.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL20.glUniform1f;
 import static org.lwjgl.opengl.GL31.*;
 import static org.lwjgl.opengl.GL43.*;
 
@@ -78,7 +79,8 @@ public class HeightmapRenderCache {
     });
 
     protected final ShaderStorageBuffer indexSSBO = new ShaderStorageBuffer();
-    protected final HeightmapRenderIndex index = new HeightmapRenderIndex();
+    //protected final HeightmapRenderIndex index = new HeightmapRenderIndex();
+    protected final HeightmapRenderIndex[] indices;
 
     public HeightmapRenderCache(@NonNull HeightmapRenderer renderer) {
         this.renderer = renderer;
@@ -88,6 +90,8 @@ public class HeightmapRenderCache {
 
         //allocate zero block
         checkState(this.dataAllocator.alloc(HEIGHTMAP_RENDER_SIZE) == 0L);
+
+        this.indices = PArrays.filled(this.renderer.maxLevel + 1, HeightmapRenderIndex[]::new, HeightmapRenderIndex::new);
     }
 
     public void receivePiece(@NonNull HeightmapPiece piece) {
@@ -101,7 +105,7 @@ public class HeightmapRenderCache {
                 Tile rootTile = this.roots.get(rootKey);
                 if (rootTile == null) {
                     //create root tile if absent
-                    this.roots.put(rootKey, rootTile = new Tile(this,null, pos.x() >> (maxLevel - pos.level()), pos.z() >> (maxLevel - pos.level()), maxLevel));
+                    this.roots.put(rootKey, rootTile = new Tile(this, null, pos.x() >> (maxLevel - pos.level()), pos.z() >> (maxLevel - pos.level()), maxLevel));
                 }
                 Tile tile = rootTile.findOrCreateChild(pos.x(), pos.z(), pos.level());
                 if (!tile.hasAddress()) {
@@ -188,26 +192,78 @@ public class HeightmapRenderCache {
 
     public void render(Volume[] ranges, ICamera frustum) {
         //rebuild and upload index
-        this.index.reset();
+        /*this.index.reset();
         this.roots.forEach((l, tile) -> tile.select(ranges, frustum, this.index));
         if (this.index.size == 0) {
             return;
+        }*/
+        for (HeightmapRenderIndex index : this.indices) {
+            index.reset();
         }
+        this.roots.forEach((l, tile) -> tile.select(ranges, frustum, this.indices));
 
-        try (ShaderStorageBuffer ssbo = this.indexSSBO.bind()) {
+        /*try (ShaderStorageBuffer ssbo = this.indexSSBO.bind()) {
             OpenGL.checkGLError("pre upload index");
-            this.index.upload(GL_SHADER_STORAGE_BUFFER);
+            //this.index.upload(GL_SHADER_STORAGE_BUFFER);
             OpenGL.checkGLError("post upload index");
-        }
+        }*/
 
         //bind SSBOs
         this.indexSSBO.bindSSBO(2);
         this.dataSSBO.bindSSBO(3);
 
         //do the rendering stuff
-
         try (VertexArrayObject vao = this.renderer.vao.bind()) {
             try (ShaderProgram shader = TERRAIN_SHADER.use()) {
+            try (ShaderStorageBuffer ssbo = this.indexSSBO.bind()) {
+                    GlStateManager.disableAlpha();
+
+                    for (int i = this.indices.length - 1; i >= 0; i--) {
+                        HeightmapRenderIndex index = this.indices[i];
+                        if (index.size > 0) {
+                            index.upload(GL_SHADER_STORAGE_BUFFER);
+
+                            glDrawElementsInstanced(GL_TRIANGLES, this.renderer.meshVertexCount, GL_UNSIGNED_SHORT, 0L, index.size);
+
+                            GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
+                        }
+                    }
+
+                    GlStateManager.enableAlpha();
+                }
+            }
+
+            /*GlStateManager.disableAlpha();
+            GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+            try (ShaderStorageBuffer ssbo = this.indexSSBO.bind()) {
+                for (int i = this.indices.length - 1; i >= 0; i--) {
+                    HeightmapRenderIndex index = this.indices[i];
+                    if (index.size > 0) {
+                        OpenGL.checkGLError("pre upload index");
+                        index.upload(GL_SHADER_STORAGE_BUFFER);
+                        OpenGL.checkGLError("post upload index");
+
+                        try (ShaderProgram shader = TERRAIN_SHADER.use()) {
+                            glDrawElementsInstanced(GL_TRIANGLES, this.renderer.meshVertexCount, GL_UNSIGNED_SHORT, 0L, index.size);
+                        }
+
+                        GlStateManager.enableBlend();
+                        GlStateManager.enableAlpha();
+                        try (ShaderProgram shader = WATER_SHADER.use()) {
+                            glDrawElementsInstanced(GL_TRIANGLES, this.renderer.meshVertexCount, GL_UNSIGNED_SHORT, 0L, index.size);
+                        }
+                        GlStateManager.disableBlend();
+                        GlStateManager.disableAlpha();
+
+                        GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
+                    }
+                }
+            }
+
+            GlStateManager.enableAlpha();*/
+
+            /*try (ShaderProgram shader = TERRAIN_SHADER.use()) {
                 GlStateManager.disableAlpha();
 
                 glDrawElementsInstanced(GL_TRIANGLES, this.renderer.meshVertexCount, GL_UNSIGNED_SHORT, 0L, this.index.size);
@@ -223,7 +279,7 @@ public class HeightmapRenderCache {
                 glDrawElementsInstanced(GL_TRIANGLES, this.renderer.meshVertexCount, GL_UNSIGNED_SHORT, 0L, this.index.size);
 
                 GlStateManager.disableBlend();
-            }
+            }*/
         }
     }
 }

@@ -26,24 +26,12 @@ void main(){
     ivec2 p2 = (posXZ >> (index.level + HEIGHTMAP_SHIFT)) - index.tilePos;
     index = entry.low[((p2.x & 1) << 1) | (p2.y & 1)];
 
-    HEIGHTMAP_TYPE center = sampleHeightmap(index);
-
-    /*TileIndex index = entry.low[0];
-    ivec2 posXZ = toWorldPos(index);
-    ivec2 posXZ2 = toWorldPos(index);
-
-    ivec2 p2 = (posXZ >> (index.level + HEIGHTMAP_SHIFT)) - index.tilePos;
-    index = entry.low[((p2.x & 1) << 1) | (p2.y & 1)];
-
-    if (true || index.index == 0)   { //this branch will almost always be false, only running for vertices along a detail level border
+    if (false && index.index == 0)   { //this branch will almost always be false, only running for vertices along a detail level border
         //check above
         //p2 >>= 1;
         index = entry.high[((p2.x & 1) << 1) | (p2.y & 1)];
-        if (((p2.x >> 1) & 1) != 0)    {
-            posXZ2.y = 0;
-        }
     }
-    HEIGHTMAP_TYPE center = sampleHeightmap(index, posXZ2);*/
+    HEIGHTMAP_TYPE center = sampleHeightmap(index);
     dvec3 pos = dvec3(double(posXZ.x), double(unpackHeight(center)), double(posXZ.y));
 
     /*int aboveTileIndex = loadedTileIndex(posXZ >> (HEIGHTMAP_SHIFT + 1), 1);

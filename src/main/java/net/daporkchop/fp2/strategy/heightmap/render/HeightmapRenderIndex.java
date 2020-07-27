@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.strategy.heightmap.render;
 
+import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -35,16 +36,26 @@ import static org.lwjgl.opengl.GL15.*;
  */
 class HeightmapRenderIndex {
     protected IntBuffer buffer = Constants.createIntBuffer(256);
+    @Getter
     protected int size = 0;
+
+    public int mark() {
+        return this.size;
+    }
+
+    public void restore(int mark) {
+        this.buffer.position(mark * 4 * 8);
+        this.size = mark;
+    }
 
     public void add(@NonNull Tile tile) {
         this.ensureWritable(4 * 8);
 
-        for (Tile t : tile.neighbors)   {
+        for (Tile t : tile.neighbors) {
             this.writeTile(t);
         }
-        if (tile.parent != null)    {
-            for (Tile t : tile.parent.neighbors)   {
+        if (tile.parent != null) {
+            for (Tile t : tile.parent.neighbors) {
                 this.writeTile(t);
             }
         } else {
@@ -56,8 +67,8 @@ class HeightmapRenderIndex {
         this.size++;
     }
 
-    private void writeTile(Tile tile)   {
-        if (tile != null && tile.hasAddress())   {
+    private void writeTile(Tile tile) {
+        if (tile != null && tile.hasAddress()) {
             this.buffer.put(tile.x).put(tile.z).put(tile.level).put(toInt(tile.address / HEIGHTMAP_RENDER_SIZE));
         } else {
             this.buffer.put(0).put(0).put(0).put(0);

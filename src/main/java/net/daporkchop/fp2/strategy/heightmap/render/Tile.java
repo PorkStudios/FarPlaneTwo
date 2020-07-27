@@ -77,7 +77,7 @@ class Tile extends AxisAlignedBB {
     public Tile findOrCreateChild(int x, int z, int level) {
         Tile next = this.findChildStep(x, z, level);
         if (next == null) {
-            next = new Tile(this.cache,this, x >> (this.level - level - 1), z >> (this.level - level - 1), this.level - 1);
+            next = new Tile(this.cache, this, x >> (this.level - level - 1), z >> (this.level - level - 1), this.level - 1);
             this.children[this.childIndex(x, z, level)] = next;
         }
         return next == this ? next : next.findOrCreateChild(x, z, level);
@@ -101,7 +101,7 @@ class Tile extends AxisAlignedBB {
         if (this.children != null) {
             for (Tile child : this.children) {
                 if (child != null) {
-                    callback.accept(child);
+                    child.forEach(callback);
                 }
             }
         }
@@ -159,7 +159,7 @@ class Tile extends AxisAlignedBB {
         return false;
     }
 
-    public boolean considerForSelection(@NonNull Volume[] ranges, @NonNull ICamera frustum) {
+    public boolean select(@NonNull Volume[] ranges, @NonNull ICamera frustum, @NonNull HeightmapRenderIndex[] indices) {
         if (!ranges[this.level].intersects(this)) {
             //the view range for this level doesn't intersect this tile's bounding box,
             // so we can be certain that neither this tile nor any of its children would be contained
@@ -169,38 +169,26 @@ class Tile extends AxisAlignedBB {
             // this tile nor any of its children would be visible
             return false;
         }
-        return true;
-    }
 
-    public boolean select(@NonNull Volume[] ranges, @NonNull ICamera frustum, @NonNull HeightmapRenderIndex index) {
-        if (!this.considerForSelection(ranges, frustum)) {
-            return false;
-        }
-
+        CHILDREN:
         if (this.children != null && ranges[this.level - 1].intersects(this)) {
             //this tile intersects with the view distance for tiles below it, consider selecting them as well
             //currently there is no mechanism for rendering part of a tile, so we only do the actual selection at the next level
             // if all of the children could be selectable
-            boolean childrenSelectable = true;
-            for (int i = 0, len = this.children.length; childrenSelectable && i < len; i++) {
-                if (this.children[i] != null) {
-                    childrenSelectable = this.children[i].considerForSelection(ranges, frustum);
-                } else {
-                    childrenSelectable = false;
+            //if all children are selectable, select all of them
+            int mark = indices[this.level - 1].mark();
+            for (int i = 0, len = this.children.length; i < len; i++) {
+                if (this.children[i] == null || !this.children[i].select(ranges, frustum, indices))  {
+                    indices[this.level - 1].restore(mark);
+                    break CHILDREN;
                 }
             }
-            if (childrenSelectable) {
-                //if all children are selectable, select all of them
-                for (int i = 0, len = this.children.length; i < len; i++) {
-                    checkState(this.children[i].select(ranges, frustum, index));
-                }
-                return true;
-            }
+            //return true;
         }
 
         if (this.hasAddress()) {
             //add self to render output
-            index.add(this);
+            indices[this.level].add(this);
             return true;
         }
 
