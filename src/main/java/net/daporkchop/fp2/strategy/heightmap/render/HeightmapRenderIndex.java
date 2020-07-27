@@ -48,23 +48,35 @@ class HeightmapRenderIndex {
         this.size = mark;
     }
 
-    public void add(@NonNull Tile tile) {
-        this.ensureWritable(4 * 8);
+    public boolean add(@NonNull Tile tile) {
+        if (tile.hasAddress()) {
+            this.ensureWritable(4 * 8);
 
-        for (Tile t : tile.neighbors) {
-            this.writeTile(t);
-        }
-        if (tile.parent != null) {
-            for (Tile t : tile.parent.neighbors) {
+            for (Tile t : tile.neighbors) {
                 this.writeTile(t);
             }
-        } else {
-            for (int i = 0; i < 4; i++) {
-                this.writeTile(null);
+            if (tile.parent != null) {
+                /*for (Tile t : tile.parent.neighbors) {
+                    this.writeTile(t);
+                }*/
+                this.writeTile(tile.parent);
+                this.writeTile((tile.z & 1) == 0 ? tile.parent : tile.parent.neighbors[1]);
+                this.writeTile((tile.x & 1) == 0 ? tile.parent : tile.parent.neighbors[2]);
+                this.writeTile((tile.x & 1) != 0 && (tile.z & 1) != 0 ? tile.parent.neighbors[3]
+                : (tile.x & 1) != 0 ? tile.parent.neighbors[2]
+                : (tile.z & 1) != 0 ? tile.parent.neighbors[1]
+                : tile.parent);
+            } else {
+                for (int i = 0; i < 4; i++) {
+                    this.writeTile(null);
+                }
             }
-        }
 
-        this.size++;
+            this.size++;
+            return true;
+        } else {
+            return false;
+        }
     }
 
     private void writeTile(Tile tile) {

@@ -18,35 +18,43 @@
  *
  */
 
+int toSlot(TileIndex index, ivec2 posXZ)  {
+    ivec2 p2 = (posXZ >> (index.level + HEIGHTMAP_SHIFT)) - index.tilePos;
+    return ((p2.x & 1) << 1) | (p2.y & 1);
+}
+
+out flat int lvl;
+
+uniform int cutoff = 256;
+
 void main(){
     TileIndexEntry entry = indexEntry();
     TileIndex index = entry.low[0];
     ivec2 posXZ = toWorldPos(index);
 
-    ivec2 p2 = (posXZ >> (index.level + HEIGHTMAP_SHIFT)) - index.tilePos;
-    index = entry.low[((p2.x & 1) << 1) | (p2.y & 1)];
+    int slot = toSlot(index, posXZ);
+    index = entry.low[slot];
 
-    if (false && index.index == 0)   { //this branch will almost always be false, only running for vertices along a detail level border
-        //check above
-        //p2 >>= 1;
-        index = entry.high[((p2.x & 1) << 1) | (p2.y & 1)];
-    }
     HEIGHTMAP_TYPE center = sampleHeightmap(index);
+    //HEIGHTMAP_TYPE center = sampleHeightmap(index);
     dvec3 pos = dvec3(double(posXZ.x), double(unpackHeight(center)), double(posXZ.y));
 
-    /*int aboveTileIndex = loadedTileIndex(posXZ >> (HEIGHTMAP_SHIFT + 1), 1);
-    if (aboveTileIndex >= 0)    {
-        ivec2 i = posXZ >> (vertex.level + 1);
-        HEIGHTMAP_TYPE above = tile_data[1].data[aboveTileIndex][((i.x & HEIGHTMAP_MASK) << HEIGHTMAP_SHIFT) | (i.y & HEIGHTMAP_MASK)];
-        aboveTileIndex = 0;
-        dvec3 abovePos = dvec3(double(i.x << (vertex.level + 1)), double(unpackHeight(above)), double(i.y << (vertex.level + 1)));
+    dvec3 abovePos = pos;
 
-        float depth = float(distance(abovePos.xz, gl_state.camera.position.xz));
-        float end = float(256 << vertex.level);
-        float start = end * .7;
+    if (entry.high[slot].index > 0)   {
+        lvl = (0*index.level + ((posXZ.x >> index.level) ^ (posXZ.y >> index.level))) & 3;
+
+        ivec2 pFloored = posXZ & ~1;
+        HEIGHTMAP_TYPE above = sampleHeightmap(entry.high[slot], pFloored);
+        abovePos = dvec3(double(pFloored.x), double(unpackHeight(above)), double(pFloored.y));
+
+        float start = float(cutoff << index.level) * .55;
+        float end = float(cutoff << index.level) * .9;
+
         float scale = 1. / (end - start);
+        float depth = float(distance(vec2(posXZ), gl_state.camera.position.xz));
         pos = mix(abovePos, pos, clamp((end - depth) * scale, 0., 1.));
-    }*/
+    }
 
     vec3 relativePos = vec3(pos - gl_state.camera.position);//convert to vec3 afterwards to minimize precision loss
 
@@ -65,8 +73,4 @@ void main(){
     //store block state
     vs_out.state = unpackBlock(center);
     vs_out.color = unpackBlockColor(center);
-
-    //vs_out.cancel = (center.z >> 24) | -aboveTileIndex;
-    //vs_out.cancel = ~center.z >> 24;
-    //vs_out.cancel = 0;
 }

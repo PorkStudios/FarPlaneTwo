@@ -159,7 +159,7 @@ class Tile extends AxisAlignedBB {
         return false;
     }
 
-    public boolean select(@NonNull Volume[] ranges, @NonNull ICamera frustum, @NonNull HeightmapRenderIndex[] indices) {
+    public boolean select(@NonNull Volume[] ranges, @NonNull ICamera frustum, @NonNull HeightmapRenderIndex index) {
         if (!ranges[this.level].intersects(this)) {
             //the view range for this level doesn't intersect this tile's bounding box,
             // so we can be certain that neither this tile nor any of its children would be contained
@@ -170,28 +170,23 @@ class Tile extends AxisAlignedBB {
             return false;
         }
 
-        CHILDREN:
         if (this.children != null && ranges[this.level - 1].intersects(this)) {
             //this tile intersects with the view distance for tiles below it, consider selecting them as well
             //currently there is no mechanism for rendering part of a tile, so we only do the actual selection at the next level
             // if all of the children could be selectable
             //if all children are selectable, select all of them
-            int mark = indices[this.level - 1].mark();
+            int mark = index.mark();
             for (int i = 0, len = this.children.length; i < len; i++) {
-                if (this.children[i] == null || !this.children[i].select(ranges, frustum, indices))  {
-                    indices[this.level - 1].restore(mark);
-                    break CHILDREN;
+                if (this.children[i] == null || !this.children[i].select(ranges, frustum, index)) {
+                    //if any one of the children cannot be added, abort and add this tile over the whole area instead
+                    index.restore(mark);
+                    return index.add(this);
                 }
             }
-            //return true;
-        }
-
-        if (this.hasAddress()) {
-            //add self to render output
-            indices[this.level].add(this);
             return true;
         }
 
-        return false;
+        //add self to render output
+        return index.add(this);
     }
 }

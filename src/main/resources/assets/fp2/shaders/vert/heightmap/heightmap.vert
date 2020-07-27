@@ -99,6 +99,11 @@ HEIGHTMAP_TYPE sampleHeightmap(TileIndex index)   {
     return tile_data.data[index.index][in_vertexID_chunk];
 }
 
+HEIGHTMAP_TYPE sampleHeightmap(TileIndex index, ivec2 posXZ)   {
+    posXZ = (posXZ >> index.level) & HEIGHTMAP_MASK;
+    return tile_data.data[index.index][(posXZ.x << HEIGHTMAP_SHIFT) | posXZ.y];
+}
+
 //
 //
 // UTILITIES

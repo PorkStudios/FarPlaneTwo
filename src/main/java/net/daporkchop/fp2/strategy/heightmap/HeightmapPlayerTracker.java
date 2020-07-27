@@ -73,13 +73,17 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, H
         Set<HeightmapPos> next = new ObjectOpenHashSet<>((dist * 2 + 2) * (dist * 2 + 2));
 
         int levels = FP2Config.maxLevels;
-        int d = FP2Config.levelCutoffDistance >> HEIGHTMAP_SHIFT;
+        int d = (FP2Config.levelCutoffDistance >> HEIGHTMAP_SHIFT) + 1;
 
         for (int lvl = 0; lvl < levels; lvl++) {
-            int xMin = ((baseX >> lvl) - d) & ~1;
+            /*int xMin = ((baseX >> lvl) - d) & ~1;
             int xMax = ((baseX >> lvl) + d) | 1;
             int zMin = ((baseZ >> lvl) - d) & ~1;
-            int zMax = ((baseZ >> lvl) + d) | 1;
+            int zMax = ((baseZ >> lvl) + d) | 1;*/
+            int xMin = ((baseX >> lvl) - d);
+            int xMax = ((baseX >> lvl) + d);
+            int zMin = ((baseZ >> lvl) - d);
+            int zMax = ((baseZ >> lvl) + d);
 
             for (int x = xMin; x <= xMax; x++) {
                 for (int z = zMin; z <= zMax; z++) {

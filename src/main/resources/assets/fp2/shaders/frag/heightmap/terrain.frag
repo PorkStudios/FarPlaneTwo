@@ -18,6 +18,15 @@
  *
  */
 
+in flat int lvl;
+
+const vec4 colors[] = {
+vec4(1., 0., 0., .5),
+vec4(0., 1., 0., .5),
+vec4(0., 0., 1., .5),
+vec4(1., 1., 0., .5)
+};
+
 void main() {
     if (fs_in.cancel == 0)  {
         discard;
@@ -45,6 +54,9 @@ void main() {
 
     //block/sky light
     frag_color *= texture(lightmap_texture, fs_in.light);
+
+    frag_color = colors[lvl];
+    //color = vec4(vec3(step(512., distance(gl_state.camera.position, fs_in.pos))), 1.);
 
     //shading
     frag_color.rgb *= diffuseLight(normalVector());
