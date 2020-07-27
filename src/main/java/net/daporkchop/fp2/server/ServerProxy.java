@@ -27,6 +27,7 @@ import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.world.WorldServer;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
@@ -75,7 +76,7 @@ public class ServerProxy {
         if (!event.getWorld().isRemote && ((IFarContext) event.getWorld()).isInitialized()) {
             try {
                 ((IFarContext) event.getWorld()).world().close();
-                FP2.LOGGER.info("Closed far world storage.");
+                FP2.LOGGER.info("Closed far world storage in dimension {}.", event.getWorld().provider.getDimension());
             } catch (IOException e) {
                 FP2.LOGGER.fatal("Unable to close far world storage!", e);
             }

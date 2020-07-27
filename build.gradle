@@ -95,24 +95,26 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+    shade
+    compile.extendsFrom shade
+}
+
 dependencies {
-    compile("net.daporkchop.lib:binary:$porklibVersion") { //TODO: shade these dependencies into a sub-package
+    shade("net.daporkchop.lib:compression-zstd:$porklibVersion") {
         exclude group: "io.netty"
     }
-    compile("net.daporkchop.lib:compression-zstd:$porklibVersion") {
+    shade("net.daporkchop.lib:concurrent:$porklibVersion") {
         exclude group: "io.netty"
     }
-    compile("net.daporkchop.lib:concurrent:$porklibVersion") {
+    shade("net.daporkchop.lib:noise:$porklibVersion") {
         exclude group: "io.netty"
     }
-    compile("net.daporkchop.lib:noise:$porklibVersion") {
-        exclude group: "io.netty"
-    }
-    compile("net.daporkchop.lib:primitive:$porklibVersion") {
+    shade("net.daporkchop.lib:primitive:$porklibVersion") {
         exclude group: "io.netty"
     }
 
-    compile("net.daporkchop:leveldb-mcpe-jni:$leveldbVersion")  {
+    shade("net.daporkchop:leveldb-mcpe-jni:$leveldbVersion")  {
         exclude group: "io.netty"
     }
 
@@ -186,6 +188,17 @@ reobf.jar {
 
 jar {
     archiveName "fp2-v$fp2Version-$minecraftVersion" + ".jar"
+
+    from {
+        configurations.shade.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }.unique()
+    } {
+        exclude "META-INF/**"
+        exclude sourceSets.main.output.asFileTree.collect {
+            return it.getPath().split("java/main/").last()
+        }
+    }
 
     manifest {
         attributes(
