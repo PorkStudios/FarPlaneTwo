@@ -104,6 +104,11 @@ HEIGHTMAP_TYPE sampleHeightmap(TileIndex index, ivec2 posXZ)   {
     return tile_data.data[index.index][(posXZ.x << HEIGHTMAP_SHIFT) | posXZ.y];
 }
 
+int toSlot(TileIndex index, ivec2 posXZ)  {
+    ivec2 p2 = (posXZ >> (index.level + HEIGHTMAP_SHIFT)) - index.tilePos;
+    return ((p2.x & 1) << 1) | (p2.y & 1);
+}
+
 //
 //
 // UTILITIES

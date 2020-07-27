@@ -18,13 +18,6 @@
  *
  */
 
-int toSlot(TileIndex index, ivec2 posXZ)  {
-    ivec2 p2 = (posXZ >> (index.level + HEIGHTMAP_SHIFT)) - index.tilePos;
-    return ((p2.x & 1) << 1) | (p2.y & 1);
-}
-
-out flat int lvl;
-
 uniform int cutoff = 256;
 
 void main(){
@@ -36,27 +29,25 @@ void main(){
     index = entry.low[slot];
 
     HEIGHTMAP_TYPE center = sampleHeightmap(index);
-    //HEIGHTMAP_TYPE center = sampleHeightmap(index);
     dvec3 pos = dvec3(double(posXZ.x), double(unpackHeight(center)), double(posXZ.y));
 
-    dvec3 abovePos = pos;
+    //sample above
+    TileIndex highIndex = entry.high[slot];
+    ivec2 pFloored = posXZ & ~((1 << highIndex.level) - 1);
+    HEIGHTMAP_TYPE above = sampleHeightmap(highIndex, pFloored);
+    dvec3 abovePos = dvec3(double(pFloored.x), double(unpackHeight(above)), double(pFloored.y));
 
-    if (entry.high[slot].index > 0)   {
-        lvl = (0*index.level + ((posXZ.x >> index.level) ^ (posXZ.y >> index.level))) & 3;
+    //linear blending between the two positions
+    float start = float(cutoff << index.level) * .55;
+    float end = float(cutoff << index.level) * .9;
+    float depth = float(distance(vec2(posXZ), gl_state.camera.position.xz));
+    float fac = min(float(highIndex.index), 1.);
+    //imagine that everything from the //sample above to this line were in an if(entry.high[slot] != 0) { ... },
+    // but i managed to implement it with 0 branches!
+    pos = mix(pos, abovePos, fac * (1. - clamp((end - depth) * (1. / (end - start)), 0., 1.)));
 
-        ivec2 pFloored = posXZ & ~1;
-        HEIGHTMAP_TYPE above = sampleHeightmap(entry.high[slot], pFloored);
-        abovePos = dvec3(double(pFloored.x), double(unpackHeight(above)), double(pFloored.y));
-
-        float start = float(cutoff << index.level) * .55;
-        float end = float(cutoff << index.level) * .9;
-
-        float scale = 1. / (end - start);
-        float depth = float(distance(vec2(posXZ), gl_state.camera.position.xz));
-        pos = mix(abovePos, pos, clamp((end - depth) * scale, 0., 1.));
-    }
-
-    vec3 relativePos = vec3(pos - gl_state.camera.position);//convert to vec3 afterwards to minimize precision loss
+    //convert position to vec3 afterwards to minimize precision loss
+    vec3 relativePos = vec3(pos - gl_state.camera.position);
 
     //give raw position to fragment shader
     vs_out.pos = vec3(pos);
