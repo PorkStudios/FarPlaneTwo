@@ -21,21 +21,20 @@
 package net.daporkchop.fp2.strategy.heightmap.render;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.lib.common.util.PorkUtil;
+import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
+import net.minecraft.init.Biomes;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
-
-import java.nio.ByteOrder;
+import net.minecraft.world.biome.Biome;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.HEIGHTMAP_VOXELS;
+import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 
 /**
  * @author DaPorkchop_
@@ -44,10 +43,11 @@ import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.HEIGHTMAP
 public class HeightmapRenderHelper {
     public static final int HEIGHTMAP_RENDER_SIZE = HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS * IVEC4_SIZE;
 
-    public static ByteBuf bakePiece(@NonNull HeightmapPiece piece)  {
+    public static ByteBuf bakePiece(@NonNull HeightmapPiece piece) {
         ByteBuf buffer = Constants.allocateByteBuf(HEIGHTMAP_RENDER_SIZE);
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
 
         for (int x = 0; x < HEIGHTMAP_VOXELS; x++) {
             for (int z = 0; z < HEIGHTMAP_VOXELS; z++) {
@@ -55,11 +55,15 @@ public class HeightmapRenderHelper {
                 int block = piece.block(x, z);
 
                 pos.setPos(piece.blockX() + (x << piece.level()), height, piece.blockZ() + (z << piece.level()));
+                biomeAccess.biome(Biome.getBiome(piece.biome(x, z), Biomes.PLAINS));
 
                 buffer.writeInt(height)
                         .writeInt((piece.light(x, z) << 24) | block)
-                        .writeInt(Minecraft.getMinecraft().getBlockColors().colorMultiplier(Block.getStateById(block), piece, pos, 0))
-                        .writeInt(Minecraft.getMinecraft().getBlockColors().colorMultiplier(Blocks.WATER.getDefaultState(), piece, pos, 0));
+                        .writeInt(Minecraft.getMinecraft().getBlockColors().colorMultiplier(Block.getStateById(block), biomeAccess, pos, 0));
+
+                biomeAccess.biome(Biome.getBiome(piece.waterBiome(x, z), Biomes.PLAINS));
+                int waterColor = Minecraft.getMinecraft().getBlockColors().colorMultiplier(Blocks.WATER.getDefaultState(), biomeAccess, pos, 0);
+                buffer.writeInt((waterColor & 0x00FFFFFF) | (piece.waterLight(x, z) << 24));
             }
         }
         return buffer;

@@ -37,7 +37,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-class Tile extends AxisAlignedBB {
+class HeightmapRenderTile extends AxisAlignedBB {
     protected static final long MINY_OFFSET = Constants.fieldOffset(AxisAlignedBB.class, "minY", "field_72338_b");
     protected static final long MAXY_OFFSET = Constants.fieldOffset(AxisAlignedBB.class, "maxY", "field_72337_e");
 
@@ -46,16 +46,16 @@ class Tile extends AxisAlignedBB {
     protected final int level;
 
     protected final HeightmapRenderCache cache;
-    protected final Tile parent;
-    protected final Tile[] children; //non-null for levels above 0
-    protected final Tile[] neighbors = new Tile[4];
+    protected final HeightmapRenderTile parent;
+    protected final HeightmapRenderTile[] children; //non-null for levels above 0
+    protected final HeightmapRenderTile[] neighbors = new HeightmapRenderTile[4];
 
     protected long address = -1L;
     protected ByteBuffer renderData;
 
     public boolean doesSelfOrAnyChildrenHaveAddress = false;
 
-    public Tile(HeightmapRenderCache cache, Tile parent, int x, int z, int level) {
+    public HeightmapRenderTile(HeightmapRenderCache cache, HeightmapRenderTile parent, int x, int z, int level) {
         super(x << HEIGHTMAP_SHIFT << level, Integer.MIN_VALUE, z << HEIGHTMAP_SHIFT << level, (x + 1) << HEIGHTMAP_SHIFT << level, Integer.MAX_VALUE, (z + 1) << HEIGHTMAP_SHIFT << level);
 
         this.cache = cache;
@@ -64,26 +64,26 @@ class Tile extends AxisAlignedBB {
         this.z = z;
         this.level = level;
 
-        this.children = level > 0 ? new Tile[4] : null;
+        this.children = level > 0 ? new HeightmapRenderTile[4] : null;
 
         cache.tileAdded(this);
     }
 
-    public Tile findChild(int x, int z, int level) {
-        Tile next = this.findChildStep(x, z, level);
+    public HeightmapRenderTile findChild(int x, int z, int level) {
+        HeightmapRenderTile next = this.findChildStep(x, z, level);
         return next == this || next == null ? next : next.findChild(x, z, level);
     }
 
-    public Tile findOrCreateChild(int x, int z, int level) {
-        Tile next = this.findChildStep(x, z, level);
+    public HeightmapRenderTile findOrCreateChild(int x, int z, int level) {
+        HeightmapRenderTile next = this.findChildStep(x, z, level);
         if (next == null) {
-            next = new Tile(this.cache, this, x >> (this.level - level - 1), z >> (this.level - level - 1), this.level - 1);
+            next = new HeightmapRenderTile(this.cache, this, x >> (this.level - level - 1), z >> (this.level - level - 1), this.level - 1);
             this.children[this.childIndex(x, z, level)] = next;
         }
         return next == this ? next : next.findOrCreateChild(x, z, level);
     }
 
-    public Tile findChildStep(int x, int z, int level) {
+    public HeightmapRenderTile findChildStep(int x, int z, int level) {
         if (this.x == x && this.z == z && this.level == level) {
             return this;
         }
@@ -96,10 +96,10 @@ class Tile extends AxisAlignedBB {
         return (((x >> (this.level - level - 1)) & 1) << 1) | ((z >> (this.level - level - 1)) & 1);
     }
 
-    public void forEach(@NonNull Consumer<Tile> callback) {
+    public void forEach(@NonNull Consumer<HeightmapRenderTile> callback) {
         callback.accept(this);
         if (this.children != null) {
-            for (Tile child : this.children) {
+            for (HeightmapRenderTile child : this.children) {
                 if (child != null) {
                     child.forEach(callback);
                 }

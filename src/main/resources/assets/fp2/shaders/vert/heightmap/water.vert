@@ -26,8 +26,22 @@ void main(){
     ivec2 posXZ = toWorldPos(index);
 
     HEIGHTMAP_TYPE center = sampleHeightmap(index);
-
     dvec3 pos = dvec3(double(posXZ.x), seaLevel - .125, double(posXZ.y));
+
+    //sample above
+    TileIndex highIndex = entry.high[slot];
+    ivec2 pFloored = posXZ & ~((1 << highIndex.level) - 1);
+    HEIGHTMAP_TYPE above = sampleHeightmap(highIndex, pFloored);
+    dvec3 abovePos = dvec3(double(pFloored.x), double(unpackHeight(above)), double(pFloored.y));
+
+    //linear blending between the two positions
+    float start = float(cutoff << index.level) * .55;
+    float end = float(cutoff << index.level) * .9;
+    float depth = float(distance(vec2(posXZ), gl_state.camera.position.xz));
+    float fac = min(float(highIndex.index), 1.);
+    //imagine that everything from the //sample above to this line were in an if(entry.high[slot] != 0) { ... },
+    // but i managed to implement it with 0 branches!
+    pos = mix(pos, abovePos, fac * (1. - clamp((end - depth) * (1. / (end - start)), 0., 1.)));
     vec3 relativePos = vec3(pos - gl_state.camera.position); //convert to vec3 afterwards to minimize precision loss
 
     //give raw position to fragment shader

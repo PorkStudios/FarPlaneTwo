@@ -48,11 +48,11 @@ class HeightmapRenderIndex {
         this.size = mark;
     }
 
-    public boolean add(@NonNull Tile tile) {
+    public boolean add(@NonNull HeightmapRenderTile tile) {
         if (tile.hasAddress()) {
             this.ensureWritable(4 * 8);
 
-            for (Tile t : tile.neighbors) {
+            for (HeightmapRenderTile t : tile.neighbors) {
                 this.writeTile(t);
             }
             if (tile.parent != null) {
@@ -73,7 +73,7 @@ class HeightmapRenderIndex {
         }
     }
 
-    private void writeTile(Tile tile) {
+    private void writeTile(HeightmapRenderTile tile) {
         if (tile != null && tile.hasAddress()) {
             this.buffer.put(tile.x).put(tile.z).put(tile.level).put(toInt(tile.address / HEIGHTMAP_RENDER_SIZE));
         } else {

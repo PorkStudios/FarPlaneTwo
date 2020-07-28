@@ -29,7 +29,7 @@ void main() {
         vec4 frag_color = fs_in.color * texture(terrain_texture, uv);
 
         //block/sky light
-        frag_color *= texture(lightmap_texture, vec2(0., 1.));
+        frag_color *= texture(lightmap_texture, fs_in.light);
 
         //fog
         frag_color = addFog(frag_color);

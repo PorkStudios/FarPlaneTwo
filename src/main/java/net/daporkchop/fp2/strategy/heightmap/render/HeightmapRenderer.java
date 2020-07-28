@@ -80,7 +80,7 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
 
     public static void reloadHeightShader(boolean notify) {
         ShaderProgram terrain = TERRAIN_SHADER;
-        boolean skipWater = true;
+        boolean skipWater = false;
         ShaderProgram water = WATER_SHADER;
         try {
             TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");

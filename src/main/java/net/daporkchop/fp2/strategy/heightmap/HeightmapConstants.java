@@ -35,5 +35,5 @@ public class HeightmapConstants {
     public static final int HEIGHTMAP_VOXELS = 1 << HEIGHTMAP_SHIFT; //side length of a tile in voxels contained
     public static final int HEIGHTMAP_VERTS = HEIGHTMAP_VOXELS + 1; //side length of a tile in vertices
 
-    public static final int HEIGHTMAP_STORAGE_VERSION = 4;
+    public static final int HEIGHTMAP_STORAGE_VERSION = 5;
 }

@@ -29,6 +29,7 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.biome.Biome;
 
 import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -37,8 +38,11 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 public class CCHeightmapGenerator implements HeightmapGenerator {
+    protected int seaLevel;
+
     @Override
     public void init(@NonNull WorldServer world) {
+        this.seaLevel = world.getSeaLevel();
     }
 
     @Override
@@ -48,8 +52,8 @@ public class CCHeightmapGenerator implements HeightmapGenerator {
 
         //prefetch columns, but not cubes because we really can't know where they are
         world.prefetch(new AxisAlignedBB(
-                pieceX * HEIGHTMAP_VOXELS - 1, 0, pieceZ * HEIGHTMAP_VOXELS - 1,
-                (pieceX + 1) * HEIGHTMAP_VOXELS, 0, (pieceZ + 1) * HEIGHTMAP_VOXELS), true);
+                pieceX * HEIGHTMAP_VOXELS , 0, pieceZ * HEIGHTMAP_VOXELS,
+                (pieceX + 1) * HEIGHTMAP_VOXELS - 1, 0, (pieceZ + 1) * HEIGHTMAP_VOXELS - 1), true);
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
@@ -64,14 +68,14 @@ public class CCHeightmapGenerator implements HeightmapGenerator {
                     state = world.getBlockState(pos);
                 }
 
-                piece.set(x, z, height, state, packCombinedLight(world.getCombinedLight(pos.add(0, 1, 0), 0)));
-            }
-        }
+                pos.setY(height + 1);
+                int light = world.getCombinedLight(pos, 0);
+                Biome biome = world.getBiome(pos);
 
-        for (int x = -1; x <= HEIGHTMAP_VOXELS; x++) {
-            for (int z = -1; z <= HEIGHTMAP_VOXELS; z++) {
-                pos.setPos(pieceX * HEIGHTMAP_VOXELS + x, 0, pieceZ * HEIGHTMAP_VOXELS + z);
-                piece.setBiome(x, z, world.getBiome(pos));
+                pos.setY(this.seaLevel);
+                int waterLight = world.getCombinedLight(pos, 0);
+                Biome waterBiome = world.getBiome(pos);
+                piece.set(x, z, height, state, packCombinedLight(light), biome, packCombinedLight(waterLight), waterBiome);
             }
         }
     }

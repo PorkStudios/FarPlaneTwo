@@ -56,7 +56,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapPos>, IBlockAccess {
+public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapPos> {
     protected static final long TIMESTAMP_OFFSET = PUnsafe.pork_getOffset(HeightmapPiece.class, "timestamp");
     protected static final long DIRTY_OFFSET = PUnsafe.pork_getOffset(HeightmapPiece.class, "dirty");
 
@@ -91,7 +91,6 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapP
 
     protected final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    protected final ByteBuffer biome = Constants.createByteBuffer((HEIGHTMAP_VOXELS + 2) * (HEIGHTMAP_VOXELS + 2));
     protected final IntBuffer data = Constants.createIntBuffer(ENTRY_COUNT * 4);
 
     protected volatile long timestamp = -1L;
@@ -108,12 +107,6 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapP
 
         this.timestamp = buf.readLong();
 
-        buf.readLong(); //placeholder
-
-        for (int i = 0; i < (HEIGHTMAP_VOXELS + 2) * (HEIGHTMAP_VOXELS + 2); i++) {
-            this.biome.put(i, buf.readByte());
-        }
-
         for (int i = 0; i < ENTRY_COUNT * 4; i++) {
             this.data.put(i, buf.readInt());
         }
@@ -125,12 +118,6 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapP
         this.writePos(dst);
 
         dst.writeLong(this.timestamp);
-
-        dst.writeLong(0L); //placeholder
-
-        for (int i = 0; i < (HEIGHTMAP_VOXELS + 2) * (HEIGHTMAP_VOXELS + 2); i++) {
-            dst.writeByte(this.biome.get(i));
-        }
 
         for (int i = 0; i < ENTRY_COUNT * 4; i++) {
             dst.writeInt(this.data.get(i));
@@ -169,32 +156,38 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapP
     }
 
     public int biome(int x, int z) {
-        return this.biome.get(biomeIndex(x, z)) & 0xFF;
+        return this.data.get(index(x, z) + 2) & 0xFF;
     }
 
-    public HeightmapPiece set(int x, int z, int height, IBlockState state, int light) {
-        return this.set(x, z, height, Block.getStateId(state), light);
+    public int waterLight(int x, int z) {
+        return (this.data.get(index(x, z) + 2) >>> 8) & 0xFF;
     }
 
-    public HeightmapPiece set(int x, int z, int height, int state, int light) {
+    public int waterBiome(int x, int z) {
+        return (this.data.get(index(x, z) + 2) >>> 16) & 0xFF;
+    }
+
+    public HeightmapPiece set(int x, int z, int height, IBlockState state, int light, Biome biome, int waterLight, Biome waterBiome) {
+        return this.set(x, z, height, Block.getStateId(state), light, Biome.getIdForBiome(biome), waterLight, Biome.getIdForBiome(waterBiome));
+    }
+
+    public HeightmapPiece set(int x, int z, int height, int state, int light, int biome, int waterLight, int waterBiome) {
         int base = index(x, z);
 
         this.data.put(base + 0, height)
                 .put(base + 1, (light << 24) | state)
-                .put(base + 2, 0)
+                .put(base + 2, (waterBiome << 16) | (waterLight << 8) | biome)
                 .put(base + 3, 0);
         this.markDirty();
         return this;
     }
 
-    public HeightmapPiece setBiome(int x, int z, Biome biome) {
-        return this.setBiome(x, z, Biome.getIdForBiome(biome));
-    }
-
-    public HeightmapPiece setBiome(int x, int z, int biome) {
-        this.biome.put(biomeIndex(x, z), (byte) biome);
-        this.markDirty();
-        return this;
+    public void copy(int srcX, int srcZ, HeightmapPiece src, int x, int z)  {
+        int srcBase = index(srcX, srcZ);
+        int base = index(x, z);
+        for (int i = 0; i < 4; i++) {
+            this.data.put(base + i, src.data.get(srcBase + i));
+        }
     }
 
     @Override
@@ -217,50 +210,5 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapP
     @Override
     public String toString() {
         return PStrings.fastFormat("HeightmapPiece(x=%d, z=%d, level=%d, timestamp=%d, dirty=%b)", this.x, this.z, this.level, this.timestamp, this.isDirty());
-    }
-
-    //IBlockAccess implementations
-
-    @Nullable
-    @Override
-    public TileEntity getTileEntity(BlockPos pos) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getCombinedLight(BlockPos pos, int lightValue) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public IBlockState getBlockState(BlockPos pos) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean isAirBlock(BlockPos pos) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Biome getBiome(BlockPos pos) {
-        int x = (pos.getX() - this.blockX()) >> this.level;
-        int z = (pos.getZ() - this.blockZ()) >> this.level;
-        return Biome.getBiome(this.biome.get(biomeIndex(x, z)) & 0xFF, Biomes.PLAINS);
-    }
-
-    @Override
-    public int getStrongPower(BlockPos pos, EnumFacing direction) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public WorldType getWorldType() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean isSideSolid(BlockPos pos, EnumFacing side, boolean _default) {
-        throw new UnsupportedOperationException();
     }
 }

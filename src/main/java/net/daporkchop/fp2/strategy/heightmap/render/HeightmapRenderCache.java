@@ -24,7 +24,6 @@ import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
-import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
@@ -36,7 +35,6 @@ import net.daporkchop.fp2.util.alloc.FixedSizeAllocator;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.misc.string.PStrings;
-import net.daporkchop.lib.common.util.PArrays;
 import net.daporkchop.lib.primitive.map.LongObjMap;
 import net.daporkchop.lib.primitive.map.open.LongObjOpenHashMap;
 import net.minecraft.client.Minecraft;
@@ -60,7 +58,7 @@ import static org.lwjgl.opengl.GL43.*;
 public class HeightmapRenderCache {
     protected final HeightmapRenderer renderer;
 
-    protected final LongObjMap<Tile> roots = new LongObjOpenHashMap<>();
+    protected final LongObjMap<HeightmapRenderTile> roots = new LongObjOpenHashMap<>();
 
     protected final ShaderStorageBuffer dataSSBO = new ShaderStorageBuffer();
     protected final ByteBuffer zeroData = Constants.createByteBuffer(HEIGHTMAP_RENDER_SIZE);
@@ -100,12 +98,12 @@ public class HeightmapRenderCache {
             try {
                 int maxLevel = this.renderer.maxLevel;
                 long rootKey = BinMath.packXY(pos.x() >> (maxLevel - pos.level()), pos.z() >> (maxLevel - pos.level()));
-                Tile rootTile = this.roots.get(rootKey);
+                HeightmapRenderTile rootTile = this.roots.get(rootKey);
                 if (rootTile == null) {
                     //create root tile if absent
-                    this.roots.put(rootKey, rootTile = new Tile(this, null, pos.x() >> (maxLevel - pos.level()), pos.z() >> (maxLevel - pos.level()), maxLevel));
+                    this.roots.put(rootKey, rootTile = new HeightmapRenderTile(this, null, pos.x() >> (maxLevel - pos.level()), pos.z() >> (maxLevel - pos.level()), maxLevel));
                 }
-                Tile tile = rootTile.findOrCreateChild(pos.x(), pos.z(), pos.level());
+                HeightmapRenderTile tile = rootTile.findOrCreateChild(pos.x(), pos.z(), pos.level());
                 if (!tile.hasAddress()) {
                     //allocate address for tile
                     tile.assignAddress(this.dataAllocator.alloc(HEIGHTMAP_RENDER_SIZE));
@@ -129,9 +127,9 @@ public class HeightmapRenderCache {
         Minecraft.getMinecraft().addScheduledTask(() -> {
             int maxLevel = this.renderer.maxLevel;
             long rootKey = BinMath.packXY(pos.x() >> (maxLevel - pos.level()), pos.z() >> (maxLevel - pos.level()));
-            Tile rootTile = this.roots.get(rootKey);
+            HeightmapRenderTile rootTile = this.roots.get(rootKey);
             if (rootTile != null) {
-                Tile unloadedTile = rootTile.findChild(pos.x(), pos.z(), pos.level());
+                HeightmapRenderTile unloadedTile = rootTile.findChild(pos.x(), pos.z(), pos.level());
                 if (unloadedTile != null && unloadedTile.hasAddress()) {
                     //free address
                     this.dataAllocator.free(unloadedTile.address);
@@ -147,19 +145,19 @@ public class HeightmapRenderCache {
         });
     }
 
-    public Tile getTile(int x, int z, int level) {
+    public HeightmapRenderTile getTile(int x, int z, int level) {
         int maxLevel = this.renderer.maxLevel;
-        Tile rootTile = this.roots.get(BinMath.packXY(x >> (maxLevel - level), z >> (maxLevel - level)));
+        HeightmapRenderTile rootTile = this.roots.get(BinMath.packXY(x >> (maxLevel - level), z >> (maxLevel - level)));
         return rootTile != null ? rootTile.findChild(x, z, level) : null;
     }
 
-    public void tileAdded(@NonNull Tile tile) {
+    public void tileAdded(@NonNull HeightmapRenderTile tile) {
         tile.neighbors[0] = tile;
         tile.neighbors[1] = this.getTile(tile.x, tile.z + 1, tile.level);
         tile.neighbors[2] = this.getTile(tile.x + 1, tile.z, tile.level);
         tile.neighbors[3] = this.getTile(tile.x + 1, tile.z + 1, tile.level);
 
-        Tile t = this.getTile(tile.x, tile.z - 1, tile.level);
+        HeightmapRenderTile t = this.getTile(tile.x, tile.z - 1, tile.level);
         if (t != null) {
             t.neighbors[1] = tile;
         }
@@ -173,8 +171,8 @@ public class HeightmapRenderCache {
         }
     }
 
-    public void tileRemoved(@NonNull Tile tile) {
-        Tile t = this.getTile(tile.x, tile.z - 1, tile.level);
+    public void tileRemoved(@NonNull HeightmapRenderTile tile) {
+        HeightmapRenderTile t = this.getTile(tile.x, tile.z - 1, tile.level);
         if (t != null) {
             t.neighbors[1] = null;
         }
