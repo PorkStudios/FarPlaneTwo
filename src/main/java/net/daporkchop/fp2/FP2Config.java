@@ -143,8 +143,34 @@ public class FP2Config {
         })
         @Config.LangKey("config.fp2.storage.leveldb")
         @Config.RequiresWorldRestart
-        public Options leveldbOptions = new Options()
-                .compressionType(CompressionType.NONE);
+        public Leveldb leveldb = new Leveldb();
+
+        public static class Leveldb {
+            public boolean errorIfExists;
+            public int writeBufferSize = 4 << 20;
+
+            public int maxOpenFiles = 1000;
+
+            public int blockRestartInterval = 16;
+            public int blockSize = 4 * 1024;
+            public CompressionType compressionType = CompressionType.NONE;
+            public boolean verifyChecksums = true;
+            public boolean paranoidChecks;
+            public int cacheSize;
+
+            public Options use()    {
+                return new Options()
+                        .errorIfExists(this.errorIfExists)
+                        .writeBufferSize(this.writeBufferSize)
+                        .maxOpenFiles(this.maxOpenFiles)
+                        .blockRestartInterval(this.blockRestartInterval)
+                        .blockSize(this.blockSize)
+                        .compressionType(this.compressionType)
+                        .verifyChecksums(this.verifyChecksums)
+                        .paranoidChecks(this.paranoidChecks)
+                        .cacheSize(this.cacheSize);
+            }
+        }
     }
 
     /**

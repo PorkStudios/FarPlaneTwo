@@ -23,18 +23,23 @@ package net.daporkchop.fp2.strategy.heightmap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import lombok.NonNull;
+import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarStorage;
 import net.daporkchop.ldbjni.LevelDB;
 import net.daporkchop.ldbjni.direct.DirectDB;
+import net.daporkchop.lib.common.misc.file.PFiles;
+import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.primitive.map.IntObjMap;
 import net.daporkchop.lib.primitive.map.concurrent.IntObjConcurrentHashMap;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.WorldServer;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.function.IntFunction;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -51,43 +56,51 @@ public class HeightmapStorage implements IFarStorage<HeightmapPos> {
 
     public HeightmapStorage(@NonNull WorldServer world) {
         this.storageRoot = new File(world.getChunkSaveLocation(), "fp2/" + RenderMode.HEIGHTMAP.name().toLowerCase());
+        PFiles.ensureDirectoryExists(this.storageRoot);
 
         checkState(LevelDB.PROVIDER.isNative());
 
         this.dbOpenFunction = i -> {
             try {
-                return LevelDB.PROVIDER.open(new File(this.storageRoot, String.valueOf(i)), FP2Config.storage.leveldbOptions);
+                return LevelDB.PROVIDER.open(new File(this.storageRoot, String.valueOf(i)), FP2Config.storage.leveldb.use());
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                FP2.LOGGER.error(PStrings.fastFormat("Unable to open DB in %s at level %d", this.storageRoot, i), e);
+                PUnsafe.throwException(e);
+                throw new RuntimeException(e); //unreachable
             }
         };
     }
 
     @Override
-    public ByteBuf load(@NonNull HeightmapPos posIn) {
+    public ByteBuf load(@NonNull HeightmapPos pos) {
         if (FP2Config.debug.disableRead || FP2Config.debug.disablePersistence) {
             return null;
         }
 
         ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer();
         try {
-            buf.writeInt(posIn.x).writeInt(posIn.z);
-            return this.dbs.computeIfAbsent(posIn.level, this.dbOpenFunction).getZeroCopy(buf);
+            buf.writeInt(pos.x).writeInt(pos.z);
+            return this.dbs.computeIfAbsent(pos.level, this.dbOpenFunction).getZeroCopy(buf);
+        } catch (Exception e)   {
+            FP2.LOGGER.error(PStrings.fastFormat("Unable to load tile %s from DB at %s", pos, this.storageRoot), e);
+            return null;
         } finally {
             buf.release();
         }
     }
 
     @Override
-    public void store(@NonNull HeightmapPos posIn, @NonNull ByteBuf data) {
+    public void store(@NonNull HeightmapPos pos, @NonNull ByteBuf data) {
         if (FP2Config.debug.disableWrite || FP2Config.debug.disablePersistence) {
             return;
         }
 
         ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer();
         try {
-            buf.writeInt(posIn.x).writeInt(posIn.z);
-            this.dbs.computeIfAbsent(posIn.level, this.dbOpenFunction).put(buf, data);
+            buf.writeInt(pos.x).writeInt(pos.z);
+            this.dbs.computeIfAbsent(pos.level, this.dbOpenFunction).put(buf, data);
+        } catch (Exception e)   {
+            FP2.LOGGER.error(PStrings.fastFormat("Unable to store tile %s to DB at %s", pos, this.storageRoot), e);
         } finally {
             buf.release();
         }
@@ -95,8 +108,19 @@ public class HeightmapStorage implements IFarStorage<HeightmapPos> {
 
     @Override
     public void close() throws IOException {
-        for (DirectDB db : this.dbs.values())   {
-            db.close();
+        IOException root = null;
+        for (DirectDB db : this.dbs.values()) {
+            try {
+                db.close();
+            } catch (IOException e) {
+                if (root == null) {
+                    root = new IOException("Unable to close all DBs in " + this.storageRoot);
+                }
+                root.addSuppressed(e);
+            }
+        }
+        if (root != null) {
+            throw root;
         }
     }
 

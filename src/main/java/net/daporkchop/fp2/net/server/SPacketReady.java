@@ -21,11 +21,15 @@
 package net.daporkchop.fp2.net.server;
 
 import io.netty.buffer.ByteBuf;
+import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
-import net.daporkchop.fp2.net.client.CPacketRenderingStrategy;
+import net.daporkchop.fp2.net.client.CPacketRenderMode;
+import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+
+import static net.daporkchop.fp2.util.Constants.NETWORK_WRAPPER;
 
 /**
  * Neat hack to ensure that the client doesn't send a packet until it's ready.
@@ -44,7 +48,11 @@ public class SPacketReady implements IMessage {
     public static class Handler implements IMessageHandler<SPacketReady, IMessage> {
         @Override
         public IMessage onMessage(SPacketReady message, MessageContext ctx) {
-            return new CPacketRenderingStrategy().strategy(FP2Config.renderMode);
+            ClientThreadExecutor.INSTANCE.execute(() -> {
+                FP2.LOGGER.debug("Server notified us that we are ready to go!");
+                NETWORK_WRAPPER.sendToServer(new CPacketRenderMode().mode(FP2Config.renderMode));
+            });
+            return null;
         }
     }
 }

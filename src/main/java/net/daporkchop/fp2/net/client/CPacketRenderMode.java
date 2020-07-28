@@ -24,6 +24,7 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
 import net.daporkchop.fp2.strategy.RenderMode;
@@ -41,27 +42,29 @@ import static net.daporkchop.fp2.util.Constants.*;
  */
 @Setter
 @Getter
-public class CPacketRenderingStrategy implements IMessage {
+public class CPacketRenderMode implements IMessage {
     @NonNull
-    protected RenderMode strategy;
+    protected RenderMode mode;
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.strategy = RenderMode.fromOrdinal(buf.readInt());
+        this.mode = RenderMode.fromOrdinal(buf.readInt());
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeInt(this.strategy.ordinal());
+        buf.writeInt(this.mode.ordinal());
     }
 
-    public static class Handler implements IMessageHandler<CPacketRenderingStrategy, IMessage> {
+    public static class Handler implements IMessageHandler<CPacketRenderMode, IMessage> {
         @Override
-        public IMessage onMessage(CPacketRenderingStrategy message, MessageContext ctx) {
-            if (message.strategy == FP2Config.renderMode) {
+        public IMessage onMessage(CPacketRenderMode message, MessageContext ctx) {
+            if (message.mode == FP2Config.renderMode) {
                 ServerThreadExecutor.INSTANCE.execute(() -> {
+                    FP2.LOGGER.debug("Player {} initiated FP2 session with render mode {}", ctx.getServerHandler().player.getName(), message.mode);
+
                     //send the packet here to ensure that it's sent before adding the player to the tracker
-                    NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy().strategy(FP2Config.renderMode), ctx.getServerHandler().player);
+                    NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy().mode(FP2Config.renderMode), ctx.getServerHandler().player);
 
                     ((IFarContext) ctx.getServerHandler().player.world).tracker().playerAdd(ctx.getServerHandler().player);
                     ((IFarPlayer) ctx.getServerHandler().player).markReady();

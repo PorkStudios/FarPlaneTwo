@@ -60,9 +60,12 @@ public class SPacketPieceData implements IMessage {
 
     public static class Handler implements IMessageHandler<SPacketPieceData, IMessage> {
         @Override
+        @SuppressWarnings("unchecked")
         public IMessage onMessage(SPacketPieceData message, MessageContext ctx) {
             IFarContext farContext = (IFarContext) ctx.getClientHandler().world;
-            ClientThreadExecutor.INSTANCE.execute(() -> farContext.renderer().receivePiece(message.piece));
+            ClientThreadExecutor.INSTANCE.execute(() -> {
+                farContext.renderer().receivePiece(message.piece);
+            });
             return null;
         }
     }

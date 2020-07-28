@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.net.client;
 
 import io.netty.buffer.ByteBuf;
+import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
@@ -50,6 +51,7 @@ public class CPacketDropAllPieces implements IMessage {
             }
             IFarContext context = (IFarContext) ctx.getServerHandler().player.world;
             ServerThreadExecutor.INSTANCE.execute(() -> {
+                FP2.LOGGER.info("Dropping all pieces for player {}", ctx.getServerHandler().player.getName());
                 context.tracker().debug_dropAllPieces(ctx.getServerHandler().player);
             });
             return null;

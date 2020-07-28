@@ -24,6 +24,7 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
@@ -38,23 +39,26 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 @Getter
 public class SPacketRenderingStrategy implements IMessage {
     @NonNull
-    protected RenderMode strategy;
+    protected RenderMode mode;
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.strategy = RenderMode.fromOrdinal(buf.readInt());
+        this.mode = RenderMode.fromOrdinal(buf.readInt());
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeInt(this.strategy.ordinal());
+        buf.writeInt(this.mode.ordinal());
     }
 
     public static class Handler implements IMessageHandler<SPacketRenderingStrategy, IMessage> {
         @Override
         public IMessage onMessage(SPacketRenderingStrategy message, MessageContext ctx) {
             IFarContext farContext = (IFarContext) ctx.getClientHandler().world;
-            ClientThreadExecutor.INSTANCE.execute(() -> farContext.init(message.strategy));
+            ClientThreadExecutor.INSTANCE.execute(() -> {
+                FP2.LOGGER.debug("Server initiated FP2 session with render mode {}", message.mode);
+                farContext.init(message.mode);
+            });
             return null;
         }
     }

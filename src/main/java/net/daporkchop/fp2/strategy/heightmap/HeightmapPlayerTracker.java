@@ -23,11 +23,13 @@ package net.daporkchop.fp2.strategy.heightmap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.net.server.SPacketPieceData;
 import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
+import net.daporkchop.lib.common.misc.string.PStrings;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import java.util.IdentityHashMap;
@@ -52,11 +54,13 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, H
 
     @Override
     public void playerAdd(@NonNull EntityPlayerMP player) {
+        FP2.LOGGER.debug("Added player {} to tracker in dimension {}", player.getName(), this.world.world.provider.getDimension());
         this.tracking.put(player, new ObjectOpenHashSet<>());
     }
 
     @Override
     public void playerRemove(@NonNull EntityPlayerMP player) {
+        FP2.LOGGER.debug("Removed player {} from tracker in dimension {}", player.getName(), this.world.world.provider.getDimension());
         this.tracking.remove(player);
     }
 
@@ -89,7 +93,6 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, H
                         //piece wasn't loaded before, we should load and send it
                         HeightmapPiece piece = this.world.getPiece(pos).getNow(null);
                         if (piece != null) {
-                            //FP2.LOGGER.info(PStrings.fastFormat("Sending piece %d,%d@%d", piece.x(), piece.z(), piece.level()));
                             NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player);
                         } else {
                             continue; //don't add to next, to indicate that the piece hasn't been sent yet
@@ -101,7 +104,6 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, H
         }
 
         for (HeightmapPos pos : prev) {//unload all previously loaded pieces
-            //FP2.LOGGER.info(PStrings.fastFormat("Sending unload piece %d,%d@%d", pos.x(), pos.z(), pos.level()));
             NETWORK_WRAPPER.sendTo(new SPacketUnloadPiece().pos(pos), player);
         }
         checkState(this.tracking.replace(player, prev, next));

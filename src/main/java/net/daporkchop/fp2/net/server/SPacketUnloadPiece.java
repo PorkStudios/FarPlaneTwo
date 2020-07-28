@@ -25,8 +25,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.fp2.strategy.RenderMode;
-import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.IFarContext;
+import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -54,9 +54,12 @@ public class SPacketUnloadPiece implements IMessage {
 
     public static class Handler implements IMessageHandler<SPacketUnloadPiece, IMessage> {
         @Override
+        @SuppressWarnings("unchecked")
         public IMessage onMessage(SPacketUnloadPiece message, MessageContext ctx) {
             IFarContext farContext = (IFarContext) ctx.getClientHandler().world;
-            ClientThreadExecutor.INSTANCE.execute(() -> farContext.renderer().unloadPiece(message.pos));
+            ClientThreadExecutor.INSTANCE.execute(() -> {
+                farContext.renderer().unloadPiece(message.pos);
+            });
             return null;
         }
     }

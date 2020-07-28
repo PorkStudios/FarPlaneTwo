@@ -63,6 +63,8 @@ public class HeightmapRenderCache {
     protected final ShaderStorageBuffer dataSSBO = new ShaderStorageBuffer();
     protected final ByteBuffer zeroData = Constants.createByteBuffer(HEIGHTMAP_RENDER_SIZE);
     protected final Allocator dataAllocator = new FixedSizeAllocator(HEIGHTMAP_RENDER_SIZE, (oldSize, newSize) -> {
+        FP2.LOGGER.debug("Growing data SSBO from {} to {} bytes", oldSize, newSize);
+
         try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
             //grow SSBO
             glBufferData(GL_SHADER_STORAGE_BUFFER, newSize, GL_STATIC_DRAW);
