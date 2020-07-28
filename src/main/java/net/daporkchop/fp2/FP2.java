@@ -40,6 +40,7 @@ import net.daporkchop.fp2.util.IFarPlayer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.event.world.WorldEvent;
@@ -154,6 +155,7 @@ public class FP2 {
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         LOGGER.debug("Handling login for player {}", event.player.getName());
         NETWORK_WRAPPER.sendTo(new SPacketReady(), (EntityPlayerMP) event.player);
+        event.player.sendMessage(new TextComponentString("§c§lFarPlaneTwo pre-pre-pre-alpha build: use at your own risk!"));
     }
 
     @SubscribeEvent

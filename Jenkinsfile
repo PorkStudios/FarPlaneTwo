@@ -30,12 +30,12 @@ pipeline {
     stages {
         stage("Prepare workspace ") {
             steps {
-                sh "./gradlew setupDecompWorkspace --no-daemon"
+                sh "./gradlew setupCiWorkspace"
             }
         }
         stage("Build") {
             steps {
-                sh "./gradlew build --no-daemon"
+                sh "./gradlew build"
             }
             post {
                 success {
@@ -48,6 +48,7 @@ pipeline {
 
     post {
         always {
+            sh "./gradlew --stop"
             deleteDir()
         }
     }

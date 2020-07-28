@@ -50,13 +50,14 @@ public class FP2Config {
     public static int renderDistance = 512;
 
     @Config.Comment({
-            "The number of LoD levels to use."
+            "The number of LoD levels to use.",
+            "Warning: Increasing this value requires exponentially larger amounts of memory! (for now, this'll be fixed later)"
     })
     @Config.RangeInt(min = 1, max = 32)
     @Config.SlidingOption
     @Config.LangKey("config.fp2.maxLevels")
     @Config.RequiresWorldRestart
-    public static int maxLevels = 8;
+    public static int maxLevels = 3;
 
     @Config.Comment({
             "The distance (in blocks) between LoD transitions.",
