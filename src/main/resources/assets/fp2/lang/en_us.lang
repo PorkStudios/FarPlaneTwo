@@ -1,8 +1,14 @@
 #
+# GUI
+#
+
+fp2.gui.buttonFP2Options=FP2
+
+#
 # Keybinds
 #
 
-key.categories.fp2.debug=FarPlaneTwo Debug
+key.categories.fp2.debug=FP2 Debug
 key.fp2.debug.reloadShaders=Reload Shaders
 key.fp2.debug.dropPieces=Drop all loaded pieces
 
