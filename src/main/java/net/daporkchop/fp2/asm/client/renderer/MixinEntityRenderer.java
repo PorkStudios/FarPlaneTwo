@@ -21,6 +21,8 @@
 package net.daporkchop.fp2.asm.client.renderer;
 
 import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.client.ShaderFP2StateHelper;
+import net.daporkchop.fp2.client.ShaderGlStateHelper;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarRenderer;

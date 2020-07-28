@@ -18,8 +18,6 @@
  *
  */
 
-uniform int cutoff = 256;
-
 void main(){
     TileIndexEntry entry = indexEntry();
     TileIndex index = entry.low[0];
@@ -38,8 +36,8 @@ void main(){
     dvec3 abovePos = dvec3(double(pFloored.x), double(unpackHeight(above)), double(pFloored.y));
 
     //linear blending between the two positions
-    float start = float(cutoff << index.level) * .55;
-    float end = float(cutoff << index.level) * .9;
+    float start = float(fp2_state.view.levelCutoffDistance << index.level) * fp2_state.view.transitionStart;
+    float end = float(fp2_state.view.levelCutoffDistance << index.level) * fp2_state.view.transitionEnd;
     float depth = float(distance(vec2(posXZ), gl_state.camera.position.xz));
     float fac = min(float(highIndex.index), 1.);
     //imagine that everything from the //sample above to this line were in an if(entry.high[slot] != 0) { ... },

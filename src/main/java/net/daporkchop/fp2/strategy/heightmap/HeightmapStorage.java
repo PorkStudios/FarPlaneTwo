@@ -23,16 +23,11 @@ package net.daporkchop.fp2.strategy.heightmap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import lombok.NonNull;
-import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarStorage;
 import net.daporkchop.ldbjni.LevelDB;
 import net.daporkchop.ldbjni.direct.DirectDB;
-import net.daporkchop.lib.common.function.io.IOBiFunction;
-import net.daporkchop.lib.common.function.io.IOFunction;
-import net.daporkchop.lib.common.function.io.IOPredicate;
-import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.primitive.map.IntObjMap;
 import net.daporkchop.lib.primitive.map.concurrent.IntObjConcurrentHashMap;
@@ -40,17 +35,8 @@ import net.minecraft.world.WorldServer;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntFunction;
-import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -86,7 +72,7 @@ public class HeightmapStorage implements IFarStorage<HeightmapPos> {
         ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer();
         try {
             buf.writeInt(posIn.x).writeInt(posIn.z);
-            return this.dbs.computeIfAbsent(posIn.level, this.dbOpenFunction).get(buf);
+            return this.dbs.computeIfAbsent(posIn.level, this.dbOpenFunction).getZeroCopy(buf);
         } finally {
             buf.release();
         }
@@ -116,11 +102,11 @@ public class HeightmapStorage implements IFarStorage<HeightmapPos> {
 
     public HeightmapPiece unpack(@NonNull ByteBuf packed, boolean release) {
         try {
-            if (packed.readableBytes() >= 8 && packed.readInt() == HEIGHTMAP_STORAGE_VERSION) {
+            if (packed.readableBytes() >= 8 && packed.readInt() == RenderMode.HEIGHTMAP.storageVersion) {
                 int uncompressedSize = packed.readInt();
                 ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(uncompressedSize, uncompressedSize);
                 try {
-                    checkState(INFLATER_CACHE.get().decompress(packed, buf));
+                    checkState(ZSTD_INF.get().decompress(packed, buf));
                     if (release) {
                         packed.release();
                         release = false;
@@ -149,9 +135,9 @@ public class HeightmapStorage implements IFarStorage<HeightmapPos> {
             piece.writePiece(buf);
 
             ByteBuf packed = PooledByteBufAllocator.DEFAULT.ioBuffer(8 + Zstd.PROVIDER.compressBound(buf.readableBytes()))
-                    .writeInt(HEIGHTMAP_STORAGE_VERSION)
+                    .writeInt(RenderMode.HEIGHTMAP.storageVersion)
                     .writeInt(buf.readableBytes());
-            checkState(DEFLATER_CACHE.get().compress(buf, packed));
+            checkState(ZSTD_DEF.get().compress(buf, packed));
 
             return packed;
         } finally {

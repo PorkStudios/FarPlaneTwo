@@ -18,22 +18,22 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap;
+package net.daporkchop.fp2.strategy.heightmap.gen;
 
-import lombok.experimental.UtilityClass;
-import net.daporkchop.lib.common.math.BinMath;
+import lombok.NonNull;
+import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.world.WorldServer;
 
 /**
- * Constant values used by the heightmap rendering mode.
- *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class HeightmapConstants {
-    public static final int HEIGHTMAP_SHIFT = 4;
-    public static final int HEIGHTMAP_MASK = (1 << HEIGHTMAP_SHIFT) - 1;
-    public static final int HEIGHTMAP_VOXELS = 1 << HEIGHTMAP_SHIFT; //side length of a tile in voxels contained
-    public static final int HEIGHTMAP_VERTS = HEIGHTMAP_VOXELS + 1; //side length of a tile in vertices
+public abstract class AbstractHeightmapGenerator implements HeightmapGenerator {
+    protected static final long SEALEVEL_OFFSET = PUnsafe.pork_getOffset(AbstractHeightmapGenerator.class, "seaLevel");
 
-    public static final int HEIGHTMAP_STORAGE_VERSION = 5;
+    protected final int seaLevel = 0; //this is final to allow JIT to hoist slow getfield opcodes out of the main loop when referenced in a loop
+
+    @Override
+    public void init(@NonNull WorldServer world) {
+        PUnsafe.putInt(this, SEALEVEL_OFFSET, world.getSeaLevel());
+    }
 }

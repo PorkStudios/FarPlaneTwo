@@ -26,17 +26,14 @@ import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.net.server.SPacketPieceData;
 import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
-import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.minecraft.entity.player.EntityPlayerMP;
 
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -65,15 +62,15 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, H
 
     @Override
     public void playerMove(@NonNull EntityPlayerMP player) {
-        int dist = FP2Config.renderDistance >> HEIGHTMAP_SHIFT;
-        int baseX = floorI(player.posX) >> HEIGHTMAP_SHIFT;
-        int baseZ = floorI(player.posZ) >> HEIGHTMAP_SHIFT;
+        int dist = FP2Config.renderDistance >> T_SHIFT;
+        int baseX = floorI(player.posX) >> T_SHIFT;
+        int baseZ = floorI(player.posZ) >> T_SHIFT;
 
         Set<HeightmapPos> prev = this.tracking.get(player);
         Set<HeightmapPos> next = new ObjectOpenHashSet<>((dist * 2 + 2) * (dist * 2 + 2));
 
         int levels = FP2Config.maxLevels;
-        int d = (FP2Config.levelCutoffDistance >> HEIGHTMAP_SHIFT) + 1;
+        int d = (FP2Config.levelCutoffDistance >> T_SHIFT) + 1;
 
         for (int lvl = 0; lvl < levels; lvl++) {
             /*int xMin = ((baseX >> lvl) - d) & ~1;

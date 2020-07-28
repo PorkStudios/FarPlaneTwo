@@ -20,29 +20,80 @@
 
 package net.daporkchop.fp2.util.compat.cwg;
 
-import com.flowpowered.noise.module.Module;
+import com.flowpowered.noise.Noise;
+import com.flowpowered.noise.Utils;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
+import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomTerrainGenerator;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.BiomeSource;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.IBuilder;
-import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.NoiseSource;
 import lombok.NonNull;
 import net.daporkchop.lib.common.math.PMath;
-import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.World;
 
 import java.lang.reflect.Field;
 import java.util.Random;
 
+import static com.flowpowered.noise.module.source.Perlin.*;
+import static java.lang.Math.*;
+
 /**
+ * Functionally equivalent to {@link CustomTerrainGenerator}'s massive tree of chained {@link IBuilder} lambdas, but with everything in a single
+ * object.
+ *
  * @author DaPorkchop_
  */
 public class CWGBuilderFast extends CustomGeneratorSettings implements IBuilder { //extending CustomGeneratorSettings eliminates an indirection
-    protected static final long NOISESOURCE_MODULE_OFFSET = PUnsafe.pork_getOffset(NoiseSource.class, "module");
+    protected static double perlin(int seed, double x, double y, double z, int octaves) {
+        double value = 0.0d;
+        double curPersistence = 1.0d;
 
-    protected final Module selector;
-    protected final Module low;
-    protected final Module high;
-    protected final Module randomHeight2d;
+        for (int curOctave = 0; curOctave < octaves; curOctave++) {
+            // Make sure that these floating-point values have the same range as a 32-
+            // bit integer so that we can pass them to the coherent-noise functions.
+            double nx = Utils.makeInt32Range(x);
+            double ny = Utils.makeInt32Range(y);
+            double nz = Utils.makeInt32Range(z);
+
+            // Get the coherent-noise value from the input value and add it to the
+            // final result.
+            value += Noise.gradientCoherentNoise3D(nx, ny, nz, seed + curOctave, DEFAULT_PERLIN_QUALITY) * curPersistence;
+
+            // Prepare the next octave.
+            x *= DEFAULT_PERLIN_LACUNARITY;
+            y *= DEFAULT_PERLIN_LACUNARITY;
+            z *= DEFAULT_PERLIN_LACUNARITY;
+            curPersistence *= DEFAULT_PERLIN_PERSISTENCE;
+        }
+
+        return value;
+    }
+
+    protected static double normalize(double value, double scale) {
+        return value * scale - 1.0d;
+    }
+
+    protected static double sample(int seed, double x, double y, double z, int octaves, double freqX, double freqY, double freqZ, double scale) {
+        return normalize(perlin(seed, x * freqX, y * freqY, z * freqZ, octaves), scale);
+    }
+
+    protected static int packSeed(long seed) {
+        return (int) ((seed) ^ (seed >>> 32L));
+    }
+
+    protected static double scale(int octaves) {
+        double maxValue = (pow(DEFAULT_PERLIN_PERSISTENCE, octaves) - 1.0d) / (DEFAULT_PERLIN_PERSISTENCE - 1.0d);
+        return 2.0d / maxValue;
+    }
+
+    protected final int selectorSeed;
+    protected final int lowSeed;
+    protected final int highSeed;
+    protected final int randomHeight2dSeed;
+    protected final double selectorScale;
+    protected final double lowScale;
+    protected final double highScale;
+    protected final double randomHeight2dScale;
+
     protected final BiomeSource biomes;
 
     public CWGBuilderFast(@NonNull World world, @NonNull CustomGeneratorSettings conf, @NonNull BiomeSource biomes) {
@@ -55,30 +106,15 @@ public class CWGBuilderFast extends CustomGeneratorSettings implements IBuilder 
         }
 
         Random rnd = new Random(world.getSeed());
-        this.selector = PUnsafe.getObject(NoiseSource.perlin()
-                .seed(rnd.nextLong())
-                .normalizeTo(-1, 1)
-                .frequency(conf.selectorNoiseFrequencyX, conf.selectorNoiseFrequencyY, conf.selectorNoiseFrequencyZ)
-                .octaves(conf.selectorNoiseOctaves)
-                .create(), NOISESOURCE_MODULE_OFFSET);
-        this.low = PUnsafe.getObject(NoiseSource.perlin()
-                .seed(rnd.nextLong())
-                .normalizeTo(-1, 1)
-                .frequency(conf.lowNoiseFrequencyX, conf.lowNoiseFrequencyY, conf.lowNoiseFrequencyZ)
-                .octaves(conf.lowNoiseOctaves)
-                .create(), NOISESOURCE_MODULE_OFFSET);
-        this.high = PUnsafe.getObject(NoiseSource.perlin()
-                .seed(rnd.nextLong())
-                .normalizeTo(-1, 1)
-                .frequency(conf.highNoiseFrequencyX, conf.highNoiseFrequencyY, conf.highNoiseFrequencyZ)
-                .octaves(conf.highNoiseOctaves)
-                .create(), NOISESOURCE_MODULE_OFFSET);
-        this.randomHeight2d = PUnsafe.getObject(NoiseSource.perlin()
-                .seed(rnd.nextLong())
-                .normalizeTo(-1, 1)
-                .frequency(conf.depthNoiseFrequencyX, 0, conf.depthNoiseFrequencyZ)
-                .octaves(conf.depthNoiseOctaves)
-                .create(), NOISESOURCE_MODULE_OFFSET);
+        this.selectorSeed = packSeed(rnd.nextLong());
+        this.lowSeed = packSeed(rnd.nextLong());
+        this.highSeed = packSeed(rnd.nextLong());
+        this.randomHeight2dSeed = packSeed(rnd.nextLong());
+
+        this.selectorScale = scale(this.selectorNoiseOctaves);
+        this.lowScale = scale(this.lowNoiseOctaves);
+        this.highScale = scale(this.highNoiseOctaves);
+        this.randomHeight2dScale = scale(this.depthNoiseOctaves);
 
         this.biomes = biomes;
     }
@@ -93,19 +129,23 @@ public class CWGBuilderFast extends CustomGeneratorSettings implements IBuilder 
     }
 
     public double selector(double x, double y, double z) {
-        return PMath.clamp(this.selector.getValue(x, y, z) * this.selectorNoiseFactor + this.selectorNoiseOffset, 0.0d, 1.0d);
+        double d = sample(this.selectorSeed, x, y, z, this.selectorNoiseOctaves, this.selectorNoiseFrequencyX, this.selectorNoiseFrequencyY, this.selectorNoiseFrequencyZ, this.selectorScale);
+        return PMath.clamp(d * this.selectorNoiseFactor + this.selectorNoiseOffset, 0.0d, 1.0d);
     }
 
     public double low(double x, double y, double z) {
-        return this.low.getValue(x, y, z) * this.lowNoiseFactor + this.lowNoiseOffset;
+        double d = sample(this.lowSeed, x, y, z, this.lowNoiseOctaves, this.lowNoiseFrequencyX, this.lowNoiseFrequencyY, this.lowNoiseFrequencyZ, this.lowScale);
+        return d * this.lowNoiseFactor + this.lowNoiseOffset;
     }
 
     public double high(double x, double y, double z) {
-        return this.high.getValue(x, y, z) * this.highNoiseFactor + this.highNoiseOffset;
+        double d = sample(this.highSeed, x, y, z, this.highNoiseOctaves, this.highNoiseFrequencyX, this.highNoiseFrequencyY, this.highNoiseFrequencyZ, this.highScale);
+        return d * this.highNoiseFactor + this.highNoiseOffset;
     }
 
     public double randomHeight2d(double x, double y, double z) {
-        double d = this.randomHeight2d.getValue(x, y, z) * this.depthNoiseFactor + this.depthNoiseOffset;
+        double d = sample(this.randomHeight2dSeed, x, y, z, this.depthNoiseOctaves, this.depthNoiseFrequencyX, 0.0d, this.depthNoiseFrequencyZ, this.randomHeight2dScale);
+        d = d * this.depthNoiseFactor + this.depthNoiseOffset;
         if (d < 0.0d) {
             d *= -0.3d;
         }

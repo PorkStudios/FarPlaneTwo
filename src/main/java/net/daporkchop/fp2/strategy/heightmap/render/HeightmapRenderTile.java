@@ -30,8 +30,8 @@ import net.minecraft.util.math.AxisAlignedBB;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
-import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderHelper.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -56,7 +56,7 @@ class HeightmapRenderTile extends AxisAlignedBB {
     public boolean doesSelfOrAnyChildrenHaveAddress = false;
 
     public HeightmapRenderTile(HeightmapRenderCache cache, HeightmapRenderTile parent, int x, int z, int level) {
-        super(x << HEIGHTMAP_SHIFT << level, Integer.MIN_VALUE, z << HEIGHTMAP_SHIFT << level, (x + 1) << HEIGHTMAP_SHIFT << level, Integer.MAX_VALUE, (z + 1) << HEIGHTMAP_SHIFT << level);
+        super(x << T_SHIFT << level, Integer.MIN_VALUE, z << T_SHIFT << level, (x + 1) << T_SHIFT << level, Integer.MAX_VALUE, (z + 1) << T_SHIFT << level);
 
         this.cache = cache;
         this.parent = parent;

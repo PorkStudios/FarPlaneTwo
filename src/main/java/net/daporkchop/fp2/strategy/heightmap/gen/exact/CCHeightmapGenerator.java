@@ -22,6 +22,7 @@ package net.daporkchop.fp2.strategy.heightmap.gen.exact;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.strategy.heightmap.gen.AbstractHeightmapGenerator;
 import net.daporkchop.fp2.strategy.heightmap.gen.HeightmapGenerator;
 import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
 import net.minecraft.block.material.Material;
@@ -31,20 +32,12 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
-import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
-public class CCHeightmapGenerator implements HeightmapGenerator {
-    protected int seaLevel;
-
-    @Override
-    public void init(@NonNull WorldServer world) {
-        this.seaLevel = world.getSeaLevel();
-    }
-
+public class CCHeightmapGenerator extends AbstractHeightmapGenerator {
     @Override
     public void generate(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece) {
         int pieceX = piece.x();
@@ -52,15 +45,15 @@ public class CCHeightmapGenerator implements HeightmapGenerator {
 
         //prefetch columns, but not cubes because we really can't know where they are
         world.prefetch(new AxisAlignedBB(
-                pieceX * HEIGHTMAP_VOXELS , 0, pieceZ * HEIGHTMAP_VOXELS,
-                (pieceX + 1) * HEIGHTMAP_VOXELS - 1, 0, (pieceZ + 1) * HEIGHTMAP_VOXELS - 1), true);
+                pieceX * T_VOXELS, 0, pieceZ * T_VOXELS,
+                (pieceX + 1) * T_VOXELS - 1, 0, (pieceZ + 1) * T_VOXELS - 1), true);
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
-        for (int x = 0; x < HEIGHTMAP_VOXELS; x++) {
-            for (int z = 0; z < HEIGHTMAP_VOXELS; z++) {
-                int height = world.getTopBlockY(pieceX * HEIGHTMAP_VOXELS + x, pieceZ * HEIGHTMAP_VOXELS + z);
-                pos.setPos(pieceX * HEIGHTMAP_VOXELS + x, height, pieceZ * HEIGHTMAP_VOXELS + z);
+        for (int x = 0; x < T_VOXELS; x++) {
+            for (int z = 0; z < T_VOXELS; z++) {
+                int height = world.getTopBlockY(pieceX * T_VOXELS + x, pieceZ * T_VOXELS + z);
+                pos.setPos(pieceX * T_VOXELS + x, height, pieceZ * T_VOXELS + z);
                 IBlockState state = world.getBlockState(pos);
 
                 while (height <= 63 && state.getMaterial() == Material.WATER) {

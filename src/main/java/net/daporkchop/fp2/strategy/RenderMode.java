@@ -47,7 +47,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  * @author DaPorkchop_
  */
 public enum RenderMode {
-    HEIGHTMAP("2D") {
+    HEIGHTMAP("2D", 5) {
         @Override
         public IFarWorld createFarWorld(@NonNull WorldServer world) {
             return new HeightmapWorld(world);
@@ -74,7 +74,7 @@ public enum RenderMode {
             return new HeightmapPos(src);
         }
     },
-    SURFACE("3D") {
+    SURFACE("3D", -1) {
         @Override
         public IFarWorld createFarWorld(@NonNull WorldServer world) {
             throw new UnsupportedOperationException(); //TODO
@@ -114,8 +114,12 @@ public enum RenderMode {
         return VALUES[ordinal];
     }
 
-    RenderMode(@NonNull String name) {
+    public final int storageVersion;
+
+    RenderMode(@NonNull String name, int storageVersion) {
         PUnsafeStrings.setEnumName(this, name.intern());
+
+        this.storageVersion = storageVersion;
     }
 
     public abstract IFarWorld createFarWorld(@NonNull WorldServer world);

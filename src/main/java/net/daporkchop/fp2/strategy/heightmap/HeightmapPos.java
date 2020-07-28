@@ -24,14 +24,13 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.ToString;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.common.misc.string.PStrings;
 
-import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -74,11 +73,11 @@ public class HeightmapPos implements IFarPos {
     }
 
     public int blockX() {
-        return this.x * HEIGHTMAP_VOXELS << this.level;
+        return this.x * T_VOXELS << this.level;
     }
 
     public int blockZ() {
-        return this.z * HEIGHTMAP_VOXELS << this.level;
+        return this.z * T_VOXELS << this.level;
     }
 
     @Override

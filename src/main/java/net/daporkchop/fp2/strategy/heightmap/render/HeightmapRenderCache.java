@@ -207,8 +207,6 @@ public class HeightmapRenderCache {
             try (ShaderProgram shader = TERRAIN_SHADER.use()) {
                 GlStateManager.disableAlpha();
 
-                glUniform1i(shader.uniformLocation("cutoff"), FP2Config.levelCutoffDistance);
-
                 glDrawElementsInstanced(GL_TRIANGLES, this.renderer.meshVertexCount, GL_UNSIGNED_SHORT, 0L, this.index.size);
 
                 GlStateManager.enableAlpha();

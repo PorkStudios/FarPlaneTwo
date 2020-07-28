@@ -24,6 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.GlobalInfo;
+import net.daporkchop.fp2.client.ShaderFP2StateHelper;
 import net.daporkchop.fp2.client.ShaderGlStateHelper;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.client.gl.OpenGL;
@@ -38,7 +39,6 @@ import net.daporkchop.fp2.strategy.common.IFarRenderer;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.daporkchop.fp2.util.math.Cylinder;
-import net.daporkchop.fp2.util.math.Sphere;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.fp2.util.threading.KeyedTaskScheduler;
 import net.minecraft.client.Minecraft;
@@ -56,16 +56,16 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
-import static net.daporkchop.fp2.client.ClientConstants.RENDER_WORKERS;
+import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.GlobalInfo.*;
-import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.minecraft.client.renderer.OpenGlHelper.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL15.glBufferData;
 import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL30.glVertexAttribIPointer;
+import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.opengl.GL31.*;
 import static org.lwjgl.opengl.GL43.*;
 import static org.lwjgl.opengl.GL45.*;
@@ -84,7 +84,7 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
         ShaderProgram water = WATER_SHADER;
         try {
             TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
-            if (!skipWater)   {
+            if (!skipWater) {
                 WATER_SHADER = ShaderManager.get("heightmap/water");
             }
         } catch (Exception e) {
@@ -136,8 +136,8 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
 
     public HeightmapRenderer(@NonNull WorldClient world) {
         {
-            ShortBuffer meshData = BufferUtils.createShortBuffer(HEIGHTMAP_VERTS * HEIGHTMAP_VERTS * 6 + 1);
-            this.meshVertexCount = genMesh(HEIGHTMAP_VERTS, HEIGHTMAP_VERTS, meshData);
+            ShortBuffer meshData = BufferUtils.createShortBuffer(T_VERTS * T_VERTS * 6 + 1);
+            this.meshVertexCount = genMesh(T_VERTS, T_VERTS, meshData);
             meshData.flip();
 
             try (ElementArrayObject mesh = this.mesh.bind()) {
@@ -148,12 +148,12 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
         }
 
         {
-            ByteBuffer coordsData = BufferUtils.createByteBuffer(HEIGHTMAP_VERTS * HEIGHTMAP_VERTS * 5);
-            for (int x = 0; x < HEIGHTMAP_VERTS; x++) {
-                for (int z = 0; z < HEIGHTMAP_VERTS; z++) {
+            ByteBuffer coordsData = BufferUtils.createByteBuffer(T_VERTS * T_VERTS * 5);
+            for (int x = 0; x < T_VERTS; x++) {
+                for (int z = 0; z < T_VERTS; z++) {
                     coordsData.put((byte) x).put((byte) z)
-                            .put((byte) (x & HEIGHTMAP_MASK)).put((byte) (z & HEIGHTMAP_MASK))
-                            .put((byte) ((x & HEIGHTMAP_MASK) * HEIGHTMAP_VOXELS + (z & HEIGHTMAP_MASK)));
+                            .put((byte) (x & T_MASK)).put((byte) (z & T_MASK))
+                            .put((byte) ((x & T_MASK) * T_VOXELS + (z & T_MASK)));
                 }
             }
             coordsData.flip();
@@ -241,14 +241,14 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
         mc.entityRenderer.enableLightmap();
 
         try {
-            ShaderGlStateHelper.update(partialTicks, mc);
-            ShaderGlStateHelper.UBO.bindUBO(0);
+            ShaderGlStateHelper.updateAndBind(partialTicks, mc);
+            ShaderFP2StateHelper.updateAndBind(partialTicks, mc);
 
             Volume[] ranges = new Volume[this.maxLevel + 1];
             Entity entity = mc.getRenderViewEntity();
             double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
             double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
-            for (int i = 0; i < ranges.length; i++)    {
+            for (int i = 0; i < ranges.length; i++) {
                 ranges[i] = new Cylinder(x, z, FP2Config.levelCutoffDistance << i);
             }
 

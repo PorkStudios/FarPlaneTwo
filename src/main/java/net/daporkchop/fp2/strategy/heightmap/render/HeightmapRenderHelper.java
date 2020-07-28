@@ -34,14 +34,14 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
 @UtilityClass
 public class HeightmapRenderHelper {
-    public static final int HEIGHTMAP_RENDER_SIZE = HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS * IVEC4_SIZE;
+    public static final int HEIGHTMAP_RENDER_SIZE = T_VOXELS * T_VOXELS * IVEC4_SIZE;
 
     public static ByteBuf bakePiece(@NonNull HeightmapPiece piece) {
         ByteBuf buffer = Constants.allocateByteBuf(HEIGHTMAP_RENDER_SIZE);
@@ -49,8 +49,8 @@ public class HeightmapRenderHelper {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
 
-        for (int x = 0; x < HEIGHTMAP_VOXELS; x++) {
-            for (int z = 0; z < HEIGHTMAP_VOXELS; z++) {
+        for (int x = 0; x < T_VOXELS; x++) {
+            for (int z = 0; z < T_VOXELS; z++) {
                 int height = piece.height(x, z);
                 int block = piece.block(x, z);
 

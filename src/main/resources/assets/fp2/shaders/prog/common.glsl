@@ -43,14 +43,14 @@
 
 //OpenGL state
 
-struct Camera {
+struct GL_Camera {
     mat4 projection;
     mat4 modelview;
 
     dvec3 position;
 };
 
-struct Fog {
+struct GL_Fog {
     vec4 color;
 
     float density;
@@ -62,9 +62,23 @@ struct Fog {
 };
 
 layout(std140, binding = 0) uniform GL_STATE {
-    Camera camera;
-    Fog fog;
+    GL_Camera camera;
+    GL_Fog fog;
 } gl_state;
+
+//FP2 state
+
+struct FP2_View {
+    int renderDistance;
+    int maxLevels;
+    int levelCutoffDistance;
+    float transitionStart;
+    float transitionEnd;
+};
+
+layout(std140, binding = 1) uniform FP2_STATE {
+    FP2_View view;
+} fp2_state;
 
 //
 //

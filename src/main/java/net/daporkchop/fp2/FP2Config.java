@@ -113,6 +113,24 @@ public class FP2Config {
         @Config.LangKey("config.fp2.client.renderThreads")
         @Config.RequiresWorldRestart
         public int renderThreads = max(PorkUtil.CPU_COUNT - 1, 1);
+
+        @Config.Comment({
+                "The factor of the maximum extent of a detail level at which the detail transition will start.",
+                "Should be less than levelTransitionEnd."
+        })
+        @Config.LangKey("config.fp2.client.levelTransitionStart")
+        @Config.SlidingOption
+        @Config.RangeDouble(min = 0.0d, max = 1.0d)
+        public double levelTransitionStart = 0.6d;
+
+        @Config.Comment({
+                "The factor of the maximum extent of a detail level at which the detail transition will end.",
+                "Should be more than levelTransitionStart."
+        })
+        @Config.LangKey("config.fp2.client.levelTransitionEnd")
+        @Config.SlidingOption
+        @Config.RangeDouble(min = 0.0d, max = 1.0d)
+        public double levelTransitionEnd = 0.9d;
     }
 
     /**

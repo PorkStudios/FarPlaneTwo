@@ -22,14 +22,17 @@ package net.daporkchop.fp2.util.compat.cwg;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.BiomeSource;
-import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.IBuilder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.minecraft.init.Biomes;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
 
 import java.util.Map;
+
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -37,6 +40,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Getter
 public final class CWGContext {
+    public static final int BIOME_CACHE_SIZE = T_VOXELS + 2;
+
     @NonNull
     protected final Map<Biome, IBiomeBlockReplacer[]> biomeBlockReplacers;
     @NonNull
@@ -44,7 +49,25 @@ public final class CWGContext {
     @NonNull
     protected final BiomeSource biomeSource;
     @NonNull
-    protected final IBuilder terrainBuilder;
+    protected final CWGBuilderFast terrainBuilder;
 
-    public Biome[] biomeCache;
+    public final Biome[] biomeCache = new Biome[BIOME_CACHE_SIZE * BIOME_CACHE_SIZE];
+
+    public Biome[] getBiomes(int baseX, int baseZ, int level) {
+        if (level == 0) { //base level, simply use vanilla system
+            return this.biomeProvider.getBiomes(this.biomeCache, baseX - 1, baseZ - 1, BIOME_CACHE_SIZE, BIOME_CACHE_SIZE, false);
+        } else { //not the base level, scale it all up
+            //TODO: optimized method for generating biomes at low resolution?
+            //TODO: this is really slow because it uses the vanilla biome cache
+            Biome[] biomes = this.biomeCache;
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+            for (int x = -1; x <= T_VOXELS; x++) {
+                for (int z = -1; z <= T_VOXELS; z++) {
+                    pos.setPos(baseX + (x << level), 0, baseZ + (z << level));
+                    biomes[z * BIOME_CACHE_SIZE + x] = this.biomeProvider.getBiome(pos, Biomes.PLAINS);
+                }
+            }
+            return biomes;
+        }
+    }
 }

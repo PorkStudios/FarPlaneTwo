@@ -24,30 +24,20 @@ import io.netty.buffer.ByteBuf;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.experimental.Accessors;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
-import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.init.Biomes;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IBlockAccess;
-import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
 
-import javax.annotation.Nullable;
-import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
+import static net.daporkchop.fp2.util.Constants.T_VOXELS;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -73,20 +63,20 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapP
     public static final int PADDING_OFFSET = ATTRS_OFFSET + ATTRS_SIZE;
 
     public static final int ENTRY_SIZE = PADDING_OFFSET + PADDING_SIZE;
-    public static final int ENTRY_COUNT = HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS;
+    public static final int ENTRY_COUNT = T_VOXELS * T_VOXELS;
 
     public static final int TOTAL_SIZE = ENTRY_COUNT * ENTRY_SIZE;
 
     private static int biomeIndex(int x, int z) {
         x += 1;
         z += 1;
-        checkArg(x >= 0 && x < HEIGHTMAP_VOXELS + 2 && z >= 0 && z < HEIGHTMAP_VOXELS + 2, "coordinates out of bounds (x=%d, z=%d)", x, z);
-        return x * (HEIGHTMAP_VOXELS + 2) + z;
+        checkArg(x >= 0 && x < T_VOXELS + 2 && z >= 0 && z < T_VOXELS + 2, "coordinates out of bounds (x=%d, z=%d)", x, z);
+        return x * (T_VOXELS + 2) + z;
     }
 
     private static int index(int x, int z) {
-        checkArg(x >= 0 && x < HEIGHTMAP_VOXELS && z >= 0 && z < HEIGHTMAP_VOXELS, "coordinates out of bounds (x=%d, z=%d)", x, z);
-        return (x * HEIGHTMAP_VOXELS + z) * 4;
+        checkArg(x >= 0 && x < T_VOXELS && z >= 0 && z < T_VOXELS, "coordinates out of bounds (x=%d, z=%d)", x, z);
+        return (x * T_VOXELS + z) * 4;
     }
 
     protected final ReadWriteLock lock = new ReentrantReadWriteLock();

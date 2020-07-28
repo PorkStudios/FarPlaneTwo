@@ -23,46 +23,48 @@ package net.daporkchop.fp2.strategy.heightmap.gen.rough;
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.strategy.heightmap.gen.AbstractHeightmapGenerator;
 import net.daporkchop.fp2.strategy.heightmap.gen.HeightmapGenerator;
 import net.daporkchop.fp2.util.compat.cwg.CWGContext;
 import net.daporkchop.fp2.util.compat.cwg.CWGHelper;
 import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
 import net.daporkchop.lib.common.ref.Ref;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.init.Biomes;
 import net.minecraft.init.Blocks;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.strategy.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.util.compat.cwg.CWGContext.*;
 
 /**
  * @author DaPorkchop_
  */
-public class CWGHeightmapGenerator implements HeightmapGenerator {
+public class CWGHeightmapGenerator extends AbstractHeightmapGenerator {
     protected Ref<CWGContext> ctx;
-    protected int seaLevel;
 
     @Override
     public void init(@NonNull WorldServer world) {
+        super.init(world);
         this.ctx = CWGHelper.tlCWGCtx(world);
-        this.seaLevel = world.getSeaLevel();
     }
 
     @Override
     public void generate(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece) {
-        int pieceX = piece.x();
-        int pieceZ = piece.z();
+        int level = piece.level();
+        int baseX = piece.blockX();
+        int baseZ = piece.blockZ();
 
         CWGContext ctx = this.ctx.get();
-        Biome[] biomes = ctx.biomeCache
-                = ctx.biomeProvider().getBiomes(ctx.biomeCache, pieceX * HEIGHTMAP_VOXELS, pieceZ * HEIGHTMAP_VOXELS, HEIGHTMAP_VOXELS, HEIGHTMAP_VOXELS, false);
+        Biome[] biomes = ctx.getBiomes(baseX, baseZ, piece.level());
 
-        for (int x = 0; x < HEIGHTMAP_VOXELS; x++) {
-            for (int z = 0; z < HEIGHTMAP_VOXELS; z++) {
-                int blockX = pieceX * HEIGHTMAP_VOXELS + x;
-                int blockZ = pieceZ * HEIGHTMAP_VOXELS + z;
+        for (int x = 0; x < T_VOXELS; x++) {
+            for (int z = 0; z < T_VOXELS; z++) {
+                int blockX = baseX + (x << level);
+                int blockZ = baseZ + (z << level);
 
                 int height = CWGHelper.getHeight(ctx.terrainBuilder(), blockX, blockZ);
                 double density = ctx.terrainBuilder().get(blockX, height, blockZ);
@@ -71,7 +73,7 @@ public class CWGHeightmapGenerator implements HeightmapGenerator {
                 double dy = ctx.terrainBuilder().get(blockX, height + 1, blockZ) - density;
                 double dz = ctx.terrainBuilder().get(blockX, height, blockZ + 1) - density;
 
-                Biome biome = biomes[z * HEIGHTMAP_VOXELS + x];
+                Biome biome = biomes[(z + 1) * BIOME_CACHE_SIZE + (x + 1)];
 
                 IBlockState state = Blocks.AIR.getDefaultState();
                 for (IBiomeBlockReplacer replacer : ctx.biomeBlockReplacers().get(biome)) {

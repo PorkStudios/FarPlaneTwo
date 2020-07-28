@@ -25,6 +25,9 @@ void main(){
     TileIndex index = entry.low[0];
     ivec2 posXZ = toWorldPos(index);
 
+    int slot = toSlot(index, posXZ);
+    index = entry.low[slot];
+
     HEIGHTMAP_TYPE center = sampleHeightmap(index);
     dvec3 pos = dvec3(double(posXZ.x), seaLevel - .125, double(posXZ.y));
 
@@ -32,11 +35,11 @@ void main(){
     TileIndex highIndex = entry.high[slot];
     ivec2 pFloored = posXZ & ~((1 << highIndex.level) - 1);
     HEIGHTMAP_TYPE above = sampleHeightmap(highIndex, pFloored);
-    dvec3 abovePos = dvec3(double(pFloored.x), double(unpackHeight(above)), double(pFloored.y));
+    dvec3 abovePos = dvec3(double(pFloored.x), seaLevel - .125, double(pFloored.y));
 
     //linear blending between the two positions
-    float start = float(cutoff << index.level) * .55;
-    float end = float(cutoff << index.level) * .9;
+    float start = float(fp2_state.view.levelCutoffDistance << index.level) * fp2_state.view.transitionStart;
+    float end = float(fp2_state.view.levelCutoffDistance << index.level) * fp2_state.view.transitionEnd;
     float depth = float(distance(vec2(posXZ), gl_state.camera.position.xz));
     float fac = min(float(highIndex.index), 1.);
     //imagine that everything from the //sample above to this line were in an if(entry.high[slot] != 0) { ... },

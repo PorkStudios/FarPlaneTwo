@@ -43,21 +43,21 @@ import static org.lwjgl.opengl.GL31.GL_UNIFORM_BUFFER;
  */
 @UtilityClass
 public class ShaderGlStateHelper {
-    public final UniformBufferObject UBO = new UniformBufferObject();
+    private final UniformBufferObject UBO = new UniformBufferObject();
 
-    public final int OFFSET_CAMERA = 0;
-    public final int SIZE_CAMERA = 2 * MAT4_SIZE + DVEC3_SIZE;
+    private final int OFFSET_CAMERA = 0;
+    private final int SIZE_CAMERA = 2 * MAT4_SIZE + DVEC3_SIZE;
 
-    public final int OFFSET_FOG = PMath.roundUp(OFFSET_CAMERA + SIZE_CAMERA, VEC4_SIZE);
-    public final int SIZE_FOG = VEC4_SIZE + INT_SIZE + 4 * FLOAT_SIZE;
+    private final int OFFSET_FOG = PMath.roundUp(OFFSET_CAMERA + SIZE_CAMERA, VEC4_SIZE);
+    private final int SIZE_FOG = VEC4_SIZE + INT_SIZE + 4 * FLOAT_SIZE;
 
-    public final int TOTAL_SIZE = OFFSET_FOG + SIZE_FOG;
+    private final int TOTAL_SIZE = OFFSET_FOG + SIZE_FOG;
 
-    public final long DATA = PUnsafe.allocateMemory(TOTAL_SIZE);
-    public final long ADDR_CAMERA = DATA + OFFSET_CAMERA;
-    public final long ADDR_FOG = DATA + OFFSET_FOG;
+    private final long DATA = PUnsafe.allocateMemory(TOTAL_SIZE);
+    private final long ADDR_CAMERA = DATA + OFFSET_CAMERA;
+    private final long ADDR_FOG = DATA + OFFSET_FOG;
 
-    public void update(float partialTicks, @NonNull Minecraft mc) {
+    public void updateAndBind(float partialTicks, @NonNull Minecraft mc) {
         { //camera
             glGetFloat(GL_PROJECTION_MATRIX, DirectBufferReuse.wrapFloat(ADDR_CAMERA, MAT4_ELEMENTS));
             glGetFloat(GL_MODELVIEW_MATRIX, DirectBufferReuse.wrapFloat(ADDR_CAMERA + MAT4_SIZE, MAT4_ELEMENTS));
@@ -86,6 +86,7 @@ public class ShaderGlStateHelper {
         try (UniformBufferObject ubo = UBO.bind()) { //upload
             glBufferData(GL_UNIFORM_BUFFER, DirectBufferReuse.wrapByte(DATA, TOTAL_SIZE), GL_STATIC_DRAW);
         }
+        UBO.bindUBO(0);
     }
 
     public void updateFogColor(@NonNull FloatBuffer buffer)  {

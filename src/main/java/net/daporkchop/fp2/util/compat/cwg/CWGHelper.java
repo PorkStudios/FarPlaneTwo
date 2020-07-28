@@ -53,50 +53,6 @@ public class CWGHelper {
 
             BiomeSource biomeSource = new BiomeSource(world, conf.createBiomeBlockReplacerConfig(), new BiomeProvider(world.getWorldInfo()), 2);
 
-            Random rnd = new Random(world.getSeed());
-            IBuilder selector = NoiseSource.perlin()
-                    .seed(rnd.nextLong())
-                    .normalizeTo(-1, 1)
-                    .frequency(conf.selectorNoiseFrequencyX, conf.selectorNoiseFrequencyY, conf.selectorNoiseFrequencyZ)
-                    .octaves(conf.selectorNoiseOctaves)
-                    .create()
-                    .mul(conf.selectorNoiseFactor).add(conf.selectorNoiseOffset).clamp(0, 1);
-            IBuilder low = NoiseSource.perlin()
-                    .seed(rnd.nextLong())
-                    .normalizeTo(-1, 1)
-                    .frequency(conf.lowNoiseFrequencyX, conf.lowNoiseFrequencyY, conf.lowNoiseFrequencyZ)
-                    .octaves(conf.lowNoiseOctaves)
-                    .create()
-                    .mul(conf.lowNoiseFactor).add(conf.lowNoiseOffset);
-            IBuilder high = NoiseSource.perlin()
-                    .seed(rnd.nextLong())
-                    .normalizeTo(-1, 1)
-                    .frequency(conf.highNoiseFrequencyX, conf.highNoiseFrequencyY, conf.highNoiseFrequencyZ)
-                    .octaves(conf.highNoiseOctaves)
-                    .create()
-                    .mul(conf.highNoiseFactor).add(conf.highNoiseOffset);
-            IBuilder randomHeight2d = NoiseSource.perlin()
-                    .seed(rnd.nextLong())
-                    .normalizeTo(-1, 1)
-                    .frequency(conf.depthNoiseFrequencyX, 0, conf.depthNoiseFrequencyZ)
-                    .octaves(conf.depthNoiseOctaves)
-                    .create()
-                    .mul(conf.depthNoiseFactor).add(conf.depthNoiseOffset)
-                    .mulIf(IBuilder.NEGATIVE, -0.3).mul(3).sub(2).clamp(-2, 1)
-                    .divIf(IBuilder.NEGATIVE, 2 * 2 * 1.4).divIf(IBuilder.POSITIVE, 8)
-                    .mul(0.2 * 17 / 64.0);
-            IBuilder height = ((IBuilder) biomeSource::getHeight)
-                    .mul(conf.heightFactor)
-                    .add(conf.heightOffset);
-            double specialVariationFactor = conf.specialHeightVariationFactorBelowAverageY;
-            IBuilder volatility = ((IBuilder) biomeSource::getVolatility)
-                    .mul((x, y, z) -> height.get(x, y, z) > y ? specialVariationFactor : 1)
-                    .mul(conf.heightVariationFactor)
-                    .add(conf.heightVariationOffset);
-            IBuilder terrainBuilder = selector
-                    .lerp(low, high).add(randomHeight2d).mul(volatility).add(height)
-                    .sub(volatility.signum().mul((x, y, z) -> y));
-
             Map<Biome, List<IBiomeBlockReplacer>> oldMap = PUnsafe.getObject(biomeSource, BIOMEBLOCKREPLACERS_OFFSET);
             Map<Biome, IBiomeBlockReplacer[]> newMap = new IdentityHashMap<>();
             oldMap.forEach((biome, list) -> newMap.put(biome, list.toArray(new IBiomeBlockReplacer[list.size()])));
