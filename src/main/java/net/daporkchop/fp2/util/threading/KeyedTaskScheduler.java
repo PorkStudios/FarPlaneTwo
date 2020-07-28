@@ -62,7 +62,7 @@ public class KeyedTaskScheduler<K> {
     }
 
     public Executor keyed(@NonNull K key) {
-        return new KeyedExecutor(key);
+        return task -> this.submit(key, task);
     }
 
     @RequiredArgsConstructor
@@ -86,17 +86,6 @@ public class KeyedTaskScheduler<K> {
                     }
                 }
             }
-        }
-    }
-
-    @RequiredArgsConstructor
-    protected final class KeyedExecutor implements Executor {
-        @NonNull
-        protected final K key;
-
-        @Override
-        public void execute(@NonNull Runnable command) {
-            KeyedTaskScheduler.this.submit(this.key, command);
         }
     }
 }

@@ -48,13 +48,13 @@ public class ShaderFP2StateHelper {
     private final long ADDR_VIEW = DATA + OFFSET_VIEW;
 
     public void updateAndBind(float partialTicks, @NonNull Minecraft mc) {
-        { //camera
+        { //view
             PUnsafe.putInt(ADDR_VIEW + 0 * INT_SIZE, FP2Config.renderDistance);
             PUnsafe.putInt(ADDR_VIEW + 1 * INT_SIZE, FP2Config.maxLevels);
             PUnsafe.putInt(ADDR_VIEW + 2 * INT_SIZE, FP2Config.levelCutoffDistance);
 
-            PUnsafe.putFloat(ADDR_VIEW + 2 * INT_SIZE + 0 * FLOAT_SIZE, (float) FP2Config.client.levelTransitionStart);
-            PUnsafe.putFloat(ADDR_VIEW + 2 * INT_SIZE + 1 * FLOAT_SIZE, (float) FP2Config.client.levelTransitionEnd);
+            PUnsafe.putFloat(ADDR_VIEW + 3 * INT_SIZE + 0 * FLOAT_SIZE, (float) FP2Config.client.levelTransitionStart);
+            PUnsafe.putFloat(ADDR_VIEW + 3 * INT_SIZE + 1 * FLOAT_SIZE, (float) FP2Config.client.levelTransitionEnd);
         }
 
         try (UniformBufferObject ubo = UBO.bind()) { //upload

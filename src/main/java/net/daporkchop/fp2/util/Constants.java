@@ -63,6 +63,19 @@ public class Constants {
     public static final int T_VOXELS = 1 << T_SHIFT;
     public static final int T_VERTS = T_VOXELS + 1;
 
+    //server-side task priorities
+    public static int loadPriority(int level)  {
+        return level << 24;
+    }
+
+    public static int scalePriority(int level)  {
+        return level;
+    }
+
+    public static int genPriority(int level)  {
+        return level << 8;
+    }
+
     public static final SimpleNetworkWrapper NETWORK_WRAPPER = NetworkRegistry.INSTANCE.newSimpleChannel(FP2.MODID);
 
     public static final Ref<ZstdDeflater> ZSTD_DEF = ThreadRef.soft(() -> Zstd.PROVIDER.deflater(Zstd.PROVIDER.deflateOptions()));

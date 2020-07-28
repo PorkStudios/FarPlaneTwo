@@ -29,9 +29,9 @@ import net.daporkchop.fp2.net.server.SPacketPieceData;
 import net.daporkchop.fp2.net.server.SPacketReady;
 import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
 import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
-import net.daporkchop.fp2.server.ServerConstants;
 import net.daporkchop.fp2.server.ServerEvents;
 import net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderer;
+import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraftforge.common.MinecraftForge;
@@ -89,12 +89,12 @@ public class FP2 {
 
     @Mod.EventHandler
     public void serverAboutToStart(FMLServerAboutToStartEvent event) {
-        ServerConstants.init();
+        ServerThreadExecutor.INSTANCE.startup();
     }
 
     @Mod.EventHandler
     public void serverStopping(FMLServerStoppingEvent event) {
-        ServerConstants.shutdown();
+        ServerThreadExecutor.INSTANCE.shutdown();
     }
 
     protected void registerPackets() {

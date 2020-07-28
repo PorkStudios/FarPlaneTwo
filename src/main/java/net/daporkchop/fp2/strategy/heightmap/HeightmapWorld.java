@@ -35,7 +35,12 @@ import net.daporkchop.fp2.strategy.heightmap.gen.rough.CWGHeightmapGenerator;
 import net.daporkchop.fp2.strategy.heightmap.scale.HeightmapScaler;
 import net.daporkchop.fp2.strategy.heightmap.scale.HeightmapScalerMax;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.util.threading.PriorityExecutor;
+import net.daporkchop.fp2.util.threading.PriorityThreadFactory;
 import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
+import net.daporkchop.fp2.util.threading.persist.IPersistentTask;
+import net.daporkchop.lib.common.misc.string.PStrings;
+import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
 import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
 import net.minecraft.world.WorldServer;
 
@@ -43,7 +48,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import static net.daporkchop.fp2.server.ServerConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -63,6 +68,8 @@ public class HeightmapWorld implements IFarWorld<HeightmapPos, HeightmapPiece> {
 
     @Getter(AccessLevel.NONE)
     protected final Map<HeightmapPos, CompletableFuture<HeightmapPiece>> cache = new ObjObjConcurrentHashMap<>();
+
+    protected final PriorityExecutor executor;
 
     public HeightmapWorld(@NonNull WorldServer world) {
         this.world = world;
@@ -95,6 +102,12 @@ public class HeightmapWorld implements IFarWorld<HeightmapPos, HeightmapPiece> {
         this.scaler = new HeightmapScalerMax();
 
         this.storage = new HeightmapStorage(world);
+
+        this.executor = new PriorityExecutor(FP2Config.generationThreads, new PriorityThreadFactory(
+                new ThreadFactoryBuilder().daemon().collapsingId().formatId()
+                        .name(PStrings.fastFormat("FP2 DIM%d Generation Thread #%%d", world.provider.getDimension()))
+                        .priority(Thread.MIN_PRIORITY).build(),
+                Thread.MIN_PRIORITY));
     }
 
     @Override
@@ -120,19 +133,19 @@ public class HeightmapWorld implements IFarWorld<HeightmapPos, HeightmapPiece> {
     public CompletableFuture<HeightmapPiece> getPiece(HeightmapPos key) {
         return this.cache.computeIfAbsent(key, pos -> {
             CompletableFuture<HeightmapPiece> future = new CompletableFuture<>();
-            GENERATION_WORKERS.submit(() -> {
+            this.executor.execute(() -> {
                 //load piece if possible
                 HeightmapPiece piece = this.storage.loadAndUnpack(pos);
                 if (piece != null) { //piece was loaded from disk, use it
                     future.complete(piece);
                 } else if (pos.level() == 0) { //root level, generate piece
-                    GENERATION_WORKERS.submit(() -> {
+                    this.executor.execute(() -> {
                         try {
                             future.complete(this.generatePiece(pos.x(), pos.z(), this.generatorRough));
                         } catch (Exception e) {
                             future.completeExceptionally(e);
                         }
-                    });
+                    }, genPriority(pos.level()));
                 } else {
                     CompletableFuture<HeightmapPiece>[] srcFutures = uncheckedCast(this.scaler.inputs(pos)
                             .map(this::getPiece)
@@ -147,17 +160,27 @@ public class HeightmapWorld implements IFarWorld<HeightmapPos, HeightmapPiece> {
                                     }
 
                                     HeightmapPiece dst = new HeightmapPiece(pos.x(), pos.z(), pos.level());
-                                    this.scaler.scale(srcs, dst);
-                                    dst.updateTimestamp(0L);
 
+                                    for (HeightmapPiece src : srcs) {
+                                        src.readLock().lock();
+                                    }
+                                    try {
+                                        this.scaler.scale(srcs, dst);
+                                    } finally {
+                                        for (HeightmapPiece src : srcs) {
+                                            src.readLock().unlock();
+                                        }
+                                    }
+
+                                    dst.updateTimestamp(0L);
                                     this.savePiece(dst);
                                     future.complete(dst);
-                                } catch (Exception e){
+                                } catch (Exception e) {
                                     future.completeExceptionally(e);
                                 }
-                            }, SCALE_WORKERS);
+                            }, this.executor.withPriority(scalePriority(pos.level())));
                 }
-            });
+            }, loadPriority(pos.level()));
             return future;
         });
     }
@@ -200,6 +223,11 @@ public class HeightmapWorld implements IFarWorld<HeightmapPos, HeightmapPiece> {
 
     @Override
     public void close() throws IOException {
+        this.executor.shutdown((task, priority) -> {
+            if (task instanceof IPersistentTask) {
+                throw new IllegalStateException("we currently can't actually persist tasks :|");
+            }
+        });
         this.storage.close();
     }
 }
