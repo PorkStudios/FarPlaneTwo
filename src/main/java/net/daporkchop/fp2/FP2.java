@@ -23,7 +23,6 @@ package net.daporkchop.fp2;
 import net.daporkchop.fp2.client.ClientEvents;
 import net.daporkchop.fp2.client.FP2ResourceReloadListener;
 import net.daporkchop.fp2.client.KeyBindings;
-import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.net.client.CPacketDropAllPieces;
 import net.daporkchop.fp2.net.client.CPacketRenderMode;
 import net.daporkchop.fp2.net.server.SPacketPieceData;
@@ -32,11 +31,15 @@ import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
 import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
 import net.daporkchop.fp2.server.ServerEvents;
 import net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderer;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
+import net.daporkchop.ldbjni.LevelDB;
+import net.daporkchop.lib.compression.zstd.Zstd;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
@@ -44,7 +47,6 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
 import net.minecraftforge.fml.relauncher.Side;
-import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GLContext;
 
 import javax.swing.JOptionPane;
@@ -61,11 +63,17 @@ import static net.daporkchop.fp2.util.Constants.*;
 public class FP2 {
     public static final String MODID = "fp2";
 
-    public static Logger LOGGER;
-
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         LOGGER = event.getModLog();
+
+        System.setProperty("porklib.native.printStackTraces", "true");
+        if (!Zstd.PROVIDER.isNative())  {
+            Constants.bigWarning("Native ZSTD could not be loaded! This will have SERIOUS performance implications!");
+        }
+        if (!LevelDB.PROVIDER.isNative())  {
+            Constants.bigWarning("Native leveldb-mcpe could not be loaded! This will have SERIOUS performance implications!");
+        }
 
         this.registerPackets();
 
@@ -77,9 +85,6 @@ public class FP2 {
                         null, JOptionPane.ERROR_MESSAGE);
                 FMLCommonHandler.instance().exitJava(1, true);
             }
-            /*JOptionPane.showMessageDialog(null, PStrings.fastFormat(
-                    "zstd: %b\nleveldb: %b", Zstd.PROVIDER.isNative(), LevelDB.PROVIDER.isNative()));
-            System.exit(0);*/
 
             MinecraftForge.EVENT_BUS.register(new ClientEvents());
 

@@ -24,7 +24,6 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.PriorityThreadFactory;
@@ -62,9 +61,9 @@ public class ClientConstants {
     public static void shutdown() {
         Future<?> mesh = RENDER_WORKERS.shutdownGracefully();
 
-        FP2.LOGGER.info("Shutting down render worker pool...");
+        Constants.LOGGER.info("Shutting down render worker pool...");
         mesh.syncUninterruptibly();
-        FP2.LOGGER.info("Done.");
+        Constants.LOGGER.info("Done.");
 
         RENDER_WORKERS = null;
     }

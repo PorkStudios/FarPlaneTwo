@@ -23,13 +23,11 @@ package net.daporkchop.fp2.strategy.heightmap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.net.server.SPacketPieceData;
 import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
-import net.daporkchop.lib.common.misc.string.PStrings;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import java.util.IdentityHashMap;
@@ -54,13 +52,13 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, H
 
     @Override
     public void playerAdd(@NonNull EntityPlayerMP player) {
-        FP2.LOGGER.debug("Added player {} to tracker in dimension {}", player.getName(), this.world.world.provider.getDimension());
+        LOGGER.debug("Added player {} to tracker in dimension {}", player.getName(), this.world.world.provider.getDimension());
         this.tracking.put(player, new ObjectOpenHashSet<>());
     }
 
     @Override
     public void playerRemove(@NonNull EntityPlayerMP player) {
-        FP2.LOGGER.debug("Removed player {} from tracker in dimension {}", player.getName(), this.world.world.provider.getDimension());
+        LOGGER.debug("Removed player {} from tracker in dimension {}", player.getName(), this.world.world.provider.getDimension());
         this.tracking.remove(player);
     }
 

@@ -39,6 +39,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
+import org.apache.logging.log4j.Logger;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -63,16 +64,18 @@ public class Constants {
     public static final int T_VOXELS = 1 << T_SHIFT;
     public static final int T_VERTS = T_VOXELS + 1;
 
+    public static Logger LOGGER;
+
     //server-side task priorities
-    public static int loadPriority(int level)  {
+    public static int loadPriority(int level) {
         return level << 24;
     }
 
-    public static int scalePriority(int level)  {
+    public static int scalePriority(int level) {
         return level;
     }
 
-    public static int genPriority(int level)  {
+    public static int genPriority(int level) {
         return level << 8;
     }
 
@@ -83,6 +86,16 @@ public class Constants {
 
     public static final boolean CC = Loader.isModLoaded("cubicchunks");
     public static final boolean CWG = Loader.isModLoaded("cubicgen");
+
+    public static void bigWarning(String format, Object... data) {
+        StackTraceElement[] trace = Thread.currentThread().getStackTrace();
+        LOGGER.warn("****************************************");
+        LOGGER.warn("* " + format, data);
+        for (int i = 2; i < 8 && i < trace.length; i++) {
+            LOGGER.warn("*  at {}{}", trace[i].toString(), i == 7 ? "..." : "");
+        }
+        LOGGER.warn("****************************************");
+    }
 
     /**
      * Converts an ARGB color to ABGR.

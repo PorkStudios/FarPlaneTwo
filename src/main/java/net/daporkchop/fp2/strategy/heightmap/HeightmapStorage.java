@@ -23,7 +23,6 @@ package net.daporkchop.fp2.strategy.heightmap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import lombok.NonNull;
-import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarStorage;
@@ -39,7 +38,6 @@ import net.minecraft.world.WorldServer;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.function.IntFunction;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -58,15 +56,11 @@ public class HeightmapStorage implements IFarStorage<HeightmapPos> {
         this.storageRoot = new File(world.getChunkSaveLocation(), "fp2/" + RenderMode.HEIGHTMAP.name().toLowerCase());
         PFiles.ensureDirectoryExists(this.storageRoot);
 
-        if (!LevelDB.PROVIDER.isNative())   {
-            FP2.LOGGER.fatal("Not using native leveldb! This will have SERIOUS performance implications!");
-        }
-
         this.dbOpenFunction = i -> {
             try {
                 return LevelDB.PROVIDER.open(new File(this.storageRoot, String.valueOf(i)), FP2Config.storage.leveldb.use());
             } catch (IOException e) {
-                FP2.LOGGER.error(PStrings.fastFormat("Unable to open DB in %s at level %d", this.storageRoot, i), e);
+                LOGGER.error(PStrings.fastFormat("Unable to open DB in %s at level %d", this.storageRoot, i), e);
                 PUnsafe.throwException(e);
                 throw new RuntimeException(e); //unreachable
             }
@@ -84,7 +78,7 @@ public class HeightmapStorage implements IFarStorage<HeightmapPos> {
             buf.writeInt(pos.x).writeInt(pos.z);
             return this.dbs.computeIfAbsent(pos.level, this.dbOpenFunction).getZeroCopy(buf);
         } catch (Exception e)   {
-            FP2.LOGGER.error(PStrings.fastFormat("Unable to load tile %s from DB at %s", pos, this.storageRoot), e);
+            LOGGER.error(PStrings.fastFormat("Unable to load tile %s from DB at %s", pos, this.storageRoot), e);
             return null;
         } finally {
             buf.release();
@@ -102,7 +96,7 @@ public class HeightmapStorage implements IFarStorage<HeightmapPos> {
             buf.writeInt(pos.x).writeInt(pos.z);
             this.dbs.computeIfAbsent(pos.level, this.dbOpenFunction).put(buf, data);
         } catch (Exception e)   {
-            FP2.LOGGER.error(PStrings.fastFormat("Unable to store tile %s to DB at %s", pos, this.storageRoot), e);
+            LOGGER.error(PStrings.fastFormat("Unable to store tile %s to DB at %s", pos, this.storageRoot), e);
         } finally {
             buf.release();
         }

@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.util.compat;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.FP2;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraftforge.fml.relauncher.Side;
@@ -49,12 +49,12 @@ public class OFHelper {
             ofVersion = ofVersion.replace("_pre", "");
             ofVersion = ofVersion.substring(ofVersion.length() - 2);
 
-            FP2.LOGGER.info("Detected Optifine version: {}", ofVersion);
+            Constants.LOGGER.info("Detected Optifine version: {}", ofVersion);
         } catch (ClassNotFoundException e) {
-            FP2.LOGGER.info("No Optifine detected");
+            Constants.LOGGER.info("No Optifine detected");
         } catch (Exception e) {
             ofVersion = "E1";
-            FP2.LOGGER.error("Optifine detected, but could not detect version. It may not work. Assuming Optifine E1...", e);
+            Constants.LOGGER.error("Optifine detected, but could not detect version. It may not work. Assuming Optifine E1...", e);
         } finally {
             OF_VERSION = ofVersion;
             OF = ofVersion != null;

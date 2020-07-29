@@ -24,7 +24,6 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
 import net.daporkchop.fp2.strategy.RenderMode;
@@ -61,7 +60,7 @@ public class CPacketRenderMode implements IMessage {
         public IMessage onMessage(CPacketRenderMode message, MessageContext ctx) {
             if (message.mode == FP2Config.renderMode) {
                 ServerThreadExecutor.INSTANCE.execute(() -> {
-                    FP2.LOGGER.debug("Player {} initiated FP2 session with render mode {}", ctx.getServerHandler().player.getName(), message.mode);
+                    LOGGER.debug("Player {} initiated FP2 session with render mode {}", ctx.getServerHandler().player.getName(), message.mode);
 
                     //send the packet here to ensure that it's sent before adding the player to the tracker
                     NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy().mode(FP2Config.renderMode), ctx.getServerHandler().player);

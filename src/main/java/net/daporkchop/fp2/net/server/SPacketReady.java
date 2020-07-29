@@ -21,9 +21,9 @@
 package net.daporkchop.fp2.net.server;
 
 import io.netty.buffer.ByteBuf;
-import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.net.client.CPacketRenderMode;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -49,7 +49,7 @@ public class SPacketReady implements IMessage {
         @Override
         public IMessage onMessage(SPacketReady message, MessageContext ctx) {
             ClientThreadExecutor.INSTANCE.execute(() -> {
-                FP2.LOGGER.debug("Server notified us that we are ready to go!");
+                Constants.LOGGER.debug("Server notified us that we are ready to go!");
                 NETWORK_WRAPPER.sendToServer(new CPacketRenderMode().mode(FP2Config.renderMode));
             });
             return null;

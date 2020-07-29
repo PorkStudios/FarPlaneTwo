@@ -20,12 +20,11 @@
 
 package net.daporkchop.fp2.server;
 
-import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
-import net.daporkchop.fp2.client.GlobalInfo;
 import net.daporkchop.fp2.net.server.SPacketReady;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.text.TextComponentString;
@@ -55,23 +54,23 @@ public class ServerEvents {
         if (!event.getWorld().isRemote && ((IFarContext) event.getWorld()).isInitialized()) {
             try {
                 ((IFarContext) event.getWorld()).world().close();
-                FP2.LOGGER.info("Closed far world storage in dimension {}.", event.getWorld().provider.getDimension());
+                Constants.LOGGER.info("Closed far world storage in dimension {}.", event.getWorld().provider.getDimension());
             } catch (IOException e) {
-                FP2.LOGGER.fatal("Unable to close far world storage!", e);
+                Constants.LOGGER.fatal("Unable to close far world storage!", e);
             }
         }
     }
 
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        FP2.LOGGER.debug("Handling login for player {}", event.player.getName());
+        Constants.LOGGER.debug("Handling login for player {}", event.player.getName());
         NETWORK_WRAPPER.sendTo(new SPacketReady(), (EntityPlayerMP) event.player);
         event.player.sendMessage(new TextComponentString("§c§lFarPlaneTwo pre-pre-pre-alpha build: use at your own risk!"));
     }
 
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        FP2.LOGGER.debug("Handling logout for player {}", event.player.getName());
+        Constants.LOGGER.debug("Handling logout for player {}", event.player.getName());
         ((IFarContext) event.player.world).tracker().playerRemove((EntityPlayerMP) event.player);
     }
 

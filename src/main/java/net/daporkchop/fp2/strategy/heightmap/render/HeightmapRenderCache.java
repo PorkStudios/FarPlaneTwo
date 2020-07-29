@@ -22,8 +22,6 @@ package net.daporkchop.fp2.strategy.heightmap.render;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.FP2;
-import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
@@ -63,7 +61,7 @@ public class HeightmapRenderCache {
     protected final ShaderStorageBuffer dataSSBO = new ShaderStorageBuffer();
     protected final ByteBuffer zeroData = Constants.createByteBuffer(HEIGHTMAP_RENDER_SIZE);
     protected final Allocator dataAllocator = new FixedSizeAllocator(HEIGHTMAP_RENDER_SIZE, (oldSize, newSize) -> {
-        FP2.LOGGER.debug("Growing data SSBO from {} to {} bytes", oldSize, newSize);
+        Constants.LOGGER.debug("Growing data SSBO from {} to {} bytes", oldSize, newSize);
 
         try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
             //grow SSBO
@@ -86,7 +84,7 @@ public class HeightmapRenderCache {
         this.renderer = renderer;
 
         int size = glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
-        FP2.LOGGER.info(PStrings.fastFormat("Max SSBO size: %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
+        Constants.LOGGER.info(PStrings.fastFormat("Max SSBO size: %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
 
         //allocate zero block
         checkState(this.dataAllocator.alloc(HEIGHTMAP_RENDER_SIZE) == 0L);
@@ -143,7 +141,7 @@ public class HeightmapRenderCache {
                     return;
                 }
             }
-            FP2.LOGGER.warn("Attempted to unload already non-existent piece at {}!", pos);
+            Constants.LOGGER.warn("Attempted to unload already non-existent piece at {}!", pos);
         });
     }
 

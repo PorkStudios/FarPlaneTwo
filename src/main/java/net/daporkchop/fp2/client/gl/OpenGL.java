@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.client.gl;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.FP2;
+import net.daporkchop.fp2.util.Constants;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.util.glu.GLU.*;
@@ -55,9 +55,9 @@ public class OpenGL {
 
     public void checkGLError(String message) {
         for (int error; (error = glGetError()) != GL_NO_ERROR; ) {
-            FP2.LOGGER.error("########## GL ERROR ##########");
-            FP2.LOGGER.error("@ {}", message);
-            FP2.LOGGER.error("{}: {}", error, gluErrorString(error));
+            Constants.LOGGER.error("########## GL ERROR ##########");
+            Constants.LOGGER.error("@ {}", message);
+            Constants.LOGGER.error("{}: {}", error, gluErrorString(error));
         }
     }
 }

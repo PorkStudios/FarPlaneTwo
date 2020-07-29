@@ -25,7 +25,6 @@ import io.netty.buffer.ByteBuf;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.strategy.heightmap.gen.HeightmapGenerator;
@@ -94,7 +93,7 @@ public class HeightmapWorld implements IFarWorld<HeightmapPos, HeightmapPiece> {
         if (roughGenerator != null) { //rough generator has been set, so use it
             (this.generatorRough = roughGenerator).init(world);
         } else { //rough generator wasn't set, use the exact generator for this as well
-            FP2.LOGGER.warn("No rough generator exists for world {} (type: {})! Falling back to exact generator, this will have serious performance implications.", world.provider.getDimension(), world.getWorldType());
+            LOGGER.warn("No rough generator exists for world {} (type: {})! Falling back to exact generator, this will have serious performance implications.", world.provider.getDimension(), world.getWorldType());
             this.generatorRough = this.generatorExact;
         }
         this.generatorExact.init(world);
