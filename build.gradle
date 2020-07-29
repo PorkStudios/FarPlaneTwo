@@ -72,7 +72,6 @@ tasks.withType(JavaCompile) {
 }
 
 repositories {
-    mavenLocal()
     maven {
         name = "DaPorkchop_"
         url = "https://maven.daporkchop.net/"
