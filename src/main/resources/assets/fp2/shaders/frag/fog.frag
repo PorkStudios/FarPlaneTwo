@@ -35,17 +35,17 @@ in FOG {
 //
 
 float getFogFactor()    { //this shouldn't cause any significant performance drop because the result is constant for every invocation
-    if (gl_state.fog.mode == GL_LINEAR) {
-        return clamp((gl_state.fog.end - fog_in.depth) * gl_state.fog.scale, 0., 1.);
-    } else if (gl_state.fog.mode == GL_EXP)  {
-        return clamp(exp(-gl_state.fog.end * fog_in.depth), 0., 1.);
-    } else if (gl_state.fog.mode == GL_EXP2)  {
-        return clamp(exp(-gl_state.fog.end * pow(fog_in.depth, 2.)), 0., 1.);
+    if (glState.fog.mode == FOG_LINEAR) {
+        return clamp((glState.fog.end - fog_in.depth) * glState.fog.scale, 0., 1.);
+    } else if (glState.fog.mode == FOG_EXP)  {
+        return clamp(exp(-glState.fog.end * fog_in.depth), 0., 1.);
+    } else if (glState.fog.mode == FOG_EXP2)  {
+        return clamp(exp(-glState.fog.end * pow(fog_in.depth, 2.)), 0., 1.);
     } else {
         return 1.;
     }
 }
 
 vec4 addFog(vec4 color) {
-    return mix(gl_state.fog.color, color, getFogFactor());
+    return mix(glState.fog.color, color, getFogFactor());
 }

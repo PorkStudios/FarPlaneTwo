@@ -31,9 +31,9 @@
 #define LAYER_CUTOUT (1 << 2)
 #define LAYER_TRANSLUCENT (1 << 3)
 
-#define GL_LINEAR (9729)
-#define GL_EXP (2048)
-#define GL_EXP2 (2049)
+#define FOG_LINEAR (9729)
+#define FOG_EXP (2048)
+#define FOG_EXP2 (2049)
 
 //
 //
@@ -43,14 +43,14 @@
 
 //OpenGL state
 
-struct GL_Camera {
+struct GlCamera {
     mat4 projection;
     mat4 modelview;
 
     dvec3 position;
 };
 
-struct GL_Fog {
+struct GlFog {
     vec4 color;
 
     float density;
@@ -61,10 +61,10 @@ struct GL_Fog {
     int mode;
 };
 
-layout(std140, binding = 0) uniform GL_STATE {
-    GL_Camera camera;
-    GL_Fog fog;
-} gl_state;
+layout(std140, binding = 0) uniform GLSTATE {
+    GlCamera camera;
+    GlFog fog;
+} glState;
 
 //FP2 state
 
@@ -177,7 +177,7 @@ vec4 getFoliageColorAtPos(dvec3 pos, int biome){
 // vertex transformation
 
 vec4 cameraTransform(vec4 point) {
-    return gl_state.camera.projection * gl_state.camera.modelview * point;
+    return glState.camera.projection * glState.camera.modelview * point;
 }
 
 vec4 cameraTransform(vec3 point)   {

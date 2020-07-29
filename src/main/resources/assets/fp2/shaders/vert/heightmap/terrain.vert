@@ -38,14 +38,14 @@ void main(){
     //linear blending between the two positions
     float start = float(fp2_state.view.levelCutoffDistance << index.level) * fp2_state.view.transitionStart;
     float end = float(fp2_state.view.levelCutoffDistance << index.level) * fp2_state.view.transitionEnd;
-    float depth = float(distance(vec2(posXZ), gl_state.camera.position.xz));
+    float depth = float(distance(vec2(posXZ), glState.camera.position.xz));
     float fac = min(float(highIndex.index), 1.);
     //imagine that everything from the //sample above to this line were in an if(entry.high[slot] != 0) { ... },
     // but i managed to implement it with 0 branches!
     pos = mix(pos, abovePos, fac * (1. - clamp((end - depth) * (1. / (end - start)), 0., 1.)));
 
     //convert position to vec3 afterwards to minimize precision loss
-    vec3 relativePos = vec3(pos - gl_state.camera.position);
+    vec3 relativePos = vec3(pos - glState.camera.position);
 
     //give raw position to fragment shader
     vs_out.pos = vec3(pos);

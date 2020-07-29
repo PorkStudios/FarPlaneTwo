@@ -58,7 +58,9 @@ public class HeightmapStorage implements IFarStorage<HeightmapPos> {
         this.storageRoot = new File(world.getChunkSaveLocation(), "fp2/" + RenderMode.HEIGHTMAP.name().toLowerCase());
         PFiles.ensureDirectoryExists(this.storageRoot);
 
-        checkState(LevelDB.PROVIDER.isNative());
+        if (!LevelDB.PROVIDER.isNative())   {
+            FP2.LOGGER.fatal("Not using native leveldb! This will have SERIOUS performance implications!");
+        }
 
         this.dbOpenFunction = i -> {
             try {
