@@ -23,6 +23,7 @@ package net.daporkchop.fp2;
 import net.daporkchop.fp2.client.ClientEvents;
 import net.daporkchop.fp2.client.FP2ResourceReloadListener;
 import net.daporkchop.fp2.client.KeyBindings;
+import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.net.client.CPacketDropAllPieces;
 import net.daporkchop.fp2.net.client.CPacketRenderMode;
 import net.daporkchop.fp2.net.server.SPacketPieceData;
@@ -44,6 +45,9 @@ import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.opengl.GLContext;
+
+import javax.swing.JOptionPane;
 
 import static net.daporkchop.fp2.FP2.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -67,6 +71,16 @@ public class FP2 {
 
         MinecraftForge.EVENT_BUS.register(new ServerEvents());
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
+            if (!GLContext.getCapabilities().OpenGL43)  {
+                JOptionPane.showMessageDialog(null,
+                "Your system does not support OpenGL 4.3!\nRequired by FarPlaneTwo.",
+                        null, JOptionPane.ERROR_MESSAGE);
+                FMLCommonHandler.instance().exitJava(1, true);
+            }
+            /*JOptionPane.showMessageDialog(null, PStrings.fastFormat(
+                    "zstd: %b\nleveldb: %b", Zstd.PROVIDER.isNative(), LevelDB.PROVIDER.isNative()));
+            System.exit(0);*/
+
             MinecraftForge.EVENT_BUS.register(new ClientEvents());
 
             ((IReloadableResourceManager) Minecraft.getMinecraft().getResourceManager()).registerReloadListener(new FP2ResourceReloadListener());
