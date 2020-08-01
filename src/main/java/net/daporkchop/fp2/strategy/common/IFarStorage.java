@@ -22,6 +22,7 @@ package net.daporkchop.fp2.strategy.common;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.strategy.RenderMode;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -47,6 +48,11 @@ public interface IFarStorage<POS extends IFarPos> extends Closeable {
      * @param data the data to save
      */
     void store(@NonNull POS pos, @NonNull ByteBuf data);
+
+    /**
+     * @return the {@link RenderMode} that this storage is used for
+     */
+    RenderMode mode();
 
     /**
      * Closes this storage.

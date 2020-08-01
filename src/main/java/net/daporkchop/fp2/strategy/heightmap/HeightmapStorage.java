@@ -103,6 +103,11 @@ public class HeightmapStorage implements IFarStorage<HeightmapPos> {
     }
 
     @Override
+    public RenderMode mode() {
+        return RenderMode.HEIGHTMAP;
+    }
+
+    @Override
     public void close() throws IOException {
         IOException root = null;
         for (DirectDB db : this.dbs.values()) {

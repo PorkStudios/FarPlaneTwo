@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.strategy.common;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.strategy.RenderMode;
 import net.minecraft.world.WorldServer;
 
 import java.io.Closeable;
@@ -69,6 +70,11 @@ public interface IFarWorld<POS extends IFarPos, P extends IFarPiece<POS>> extend
      * @return the {@link IFarStorage} used for persistence of far terrain pieces
      */
     IFarStorage<POS> storage();
+
+    /**
+     * @return the {@link RenderMode} that this world is used for
+     */
+    RenderMode mode();
 
     @Override
     void close() throws IOException;

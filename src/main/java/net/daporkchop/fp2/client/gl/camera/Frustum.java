@@ -33,6 +33,8 @@ import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static org.lwjgl.opengl.GL11.*;
 
 /**
+ * Alternative to {@link net.minecraft.client.renderer.culling.Frustum} which uses double-precision floats and is also probably faster.
+ *
  * @author DaPorkchop_
  */
 public class Frustum implements ICamera {

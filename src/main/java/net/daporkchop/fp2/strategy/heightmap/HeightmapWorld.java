@@ -26,6 +26,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarWorld;
 import net.daporkchop.fp2.strategy.heightmap.gen.HeightmapGenerator;
 import net.daporkchop.fp2.strategy.heightmap.gen.exact.CCHeightmapGenerator;
@@ -228,5 +229,10 @@ public class HeightmapWorld implements IFarWorld<HeightmapPos, HeightmapPiece> {
             }
         });
         this.storage.close();
+    }
+
+    @Override
+    public RenderMode mode() {
+        return RenderMode.HEIGHTMAP;
     }
 }

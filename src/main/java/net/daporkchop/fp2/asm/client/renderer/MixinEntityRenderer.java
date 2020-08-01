@@ -71,10 +71,10 @@ public abstract class MixinEntityRenderer {
             double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks;
             double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks;
             double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks;
-            frustum.setPosition(x, y, z);
+            this.frustum.setPosition(x, y, z);
 
             //render
-            renderer.render(partialTicks, this.mc.world, this.mc, frustum);
+            renderer.render(partialTicks, this.mc.world, this.mc, this.frustum);
         }
     }
 
