@@ -18,39 +18,49 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.common;
+package net.daporkchop.fp2.strategy.common.server;
 
+import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
-import net.minecraft.world.WorldServer;
+import net.daporkchop.fp2.strategy.RenderMode;
+import net.daporkchop.fp2.strategy.common.IFarPiece;
+import net.daporkchop.fp2.strategy.common.IFarPos;
+
+import java.io.Closeable;
+import java.io.IOException;
 
 /**
- * Extracts height and color information from a world for use by a rendering mode.
- * <p>
- * Once initialized, instances of this class are expected to be safely usable by multiple concurrent threads.
+ * Handles reading and writing of far terrain data.
  *
  * @author DaPorkchop_
  */
-public interface IFarGenerator<POS extends IFarPos, P extends IFarPiece<POS>> {
+public interface IFarStorage<POS extends IFarPos, P extends IFarPiece<POS>> extends Closeable {
     /**
-     * Initializes this instance.
+     * Loads the piece at the given position.
+     *
+     * @param pos the position of the piece to load
+     * @return the loaded piece, or {@code null} if it doesn't exist
+     */
+    P load(@NonNull POS pos);
+
+    /**
+     * Stores the given piece at the given position, atomically replacing any existing piece.
+     *
+     * @param pos   the position to save the data at
+     * @param piece the piece to save
+     */
+    void store(@NonNull POS pos, @NonNull P piece);
+
+    /**
+     * @return the {@link RenderMode} that this storage is used for
+     */
+    RenderMode mode();
+
+    /**
+     * Closes this storage.
      * <p>
-     * An instance is only initialized once. No other methods will be called on this instance until initialization is complete.
-     *
-     * @param world the world that the heightmap will be generated for
+     * If write operations are queued, this method will block until they are completed.
      */
-    void init(@NonNull WorldServer world);
-
-    /**
-     * Generates a rough estimate of the terrain in the given piece.
-     *
-     * @param world the {@link CachedBlockAccess} providing access to block/height data in the world
-     * @param piece the piece to generate
-     */
-    void generate(@NonNull CachedBlockAccess world, @NonNull P piece);
-
-    /**
-     * @return whether or not this generator can generate pieces at low resolution
-     */
-    boolean supportsLowResolution();
+    @Override
+    void close() throws IOException;
 }

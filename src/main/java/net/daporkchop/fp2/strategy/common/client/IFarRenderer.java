@@ -18,17 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.common;
+package net.daporkchop.fp2.strategy.common.client;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.strategy.common.IFarPos;
+import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.culling.ICamera;
-import net.minecraft.entity.Entity;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-
-import java.nio.FloatBuffer;
 
 /**
  * @author DaPorkchop_

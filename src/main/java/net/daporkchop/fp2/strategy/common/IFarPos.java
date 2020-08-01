@@ -52,5 +52,15 @@ public interface IFarPos {
      *
      * @param dst the {@link ByteBuf} to write to
      */
-    void writePos(@NonNull ByteBuf dst);
+    default void writePos(@NonNull ByteBuf dst) {
+        this.writePosNoLevel(dst);
+        dst.writeInt(this.level());
+    }
+
+    /**
+     * Writes this position to the given {@link ByteBuf}, without including the detail level
+     *
+     * @param dst the {@link ByteBuf} to write to
+     */
+    void writePosNoLevel(@NonNull ByteBuf dst);
 }

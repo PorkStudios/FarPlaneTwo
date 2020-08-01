@@ -25,7 +25,8 @@ import io.netty.buffer.PooledByteBufAllocator;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.RenderMode;
-import net.daporkchop.fp2.strategy.common.IFarStorage;
+import net.daporkchop.fp2.strategy.base.server.AbstractFarStorage;
+import net.daporkchop.fp2.strategy.common.server.IFarStorage;
 import net.daporkchop.ldbjni.LevelDB;
 import net.daporkchop.ldbjni.direct.DirectDB;
 import net.daporkchop.lib.common.misc.file.PFiles;
@@ -46,127 +47,13 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class HeightmapStorage implements IFarStorage<HeightmapPos> {
-    protected final IntObjMap<DirectDB> dbs = new IntObjConcurrentHashMap<>();
-    protected final File storageRoot;
-
-    protected final IntFunction<DirectDB> dbOpenFunction;
-
+public class HeightmapStorage extends AbstractFarStorage<HeightmapPos, HeightmapPiece> {
     public HeightmapStorage(@NonNull WorldServer world) {
-        this.storageRoot = new File(world.getChunkSaveLocation(), "fp2/" + RenderMode.HEIGHTMAP.name().toLowerCase());
-        PFiles.ensureDirectoryExists(this.storageRoot);
-
-        this.dbOpenFunction = i -> {
-            try {
-                return LevelDB.PROVIDER.open(new File(this.storageRoot, String.valueOf(i)), FP2Config.storage.leveldb.use());
-            } catch (IOException e) {
-                LOGGER.error(PStrings.fastFormat("Unable to open DB in %s at level %d", this.storageRoot, i), e);
-                PUnsafe.throwException(e);
-                throw new RuntimeException(e); //unreachable
-            }
-        };
-    }
-
-    @Override
-    public ByteBuf load(@NonNull HeightmapPos pos) {
-        if (FP2Config.debug.disableRead || FP2Config.debug.disablePersistence) {
-            return null;
-        }
-
-        ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer();
-        try {
-            buf.writeInt(pos.x).writeInt(pos.z);
-            return this.dbs.computeIfAbsent(pos.level, this.dbOpenFunction).getZeroCopy(buf);
-        } catch (Exception e)   {
-            LOGGER.error(PStrings.fastFormat("Unable to load tile %s from DB at %s", pos, this.storageRoot), e);
-            return null;
-        } finally {
-            buf.release();
-        }
-    }
-
-    @Override
-    public void store(@NonNull HeightmapPos pos, @NonNull ByteBuf data) {
-        if (FP2Config.debug.disableWrite || FP2Config.debug.disablePersistence) {
-            return;
-        }
-
-        ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer();
-        try {
-            buf.writeInt(pos.x).writeInt(pos.z);
-            this.dbs.computeIfAbsent(pos.level, this.dbOpenFunction).put(buf, data);
-        } catch (Exception e)   {
-            LOGGER.error(PStrings.fastFormat("Unable to store tile %s to DB at %s", pos, this.storageRoot), e);
-        } finally {
-            buf.release();
-        }
+        super(world);
     }
 
     @Override
     public RenderMode mode() {
         return RenderMode.HEIGHTMAP;
-    }
-
-    @Override
-    public void close() throws IOException {
-        IOException root = null;
-        for (DirectDB db : this.dbs.values()) {
-            try {
-                db.close();
-            } catch (IOException e) {
-                if (root == null) {
-                    root = new IOException("Unable to close all DBs in " + this.storageRoot);
-                }
-                root.addSuppressed(e);
-            }
-        }
-        if (root != null) {
-            throw root;
-        }
-    }
-
-    public HeightmapPiece unpack(@NonNull ByteBuf packed, boolean release) {
-        try {
-            if (packed.readableBytes() >= 8 && packed.readInt() == RenderMode.HEIGHTMAP.storageVersion) {
-                int uncompressedSize = packed.readInt();
-                ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(uncompressedSize, uncompressedSize);
-                try {
-                    checkState(ZSTD_INF.get().decompress(packed, buf));
-                    if (release) {
-                        packed.release();
-                        release = false;
-                    }
-                    return new HeightmapPiece(buf);
-                } finally {
-                    buf.release();
-                }
-            }
-            return null;
-        } finally {
-            if (release) {
-                packed.release();
-            }
-        }
-    }
-
-    public HeightmapPiece loadAndUnpack(@NonNull HeightmapPos pos) {
-        ByteBuf packed = this.load(pos);
-        return packed != null ? this.unpack(packed, true) : null;
-    }
-
-    public ByteBuf pack(@NonNull HeightmapPiece piece) {
-        ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer();
-        try {
-            piece.writePiece(buf);
-
-            ByteBuf packed = PooledByteBufAllocator.DEFAULT.ioBuffer(8 + Zstd.PROVIDER.compressBound(buf.readableBytes()))
-                    .writeInt(RenderMode.HEIGHTMAP.storageVersion)
-                    .writeInt(buf.readableBytes());
-            checkState(ZSTD_DEF.get().compress(buf, packed));
-
-            return packed;
-        } finally {
-            buf.release();
-        }
     }
 }

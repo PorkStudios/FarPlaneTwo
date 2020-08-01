@@ -23,6 +23,8 @@ package net.daporkchop.fp2.strategy.common;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.RenderMode;
+import net.daporkchop.fp2.strategy.common.server.IFarGenerator;
+import net.daporkchop.fp2.strategy.common.IFarPos;
 
 import java.util.concurrent.locks.ReadWriteLock;
 

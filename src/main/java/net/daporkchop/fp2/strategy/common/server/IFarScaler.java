@@ -18,9 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.common;
+package net.daporkchop.fp2.strategy.common.server;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.strategy.common.IFarPos;
+import net.daporkchop.fp2.strategy.common.IFarPiece;
 
 import java.util.stream.Stream;
 

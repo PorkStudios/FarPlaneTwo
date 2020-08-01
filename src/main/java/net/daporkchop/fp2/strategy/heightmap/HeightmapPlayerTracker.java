@@ -26,8 +26,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.net.server.SPacketPieceData;
 import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
-import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
-import net.daporkchop.fp2.strategy.common.IFarWorld;
+import net.daporkchop.fp2.strategy.common.server.IFarPlayerTracker;
+import net.daporkchop.fp2.strategy.common.server.IFarWorld;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import java.util.IdentityHashMap;

@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.strategy.heightmap.gen;
 
-import net.daporkchop.fp2.strategy.common.IFarGenerator;
+import net.daporkchop.fp2.strategy.common.server.IFarGenerator;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 

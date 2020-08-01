@@ -18,10 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.common;
+package net.daporkchop.fp2.strategy.common.server;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.RenderMode;
+import net.daporkchop.fp2.strategy.common.IFarPos;
+import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.minecraft.world.WorldServer;
 
 import java.io.Closeable;
@@ -69,7 +71,7 @@ public interface IFarWorld<POS extends IFarPos, P extends IFarPiece<POS>> extend
     /**
      * @return the {@link IFarStorage} used for persistence of far terrain pieces
      */
-    IFarStorage<POS> storage();
+    IFarStorage<POS, P> storage();
 
     /**
      * @return the {@link RenderMode} that this world is used for

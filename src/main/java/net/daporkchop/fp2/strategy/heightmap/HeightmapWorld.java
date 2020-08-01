@@ -27,7 +27,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.RenderMode;
-import net.daporkchop.fp2.strategy.common.IFarWorld;
+import net.daporkchop.fp2.strategy.common.server.IFarWorld;
 import net.daporkchop.fp2.strategy.heightmap.gen.HeightmapGenerator;
 import net.daporkchop.fp2.strategy.heightmap.gen.exact.CCHeightmapGenerator;
 import net.daporkchop.fp2.strategy.heightmap.gen.exact.VanillaHeightmapGenerator;
@@ -135,7 +135,7 @@ public class HeightmapWorld implements IFarWorld<HeightmapPos, HeightmapPiece> {
             CompletableFuture<HeightmapPiece> future = new CompletableFuture<>();
             this.executor.execute(() -> {
                 //load piece if possible
-                HeightmapPiece piece = this.storage.loadAndUnpack(pos);
+                HeightmapPiece piece = this.storage.load(pos);
                 if (piece != null) { //piece was loaded from disk, use it
                     future.complete(piece);
                 } else if (pos.level() == 0) { //root level, generate piece
@@ -199,25 +199,17 @@ public class HeightmapWorld implements IFarWorld<HeightmapPos, HeightmapPiece> {
     }
 
     protected void savePiece(@NonNull HeightmapPiece piece) {
-        if (FP2Config.debug.disableWrite || FP2Config.debug.disablePersistence || !piece.isDirty()) {
+        if (!piece.isDirty())   {
             return;
         }
 
-        ByteBuf packed = null;
-
+        piece.readLock().lock();
         try {
-            piece.readLock().lock();
-            try {
-                packed = this.storage.pack(piece);
-            } finally {
-                piece.readLock().unlock();
+            if (piece.clearDirty()) {
+                this.storage.store(piece.pos(), piece);
             }
-
-            this.storage.store(piece.pos(), packed);
         } finally {
-            if (packed != null) {
-                packed.release();
-            }
+            piece.readLock().unlock();
         }
     }
 

@@ -23,7 +23,7 @@ package net.daporkchop.fp2.server;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.net.server.SPacketReady;
 import net.daporkchop.fp2.strategy.common.IFarContext;
-import net.daporkchop.fp2.strategy.common.IFarPlayerTracker;
+import net.daporkchop.fp2.strategy.common.server.IFarPlayerTracker;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;

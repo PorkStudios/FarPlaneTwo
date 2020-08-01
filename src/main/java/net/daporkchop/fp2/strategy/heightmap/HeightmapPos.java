@@ -51,8 +51,8 @@ public class HeightmapPos implements IFarPos {
     }
 
     @Override
-    public void writePos(@NonNull ByteBuf dst) {
-        dst.writeInt(this.x).writeInt(this.z).writeInt(this.level);
+    public void writePosNoLevel(@NonNull ByteBuf dst) {
+        dst.writeInt(this.x).writeInt(this.z);
     }
 
     @Override

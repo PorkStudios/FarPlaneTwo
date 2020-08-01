@@ -22,6 +22,9 @@ package net.daporkchop.fp2.strategy.common;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.RenderMode;
+import net.daporkchop.fp2.strategy.common.client.IFarRenderer;
+import net.daporkchop.fp2.strategy.common.server.IFarPlayerTracker;
+import net.daporkchop.fp2.strategy.common.server.IFarWorld;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
