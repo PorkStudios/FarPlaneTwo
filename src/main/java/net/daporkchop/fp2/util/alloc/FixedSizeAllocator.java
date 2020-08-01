@@ -78,7 +78,7 @@ public class FixedSizeAllocator extends BitSet implements Allocator { //extend B
         this.set(slot);
         this.fromIndex = slot;
 
-        if (slot > this.size)   {
+        if (slot >= this.size)   {
             int oldSize = this.size;
             this.size = this.growFunction.applyAsInt(oldSize);
             checkState(this.size > oldSize, "size (%d) must be greater than previous size (%d)", this.size, oldSize);
