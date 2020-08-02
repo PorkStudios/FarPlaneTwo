@@ -77,8 +77,8 @@ public abstract class MixinWorldServer extends World implements IFarContext, Cac
         this.cachedBlockAccess = Constants.isCubicWorld(this)
                                  ? new CCCachedBlockAccessImpl((WorldServer) (Object) this)
                                  : new VanillaCachedBlockAccessImpl((WorldServer) (Object) this);
-        this.world = mode.createFarWorld((WorldServer) (Object) this);
-        this.tracker = mode.createFarTracker(this.world);
+        this.world = mode.createWorld((WorldServer) (Object) this);
+        this.tracker = mode.createPlayerTracker(this.world);
         this.mode = mode;
     }
 

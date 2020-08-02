@@ -21,22 +21,37 @@
 package net.daporkchop.fp2.strategy;
 
 import io.netty.buffer.ByteBuf;
+import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
-import net.daporkchop.fp2.strategy.common.server.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.client.IFarRenderer;
+import net.daporkchop.fp2.strategy.common.server.IFarGenerator;
+import net.daporkchop.fp2.strategy.common.server.IFarPlayerTracker;
+import net.daporkchop.fp2.strategy.common.server.IFarScaler;
+import net.daporkchop.fp2.strategy.common.server.IFarStorage;
 import net.daporkchop.fp2.strategy.common.server.IFarWorld;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPlayerTracker;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapStorage;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapWorld;
+import net.daporkchop.fp2.strategy.heightmap.gen.exact.CCHeightmapGenerator;
+import net.daporkchop.fp2.strategy.heightmap.gen.exact.VanillaHeightmapGenerator;
+import net.daporkchop.fp2.strategy.heightmap.gen.rough.CWGHeightmapGenerator;
 import net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderer;
+import net.daporkchop.fp2.strategy.heightmap.scale.HeightmapScalerMax;
+import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.util.PriorityCollection;
 import net.daporkchop.lib.common.misc.string.PUnsafeStrings;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+
+import java.util.function.Function;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Defines the different modes that may be used for rendering terrain.
@@ -46,21 +61,42 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  *
  * @author DaPorkchop_
  */
+@Getter
 public enum RenderMode {
     HEIGHTMAP("2D", 5) {
         @Override
-        public IFarWorld createFarWorld(@NonNull WorldServer world) {
+        protected void registerDefaultGenerators() {
+            //rough
+            this.generatorsRough().add(-100, world -> Constants.isCwgWorld(world) ? new CWGHeightmapGenerator() : null);
+
+            //exact
+            this.generatorsExact().add(-100, world -> Constants.isCubicWorld(world) ? new CCHeightmapGenerator() : null);
+            this.generatorsExact().add(100, world -> new VanillaHeightmapGenerator());
+        }
+
+        @Override
+        public IFarScaler createScaler(@NonNull WorldServer world) {
+            return new HeightmapScalerMax();
+        }
+
+        @Override
+        public IFarStorage createStorage(@NonNull WorldServer world) {
+            return new HeightmapStorage(world);
+        }
+
+        @Override
+        public IFarWorld createWorld(@NonNull WorldServer world) {
             return new HeightmapWorld(world);
         }
 
         @Override
-        public IFarPlayerTracker createFarTracker(@NonNull IFarWorld world) {
+        public IFarPlayerTracker createPlayerTracker(@NonNull IFarWorld world) {
             return new HeightmapPlayerTracker(world);
         }
 
         @Override
         @SideOnly(Side.CLIENT)
-        public IFarRenderer createTerrainRenderer(@NonNull WorldClient world) {
+        public IFarRenderer createRenderer(@NonNull WorldClient world) {
             return new HeightmapRenderer(world);
         }
 
@@ -76,18 +112,33 @@ public enum RenderMode {
     },
     SURFACE("3D", -1) {
         @Override
-        public IFarWorld createFarWorld(@NonNull WorldServer world) {
+        protected void registerDefaultGenerators() {
+            //TODO
+        }
+
+        @Override
+        public IFarScaler createScaler(@NonNull WorldServer world) {
             throw new UnsupportedOperationException(); //TODO
         }
 
         @Override
-        public IFarPlayerTracker createFarTracker(@NonNull IFarWorld world) {
+        public IFarStorage createStorage(@NonNull WorldServer world) {
+            throw new UnsupportedOperationException(); //TODO
+        }
+
+        @Override
+        public IFarWorld createWorld(@NonNull WorldServer world) {
+            throw new UnsupportedOperationException(); //TODO
+        }
+
+        @Override
+        public IFarPlayerTracker createPlayerTracker(@NonNull IFarWorld world) {
             throw new UnsupportedOperationException(); //TODO
         }
 
         @Override
         @SideOnly(Side.CLIENT)
-        public IFarRenderer createTerrainRenderer(@NonNull WorldClient world) {
+        public IFarRenderer createRenderer(@NonNull WorldClient world) {
             throw new UnsupportedOperationException(); //TODO
         }
 
@@ -114,22 +165,106 @@ public enum RenderMode {
         return VALUES[ordinal];
     }
 
-    public final int storageVersion;
+    private final PriorityCollection<Function<WorldServer, IFarGenerator>> generatorsRough = new PriorityCollection<>();
+    private final PriorityCollection<Function<WorldServer, IFarGenerator>> generatorsExact = new PriorityCollection<>();
+
+    private final int storageVersion;
 
     RenderMode(@NonNull String name, int storageVersion) {
         PUnsafeStrings.setEnumName(this, name.intern());
-
         this.storageVersion = storageVersion;
+
+        this.registerDefaultGenerators();
     }
 
-    public abstract IFarWorld createFarWorld(@NonNull WorldServer world);
+    protected abstract void registerDefaultGenerators();
 
-    public abstract IFarPlayerTracker createFarTracker(@NonNull IFarWorld world);
+    /**
+     * {@link #generatorsRough}, but with an unchecked generic cast
+     */
+    public <POS extends IFarPos, P extends IFarPiece<POS>> PriorityCollection<Function<WorldServer, IFarGenerator<POS, P>>> uncheckedGeneratorsRough() {
+        return uncheckedCast(this.generatorsRough);
+    }
 
+    /**
+     * {@link #generatorsExact}, but with an unchecked generic cast
+     */
+    public <POS extends IFarPos, P extends IFarPiece<POS>> PriorityCollection<Function<WorldServer, IFarGenerator<POS, P>>> uncheckedGeneratorsExact() {
+        return uncheckedCast(this.generatorsExact);
+    }
+
+    /**
+     * Creates a new {@link IFarScaler} for the given {@link WorldServer}.
+     *
+     * @param world the {@link WorldServer} to create an {@link IFarScaler} for
+     * @return a new {@link IFarScaler} for the given {@link WorldServer}
+     */
+    public abstract IFarScaler createScaler(@NonNull WorldServer world);
+
+    /**
+     * {@link #createScaler(WorldServer)}, but with an unchecked generic cast
+     */
+    public <POS extends IFarPos, P extends IFarPiece<POS>> IFarScaler<POS, P> uncheckedCreateScaler(@NonNull WorldServer world) {
+        return uncheckedCast(this.createScaler(world));
+    }
+
+    /**
+     * Creates a new {@link IFarStorage} for the given {@link WorldServer}.
+     *
+     * @param world the {@link WorldServer} to create an {@link IFarStorage} for
+     * @return a new {@link IFarStorage} for the given {@link WorldServer}
+     */
+    public abstract IFarStorage createStorage(@NonNull WorldServer world);
+
+    /**
+     * {@link #createStorage(WorldServer)}, but with an unchecked generic cast
+     */
+    public <POS extends IFarPos, P extends IFarPiece<POS>> IFarStorage<POS, P> uncheckedCreateStorage(@NonNull WorldServer world) {
+        return uncheckedCast(this.createStorage(world));
+    }
+
+    /**
+     * Creates a new {@link IFarWorld} for the given {@link WorldServer}.
+     *
+     * @param world the {@link WorldServer} to create an {@link IFarWorld} for
+     * @return a new {@link IFarWorld} for the given {@link WorldServer}
+     */
+    public abstract IFarWorld createWorld(@NonNull WorldServer world);
+
+    /**
+     * Creates a new {@link IFarPlayerTracker} for the given {@link IFarWorld}.
+     *
+     * @param world the {@link IFarWorld} to create an {@link IFarPlayerTracker} for
+     * @return a new {@link IFarPlayerTracker} for the given {@link IFarWorld}
+     */
+    public abstract IFarPlayerTracker createPlayerTracker(@NonNull IFarWorld world);
+
+    /**
+     * Creates a new {@link IFarRenderer} for the given {@link WorldClient}.
+     *
+     * @param world the {@link WorldClient} to create an {@link IFarRenderer} for
+     * @return a new {@link IFarRenderer} for the given {@link WorldClient}
+     */
     @SideOnly(Side.CLIENT)
-    public abstract IFarRenderer createTerrainRenderer(@NonNull WorldClient world);
+    public abstract IFarRenderer createRenderer(@NonNull WorldClient world);
 
+    /**
+     * Reads a {@link IFarPiece} from its binary format.
+     * <p>
+     * The format is compatible with {@link IFarPiece#writePiece(ByteBuf)}.
+     *
+     * @param src the {@link ByteBuf} containing the encoded data
+     * @return the decoded {@link IFarPiece}
+     */
     public abstract IFarPiece readPiece(@NonNull ByteBuf src);
 
+    /**
+     * Reads a {@link IFarPos} from its binary format.
+     * <p>
+     * The format is compatible with {@link IFarPos#writePos(ByteBuf)}.
+     *
+     * @param src the {@link ByteBuf} containing the encoded data
+     * @return the decoded {@link IFarPos}
+     */
     public abstract IFarPos readPos(@NonNull ByteBuf src);
 }

@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.util;
 
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
+import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomCubicWorldType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import lombok.NonNull;
@@ -115,6 +116,16 @@ public class Constants {
      */
     public static boolean isCubicWorld(@NonNull World world) {
         return CC && world instanceof ICubicWorld && ((ICubicWorld) world).isCubicWorld();
+    }
+
+    /**
+     * Checks whether or not the given {@link World} uses Cubic World Gen.
+     *
+     * @param world the {@link World} to check
+     * @return whether or not the given {@link World} uses Cubic World Gen
+     */
+    public static boolean isCwgWorld(@NonNull World world) {
+        return isCubicWorld(world) && Constants.CWG && world.getWorldType() instanceof CustomCubicWorldType;
     }
 
     /**

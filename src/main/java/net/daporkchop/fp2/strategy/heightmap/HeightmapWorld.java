@@ -21,12 +21,13 @@
 package net.daporkchop.fp2.strategy.heightmap;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomCubicWorldType;
-import io.netty.buffer.ByteBuf;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.RenderMode;
+import net.daporkchop.fp2.strategy.base.server.AbstractFarWorld;
+import net.daporkchop.fp2.strategy.common.server.IFarGenerator;
 import net.daporkchop.fp2.strategy.common.server.IFarWorld;
 import net.daporkchop.fp2.strategy.heightmap.gen.HeightmapGenerator;
 import net.daporkchop.fp2.strategy.heightmap.gen.exact.CCHeightmapGenerator;
@@ -38,7 +39,7 @@ import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.PriorityExecutor;
 import net.daporkchop.fp2.util.threading.PriorityThreadFactory;
 import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
-import net.daporkchop.fp2.util.threading.persist.IPersistentTask;
+import net.daporkchop.fp2.util.threading.executor.LazyTask;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
 import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
@@ -57,57 +58,12 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public class HeightmapWorld implements IFarWorld<HeightmapPos, HeightmapPiece> {
-    protected final WorldServer world;
-
-    protected final HeightmapGenerator generatorRough;
-    protected final HeightmapGenerator generatorExact;
-    protected final HeightmapScaler scaler;
-
-    protected final HeightmapStorage storage;
-
+public class HeightmapWorld extends AbstractFarWorld<HeightmapPos, HeightmapPiece> {
     @Getter(AccessLevel.NONE)
     protected final Map<HeightmapPos, CompletableFuture<HeightmapPiece>> cache = new ObjObjConcurrentHashMap<>();
 
-    protected final PriorityExecutor executor;
-
     public HeightmapWorld(@NonNull WorldServer world) {
-        this.world = world;
-
-        //TODO: this entire section should be re-done to utilize some form of registry so other mods can add their own rough generators
-
-        //rough generator
-        HeightmapGenerator roughGenerator = null;
-        if (Constants.isCubicWorld(world)) {
-            if (Constants.CWG && world.getWorldType() instanceof CustomCubicWorldType) {
-                roughGenerator = new CWGHeightmapGenerator();
-            }
-        }
-
-        //exact generator
-        if (Constants.isCubicWorld(world)) {
-            this.generatorExact = new CCHeightmapGenerator();
-        } else {
-            this.generatorExact = new VanillaHeightmapGenerator();
-        }
-
-        if (roughGenerator != null) { //rough generator has been set, so use it
-            (this.generatorRough = roughGenerator).init(world);
-        } else { //rough generator wasn't set, use the exact generator for this as well
-            LOGGER.warn("No rough generator exists for world {} (type: {})! Falling back to exact generator, this will have serious performance implications.", world.provider.getDimension(), world.getWorldType());
-            this.generatorRough = this.generatorExact;
-        }
-        this.generatorExact.init(world);
-
-        this.scaler = new HeightmapScalerMax();
-
-        this.storage = new HeightmapStorage(world);
-
-        this.executor = new PriorityExecutor(FP2Config.generationThreads, new PriorityThreadFactory(
-                new ThreadFactoryBuilder().daemon().collapsingId().formatId()
-                        .name(PStrings.fastFormat("FP2 DIM%d Generation Thread #%%d", world.provider.getDimension()))
-                        .priority(Thread.MIN_PRIORITY).build(),
-                Thread.MIN_PRIORITY));
+        super(world);
     }
 
     @Override
@@ -185,7 +141,7 @@ public class HeightmapWorld implements IFarWorld<HeightmapPos, HeightmapPiece> {
         });
     }
 
-    protected HeightmapPiece generatePiece(int x, int z, @NonNull HeightmapGenerator generator) {
+    protected HeightmapPiece generatePiece(int x, int z, @NonNull IFarGenerator<HeightmapPos, HeightmapPiece> generator) {
         CachedBlockAccess world = ((CachedBlockAccess.Holder) this.world).cachedBlockAccess();
         HeightmapPiece piece = new HeightmapPiece(x, z, 0);
         generator.generate(world, piece);
@@ -211,16 +167,6 @@ public class HeightmapWorld implements IFarWorld<HeightmapPos, HeightmapPiece> {
         } finally {
             piece.readLock().unlock();
         }
-    }
-
-    @Override
-    public void close() throws IOException {
-        this.executor.shutdown((task, priority) -> {
-            if (task instanceof IPersistentTask) {
-                throw new IllegalStateException("we currently can't actually persist tasks :|");
-            }
-        });
-        this.storage.close();
     }
 
     @Override

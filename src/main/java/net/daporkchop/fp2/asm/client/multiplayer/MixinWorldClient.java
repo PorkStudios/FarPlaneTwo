@@ -49,7 +49,7 @@ public abstract class MixinWorldClient extends World implements IFarContext {
 
     @Override
     public void init(@NonNull RenderMode mode) {
-        this.renderer = mode.createTerrainRenderer((WorldClient) (Object) this);
+        this.renderer = mode.createRenderer((WorldClient) (Object) this);
         this.mode = mode;
     }
 

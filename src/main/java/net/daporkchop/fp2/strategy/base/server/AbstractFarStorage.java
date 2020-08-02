@@ -93,7 +93,7 @@ public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiec
             //unpack
             boolean release = true;
             try {
-                if (packed.readInt() == this.mode().storageVersion) {
+                if (packed.readInt() == this.mode().storageVersion()) {
                     int uncompressedSize = packed.readInt();
                     buf = PooledByteBufAllocator.DEFAULT.buffer(uncompressedSize, uncompressedSize);
                     try {
@@ -136,7 +136,7 @@ public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiec
                 }
 
                 packed = PooledByteBufAllocator.DEFAULT.ioBuffer(8 + Zstd.PROVIDER.compressBound(buf.readableBytes()))
-                        .writeInt(RenderMode.HEIGHTMAP.storageVersion)
+                        .writeInt(RenderMode.HEIGHTMAP.storageVersion())
                         .writeInt(buf.readableBytes());
                 checkState(ZSTD_DEF.get().compress(buf, packed));
             } finally {

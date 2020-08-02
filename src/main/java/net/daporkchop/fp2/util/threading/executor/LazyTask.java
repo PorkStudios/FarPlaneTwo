@@ -18,14 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.persist;
+package net.daporkchop.fp2.util.threading.executor;
 
-import io.netty.buffer.ByteBuf;
-import lombok.NonNull;
+import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
  */
-public interface IPersistentTask extends Runnable {
-    void write(@NonNull ByteBuf buf);
+public interface LazyTask<K extends Comparable<K>> {
+    K key();
+
+    Stream<? extends LazyTask<K>> run();
 }
