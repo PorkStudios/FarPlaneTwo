@@ -18,34 +18,41 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.executor;
+package net.daporkchop.fp2.strategy.base.server.task;
 
-import io.netty.util.concurrent.Promise;
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.lib.concurrent.PFuture;
-
-import java.util.List;
-import java.util.stream.Stream;
+import net.daporkchop.fp2.strategy.base.server.AbstractFarWorld;
+import net.daporkchop.fp2.strategy.base.server.TaskKey;
+import net.daporkchop.fp2.strategy.common.IFarPiece;
+import net.daporkchop.fp2.strategy.common.IFarPos;
+import net.daporkchop.fp2.util.threading.executor.LazyTask;
+import net.daporkchop.lib.concurrent.future.DefaultPFuture;
 
 /**
  * @author DaPorkchop_
  */
-public interface LazyTask<K extends LazyKey<K>, T, R> extends PFuture<R> {
-    K key();
+@Getter
+public abstract class AbstractPieceTask<POS extends IFarPos, P extends IFarPiece<POS>, T, R> extends DefaultPFuture<R> implements LazyTask<TaskKey, T, R> {
+    protected final AbstractFarWorld<POS, P> world;
+    protected final TaskKey key;
 
-    Stream<? extends LazyTask<K, ?, T>> before(@NonNull K key);
+    public AbstractPieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key) {
+        super(world.nettyExecutor());
 
-    R run(@NonNull List<T> params, @NonNull LazyPriorityExecutor<K> executor);
+        this.world = world;
+        this.key = key;
+    }
 
-    /**
-     * @see Promise#setSuccess(Object)
-     */
-    LazyTask<K, T, R> setSuccess(R result);
+    @Override
+    public AbstractPieceTask<POS, P, T, R> setSuccess(R result) {
+        super.setSuccess(result);
+        return this;
+    }
 
-    /**
-     * @see Promise#setFailure(Throwable)
-     */
-    LazyTask<K, T, R> setFailure(Throwable cause);
-
-    void cancel();
+    @Override
+    public AbstractPieceTask<POS, P, T, R> setFailure(Throwable cause) {
+        super.setFailure(cause);
+        return this;
+    }
 }

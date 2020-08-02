@@ -22,25 +22,26 @@ package net.daporkchop.fp2.util.threading.executor;
 
 import lombok.NonNull;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-public class LazyPriorityExecutor<K extends Comparable<K>> {
+public class LazyPriorityExecutor<K extends LazyKey<K>> {
     protected final Thread[] threads;
 
-    protected final Comparator<LazyTask<K>> comparator;
-    protected final BlockingQueue<LazyTask<K>> queue;
+    protected final Comparator<LazyTask<K, ?, ?>> comparator;
+    protected final BlockingQueue<LazyTask<K, ?, ?>> queue;
 
     protected volatile boolean running;
 
@@ -50,26 +51,88 @@ public class LazyPriorityExecutor<K extends Comparable<K>> {
 
         this.threads = new Thread[positive(threads, "threads")];
 
-        Runnable worker = () -> {
-            while (this.running) {
-                try {
-                    Stream<? extends LazyTask<K>> afterStream = this.queue.take().run();
-                    if (afterStream != null) {
-                        this.queue.addAll(afterStream.collect(Collectors.toList()));
-                    }
-                } catch (InterruptedException e) {
-                    //gracefully exit on interrupt
-                } catch (Exception e)   {
-                    e.printStackTrace();
-                }
-            }
-        };
+        Runnable worker = new Worker();
         for (int i = 0; i < threads; i++) {
             (this.threads[i] = threadFactory.newThread(worker)).start();
         }
     }
 
-    public void submit(@NonNull LazyTask<K> task) {
+    public void submit(@NonNull LazyTask<K, ?, ?> task) {
         this.queue.add(task);
+    }
+
+    public void submit(@NonNull Collection<LazyTask<K, ?, ?>> tasks) {
+        this.queue.addAll(tasks);
+    }
+
+    protected class Worker implements Runnable {
+        @Override
+        public void run() {
+            while (LazyPriorityExecutor.this.running) {
+                try {
+                    this.runSingle();
+                } catch (InterruptedException e) {
+                    //gracefully exit on interrupt
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        protected void runSingle() throws InterruptedException {
+            this.runLazy(LazyPriorityExecutor.this.queue.take());
+        }
+
+        protected <T, R> void runLazy(@NonNull LazyTask<K, T, R> task) throws InterruptedException {
+            try {
+                List<T> params = this.runBefore(task.before(task.key().raiseTie()).collect(Collectors.toList()));
+
+                R val = task.run(params, LazyPriorityExecutor.this);
+                task.setSuccess(val);
+            } catch (InterruptedException e) {
+                throw e; //rethrow
+            } catch (Exception e) {
+                e.printStackTrace();
+                task.setFailure(task.cause());
+            }
+        }
+
+        protected <T> List<T> runBefore(@NonNull List<LazyTask<K, ?, T>> tasks) throws Exception {
+            if (tasks.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            List<T> list = new ArrayList<>(tasks.size());
+            for (int i = 0, size = tasks.size(); i < size; i++) {
+                list.add(null);
+                int _i = i; //aaaaaa
+                tasks.get(i).thenAccept(v -> list.set(_i, v)); //store in list
+            }
+
+            LazyPriorityExecutor.this.queue.addAll(tasks);
+            try {
+                do {
+                    this.runSingle();
+                } while (this.areAnyIncomplete(tasks));
+            } catch (Exception e) {
+                if (!(e instanceof InterruptedException)) {
+                    LazyPriorityExecutor.this.queue.removeAll(tasks.stream()
+                            .filter(f -> !f.isDone())
+                            .peek(LazyTask::cancel)
+                            .collect(Collectors.toList()));
+                }
+                throw e;
+            }
+            return list;
+        }
+
+        protected <V> boolean areAnyIncomplete(@NonNull List<LazyTask<K, ?, V>> tasks) {
+            for (int i = 0, size = tasks.size(); i < size; i++) {
+                if (!tasks.get(i).isDone()) {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 }

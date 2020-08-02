@@ -20,10 +20,13 @@
 
 package net.daporkchop.fp2.strategy.base.server;
 
+import com.google.common.cache.LoadingCache;
+import io.netty.util.concurrent.EventExecutor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.server.IFarGenerator;
@@ -35,10 +38,16 @@ import net.daporkchop.fp2.util.threading.PriorityThreadFactory;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
+import net.daporkchop.lib.concurrent.PExecutors;
+import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
 import net.minecraft.world.WorldServer;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 
 import static net.daporkchop.fp2.util.Constants.*;
 
@@ -56,9 +65,16 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
     protected final IFarStorage<POS, P> storage;
 
     protected final PriorityExecutor executor;
+    protected final EventExecutor nettyExecutor;
 
-    public AbstractFarWorld(@NonNull WorldServer world) {
+    protected final Map<POS, P> cache = new ObjObjConcurrentHashMap<>();
+    protected final Set<POS> queuedPositions = ConcurrentHashMap.newKeySet();
+
+    protected final RenderMode mode;
+
+    public AbstractFarWorld(@NonNull WorldServer world, @NonNull RenderMode mode) {
         this.world = world;
+        this.mode = mode;
 
         IFarGenerator<POS, P> generatorRough = this.mode().<POS, P>uncheckedGeneratorsRough().stream()
                 .map(f -> f.apply(world))
@@ -94,6 +110,13 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
                         .name(PStrings.fastFormat("FP2 DIM%d Generation Thread #%%d", world.provider.getDimension()))
                         .priority(Thread.MIN_PRIORITY).build(),
                 Thread.MIN_PRIORITY));
+        this.nettyExecutor = PExecutors.toNettyExecutor(this.executor);
+    }
+
+    @Override
+    public P getPieceLazy(@NonNull POS pos) {
+        //TODO
+        return null;
     }
 
     @Override
@@ -106,28 +129,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
         this.storage.close();
     }
 
-    public enum Stage {
-        ROUGH_GENERATE,
-        ROUGH_SCALE,
-        EXACT;
-    }
-
-    @RequiredArgsConstructor
-    @Getter
-    public static class Key implements Comparable<Key> {
-        @NonNull
-        protected final Stage stage;
-        protected final int level;
-
-        @Override
-        public int compareTo(Key o) {
-            int d = Integer.compare(this.level, o.level);
-            if (d != 0) {
-                return d;
-            }
-            return Integer.compare(this.stage.ordinal(), o.stage.ordinal());
-        }
-    }
 }
 
 

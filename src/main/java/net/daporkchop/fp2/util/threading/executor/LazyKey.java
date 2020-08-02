@@ -20,32 +20,17 @@
 
 package net.daporkchop.fp2.util.threading.executor;
 
-import io.netty.util.concurrent.Promise;
-import lombok.NonNull;
-import net.daporkchop.lib.concurrent.PFuture;
-
-import java.util.List;
-import java.util.stream.Stream;
-
 /**
  * @author DaPorkchop_
  */
-public interface LazyTask<K extends LazyKey<K>, T, R> extends PFuture<R> {
-    K key();
-
-    Stream<? extends LazyTask<K, ?, T>> before(@NonNull K key);
-
-    R run(@NonNull List<T> params, @NonNull LazyPriorityExecutor<K> executor);
+public interface LazyKey<K extends LazyKey<K>> extends Comparable<K> {
+    /**
+     * @return a key with a higher priority in the event of a tie, but otherwise identical to this key
+     */
+    K raiseTie();
 
     /**
-     * @see Promise#setSuccess(Object)
+     * @return a key with a lower priority in the event of a tie, but otherwise identical to this key
      */
-    LazyTask<K, T, R> setSuccess(R result);
-
-    /**
-     * @see Promise#setFailure(Throwable)
-     */
-    LazyTask<K, T, R> setFailure(Throwable cause);
-
-    void cancel();
+    K lowerTie();
 }

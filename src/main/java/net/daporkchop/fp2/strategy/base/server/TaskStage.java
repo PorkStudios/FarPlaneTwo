@@ -18,34 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.executor;
+package net.daporkchop.fp2.strategy.base.server;
 
-import io.netty.util.concurrent.Promise;
-import lombok.NonNull;
-import net.daporkchop.lib.concurrent.PFuture;
-
-import java.util.List;
-import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
 
 /**
  * @author DaPorkchop_
  */
-public interface LazyTask<K extends LazyKey<K>, T, R> extends PFuture<R> {
-    K key();
+//TODO: use lombok
+public enum TaskStage {
+    LOAD(true),
+    ROUGH_GENERATE(false),
+    ROUGH_SCALE(false),
+    EXACT(false);
 
-    Stream<? extends LazyTask<K, ?, T>> before(@NonNull K key);
+    public final boolean first;
 
-    R run(@NonNull List<T> params, @NonNull LazyPriorityExecutor<K> executor);
-
-    /**
-     * @see Promise#setSuccess(Object)
-     */
-    LazyTask<K, T, R> setSuccess(R result);
-
-    /**
-     * @see Promise#setFailure(Throwable)
-     */
-    LazyTask<K, T, R> setFailure(Throwable cause);
-
-    void cancel();
+    TaskStage(boolean first)    {
+        this.first = first;
+    }
 }

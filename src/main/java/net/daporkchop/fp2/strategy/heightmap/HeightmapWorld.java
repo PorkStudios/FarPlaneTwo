@@ -63,7 +63,7 @@ public class HeightmapWorld extends AbstractFarWorld<HeightmapPos, HeightmapPiec
     protected final Map<HeightmapPos, CompletableFuture<HeightmapPiece>> cache = new ObjObjConcurrentHashMap<>();
 
     public HeightmapWorld(@NonNull WorldServer world) {
-        super(world);
+        super(world, RenderMode.HEIGHTMAP);
     }
 
     @Override
@@ -85,7 +85,7 @@ public class HeightmapWorld extends AbstractFarWorld<HeightmapPos, HeightmapPiec
                 .thenAcceptAsync(((IFarContext) this.world).fp2_tracker()::pieceChanged);*/
     }
 
-    @Override
+    //@Override
     public CompletableFuture<HeightmapPiece> getPiece(HeightmapPos key) {
         return this.cache.computeIfAbsent(key, pos -> {
             CompletableFuture<HeightmapPiece> future = new CompletableFuture<>();
@@ -167,10 +167,5 @@ public class HeightmapWorld extends AbstractFarWorld<HeightmapPos, HeightmapPiec
         } finally {
             piece.readLock().unlock();
         }
-    }
-
-    @Override
-    public RenderMode mode() {
-        return RenderMode.HEIGHTMAP;
     }
 }

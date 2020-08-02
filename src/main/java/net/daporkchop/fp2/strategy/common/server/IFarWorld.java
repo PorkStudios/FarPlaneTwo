@@ -22,13 +22,12 @@ package net.daporkchop.fp2.strategy.common.server;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.RenderMode;
-import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
+import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.minecraft.world.WorldServer;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * @author DaPorkchop_
@@ -38,11 +37,13 @@ public interface IFarWorld<POS extends IFarPos, P extends IFarPiece<POS>> extend
 
     /**
      * Gets the {@link IFarPiece} at the given position.
+     * <p>
+     * If the piece is already loaded, it will be returned. Otherwise, it will be queued for loading and this method will return {@code null}.
      *
      * @param pos the position of the piece to get
-     * @return a {@link CompletableFuture} which will be completed with the piece as soon as it is available
+     * @return the piece, or {@code null} if it isn't loaded yet
      */
-    CompletableFuture<P> getPiece(@NonNull POS pos);
+    P getPieceLazy(@NonNull POS pos);
 
     /**
      * Fired whenever a block state changes.
