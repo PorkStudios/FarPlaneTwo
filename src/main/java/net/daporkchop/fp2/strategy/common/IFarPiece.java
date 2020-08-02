@@ -25,6 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.server.IFarGenerator;
 import net.daporkchop.fp2.strategy.common.IFarPos;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.concurrent.locks.ReadWriteLock;
 
@@ -61,6 +62,12 @@ public interface IFarPiece<POS extends IFarPos> extends ReadWriteLock {
      * @throws IllegalArgumentException if the new timestamp is not greater than the current timestamp
      */
     void updateTimestamp(long timestamp) throws IllegalArgumentException;
+
+    boolean isDirty();
+
+    void markDirty();
+
+    boolean clearDirty();
 
     /**
      * Writes this piece to the given {@link ByteBuf}.

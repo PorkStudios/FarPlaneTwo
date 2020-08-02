@@ -109,6 +109,17 @@ public enum RenderMode {
         public IFarPos readPos(@NonNull ByteBuf src) {
             return new HeightmapPos(src);
         }
+
+        @Override
+        public IFarPiece piece(@NonNull IFarPos posIn) {
+            HeightmapPos pos = (HeightmapPos) posIn;
+            return new HeightmapPiece(pos.x(), pos.z(), pos.level());
+        }
+
+        @Override
+        public IFarPiece[] pieceArray(int size) {
+            return new HeightmapPiece[size];
+        }
     },
     SURFACE("3D", -1) {
         @Override
@@ -149,6 +160,16 @@ public enum RenderMode {
 
         @Override
         public IFarPos readPos(@NonNull ByteBuf src) {
+            throw new UnsupportedOperationException(); //TODO
+        }
+
+        @Override
+        public IFarPiece piece(@NonNull IFarPos pos) {
+            throw new UnsupportedOperationException(); //TODO
+        }
+
+        @Override
+        public IFarPiece[] pieceArray(int size) {
             throw new UnsupportedOperationException(); //TODO
         }
     };
@@ -267,4 +288,8 @@ public enum RenderMode {
      * @return the decoded {@link IFarPos}
      */
     public abstract IFarPos readPos(@NonNull ByteBuf src);
+
+    public abstract IFarPiece piece(@NonNull IFarPos pos);
+
+    public abstract IFarPiece[] pieceArray(int size);
 }

@@ -185,14 +185,17 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapP
         return new HeightmapPos(this);
     }
 
+    @Override
     public boolean isDirty() {
         return this.dirty != 0;
     }
 
+    @Override
     public void markDirty() {
         this.dirty = 1;
     }
 
+    @Override
     public boolean clearDirty() {
         return PUnsafe.compareAndSwapInt(this, DIRTY_OFFSET, 1, 0);
     }

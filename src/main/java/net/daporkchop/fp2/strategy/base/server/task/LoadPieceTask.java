@@ -20,61 +20,43 @@
 
 package net.daporkchop.fp2.strategy.base.server.task;
 
-import io.netty.util.concurrent.GenericFutureListener;
-import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.base.server.AbstractFarWorld;
 import net.daporkchop.fp2.strategy.base.server.TaskKey;
+import net.daporkchop.fp2.strategy.base.server.TaskStage;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
+import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
-import net.daporkchop.lib.concurrent.PExecutors;
-import net.daporkchop.lib.concurrent.future.DefaultPFuture;
+
+import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-public abstract class AbstractPieceTask<POS extends IFarPos, P extends IFarPiece<POS>, T> extends DefaultPFuture<P> implements LazyTask<TaskKey, T, P> {
-    protected final AbstractFarWorld<POS, P> world;
-    protected final TaskKey key;
-    protected final POS pos;
-
-    public AbstractPieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos) {
-        super(PExecutors.FORKJOINPOOL);
-
-        this.world = world;
-        this.key = key;
-        this.pos = pos;
+public class LoadPieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractPieceTask<POS, P, Void> {
+    public LoadPieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos) {
+        super(world, key, pos);
     }
 
     @Override
-    public AbstractPieceTask<POS, P, T> setSuccess(@NonNull P result) {
-        super.setSuccess(result);
-        return this;
+    public Stream<? extends LazyTask<TaskKey, ?, Void>> before(@NonNull TaskKey key) {
+        return Stream.empty();
     }
 
     @Override
-    public AbstractPieceTask<POS, P, T> setFailure(Throwable cause) {
-        super.setFailure(cause);
-        return this;
-    }
-
-    @Override
-    public void cancel() {
-        super.cancel(false);
-    }
-
-    public AbstractPieceTask<POS, P, T> thenCopyStatusTo(@NonNull AbstractPieceTask<POS, P, ?> dst) {
-        this.addListener((GenericFutureListener<AbstractPieceTask<POS, P, T>>) f -> {
-            if (f.isSuccess()) {
-                dst.setSuccess(f.getNow());
-            } else if (f.isCancelled()) {
-                dst.cancel();
+    public P run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) {
+        P piece = this.world.storage().load(this.pos);
+        if (piece == null) {
+            if (this.pos.level() == 0 || this.world.generatorRough().supportsLowResolution()) {
+                //the piece can be generated using the rough generator
+                executor.submit(new RoughGeneratePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_GENERATE), this.pos).thenCopyStatusTo(this));
             } else {
-                dst.setFailure(f.cause());
+                //the piece requires that the pieces below it be generated so that it can be scaled down
+                executor.submit(new RoughScalePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_SCALE), this.pos).thenCopyStatusTo(this));
             }
-        });
-        return this;
+        }
+        return piece;
     }
 }

@@ -20,13 +20,13 @@
 
 package net.daporkchop.fp2.strategy.base.server;
 
-import com.google.common.cache.LoadingCache;
 import io.netty.util.concurrent.EventExecutor;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.RenderMode;
+import net.daporkchop.fp2.strategy.base.server.task.LoadPieceTask;
+import net.daporkchop.fp2.strategy.base.server.task.SavePieceTask;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.server.IFarGenerator;
@@ -35,6 +35,7 @@ import net.daporkchop.fp2.strategy.common.server.IFarStorage;
 import net.daporkchop.fp2.strategy.common.server.IFarWorld;
 import net.daporkchop.fp2.util.threading.PriorityExecutor;
 import net.daporkchop.fp2.util.threading.PriorityThreadFactory;
+import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
@@ -47,7 +48,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 
 import static net.daporkchop.fp2.util.Constants.*;
 
@@ -64,7 +64,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
 
     protected final IFarStorage<POS, P> storage;
 
-    protected final PriorityExecutor executor;
+    protected final LazyPriorityExecutor<TaskKey> executor;
     protected final EventExecutor nettyExecutor;
 
     protected final Map<POS, P> cache = new ObjObjConcurrentHashMap<>();
@@ -105,27 +105,37 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
         this.scaler = this.mode().uncheckedCreateScaler(world);
         this.storage = this.mode().uncheckedCreateStorage(world);
 
-        this.executor = new PriorityExecutor(FP2Config.generationThreads, new PriorityThreadFactory(
+        this.executor = new LazyPriorityExecutor<>(FP2Config.generationThreads, new PriorityThreadFactory(
                 new ThreadFactoryBuilder().daemon().collapsingId().formatId()
                         .name(PStrings.fastFormat("FP2 DIM%d Generation Thread #%%d", world.provider.getDimension()))
                         .priority(Thread.MIN_PRIORITY).build(),
                 Thread.MIN_PRIORITY));
-        this.nettyExecutor = PExecutors.toNettyExecutor(this.executor);
+        this.nettyExecutor = this.executor.maxPriorityExecutor();
     }
 
     @Override
     public P getPieceLazy(@NonNull POS pos) {
+        P piece = this.cache.getOrDefault(pos, null);
+        if (piece == null && this.queuedPositions.add(pos)) {
+            //piece is not in cache and was newly marked as queued
+            TaskKey key = new TaskKey(TaskStage.LOAD, pos.level());
+            this.executor.submit(new LoadPieceTask<>(this, key, pos));
+        }
+        return piece;
+    }
+
+    public void savePiece(@NonNull P p) {
+        this.executor.submit(new SavePieceTask<>(this, new TaskKey(TaskStage.SAVE, -1), p.pos(), p));
+    }
+
+    @Override
+    public void blockChanged(int x, int y, int z) {
         //TODO
-        return null;
     }
 
     @Override
     public void close() throws IOException {
-        this.executor.shutdown((task, priority) -> {
-            if (task instanceof LazyTask) {
-                throw new IllegalStateException("we currently can't actually persist tasks :|");
-            }
-        });
+        this.executor.shutdown();
         this.storage.close();
     }
 

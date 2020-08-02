@@ -18,18 +18,40 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap;
+package net.daporkchop.fp2.strategy.base.server.task;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.base.server.AbstractFarWorld;
-import net.minecraft.world.WorldServer;
+import net.daporkchop.fp2.strategy.base.server.TaskKey;
+import net.daporkchop.fp2.strategy.base.server.TaskStage;
+import net.daporkchop.fp2.strategy.common.IFarPiece;
+import net.daporkchop.fp2.strategy.common.IFarPos;
+import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
+import net.daporkchop.fp2.util.threading.executor.LazyTask;
+
+import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
  */
-public class HeightmapWorld extends AbstractFarWorld<HeightmapPos, HeightmapPiece> {
-    public HeightmapWorld(@NonNull WorldServer world) {
-        super(world, RenderMode.HEIGHTMAP);
+public class LoadAndThenStopPieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractPieceTask<POS, P, Void> {
+    public LoadAndThenStopPieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos) {
+        super(world, key, pos);
+    }
+
+    @Override
+    public Stream<? extends LazyTask<TaskKey, ?, Void>> before(@NonNull TaskKey key) {
+        return Stream.empty();
+    }
+
+    @Override
+    public P run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) {
+        P piece = this.world.storage().load(this.pos);
+        if (piece == null)  {
+            //manually set success value as null because otherwise it will never be marked as complete
+            this.setSuccess(null);
+        }
+        return piece;
     }
 }

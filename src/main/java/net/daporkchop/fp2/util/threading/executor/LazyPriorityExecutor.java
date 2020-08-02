@@ -20,7 +20,11 @@
 
 package net.daporkchop.fp2.util.threading.executor;
 
+import io.netty.util.concurrent.EventExecutor;
 import lombok.NonNull;
+import net.daporkchop.lib.concurrent.PExecutors;
+import net.daporkchop.lib.concurrent.future.DefaultPFuture;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,9 +32,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.function.ObjIntConsumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -46,7 +53,7 @@ public class LazyPriorityExecutor<K extends LazyKey<K>> {
     protected volatile boolean running;
 
     public LazyPriorityExecutor(int threads, @NonNull ThreadFactory threadFactory) {
-        this.comparator = Comparator.comparing(LazyTask::key);
+        this.comparator = (a, b) -> a.key() != null ? a.key().compareTo(b.key()) : -1;
         this.queue = new PriorityBlockingQueue<>(256, this.comparator);
 
         this.threads = new Thread[positive(threads, "threads")];
@@ -63,6 +70,80 @@ public class LazyPriorityExecutor<K extends LazyKey<K>> {
 
     public void submit(@NonNull Collection<LazyTask<K, ?, ?>> tasks) {
         this.queue.addAll(tasks);
+    }
+
+    public void shutdown() {
+        this.running = false;
+
+        //interrupt all workers
+        for (Thread t : this.threads) {
+            t.interrupt();
+        }
+
+        //wait for all workers to shut down
+        for (Thread t : this.threads) {
+            do {
+                try {
+                    t.join();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            } while (t.isAlive());
+        }
+    }
+
+    public EventExecutor maxPriorityExecutor()   {
+        class MaxPriorityExecutor implements Executor {
+            protected final EventExecutor nettyExecutor = PExecutors.toNettyExecutor(this);
+
+            @Override
+            public void execute(@NonNull Runnable task) {
+                class RunnableWrapper extends DefaultPFuture<Void> implements LazyTask<K,Void, Void> {
+                    protected final Runnable task;
+
+                    public RunnableWrapper(@NonNull Runnable task) {
+                        super(MaxPriorityExecutor.this.nettyExecutor);
+
+                        this.task = task;
+                    }
+
+                    @Override
+                    public K key() {
+                        return null;
+                    }
+
+                    @Override
+                    public Stream<? extends LazyTask<K, ?, Void>> before(@NonNull K key) {
+                        return Stream.empty();
+                    }
+
+                    @Override
+                    public Void run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<K> executor) {
+                        this.task.run();
+                        return null;
+                    }
+
+                    @Override
+                    public RunnableWrapper setSuccess(Void result) {
+                        super.setSuccess(result);
+                        return this;
+                    }
+
+                    @Override
+                    public RunnableWrapper setFailure(Throwable cause) {
+                        super.setFailure(cause);
+                        return this;
+                    }
+
+                    @Override
+                    public void cancel() {
+                        super.cancel(false);
+                    }
+                }
+                LazyPriorityExecutor.this.submit(new RunnableWrapper(task));
+            }
+        }
+        return new MaxPriorityExecutor().nettyExecutor;
     }
 
     protected class Worker implements Runnable {
@@ -88,7 +169,9 @@ public class LazyPriorityExecutor<K extends LazyKey<K>> {
                 List<T> params = this.runBefore(task.before(task.key().raiseTie()).collect(Collectors.toList()));
 
                 R val = task.run(params, LazyPriorityExecutor.this);
-                task.setSuccess(val);
+                if (val != null)    {
+                    task.setSuccess(val);
+                }
             } catch (InterruptedException e) {
                 throw e; //rethrow
             } catch (Exception e) {

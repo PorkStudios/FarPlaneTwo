@@ -20,6 +20,8 @@
 
 package net.daporkchop.fp2.strategy.base.server;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.util.threading.executor.LazyKey;
@@ -27,6 +29,7 @@ import net.daporkchop.fp2.util.threading.executor.LazyKey;
 /**
  * @author DaPorkchop_
  */
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public final class TaskKey implements LazyKey<TaskKey> {
     @NonNull
@@ -36,12 +39,6 @@ public final class TaskKey implements LazyKey<TaskKey> {
 
     public TaskKey(@NonNull TaskStage stage, int level) {
         this(stage, level, 0);
-    }
-
-    TaskKey(@NonNull TaskStage stage, int level, int tieBreak) {
-        this.stage = stage;
-        this.level = level;
-        this.tieBreak = tieBreak;
     }
 
     @Override
@@ -62,6 +59,18 @@ public final class TaskKey implements LazyKey<TaskKey> {
             d = Integer.compare(this.tieBreak, o.tieBreak);
         }
         return d;
+    }
+
+    public TaskKey withStage(@NonNull TaskStage stage)  {
+        return new TaskKey(stage, this.level, this.tieBreak);
+    }
+
+    public TaskKey withStageLevel(@NonNull TaskStage stage, int level)  {
+        return new TaskKey(stage, level, this.tieBreak);
+    }
+
+    public TaskKey withLevel(int level)  {
+        return new TaskKey(this.stage, level, this.tieBreak);
     }
 
     @Override

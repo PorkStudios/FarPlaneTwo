@@ -18,21 +18,35 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.base.server;
+package net.daporkchop.fp2.strategy.base.server.task;
 
-import lombok.RequiredArgsConstructor;
+import lombok.NonNull;
+import net.daporkchop.fp2.strategy.base.server.AbstractFarWorld;
+import net.daporkchop.fp2.strategy.base.server.TaskKey;
+import net.daporkchop.fp2.strategy.base.server.TaskStage;
+import net.daporkchop.fp2.strategy.common.IFarPiece;
+import net.daporkchop.fp2.strategy.common.IFarPos;
+import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
+import net.daporkchop.fp2.util.threading.executor.LazyTask;
+
+import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public enum TaskStage {
-    SAVE(true),
-    LOAD(true),
-    EXACT_GENERATE(false),
-    EXACT_SCALE(false),
-    ROUGH_GENERATE(false),
-    ROUGH_SCALE(false);
+public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractPieceTask<POS, P, Void> {
+    public RoughGeneratePieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos) {
+        super(world, key, pos);
+    }
 
-    public final boolean first;
+    @Override
+    public Stream<? extends LazyTask<TaskKey, ?, Void>> before(@NonNull TaskKey key) {
+        return Stream.empty();
+    }
+
+    @Override
+    public P run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) {
+        return null; //TODO: this
+    }
 }
