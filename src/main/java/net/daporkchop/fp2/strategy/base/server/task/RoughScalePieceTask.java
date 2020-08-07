@@ -23,13 +23,13 @@ package net.daporkchop.fp2.strategy.base.server.task;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.base.server.AbstractFarWorld;
 import net.daporkchop.fp2.strategy.base.server.TaskKey;
+import net.daporkchop.fp2.strategy.base.server.TaskPhase;
 import net.daporkchop.fp2.strategy.base.server.TaskStage;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -68,32 +68,31 @@ public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> 
     @Override
     public P run(@NonNull List<P> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
         P piece = this.world.getRawPieceBlocking(this.pos);
+        long newTimestamp = IFarPiece.pieceRough(this.targetDetail);
+        if (piece.timestamp() >= newTimestamp) {
+            return piece;
+        }
 
         P[] srcs = params.toArray(uncheckedCast(this.world.mode().pieceArray(params.size())));
         for (int i = 0, len = srcs.length; i < len; i++) {
             srcs[i].readLock().lock();
         }
+        piece.writeLock().lock();
         try {
-            long newTimestamp = Arrays.stream(srcs).mapToLong(IFarPiece::timestamp).max().orElse(IFarPiece.PIECE_EMPTY);
-
-            piece.writeLock().lock();
-            try {
-                if (piece.timestamp() >= newTimestamp) {
-                    return piece;
-                }
-
-                this.world.scaler().scale(srcs, piece);
-                piece.updateTimestamp(newTimestamp);
-
-                this.world.savePiece(piece);
-            } finally {
-                piece.writeLock().unlock();
+            if (piece.timestamp() >= newTimestamp) {
+                return piece;
             }
+
+            this.world.scaler().scale(srcs, piece);
+            piece.updateTimestamp(newTimestamp);
         } finally {
+            piece.writeLock().unlock();
             for (int i = 0, len = srcs.length; i < len; i++) {
                 srcs[i].readLock().unlock();
             }
         }
+
+        this.world.pieceChanged(piece, this.pos, newTimestamp);
 
         return piece;
     }

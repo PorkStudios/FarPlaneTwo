@@ -83,7 +83,7 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapP
 
     protected final IntBuffer data = Constants.createIntBuffer(ENTRY_COUNT * 4);
 
-    protected volatile long timestamp = -1L;
+    protected volatile long timestamp = PIECE_EMPTY;
 
     @Getter(AccessLevel.NONE)
     protected transient volatile int dirty = 0;
@@ -104,7 +104,7 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapP
 
     @Override
     public void writePiece(@NonNull ByteBuf dst) {
-        checkState(this.timestamp >= 0L, "piece does not contain any data!");
+        checkState(this.timestamp != PIECE_EMPTY, "piece does not contain any data!");
         this.writePos(dst);
 
         dst.writeLong(this.timestamp);

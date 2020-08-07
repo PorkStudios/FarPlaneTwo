@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.strategy.common.server;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
+import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
 import net.minecraft.world.WorldServer;
 
@@ -55,4 +55,9 @@ public interface IFarGenerator<POS extends IFarPos, P extends IFarPiece<POS>> {
      * @return whether or not this generator can generate pieces at low resolution
      */
     boolean supportsLowResolution();
+
+    /**
+     * @return whether or not low-resolution pieces are inaccurate
+     */
+    boolean isLowResolutionInaccurate();
 }

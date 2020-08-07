@@ -211,7 +211,7 @@ jar {
 
 task preIntellijRuns {
     doFirst {
-        StreamSupport.stream(configurations.compile.spliterator(), false).filter({
+        StreamSupport.stream(configurations.annotationProcessor.spliterator(), false).filter({
             it.name.contains("mixin")
         }).findAny().ifPresent({
             minecraft.clientJvmArgs += "-javaagent:" + it.absolutePath

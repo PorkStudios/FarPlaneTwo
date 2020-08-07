@@ -44,7 +44,7 @@ public final class TaskKey implements LazyKey<TaskKey> {
     @Override
     public int compareTo(TaskKey o) {
         int d;
-        if (this.stage.first || o.stage.first) {
+        if (this.stage.first() || o.stage.first()) {
             d = Integer.compare(this.stage.ordinal(), o.stage.ordinal());
             if (d == 0) {
                 d = Integer.compare(this.level, o.level);

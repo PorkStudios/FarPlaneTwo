@@ -90,4 +90,9 @@ public class CWGHeightmapGenerator extends AbstractHeightmapGenerator {
     public boolean supportsLowResolution() {
         return false; //TODO
     }
+
+    @Override
+    public boolean isLowResolutionInaccurate() {
+        return true;
+    }
 }

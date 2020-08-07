@@ -51,6 +51,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -135,9 +136,22 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
         }
     }
 
-    public void savePiece(@NonNull P p) {
-        POS pos = p.pos();
-        this.executor.submit(new SavePieceTask<>(this, new TaskKey(TaskStage.SAVE, pos.level()), pos, p));
+    public void pieceChanged(@NonNull P piece, @NonNull POS pos, long newTimestamp) {
+        checkArg(newTimestamp != IFarPiece.PIECE_EMPTY);
+        if (piece.isDirty()) { //only do stuff if the piece changed
+            //save the piece
+            this.executor.submit(new SavePieceTask<>(this, new TaskKey(TaskStage.SAVE, pos.level()), pos, piece));
+
+            if (newTimestamp > 0L && pos.level() < FP2Config.maxLevels) {
+                //the piece has been generated with the exact generator, schedule all output pieces for scaling
+                this.scaler.outputs(pos).forEach(p -> this.schedulePieceForScaling(p, newTimestamp));
+            }
+        }
+    }
+
+    public void schedulePieceForScaling(@NonNull POS pos, long _newTimestamp) {
+        checkArg(_newTimestamp != IFarPiece.PIECE_EMPTY);
+        throw new UnsupportedOperationException(); //TODO
     }
 
     @Override

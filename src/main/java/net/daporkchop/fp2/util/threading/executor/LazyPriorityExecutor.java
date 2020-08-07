@@ -48,7 +48,7 @@ public class LazyPriorityExecutor<K extends LazyKey<K>> {
     protected final Comparator<LazyTask<K, ?, ?>> comparator;
     protected final BlockingQueue<LazyTask<K, ?, ?>> queue;
 
-    protected volatile boolean running;
+    protected volatile boolean running = true;
 
     public LazyPriorityExecutor(int threads, @NonNull ThreadFactory threadFactory) {
         this.comparator = (a, b) -> a.key() != null ? a.key().compareTo(b.key()) : -1;

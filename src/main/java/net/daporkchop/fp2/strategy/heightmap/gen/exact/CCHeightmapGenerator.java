@@ -77,4 +77,9 @@ public class CCHeightmapGenerator extends AbstractHeightmapGenerator {
     public boolean supportsLowResolution() {
         return false;
     }
+
+    @Override
+    public boolean isLowResolutionInaccurate() {
+        return false;
+    }
 }

@@ -76,4 +76,9 @@ public class VanillaHeightmapGenerator extends AbstractHeightmapGenerator {
     public boolean supportsLowResolution() {
         return false;
     }
+
+    @Override
+    public boolean isLowResolutionInaccurate() {
+        return false;
+    }
 }

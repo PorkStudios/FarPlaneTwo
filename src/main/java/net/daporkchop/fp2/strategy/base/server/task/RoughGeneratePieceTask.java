@@ -23,6 +23,8 @@ package net.daporkchop.fp2.strategy.base.server.task;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.base.server.AbstractFarWorld;
 import net.daporkchop.fp2.strategy.base.server.TaskKey;
+import net.daporkchop.fp2.strategy.base.server.TaskPhase;
+import net.daporkchop.fp2.strategy.base.server.TaskStage;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
@@ -39,15 +41,17 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractPieceTask<POS, P, Void> {
-    protected final boolean lowRes;
+    protected final boolean inaccurate;
 
     public RoughGeneratePieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos) {
         super(world, key, pos);
 
-        if (this.lowRes = pos.level() != 0) {
+        boolean lowRes = pos.level() != 0;
+        if (lowRes) {
             checkArg(world.generatorRough().supportsLowResolution(),
                     "rough generator (%s) cannot generate low-resolution piece at level %d!", world.generatorRough(), pos.level());
         }
+        this.inaccurate = lowRes && world.generatorRough().isLowResolutionInaccurate();
     }
 
     @Override
@@ -58,7 +62,12 @@ public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS
     @Override
     public P run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
         P piece = this.world.getRawPieceBlocking(this.pos);
-        long newTimestamp = IFarPiece.PIECE_ROUGH_INITIAL(this.pos.level());
+        long newTimestamp = this.inaccurate
+                ? IFarPiece.pieceRough(this.pos.level()) //if the piece is inaccurate, it will need to be re-generated later based on scaled data
+                : IFarPiece.PIECE_ROUGH_COMPLETE;
+        if (piece.timestamp() >= newTimestamp) {
+            return piece;
+        }
 
         piece.writeLock().lock();
         try {
@@ -72,11 +81,11 @@ public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS
             piece.writeLock().unlock();
         }
 
-        if (this.lowRes) {
-            //piece is low-resolution, we should now enqueue it to generate scaled data from the layer below
-        } else {
-            //piece is generated, enqueue it for saving
-            this.world.savePiece(piece);
+        this.world.pieceChanged(piece, this.pos, newTimestamp);
+
+        if (this.inaccurate) {
+            //piece is low-resolution and inaccurate, we should now enqueue it to generate scaled data from the layer below
+            executor.submit(new RoughScalePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_SCALE), this.pos, this.pos.level() - 1));
         }
         return piece;
     }

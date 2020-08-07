@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.strategy.base.server;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -28,21 +29,12 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 @Getter
-public enum TaskStage {
-    SAVE(true),
-    LOAD(true),
-    ROUGH_GENERATE(false),
-    ROUGH_SCALE(false),
-    EXACT_GENERATE(false),
-    EXACT_SCALE(false);
+public enum TaskPhase {
+    ROUGH(TaskStage.ROUGH_GENERATE, TaskStage.ROUGH_SCALE),
+    EXACT(TaskStage.EXACT_GENERATE, TaskStage.EXACT_SCALE);
 
-    static {
-        ROUGH_GENERATE.phase = TaskPhase.ROUGH;
-        ROUGH_SCALE.phase = TaskPhase.ROUGH;
-        EXACT_GENERATE.phase = TaskPhase.EXACT;
-        EXACT_SCALE.phase = TaskPhase.EXACT;
-    }
-
-    private TaskPhase phase;
-    private final boolean first;
+    @NonNull
+    private final TaskStage generate;
+    @NonNull
+    private final TaskStage scale;
 }
