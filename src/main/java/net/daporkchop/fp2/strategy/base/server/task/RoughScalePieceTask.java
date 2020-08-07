@@ -29,53 +29,72 @@ import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
 
-import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
+ * Handles generation of a piece at a lower detail level.
+ * <p>
+ * This will cause all of the input pieces to be generated, and then use them as inputs for scaling of this piece.
+ *
  * @author DaPorkchop_
  */
 public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractPieceTask<POS, P, P> {
-    public RoughScalePieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos) {
+    protected final int targetDetail;
+
+    public RoughScalePieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos, int targetDetail) {
         super(world, key, pos);
+
+        this.targetDetail = targetDetail;
+        checkArg(targetDetail < pos.level(), "targetDetail (%d) must be less than the piece's detail level (%d)", targetDetail, pos.level());
     }
 
     @Override
     public Stream<? extends LazyTask<TaskKey, ?, P>> before(@NonNull TaskKey key) {
-        return this.world.scaler().inputs(this.pos)
-                .map(pos -> new LoadPieceTask<>(this.world, key.withStageLevel(TaskStage.LOAD, pos.level()), pos));
+        Stream<POS> inputs = this.world.scaler().inputs(this.pos);
+        if (this.targetDetail == this.pos.level() - 1) {
+            //this piece is one level above the target level, so the pieces should be read directly rather than scaling them
+            return inputs.map(pos -> new GetPieceTask<>(this.world, key.withStageLevel(TaskStage.LOAD, pos.level()), pos));
+        } else {
+            //this piece is more than one level above the target level, queue the pieces below for scaling as well
+            return inputs.map(pos -> new RoughScalePieceTask<>(this.world, key.withStageLevel(TaskStage.ROUGH_SCALE, pos.level()), pos, this.targetDetail));
+        }
     }
 
     @Override
-    public P run(@NonNull List<P> params, @NonNull LazyPriorityExecutor<TaskKey> executor) {
-        //create new destination piece
-        //we just assume that this class will never be used for pieces that already exist :P
-        //TODO: this assumption is actually wrong, we'll need to query the world
-        P dst = uncheckedCast(this.world.mode().piece(this.pos));
+    public P run(@NonNull List<P> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
+        P piece = this.world.getRawPieceBlocking(this.pos);
 
         P[] srcs = params.toArray(uncheckedCast(this.world.mode().pieceArray(params.size())));
-
         for (int i = 0, len = srcs.length; i < len; i++) {
             srcs[i].readLock().lock();
         }
-        dst.writeLock().lock();
-
         try {
-            //actually do scaling
-            this.world.scaler().scale(srcs, dst);
+            long newTimestamp = Arrays.stream(srcs).mapToLong(IFarPiece::timestamp).max().orElse(IFarPiece.PIECE_EMPTY);
 
-            //queue the piece to be saved
-            this.world.savePiece(dst);
+            piece.writeLock().lock();
+            try {
+                if (piece.timestamp() >= newTimestamp) {
+                    return piece;
+                }
+
+                this.world.scaler().scale(srcs, piece);
+                piece.updateTimestamp(newTimestamp);
+
+                this.world.savePiece(piece);
+            } finally {
+                piece.writeLock().unlock();
+            }
         } finally {
-            dst.writeLock().unlock();
             for (int i = 0, len = srcs.length; i < len; i++) {
                 srcs[i].readLock().unlock();
             }
         }
 
-        return dst;
+        return piece;
     }
 }

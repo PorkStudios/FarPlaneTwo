@@ -52,13 +52,13 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, H
 
     @Override
     public void playerAdd(@NonNull EntityPlayerMP player) {
-        LOGGER.debug("Added player {} to tracker in dimension {}", player.getName(), this.world.world.provider.getDimension());
+        LOGGER.debug("Added player {} to tracker in dimension {}", player.getName(), this.world.world().provider.getDimension());
         this.tracking.put(player, new ObjectOpenHashSet<>());
     }
 
     @Override
     public void playerRemove(@NonNull EntityPlayerMP player) {
-        LOGGER.debug("Removed player {} from tracker in dimension {}", player.getName(), this.world.world.provider.getDimension());
+        LOGGER.debug("Removed player {} from tracker in dimension {}", player.getName(), this.world.world().provider.getDimension());
         this.tracking.remove(player);
     }
 
@@ -89,7 +89,7 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, H
                     HeightmapPos pos = new HeightmapPos(x, z, lvl);
                     if (!prev.remove(pos)) {
                         //piece wasn't loaded before, we should load and send it
-                        HeightmapPiece piece = this.world.getPiece(pos).getNow(null);
+                        HeightmapPiece piece = this.world.getPieceLazy(pos);
                         if (piece != null) {
                             NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player);
                         } else {

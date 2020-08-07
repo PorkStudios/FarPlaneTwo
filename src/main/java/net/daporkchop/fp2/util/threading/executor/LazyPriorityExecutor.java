@@ -24,7 +24,6 @@ import io.netty.util.concurrent.EventExecutor;
 import lombok.NonNull;
 import net.daporkchop.lib.concurrent.PExecutors;
 import net.daporkchop.lib.concurrent.future.DefaultPFuture;
-import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,7 +34,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadFactory;
-import java.util.function.ObjIntConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -118,7 +116,7 @@ public class LazyPriorityExecutor<K extends LazyKey<K>> {
                     }
 
                     @Override
-                    public Void run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<K> executor) {
+                    public Void run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<K> executor) throws Exception {
                         this.task.run();
                         return null;
                     }

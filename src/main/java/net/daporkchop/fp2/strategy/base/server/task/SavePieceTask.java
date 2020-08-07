@@ -49,7 +49,7 @@ public class SavePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extend
     }
 
     @Override
-    public P run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) {
+    public P run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
         this.piece.readLock().lock();
         try {
             if (this.piece.clearDirty())    {

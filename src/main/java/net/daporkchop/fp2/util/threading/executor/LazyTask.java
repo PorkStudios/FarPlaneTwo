@@ -35,7 +35,7 @@ public interface LazyTask<K extends LazyKey<K>, T, R> extends PFuture<R> {
 
     Stream<? extends LazyTask<K, ?, T>> before(@NonNull K key);
 
-    R run(@NonNull List<T> params, @NonNull LazyPriorityExecutor<K> executor);
+    R run(@NonNull List<T> params, @NonNull LazyPriorityExecutor<K> executor) throws Exception;
 
     /**
      * @see Promise#setSuccess(Object)

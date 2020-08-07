@@ -21,41 +21,33 @@
 package net.daporkchop.fp2.strategy.base.server.task;
 
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.strategy.base.server.AbstractFarWorld;
-import net.daporkchop.fp2.strategy.base.server.TaskKey;
-import net.daporkchop.fp2.strategy.base.server.TaskStage;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
-import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
-import net.daporkchop.fp2.util.threading.executor.LazyTask;
 
-import java.util.List;
-import java.util.stream.Stream;
+import java.util.concurrent.Callable;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
+ * Not really a task, but used by {@link AbstractFarWorld} to load a piece from disk and create it if absent.
+ *
  * @author DaPorkchop_
  */
-public class LoadPieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractPieceTask<POS, P, Void> {
-    public LoadPieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos) {
-        super(world, key, pos);
-    }
+@RequiredArgsConstructor
+public class LoadPieceAction<POS extends IFarPos, P extends IFarPiece<POS>> implements Callable<P> {
+    @NonNull
+    protected final AbstractFarWorld<POS, P> world;
+    @NonNull
+    protected final POS pos;
 
     @Override
-    public Stream<? extends LazyTask<TaskKey, ?, Void>> before(@NonNull TaskKey key) {
-        return Stream.empty();
-    }
-
-    @Override
-    public P run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) {
+    public P call() throws Exception {
         P piece = this.world.storage().load(this.pos);
         if (piece == null) {
-            if (this.pos.level() == 0 || this.world.generatorRough().supportsLowResolution()) {
-                //the piece can be generated using the rough generator
-                executor.submit(new RoughGeneratePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_GENERATE), this.pos).thenCopyStatusTo(this));
-            } else {
-                //the piece requires that the pieces below it be generated so that it can be scaled down
-                executor.submit(new RoughScalePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_SCALE), this.pos).thenCopyStatusTo(this));
-            }
+            //piece doesn't exist on disk, let's make a new one!
+            return uncheckedCast(this.world.mode().piece(this.pos));
         }
         return piece;
     }

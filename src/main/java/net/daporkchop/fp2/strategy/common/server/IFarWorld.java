@@ -24,6 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
+import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
 import net.minecraft.world.WorldServer;
 
 import java.io.Closeable;
@@ -34,6 +35,8 @@ import java.io.IOException;
  */
 public interface IFarWorld<POS extends IFarPos, P extends IFarPiece<POS>> extends Closeable {
     WorldServer world();
+
+    CachedBlockAccess blockAccess();
 
     /**
      * Gets the {@link IFarPiece} at the given position.

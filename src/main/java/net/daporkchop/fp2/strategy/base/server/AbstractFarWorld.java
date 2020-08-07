@@ -20,12 +20,15 @@
 
 package net.daporkchop.fp2.strategy.base.server;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import io.netty.util.concurrent.EventExecutor;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.RenderMode;
-import net.daporkchop.fp2.strategy.base.server.task.LoadPieceTask;
+import net.daporkchop.fp2.strategy.base.server.task.GetPieceTask;
+import net.daporkchop.fp2.strategy.base.server.task.LoadPieceAction;
 import net.daporkchop.fp2.strategy.base.server.task.SavePieceTask;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
@@ -33,21 +36,19 @@ import net.daporkchop.fp2.strategy.common.server.IFarGenerator;
 import net.daporkchop.fp2.strategy.common.server.IFarScaler;
 import net.daporkchop.fp2.strategy.common.server.IFarStorage;
 import net.daporkchop.fp2.strategy.common.server.IFarWorld;
-import net.daporkchop.fp2.util.threading.PriorityExecutor;
 import net.daporkchop.fp2.util.threading.PriorityThreadFactory;
+import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
-import net.daporkchop.fp2.util.threading.executor.LazyTask;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
-import net.daporkchop.lib.concurrent.PExecutors;
-import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.WorldServer;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 
 import static net.daporkchop.fp2.util.Constants.*;
 
@@ -57,20 +58,21 @@ import static net.daporkchop.fp2.util.Constants.*;
 @Getter
 public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<POS>> implements IFarWorld<POS, P> {
     protected final WorldServer world;
+    protected final RenderMode mode;
 
     protected final IFarGenerator<POS, P> generatorRough;
     protected final IFarGenerator<POS, P> generatorExact;
     protected final IFarScaler<POS, P> scaler;
-
     protected final IFarStorage<POS, P> storage;
+
+    protected final Cache<POS, P> cache = CacheBuilder.newBuilder()
+            .concurrencyLevel(FP2Config.generationThreads)
+            .softValues()
+            .build();
+    protected final Set<POS> queuedPositions = ConcurrentHashMap.newKeySet();
 
     protected final LazyPriorityExecutor<TaskKey> executor;
     protected final EventExecutor nettyExecutor;
-
-    protected final Map<POS, P> cache = new ObjObjConcurrentHashMap<>();
-    protected final Set<POS> queuedPositions = ConcurrentHashMap.newKeySet();
-
-    protected final RenderMode mode;
 
     public AbstractFarWorld(@NonNull WorldServer world, @NonNull RenderMode mode) {
         this.world = world;
@@ -115,22 +117,37 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
 
     @Override
     public P getPieceLazy(@NonNull POS pos) {
-        P piece = this.cache.getOrDefault(pos, null);
+        P piece = this.cache.getIfPresent(pos);
         if (piece == null && this.queuedPositions.add(pos)) {
             //piece is not in cache and was newly marked as queued
             TaskKey key = new TaskKey(TaskStage.LOAD, pos.level());
-            this.executor.submit(new LoadPieceTask<>(this, key, pos));
+            this.executor.submit(new GetPieceTask<>(this, key, pos));
         }
         return piece;
     }
 
+    public P getRawPieceBlocking(@NonNull POS pos) {
+        try {
+            return this.cache.get(pos, new LoadPieceAction<>(this, pos));
+        } catch (ExecutionException e) {
+            PUnsafe.throwException(e);
+            throw new RuntimeException(e);
+        }
+    }
+
     public void savePiece(@NonNull P p) {
-        this.executor.submit(new SavePieceTask<>(this, new TaskKey(TaskStage.SAVE, -1), p.pos(), p));
+        POS pos = p.pos();
+        this.executor.submit(new SavePieceTask<>(this, new TaskKey(TaskStage.SAVE, pos.level()), pos, p));
     }
 
     @Override
     public void blockChanged(int x, int y, int z) {
         //TODO
+    }
+
+    @Override
+    public CachedBlockAccess blockAccess() {
+        return ((CachedBlockAccess.Holder) this.world).cachedBlockAccess();
     }
 
     @Override

@@ -23,9 +23,6 @@ package net.daporkchop.fp2.strategy.common;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.RenderMode;
-import net.daporkchop.fp2.strategy.common.server.IFarGenerator;
-import net.daporkchop.fp2.strategy.common.IFarPos;
-import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.concurrent.locks.ReadWriteLock;
 
@@ -33,6 +30,25 @@ import java.util.concurrent.locks.ReadWriteLock;
  * @author DaPorkchop_
  */
 public interface IFarPiece<POS extends IFarPos> extends ReadWriteLock {
+    /**
+     * Timestamp indicating that the piece does not contain any data.
+     */
+    long PIECE_EMPTY = Long.MIN_VALUE;
+    /**
+     * Timestamp indicating that the piece's rough generation has been completed.
+     */
+    long PIECE_ROUGH_COMPLETE = 0L;
+
+    /**
+     * Gets a timestamp indicating that the piece contains data generated using the rough generator at the given level.
+     *
+     * @param level the lowest level that has been generated roughly
+     * @return a timestamp indicating that the piece contains data generated using the rough generator at the given level
+     */
+    static long PIECE_ROUGH_INITIAL(int level) {
+        return -level;
+    }
+
     /**
      * @return the {@link RenderMode} that this piece is used for
      */
@@ -47,11 +63,12 @@ public interface IFarPiece<POS extends IFarPos> extends ReadWriteLock {
      * Gets this piece's timestamp.
      * <p>
      * A timestamp serves as a revision number to indicate the most recently updated data point contained by this piece. The value itself is an arbitrary
-     * positive global value that is guaranteed never to decrease. Negative values indicate that the piece does not yet contain any data, and {@code 0L}
-     * value indicate that the piece's data was produced by a rough {@link IFarGenerator}, and as such does not represent the contents of the world as it
-     * was at ANY point in time.
+     * positive global value that is guaranteed never to decrease.
      *
      * @return this piece's timestamp
+     * @see #PIECE_EMPTY
+     * @see #PIECE_ROUGH_INITIAL(int)
+     * @see #PIECE_ROUGH_COMPLETE
      */
     long timestamp();
 

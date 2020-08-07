@@ -29,10 +29,10 @@ import lombok.RequiredArgsConstructor;
 public enum TaskStage {
     SAVE(true),
     LOAD(true),
-    EXACT_GENERATE(false),
-    EXACT_SCALE(false),
     ROUGH_GENERATE(false),
-    ROUGH_SCALE(false);
+    ROUGH_SCALE(false),
+    EXACT_GENERATE(false),
+    EXACT_SCALE(false),;
 
     public final boolean first;
 }
