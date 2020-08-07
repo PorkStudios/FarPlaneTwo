@@ -24,6 +24,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.base.server.AbstractFarWorld;
 import net.daporkchop.fp2.strategy.base.server.TaskKey;
 import net.daporkchop.fp2.strategy.base.server.TaskStage;
@@ -60,14 +61,16 @@ public class GetPieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends
         P piece = this.world.getRawPieceBlocking(this.pos);
         long version = piece.timestamp();
         if (version < IFarPiece.PIECE_ROUGH_COMPLETE) { //the piece has not been fully generated yet
-            boolean supportsLowResolution = this.world.generatorRough().supportsLowResolution();
+            boolean supportsLowResolution = FP2Config.performance.lowResolutionEnable && this.world.generatorRough().supportsLowResolution();
             if (this.pos.level() == 0 || supportsLowResolution) {
                 //the piece can be generated using the rough generator
-                executor.submit(new RoughGeneratePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_GENERATE), this.pos).thenCopyStatusTo(this));
+                TaskKey key = this.key.stage() == TaskStage.LOAD ? this.key.withStage(TaskStage.ROUGH_GENERATE) : this.key;
+                executor.submit(new RoughGeneratePieceTask<>(this.world, key, this.pos).thenCopyStatusTo(this));
             } else {
                 //the piece is at a lower detail than 0, and low-resolution generation is not an option
                 //this will generate the piece and all pieces below it down to level 0 until the piece can be "generated" from scaled data
-                executor.submit(new RoughScalePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_SCALE), this.pos, 0).thenCopyStatusTo(this));
+                TaskKey key = this.key.stage() == TaskStage.LOAD ? this.key.withStage(TaskStage.ROUGH_GENERATE) : this.key;
+                executor.submit(new RoughScalePieceTask<>(this.world, key, this.pos, 0).thenCopyStatusTo(this));
             }
             if (version == IFarPiece.PIECE_EMPTY) {
                 return null; //don't store the piece in the world until it contains at least SOME data

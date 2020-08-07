@@ -51,19 +51,19 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, H
     }
 
     @Override
-    public void playerAdd(@NonNull EntityPlayerMP player) {
+    public synchronized void playerAdd(@NonNull EntityPlayerMP player) {
         LOGGER.debug("Added player {} to tracker in dimension {}", player.getName(), this.world.world().provider.getDimension());
         this.tracking.put(player, new ObjectOpenHashSet<>());
     }
 
     @Override
-    public void playerRemove(@NonNull EntityPlayerMP player) {
+    public synchronized void playerRemove(@NonNull EntityPlayerMP player) {
         LOGGER.debug("Removed player {} from tracker in dimension {}", player.getName(), this.world.world().provider.getDimension());
         this.tracking.remove(player);
     }
 
     @Override
-    public void playerMove(@NonNull EntityPlayerMP player) {
+    public synchronized void playerMove(@NonNull EntityPlayerMP player) {
         int dist = FP2Config.renderDistance >> T_SHIFT;
         int baseX = floorI(player.posX) >> T_SHIFT;
         int baseZ = floorI(player.posZ) >> T_SHIFT;
@@ -108,7 +108,7 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, H
     }
 
     @Override
-    public void pieceChanged(@NonNull HeightmapPiece piece) {
+    public synchronized void pieceChanged(@NonNull HeightmapPiece piece) {
         this.tracking.forEach((player, curr) -> {
             if (curr.contains(piece)) { //HeightmapPiece is also a HeightmapPos
                 NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player);
@@ -117,7 +117,7 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, H
     }
 
     @Override
-    public void debug_dropAllPieces(@NonNull EntityPlayerMP player) {
+    public synchronized void debug_dropAllPieces(@NonNull EntityPlayerMP player) {
         this.tracking.computeIfPresent(player, (p, positions) -> {
             positions.forEach(pos -> NETWORK_WRAPPER.sendTo(new SPacketUnloadPiece().pos(pos), p));
             return new ObjectOpenHashSet<>();

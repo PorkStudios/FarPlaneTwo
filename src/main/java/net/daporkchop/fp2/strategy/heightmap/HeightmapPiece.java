@@ -104,10 +104,11 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapP
 
     @Override
     public void writePiece(@NonNull ByteBuf dst) {
-        checkState(this.timestamp != PIECE_EMPTY, "piece does not contain any data!");
+        long timestamp = this.timestamp;
+        checkState(timestamp != PIECE_EMPTY, "piece does not contain any data! %d", timestamp);
         this.writePos(dst);
 
-        dst.writeLong(this.timestamp);
+        dst.writeLong(timestamp);
 
         for (int i = 0; i < ENTRY_COUNT * 4; i++) {
             dst.writeInt(this.data.get(i));

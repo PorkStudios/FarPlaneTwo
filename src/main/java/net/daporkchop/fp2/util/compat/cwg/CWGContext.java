@@ -64,7 +64,7 @@ public final class CWGContext {
             for (int x = -1; x <= T_VOXELS; x++) {
                 for (int z = -1; z <= T_VOXELS; z++) {
                     pos.setPos(baseX + (x << level), 0, baseZ + (z << level));
-                    biomes[z * BIOME_CACHE_SIZE + x] = this.biomeProvider.getBiome(pos, Biomes.PLAINS);
+                    biomes[(z + 1) * BIOME_CACHE_SIZE + (x + 1)] = this.biomeProvider.getBiome(pos, Biomes.PLAINS);
                 }
             }
             return biomes;

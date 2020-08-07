@@ -76,19 +76,17 @@ public class FP2Config {
     public static int generationThreads = max(PorkUtil.CPU_COUNT - 1, 1);
 
     @Config.Comment({
-            "The number of threads that will be used for downscaling far plane terrain data.",
-            "Default: <cpu count> - 1 (and at least 1)"
-    })
-    @Config.LangKey("config.fp2.scaleThreads")
-    @Config.RequiresWorldRestart
-    public static int scaleThreads = max(PorkUtil.CPU_COUNT - 1, 1);
-
-    @Config.Comment({
             "Config options available only on the client."
     })
     @Config.LangKey("config.fp2.client")
     @SideOnly(Side.CLIENT)
     public static Client client = new Client();
+
+    @Config.Comment({
+            "Performance options."
+    })
+    @Config.LangKey("config.fp2.performance")
+    public static Performance performance = new Performance();
 
     @Config.Comment({
             "Options for storage of far terrain tiles."
@@ -132,6 +130,30 @@ public class FP2Config {
         @Config.SlidingOption
         @Config.RangeDouble(min = 0.0d, max = 1.0d)
         public double levelTransitionEnd = 0.9d;
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public static class Performance {
+        @Config.Comment({
+                "Whether or not tiles can be generated at low resolution.",
+                "The generator must support this feature as well."
+        })
+        public boolean lowResolutionEnable = true;
+
+        @Config.Comment({
+                "If low resolution is enabled, allows tiles to be initially generated at low resolution and subsequently be replaced by higher resolution",
+                "tiles once available."
+        })
+        public boolean lowResolutionRefine = true;
+
+        @Config.Comment({
+                "If low resolution refine is enabled, makes the refining process more gradual by increasing the resolution one step at a time until",
+                "maximum resolution is reached, rather than doing the entire process in a single step.",
+                "This will generally not improve visual quality much, and can result in significantly higher CPU usage."
+        })
+        public boolean lowResolutionRefineProgressive = false;
     }
 
     /**

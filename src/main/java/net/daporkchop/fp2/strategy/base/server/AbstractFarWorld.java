@@ -30,6 +30,7 @@ import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.base.server.task.GetPieceTask;
 import net.daporkchop.fp2.strategy.base.server.task.LoadPieceAction;
 import net.daporkchop.fp2.strategy.base.server.task.SavePieceTask;
+import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.server.IFarGenerator;
@@ -37,6 +38,7 @@ import net.daporkchop.fp2.strategy.common.server.IFarScaler;
 import net.daporkchop.fp2.strategy.common.server.IFarStorage;
 import net.daporkchop.fp2.strategy.common.server.IFarWorld;
 import net.daporkchop.fp2.util.threading.PriorityThreadFactory;
+import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.lib.common.misc.string.PStrings;
@@ -119,10 +121,13 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
     @Override
     public P getPieceLazy(@NonNull POS pos) {
         P piece = this.cache.getIfPresent(pos);
-        if (piece == null && this.queuedPositions.add(pos)) {
-            //piece is not in cache and was newly marked as queued
-            TaskKey key = new TaskKey(TaskStage.LOAD, pos.level());
-            this.executor.submit(new GetPieceTask<>(this, key, pos));
+        if (piece == null || piece.timestamp() == IFarPiece.PIECE_EMPTY)  {
+            if (this.queuedPositions.add(pos)) {
+                //piece is not in cache and was newly marked as queued
+                TaskKey key = new TaskKey(TaskStage.LOAD, pos.level());
+                this.executor.submit(new GetPieceTask<>(this, key, pos));
+            }
+            return null;
         }
         return piece;
     }
@@ -138,7 +143,10 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
 
     public void pieceChanged(@NonNull P piece, @NonNull POS pos, long newTimestamp) {
         checkArg(newTimestamp != IFarPiece.PIECE_EMPTY);
-        if (piece.isDirty()) { //only do stuff if the piece changed
+
+        ((IFarContext) this.world).tracker().pieceChanged(piece);
+
+        if (newTimestamp >= 0L && piece.isDirty()) { //only do stuff if the piece has been fully generated and its contents changed
             //save the piece
             this.executor.submit(new SavePieceTask<>(this, new TaskKey(TaskStage.SAVE, pos.level()), pos, piece));
 

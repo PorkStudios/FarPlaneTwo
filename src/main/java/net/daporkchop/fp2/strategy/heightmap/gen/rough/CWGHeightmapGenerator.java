@@ -36,6 +36,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.compat.cwg.CWGContext.*;
@@ -88,7 +90,7 @@ public class CWGHeightmapGenerator extends AbstractHeightmapGenerator {
 
     @Override
     public boolean supportsLowResolution() {
-        return false; //TODO
+        return true;
     }
 
     @Override

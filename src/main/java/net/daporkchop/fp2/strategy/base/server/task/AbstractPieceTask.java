@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.strategy.base.server.task;
 
 import io.netty.util.concurrent.GenericFutureListener;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.base.server.AbstractFarWorld;
@@ -28,7 +29,6 @@ import net.daporkchop.fp2.strategy.base.server.TaskKey;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
-import net.daporkchop.lib.concurrent.PExecutors;
 import net.daporkchop.lib.concurrent.future.DefaultPFuture;
 
 /**
@@ -41,7 +41,7 @@ public abstract class AbstractPieceTask<POS extends IFarPos, P extends IFarPiece
     protected final POS pos;
 
     public AbstractPieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos) {
-        super(PExecutors.FORKJOINPOOL);
+        super(ImmediateEventExecutor.INSTANCE);
 
         this.world = world;
         this.key = key;

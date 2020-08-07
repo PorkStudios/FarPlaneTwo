@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -183,13 +184,6 @@ public class LazyPriorityExecutor<K extends LazyKey<K>> {
                 return Collections.emptyList();
             }
 
-            List<T> list = new ArrayList<>(tasks.size());
-            for (int i = 0, size = tasks.size(); i < size; i++) {
-                list.add(null);
-                int _i = i; //aaaaaa
-                tasks.get(i).thenAccept(v -> list.set(_i, v)); //store in list
-            }
-
             LazyPriorityExecutor.this.queue.addAll(tasks);
             try {
                 do {
@@ -204,16 +198,21 @@ public class LazyPriorityExecutor<K extends LazyKey<K>> {
                 }
                 throw e;
             }
+
+            List<T> list = new ArrayList<>(tasks.size());
+            for (int i = 0, size = tasks.size(); i < size; i++) {
+                list.add(Objects.requireNonNull(tasks.get(i).get()));
+            }
             return list;
         }
 
         protected <V> boolean areAnyIncomplete(@NonNull List<LazyTask<K, ?, V>> tasks) {
             for (int i = 0, size = tasks.size(); i < size; i++) {
                 if (!tasks.get(i).isDone()) {
-                    return false;
+                    return true;
                 }
             }
-            return true;
+            return false;
         }
     }
 }

@@ -21,9 +21,9 @@
 package net.daporkchop.fp2.strategy.base.server.task;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.base.server.AbstractFarWorld;
 import net.daporkchop.fp2.strategy.base.server.TaskKey;
-import net.daporkchop.fp2.strategy.base.server.TaskPhase;
 import net.daporkchop.fp2.strategy.base.server.TaskStage;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
@@ -58,10 +58,10 @@ public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> 
         Stream<POS> inputs = this.world.scaler().inputs(this.pos);
         if (this.targetDetail == this.pos.level() - 1) {
             //this piece is one level above the target level, so the pieces should be read directly rather than scaling them
-            return inputs.map(pos -> new GetPieceTask<>(this.world, key.withStageLevel(TaskStage.LOAD, pos.level()), pos));
+            return inputs.map(pos -> new GetPieceTask<>(this.world, key.withLevel(pos.level()), pos));
         } else {
             //this piece is more than one level above the target level, queue the pieces below for scaling as well
-            return inputs.map(pos -> new RoughScalePieceTask<>(this.world, key.withStageLevel(TaskStage.ROUGH_SCALE, pos.level()), pos, this.targetDetail));
+            return inputs.map(pos -> new RoughScalePieceTask<>(this.world, key.withLevel(pos.level()), pos, this.targetDetail));
         }
     }
 
@@ -93,6 +93,12 @@ public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> 
         }
 
         this.world.pieceChanged(piece, this.pos, newTimestamp);
+
+        if (FP2Config.performance.lowResolutionRefine && this.targetDetail != 0) {
+            //continually re-scale the tile until the target detail reaches 0
+            executor.submit(new RoughScalePieceTask<>(this.world, this.key.lowerTie(), this.pos,
+                    FP2Config.performance.lowResolutionRefineProgressive ? this.targetDetail - 1 : 0));
+        }
 
         return piece;
     }

@@ -21,9 +21,9 @@
 package net.daporkchop.fp2.strategy.base.server.task;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.base.server.AbstractFarWorld;
 import net.daporkchop.fp2.strategy.base.server.TaskKey;
-import net.daporkchop.fp2.strategy.base.server.TaskPhase;
 import net.daporkchop.fp2.strategy.base.server.TaskStage;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
@@ -48,6 +48,7 @@ public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS
 
         boolean lowRes = pos.level() != 0;
         if (lowRes) {
+            checkArg(FP2Config.performance.lowResolutionEnable, "low resolution rendering is disabled!");
             checkArg(world.generatorRough().supportsLowResolution(),
                     "rough generator (%s) cannot generate low-resolution piece at level %d!", world.generatorRough(), pos.level());
         }
@@ -85,7 +86,7 @@ public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS
 
         if (this.inaccurate) {
             //piece is low-resolution and inaccurate, we should now enqueue it to generate scaled data from the layer below
-            executor.submit(new RoughScalePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_SCALE), this.pos, this.pos.level() - 1));
+            executor.submit(new RoughScalePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_SCALE).lowerTie(), this.pos, 0));
         }
         return piece;
     }

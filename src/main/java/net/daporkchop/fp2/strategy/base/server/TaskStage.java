@@ -36,13 +36,5 @@ public enum TaskStage {
     EXACT_GENERATE(false),
     EXACT_SCALE(false);
 
-    static {
-        ROUGH_GENERATE.phase = TaskPhase.ROUGH;
-        ROUGH_SCALE.phase = TaskPhase.ROUGH;
-        EXACT_GENERATE.phase = TaskPhase.EXACT;
-        EXACT_SCALE.phase = TaskPhase.EXACT;
-    }
-
-    private TaskPhase phase;
     private final boolean first;
 }
