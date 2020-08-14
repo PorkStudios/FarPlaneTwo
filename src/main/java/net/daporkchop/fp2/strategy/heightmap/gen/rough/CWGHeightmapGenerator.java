@@ -57,8 +57,8 @@ public class CWGHeightmapGenerator extends AbstractHeightmapGenerator {
     @Override
     public void generate(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece) {
         int level = piece.level();
-        int baseX = piece.blockX();
-        int baseZ = piece.blockZ();
+        int baseX = piece.pos().blockX();
+        int baseZ = piece.pos().blockZ();
 
         CWGContext ctx = this.ctx.get();
         Biome[] biomes = ctx.getBiomes(baseX, baseZ, piece.level());

@@ -50,14 +50,16 @@ public class SavePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extend
 
     @Override
     public P run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
-        this.piece.readLock().lock();
-        try {
-            if (this.piece.clearDirty())    {
-                this.world.storage().store(this.pos, this.piece);
+        if (this.piece.isDirty()) {
+            this.piece.readLock().lock();
+            try {
+                if (this.piece.clearDirty()) {
+                    this.world.storage().store(this.pos, this.piece);
+                }
+            } finally {
+                this.piece.readLock().unlock();
             }
-        } finally {
-            this.piece.readLock().unlock();
         }
-        return null;
+        return this.piece;
     }
 }

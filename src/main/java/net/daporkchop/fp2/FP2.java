@@ -45,6 +45,7 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
+import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import org.lwjgl.opengl.GLContext;
@@ -112,7 +113,8 @@ public class FP2 {
     }
 
     @Mod.EventHandler
-    public void serverStopping(FMLServerStoppingEvent event) {
+    public void serverStopped(FMLServerStoppedEvent event) {
+        ServerThreadExecutor.INSTANCE.workOffQueue();
         ServerThreadExecutor.INSTANCE.shutdown();
     }
 

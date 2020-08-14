@@ -29,6 +29,11 @@ config.fp2.client.heightmap=Heightmap options
 config.fp2.client.levelTransitionStart=Detail transition start
 config.fp2.client.levelTransitionEnd=Detail transition end
 
+config.fp2.performance=Performance options
+config.fp2.performance.lowResolutionEnable=Allow low resolution
+config.fp2.performance.lowResolutionRefine=Allow refine
+config.fp2.performance.lowResolutionRefineProgressive=Allow progressive refine
+
 config.fp2.debug=Debug options
 config.fp2.debug.debug=Debug mode
 config.fp2.debug.disableRead=Disable read

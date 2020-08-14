@@ -30,6 +30,7 @@ import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.server.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.server.IFarWorld;
+import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 import net.minecraft.entity.player.EntityPlayerMP;
 
@@ -59,6 +60,11 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
 
     @Override
     public void playerAdd(@NonNull EntityPlayerMP player) {
+        if (!ServerThreadExecutor.INSTANCE.isServerThread())    {
+            ServerThreadExecutor.INSTANCE.execute(() -> this.playerAdd(player));
+            return;
+        }
+
         checkState(this.trackingPositions.putIfAbsent(player, this.allocateSet()) == null, player);
 
         LOGGER.debug("Added player {} to tracker in dimension {}", player.getName(), this.world.world().provider.getDimension());
@@ -66,6 +72,11 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
 
     @Override
     public void playerRemove(@NonNull EntityPlayerMP player) {
+        if (!ServerThreadExecutor.INSTANCE.isServerThread())    {
+            ServerThreadExecutor.INSTANCE.execute(() -> this.playerRemove(player));
+            return;
+        }
+
         Set<POS> trackingPositions = this.trackingPositions.remove(player);
         checkState(trackingPositions != null, player);
 
@@ -78,6 +89,8 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
 
     @Override
     public void playerMove(@NonNull EntityPlayerMP player) {
+        ServerThreadExecutor.INSTANCE.checkServerThread();
+
         Set<POS> oldPositions = this.trackingPositions.get(player);
         checkState(oldPositions != null, player);
         Set<POS> newPositions = this.allocateSet();
@@ -102,14 +115,26 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
 
     @Override
     public void pieceChanged(@NonNull P piece) {
-        Entry entry = this.entries.get(piece.pos());
-        if (entry != null)  {
-            entry.pieceChanged(piece);
+        if (!ServerThreadExecutor.INSTANCE.isServerThread())    {
+            ServerThreadExecutor.INSTANCE.execute(() -> this.pieceChanged(piece));
+            return;
+        }
+
+        if (!piece.isEmpty()) {
+            Entry entry = this.entries.get(piece.pos());
+            if (entry != null) {
+                entry.pieceChanged(piece);
+            }
         }
     }
 
     @Override
     public void debug_dropAllPieces(@NonNull EntityPlayerMP player) {
+        if (!ServerThreadExecutor.INSTANCE.isServerThread())    {
+            ServerThreadExecutor.INSTANCE.execute(() -> this.debug_dropAllPieces(player));
+            return;
+        }
+
         throw new UnsupportedOperationException();
     }
 
@@ -134,15 +159,19 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
         return new Entry(pos);
     }
 
-    @RequiredArgsConstructor
     @ToString
     public class Entry {
-        @NonNull
         protected final POS pos;
-
         protected final Set<EntityPlayerMP> players = new ReferenceOpenHashSet<>();
 
         protected P piece;
+
+        public Entry(@NonNull POS pos)  {
+            this.pos = pos;
+
+            //attempt to get piece now
+            this.piece = AbstractPlayerTracker.this.world.getPieceLazy(pos);
+        }
 
         public void addPlayer(@NonNull EntityPlayerMP player)   {
             if (this.players.add(player) && this.piece != null) {

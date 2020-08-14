@@ -81,6 +81,13 @@ public interface IFarPiece<POS extends IFarPos> extends ReadWriteLock {
     void updateTimestamp(long timestamp) throws IllegalArgumentException;
 
     /**
+     * @return whether or not this piece is empty (i.e. has no data)
+     */
+    default boolean isEmpty() {
+        return this.timestamp() == PIECE_EMPTY;
+    }
+
+    /**
      * @return whether or not this piece is done (i.e. has been fully generated and may be saved)
      */
     default boolean isDone() {

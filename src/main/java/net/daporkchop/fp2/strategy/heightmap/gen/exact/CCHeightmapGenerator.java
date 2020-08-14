@@ -40,8 +40,8 @@ import static net.daporkchop.fp2.util.Constants.*;
 public class CCHeightmapGenerator extends AbstractHeightmapGenerator {
     @Override
     public void generate(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece) {
-        int pieceX = piece.x();
-        int pieceZ = piece.z();
+        int pieceX = piece.pos().x();
+        int pieceZ = piece.pos().z();
 
         //prefetch columns, but not cubes because we really can't know where they are
         world.prefetch(new AxisAlignedBB(

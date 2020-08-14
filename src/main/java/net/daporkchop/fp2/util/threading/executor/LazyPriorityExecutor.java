@@ -20,10 +20,7 @@
 
 package net.daporkchop.fp2.util.threading.executor;
 
-import io.netty.util.concurrent.EventExecutor;
 import lombok.NonNull;
-import net.daporkchop.lib.concurrent.PExecutors;
-import net.daporkchop.lib.concurrent.future.DefaultPFuture;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,12 +29,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executor;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -100,7 +96,7 @@ public class LazyPriorityExecutor<K extends LazyKey<K>> {
                 } catch (InterruptedException e) {
                     //gracefully exit on interrupt
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    LOGGER.error(Thread.currentThread().getName(), e);
                 }
             }
         }
@@ -114,14 +110,14 @@ public class LazyPriorityExecutor<K extends LazyKey<K>> {
                 List<T> params = this.runBefore(task.before(task.key().raiseTie()).collect(Collectors.toList()));
 
                 R val = task.run(params, LazyPriorityExecutor.this);
-                if (val != null)    {
+                if (val != null) {
                     task.setSuccess(val);
                 }
             } catch (InterruptedException e) {
                 throw e; //rethrow
             } catch (Exception e) {
-                e.printStackTrace();
-                task.setFailure(task.cause());
+                LOGGER.error(Thread.currentThread().getName(), e);
+                task.setFailure(e);
             }
         }
 

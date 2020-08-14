@@ -67,10 +67,7 @@ public class HeightmapPiece extends AbstractFarPiece<HeightmapPos> {
 
     public HeightmapPiece(@NonNull ByteBuf src) {
         super(src, RenderMode.HEIGHTMAP);
-    }
 
-    @Override
-    protected void readBody(@NonNull ByteBuf src) {
         for (int i = 0; i < TOTAL_SIZE; i++) {
             this.data.put(i, src.readInt());
         }
@@ -125,8 +122,20 @@ public class HeightmapPiece extends AbstractFarPiece<HeightmapPos> {
     public void copy(int srcX, int srcZ, HeightmapPiece src, int x, int z)  {
         int srcBase = index(srcX, srcZ);
         int base = index(x, z);
-        for (int i = 0; i < 4; i++) {
+
+        int i0 = src.data.get(srcBase + 0);
+        int i1 = src.data.get(srcBase + 1);
+        int i2 = src.data.get(srcBase + 2);
+        int i3 = src.data.get(srcBase + 3);
+
+        this.data.put(base + 0, i0);
+        this.data.put(base + 1, i1);
+        this.data.put(base + 2, i2);
+        this.data.put(base + 3, i3);
+
+        /*for (int i = 0; i < 4; i++) {
             this.data.put(base + i, src.data.get(srcBase + i));
-        }
+        }*/
+        this.markDirty();
     }
 }

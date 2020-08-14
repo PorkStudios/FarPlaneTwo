@@ -39,8 +39,8 @@ import static net.daporkchop.fp2.util.Constants.*;
 public class VanillaHeightmapGenerator extends AbstractHeightmapGenerator {
     @Override
     public void generate(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece) {
-        int pieceX = piece.x();
-        int pieceZ = piece.z();
+        int pieceX = piece.pos().x();
+        int pieceZ = piece.pos().z();
 
         world.prefetch(new AxisAlignedBB(
                 pieceX * T_VOXELS, 0, pieceZ * T_VOXELS,

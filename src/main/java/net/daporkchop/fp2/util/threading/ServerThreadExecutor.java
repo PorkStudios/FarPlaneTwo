@@ -85,8 +85,12 @@ public final class ServerThreadExecutor implements WorldWorkerManager.IWorker, E
         }
     }
 
-    public boolean isServerThread()    {
+    public boolean isServerThread() {
         return Thread.currentThread() == this.serverThread;
+    }
+
+    public void checkServerThread() {
+        checkState(this.isServerThread(), "not on server thread?!?");
     }
 
     public void startup() {

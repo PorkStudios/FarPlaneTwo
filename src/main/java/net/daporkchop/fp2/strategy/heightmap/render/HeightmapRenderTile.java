@@ -172,18 +172,29 @@ class HeightmapRenderTile extends AxisAlignedBB {
 
         if (this.children != null && ranges[this.level - 1].intersects(this)) {
             //this tile intersects with the view distance for tiles below it, consider selecting them as well
-            //currently there is no mechanism for rendering part of a tile, so we only do the actual selection at the next level
-            // if all of the children could be selectable
             //if all children are selectable, select all of them
-            int mark = index.mark();
-            for (int i = 0, len = this.children.length; i < len; i++) {
-                if (this.children[i] == null || !this.children[i].select(ranges, frustum, index)) {
-                    //if any one of the children cannot be added, abort and add this tile over the whole area instead
-                    index.restore(mark);
-                    return index.add(this);
+            if (this.hasAddress())  {
+                //this tile contains renderable data, so only add below pieces if all of them are present
+                //this is necessary because there is no mechanism for rendering part of a tile
+                int mark = index.mark();
+                for (int i = 0, len = this.children.length; i < len; i++) {
+                    if (this.children[i] == null || !this.children[i].select(ranges, frustum, index)) {
+                        //if any one of the children cannot be added, abort and add this tile over the whole area instead
+                        index.restore(mark);
+                        return index.add(this);
+                    }
                 }
+                return true;
+            } else {
+                //this tile has no data, add as many children as possible and return true if any of them could be added
+                boolean flag = false;
+                for (int i = 0, len = this.children.length; i < len; i++) {
+                    if (this.children[i] != null) {
+                        flag |= this.children[i].select(ranges, frustum, index);
+                    }
+                }
+                return flag;
             }
-            return true;
         }
 
         //add self to render output

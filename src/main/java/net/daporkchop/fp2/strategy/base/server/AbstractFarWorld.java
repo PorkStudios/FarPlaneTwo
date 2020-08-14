@@ -22,7 +22,6 @@ package net.daporkchop.fp2.strategy.base.server;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import io.netty.util.concurrent.ProgressiveFuture;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
@@ -46,7 +45,6 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.WorldServer;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -81,6 +79,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
 
     protected final boolean lowResolution;
     protected final boolean inaccurate;
+    protected final boolean refine;
+    protected final boolean refineProgressive;
 
     public AbstractFarWorld(@NonNull WorldServer world, @NonNull RenderMode mode) {
         this.world = world;
@@ -114,6 +114,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
 
         this.lowResolution = FP2Config.performance.lowResolutionEnable && this.generatorRough.supportsLowResolution();
         this.inaccurate = this.lowResolution && this.generatorRough.isLowResolutionInaccurate();
+        this.refine = this.inaccurate && FP2Config.performance.lowResolutionRefine;
+        this.refineProgressive = this.refine && FP2Config.performance.lowResolutionRefineProgressive;
 
         this.scaler = this.mode().uncheckedCreateScaler(world);
         this.storage = this.mode().uncheckedCreateStorage(world);
@@ -128,11 +130,11 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
     @Override
     public P getPieceLazy(@NonNull POS pos) {
         P piece = this.cache.getIfPresent(pos);
-        if (piece == null || piece.timestamp() == IFarPiece.PIECE_EMPTY)  {
+        if (piece == null || piece.timestamp() == IFarPiece.PIECE_EMPTY) {
             if (this.notDone.add(pos)) {
                 //piece is not in cache and was newly marked as queued
                 TaskKey key = new TaskKey(TaskStage.LOAD, pos.level());
-                this.executor.submit(new GetPieceTask<>(this, key, pos));
+                this.executor.submit(new GetPieceTask<>(this, key, pos, true));
             }
             return null;
         }
@@ -148,18 +150,28 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
         }
     }
 
-    public void pieceChanged(@NonNull P piece, @NonNull POS pos, long newTimestamp) {
-        checkArg(newTimestamp != IFarPiece.PIECE_EMPTY);
+    @SuppressWarnings("unchecked")
+    public void pieceChanged(@NonNull P piece) {
+        if (piece.isEmpty())   {
+            return;
+        }
 
+        this.cache.put(piece.pos(), piece);
         ((IFarContext) this.world).tracker().pieceChanged(piece);
 
-        if (newTimestamp >= 0L && piece.isDirty()) { //only do stuff if the piece has been fully generated and its contents changed
-            //save the piece
-            this.executor.submit(new SavePieceTask<>(this, new TaskKey(TaskStage.SAVE, pos.level()), pos, piece));
+        if (piece.isDone()) {
+            //unmark piece as being incomplete
+            this.notDone.remove(piece.pos());
 
-            if (newTimestamp > 0L && pos.level() < FP2Config.maxLevels) {
-                //the piece has been generated with the exact generator, schedule all output pieces for scaling
-                this.scaler.outputs(pos).forEach(p -> this.schedulePieceForScaling(p, newTimestamp));
+            if (piece.isDirty()) { //only do stuff if the piece has been fully generated and its contents changed
+                //save the piece
+                this.executor.submit(new SavePieceTask<>(this, new TaskKey(TaskStage.SAVE, piece.level()), piece.pos(), piece));
+
+                //TODO: make scaling work again...
+                /*if (newTimestamp > 0L && pos.level() < FP2Config.maxLevels) {
+                    //the piece has been generated with the exact generator, schedule all output pieces for scaling
+                    this.scaler.outputs(pos).forEach(p -> this.schedulePieceForScaling(p, newTimestamp));
+                }*/
             }
         }
     }

@@ -20,11 +20,7 @@
 
 package net.daporkchop.fp2.strategy.base.server.task;
 
-import io.netty.util.concurrent.GenericFutureListener;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.base.server.AbstractFarWorld;
 import net.daporkchop.fp2.strategy.base.server.TaskKey;
 import net.daporkchop.fp2.strategy.base.server.TaskStage;
@@ -36,8 +32,6 @@ import net.daporkchop.fp2.util.threading.executor.LazyTask;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static net.daporkchop.lib.common.util.PorkUtil.*;
-
 /**
  * Main task for loading pieces, this actually gets the piece from disk, creates a new one if absent and queues it for generation if it doesn't contain
  * any data.
@@ -45,10 +39,14 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 public class GetPieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractPieceTask<POS, P, Void> {
-    public GetPieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos) {
+    protected final boolean top;
+
+    public GetPieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos, boolean top) {
         super(world, key, pos);
 
-        this.addListener(uncheckedCast(Callback.INSTANCE));
+        this.top = top;
+
+        world.notDone().add(pos);
     }
 
     @Override
@@ -59,36 +57,22 @@ public class GetPieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends
     @Override
     public P run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) {
         P piece = this.world.getRawPieceBlocking(this.pos);
-        long version = piece.timestamp();
-        if (version < IFarPiece.PIECE_ROUGH_COMPLETE) { //the piece has not been fully generated yet
-            boolean supportsLowResolution = FP2Config.performance.lowResolutionEnable && this.world.generatorRough().supportsLowResolution();
-            if (this.pos.level() == 0 || supportsLowResolution) {
+        if (piece.isDone()) {
+            //this adds the piece to the cache, unmarks it as not done and notifies the player tracker
+            this.world.pieceChanged(piece);
+        } else { //the piece has not been fully generated yet
+            if (this.pos.level() == 0 || this.world.lowResolution()) {
                 //the piece can be generated using the rough generator
-                TaskKey key = this.key.stage() == TaskStage.LOAD ? this.key.withStage(TaskStage.ROUGH_GENERATE) : this.key;
-                executor.submit(new RoughGeneratePieceTask<>(this.world, key, this.pos).thenCopyStatusTo(this));
+                executor.submit(new RoughGeneratePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_GENERATE), this.pos, this.top).thenCopyStatusTo(this));
             } else {
                 //the piece is at a lower detail than 0, and low-resolution generation is not an option
                 //this will generate the piece and all pieces below it down to level 0 until the piece can be "generated" from scaled data
-                TaskKey key = this.key.stage() == TaskStage.LOAD ? this.key.withStage(TaskStage.ROUGH_GENERATE) : this.key;
-                executor.submit(new RoughScalePieceTask<>(this.world, key, this.pos, 0).thenCopyStatusTo(this));
+                executor.submit(new RoughScalePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_SCALE), this.pos, 0).thenCopyStatusTo(this));
             }
-            if (version == IFarPiece.PIECE_EMPTY) {
+            if (piece.isEmpty()) {
                 return null; //don't store the piece in the world until it contains at least SOME data
             }
         }
         return piece;
-    }
-
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Callback<POS extends IFarPos, P extends IFarPiece<POS>> implements GenericFutureListener<GetPieceTask<POS, P>> {
-        private static final Callback INSTANCE = new Callback();
-
-        @Override
-        public void operationComplete(@NonNull GetPieceTask<POS, P> task) throws Exception {
-            if (task.isSuccess()) {
-                task.world.cache().put(task.pos, task.getNow());
-            }
-            task.world.notDone().remove(task.pos);
-        }
     }
 }

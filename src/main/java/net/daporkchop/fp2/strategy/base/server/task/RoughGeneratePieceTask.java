@@ -41,10 +41,13 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractPieceTask<POS, P, Void> {
+    protected final boolean top;
     protected final boolean inaccurate;
 
-    public RoughGeneratePieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos) {
+    public RoughGeneratePieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos, boolean top) {
         super(world, key, pos);
+
+        this.top = top;
 
         boolean lowRes = pos.level() != 0;
         if (lowRes) {
@@ -52,7 +55,7 @@ public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS
             checkArg(world.generatorRough().supportsLowResolution(),
                     "rough generator (%s) cannot generate low-resolution piece at level %d!", world.generatorRough(), pos.level());
         }
-        this.inaccurate = lowRes && world.generatorRough().isLowResolutionInaccurate();
+        this.inaccurate = lowRes && world.inaccurate();
     }
 
     @Override
@@ -63,7 +66,7 @@ public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS
     @Override
     public P run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
         P piece = this.world.getRawPieceBlocking(this.pos);
-        long newTimestamp = this.inaccurate
+        long newTimestamp = this.inaccurate && this.world.refine()
                 ? IFarPiece.pieceRough(this.pos.level()) //if the piece is inaccurate, it will need to be re-generated later based on scaled data
                 : IFarPiece.PIECE_ROUGH_COMPLETE;
         if (piece.timestamp() >= newTimestamp) {
@@ -82,11 +85,12 @@ public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS
             piece.writeLock().unlock();
         }
 
-        this.world.pieceChanged(piece, this.pos, newTimestamp);
+        this.world.pieceChanged(piece);
 
-        if (this.inaccurate) {
+        if (this.top && this.inaccurate && this.world.refine()) {
             //piece is low-resolution and inaccurate, we should now enqueue it to generate scaled data from the layer below
-            executor.submit(new RoughScalePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_SCALE).lowerTie(), this.pos, 0));
+            executor.submit(new RoughScalePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_SCALE).lowerTie(), this.pos,
+                    this.world.refineProgressive() ? this.pos.level() - 1 : 0));
         }
         return piece;
     }

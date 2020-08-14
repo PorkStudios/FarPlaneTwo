@@ -61,12 +61,18 @@ public final class CWGContext {
             //TODO: this is really slow because it uses the vanilla biome cache
             Biome[] biomes = this.biomeCache;
             BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-            for (int x = -1; x <= T_VOXELS; x++) {
-                for (int z = -1; z <= T_VOXELS; z++) {
+            for (int x = 0; x < T_VOXELS; x++) {
+                for (int z = 0; z < T_VOXELS; z++) {
                     pos.setPos(baseX + (x << level), 0, baseZ + (z << level));
                     biomes[(z + 1) * BIOME_CACHE_SIZE + (x + 1)] = this.biomeProvider.getBiome(pos, Biomes.PLAINS);
                 }
             }
+            /*for (int x = -1; x <= T_VOXELS; x++) {
+                for (int z = -1; z <= T_VOXELS; z++) {
+                    pos.setPos(baseX + (x << level), 0, baseZ + (z << level));
+                    biomes[(z + 1) * BIOME_CACHE_SIZE + (x + 1)] = this.biomeProvider.getBiome(pos, Biomes.PLAINS);
+                }
+            }*/
             return biomes;
         }
     }

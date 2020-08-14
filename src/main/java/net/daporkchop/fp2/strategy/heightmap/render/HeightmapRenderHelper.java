@@ -46,6 +46,9 @@ public class HeightmapRenderHelper {
     public static ByteBuf bakePiece(@NonNull HeightmapPiece piece) {
         ByteBuf buffer = Constants.allocateByteBuf(HEIGHTMAP_RENDER_SIZE);
 
+        final int blockX = piece.pos().blockX();
+        final int blockZ = piece.pos().blockZ();
+
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
 
@@ -54,7 +57,7 @@ public class HeightmapRenderHelper {
                 int height = piece.height(x, z);
                 int block = piece.block(x, z);
 
-                pos.setPos(piece.blockX() + (x << piece.level()), height, piece.blockZ() + (z << piece.level()));
+                pos.setPos(blockX + (x << piece.level()), height, blockZ + (z << piece.level()));
                 biomeAccess.biome(Biome.getBiome(piece.biome(x, z), Biomes.PLAINS));
 
                 buffer.writeInt(height)

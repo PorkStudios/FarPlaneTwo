@@ -68,11 +68,7 @@ public abstract class AbstractFarPiece<POS extends IFarPos> implements IFarPiece
         this(PorkUtil.<POS>uncheckedCast(mode.readPos(src)), mode);
 
         this.timestamp = src.readLong();
-
-        this.readBody(src);
     }
-
-    protected abstract void readBody(@NonNull ByteBuf src);
 
     @Override
     public void writePiece(@NonNull ByteBuf dst) {

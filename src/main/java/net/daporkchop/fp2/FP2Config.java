@@ -140,12 +140,14 @@ public class FP2Config {
                 "Whether or not tiles can be generated at low resolution.",
                 "The generator must support this feature as well."
         })
+        @Config.LangKey("config.fp2.performance.lowResolutionEnable")
         public boolean lowResolutionEnable = true;
 
         @Config.Comment({
                 "If low resolution is enabled, allows tiles to be initially generated at low resolution and subsequently be replaced by higher resolution",
                 "tiles once available."
         })
+        @Config.LangKey("config.fp2.performance.lowResolutionRefine")
         public boolean lowResolutionRefine = true;
 
         @Config.Comment({
@@ -153,6 +155,7 @@ public class FP2Config {
                 "maximum resolution is reached, rather than doing the entire process in a single step.",
                 "This will generally not improve visual quality much, and can result in significantly higher CPU usage."
         })
+        @Config.LangKey("config.fp2.performance.lowResolutionRefineProgressive")
         public boolean lowResolutionRefineProgressive = false;
     }
 
@@ -169,21 +172,24 @@ public class FP2Config {
         public Leveldb leveldb = new Leveldb();
 
         public static class Leveldb {
-            public boolean errorIfExists;
+            @Config.RangeInt(min = 0)
             public int writeBufferSize = 4 << 20;
 
+            @Config.RangeInt(min = 1)
             public int maxOpenFiles = 1000;
 
+            @Config.RangeInt(min = 1)
             public int blockRestartInterval = 16;
+            @Config.RangeInt(min = 1)
             public int blockSize = 4 * 1024;
             public CompressionType compressionType = CompressionType.NONE;
             public boolean verifyChecksums = true;
             public boolean paranoidChecks;
+            @Config.RangeInt(min = 0)
             public int cacheSize;
 
             public Options use()    {
                 return new Options()
-                        .errorIfExists(this.errorIfExists)
                         .writeBufferSize(this.writeBufferSize)
                         .maxOpenFiles(this.maxOpenFiles)
                         .blockRestartInterval(this.blockRestartInterval)
