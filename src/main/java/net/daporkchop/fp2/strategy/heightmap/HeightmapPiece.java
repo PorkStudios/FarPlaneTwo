@@ -24,6 +24,8 @@ import io.netty.buffer.ByteBuf;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.strategy.RenderMode;
+import net.daporkchop.fp2.strategy.base.AbstractFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.misc.string.PStrings;
@@ -46,92 +48,39 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapPos> {
-    protected static final long TIMESTAMP_OFFSET = PUnsafe.pork_getOffset(HeightmapPiece.class, "timestamp");
-    protected static final long DIRTY_OFFSET = PUnsafe.pork_getOffset(HeightmapPiece.class, "dirty");
-
-    public static final int HEIGHT_SIZE = 4;
-    public static final int HEIGHT_OFFSET = 0;
-
-    public static final int BLOCK_SIZE = 4;
-    public static final int BLOCK_OFFSET = HEIGHT_OFFSET + HEIGHT_SIZE;
-
-    public static final int ATTRS_SIZE = 4;
-    public static final int ATTRS_OFFSET = BLOCK_OFFSET + BLOCK_SIZE;
-
-    public static final int PADDING_SIZE = 4;
-    public static final int PADDING_OFFSET = ATTRS_OFFSET + ATTRS_SIZE;
-
-    public static final int ENTRY_SIZE = PADDING_OFFSET + PADDING_SIZE;
+public class HeightmapPiece extends AbstractFarPiece<HeightmapPos> {
+    public static final int ENTRY_SIZE = 4;
     public static final int ENTRY_COUNT = T_VOXELS * T_VOXELS;
 
     public static final int TOTAL_SIZE = ENTRY_COUNT * ENTRY_SIZE;
-
-    private static int biomeIndex(int x, int z) {
-        x += 1;
-        z += 1;
-        checkArg(x >= 0 && x < T_VOXELS + 2 && z >= 0 && z < T_VOXELS + 2, "coordinates out of bounds (x=%d, z=%d)", x, z);
-        return x * (T_VOXELS + 2) + z;
-    }
 
     private static int index(int x, int z) {
         checkArg(x >= 0 && x < T_VOXELS && z >= 0 && z < T_VOXELS, "coordinates out of bounds (x=%d, z=%d)", x, z);
         return (x * T_VOXELS + z) * 4;
     }
 
-    protected final ReadWriteLock lock = new ReentrantReadWriteLock();
-
     protected final IntBuffer data = Constants.createIntBuffer(ENTRY_COUNT * 4);
 
-    protected volatile long timestamp = PIECE_EMPTY;
-
-    @Getter(AccessLevel.NONE)
-    protected transient volatile int dirty = 0;
-
-    public HeightmapPiece(int x, int z, int level) {
-        super(x, z, level);
+    public HeightmapPiece(@NonNull HeightmapPos pos) {
+        super(pos, RenderMode.HEIGHTMAP);
     }
 
-    public HeightmapPiece(@NonNull ByteBuf buf) {
-        super(buf);
+    public HeightmapPiece(@NonNull ByteBuf src) {
+        super(src, RenderMode.HEIGHTMAP);
+    }
 
-        this.timestamp = buf.readLong();
-
-        for (int i = 0; i < ENTRY_COUNT * 4; i++) {
-            this.data.put(i, buf.readInt());
+    @Override
+    protected void readBody(@NonNull ByteBuf src) {
+        for (int i = 0; i < TOTAL_SIZE; i++) {
+            this.data.put(i, src.readInt());
         }
     }
 
     @Override
-    public void writePiece(@NonNull ByteBuf dst) {
-        long timestamp = this.timestamp;
-        checkState(timestamp != PIECE_EMPTY, "piece does not contain any data! %d", timestamp);
-        this.writePos(dst);
-
-        dst.writeLong(timestamp);
-
-        for (int i = 0; i < ENTRY_COUNT * 4; i++) {
+    protected void writeBody(@NonNull ByteBuf dst) {
+        for (int i = 0; i < TOTAL_SIZE; i++) {
             dst.writeInt(this.data.get(i));
         }
-    }
-
-    @Override
-    public void updateTimestamp(long timestamp) throws IllegalArgumentException {
-        long current;
-        do {
-            current = PUnsafe.getLongVolatile(this, TIMESTAMP_OFFSET);
-            checkArg(timestamp > current, "new timestamp (%d) must be greater than current timestamp (%d)!", timestamp, current);
-        } while (!PUnsafe.compareAndSwapLong(this, TIMESTAMP_OFFSET, current, timestamp));
-    }
-
-    @Override
-    public Lock readLock() {
-        return this.lock.readLock();
-    }
-
-    @Override
-    public Lock writeLock() {
-        return this.lock.writeLock();
     }
 
     public int height(int x, int z) {
@@ -179,30 +128,5 @@ public class HeightmapPiece extends HeightmapPos implements IFarPiece<HeightmapP
         for (int i = 0; i < 4; i++) {
             this.data.put(base + i, src.data.get(srcBase + i));
         }
-    }
-
-    @Override
-    public HeightmapPos pos() {
-        return new HeightmapPos(this);
-    }
-
-    @Override
-    public boolean isDirty() {
-        return this.dirty != 0;
-    }
-
-    @Override
-    public void markDirty() {
-        this.dirty = 1;
-    }
-
-    @Override
-    public boolean clearDirty() {
-        return PUnsafe.compareAndSwapInt(this, DIRTY_OFFSET, 1, 0);
-    }
-
-    @Override
-    public String toString() {
-        return PStrings.fastFormat("HeightmapPiece(x=%d, z=%d, level=%d, timestamp=%d, dirty=%b)", this.x, this.z, this.level, this.timestamp, this.isDirty());
     }
 }

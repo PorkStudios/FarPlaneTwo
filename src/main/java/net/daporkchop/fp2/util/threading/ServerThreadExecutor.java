@@ -85,6 +85,10 @@ public final class ServerThreadExecutor implements WorldWorkerManager.IWorker, E
         }
     }
 
+    public boolean isServerThread()    {
+        return Thread.currentThread() == this.serverThread;
+    }
+
     public void startup() {
         checkState(PUnsafe.compareAndSwapInt(this, ADDED_OFFSET, 0, 1), "already added?!?");
         this.serverThread = Thread.currentThread();

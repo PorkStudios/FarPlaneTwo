@@ -20,59 +20,35 @@
 
 package net.daporkchop.fp2.strategy.heightmap;
 
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
-import net.daporkchop.fp2.net.server.SPacketPieceData;
-import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
-import net.daporkchop.fp2.strategy.common.server.IFarPlayerTracker;
-import net.daporkchop.fp2.strategy.common.server.IFarWorld;
+import net.daporkchop.fp2.strategy.base.server.AbstractPlayerTracker;
 import net.minecraft.entity.player.EntityPlayerMP;
 
-import java.util.IdentityHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, HeightmapPiece> {
-    protected final HeightmapWorld world;
-    protected final Map<EntityPlayerMP, Set<HeightmapPos>> tracking = new IdentityHashMap<>();
-
-    public HeightmapPlayerTracker(@NonNull IFarWorld world) {
-        this.world = (HeightmapWorld) world;
+public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, HeightmapPiece> {
+    public HeightmapPlayerTracker(@NonNull HeightmapWorld world) {
+        super(world);
     }
 
     @Override
-    public synchronized void playerAdd(@NonNull EntityPlayerMP player) {
-        LOGGER.debug("Added player {} to tracker in dimension {}", player.getName(), this.world.world().provider.getDimension());
-        this.tracking.put(player, new ObjectOpenHashSet<>());
-    }
+    protected Stream<HeightmapPos> getPositions(@NonNull EntityPlayerMP player) {
+        final int dist = FP2Config.renderDistance >> T_SHIFT; //TODO: make it based on render distance
+        final int baseX = floorI(player.posX) >> T_SHIFT;
+        final int baseZ = floorI(player.posZ) >> T_SHIFT;
 
-    @Override
-    public synchronized void playerRemove(@NonNull EntityPlayerMP player) {
-        LOGGER.debug("Removed player {} from tracker in dimension {}", player.getName(), this.world.world().provider.getDimension());
-        this.tracking.remove(player);
-    }
+        final int levels = FP2Config.maxLevels;
+        final int d = (FP2Config.levelCutoffDistance >> T_SHIFT) + 1;
 
-    @Override
-    public synchronized void playerMove(@NonNull EntityPlayerMP player) {
-        int dist = FP2Config.renderDistance >> T_SHIFT;
-        int baseX = floorI(player.posX) >> T_SHIFT;
-        int baseZ = floorI(player.posZ) >> T_SHIFT;
-
-        Set<HeightmapPos> prev = this.tracking.get(player);
-        Set<HeightmapPos> next = new ObjectOpenHashSet<>((dist * 2 + 2) * (dist * 2 + 2));
-
-        int levels = FP2Config.maxLevels;
-        int d = (FP2Config.levelCutoffDistance >> T_SHIFT) + 1;
+        HeightmapPos[] positions = new HeightmapPos[(d * 2 + 1) * (d * 2 + 1) * levels];
+        int i = 0;
 
         for (int lvl = 0; lvl < levels; lvl++) {
             /*int xMin = ((baseX >> lvl) - d) & ~1;
@@ -86,41 +62,11 @@ public class HeightmapPlayerTracker implements IFarPlayerTracker<HeightmapPos, H
 
             for (int x = xMin; x <= xMax; x++) {
                 for (int z = zMin; z <= zMax; z++) {
-                    HeightmapPos pos = new HeightmapPos(x, z, lvl);
-                    if (!prev.remove(pos)) {
-                        //piece wasn't loaded before, we should load and send it
-                        HeightmapPiece piece = this.world.getPieceLazy(pos);
-                        if (piece != null) {
-                            NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player);
-                        } else {
-                            continue; //don't add to next, to indicate that the piece hasn't been sent yet
-                        }
-                    }
-                    next.add(pos);
+                    positions[i++] = new HeightmapPos(x, z, lvl);
                 }
             }
         }
 
-        for (HeightmapPos pos : prev) {//unload all previously loaded pieces
-            NETWORK_WRAPPER.sendTo(new SPacketUnloadPiece().pos(pos), player);
-        }
-        checkState(this.tracking.replace(player, prev, next));
-    }
-
-    @Override
-    public synchronized void pieceChanged(@NonNull HeightmapPiece piece) {
-        this.tracking.forEach((player, curr) -> {
-            if (curr.contains(piece)) { //HeightmapPiece is also a HeightmapPos
-                NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(piece), player);
-            }
-        });
-    }
-
-    @Override
-    public synchronized void debug_dropAllPieces(@NonNull EntityPlayerMP player) {
-        this.tracking.computeIfPresent(player, (p, positions) -> {
-            positions.forEach(pos -> NETWORK_WRAPPER.sendTo(new SPacketUnloadPiece().pos(pos), p));
-            return new ObjectOpenHashSet<>();
-        });
+        return Stream.of(positions);
     }
 }

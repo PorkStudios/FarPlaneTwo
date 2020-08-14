@@ -80,6 +80,13 @@ public interface IFarPiece<POS extends IFarPos> extends ReadWriteLock {
      */
     void updateTimestamp(long timestamp) throws IllegalArgumentException;
 
+    /**
+     * @return whether or not this piece is done (i.e. has been fully generated and may be saved)
+     */
+    default boolean isDone() {
+        return this.timestamp() >= PIECE_ROUGH_COMPLETE;
+    }
+
     boolean isDirty();
 
     void markDirty();
@@ -94,4 +101,8 @@ public interface IFarPiece<POS extends IFarPos> extends ReadWriteLock {
      * @param dst the {@link ByteBuf} to write to
      */
     void writePiece(@NonNull ByteBuf dst);
+
+    default int level() {
+        return this.pos().level();
+    }
 }

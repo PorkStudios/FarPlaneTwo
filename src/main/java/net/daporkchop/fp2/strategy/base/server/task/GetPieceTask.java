@@ -88,7 +88,7 @@ public class GetPieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends
             if (task.isSuccess()) {
                 task.world.cache().put(task.pos, task.getNow());
             }
-            task.world.queuedPositions().remove(task.pos);
+            task.world.notDone().remove(task.pos);
         }
     }
 }

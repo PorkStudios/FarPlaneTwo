@@ -91,60 +91,6 @@ public class LazyPriorityExecutor<K extends LazyKey<K>> {
         }
     }
 
-    public EventExecutor maxPriorityExecutor()   {
-        class MaxPriorityExecutor implements Executor {
-            protected final EventExecutor nettyExecutor = PExecutors.toNettyExecutor(this);
-
-            @Override
-            public void execute(@NonNull Runnable task) {
-                class RunnableWrapper extends DefaultPFuture<Void> implements LazyTask<K,Void, Void> {
-                    protected final Runnable task;
-
-                    public RunnableWrapper(@NonNull Runnable task) {
-                        super(MaxPriorityExecutor.this.nettyExecutor);
-
-                        this.task = task;
-                    }
-
-                    @Override
-                    public K key() {
-                        return null;
-                    }
-
-                    @Override
-                    public Stream<? extends LazyTask<K, ?, Void>> before(@NonNull K key) {
-                        return Stream.empty();
-                    }
-
-                    @Override
-                    public Void run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<K> executor) throws Exception {
-                        this.task.run();
-                        return null;
-                    }
-
-                    @Override
-                    public RunnableWrapper setSuccess(Void result) {
-                        super.setSuccess(result);
-                        return this;
-                    }
-
-                    @Override
-                    public RunnableWrapper setFailure(Throwable cause) {
-                        super.setFailure(cause);
-                        return this;
-                    }
-
-                    @Override
-                    public void cancel() {
-                        super.cancel(false);
-                    }
-                }
-                LazyPriorityExecutor.this.submit(new RunnableWrapper(task));
-            }
-        }
-        return new MaxPriorityExecutor().nettyExecutor;
-    }
-
     protected class Worker implements Runnable {
         @Override
         public void run() {

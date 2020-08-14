@@ -91,7 +91,7 @@ public enum RenderMode {
 
         @Override
         public IFarPlayerTracker createPlayerTracker(@NonNull IFarWorld world) {
-            return new HeightmapPlayerTracker(world);
+            return new HeightmapPlayerTracker(uncheckedCast(world));
         }
 
         @Override
@@ -112,8 +112,7 @@ public enum RenderMode {
 
         @Override
         public IFarPiece piece(@NonNull IFarPos posIn) {
-            HeightmapPos pos = (HeightmapPos) posIn;
-            return new HeightmapPiece(pos.x(), pos.z(), pos.level());
+            return new HeightmapPiece((HeightmapPos) posIn);
         }
 
         @Override
