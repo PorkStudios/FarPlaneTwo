@@ -34,6 +34,7 @@ import net.minecraft.world.WorldServer;
 import org.spongepowered.asm.mixin.Implements;
 import org.spongepowered.asm.mixin.Interface;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -55,6 +56,11 @@ public abstract class MixinWorldServer extends World implements IFarContext, Cac
     protected IFarWorld world;
     protected IFarPlayerTracker tracker;
 
+    @Unique
+    protected int cbaGcTicks;
+    @Unique
+    protected int saveTicks;
+
     protected MixinWorldServer() {
         super(null, null, null, null, false);
     }
@@ -69,7 +75,14 @@ public abstract class MixinWorldServer extends World implements IFarContext, Cac
                     target = "Lnet/minecraft/world/chunk/IChunkProvider;tick()Z",
                     shift = At.Shift.AFTER))
     private void tick_postChunkProviderTick(CallbackInfo ci) {
-        this.cachedBlockAccess.gc();
+        if (this.cbaGcTicks++ > 40) {
+            this.cbaGcTicks = 0;
+            this.cachedBlockAccess.gc();
+        }
+        if (this.saveTicks > 1200) {
+            this.saveTicks = 0;
+            this.world.save();
+        }
     }
 
     @Override

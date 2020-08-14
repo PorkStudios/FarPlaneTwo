@@ -63,4 +63,12 @@ public interface IFarPos {
      * @param dst the {@link ByteBuf} to write to
      */
     void writePosNoLevel(@NonNull ByteBuf dst);
+
+    /**
+     * Checks whether or not this position contains the given {@link IFarPos}.
+     *
+     * @param posIn the {@link IFarPos} to check
+     * @return whether or not this position contains the given {@link IFarPos}
+     */
+    boolean contains(@NonNull IFarPos posIn);
 }

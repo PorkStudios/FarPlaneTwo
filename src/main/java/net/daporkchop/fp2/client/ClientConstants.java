@@ -20,14 +20,8 @@
 
 package net.daporkchop.fp2.client;
 
-import io.netty.util.concurrent.EventExecutorGroup;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.PriorityThreadFactory;
-import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.chunk.CompiledChunk;
@@ -38,34 +32,16 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.nio.IntBuffer;
 
-import static net.daporkchop.lib.common.util.PValidation.*;
-
 /**
  * @author DaPorkchop_
  */
 @UtilityClass
 @SideOnly(Side.CLIENT)
 public class ClientConstants {
-    public static EventExecutorGroup RENDER_WORKERS;
-
     public static void init() {
-        checkState(RENDER_WORKERS == null);
-
-        RENDER_WORKERS = new UnorderedThreadPoolEventExecutor(
-                FP2Config.client.renderThreads,
-                new PriorityThreadFactory(
-                        new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Rendering Thread #%d").priority(Thread.MIN_PRIORITY).build(),
-                        Thread.MIN_PRIORITY));
     }
 
     public static void shutdown() {
-        Future<?> mesh = RENDER_WORKERS.shutdownGracefully();
-
-        Constants.LOGGER.info("Shutting down render worker pool...");
-        mesh.syncUninterruptibly();
-        Constants.LOGGER.info("Done.");
-
-        RENDER_WORKERS = null;
     }
 
     public static IntBuffer renderableChunksMask(Minecraft mc, IntBuffer buffer) {

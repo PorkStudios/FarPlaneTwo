@@ -22,13 +22,16 @@ package net.daporkchop.fp2.strategy.base.server;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.base.server.task.GetPieceTask;
 import net.daporkchop.fp2.strategy.base.server.task.LoadPieceAction;
-import net.daporkchop.fp2.strategy.base.server.task.SavePieceTask;
+import net.daporkchop.fp2.strategy.base.server.task.SavePieceAction;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
@@ -36,15 +39,28 @@ import net.daporkchop.fp2.strategy.common.server.IFarGenerator;
 import net.daporkchop.fp2.strategy.common.server.IFarScaler;
 import net.daporkchop.fp2.strategy.common.server.IFarStorage;
 import net.daporkchop.fp2.strategy.common.server.IFarWorld;
+import net.daporkchop.fp2.util.threading.KeyedTaskScheduler;
 import net.daporkchop.fp2.util.threading.PriorityThreadFactory;
 import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
+import net.daporkchop.fp2.util.threading.executor.LazyTask;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
+import net.daporkchop.lib.common.misc.file.PFiles;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
+import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.WorldServer;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,6 +68,7 @@ import java.util.concurrent.ExecutionException;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -76,6 +93,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
     protected final Set<POS> notDone = ConcurrentHashMap.newKeySet();
 
     protected final LazyPriorityExecutor<TaskKey> executor;
+    protected final KeyedTaskScheduler<POS> ioExecutor;
 
     protected final boolean lowResolution;
     protected final boolean inaccurate;
@@ -125,6 +143,13 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
                         .name(PStrings.fastFormat("FP2 DIM%d Generation Thread #%%d", world.provider.getDimension()))
                         .priority(Thread.MIN_PRIORITY).build(),
                 Thread.MIN_PRIORITY));
+        this.ioExecutor = new KeyedTaskScheduler<>(FP2Config.ioThreads, new PriorityThreadFactory(
+                new ThreadFactoryBuilder().daemon().collapsingId().formatId()
+                        .name(PStrings.fastFormat("FP2 DIM%d IO Thread #%%d", world.provider.getDimension()))
+                        .priority(Thread.MIN_PRIORITY).build(),
+                Thread.MIN_PRIORITY));
+
+        this.loadNotDone();
     }
 
     @Override
@@ -152,7 +177,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
 
     @SuppressWarnings("unchecked")
     public void pieceChanged(@NonNull P piece) {
-        if (piece.isEmpty())   {
+        if (piece.isEmpty()) {
             return;
         }
 
@@ -162,17 +187,17 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
         if (piece.isDone()) {
             //unmark piece as being incomplete
             this.notDone.remove(piece.pos());
+        }
 
-            if (piece.isDirty()) { //only do stuff if the piece has been fully generated and its contents changed
-                //save the piece
-                this.executor.submit(new SavePieceTask<>(this, new TaskKey(TaskStage.SAVE, piece.level()), piece.pos(), piece));
+        if ((FP2Config.performance.savePartial || piece.isDone()) && piece.isDirty()) {
+            //save the piece
+            this.ioExecutor.submit(piece.pos(), new SavePieceAction<>(this, piece));
 
-                //TODO: make scaling work again...
-                /*if (newTimestamp > 0L && pos.level() < FP2Config.maxLevels) {
-                    //the piece has been generated with the exact generator, schedule all output pieces for scaling
-                    this.scaler.outputs(pos).forEach(p -> this.schedulePieceForScaling(p, newTimestamp));
-                }*/
-            }
+            //TODO: make scaling work again...
+            /*if (newTimestamp > 0L && pos.level() < FP2Config.maxLevels) {
+                //the piece has been generated with the exact generator, schedule all output pieces for scaling
+                this.scaler.outputs(pos).forEach(p -> this.schedulePieceForScaling(p, newTimestamp));
+            }*/
         }
     }
 
@@ -192,9 +217,99 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
     }
 
     @Override
+    public void save() {
+        try {
+            this.saveNotDone();
+        } catch (IOException e) {
+            LOGGER.error("Unable to save in DIM" + this.world.provider.getDimension(), e);
+        }
+    }
+
+    @Override
     public void close() throws IOException {
+        LOGGER.trace("Shutting down generation workers in DIM{}", this.world.provider.getDimension());
         this.executor.shutdown();
+        LOGGER.trace("Shutting down IO workers in DIM{}", this.world.provider.getDimension());
+        this.ioExecutor.shutdown();
+        LOGGER.trace("Shutting down storage in DIM{}", this.world.provider.getDimension());
         this.storage.close();
+        this.saveNotDone();
+    }
+
+    protected void saveNotDone() throws IOException {
+        if (FP2Config.debug.disablePersistence || FP2Config.debug.disableWrite || this.notDone.isEmpty()) {
+            return;
+        }
+
+        LOGGER.trace("Saving incomplete pieces in DIM{}", this.world.provider.getDimension());
+        List<POS> positions = new ArrayList<>();
+        ITR:
+        for (Iterator<POS> iterator = this.notDone.iterator(); iterator.hasNext(); ) {
+            POS pos = iterator.next();
+            iterator.remove();
+
+            for (int i = 0, size = positions.size(); i < size; i++) {
+                if (positions.get(i).contains(pos)) {
+                    //a position that contains the current position has already been added, avoid enqueuing duplicate positions
+                    continue ITR;
+                }
+            }
+
+            //same check as above, but backwards
+            positions.removeIf(pos::contains);
+
+            positions.add(pos);
+        }
+
+        File root = this.storage.storageRoot();
+        File tmpFile = PFiles.ensureFileExists(new File(root, "notDone.tmp"));
+        File file = new File(root, "notDone");
+
+        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
+        try (DataOut out = ZSTD_DEF.get().compressionStream(DataOut.wrapNonBuffered(tmpFile))) {
+            out.writeVarInt(positions.size());
+            for (POS pos : positions) {
+                pos.writePos(buf.clear());
+                out.writeVarInt(buf.readableBytes());
+                out.write(buf);
+            }
+        } finally {
+            buf.release();
+        }
+
+        Files.move(tmpFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    protected void loadNotDone() {
+        Collection<GetPieceTask<POS, P>> loadTasks = new ArrayList<>();
+
+        try {
+            File file = new File(this.storage.storageRoot(), "notDone");
+            if (FP2Config.debug.disablePersistence || FP2Config.debug.disableRead || !PFiles.checkFileExists(file)) {
+                return; //don't bother attempting to load
+            }
+
+            ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
+            try (DataIn in = ZSTD_INF.get().decompressionStream(DataIn.wrapNonBuffered(file))) {
+                for (int i = in.readVarInt() - 1; i >= 0; i--) {
+                    int size = in.readVarInt();
+                    in.read(buf.clear().ensureWritable(size), size);
+
+                    POS pos = uncheckedCast(this.mode.readPos(buf));
+                    this.notDone.add(pos);
+                    if (pos.level() < FP2Config.maxLevels)  {
+                        loadTasks.add(new GetPieceTask<>(this, new TaskKey(TaskStage.LOAD, pos.level()), pos, true));
+                    }
+                }
+            } finally {
+                buf.release();
+            }
+        } catch (IOException e) {
+            LOGGER.error("Unable to load notDone pieces!", e);
+        } finally {
+            LOGGER.info("Loaded {} persisted piece load tasks", loadTasks.size());
+            this.executor.submit(PorkUtil.<Collection<LazyTask<TaskKey, ?, ?>>>uncheckedCast(loadTasks));
+        }
     }
 }
 

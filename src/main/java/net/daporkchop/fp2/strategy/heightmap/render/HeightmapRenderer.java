@@ -20,7 +20,9 @@
 
 package net.daporkchop.fp2.strategy.heightmap.render;
 
+import io.netty.util.concurrent.GlobalEventExecutor;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.GlobalInfo;
@@ -41,6 +43,9 @@ import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.daporkchop.fp2.util.math.Cylinder;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.fp2.util.threading.KeyedTaskScheduler;
+import net.daporkchop.fp2.util.threading.PriorityThreadFactory;
+import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
+import net.daporkchop.lib.unsafe.PCleaner;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
@@ -129,9 +134,28 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
 
     protected final VertexArrayObject vao = new VertexArrayObject();
 
-    protected final KeyedTaskScheduler<HeightmapPos> scheduler = new KeyedTaskScheduler<>(RENDER_WORKERS);
+    protected final KeyedTaskScheduler<HeightmapPos> scheduler = new KeyedTaskScheduler<>(
+            FP2Config.client.renderThreads,
+            new PriorityThreadFactory(
+                    new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Rendering Thread #%d").priority(Thread.MIN_PRIORITY).build(),
+                    Thread.MIN_PRIORITY));
 
     public HeightmapRenderer(@NonNull WorldClient world) {
+        {
+            @RequiredArgsConstructor
+            class SchedulerReleaser implements Runnable {
+                @NonNull
+                protected final KeyedTaskScheduler<HeightmapPos> scheduler;
+
+                @Override
+                public void run() {
+                    //avoid calling shutdown on the reference handler thread
+                    GlobalEventExecutor.INSTANCE.execute(this.scheduler::shutdown);
+                }
+            }
+            PCleaner.cleaner(this, new SchedulerReleaser(this.scheduler));
+        }
+
         {
             ShortBuffer meshData = BufferUtils.createShortBuffer(T_VERTS * T_VERTS * 6 + 1);
             this.meshVertexCount = genMesh(T_VERTS, T_VERTS, meshData);

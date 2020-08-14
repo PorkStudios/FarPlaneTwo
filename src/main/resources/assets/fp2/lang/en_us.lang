@@ -21,7 +21,7 @@ config.fp2.renderDistance=Render distance
 config.fp2.maxLevels=Max LoD levels
 config.fp2.levelCutoffDistance=LoD level cutoff distance
 config.fp2.generationThreads=Generation threads
-config.fp2.scaleThreads=Scale Threads
+config.fp2.ioThreads=I/O Threads
 
 config.fp2.client=Client options
 config.fp2.client.renderThreads=Render threads
@@ -33,6 +33,7 @@ config.fp2.performance=Performance options
 config.fp2.performance.lowResolutionEnable=Allow low resolution
 config.fp2.performance.lowResolutionRefine=Allow refine
 config.fp2.performance.lowResolutionRefineProgressive=Allow progressive refine
+config.fp2.performance.savePartial=Allow partial save
 
 config.fp2.debug=Debug options
 config.fp2.debug.debug=Debug mode

@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.strategy.base.server.task;
 
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.strategy.base.server.AbstractFarWorld;
 import net.daporkchop.fp2.strategy.base.server.TaskKey;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
@@ -34,32 +35,24 @@ import java.util.stream.Stream;
 /**
  * @author DaPorkchop_
  */
-public class SavePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractPieceTask<POS, P, Void> {
+@RequiredArgsConstructor
+public class SavePieceAction<POS extends IFarPos, P extends IFarPiece<POS>> implements Runnable {
+    @NonNull
+    protected final AbstractFarWorld<POS, P> world;
+    @NonNull
     protected final P piece;
 
-    public SavePieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull P piece) {
-        super(world, key, pos);
-
-        this.piece = piece;
-    }
-
     @Override
-    public Stream<? extends LazyTask<TaskKey, ?, Void>> before(@NonNull TaskKey key) {
-        return Stream.empty();
-    }
-
-    @Override
-    public P run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
+    public void run() {
         if (this.piece.isDirty()) {
             this.piece.readLock().lock();
             try {
                 if (this.piece.clearDirty()) {
-                    this.world.storage().store(this.pos, this.piece);
+                    this.world.storage().store(this.piece.pos(), this.piece);
                 }
             } finally {
                 this.piece.readLock().unlock();
             }
         }
-        return this.piece;
     }
 }

@@ -82,6 +82,8 @@ public interface IFarWorld<POS extends IFarPos, P extends IFarPiece<POS>> extend
      */
     RenderMode mode();
 
+    void save();
+
     @Override
     void close() throws IOException;
 }

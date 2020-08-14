@@ -86,4 +86,13 @@ public class HeightmapPos implements IFarPos {
     public RenderMode mode() {
         return RenderMode.HEIGHTMAP;
     }
+
+    @Override
+    public boolean contains(@NonNull IFarPos posIn) {
+        HeightmapPos pos = (HeightmapPos) posIn;
+        int d = this.level - pos.level;
+        return d > 0
+               && (this.x << d) >= pos.x && ((this.x + 1) << d) < pos.x
+               && (this.z << d) >= pos.z && ((this.z + 1) << d) < pos.z;
+    }
 }

@@ -20,13 +20,13 @@
 
 package net.daporkchop.fp2.strategy.common.server;
 
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -35,6 +35,11 @@ import java.io.IOException;
  * @author DaPorkchop_
  */
 public interface IFarStorage<POS extends IFarPos, P extends IFarPiece<POS>> extends Closeable {
+    /**
+     * @return the root directory for piece storage
+     */
+    File storageRoot();
+
     /**
      * Loads the piece at the given position.
      *

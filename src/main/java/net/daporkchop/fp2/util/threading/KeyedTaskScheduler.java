@@ -23,13 +23,27 @@ package net.daporkchop.fp2.util.threading;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import io.netty.util.concurrent.EventExecutor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
+import net.daporkchop.fp2.util.threading.executor.LazyTask;
+import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.stream.Collectors;
 
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -37,8 +51,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @RequiredArgsConstructor
 public class KeyedTaskScheduler<K> {
-    @NonNull
-    protected final Executor executor;
+    protected final Thread[] threads;
 
     protected final LoadingCache<K, Queue<Runnable>> queueCache = CacheBuilder.newBuilder()
             .weakValues()
@@ -48,6 +61,20 @@ public class KeyedTaskScheduler<K> {
                     return new ArrayDeque<>();
                 }
             });
+    protected final BlockingQueue<Runnable> queue;
+
+    protected volatile boolean running = true;
+
+    public KeyedTaskScheduler(int threads, @NonNull ThreadFactory threadFactory) {
+        this.queue = new ArrayBlockingQueue<>(256);
+
+        this.threads = new Thread[positive(threads, "threads")];
+
+        Runnable worker = new Worker();
+        for (int i = 0; i < threads; i++) {
+            (this.threads[i] = threadFactory.newThread(worker)).start();
+        }
+    }
 
     public void submit(@NonNull K key, @NonNull Runnable task) {
         Queue<Runnable> queue = this.queueCache.getUnchecked(key);
@@ -56,13 +83,33 @@ public class KeyedTaskScheduler<K> {
             queue.add(task);
             if (queue.size() == 1) {
                 //the only task in the queue is this one, so let's submit it now
-                this.executor.execute(task);
+                this.queue.add(task);
             }
         }
     }
 
     public Executor keyed(@NonNull K key) {
         return task -> this.submit(key, task);
+    }
+
+    public void shutdown() {
+        this.running = false;
+
+        //interrupt all workers
+        for (Thread t : this.threads) {
+            t.interrupt();
+        }
+
+        //wait for all workers to shut down
+        for (Thread t : this.threads) {
+            do {
+                try {
+                    t.join();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            } while (t.isAlive());
+        }
     }
 
     @RequiredArgsConstructor
@@ -82,8 +129,33 @@ public class KeyedTaskScheduler<K> {
                     checkState(next == this, "this task wasn't the next one in the queue!");
                     next = this.queue.poll();
                     if (next != null) {
-                        KeyedTaskScheduler.this.executor.execute(next);
+                        KeyedTaskScheduler.this.queue.add(next);
                     }
+                }
+            }
+        }
+    }
+
+    protected class Worker implements Runnable {
+        @Override
+        public void run() {
+            while (KeyedTaskScheduler.this.running) {
+                try {
+                    KeyedTaskScheduler.this.queue.take().run();
+                } catch (InterruptedException e) {
+                    //gracefully exit on interrupt
+                } catch (Exception e) {
+                    LOGGER.error(Thread.currentThread().getName(), e);
+                }
+            }
+
+            //work off queue
+            Runnable task;
+            while ((task = KeyedTaskScheduler.this.queue.poll()) != null)   {
+                try {
+                    task.run();
+                } catch (Exception e) {
+                    LOGGER.error(Thread.currentThread().getName(), e);
                 }
             }
         }

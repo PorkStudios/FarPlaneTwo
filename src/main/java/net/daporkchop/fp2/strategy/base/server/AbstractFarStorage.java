@@ -22,6 +22,7 @@ package net.daporkchop.fp2.strategy.base.server;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
+import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.RenderMode;
@@ -52,6 +53,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiece<POS>> implements IFarStorage<POS, P> {
     protected final IntObjMap<DirectDB> dbs = new IntObjConcurrentHashMap<>();
+    @Getter
     protected final File storageRoot;
 
     protected final IntFunction<DirectDB> dbOpenFunction;

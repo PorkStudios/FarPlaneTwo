@@ -71,9 +71,19 @@ public class FP2Config {
             "The number of threads that will be used for generating far plane terrain data.",
             "Default: <cpu count> - 1 (and at least 1)"
     })
+    @Config.RangeInt(min = 1)
     @Config.LangKey("config.fp2.generationThreads")
     @Config.RequiresWorldRestart
     public static int generationThreads = max(PorkUtil.CPU_COUNT - 1, 1);
+
+    @Config.Comment({
+            "The number of threads that will be used for saving far plane terrain data.",
+            "Default: 1"
+    })
+    @Config.RangeInt(min = 1)
+    @Config.LangKey("config.fp2.ioThreads")
+    @Config.RequiresWorldRestart
+    public static int ioThreads = 1;
 
     @Config.Comment({
             "Config options available only on the client."
@@ -157,6 +167,13 @@ public class FP2Config {
         })
         @Config.LangKey("config.fp2.performance.lowResolutionRefineProgressive")
         public boolean lowResolutionRefineProgressive = false;
+
+        @Config.Comment({
+                "If low resolution refine is enabled, allows incomplete pieces to be saved.",
+                "This can provide a performance boost if the server is restarted while pieces are still being generated."
+        })
+        @Config.LangKey("config.fp2.performance.savePartial")
+        public boolean savePartial = true;
     }
 
     /**
@@ -174,10 +191,8 @@ public class FP2Config {
         public static class Leveldb {
             @Config.RangeInt(min = 0)
             public int writeBufferSize = 4 << 20;
-
             @Config.RangeInt(min = 1)
             public int maxOpenFiles = 1000;
-
             @Config.RangeInt(min = 1)
             public int blockRestartInterval = 16;
             @Config.RangeInt(min = 1)

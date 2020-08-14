@@ -49,7 +49,7 @@ public class LazyPriorityExecutor<K extends LazyKey<K>> {
 
     public LazyPriorityExecutor(int threads, @NonNull ThreadFactory threadFactory) {
         this.comparator = (a, b) -> a.key() != null ? a.key().compareTo(b.key()) : -1;
-        this.queue = new PriorityBlockingQueue<>(256, this.comparator);
+        this.queue = new PriorityBlockingQueue<>(256, this.comparator); //TODO: better queue (better concurrency and arbitrary capacity limit)
 
         this.threads = new Thread[positive(threads, "threads")];
 
