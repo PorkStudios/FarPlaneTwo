@@ -57,15 +57,23 @@ import net.daporkchop.lib.primitive.map.ObjLongMap;
 import net.daporkchop.lib.primitive.map.concurrent.ObjLongConcurrentHashMap;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.WorldServer;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.fml.common.eventhandler.EventBus;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import net.minecraftforge.fml.relauncher.Side;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -101,6 +109,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
 
     //contains positions of all tiles that are going to be updated with the exact generator
     protected final ObjLongMap<POS> exactActive = new ObjLongConcurrentHashMap<>(-1L);
+    protected final Queue<LazyTask<TaskKey, ?, ?>> pendingExactTasks = new ArrayDeque<>();
 
     protected final LazyPriorityExecutor<TaskKey> executor;
     protected final KeyedTaskScheduler<POS> ioExecutor;
@@ -180,6 +189,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
                 Thread.MIN_PRIORITY));
 
         this.loadNotDone();
+
+        MinecraftForge.EVENT_BUS.register(this);
     }
 
     @Override
@@ -224,7 +235,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
             this.ioExecutor.submit(piece.pos(), new SavePieceAction<>(this, piece));
         }
 
-        if (piece.timestamp() >= 0L && piece.isDirty() && piece.level() < FP2Config.maxLevels) {
+        if (piece.timestamp() >= 0L && piece.isDirty() && piece.level() < FP2Config.maxLevels - 1) {
             //the piece has been generated with the exact generator, schedule all output pieces for scaling
             long currTimestamp = piece.timestamp();
 
@@ -232,21 +243,24 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
         }
     }
 
-    protected void schedulePieceForUpdate(@NonNull POS _pos, long newTimestamp) {
-        this.exactActive.compute(_pos, (pos, oldTimestamp) -> {
-            if (oldTimestamp >= 0L) { //position is already queued for exact update
-                return newTimestamp; //simply return new timestamp so that the already scheduled task will use the new timestamp
+    protected void schedulePieceForUpdate(@NonNull POS pos, long newTimestamp) {
+        if (this.exactActive.put(pos, newTimestamp) < 0L)  {
+            //position wasn't previously queued for update
+            synchronized (this.pendingExactTasks) {
+                this.pendingExactTasks.add(new ExactUpdatePieceTask<>(this, new TaskKey(TaskStage.EXACT, pos.level()), pos, TaskStage.EXACT));
             }
+        }
+    }
 
-            //schedule a new update task
-            //TODO: queue tasks to be fired at end of tick
-            GlobalEventExecutor.INSTANCE.schedule(
-                    () -> this.executor.submit(new ExactUpdatePieceTask<>(this, new TaskKey(TaskStage.EXACT, pos.level()), pos, TaskStage.EXACT)),
-                    500L, TimeUnit.MILLISECONDS);
-            //this.executor.submit(new ExactUpdatePieceTask<>(this, new TaskKey(TaskStage.EXACT, pos.level()), pos, TaskStage.EXACT));
-            LOGGER.info("Scheduled update at {}", pos);
-            return newTimestamp;
-        });
+    @SubscribeEvent
+    public void onWorldTick(TickEvent.ServerTickEvent event)    {
+        if (event.phase == TickEvent.Phase.END && !this.pendingExactTasks.isEmpty()) {
+            //fire pending tasks
+            synchronized (this.pendingExactTasks) {
+                this.executor.submit(this.pendingExactTasks);
+                this.pendingExactTasks.clear();
+            }
+        }
     }
 
     public boolean notDone(@NonNull POS pos, boolean persist) {
@@ -281,6 +295,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
 
     @Override
     public void close() throws IOException {
+        MinecraftForge.EVENT_BUS.unregister(this);
+
         LOGGER.trace("Shutting down generation workers in DIM{}", this.world.provider.getDimension());
         this.executor.shutdown();
         LOGGER.trace("Shutting down IO workers in DIM{}", this.world.provider.getDimension());

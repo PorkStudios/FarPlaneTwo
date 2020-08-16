@@ -136,7 +136,9 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
             return;
         }
 
-        throw new UnsupportedOperationException();
+        this.entries.values().stream()
+                .filter(e -> e.players.contains(player))
+                .forEach(e -> e.removePlayer(player));
     }
 
     protected abstract Stream<POS> getPositions(@NonNull EntityPlayerMP player);

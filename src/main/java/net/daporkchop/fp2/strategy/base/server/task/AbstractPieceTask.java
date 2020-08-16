@@ -24,12 +24,14 @@ import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.ToString;
 import net.daporkchop.fp2.strategy.base.server.AbstractFarWorld;
 import net.daporkchop.fp2.strategy.base.server.TaskKey;
 import net.daporkchop.fp2.strategy.base.server.TaskStage;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
+import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.concurrent.future.DefaultPFuture;
 
 /**
@@ -79,5 +81,10 @@ public abstract class AbstractPieceTask<POS extends IFarPos, P extends IFarPiece
             }
         });
         return this;
+    }
+
+    @Override
+    public String toString() {
+        return this.pos.toString();
     }
 }

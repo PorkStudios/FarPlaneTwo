@@ -80,9 +80,21 @@ public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E
 
     @Override
     public boolean add(E e) {
-        checkArg(this.set.add(e), "duplicate element: %s", e);
+        this.set.add(e);
         this.lock.release();
         return true;
+    }
+
+    @Override
+    public boolean addAll(@NonNull Collection<? extends E> c) {
+        checkArg(this != c);
+        if (c.isEmpty()) {
+            return false;
+        } else {
+            this.set.addAll(c);
+            this.lock.release(c.size());
+            return true;
+        }
     }
 
     @Override
