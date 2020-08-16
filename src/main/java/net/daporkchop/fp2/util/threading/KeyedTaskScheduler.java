@@ -39,6 +39,7 @@ import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
@@ -66,7 +67,7 @@ public class KeyedTaskScheduler<K> {
     protected volatile boolean running = true;
 
     public KeyedTaskScheduler(int threads, @NonNull ThreadFactory threadFactory) {
-        this.queue = new ArrayBlockingQueue<>(256);
+        this.queue = new LinkedBlockingQueue<>();
 
         this.threads = new Thread[positive(threads, "threads")];
 
@@ -127,7 +128,7 @@ public class KeyedTaskScheduler<K> {
                 synchronized (this.queue) {
                     Runnable next = this.queue.poll();
                     checkState(next == this, "this task wasn't the next one in the queue!");
-                    next = this.queue.poll();
+                    next = this.queue.peek();
                     if (next != null) {
                         KeyedTaskScheduler.this.queue.add(next);
                     }

@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.util.threading.executor;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.util.threading.UnboundedPriorityBlockingQueue;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,27 +30,28 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 public class LazyPriorityExecutor<K extends LazyKey<K>> {
+    @SuppressWarnings("unchecked")
+    protected static final Comparator<LazyTask> COMPARATOR = (a, b) -> a.key() != null ? a.key().compareTo(b.key()) : -1;
+
     protected final Thread[] threads;
 
-    protected final Comparator<LazyTask<K, ?, ?>> comparator;
     protected final BlockingQueue<LazyTask<K, ?, ?>> queue;
 
     protected volatile boolean running = true;
 
     public LazyPriorityExecutor(int threads, @NonNull ThreadFactory threadFactory) {
-        this.comparator = (a, b) -> a.key() != null ? a.key().compareTo(b.key()) : -1;
-        this.queue = new PriorityBlockingQueue<>(256, this.comparator); //TODO: better queue (better concurrency and arbitrary capacity limit)
+        this.queue = new UnboundedPriorityBlockingQueue<>(uncheckedCast(COMPARATOR));
 
         this.threads = new Thread[positive(threads, "threads")];
 

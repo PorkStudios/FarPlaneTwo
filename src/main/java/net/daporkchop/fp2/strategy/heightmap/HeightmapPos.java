@@ -90,9 +90,21 @@ public class HeightmapPos implements IFarPos {
     @Override
     public boolean contains(@NonNull IFarPos posIn) {
         HeightmapPos pos = (HeightmapPos) posIn;
+        /*if (this.level > pos.level) {
+            int ownMinBlockX = this.x * T_VOXELS << this.level;
+            int ownMinBlockZ = this.z * T_VOXELS << this.level;
+            int ownMaxBlockX = ownMinBlockX + (1 << this.level);
+            int ownMaxBlockZ = ownMinBlockZ + (1 << this.level);
+            int posMinBlockX = pos.x * T_VOXELS << pos.level;
+            int posMinBlockZ = pos.z * T_VOXELS << pos.level;
+            int posMaxBlockX = posMinBlockX + (1 << pos.level);
+            int posMaxBlockZ = posMinBlockZ + (1 << pos.level);
+            return posMinBlockX >= ownMinBlockX && posMinBlockZ >= ownMinBlockZ
+                    && posMaxBlockX <= ownMaxBlockX && posMaxBlockZ <= ownMaxBlockZ;
+        }*/
         int d = this.level - pos.level;
         return d > 0
-               && (this.x << d) >= pos.x && ((this.x + 1) << d) < pos.x
-               && (this.z << d) >= pos.z && ((this.z + 1) << d) < pos.z;
+               && (this.x << d) >= pos.x && ((this.x + 1) << d) <= pos.x
+               && (this.z << d) >= pos.z && ((this.z + 1) << d) <= pos.z;
     }
 }
