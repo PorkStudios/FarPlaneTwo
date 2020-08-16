@@ -28,38 +28,34 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NavigableSet;
-import java.util.TreeSet;
+import java.util.NoSuchElementException;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
+import static java.util.Objects.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Alternative to {@link PriorityBlockingQueue} backed by a tree map rather than a sorted array.
- * <p>
- * This should yield better performance for large queue sizes, has a lower base overhead and doesn't have a fixed maximum capacity.
+ * Alternative to {@link UnboundedPriorityBlockingQueue} with better performance under high concurrency.
  *
  * @author DaPorkchop_
  */
-public class UnboundedPriorityBlockingQueue<E> extends AbstractQueue<E> implements BlockingQueue<E> {
-    protected final Lock lock = new ReentrantLock();
-    protected final Condition notEmpty = this.lock.newCondition();
+public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E> implements BlockingQueue<E> {
+    protected final Semaphore lock = new Semaphore(0); //TODO: this isn't optimally scalable
     protected final NavigableSet<E> set;
 
-    public UnboundedPriorityBlockingQueue() {
+    public ConcurrentUnboundedPriorityBlockingQueue() {
         this(null);
     }
 
-    public UnboundedPriorityBlockingQueue(Comparator<E> comparator) {
+    public ConcurrentUnboundedPriorityBlockingQueue(Comparator<E> comparator) {
         this(comparator, false, true);
     }
 
-    public UnboundedPriorityBlockingQueue(Comparator<E> comparator, boolean tieUseHashCode, boolean tieUp) {
-        this.set = new TreeSet<>(new EqualsTieBreakComparator<>(comparator, tieUseHashCode, tieUp));
+    public ConcurrentUnboundedPriorityBlockingQueue(Comparator<E> comparator, boolean tieUseHashCode, boolean tieUp) {
+        this.set = new ConcurrentSkipListSet<>(new EqualsTieBreakComparator<>(comparator, tieUseHashCode, tieUp));
     }
 
     @Override
@@ -84,53 +80,25 @@ public class UnboundedPriorityBlockingQueue<E> extends AbstractQueue<E> implemen
 
     @Override
     public boolean add(E e) {
-        this.lock.lock();
-        try {
-            checkArg(this.set.add(e), "duplicate element: %s", e);
-            this.notEmpty.signal();
-            return true;
-        } finally {
-            this.lock.unlock();
-        }
+        checkArg(this.set.add(e), "duplicate element: %s", e);
+        this.lock.release();
+        return true;
     }
 
     @Override
     public E poll() {
-        this.lock.lock();
-        try {
-            return this.set.pollFirst();
-        } finally {
-            this.lock.unlock();
-        }
+        return this.lock.tryAcquire() ? requireNonNull(this.set.pollFirst()) : null;
     }
 
     @Override
     public E poll(long timeout, TimeUnit unit) throws InterruptedException {
-        this.lock.lock();
-        try {
-            E value = this.set.pollFirst();
-            if (value == null && this.notEmpty.await(timeout, unit)) { //queue is empty and we were signalled while waiting
-                checkState((value = this.set.pollFirst()) != null, "no values available after signal?!?");
-            }
-            return value;
-        } finally {
-            this.lock.unlock();
-        }
+        return this.lock.tryAcquire(timeout, unit) ? requireNonNull(this.set.pollFirst()) : null;
     }
 
     @Override
     public E take() throws InterruptedException {
-        this.lock.lock();
-        try {
-            E value = this.set.pollFirst();
-            if (value == null) { //queue is empty
-                this.notEmpty.await();
-                checkState((value = this.set.pollFirst()) != null, "no values available after signal?!?");
-            }
-            return value;
-        } finally {
-            this.lock.unlock();
-        }
+        this.lock.acquire();
+        return requireNonNull(this.set.pollFirst());
     }
 
     @Override
@@ -140,29 +108,19 @@ public class UnboundedPriorityBlockingQueue<E> extends AbstractQueue<E> implemen
 
     @Override
     public int drainTo(@NonNull Collection<? super E> c, int maxElements) {
-        if (maxElements <= 0) {
-            return 0;
+        int added = 0;
+        for (E value; added < maxElements && (value = this.poll()) != null; added++) {
+            c.add(value);
         }
-
-        this.lock.lock();
-        try {
-            int added = 0;
-            for (E value; added < maxElements && (value = this.set.pollFirst()) != null; added++) {
-                c.add(value);
-            }
-            return added;
-        } finally {
-            this.lock.unlock();
-        }
+        return added;
     }
 
     @Override
     public E peek() {
-        this.lock.lock();
         try {
-            return this.set.isEmpty() ? null : this.set.first();
-        } finally {
-            this.lock.unlock();
+            return this.set.first();
+        } catch (NoSuchElementException e) { //set is empty
+            return null;
         }
     }
 

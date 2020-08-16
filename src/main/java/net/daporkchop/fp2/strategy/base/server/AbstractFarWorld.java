@@ -26,7 +26,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.base.server.task.GetPieceTask;
@@ -46,6 +45,7 @@ import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
+import net.daporkchop.lib.common.function.io.IOConsumer;
 import net.daporkchop.lib.common.misc.file.PFiles;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
@@ -59,12 +59,11 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.function.BiFunction;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -75,6 +74,8 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Getter
 public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<POS>> implements IFarWorld<POS, P> {
+    protected static final BiFunction<Boolean, Boolean, Boolean> BOOLEAN_OR = (a, b) -> a | b;
+
     protected final WorldServer world;
     protected final RenderMode mode;
 
@@ -90,7 +91,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
             .build();
 
     //contains positions of all tiles that aren't done
-    protected final Set<POS> notDone = ConcurrentHashMap.newKeySet();
+    protected final Map<POS, Boolean> notDone = new ConcurrentHashMap<>();
 
     protected final LazyPriorityExecutor<TaskKey> executor;
     protected final KeyedTaskScheduler<POS> ioExecutor;
@@ -156,7 +157,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
     public P getPieceLazy(@NonNull POS pos) {
         P piece = this.cache.getIfPresent(pos);
         if (piece == null || piece.timestamp() == IFarPiece.PIECE_EMPTY) {
-            if (this.notDone.add(pos)) {
+            if (this.notDone(pos, true)) {
                 //piece is not in cache and was newly marked as queued
                 TaskKey key = new TaskKey(TaskStage.LOAD, pos.level());
                 this.executor.submit(new GetPieceTask<>(this, key, pos, true));
@@ -206,6 +207,15 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
         throw new UnsupportedOperationException(); //TODO
     }
 
+    public boolean notDone(@NonNull POS pos, boolean persist) {
+        if (persist) {
+            return this.notDone.putIfAbsent(pos, Boolean.TRUE) == null;
+        } else {
+            this.notDone.merge(pos, Boolean.FALSE, BOOLEAN_OR);
+            return false; //whatever
+        }
+    }
+
     @Override
     public void blockChanged(int x, int y, int z) {
         //TODO
@@ -242,24 +252,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
         }
 
         LOGGER.trace("Saving incomplete pieces in DIM{}", this.world.provider.getDimension());
-        List<POS> positions = new ArrayList<>();
-        ITR:
-        for (Iterator<POS> iterator = this.notDone.iterator(); iterator.hasNext(); ) {
-            POS pos = iterator.next();
-            iterator.remove();
-
-            for (int i = 0, size = positions.size(); i < size; i++) {
-                if (positions.get(i).contains(pos)) {
-                    //a position that contains the current position has already been added, avoid enqueuing duplicate positions
-                    continue ITR;
-                }
-            }
-
-            //same check as above, but backwards
-            positions.removeIf(pos::contains);
-
-            positions.add(pos);
-        }
 
         File root = this.storage.storageRoot();
         File tmpFile = PFiles.ensureFileExists(new File(root, "notDone.tmp"));
@@ -267,12 +259,16 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
 
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
         try (DataOut out = ZSTD_DEF.get().compressionStream(DataOut.wrapNonBuffered(tmpFile))) {
-            out.writeVarInt(positions.size());
-            for (POS pos : positions) {
-                pos.writePos(buf.clear());
-                out.writeVarInt(buf.readableBytes());
-                out.write(buf);
-            }
+            this.notDone.entrySet().stream()
+                    .filter(Map.Entry::getValue)
+                    .map(Map.Entry::getKey)
+                    .forEach((IOConsumer<POS>) pos -> {
+                        pos.writePos(buf.clear());
+                        checkState(buf.isReadable(), "position %s serialized to 0 bytes!", pos);
+                        out.writeVarInt(buf.readableBytes());
+                        out.write(buf);
+                    });
+            out.writeVarInt(0);
         } finally {
             buf.release();
         }
@@ -291,13 +287,11 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
 
             ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
             try (DataIn in = ZSTD_INF.get().decompressionStream(DataIn.wrapNonBuffered(file))) {
-                for (int i = in.readVarInt() - 1; i >= 0; i--) {
-                    int size = in.readVarInt();
-                    in.read(buf.clear().ensureWritable(size), size);
+                for (int size; (size = in.readVarInt()) > 0; ) {
+                    in.readFully(buf.clear().ensureWritable(size), size);
 
                     POS pos = uncheckedCast(this.mode.readPos(buf));
-                    this.notDone.add(pos);
-                    if (pos.level() < FP2Config.maxLevels)  {
+                    if (this.notDone(pos, true) && pos.level() < FP2Config.maxLevels) {
                         loadTasks.add(new GetPieceTask<>(this, new TaskKey(TaskStage.LOAD, pos.level()), pos, true));
                     }
                 }
@@ -312,8 +306,3 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
         }
     }
 }
-
-
-
-
-

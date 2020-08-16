@@ -78,12 +78,12 @@ public class FP2Config {
 
     @Config.Comment({
             "The number of threads that will be used for saving far plane terrain data.",
-            "Default: 1"
+            "Default: <cpu count> / 4 (and at least 1)"
     })
     @Config.RangeInt(min = 1)
     @Config.LangKey("config.fp2.ioThreads")
     @Config.RequiresWorldRestart
-    public static int ioThreads = 1;
+    public static int ioThreads = max(PorkUtil.CPU_COUNT >> 2, 1);
 
     @Config.Comment({
             "Config options available only on the client."
@@ -170,10 +170,11 @@ public class FP2Config {
 
         @Config.Comment({
                 "If low resolution refine is enabled, allows incomplete pieces to be saved.",
-                "This can provide a performance boost if the server is restarted while pieces are still being generated."
+                "This can provide a performance boost if the server is restarted while pieces are still being generated and low resolution refine is",
+                "enabled, but will likely significantly reduce overall generation performance."
         })
         @Config.LangKey("config.fp2.performance.savePartial")
-        public boolean savePartial = true;
+        public boolean savePartial = false;
     }
 
     /**

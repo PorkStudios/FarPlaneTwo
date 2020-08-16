@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.util.threading.executor;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.threading.UnboundedPriorityBlockingQueue;
+import net.daporkchop.fp2.util.threading.ConcurrentUnboundedPriorityBlockingQueue;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,7 +51,7 @@ public class LazyPriorityExecutor<K extends LazyKey<K>> {
     protected volatile boolean running = true;
 
     public LazyPriorityExecutor(int threads, @NonNull ThreadFactory threadFactory) {
-        this.queue = new UnboundedPriorityBlockingQueue<>(uncheckedCast(COMPARATOR));
+        this.queue = new ConcurrentUnboundedPriorityBlockingQueue<>(uncheckedCast(COMPARATOR));
 
         this.threads = new Thread[positive(threads, "threads")];
 

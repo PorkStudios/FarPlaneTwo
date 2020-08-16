@@ -29,7 +29,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Getter
 public enum TaskStage {
-    SAVE(true),
     LOAD(true),
     ROUGH_GENERATE(false),
     ROUGH_SCALE(false),

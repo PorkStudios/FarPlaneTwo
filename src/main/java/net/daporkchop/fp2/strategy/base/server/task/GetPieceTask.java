@@ -45,8 +45,7 @@ public class GetPieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends
         super(world, key, pos);
 
         this.top = top;
-
-        world.notDone().add(pos);
+        world.notDone(pos, top);
     }
 
     @Override
