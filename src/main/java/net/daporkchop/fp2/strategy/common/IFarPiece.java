@@ -37,7 +37,7 @@ public interface IFarPiece<POS extends IFarPos> extends ReadWriteLock {
     /**
      * Timestamp indicating that the piece's rough generation has been completed.
      */
-    long PIECE_ROUGH_COMPLETE = 0L;
+    long PIECE_ROUGH_COMPLETE = -1L;
 
     /**
      * Gets a timestamp indicating that the piece contains rough data generated at the given level.
@@ -46,7 +46,7 @@ public interface IFarPiece<POS extends IFarPos> extends ReadWriteLock {
      * @return a timestamp indicating that the piece contains rough data generated at the given level
      */
     static long pieceRough(int level) {
-        return -level;
+        return -level - 1L;
     }
 
     /**

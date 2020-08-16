@@ -24,20 +24,23 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.RenderMode;
+import net.daporkchop.fp2.strategy.base.server.task.ExactUpdatePieceTask;
 import net.daporkchop.fp2.strategy.base.server.task.GetPieceTask;
 import net.daporkchop.fp2.strategy.base.server.task.LoadPieceAction;
 import net.daporkchop.fp2.strategy.base.server.task.SavePieceAction;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
-import net.daporkchop.fp2.strategy.common.server.IFarGenerator;
 import net.daporkchop.fp2.strategy.common.server.IFarScaler;
 import net.daporkchop.fp2.strategy.common.server.IFarStorage;
 import net.daporkchop.fp2.strategy.common.server.IFarWorld;
+import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorExact;
+import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.util.threading.KeyedTaskScheduler;
 import net.daporkchop.fp2.util.threading.PriorityThreadFactory;
 import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
@@ -50,6 +53,8 @@ import net.daporkchop.lib.common.misc.file.PFiles;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
 import net.daporkchop.lib.common.util.PorkUtil;
+import net.daporkchop.lib.primitive.map.ObjLongMap;
+import net.daporkchop.lib.primitive.map.concurrent.ObjLongConcurrentHashMap;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.WorldServer;
 
@@ -63,6 +68,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -79,8 +85,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
     protected final WorldServer world;
     protected final RenderMode mode;
 
-    protected final IFarGenerator<POS, P> generatorRough;
-    protected final IFarGenerator<POS, P> generatorExact;
+    protected final IFarGeneratorRough<POS, P> generatorRough;
+    protected final IFarGeneratorExact<POS, P> generatorExact;
     protected final IFarScaler<POS, P> scaler;
     protected final IFarStorage<POS, P> storage;
 
@@ -92,6 +98,9 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
 
     //contains positions of all tiles that aren't done
     protected final Map<POS, Boolean> notDone = new ConcurrentHashMap<>();
+
+    //contains positions of all tiles that are going to be updated with the exact generator
+    protected final ObjLongMap<POS> exactActive = new ObjLongConcurrentHashMap<>(-1L);
 
     protected final LazyPriorityExecutor<TaskKey> executor;
     protected final KeyedTaskScheduler<POS> ioExecutor;
@@ -105,12 +114,12 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
         this.world = world;
         this.mode = mode;
 
-        IFarGenerator<POS, P> generatorRough = this.mode().<POS, P>uncheckedGeneratorsRough().stream()
+        IFarGeneratorRough<POS, P> generatorRough = this.mode().<POS, P>uncheckedGeneratorsRough().stream()
                 .map(f -> f.apply(world))
                 .filter(Objects::nonNull)
                 .findFirst().orElse(null);
 
-        IFarGenerator<POS, P> generatorExact = this.mode().<POS, P>uncheckedGeneratorsExact().stream()
+        IFarGeneratorExact<POS, P> generatorExact = this.mode().<POS, P>uncheckedGeneratorsExact().stream()
                 .map(f -> f.apply(world))
                 .filter(Objects::nonNull)
                 .findFirst().orElseThrow(() -> new IllegalStateException(PStrings.fastFormat(
@@ -124,7 +133,27 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
             generatorRough.init(world);
         } else { //rough generator wasn't set, use the exact generator for this as well
             LOGGER.warn("No rough generator exists for world {} (type: {})! Falling back to exact generator, this will have serious performance implications.", world.provider.getDimension(), world.getWorldType());
-            generatorRough = generatorExact;
+            generatorRough = new IFarGeneratorRough<POS, P>() {
+                @Override
+                public void init(@NonNull WorldServer world) {
+                    //no-op
+                }
+
+                @Override
+                public void generate(@NonNull P piece) {
+                    //TODO: this
+                }
+
+                @Override
+                public boolean supportsLowResolution() {
+                    return false;
+                }
+
+                @Override
+                public boolean isLowResolutionInaccurate() {
+                    return false;
+                }
+            };
         }
         generatorExact.init(world);
 
@@ -159,8 +188,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
         if (piece == null || piece.timestamp() == IFarPiece.PIECE_EMPTY) {
             if (this.notDone(pos, true)) {
                 //piece is not in cache and was newly marked as queued
-                TaskKey key = new TaskKey(TaskStage.LOAD, pos.level());
-                this.executor.submit(new GetPieceTask<>(this, key, pos, true));
+                TaskKey key = new TaskKey(TaskStage.GET, pos.level());
+                this.executor.submit(new GetPieceTask<>(this, key, pos, TaskStage.GET));
             }
             return null;
         }
@@ -193,23 +222,36 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
         if ((FP2Config.performance.savePartial || piece.isDone()) && piece.isDirty()) {
             //save the piece
             this.ioExecutor.submit(piece.pos(), new SavePieceAction<>(this, piece));
+        }
 
-            //TODO: make scaling work again...
-            /*if (newTimestamp > 0L && pos.level() < FP2Config.maxLevels) {
-                //the piece has been generated with the exact generator, schedule all output pieces for scaling
-                this.scaler.outputs(pos).forEach(p -> this.schedulePieceForScaling(p, newTimestamp));
-            }*/
+        if (piece.timestamp() >= 0L && piece.isDirty() && piece.level() < FP2Config.maxLevels) {
+            //the piece has been generated with the exact generator, schedule all output pieces for scaling
+            long currTimestamp = piece.timestamp();
+
+            this.scaler.outputs(piece.pos()).forEach(outputPos -> this.schedulePieceForUpdate(outputPos, currTimestamp));
         }
     }
 
-    public void schedulePieceForScaling(@NonNull POS pos, long _newTimestamp) {
-        checkArg(_newTimestamp != IFarPiece.PIECE_EMPTY);
-        throw new UnsupportedOperationException(); //TODO
+    protected void schedulePieceForUpdate(@NonNull POS _pos, long newTimestamp) {
+        this.exactActive.compute(_pos, (pos, oldTimestamp) -> {
+            if (oldTimestamp >= 0L) { //position is already queued for exact update
+                return newTimestamp; //simply return new timestamp so that the already scheduled task will use the new timestamp
+            }
+
+            //schedule a new update task
+            //TODO: queue tasks to be fired at end of tick
+            GlobalEventExecutor.INSTANCE.schedule(
+                    () -> this.executor.submit(new ExactUpdatePieceTask<>(this, new TaskKey(TaskStage.EXACT, pos.level()), pos, TaskStage.EXACT)),
+                    500L, TimeUnit.MILLISECONDS);
+            //this.executor.submit(new ExactUpdatePieceTask<>(this, new TaskKey(TaskStage.EXACT, pos.level()), pos, TaskStage.EXACT));
+            LOGGER.info("Scheduled update at {}", pos);
+            return newTimestamp;
+        });
     }
 
     public boolean notDone(@NonNull POS pos, boolean persist) {
         if (persist) {
-            return this.notDone.putIfAbsent(pos, Boolean.TRUE) == null;
+            return this.notDone.put(pos, Boolean.TRUE) != Boolean.TRUE;
         } else {
             this.notDone.merge(pos, Boolean.FALSE, BOOLEAN_OR);
             return false; //whatever
@@ -218,8 +260,10 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
 
     @Override
     public void blockChanged(int x, int y, int z) {
-        //TODO
+        this.schedulePieceForUpdate(this.fromBlockCoords(x, y, z), this.world.getTotalWorldTime());
     }
+
+    protected abstract POS fromBlockCoords(int x, int y, int z);
 
     @Override
     public CachedBlockAccess blockAccess() {
@@ -259,6 +303,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
 
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
         try (DataOut out = ZSTD_DEF.get().compressionStream(DataOut.wrapNonBuffered(tmpFile))) {
+            //piece load tasks
             this.notDone.entrySet().stream()
                     .filter(Map.Entry::getValue)
                     .map(Map.Entry::getKey)
@@ -268,6 +313,21 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
                         out.writeVarInt(buf.readableBytes());
                         out.write(buf);
                     });
+            out.writeVarInt(0);
+
+            //exact generate tasks
+            this.exactActive.forEach((pos, newTimestamp) -> {
+                try {
+                    pos.writePos(buf.clear());
+                    checkState(buf.isReadable(), "position %s serialized to 0 bytes!", pos);
+                    out.writeVarInt(buf.readableBytes());
+                    out.writeVarLong(newTimestamp);
+                    out.write(buf);
+                } catch (IOException e) {
+                    PUnsafe.throwException(e);
+                    throw new RuntimeException(e);
+                }
+            });
             out.writeVarInt(0);
         } finally {
             buf.release();
@@ -287,13 +347,23 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
 
             ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
             try (DataIn in = ZSTD_INF.get().decompressionStream(DataIn.wrapNonBuffered(file))) {
+                //piece load tasks
                 for (int size; (size = in.readVarInt()) > 0; ) {
                     in.readFully(buf.clear().ensureWritable(size), size);
 
                     POS pos = uncheckedCast(this.mode.readPos(buf));
                     if (this.notDone(pos, true) && pos.level() < FP2Config.maxLevels) {
-                        loadTasks.add(new GetPieceTask<>(this, new TaskKey(TaskStage.LOAD, pos.level()), pos, true));
+                        loadTasks.add(new GetPieceTask<>(this, new TaskKey(TaskStage.GET, pos.level()), pos, TaskStage.GET));
                     }
+                }
+
+                //exact update tasks
+                for (int size; (size = in.readVarInt()) > 0; ) {
+                    in.readFully(buf.clear().ensureWritable(size), size);
+                    long newTimestamp = in.readVarLong();
+
+                    POS pos = uncheckedCast(this.mode.readPos(buf));
+                    //TODO: do something with it
                 }
             } finally {
                 buf.release();

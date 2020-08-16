@@ -18,22 +18,25 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.gen;
+package net.daporkchop.fp2.strategy.common.server.gen;
 
 import lombok.NonNull;
-import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.WorldServer;
 
 /**
+ * Extracts height and color information from a world for use by a rendering mode.
+ * <p>
+ * Once initialized, instances of this class are expected to be safely usable by multiple concurrent threads.
+ *
  * @author DaPorkchop_
  */
-public abstract class AbstractHeightmapGenerator implements HeightmapGenerator {
-    protected static final long SEALEVEL_OFFSET = PUnsafe.pork_getOffset(AbstractHeightmapGenerator.class, "seaLevel");
-
-    protected final int seaLevel = 0; //this is final to allow JIT to hoist slow getfield opcodes out of the main loop when referenced in a loop
-
-    @Override
-    public void init(@NonNull WorldServer world) {
-        PUnsafe.putInt(this, SEALEVEL_OFFSET, world.getSeaLevel());
-    }
+public interface IFarGenerator {
+    /**
+     * Initializes this instance.
+     * <p>
+     * An instance is only initialized once. No other methods will be called on this instance until initialization is complete.
+     *
+     * @param world the world that the heightmap will be generated for
+     */
+    void init(@NonNull WorldServer world);
 }

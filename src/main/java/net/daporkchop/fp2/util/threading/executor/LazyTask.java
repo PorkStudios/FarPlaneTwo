@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 public interface LazyTask<K extends LazyKey<K>, T, R> extends PFuture<R> {
     K key();
 
-    Stream<? extends LazyTask<K, ?, T>> before(@NonNull K key);
+    Stream<? extends LazyTask<K, ?, T>> before(@NonNull K key) throws Exception;
 
     R run(@NonNull List<T> params, @NonNull LazyPriorityExecutor<K> executor) throws Exception;
 

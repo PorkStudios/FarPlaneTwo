@@ -18,23 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.base.server;
+package net.daporkchop.fp2.util.compat.vanilla;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.util.IHeightMap;
+import net.minecraft.world.IBlockAccess;
 
 /**
+ * Combination of {@link IBlockAccess} and {@link IHeightMap}.
+ *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public enum TaskStage {
-    GET(true),
-    ROUGH_GENERATE(false),
-    ROUGH_SCALE(false),
-    EXACT_GENERATE(false),
-    EXACT_SCALE(false),
-    EXACT(false);
-
-    private final boolean first;
+public interface IBlockHeightAccess extends IBlockAccess, IHeightMap {
 }

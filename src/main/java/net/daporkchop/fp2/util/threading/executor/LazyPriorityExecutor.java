@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -94,7 +95,7 @@ public class LazyPriorityExecutor<K extends LazyKey<K>> {
         public void run() {
             while (LazyPriorityExecutor.this.running) {
                 try {
-                    this.runSingle();
+                    this.runLazy(LazyPriorityExecutor.this.queue.take());
                 } catch (InterruptedException e) {
                     //gracefully exit on interrupt
                 } catch (Exception e) {
@@ -104,7 +105,6 @@ public class LazyPriorityExecutor<K extends LazyKey<K>> {
         }
 
         protected void runSingle() throws InterruptedException {
-            this.runLazy(LazyPriorityExecutor.this.queue.take());
         }
 
         protected <T, R> void runLazy(@NonNull LazyTask<K, T, R> task) throws InterruptedException {
@@ -131,7 +131,10 @@ public class LazyPriorityExecutor<K extends LazyKey<K>> {
             LazyPriorityExecutor.this.queue.addAll(tasks);
             try {
                 do {
-                    this.runSingle();
+                    LazyTask<K, ?, ?> task = LazyPriorityExecutor.this.queue.poll(50L, TimeUnit.MILLISECONDS);
+                    if (task != null)   {
+                        this.runLazy(task);
+                    }
                 } while (this.areAnyIncomplete(tasks));
             } catch (Exception e) {
                 if (!(e instanceof InterruptedException)) {

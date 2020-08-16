@@ -20,64 +20,45 @@
 
 package net.daporkchop.fp2.strategy.base.server.task;
 
-import io.netty.util.concurrent.GenericFutureListener;
-import io.netty.util.concurrent.ImmediateEventExecutor;
-import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.base.server.AbstractFarWorld;
 import net.daporkchop.fp2.strategy.base.server.TaskKey;
 import net.daporkchop.fp2.strategy.base.server.TaskStage;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
+import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
-import net.daporkchop.lib.concurrent.future.DefaultPFuture;
+
+import java.util.List;
+import java.util.stream.Stream;
 
 /**
+ * Handles exact updating for a piece.
+ * <p>
+ * Delegates the actual work to {@link ExactGeneratePieceTask} and {@link ExactScalePieceTask}.
+ *
  * @author DaPorkchop_
  */
-@Getter
-public abstract class AbstractPieceTask<POS extends IFarPos, P extends IFarPiece<POS>, T> extends DefaultPFuture<P> implements LazyTask<TaskKey, T, P> {
-    protected final AbstractFarWorld<POS, P> world;
-    protected final TaskKey key;
-    protected final POS pos;
-    protected final TaskStage requestedBy;
-
-    public AbstractPieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
-        super(ImmediateEventExecutor.INSTANCE);
-
-        this.world = world;
-        this.key = key;
-        this.pos = pos;
-        this.requestedBy = requestedBy;
+public class ExactUpdatePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractPieceTask<POS, P, P> {
+    public ExactUpdatePieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
+        super(world, key, pos, requestedBy);
     }
 
     @Override
-    public AbstractPieceTask<POS, P, T> setSuccess(@NonNull P result) {
-        super.setSuccess(result);
-        return this;
+    public Stream<? extends LazyTask<TaskKey, ?, P>> before(@NonNull TaskKey key) throws Exception {
+        //fully generate the piece before attempting an exact update
+        return Stream.of(new GetPieceTask<>(this.world, key.withStage(TaskStage.GET), this.pos, TaskStage.EXACT));
     }
 
     @Override
-    public AbstractPieceTask<POS, P, T> setFailure(Throwable cause) {
-        super.setFailure(cause);
-        return this;
-    }
-
-    @Override
-    public void cancel() {
-        super.cancel(false);
-    }
-
-    public AbstractPieceTask<POS, P, T> thenCopyStatusTo(@NonNull AbstractPieceTask<POS, P, ?> dst) {
-        this.addListener((GenericFutureListener<AbstractPieceTask<POS, P, T>>) f -> {
-            if (f.isSuccess()) {
-                dst.setSuccess(f.getNow());
-            } else if (f.isCancelled()) {
-                dst.cancel();
-            } else {
-                dst.setFailure(f.cause());
-            }
-        });
-        return this;
+    public P run(@NonNull List<P> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
+        if (this.pos.level() == 0) {
+            //generate piece with exact generator
+            executor.submit(new ExactGeneratePieceTask<>(this.world, this.key.withStage(TaskStage.EXACT_GENERATE), this.pos).thenCopyStatusTo(this));
+        } else {
+            //scale piece
+            executor.submit(new ExactScalePieceTask<>(this.world, this.key.withStage(TaskStage.EXACT_SCALE), this.pos, TaskStage.EXACT).thenCopyStatusTo(this));
+        }
+        return null; //return null because we won't be finished until whatever our delegate task that we spawned is is complete
     }
 }

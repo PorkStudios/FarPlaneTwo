@@ -21,14 +21,14 @@
 package net.daporkchop.fp2.strategy.heightmap;
 
 import io.netty.buffer.ByteBuf;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarPos;
-import net.daporkchop.lib.common.math.BinMath;
-import net.daporkchop.lib.common.math.PMath;
+import net.minecraft.util.math.ChunkPos;
 
 import static net.daporkchop.fp2.util.Constants.*;
 
@@ -38,6 +38,7 @@ import static net.daporkchop.fp2.util.Constants.*;
 @RequiredArgsConstructor
 @Getter
 @ToString
+@EqualsAndHashCode
 public class HeightmapPos implements IFarPos {
     protected final int x;
     protected final int z;
@@ -47,34 +48,29 @@ public class HeightmapPos implements IFarPos {
         this(buf.readInt(), buf.readInt(), buf.readInt());
     }
 
-    @Override
-    public void writePosNoLevel(@NonNull ByteBuf dst) {
-        dst.writeInt(this.x).writeInt(this.z);
-    }
-
-    @Override
-    public int hashCode() {
-        return PMath.mix32(BinMath.packXY(this.x, this.z) ^ this.level);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        } else if (obj instanceof HeightmapPos) {
-            HeightmapPos pos = (HeightmapPos) obj;
-            return this.x == pos.x && this.z == pos.z && this.level == pos.level;
-        } else {
-            return false;
-        }
-    }
-
     public int blockX() {
         return this.x * T_VOXELS << this.level;
     }
 
     public int blockZ() {
         return this.z * T_VOXELS << this.level;
+    }
+
+    public int flooredChunkX() {
+        return this.blockX() >> 4;
+    }
+
+    public int flooredChunkZ() {
+        return this.blockZ() >> 4;
+    }
+
+    public ChunkPos flooredChunkPos() {
+        return new ChunkPos(this.flooredChunkX(), this.flooredChunkZ());
+    }
+
+    @Override
+    public void writePosNoLevel(@NonNull ByteBuf dst) {
+        dst.writeInt(this.x).writeInt(this.z);
     }
 
     @Override
@@ -90,18 +86,6 @@ public class HeightmapPos implements IFarPos {
     @Override
     public boolean contains(@NonNull IFarPos posIn) {
         HeightmapPos pos = (HeightmapPos) posIn;
-        /*if (this.level > pos.level) {
-            int ownMinBlockX = this.x * T_VOXELS << this.level;
-            int ownMinBlockZ = this.z * T_VOXELS << this.level;
-            int ownMaxBlockX = ownMinBlockX + (1 << this.level);
-            int ownMaxBlockZ = ownMinBlockZ + (1 << this.level);
-            int posMinBlockX = pos.x * T_VOXELS << pos.level;
-            int posMinBlockZ = pos.z * T_VOXELS << pos.level;
-            int posMaxBlockX = posMinBlockX + (1 << pos.level);
-            int posMaxBlockZ = posMinBlockZ + (1 << pos.level);
-            return posMinBlockX >= ownMinBlockX && posMinBlockZ >= ownMinBlockZ
-                    && posMaxBlockX <= ownMaxBlockX && posMaxBlockZ <= ownMaxBlockZ;
-        }*/
         int d = this.level - pos.level;
         return d > 0
                && (this.x << d) >= pos.x && ((this.x + 1) << d) <= pos.x

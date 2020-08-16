@@ -21,13 +21,12 @@
 package net.daporkchop.fp2.util.threading.cachedblockaccess;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.IHeightMap;
+import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
 
@@ -36,7 +35,7 @@ import net.minecraft.world.biome.Biome;
  *
  * @author DaPorkchop_
  */
-public interface CachedBlockAccess extends IBlockAccess, IHeightMap {
+public interface CachedBlockAccess extends IBlockHeightAccess {
     /**
      * Requests that all blocks in the given range be fetched into the cache.
      * <p>

@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.util.compat;
+package net.daporkchop.fp2.util.compat.of;
 
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.util.Constants;

@@ -32,17 +32,17 @@ import net.daporkchop.fp2.util.threading.executor.LazyTask;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
+
 /**
- * Main task for loading pieces, this actually gets the piece from disk, creates a new one if absent and queues it for generation if it doesn't contain
- * any data.
- *
  * @author DaPorkchop_
  */
-public class GetPieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractPieceTask<POS, P, Void> {
-    public GetPieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
-        super(world, key, pos, requestedBy);
+public class ExactGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractPieceTask<POS, P, Void> {
+    public ExactGeneratePieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos) {
+        super(world, key, pos, TaskStage.EXACT);
 
-        world.notDone(pos, requestedBy == TaskStage.GET);
+        checkArg(pos.level() == 0, "cannot do exact generation at level %d!", pos.level());
     }
 
     @Override
@@ -51,33 +51,39 @@ public class GetPieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends
     }
 
     @Override
-    public P run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) {
-        P piece = this.world.getRawPieceBlocking(this.pos);
+    public P run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
+        long newTimestamp = this.world.exactActive().remove(this.pos);
+        if (newTimestamp < 0L) { //probably impossible, but this means that another task scheduled for the same piece already ran before this one
+            LOGGER.warn("Duplicate generation task scheduled for piece at {}!", this.pos);
+            this.setSuccess(null); //explicitly complete the future
+            return null;
+        }
 
-        piece.readLock().lock();
+        P piece = this.world.getRawPieceBlocking(this.pos);
+        if (piece.timestamp() >= newTimestamp) {
+            return piece;
+        }
+
+        piece.writeLock().lock();
         try {
-            if (piece.isDone()) {
-                //this adds the piece to the cache, unmarks it as not done and notifies the player tracker
-                this.world.pieceChanged(piece);
-            } else { //the piece has not been fully generated yet
-                if (this.requestedBy == TaskStage.GET //only allow rough generation if the piece was requested for loading by a player's presence
-                    && (this.pos.level() == 0 || this.world.lowResolution())) {
-                    //the piece can be generated using the rough generator
-                    executor.submit(new RoughGeneratePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_GENERATE), this.pos)
-                            .thenCopyStatusTo(this));
-                } else {
-                    //the piece is at a lower detail than 0, and low-resolution generation is not an option
-                    //this will generate the piece and all pieces below it down to level 0 until the piece can be "generated" from scaled data
-                    executor.submit(new RoughScalePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_SCALE), this.pos, TaskStage.GET, 0)
-                            .thenCopyStatusTo(this));
-                }
-                if (piece.isEmpty()) {
-                    return null; //don't store the piece in the world until it contains at least SOME data
-                }
+            if (piece.timestamp() >= newTimestamp) {
+                return piece;
             }
+
+            this.world.generatorExact().generate(this.world.blockAccess(), piece);
+            piece.updateTimestamp(newTimestamp);
+
+            piece.readLock().lock(); //downgrade lock
+        } finally {
+            piece.writeLock().unlock();
+        }
+
+        try {
+            this.world.pieceChanged(piece);
         } finally {
             piece.readLock().unlock();
         }
+
         return piece;
     }
 }

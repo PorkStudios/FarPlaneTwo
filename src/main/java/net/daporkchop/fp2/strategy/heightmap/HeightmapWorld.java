@@ -25,11 +25,18 @@ import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.base.server.AbstractFarWorld;
 import net.minecraft.world.WorldServer;
 
+import static net.daporkchop.fp2.util.Constants.*;
+
 /**
  * @author DaPorkchop_
  */
 public class HeightmapWorld extends AbstractFarWorld<HeightmapPos, HeightmapPiece> {
     public HeightmapWorld(@NonNull WorldServer world) {
         super(world, RenderMode.HEIGHTMAP);
+    }
+
+    @Override
+    protected HeightmapPos fromBlockCoords(int x, int y, int z) {
+        return new HeightmapPos(x >> T_SHIFT, z >> T_SHIFT, 0);
     }
 }

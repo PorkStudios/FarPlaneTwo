@@ -21,32 +21,48 @@
 package net.daporkchop.fp2.strategy.heightmap.gen.exact;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.strategy.base.server.AbstractFarGenerator;
+import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
-import net.daporkchop.fp2.strategy.heightmap.gen.AbstractHeightmapGenerator;
-import net.daporkchop.fp2.strategy.heightmap.gen.HeightmapGenerator;
-import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
+import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.WorldServer;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.biome.Biome;
+
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
-public class CCHeightmapGenerator extends AbstractHeightmapGenerator {
+public class CCHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorExact<HeightmapPos, HeightmapPiece> {
     @Override
-    public void generate(@NonNull CachedBlockAccess world, @NonNull HeightmapPiece piece) {
+    public Stream<ChunkPos> neededColumns(@NonNull HeightmapPos pos) {
+        return Stream.of(pos.flooredChunkPos());
+    }
+
+    @Override
+    public Stream<Vec3i> neededCubes(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos pos) {
+        return IntStream.range(0, T_VOXELS * T_VOXELS)
+                .map(packed -> {
+                    int blockX = pos.blockX() + (packed & T_MASK);
+                    int blockZ = pos.blockZ() + ((packed >> T_SHIFT) & T_MASK);
+                    return world.getTopBlockY(blockX, blockZ);
+                })
+                .distinct() //we don't want a bunch of identical cube Y coordinates
+                .mapToObj(cubeY -> new Vec3i(pos.flooredChunkX(), cubeY, pos.flooredChunkZ()));
+    }
+
+    @Override
+    public void generate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPiece piece) {
         int pieceX = piece.pos().x();
         int pieceZ = piece.pos().z();
-
-        //prefetch columns, but not cubes because we really can't know where they are
-        world.prefetch(new AxisAlignedBB(
-                pieceX * T_VOXELS, 0, pieceZ * T_VOXELS,
-                (pieceX + 1) * T_VOXELS - 1, 0, (pieceZ + 1) * T_VOXELS - 1), true);
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
@@ -71,15 +87,5 @@ public class CCHeightmapGenerator extends AbstractHeightmapGenerator {
                 piece.set(x, z, height, state, packCombinedLight(light), biome, packCombinedLight(waterLight), waterBiome);
             }
         }
-    }
-
-    @Override
-    public boolean supportsLowResolution() {
-        return false;
-    }
-
-    @Override
-    public boolean isLowResolutionInaccurate() {
-        return false;
     }
 }

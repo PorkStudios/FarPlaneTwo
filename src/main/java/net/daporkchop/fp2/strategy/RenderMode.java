@@ -26,7 +26,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.client.IFarRenderer;
-import net.daporkchop.fp2.strategy.common.server.IFarGenerator;
+import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorExact;
+import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.strategy.common.server.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.server.IFarScaler;
 import net.daporkchop.fp2.strategy.common.server.IFarStorage;
@@ -63,7 +64,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Getter
 public enum RenderMode {
-    HEIGHTMAP("2D", 5) {
+    HEIGHTMAP("2D", 6) {
         @Override
         protected void registerDefaultGenerators() {
             //rough
@@ -185,8 +186,8 @@ public enum RenderMode {
         return VALUES[ordinal];
     }
 
-    private final PriorityCollection<Function<WorldServer, IFarGenerator>> generatorsRough = new PriorityCollection<>();
-    private final PriorityCollection<Function<WorldServer, IFarGenerator>> generatorsExact = new PriorityCollection<>();
+    private final PriorityCollection<Function<WorldServer, IFarGeneratorRough>> generatorsRough = new PriorityCollection<>();
+    private final PriorityCollection<Function<WorldServer, IFarGeneratorExact>> generatorsExact = new PriorityCollection<>();
 
     private final int storageVersion;
 
@@ -202,14 +203,14 @@ public enum RenderMode {
     /**
      * {@link #generatorsRough}, but with an unchecked generic cast
      */
-    public <POS extends IFarPos, P extends IFarPiece<POS>> PriorityCollection<Function<WorldServer, IFarGenerator<POS, P>>> uncheckedGeneratorsRough() {
+    public <POS extends IFarPos, P extends IFarPiece<POS>> PriorityCollection<Function<WorldServer, IFarGeneratorRough<POS, P>>> uncheckedGeneratorsRough() {
         return uncheckedCast(this.generatorsRough);
     }
 
     /**
      * {@link #generatorsExact}, but with an unchecked generic cast
      */
-    public <POS extends IFarPos, P extends IFarPiece<POS>> PriorityCollection<Function<WorldServer, IFarGenerator<POS, P>>> uncheckedGeneratorsExact() {
+    public <POS extends IFarPos, P extends IFarPiece<POS>> PriorityCollection<Function<WorldServer, IFarGeneratorExact<POS, P>>> uncheckedGeneratorsExact() {
         return uncheckedCast(this.generatorsExact);
     }
 

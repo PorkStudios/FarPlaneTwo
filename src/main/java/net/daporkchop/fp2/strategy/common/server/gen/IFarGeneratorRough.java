@@ -18,16 +18,38 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.gen;
+package net.daporkchop.fp2.strategy.common.server.gen;
 
-import net.daporkchop.fp2.strategy.common.server.IFarGenerator;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
+import lombok.NonNull;
+import net.daporkchop.fp2.strategy.common.IFarPiece;
+import net.daporkchop.fp2.strategy.common.IFarPos;
+import net.minecraft.world.WorldServer;
 
 /**
- * Extracts height and color information from a world for use by the heightmap rendering mode.
+ * Extracts height and color information from a world for use by a rendering mode.
+ * <p>
+ * Once initialized, instances of this class are expected to be safely usable by multiple concurrent threads.
  *
  * @author DaPorkchop_
  */
-public interface HeightmapGenerator extends IFarGenerator<HeightmapPos, HeightmapPiece> {
+public interface IFarGeneratorRough<POS extends IFarPos, P extends IFarPiece<POS>> extends IFarGenerator {
+    @Override
+    void init(@NonNull WorldServer world);
+
+    /**
+     * Generates a rough estimate of the terrain in the given piece.
+     *
+     * @param piece the piece to generate
+     */
+    void generate(@NonNull P piece);
+
+    /**
+     * @return whether or not this generator can generate pieces at low resolution
+     */
+    boolean supportsLowResolution();
+
+    /**
+     * @return whether or not low-resolution pieces are inaccurate
+     */
+    boolean isLowResolutionInaccurate();
 }

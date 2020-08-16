@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.strategy.base.server;
 
+import io.netty.util.concurrent.GlobalEventExecutor;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -176,7 +177,8 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
         public void addPlayer(@NonNull EntityPlayerMP player)   {
             if (this.players.add(player) && this.piece != null) {
                 //player was newly added and the piece has been set, send it
-                NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(this.piece), player);
+                //TODO: make this not be async after fixing exact generator
+                GlobalEventExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(new SPacketPieceData().piece(this.piece), player));
             }
         }
 
@@ -196,7 +198,8 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
 
             //send packet to all players
             SPacketPieceData packet = new SPacketPieceData().piece(piece);
-            this.players.forEach(player -> NETWORK_WRAPPER.sendTo(packet, player));
+            //TODO: make this not be async after fixing exact generator
+            this.players.forEach(player -> GlobalEventExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(packet, player)));
         }
     }
 }

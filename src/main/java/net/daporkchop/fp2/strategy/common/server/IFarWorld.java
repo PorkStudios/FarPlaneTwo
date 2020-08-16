@@ -24,6 +24,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
+import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorExact;
+import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
 import net.minecraft.world.WorldServer;
 
@@ -58,14 +60,14 @@ public interface IFarWorld<POS extends IFarPos, P extends IFarPiece<POS>> extend
     void blockChanged(int x, int y, int z);
 
     /**
-     * @return the {@link IFarGenerator} used for initial generation of far terrain
+     * @return the (possibly {@code null}) {@link IFarGeneratorRough} used for rough generation of far terrain
      */
-    IFarGenerator<POS, P> generatorRough();
+    IFarGeneratorRough<POS, P> generatorRough();
 
     /**
-     * @return the {@link IFarGenerator} used for block-accurate generation of far terrain
+     * @return the {@link IFarGeneratorExact} used for block-accurate generation of far terrain
      */
-    IFarGenerator<POS, P> generatorExact();
+    IFarGeneratorExact<POS, P> generatorExact();
 
     /**
      * @return the {@link IFarScaler} used for downscaling the far terrain pieces
