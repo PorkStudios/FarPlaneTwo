@@ -26,6 +26,7 @@ import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.strategy.common.server.scale.IFarScaler;
 import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
 import net.minecraft.world.WorldServer;
 

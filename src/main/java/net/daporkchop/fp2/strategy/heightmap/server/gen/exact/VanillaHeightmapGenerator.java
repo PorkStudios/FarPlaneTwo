@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.gen.exact;
+package net.daporkchop.fp2.strategy.heightmap.server.gen.exact;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.base.server.AbstractFarGenerator;

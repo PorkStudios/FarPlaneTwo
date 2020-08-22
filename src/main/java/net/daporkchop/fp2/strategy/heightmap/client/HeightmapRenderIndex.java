@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.render;
+package net.daporkchop.fp2.strategy.heightmap.client;
 
 import lombok.Getter;
 import lombok.NonNull;
@@ -27,7 +27,7 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.IntBuffer;
 
-import static net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderHelper.*;
+import static net.daporkchop.fp2.strategy.heightmap.client.HeightmapRenderHelper.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL15.*;
 

@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.common.server;
+package net.daporkchop.fp2.strategy.common.server.scale;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.common.IFarPos;

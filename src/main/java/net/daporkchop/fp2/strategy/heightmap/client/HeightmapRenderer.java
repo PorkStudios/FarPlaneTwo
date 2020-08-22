@@ -18,14 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.render;
+package net.daporkchop.fp2.strategy.heightmap.client;
 
 import io.netty.util.concurrent.GlobalEventExecutor;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.client.ClientConstants;
-import net.daporkchop.fp2.client.GlobalInfo;
 import net.daporkchop.fp2.client.ShaderFP2StateHelper;
 import net.daporkchop.fp2.client.ShaderGlStateHelper;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
@@ -52,7 +50,6 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.BufferUtils;
@@ -61,7 +58,6 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
-import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.GlobalInfo.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;

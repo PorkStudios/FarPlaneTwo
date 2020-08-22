@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.scale;
+package net.daporkchop.fp2.strategy.heightmap.server.scale;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;

@@ -30,7 +30,7 @@ import net.daporkchop.fp2.net.server.SPacketReady;
 import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
 import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
 import net.daporkchop.fp2.server.ServerEvents;
-import net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderer;
+import net.daporkchop.fp2.strategy.heightmap.client.HeightmapRenderer;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.ldbjni.LevelDB;

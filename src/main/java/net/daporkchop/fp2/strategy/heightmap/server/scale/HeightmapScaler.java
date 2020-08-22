@@ -18,9 +18,9 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.scale;
+package net.daporkchop.fp2.strategy.heightmap.server.scale;
 
-import net.daporkchop.fp2.strategy.common.server.IFarScaler;
+import net.daporkchop.fp2.strategy.common.server.scale.IFarScaler;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 

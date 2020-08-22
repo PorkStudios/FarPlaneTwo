@@ -18,11 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap;
+package net.daporkchop.fp2.strategy.heightmap.server;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.base.server.AbstractPlayerTracker;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import java.util.stream.Stream;

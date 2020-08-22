@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.render;
+package net.daporkchop.fp2.strategy.heightmap.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.util.Constants;
@@ -30,7 +30,7 @@ import net.minecraft.util.math.AxisAlignedBB;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
-import static net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderHelper.*;
+import static net.daporkchop.fp2.strategy.heightmap.client.HeightmapRenderHelper.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 

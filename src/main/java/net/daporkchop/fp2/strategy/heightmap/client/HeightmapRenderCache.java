@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.render;
+package net.daporkchop.fp2.strategy.heightmap.client;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
@@ -41,8 +41,8 @@ import net.minecraft.client.renderer.culling.ICamera;
 
 import java.nio.ByteBuffer;
 
-import static net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderHelper.*;
-import static net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderer.*;
+import static net.daporkchop.fp2.strategy.heightmap.client.HeightmapRenderHelper.*;
+import static net.daporkchop.fp2.strategy.heightmap.client.HeightmapRenderer.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
