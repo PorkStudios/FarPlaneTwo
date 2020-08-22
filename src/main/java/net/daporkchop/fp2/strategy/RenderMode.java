@@ -26,24 +26,30 @@ import lombok.NonNull;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.client.IFarRenderer;
-import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.strategy.common.server.IFarPlayerTracker;
-import net.daporkchop.fp2.strategy.common.server.scale.IFarScaler;
 import net.daporkchop.fp2.strategy.common.server.IFarStorage;
 import net.daporkchop.fp2.strategy.common.server.IFarWorld;
+import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorExact;
+import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.strategy.common.server.scale.IFarScaler;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
-import net.daporkchop.fp2.strategy.heightmap.server.HeightmapPlayerTracker;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
+import net.daporkchop.fp2.strategy.heightmap.client.HeightmapRenderer;
+import net.daporkchop.fp2.strategy.heightmap.server.HeightmapPlayerTracker;
 import net.daporkchop.fp2.strategy.heightmap.server.HeightmapStorage;
 import net.daporkchop.fp2.strategy.heightmap.server.HeightmapWorld;
 import net.daporkchop.fp2.strategy.heightmap.server.gen.exact.CCHeightmapGenerator;
 import net.daporkchop.fp2.strategy.heightmap.server.gen.exact.VanillaHeightmapGenerator;
 import net.daporkchop.fp2.strategy.heightmap.server.gen.rough.CWGHeightmapGenerator;
-import net.daporkchop.fp2.strategy.heightmap.client.HeightmapRenderer;
 import net.daporkchop.fp2.strategy.heightmap.server.scale.HeightmapScalerMax;
 import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
 import net.daporkchop.fp2.strategy.voxel.VoxelPos;
+import net.daporkchop.fp2.strategy.voxel.client.VoxelRenderer;
+import net.daporkchop.fp2.strategy.voxel.server.VoxelPlayerTracker;
+import net.daporkchop.fp2.strategy.voxel.server.VoxelStorage;
+import net.daporkchop.fp2.strategy.voxel.server.VoxelWorld;
+import net.daporkchop.fp2.strategy.voxel.server.gen.exact.VoxelNoiseGenerator;
+import net.daporkchop.fp2.strategy.voxel.server.scale.VoxelScalerNone;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.PriorityCollection;
 import net.daporkchop.lib.common.misc.string.PUnsafeStrings;
@@ -126,33 +132,36 @@ public enum RenderMode {
     VOXEL("3D", -1) {
         @Override
         protected void registerDefaultGenerators() {
-            //TODO
+            //rough
+
+            //exact
+            this.generatorsExact().add(0, world -> new VoxelNoiseGenerator());
         }
 
         @Override
         public IFarScaler createScaler(@NonNull WorldServer world) {
-            throw new UnsupportedOperationException(); //TODO
+            return new VoxelScalerNone();
         }
 
         @Override
         public IFarStorage createStorage(@NonNull WorldServer world) {
-            throw new UnsupportedOperationException(); //TODO
+            return new VoxelStorage(world);
         }
 
         @Override
         public IFarWorld createWorld(@NonNull WorldServer world) {
-            throw new UnsupportedOperationException(); //TODO
+            return new VoxelWorld(world);
         }
 
         @Override
         public IFarPlayerTracker createPlayerTracker(@NonNull IFarWorld world) {
-            throw new UnsupportedOperationException(); //TODO
+            return new VoxelPlayerTracker(uncheckedCast(world));
         }
 
         @Override
         @SideOnly(Side.CLIENT)
         public IFarRenderer createRenderer(@NonNull WorldClient world) {
-            throw new UnsupportedOperationException(); //TODO
+            return new VoxelRenderer(world);
         }
 
         @Override

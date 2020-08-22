@@ -21,16 +21,17 @@
 package net.daporkchop.fp2.strategy.voxel;
 
 import io.netty.buffer.ByteBuf;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarPos;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.ChunkPos;
 
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -38,7 +39,6 @@ import static net.daporkchop.fp2.util.Constants.*;
 @RequiredArgsConstructor
 @Getter
 @ToString
-@EqualsAndHashCode
 public class VoxelPos implements IFarPos {
     protected final int x;
     protected final int y;
@@ -83,6 +83,17 @@ public class VoxelPos implements IFarPos {
     }
 
     @Override
+    public VoxelPos upTo(int targetLevel) {
+        if (targetLevel == this.level) {
+            return this;
+        }
+        checkArg(targetLevel > this.level, "targetLevel (%d) must be greater than current level (%d)", targetLevel, this.level);
+
+        int shift = targetLevel - this.level;
+        return new VoxelPos(this.x >> shift, this.y >> shift, this.z >> shift, targetLevel);
+    }
+
+    @Override
     public VoxelPos up() {
         return new VoxelPos(this.x >> 1, this.y >> 1, this.z >> 1, this.level + 1);
     }
@@ -100,5 +111,30 @@ public class VoxelPos implements IFarPos {
                && (this.x << d) >= pos.x && ((this.x + 1) << d) <= pos.x
                && (this.y << d) >= pos.y && ((this.y + 1) << d) <= pos.y
                && (this.z << d) >= pos.z && ((this.z + 1) << d) <= pos.z;
+    }
+
+    @Override
+    public AxisAlignedBB bounds() {
+        int shift = this.level + T_SHIFT;
+        return new AxisAlignedBB(
+                this.x << shift, this.y << shift, this.z << shift,
+                (this.x + 1) << shift, (this.y + 1) << shift, (this.z + 1) << shift);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        } else if (obj instanceof VoxelPos) {
+            VoxelPos pos = (VoxelPos) obj;
+            return this.x == pos.x && this.y == pos.y && this.z == pos.z && this.level == pos.level;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return this.x * 1317194159 + this.y * 1964379643 + this.z * 1656858407 + this.level;
     }
 }

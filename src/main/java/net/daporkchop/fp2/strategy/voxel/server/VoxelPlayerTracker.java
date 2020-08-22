@@ -18,13 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.server;
+package net.daporkchop.fp2.strategy.voxel.server;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.base.server.AbstractPlayerTracker;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.strategy.common.server.IFarWorld;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
+import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
+import net.daporkchop.fp2.strategy.voxel.VoxelPos;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import java.util.stream.Stream;
@@ -35,32 +37,37 @@ import static net.daporkchop.lib.common.math.PMath.*;
 /**
  * @author DaPorkchop_
  */
-public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, HeightmapPiece> {
-    public HeightmapPlayerTracker(@NonNull HeightmapWorld world) {
+public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelPiece> {
+    public VoxelPlayerTracker(@NonNull VoxelWorld world) {
         super(world);
     }
 
     @Override
-    protected Stream<HeightmapPos> getPositions(@NonNull EntityPlayerMP player) {
+    protected Stream<VoxelPos> getPositions(@NonNull EntityPlayerMP player) {
         final int dist = FP2Config.renderDistance >> T_SHIFT; //TODO: make it based on render distance
         final int baseX = floorI(player.posX) >> T_SHIFT;
+        final int baseY = floorI(player.posY) >> T_SHIFT;
         final int baseZ = floorI(player.posZ) >> T_SHIFT;
 
         final int levels = FP2Config.maxLevels;
         final int d = (FP2Config.levelCutoffDistance >> T_SHIFT) + 1;
 
-        HeightmapPos[] positions = new HeightmapPos[pow(d * 2 + 1, 2) * levels];
+        VoxelPos[] positions = new VoxelPos[pow(d * 2 + 1, 3) * levels];
         int i = 0;
 
         for (int lvl = 0; lvl < levels; lvl++) {
             int xMin = ((baseX >> lvl) - d);
             int xMax = ((baseX >> lvl) + d);
+            int yMin = ((baseY >> lvl) - d);
+            int yMax = ((baseY >> lvl) + d);
             int zMin = ((baseZ >> lvl) - d);
             int zMax = ((baseZ >> lvl) + d);
 
             for (int x = xMin; x <= xMax; x++) {
-                for (int z = zMin; z <= zMax; z++) {
-                    positions[i++] = new HeightmapPos(x, z, lvl);
+                for (int y = yMin; y <= yMax; y++)  {
+                    for (int z = zMin; z <= zMax; z++) {
+                        positions[i++] = new VoxelPos(x, y, z, lvl);
+                    }
                 }
             }
         }

@@ -18,47 +18,52 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.client;
+package net.daporkchop.fp2.strategy.voxel.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.base.client.AbstractFarRenderIndex;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
+import net.daporkchop.fp2.strategy.voxel.VoxelPos;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-public class HeightmapRenderIndex extends AbstractFarRenderIndex<HeightmapPos, HeightmapRenderTile, HeightmapRenderIndex> {
+public class VoxelRenderIndex extends AbstractFarRenderIndex<VoxelPos, VoxelRenderTile, VoxelRenderIndex> {
     protected final int bakedSize;
 
-    public HeightmapRenderIndex(int bakedSize) {
+    public VoxelRenderIndex(int bakedSize) {
         this.bakedSize = positive(bakedSize, "bakedSize");
     }
 
     @Override
-    public boolean add(@NonNull HeightmapRenderTile tile) {
+    public boolean add(@NonNull VoxelRenderTile tile) {
         if (!tile.hasAddress()) {
             return false;
         }
 
-        this.ensureWritable(4 * (4 * 2));
+        this.ensureWritable(5 * (8 * 2));
 
-        for (HeightmapRenderTile t : tile.neighbors()) {
+        for (VoxelRenderTile t : tile.neighbors()) {
             this.writeTile(t);
         }
 
-        HeightmapRenderTile parent = tile.parent();
+        VoxelRenderTile parent = tile.parent();
         if (parent != null) {
-            HeightmapPos pos = tile.pos();
-            int xLSB = (pos.x() & 1) << 1;
+            VoxelPos pos = tile.pos();
+            int xLSB = (pos.x() & 1) << 2;
+            int yLSB = (pos.y() & 1) << 1;
             int zLSB = pos.z() & 1;
-            HeightmapRenderTile[] neighbors = parent.neighbors();
+            VoxelRenderTile[] neighbors = parent.neighbors();
 
             this.writeTile(parent);
             this.writeTile(neighbors[zLSB]);
+            this.writeTile(neighbors[yLSB]);
+            this.writeTile(neighbors[yLSB | zLSB]);
             this.writeTile(neighbors[xLSB]);
             this.writeTile(neighbors[xLSB | zLSB]);
+            this.writeTile(neighbors[xLSB | yLSB]);
+            this.writeTile(neighbors[xLSB | yLSB | zLSB]);
         } else {
             for (int i = 0; i < 4; i++) {
                 this.writeTile(null);
@@ -70,12 +75,12 @@ public class HeightmapRenderIndex extends AbstractFarRenderIndex<HeightmapPos, H
     }
 
     @Override
-    protected void writeTile(HeightmapRenderTile tile) {
+    protected void writeTile(VoxelRenderTile tile) {
         if (tile != null && tile.hasAddress()) {
-            HeightmapPos pos = tile.pos();
-            this.buffer.put(pos.x()).put(pos.z()).put(pos.level()).put(toInt(tile.address() / this.bakedSize));
+            VoxelPos pos = tile.pos();
+            this.buffer.put(pos.x()).put(pos.y()).put(pos.z()).put(pos.level()).put(toInt(tile.address() / this.bakedSize));
         } else {
-            this.buffer.put(0).put(0).put(0).put(0);
+            this.buffer.put(0).put(0).put(0).put(0).put(0);
         }
     }
 }

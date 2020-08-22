@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.strategy.heightmap.server.scale;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.strategy.common.server.scale.IFarScaler;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 
@@ -35,7 +36,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public class HeightmapScalerMax implements HeightmapScaler {
+public class HeightmapScalerMax implements IFarScaler<HeightmapPos, HeightmapPiece> {
     @Override
     public Stream<HeightmapPos> outputs(@NonNull HeightmapPos srcPos) {
         return Stream.of(srcPos.up());

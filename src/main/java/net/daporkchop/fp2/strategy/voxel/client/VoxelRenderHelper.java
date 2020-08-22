@@ -18,12 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.client;
+package net.daporkchop.fp2.strategy.voxel.client;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
 import net.minecraft.block.Block;
@@ -33,6 +33,9 @@ import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
 
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
@@ -40,33 +43,27 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 @UtilityClass
-public class HeightmapRenderHelper {
-    public static final int HEIGHTMAP_RENDER_SIZE = T_VOXELS * T_VOXELS * IVEC4_SIZE;
+public class VoxelRenderHelper {
+    public static final int VOXEL_RENDER_SIZE = T_VOXELS * T_VOXELS * T_VOXELS * VEC3_SIZE;
 
-    public static ByteBuf bake(@NonNull HeightmapPiece piece) {
-        ByteBuf buffer = Constants.allocateByteBuf(HEIGHTMAP_RENDER_SIZE);
+    public static ByteBuf bake(@NonNull VoxelPiece piece) {
+        ByteBuf buffer = Constants.allocateByteBuf(VOXEL_RENDER_SIZE);
 
         final int blockX = piece.pos().blockX();
+        final int blockY = piece.pos().blockY();
         final int blockZ = piece.pos().blockZ();
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
 
+        Random random = ThreadLocalRandom.current();
         for (int x = 0; x < T_VOXELS; x++) {
-            for (int z = 0; z < T_VOXELS; z++) {
-                int height = piece.height(x, z);
-                int block = piece.block(x, z);
+            for (int y = 0; y < T_VOXELS; y++) {
+                for (int z = 0; z < T_VOXELS; z++) {
+                    buffer.writeFloat(random.nextFloat()).writeFloat(random.nextFloat()).writeFloat(random.nextFloat());
 
-                pos.setPos(blockX + (x << piece.level()), height, blockZ + (z << piece.level()));
-                biomeAccess.biome(Biome.getBiome(piece.biome(x, z), Biomes.PLAINS));
-
-                buffer.writeInt(height)
-                        .writeInt((piece.light(x, z) << 24) | block)
-                        .writeInt(Minecraft.getMinecraft().getBlockColors().colorMultiplier(Block.getStateById(block), biomeAccess, pos, 0));
-
-                biomeAccess.biome(Biome.getBiome(piece.waterBiome(x, z), Biomes.PLAINS));
-                int waterColor = Minecraft.getMinecraft().getBlockColors().colorMultiplier(Blocks.WATER.getDefaultState(), biomeAccess, pos, 0);
-                buffer.writeInt((waterColor & 0x00FFFFFF) | (piece.waterLight(x, z) << 24));
+                    buffer.writeFloat(0.0f); //padding
+                }
             }
         }
         return buffer;

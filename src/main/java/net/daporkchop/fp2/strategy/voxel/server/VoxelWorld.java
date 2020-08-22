@@ -18,14 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.server.scale;
+package net.daporkchop.fp2.strategy.voxel.server;
 
-import net.daporkchop.fp2.strategy.common.server.scale.IFarScaler;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
+import lombok.NonNull;
+import net.daporkchop.fp2.strategy.RenderMode;
+import net.daporkchop.fp2.strategy.base.server.AbstractFarWorld;
+import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
+import net.daporkchop.fp2.strategy.voxel.VoxelPos;
+import net.minecraft.world.WorldServer;
+
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
-public interface HeightmapScaler extends IFarScaler<HeightmapPos, HeightmapPiece> {
+public class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelPiece> {
+    public VoxelWorld(@NonNull WorldServer world) {
+        super(world, RenderMode.VOXEL);
+    }
+
+    @Override
+    protected VoxelPos fromBlockCoords(int x, int y, int z) {
+        return new VoxelPos(x >> T_SHIFT, y >> T_SHIFT, z >> T_SHIFT, 0);
+    }
 }

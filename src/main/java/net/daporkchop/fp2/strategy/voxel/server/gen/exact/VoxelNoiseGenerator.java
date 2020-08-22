@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-$today.year DaPorkchop_
+ * Copyright (c) 2020-2020 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,13 +18,38 @@
  *
  */
 
-//
-//
-// MACROS
-//
-//
+package net.daporkchop.fp2.strategy.voxel.server.gen.exact;
 
-#define HEIGHTMAP_SHIFT (4)
-#define HEIGHTMAP_MASK ((1 << HEIGHTMAP_SHIFT) - 1)
-#define HEIGHTMAP_VOXELS (1 << HEIGHTMAP_SHIFT)
-#define HEIGHTMAP_VERTS (HEIGHTMAP_VOXELS + 1)
+import lombok.NonNull;
+import net.daporkchop.fp2.strategy.base.server.AbstractFarGenerator;
+import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorExact;
+import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
+import net.daporkchop.fp2.strategy.voxel.VoxelPos;
+import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.Vec3i;
+import net.minecraft.world.WorldServer;
+
+import java.util.stream.Stream;
+
+/**
+ * debug thing srsly don't use in production this is useless
+ *
+ * @author DaPorkchop_
+ */
+public class VoxelNoiseGenerator extends AbstractFarGenerator implements IFarGeneratorExact<VoxelPos, VoxelPiece> {
+    @Override
+    public Stream<ChunkPos> neededColumns(@NonNull VoxelPos pos) {
+        return Stream.empty();
+    }
+
+    @Override
+    public Stream<Vec3i> neededCubes(@NonNull IBlockHeightAccess world, @NonNull VoxelPos pos) {
+        return Stream.empty();
+    }
+
+    @Override
+    public void generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPiece piece) {
+        //TODO: do something here lol
+    }
+}

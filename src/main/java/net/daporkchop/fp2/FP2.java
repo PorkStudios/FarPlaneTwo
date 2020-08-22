@@ -31,6 +31,7 @@ import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
 import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
 import net.daporkchop.fp2.server.ServerEvents;
 import net.daporkchop.fp2.strategy.heightmap.client.HeightmapRenderer;
+import net.daporkchop.fp2.strategy.voxel.client.VoxelRenderer;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.ldbjni.LevelDB;
@@ -102,7 +103,9 @@ public class FP2 {
     @Mod.EventHandler
     public void postInit(FMLPostInitializationEvent event) {
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-            PUnsafe.ensureClassInitialized(HeightmapRenderer.class); //load HeightmapRenderer on client thread
+            //load render classes on client thread
+            PUnsafe.ensureClassInitialized(HeightmapRenderer.class);
+            PUnsafe.ensureClassInitialized(VoxelRenderer.class);
         }
     }
 
