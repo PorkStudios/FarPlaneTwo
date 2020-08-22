@@ -42,6 +42,8 @@ import net.daporkchop.fp2.strategy.heightmap.gen.exact.VanillaHeightmapGenerator
 import net.daporkchop.fp2.strategy.heightmap.gen.rough.CWGHeightmapGenerator;
 import net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderer;
 import net.daporkchop.fp2.strategy.heightmap.scale.HeightmapScalerMax;
+import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
+import net.daporkchop.fp2.strategy.voxel.VoxelPos;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.PriorityCollection;
 import net.daporkchop.lib.common.misc.string.PUnsafeStrings;
@@ -121,7 +123,7 @@ public enum RenderMode {
             return new HeightmapPiece[size];
         }
     },
-    SURFACE("3D", -1) {
+    VOXEL("3D", -1) {
         @Override
         protected void registerDefaultGenerators() {
             //TODO
@@ -155,22 +157,22 @@ public enum RenderMode {
 
         @Override
         public IFarPiece readPiece(@NonNull ByteBuf src) {
-            throw new UnsupportedOperationException(); //TODO
+            return new VoxelPiece(src);
         }
 
         @Override
         public IFarPos readPos(@NonNull ByteBuf src) {
-            throw new UnsupportedOperationException(); //TODO
+            return new VoxelPos(src);
         }
 
         @Override
         public IFarPiece piece(@NonNull IFarPos pos) {
-            throw new UnsupportedOperationException(); //TODO
+            return new VoxelPiece((VoxelPos) pos);
         }
 
         @Override
         public IFarPiece[] pieceArray(int size) {
-            throw new UnsupportedOperationException(); //TODO
+            return new VoxelPiece[size];
         }
     };
 
