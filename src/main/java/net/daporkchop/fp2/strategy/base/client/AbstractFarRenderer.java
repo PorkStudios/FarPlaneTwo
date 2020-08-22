@@ -55,7 +55,7 @@ import static org.lwjgl.opengl.GL45.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPiece<POS>, T extends AbstractFarRenderTile<POS>, I extends AbstractFarRenderIndex<POS, T>> implements IFarRenderer<POS, P> {
+public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPiece<POS>, T extends AbstractFarRenderTile<POS, I, T>, I extends AbstractFarRenderIndex<POS, T, I>> implements IFarRenderer<POS, P> {
     protected final AbstractFarRenderCache<POS, P, T, I> cache;
 
     protected final int maxLevel = FP2Config.maxLevels - 1;
@@ -149,6 +149,8 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
             loadedBuffer.bindSSBO(0);
         }
         GLOBAL_INFO.bindSSBO(1);
+
+        this.cache.bindIndex();
     }
 
     protected void updateAndBindUBOs(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum) {

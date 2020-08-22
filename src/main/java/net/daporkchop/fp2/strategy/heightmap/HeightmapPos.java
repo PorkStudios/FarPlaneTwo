@@ -28,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarPos;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.ChunkPos;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -76,7 +77,7 @@ public class HeightmapPos implements IFarPos {
 
     @Override
     public IFarPos upTo(int targetLevel) {
-        if (targetLevel == this.level){
+        if (targetLevel == this.level) {
             return this;
         }
         checkArg(targetLevel > this.level, "targetLevel (%d) must be greater than current level (%d)", targetLevel, this.level);
@@ -102,5 +103,13 @@ public class HeightmapPos implements IFarPos {
         return shift > 0
                && (this.x << shift) >= pos.x && ((this.x + 1) << shift) <= pos.x
                && (this.z << shift) >= pos.z && ((this.z + 1) << shift) <= pos.z;
+    }
+
+    @Override
+    public AxisAlignedBB bounds() {
+        int shift = this.level + T_SHIFT;
+        return new AxisAlignedBB(
+                this.x << shift, Integer.MIN_VALUE, this.z << shift,
+                (this.x + 1) << shift, Integer.MAX_VALUE, (this.z + 1) << shift);
     }
 }

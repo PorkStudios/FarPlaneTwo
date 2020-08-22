@@ -34,7 +34,7 @@ import static org.lwjgl.opengl.GL15.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractFarRenderIndex<POS extends IFarPos, T extends AbstractFarRenderTile<POS>> {
+public abstract class AbstractFarRenderIndex<POS extends IFarPos, T extends AbstractFarRenderTile<POS, I, T>, I extends AbstractFarRenderIndex<POS, T, I>> {
     protected IntBuffer buffer = Constants.createIntBuffer(256);
     @Getter
     protected int size = 0;
@@ -50,10 +50,10 @@ public abstract class AbstractFarRenderIndex<POS extends IFarPos, T extends Abst
 
     public abstract boolean add(@NonNull T tile);
 
-    protected abstract void writeTile(POS tile);
+    protected abstract void writeTile(T tile);
 
     protected void ensureWritable(int count) {
-        while (this.buffer.remaining() < count) {  //buffer doesn't have enough space, grow it
+        while (this.buffer.remaining() < count) { //buffer doesn't have enough space, grow it
             IntBuffer bigger = Constants.createIntBuffer(this.buffer.capacity() << 1);
             this.buffer.flip();
             bigger.put(this.buffer);

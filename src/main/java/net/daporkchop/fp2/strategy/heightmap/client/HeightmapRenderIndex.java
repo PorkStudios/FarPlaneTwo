@@ -20,46 +20,37 @@
 
 package net.daporkchop.fp2.strategy.heightmap.client;
 
-import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.lib.unsafe.PUnsafe;
-
-import java.nio.IntBuffer;
+import net.daporkchop.fp2.strategy.base.client.AbstractFarRenderIndex;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 
 import static net.daporkchop.fp2.strategy.heightmap.client.HeightmapRenderHelper.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static org.lwjgl.opengl.GL15.*;
 
 /**
  * @author DaPorkchop_
  */
-class HeightmapRenderIndex /*extends AbstractFarRenderIndex<HeightmapPos, HeightmapRenderTile>*/ {
-    protected IntBuffer buffer = Constants.createIntBuffer(256);
-    @Getter
-    protected int size = 0;
-
-    public int mark() {
-        return this.size;
-    }
-
-    public void restore(int mark) {
-        this.buffer.position(mark * 4 * 8);
-        this.size = mark;
-    }
-
+class HeightmapRenderIndex extends AbstractFarRenderIndex<HeightmapPos, HeightmapRenderTile, HeightmapRenderIndex> {
+    @Override
     public boolean add(@NonNull HeightmapRenderTile tile) {
         if (tile.hasAddress()) {
             this.ensureWritable(4 * 8);
 
-            for (HeightmapRenderTile t : tile.neighbors) {
+            for (HeightmapRenderTile t : tile.neighbors()) {
                 this.writeTile(t);
             }
-            if (tile.parent != null) {
-                this.writeTile(tile.parent);
-                this.writeTile((tile.z & 1) == 0 ? tile.parent : tile.parent.neighbors[1]);
-                this.writeTile((tile.x & 1) == 0 ? tile.parent : tile.parent.neighbors[2]);
-                this.writeTile((tile.x & 1) != 0 && (tile.z & 1) != 0 ? tile.parent.neighbors[3] : (tile.x & 1) != 0 ? tile.parent.neighbors[2] : (tile.z & 1) != 0 ? tile.parent.neighbors[1] : tile.parent);
+
+            HeightmapRenderTile parent = tile.parent();
+            if (parent != null) {
+                HeightmapPos pos = tile.pos();
+                int xLSB = pos.x() & 1;
+                int zLSB = pos.z() & 1;
+                HeightmapRenderTile[] neighbors = parent.neighbors();
+
+                this.writeTile(parent);
+                this.writeTile(neighbors[zLSB]);
+                this.writeTile(neighbors[xLSB << 1]);
+                this.writeTile(neighbors[(xLSB << 1) | zLSB]);
             } else {
                 for (int i = 0; i < 4; i++) {
                     this.writeTile(null);
@@ -73,35 +64,13 @@ class HeightmapRenderIndex /*extends AbstractFarRenderIndex<HeightmapPos, Height
         }
     }
 
-    private void writeTile(HeightmapRenderTile tile) {
+    @Override
+    protected void writeTile(HeightmapRenderTile tile) {
         if (tile != null && tile.hasAddress()) {
-            this.buffer.put(tile.x).put(tile.z).put(tile.level).put(toInt(tile.address / HEIGHTMAP_RENDER_SIZE));
+            HeightmapPos pos = tile.pos();
+            this.buffer.put(pos.x()).put(pos.z()).put(pos.level()).put(toInt(tile.address() / HEIGHTMAP_RENDER_SIZE));
         } else {
             this.buffer.put(0).put(0).put(0).put(0);
-        }
-    }
-
-    private void ensureWritable(int count) {
-        while (this.buffer.remaining() < count) {  //buffer doesn't have enough space, grow it
-            IntBuffer bigger = Constants.createIntBuffer(this.buffer.capacity() << 1);
-            this.buffer.flip();
-            bigger.put(this.buffer);
-            PUnsafe.pork_releaseBuffer(this.buffer);
-            this.buffer = bigger;
-        }
-    }
-
-    public void reset() {
-        this.buffer.clear();
-        this.size = 0;
-    }
-
-    public void upload(int slot) {
-        if (this.size > 0) {
-            this.buffer.flip();
-            glBufferData(slot, this.buffer, GL_STREAM_DRAW);
-        } else {
-            glBufferData(slot, 0L, GL_STREAM_DRAW);
         }
     }
 }

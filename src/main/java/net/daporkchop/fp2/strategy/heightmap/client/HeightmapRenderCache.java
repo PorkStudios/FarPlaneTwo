@@ -20,36 +20,12 @@
 
 package net.daporkchop.fp2.strategy.heightmap.client;
 
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
-import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.base.client.AbstractFarRenderCache;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
-import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.alloc.Allocator;
-import net.daporkchop.fp2.util.alloc.FixedSizeAllocator;
-import net.daporkchop.fp2.util.math.Volume;
-import net.daporkchop.lib.common.math.BinMath;
-import net.daporkchop.lib.common.misc.string.PStrings;
-import net.daporkchop.lib.primitive.map.LongObjMap;
-import net.daporkchop.lib.primitive.map.open.LongObjOpenHashMap;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.culling.ICamera;
-
-import java.nio.ByteBuffer;
 
 import static net.daporkchop.fp2.strategy.heightmap.client.HeightmapRenderHelper.*;
-import static net.daporkchop.fp2.strategy.heightmap.client.HeightmapRenderer.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL31.*;
-import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_
@@ -60,42 +36,52 @@ public class HeightmapRenderCache extends AbstractFarRenderCache<HeightmapPos, H
     }
 
     @Override
-    protected HeightmapRenderTile createTile(HeightmapRenderTile parent, @NonNull HeightmapPos pos) {
+    public HeightmapRenderTile createTile(HeightmapRenderTile parent, @NonNull HeightmapPos pos) {
         return new HeightmapRenderTile(this, parent, pos);
     }
 
+    @Override
     public void tileAdded(@NonNull HeightmapRenderTile tile) {
-        tile.neighbors[0] = tile;
-        tile.neighbors[1] = this.getTile(tile.x, tile.z + 1, tile.level);
-        tile.neighbors[2] = this.getTile(tile.x + 1, tile.z, tile.level);
-        tile.neighbors[3] = this.getTile(tile.x + 1, tile.z + 1, tile.level);
+        int x = tile.pos().x();
+        int z = tile.pos().z();
+        int level = tile.pos().level();
 
-        HeightmapRenderTile t = this.getTile(tile.x, tile.z - 1, tile.level);
+        tile.neighbors()[0] = tile;
+        tile.neighbors()[1] = this.getTile(new HeightmapPos(x, z + 1, level));
+        tile.neighbors()[2] = this.getTile(new HeightmapPos(x + 1, z, level));
+        tile.neighbors()[3] = this.getTile(new HeightmapPos(x + 1, z + 1, level));
+
+        HeightmapRenderTile t = this.getTile(new HeightmapPos(x, z - 1, level));
         if (t != null) {
-            t.neighbors[1] = tile;
+            t.neighbors()[1] = tile;
         }
-        t = this.getTile(tile.x - 1, tile.z, tile.level);
+        t = this.getTile(new HeightmapPos(x - 1, z, level));
         if (t != null) {
-            t.neighbors[2] = tile;
+            t.neighbors()[2] = tile;
         }
-        t = this.getTile(tile.x - 1, tile.z - 1, tile.level);
+        t = this.getTile(new HeightmapPos(x - 1, z - 1, level));
         if (t != null) {
-            t.neighbors[3] = tile;
+            t.neighbors()[3] = tile;
         }
     }
 
+    @Override
     public void tileRemoved(@NonNull HeightmapRenderTile tile) {
-        HeightmapRenderTile t = this.getTile(tile.x, tile.z - 1, tile.level);
+        int x = tile.pos().x();
+        int z = tile.pos().z();
+        int level = tile.pos().level();
+
+        HeightmapRenderTile t = this.getTile(new HeightmapPos(x, z - 1, level));
         if (t != null) {
-            t.neighbors[1] = null;
+            t.neighbors()[1] = null;
         }
-        t = this.getTile(tile.x - 1, tile.z, tile.level);
+        t = this.getTile(new HeightmapPos(x - 1, z, level));
         if (t != null) {
-            t.neighbors[2] = null;
+            t.neighbors()[2] = null;
         }
-        t = this.getTile(tile.x - 1, tile.z - 1, tile.level);
+        t = this.getTile(new HeightmapPos(x - 1, z - 1, level));
         if (t != null) {
-            t.neighbors[3] = null;
+            t.neighbors()[3] = null;
         }
     }
 }

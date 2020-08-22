@@ -36,6 +36,7 @@ import net.minecraft.client.renderer.culling.ICamera;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -46,7 +47,7 @@ import static org.lwjgl.opengl.GL43.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFarPiece<POS>, T extends AbstractFarRenderTile<POS>, I extends AbstractFarRenderIndex<POS, T>> {
+public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFarPiece<POS>, T extends AbstractFarRenderTile<POS, I, T>, I extends AbstractFarRenderIndex<POS, T, I>> {
     protected final AbstractFarRenderer<POS, P, T, I> renderer;
 
     protected final Map<POS, T> roots = new ObjObjOpenHashMap<>();
@@ -90,7 +91,11 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
         checkState(this.dataAllocator.alloc(this.bakedSize) == 0L);
     }
 
-    protected abstract T createTile(T parent, @NonNull POS pos);
+    public abstract T createTile(T parent, @NonNull POS pos);
+
+    public abstract void tileAdded(@NonNull T tile);
+
+    public abstract void tileRemoved(@NonNull T tile);
 
     public void addPiece(@NonNull P piece, @NonNull ByteBuf bakedData) {
         POS pos = piece.pos();

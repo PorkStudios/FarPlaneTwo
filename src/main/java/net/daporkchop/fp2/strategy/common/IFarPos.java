@@ -23,6 +23,7 @@ package net.daporkchop.fp2.strategy.common;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.RenderMode;
+import net.minecraft.util.math.AxisAlignedBB;
 
 /**
  * An identifier for a {@link IFarPiece}.
@@ -37,6 +38,7 @@ public interface IFarPos {
 
     /**
      * Gets the {@link IFarPos} containing this position at the given lower level of detail.
+     *
      * @param targetLevel the level of detail to go up to
      * @return the {@link IFarPos} containing this position at the given lower level of detail
      */
@@ -45,7 +47,7 @@ public interface IFarPos {
     /**
      * @return the {@link IFarPos} containing this position at a lower level of detail
      */
-    default IFarPos up()    {
+    default IFarPos up() {
         return this.upTo(this.level() + 1);
     }
 
@@ -80,4 +82,9 @@ public interface IFarPos {
      * @return whether or not this position contains the given {@link IFarPos}
      */
     boolean contains(@NonNull IFarPos posIn);
+
+    /**
+     * @return the maximum volume that the piece at this position could possibly occupy
+     */
+    AxisAlignedBB bounds();
 }
