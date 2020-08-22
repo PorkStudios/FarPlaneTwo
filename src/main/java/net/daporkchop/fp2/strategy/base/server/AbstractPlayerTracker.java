@@ -36,6 +36,7 @@ import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.Map;
 import java.util.Set;
@@ -136,7 +137,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
             return;
         }
 
-        this.entries.values().stream()
+        new ArrayList<>(this.entries.values()).stream()
                 .filter(e -> e.players.contains(player))
                 .forEach(e -> e.removePlayer(player));
     }

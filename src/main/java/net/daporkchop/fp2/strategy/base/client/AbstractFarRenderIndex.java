@@ -18,23 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.render;
+package net.daporkchop.fp2.strategy.base.client;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.IntBuffer;
 
-import static net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderHelper.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL15.*;
 
 /**
  * @author DaPorkchop_
  */
-class HeightmapRenderIndex {
+public abstract class AbstractFarRenderIndex<POS extends IFarPos, T extends AbstractFarRenderTile<POS, I, T>, I extends AbstractFarRenderIndex<POS, T, I>> {
     protected IntBuffer buffer = Constants.createIntBuffer(256);
     @Getter
     protected int size = 0;
@@ -48,41 +48,12 @@ class HeightmapRenderIndex {
         this.size = mark;
     }
 
-    public boolean add(@NonNull HeightmapRenderTile tile) {
-        if (tile.hasAddress()) {
-            this.ensureWritable(4 * 8);
+    public abstract boolean add(@NonNull T tile);
 
-            for (HeightmapRenderTile t : tile.neighbors) {
-                this.writeTile(t);
-            }
-            if (tile.parent != null) {
-                this.writeTile(tile.parent);
-                this.writeTile((tile.z & 1) == 0 ? tile.parent : tile.parent.neighbors[1]);
-                this.writeTile((tile.x & 1) == 0 ? tile.parent : tile.parent.neighbors[2]);
-                this.writeTile((tile.x & 1) != 0 && (tile.z & 1) != 0 ? tile.parent.neighbors[3] : (tile.x & 1) != 0 ? tile.parent.neighbors[2] : (tile.z & 1) != 0 ? tile.parent.neighbors[1] : tile.parent);
-            } else {
-                for (int i = 0; i < 4; i++) {
-                    this.writeTile(null);
-                }
-            }
+    protected abstract void writeTile(T tile);
 
-            this.size++;
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    private void writeTile(HeightmapRenderTile tile) {
-        if (tile != null && tile.hasAddress()) {
-            this.buffer.put(tile.x).put(tile.z).put(tile.level).put(toInt(tile.address / HEIGHTMAP_RENDER_SIZE));
-        } else {
-            this.buffer.put(0).put(0).put(0).put(0);
-        }
-    }
-
-    private void ensureWritable(int count) {
-        while (this.buffer.remaining() < count) {  //buffer doesn't have enough space, grow it
+    protected void ensureWritable(int count) {
+        while (this.buffer.remaining() < count) { //buffer doesn't have enough space, grow it
             IntBuffer bigger = Constants.createIntBuffer(this.buffer.capacity() << 1);
             this.buffer.flip();
             bigger.put(this.buffer);

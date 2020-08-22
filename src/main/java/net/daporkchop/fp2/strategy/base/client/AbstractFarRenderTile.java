@@ -18,9 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.render;
+package net.daporkchop.fp2.strategy.base.client;
 
+import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -30,76 +32,75 @@ import net.minecraft.util.math.AxisAlignedBB;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
-import static net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderHelper.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-class HeightmapRenderTile extends AxisAlignedBB {
+@Getter
+public abstract class AbstractFarRenderTile<POS extends IFarPos, I extends AbstractFarRenderIndex<POS, T, I>, T extends AbstractFarRenderTile<POS, I, T>> extends AxisAlignedBB {
     protected static final long MINY_OFFSET = Constants.fieldOffset(AxisAlignedBB.class, "minY", "field_72338_b");
     protected static final long MAXY_OFFSET = Constants.fieldOffset(AxisAlignedBB.class, "maxY", "field_72337_e");
 
-    protected final int x;
-    protected final int z;
+    protected final POS pos;
     protected final int level;
 
-    protected final HeightmapRenderCache cache;
-    protected final HeightmapRenderTile parent;
-    protected final HeightmapRenderTile[] children; //non-null for levels above 0
-    protected final HeightmapRenderTile[] neighbors = new HeightmapRenderTile[4];
+    protected final T[] children; //non-null for levels above 0
+    protected final T[] neighbors;
+
+    protected final AbstractFarRenderCache<POS, ?, T, I> cache;
+    protected final T parent;
 
     protected long address = -1L;
     protected ByteBuffer renderData;
 
     public boolean doesSelfOrAnyChildrenHaveAddress = false;
 
-    public HeightmapRenderTile(HeightmapRenderCache cache, HeightmapRenderTile parent, int x, int z, int level) {
-        super(x << T_SHIFT << level, Integer.MIN_VALUE, z << T_SHIFT << level, (x + 1) << T_SHIFT << level, Integer.MAX_VALUE, (z + 1) << T_SHIFT << level);
+    public AbstractFarRenderTile(@NonNull AbstractFarRenderCache<POS, ?, T, I> cache, T parent, @NonNull POS pos, @NonNull AxisAlignedBB bb, int childCount) {
+        super(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
 
+        this.level = (this.pos = pos).level();
         this.cache = cache;
         this.parent = parent;
-        this.x = x;
-        this.z = z;
-        this.level = level;
 
-        this.children = level > 0 ? new HeightmapRenderTile[4] : null;
+        this.children = pos.level() > 0 ? this.tileArray(childCount) : null;
+        this.neighbors = this.tileArray(childCount);
 
-        cache.tileAdded(this);
+        cache.tileAdded(uncheckedCast(this));
     }
 
-    public HeightmapRenderTile findChild(int x, int z, int level) {
-        HeightmapRenderTile next = this.findChildStep(x, z, level);
-        return next == this || next == null ? next : next.findChild(x, z, level);
+    protected abstract T[] tileArray(int size);
+
+    protected abstract int childIndex(@NonNull POS pos);
+
+    public T findChild(@NonNull POS pos) {
+        T next = this.findChildStep(pos);
+        return next == this || next == null ? next : next.findChild(pos);
     }
 
-    public HeightmapRenderTile findOrCreateChild(int x, int z, int level) {
-        HeightmapRenderTile next = this.findChildStep(x, z, level);
+    public T findOrCreateChild(@NonNull POS pos) {
+        T next = this.findChildStep(pos);
         if (next == null) {
-            next = new HeightmapRenderTile(this.cache, this, x >> (this.level - level - 1), z >> (this.level - level - 1), this.level - 1);
-            this.children[this.childIndex(x, z, level)] = next;
+            next = this.cache.createTile(uncheckedCast(this), uncheckedCast(pos.upTo(this.level - 1)));
+            this.children[this.childIndex(pos)] = next;
         }
-        return next == this ? next : next.findOrCreateChild(x, z, level);
+        return next == this ? next : next.findOrCreateChild(pos);
     }
 
-    public HeightmapRenderTile findChildStep(int x, int z, int level) {
-        if (this.x == x && this.z == z && this.level == level) {
-            return this;
+    public T findChildStep(@NonNull POS pos) {
+        if (this.pos.equals(pos)) {
+            return uncheckedCast(this);
         }
-        checkState(this.level > level);
-        checkState((x >> (this.level - level)) == this.x && (z >> (this.level - level)) == this.z);
-        return this.children[this.childIndex(x, z, level)];
+        checkState(this.level > pos.level());
+        //checkState((pos.x() >> (this.level - pos.level())) == this.x && (pos.z() >> (this.level - pos.level())) == this.z);
+        return this.children[this.childIndex(pos)];
     }
 
-    private int childIndex(int x, int z, int level) {
-        return (((x >> (this.level - level - 1)) & 1) << 1) | ((z >> (this.level - level - 1)) & 1);
-    }
-
-    public void forEach(@NonNull Consumer<HeightmapRenderTile> callback) {
-        callback.accept(this);
+    public void forEach(@NonNull Consumer<T> callback) {
+        callback.accept(uncheckedCast(this));
         if (this.children != null) {
-            for (HeightmapRenderTile child : this.children) {
+            for (T child : this.children) {
                 if (child != null) {
                     child.forEach(callback);
                 }
@@ -114,15 +115,10 @@ class HeightmapRenderTile extends AxisAlignedBB {
     public void assignAddress(long address) {
         checkState(!this.hasAddress(), "already has an address?!?");
         this.address = address;
-        this.renderData = Constants.createByteBuffer(HEIGHTMAP_RENDER_SIZE);
+        this.renderData = Constants.createByteBuffer(this.cache.bakedSize);
         this.markHasAddress(true);
     }
 
-    /**
-     * Deletes this node's address.
-     *
-     * @return whether or not the root tile should be deleted
-     */
     public boolean dropAddress() {
         checkState(this.hasAddress(), "doesn't have an address?!?");
         this.address = -1L;
@@ -131,7 +127,7 @@ class HeightmapRenderTile extends AxisAlignedBB {
         return this.markHasAddress(false);
     }
 
-    private boolean markHasAddress(boolean hasAddress) {
+    protected boolean markHasAddress(boolean hasAddress) {
         if (!hasAddress && this.children != null) {
             //check if any children have an address
             for (int i = 0, len = this.children.length; !hasAddress && i < len; i++) {
@@ -142,12 +138,12 @@ class HeightmapRenderTile extends AxisAlignedBB {
         }
         this.doesSelfOrAnyChildrenHaveAddress = hasAddress;
         if (!hasAddress) {
-            this.cache.tileRemoved(this);
+            this.cache.tileRemoved(uncheckedCast(this));
 
             //neither this tile nor any of its children has an address
             if (this.parent != null) {
                 //this tile has a parent, remove it from the parent
-                this.parent.children[this.parent.childIndex(this.x, this.z, this.level)] = null;
+                this.parent.children[this.parent.childIndex(this.pos)] = null;
 
                 //notify the parent that this tile has been removed
                 return this.parent.markHasAddress(this.parent.hasAddress());
@@ -159,7 +155,7 @@ class HeightmapRenderTile extends AxisAlignedBB {
         return false;
     }
 
-    public boolean select(@NonNull Volume[] ranges, @NonNull ICamera frustum, @NonNull HeightmapRenderIndex index) {
+    public boolean select(@NonNull Volume[] ranges, @NonNull ICamera frustum, @NonNull I index) {
         if (!ranges[this.level].intersects(this)) {
             //the view range for this level doesn't intersect this tile's bounding box,
             // so we can be certain that neither this tile nor any of its children would be contained
@@ -173,7 +169,7 @@ class HeightmapRenderTile extends AxisAlignedBB {
         if (this.children != null && ranges[this.level - 1].intersects(this)) {
             //this tile intersects with the view distance for tiles below it, consider selecting them as well
             //if all children are selectable, select all of them
-            if (this.hasAddress())  {
+            if (this.hasAddress()) {
                 //this tile contains renderable data, so only add below pieces if all of them are present
                 //this is necessary because there is no mechanism for rendering part of a tile
                 int mark = index.mark();
@@ -181,7 +177,7 @@ class HeightmapRenderTile extends AxisAlignedBB {
                     if (this.children[i] == null || !this.children[i].select(ranges, frustum, index)) {
                         //if any one of the children cannot be added, abort and add this tile over the whole area instead
                         index.restore(mark);
-                        return index.add(this);
+                        return index.add(uncheckedCast(this));
                     }
                 }
                 return true;
@@ -198,6 +194,6 @@ class HeightmapRenderTile extends AxisAlignedBB {
         }
 
         //add self to render output
-        return index.add(this);
+        return index.add(uncheckedCast(this));
     }
 }

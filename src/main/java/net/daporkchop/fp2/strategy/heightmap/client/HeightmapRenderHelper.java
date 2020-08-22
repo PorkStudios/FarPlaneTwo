@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.render;
+package net.daporkchop.fp2.strategy.heightmap.client;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;

@@ -55,11 +55,14 @@ public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiec
     protected final IntObjMap<DirectDB> dbs = new IntObjConcurrentHashMap<>();
     @Getter
     protected final File storageRoot;
+    @Getter
+    protected final RenderMode mode;
 
     protected final IntFunction<DirectDB> dbOpenFunction;
 
-    public AbstractFarStorage(@NonNull WorldServer world) {
-        this.storageRoot = new File(world.getChunkSaveLocation(), "fp2/" + this.mode().name().toLowerCase());
+    public AbstractFarStorage(@NonNull WorldServer world, @NonNull RenderMode mode) {
+        this.storageRoot = new File(world.getChunkSaveLocation(), "fp2/" + mode.name().toLowerCase());
+        this.mode = mode;
         PFiles.ensureDirectoryExists(this.storageRoot);
 
         this.dbOpenFunction = i -> {

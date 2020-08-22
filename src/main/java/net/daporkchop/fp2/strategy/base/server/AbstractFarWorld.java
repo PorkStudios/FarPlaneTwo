@@ -24,7 +24,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.util.concurrent.GlobalEventExecutor;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
@@ -36,13 +35,12 @@ import net.daporkchop.fp2.strategy.base.server.task.SavePieceAction;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
-import net.daporkchop.fp2.strategy.common.server.IFarScaler;
 import net.daporkchop.fp2.strategy.common.server.IFarStorage;
 import net.daporkchop.fp2.strategy.common.server.IFarWorld;
 import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.strategy.common.server.scale.IFarScaler;
 import net.daporkchop.fp2.util.threading.KeyedTaskScheduler;
-import net.daporkchop.fp2.util.threading.PriorityThreadFactory;
 import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
@@ -51,6 +49,7 @@ import net.daporkchop.lib.binary.stream.DataOut;
 import net.daporkchop.lib.common.function.io.IOConsumer;
 import net.daporkchop.lib.common.misc.file.PFiles;
 import net.daporkchop.lib.common.misc.string.PStrings;
+import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.primitive.map.ObjLongMap;
@@ -58,11 +57,8 @@ import net.daporkchop.lib.primitive.map.concurrent.ObjLongConcurrentHashMap;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.EventBus;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.relauncher.Side;
 
 import java.io.File;
 import java.io.IOException;
@@ -76,7 +72,6 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -111,7 +106,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
     protected final ObjLongMap<POS> exactActive = new ObjLongConcurrentHashMap<>(-1L);
     protected final Queue<LazyTask<TaskKey, ?, ?>> pendingExactTasks = new ArrayDeque<>();
 
-    protected final LazyPriorityExecutor<TaskKey> executor;
+    protected final LazyPriorityExecutor<TaskKey> executor; //TODO: make these global rather than per-dimension
     protected final KeyedTaskScheduler<POS> ioExecutor;
 
     protected final boolean lowResolution;
@@ -177,16 +172,14 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
         this.scaler = this.mode().uncheckedCreateScaler(world);
         this.storage = this.mode().uncheckedCreateStorage(world);
 
-        this.executor = new LazyPriorityExecutor<>(FP2Config.generationThreads, new PriorityThreadFactory(
-                new ThreadFactoryBuilder().daemon().collapsingId().formatId()
-                        .name(PStrings.fastFormat("FP2 DIM%d Generation Thread #%%d", world.provider.getDimension()))
-                        .priority(Thread.MIN_PRIORITY).build(),
-                Thread.MIN_PRIORITY));
-        this.ioExecutor = new KeyedTaskScheduler<>(FP2Config.ioThreads, new PriorityThreadFactory(
-                new ThreadFactoryBuilder().daemon().collapsingId().formatId()
-                        .name(PStrings.fastFormat("FP2 DIM%d IO Thread #%%d", world.provider.getDimension()))
-                        .priority(Thread.MIN_PRIORITY).build(),
-                Thread.MIN_PRIORITY));
+        this.executor = new LazyPriorityExecutor<>(
+                FP2Config.generationThreads,
+                PThreadFactories.builder().daemon().minPriority()
+                        .collapsingId().name(PStrings.fastFormat("FP2 DIM%d Generation Thread #%%d", world.provider.getDimension())).build());
+        this.ioExecutor = new KeyedTaskScheduler<>(
+                FP2Config.ioThreads,
+                PThreadFactories.builder().daemon().minPriority()
+                        .collapsingId().name(PStrings.fastFormat("FP2 DIM%d IO Thread #%%d", world.provider.getDimension())).build());
 
         this.loadNotDone();
 
@@ -244,7 +237,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
     }
 
     protected void schedulePieceForUpdate(@NonNull POS pos, long newTimestamp) {
-        if (this.exactActive.put(pos, newTimestamp) < 0L)  {
+        if (this.exactActive.put(pos, newTimestamp) < 0L) {
             //position wasn't previously queued for update
             synchronized (this.pendingExactTasks) {
                 this.pendingExactTasks.add(new ExactUpdatePieceTask<>(this, new TaskKey(TaskStage.EXACT, pos.level()), pos, TaskStage.EXACT));
@@ -253,7 +246,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
     }
 
     @SubscribeEvent
-    public void onWorldTick(TickEvent.ServerTickEvent event)    {
+    public void onWorldTick(TickEvent.ServerTickEvent event) {
         if (event.phase == TickEvent.Phase.END && !this.pendingExactTasks.isEmpty()) {
             //fire pending tasks
             synchronized (this.pendingExactTasks) {

@@ -20,23 +20,26 @@
 
 package net.daporkchop.fp2.client.gl.shader;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.strategy.heightmap.render.HeightmapRenderer;
 import net.daporkchop.lib.binary.oio.StreamUtil;
+import net.daporkchop.lib.binary.oio.reader.UTF8FileReader;
+import net.daporkchop.lib.common.function.io.IOBiConsumer;
 import net.daporkchop.lib.common.function.io.IOFunction;
 import net.daporkchop.lib.common.misc.string.PStrings;
+import net.minecraft.client.Minecraft;
+import net.minecraft.util.text.TextComponentString;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.stream.StreamSupport;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
@@ -50,6 +53,28 @@ import static org.lwjgl.opengl.GL20.*;
 public class ShaderManager {
     protected final String BASE_PATH = "/assets/fp2/shaders";
 
+    protected final LoadingCache<String, ShaderProgram> SHADER_CACHE = CacheBuilder.newBuilder()
+            .weakValues()
+            .build(new CacheLoader<String, ShaderProgram>() {
+                @Override
+                public ShaderProgram load(String programName) throws Exception {
+                    ProgramMeta meta;
+                    try (InputStream in = ShaderManager.class.getResourceAsStream(PStrings.fastFormat("%s/prog/%s.json", BASE_PATH, programName))) {
+                        checkArg(in != null, "Unable to find shader meta file: \"%s/prog/%s.json\"!", BASE_PATH, programName);
+                        meta = GSON.fromJson(new UTF8FileReader(in), ProgramMeta.class);
+                    }
+
+                    checkState(meta.vert != null, "Program \"%s\" has no vertex shaders!", programName);
+                    checkState(meta.frag != null, "Program \"%s\" has no fragment shaders!", programName);
+
+                    return new ShaderProgram(
+                            programName,
+                            get(meta.vert, ShaderType.VERTEX),
+                            meta.geom != null ? get(meta.geom, ShaderType.VERTEX) : null,
+                            get(meta.frag, ShaderType.FRAGMENT));
+                }
+            });
+
     /**
      * Obtains a shader program with the given name.
      *
@@ -57,38 +82,19 @@ public class ShaderManager {
      * @return the shader program with the given name
      */
     public ShaderProgram get(@NonNull String programName) {
-        try {
-            String fileName = PStrings.fastFormat("%s/prog/%s.json", BASE_PATH, programName);
-            JsonObject meta;
-            try (InputStream in = ShaderManager.class.getResourceAsStream(fileName)) {
-                if (in == null) {
-                    throw new IllegalStateException(PStrings.fastFormat("Unable to find shader meta file: \"%s\"!", fileName));
-                }
-                meta = new JsonParser().parse(new InputStreamReader(in)).getAsJsonObject();
-            }
-            if (!meta.has("vert")) {
-                throw new IllegalStateException(PStrings.fastFormat("Shader \"%s\" has no vertex shader!", programName));
-            } else if (!meta.has("frag")) {
-                throw new IllegalStateException(PStrings.fastFormat("Shader \"%s\" has no fragment shader!", programName));
-            }
-            return new ShaderProgram(
-                    programName,
-                    get(StreamSupport.stream(meta.getAsJsonArray("vert").spliterator(), false).map(JsonElement::getAsString).toArray(String[]::new), ShaderType.VERTEX),
-                    meta.has("geom") ? get(StreamSupport.stream(meta.getAsJsonArray("vert").spliterator(), false).map(JsonElement::getAsString).toArray(String[]::new), ShaderType.VERTEX) : null,
-                    get(StreamSupport.stream(meta.getAsJsonArray("frag").spliterator(), false).map(JsonElement::getAsString).toArray(String[]::new), ShaderType.FRAGMENT));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return SHADER_CACHE.getUnchecked(programName);
     }
 
     protected Shader get(@NonNull String[] names, @NonNull ShaderType type) {
-        return type.construct(names, Arrays.stream(names)
-                .map((IOFunction<String, String>) fileName -> {
-                    try (InputStream in = ShaderManager.class.getResourceAsStream(BASE_PATH + '/' + fileName)) {
-                        checkState(in != null, "Unable to find shader file: \"%s\"!", fileName);
-                        return new String(StreamUtil.toByteArray(in), StandardCharsets.UTF_8);
-                    }
-                })
+        return new Shader(type, names, Stream.concat(
+                Stream.of("#version 430 core\n"), //add version prefix
+                Arrays.stream(names)
+                        .map((IOFunction<String, String>) fileName -> {
+                            try (InputStream in = ShaderManager.class.getResourceAsStream(BASE_PATH + '/' + fileName)) {
+                                checkState(in != null, "Unable to find shader file: \"%s\"!", fileName);
+                                return new String(StreamUtil.toByteArray(in), StandardCharsets.UTF_8);
+                            }
+                        }))
                 .toArray(String[]::new));
     }
 
@@ -120,7 +126,28 @@ public class ShaderManager {
     }
 
     public void reload() {
-        //TODO: actually reload all shaders rather than doing it manually
-        HeightmapRenderer.reloadHeightShader(true);
+        try {
+            AtomicInteger shaderCount = new AtomicInteger();
+            SHADER_CACHE.asMap().forEach((IOBiConsumer<String, ShaderProgram>) (programName, program) -> {
+                ProgramMeta meta;
+                try (InputStream in = ShaderManager.class.getResourceAsStream(PStrings.fastFormat("%s/prog/%s.json", BASE_PATH, programName))) {
+                    checkArg(in != null, "Unable to find shader meta file: \"%s/prog/%s.json\"!", BASE_PATH, programName);
+                    meta = GSON.fromJson(new UTF8FileReader(in), ProgramMeta.class);
+                }
+
+                checkState(meta.vert != null, "Program \"%s\" has no vertex shaders!", programName);
+                checkState(meta.frag != null, "Program \"%s\" has no fragment shaders!", programName);
+
+                program.reload(
+                        get(meta.vert, ShaderType.VERTEX),
+                        meta.geom != null ? get(meta.geom, ShaderType.VERTEX) : null,
+                        get(meta.frag, ShaderType.FRAGMENT));
+                shaderCount.incrementAndGet();
+            });
+            Minecraft.getMinecraft().player.sendMessage(new TextComponentString("§a" + shaderCount.get() + " shaders successfully reloaded."));
+        } catch (Exception e) {
+            LOGGER.error("shader reload failed", e);
+            Minecraft.getMinecraft().player.sendMessage(new TextComponentString("§cshaders reload failed (check console)."));
+        }
     }
 }

@@ -20,26 +20,13 @@
 
 package net.daporkchop.fp2.client.gl.shader;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL32.*;
-
 /**
- * The different types of shaders.
+ * Metadata for a shader program.
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public enum ShaderType {
-    VERTEX("vert", GL_VERTEX_SHADER),
-    GEOMETRY("geom", GL_GEOMETRY_SHADER),
-    FRAGMENT("frag", GL_FRAGMENT_SHADER);
-
-    @NonNull
-    protected final String extension;
-    protected final int id;
+final class ProgramMeta {
+    public String[] vert;
+    public String[] geom;
+    public String[] frag;
 }

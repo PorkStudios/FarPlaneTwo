@@ -18,26 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading;
+package net.daporkchop.fp2.strategy.heightmap.server;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.strategy.RenderMode;
+import net.daporkchop.fp2.strategy.base.server.AbstractFarWorld;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
+import net.minecraft.world.WorldServer;
 
-import java.util.concurrent.ThreadFactory;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public class PriorityThreadFactory implements ThreadFactory {
-    @NonNull
-    protected final ThreadFactory delegate;
-    protected final int priority;
+public class HeightmapWorld extends AbstractFarWorld<HeightmapPos, HeightmapPiece> {
+    public HeightmapWorld(@NonNull WorldServer world) {
+        super(world, RenderMode.HEIGHTMAP);
+    }
 
     @Override
-    public Thread newThread(Runnable r) {
-        Thread thread = this.delegate.newThread(r);
-        thread.setPriority(this.priority);
-        return thread;
+    protected HeightmapPos fromBlockCoords(int x, int y, int z) {
+        return new HeightmapPos(x >> T_SHIFT, z >> T_SHIFT, 0);
     }
 }

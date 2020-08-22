@@ -54,6 +54,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class KeyedTaskScheduler<K> {
     protected final Thread[] threads;
 
+    protected final LoadingCache<K, Executor> executorCache = CacheBuilder.newBuilder() //avoid allocating tons of lambda objects
+            .weakValues()
+            .build(new CacheLoader<K, Executor>() {
+                @Override
+                public Executor load(K key) throws Exception {
+                    return task -> KeyedTaskScheduler.this.submit(key, task);
+                }
+            });
     protected final LoadingCache<K, Queue<Runnable>> queueCache = CacheBuilder.newBuilder()
             .weakValues()
             .build(new CacheLoader<K, Queue<Runnable>>() {
@@ -62,6 +70,7 @@ public class KeyedTaskScheduler<K> {
                     return new ArrayDeque<>();
                 }
             });
+
     protected final BlockingQueue<Runnable> queue;
 
     protected volatile boolean running = true;
@@ -90,7 +99,7 @@ public class KeyedTaskScheduler<K> {
     }
 
     public Executor keyed(@NonNull K key) {
-        return task -> this.submit(key, task);
+        return this.executorCache.getUnchecked(key);
     }
 
     public void shutdown() {

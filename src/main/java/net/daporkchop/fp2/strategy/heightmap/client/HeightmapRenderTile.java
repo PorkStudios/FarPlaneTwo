@@ -18,23 +18,28 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap;
+package net.daporkchop.fp2.strategy.heightmap.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.RenderMode;
-import net.daporkchop.fp2.strategy.base.server.AbstractFarStorage;
-import net.minecraft.world.WorldServer;
+import net.daporkchop.fp2.strategy.base.client.AbstractFarRenderTile;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 
 /**
  * @author DaPorkchop_
  */
-public class HeightmapStorage extends AbstractFarStorage<HeightmapPos, HeightmapPiece> {
-    public HeightmapStorage(@NonNull WorldServer world) {
-        super(world);
+class HeightmapRenderTile extends AbstractFarRenderTile<HeightmapPos, HeightmapRenderIndex, HeightmapRenderTile> {
+    public HeightmapRenderTile(HeightmapRenderCache cache, HeightmapRenderTile parent, @NonNull HeightmapPos pos) {
+        super(cache, parent, pos, pos.bounds(), 4);
     }
 
     @Override
-    public RenderMode mode() {
-        return RenderMode.HEIGHTMAP;
+    protected HeightmapRenderTile[] tileArray(int size) {
+        return new HeightmapRenderTile[size];
+    }
+
+    @Override
+    protected int childIndex(@NonNull HeightmapPos pos) {
+        int shift = this.level - pos.level() - 1;
+        return (((pos.x() >> shift) & 1) << 1) | ((pos.z() >> shift) & 1);
     }
 }

@@ -22,10 +22,12 @@ package net.daporkchop.fp2.client.gl.shader;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.experimental.Accessors;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.minecraft.client.Minecraft;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL20.*;
 
 /**
@@ -36,44 +38,70 @@ import static org.lwjgl.opengl.GL20.*;
 @Getter
 public final class ShaderProgram implements AutoCloseable {
     protected final String name;
-    protected final Shader vertex;
-    protected final Shader geometry;
-    protected final Shader fragment;
-    protected final int id;
+    protected int id;
+
+    //stores the id in an object that isn't this object to allow this to be garbage collected
+    //the value is used by the cleaner to delete the shader program after this is GC'd
+    protected final AtomicInteger idReference = new AtomicInteger();
 
     /**
      * Creates a new shader program by attaching the given vertex shader with the given fragment shader.
      *
      * @param name     the program's name
-     * @param vertex   the vertex shader
-     * @param geometry the geometry shader
-     * @param fragment fragment shader
+     * @param vert   the vertex shader
+     * @param geom the geometry shader
+     * @param frag fragment shader
      */
-    protected ShaderProgram(@NonNull String name, @NonNull Shader vertex, Shader geometry, @NonNull Shader fragment) {
+    protected ShaderProgram(@NonNull String name, @NonNull Shader vert, Shader geom, @NonNull Shader frag) {
         this.name = name;
 
         //allocate program
-        this.id = glCreateProgram();
+        this.idReference.set(this.id = glCreateProgram());
 
-        int id = this.id;
-        PCleaner.cleaner(this, () -> Minecraft.getMinecraft().addScheduledTask(() -> glDeleteProgram(id)));
+        //allow garbage-collection of program
+        AtomicInteger idReference = this.idReference;
+        PCleaner.cleaner(this, () -> Minecraft.getMinecraft().addScheduledTask(() -> glDeleteProgram(idReference.get())));
+
+        this.link(this.id, vert, geom, frag);
+    }
+
+    private void link(int id, @NonNull Shader vert, Shader geom, @NonNull Shader frag)   {
+        checkArg(vert.type == ShaderType.VERTEX, "vert must be a VERTEX shader (%s)", vert.type);
+        if (geom != null)   {
+            checkArg(geom.type == ShaderType.GEOMETRY, "geom must be a GEOMETRY shader (%s)", geom.type);
+        }
+        checkArg(frag.type == ShaderType.FRAGMENT, "frag must be a FRAGMENT shader (%s)", frag.type);
 
         //attach shaders
-        vertex.attach(this);
-        if (geometry != null) {
-            geometry.attach(this);
+        glAttachShader(id, vert.id);
+        if (geom != null) {
+            glAttachShader(id, geom.id);
         }
-        fragment.attach(this);
+        glAttachShader(id, frag.id);
 
         //link and validate
-        glLinkProgram(this.id);
-        ShaderManager.validateProgramLink(this.name, this.id);
-        glValidateProgram(this.id);
-        ShaderManager.validateProgramValidate(this.name, this.id);
+        glLinkProgram(id);
+        ShaderManager.validateProgramLink(this.name, id);
+        glValidateProgram(id);
+        ShaderManager.validateProgramValidate(this.name, id);
+    }
 
-        this.vertex = vertex;
-        this.geometry = geometry;
-        this.fragment = fragment;
+    protected void reload(@NonNull Shader vert, Shader geom, @NonNull Shader frag)    {
+        //attempt to link new code
+        int newId = glCreateProgram();
+        try {
+            this.link(newId, vert, geom, frag);
+        } catch (Exception e)   {
+            glDeleteProgram(newId);
+            throw e;
+        }
+
+        //replace old shader program with newly linked one
+        int oldId = this.id;
+        this.idReference.set(this.id = newId);
+
+        //delete old program
+        glDeleteProgram(oldId);
     }
 
     /**
