@@ -29,6 +29,7 @@ import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
 import net.daporkchop.fp2.strategy.voxel.VoxelPos;
 import net.minecraft.entity.player.EntityPlayerMP;
 
+import java.util.Arrays;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -72,6 +73,6 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelPie
             }
         }
 
-        return Stream.of(positions);
+        return Arrays.stream(positions, 0, i);
     }
 }

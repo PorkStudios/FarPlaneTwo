@@ -34,7 +34,7 @@ layout(binding = 1) uniform sampler2D lightmap_texture;
 //
 //
 
-in VS_OUT {
+in GS_OUT {
     vec3 pos;
 
     flat vec4 color;

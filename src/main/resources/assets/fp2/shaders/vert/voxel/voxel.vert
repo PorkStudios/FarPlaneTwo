@@ -24,7 +24,7 @@
 //
 //
 
-#define VOXEL_TYPE vec3
+#define VOXEL_TYPE vec4
 
 //
 //

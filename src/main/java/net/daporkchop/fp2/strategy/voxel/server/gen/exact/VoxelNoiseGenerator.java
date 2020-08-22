@@ -51,5 +51,6 @@ public class VoxelNoiseGenerator extends AbstractFarGenerator implements IFarGen
     @Override
     public void generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPiece piece) {
         //TODO: do something here lol
+        piece.markDirty();
     }
 }

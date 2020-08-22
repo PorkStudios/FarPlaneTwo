@@ -18,20 +18,42 @@
  *
  */
 
+layout(points) in;
+layout(triangle_strip, max_vertices = 3) out;
+
+in VS_OUT {
+    vec3 pos;
+
+    flat vec4 color;
+} gs_in[];
+
+in gl_PerVertex {
+    vec4 gl_Position;
+    float gl_PointSize;
+    float gl_ClipDistance[];
+} gl_in[];
+
+out GS_OUT {
+    vec3 pos;
+
+    flat vec4 color;
+} gs_out;
+
+out gl_PerVertex {
+    vec4 gl_Position;
+};
+
 void main() {
-    //TODO: i really need a good solution for this
-    if (isChunkSectionRenderable(ivec3(fs_in.pos) >> 4))    {
-        discard;
-    }
+    gl_Position = cameraTransform(gl_in[0].gl_Position);
+    gs_out.pos = gs_in[0].pos;
+    gs_out.color = gs_in[0].color;
+    EmitVertex();
 
-    //initial block texture sample
-    vec4 frag_color = fs_in.color;
+    gl_Position = cameraTransform(gl_in[0].gl_Position + vec4(0., 1., 0., 0.));
+    gs_out.pos = gs_in[0].pos + vec3(0., 1., 0.);
+    EmitVertex();
 
-    //shading
-    frag_color.rgb *= diffuseLight(normalVector());
-
-    //fog
-    //frag_color = addFog(frag_color);
-
-    color = frag_color;
+    gl_Position = cameraTransform(gl_in[0].gl_Position + vec4(1., 0., 0., 0.));
+    gs_out.pos = gs_in[0].pos + vec3(1., 0., 0.);
+    EmitVertex();
 }

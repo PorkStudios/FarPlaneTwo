@@ -70,7 +70,7 @@ public class ShaderManager {
                     return new ShaderProgram(
                             programName,
                             get(meta.vert, ShaderType.VERTEX),
-                            meta.geom != null ? get(meta.geom, ShaderType.VERTEX) : null,
+                            meta.geom != null ? get(meta.geom, ShaderType.GEOMETRY) : null,
                             get(meta.frag, ShaderType.FRAGMENT));
                 }
             });
@@ -140,7 +140,7 @@ public class ShaderManager {
 
                 program.reload(
                         get(meta.vert, ShaderType.VERTEX),
-                        meta.geom != null ? get(meta.geom, ShaderType.VERTEX) : null,
+                        meta.geom != null ? get(meta.geom, ShaderType.GEOMETRY) : null,
                         get(meta.frag, ShaderType.FRAGMENT));
                 shaderCount.incrementAndGet();
             });

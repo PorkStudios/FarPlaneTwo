@@ -27,6 +27,7 @@ import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.minecraft.entity.player.EntityPlayerMP;
 
+import java.util.Arrays;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -65,6 +66,6 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
             }
         }
 
-        return Stream.of(positions);
+        return Arrays.stream(positions, 0, i);
     }
 }

@@ -36,8 +36,8 @@ import net.minecraft.client.renderer.culling.ICamera;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
-import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -67,11 +67,11 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
         this.bakedSize = positive(bakedSize, "bakedSize");
 
         int size = glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
-        Constants.LOGGER.info(PStrings.fastFormat("Max SSBO size: %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
+        LOGGER.info(PStrings.fastFormat("Max SSBO size: %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
 
         this.zeroData = Constants.createByteBuffer(this.bakedSize);
         this.dataAllocator = new FixedSizeAllocator(this.bakedSize, (oldSize, newSize) -> {
-            Constants.LOGGER.debug("Growing data SSBO from {} to {} bytes", oldSize, newSize);
+            LOGGER.debug("Growing data SSBO from {} to {} bytes", oldSize, newSize);
 
             try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
                 //grow SSBO

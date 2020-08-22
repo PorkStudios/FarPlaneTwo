@@ -6,6 +6,10 @@
     "vert/voxel/voxel.vert",
     "vert/voxel/terrain.vert"
   ],
+  "geom": [
+    "prog/common.glsl",
+    "geom/voxel/terrain.geom"
+  ],
   "frag": [
     "prog/common.glsl",
     "frag/common.frag",

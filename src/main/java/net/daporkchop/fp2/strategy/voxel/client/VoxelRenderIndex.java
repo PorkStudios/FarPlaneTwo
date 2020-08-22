@@ -42,7 +42,7 @@ public class VoxelRenderIndex extends AbstractFarRenderIndex<VoxelPos, VoxelRend
             return false;
         }
 
-        this.ensureWritable(5 * (8 * 2));
+        this.ensureWritable(8 * (8 * 2));
 
         for (VoxelRenderTile t : tile.neighbors()) {
             this.writeTile(t);
@@ -65,7 +65,7 @@ public class VoxelRenderIndex extends AbstractFarRenderIndex<VoxelPos, VoxelRend
             this.writeTile(neighbors[xLSB | yLSB]);
             this.writeTile(neighbors[xLSB | yLSB | zLSB]);
         } else {
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 8; i++) {
                 this.writeTile(null);
             }
         }
@@ -78,9 +78,11 @@ public class VoxelRenderIndex extends AbstractFarRenderIndex<VoxelPos, VoxelRend
     protected void writeTile(VoxelRenderTile tile) {
         if (tile != null && tile.hasAddress()) {
             VoxelPos pos = tile.pos();
-            this.buffer.put(pos.x()).put(pos.y()).put(pos.z()).put(pos.level()).put(toInt(tile.address() / this.bakedSize));
+            this.buffer.put(pos.x()).put(pos.y()).put(pos.z()).put(pos.level()).put(toInt(tile.address() / this.bakedSize))
+                    .put(0).put(0).put(0);
         } else {
-            this.buffer.put(0).put(0).put(0).put(0).put(0);
+            this.buffer.put(0).put(0).put(0).put(0).put(0)
+                    .put(0).put(0).put(0);
         }
     }
 }

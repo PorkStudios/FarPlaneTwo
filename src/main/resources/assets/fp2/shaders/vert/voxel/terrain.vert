@@ -28,7 +28,7 @@ void main(){
 
     VOXEL_TYPE voxel = sampleVoxel(index);
 
-    dvec3 pos = dvec3(blockPos + voxel);
+    dvec3 pos = dvec3(blockPos) + dvec3(voxel.xyz);
 
     //convert position to vec3 afterwards to minimize precision loss
     vec3 relativePos = vec3(pos - glState.camera.position);
@@ -40,7 +40,7 @@ void main(){
     fog_out.depth = length(relativePos);
 
     //translate vertex position
-    gl_Position = cameraTransform(relativePos);
+    gl_Position = vec4(relativePos, 1.);
 
-    vs_out.color = vec4(1.);
+    vs_out.color = vec4(vec3(voxel.w), 1.);
 }

@@ -44,7 +44,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  */
 @UtilityClass
 public class VoxelRenderHelper {
-    public static final int VOXEL_RENDER_SIZE = T_VOXELS * T_VOXELS * T_VOXELS * VEC3_SIZE;
+    public static final int VOXEL_RENDER_SIZE = T_VOXELS * T_VOXELS * T_VOXELS * VEC4_SIZE;
 
     public static ByteBuf bake(@NonNull VoxelPiece piece) {
         ByteBuf buffer = Constants.allocateByteBuf(VOXEL_RENDER_SIZE);
@@ -62,7 +62,7 @@ public class VoxelRenderHelper {
                 for (int z = 0; z < T_VOXELS; z++) {
                     buffer.writeFloat(random.nextFloat()).writeFloat(random.nextFloat()).writeFloat(random.nextFloat());
 
-                    buffer.writeFloat(0.0f); //padding
+                    buffer.writeFloat(random.nextFloat());
                 }
             }
         }

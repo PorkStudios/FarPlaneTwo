@@ -73,10 +73,6 @@ public class VoxelPos implements IFarPos {
         return this.blockZ() >> 4;
     }
 
-    public ChunkPos flooredChunkPos() {
-        return new ChunkPos(this.flooredChunkX(), this.flooredChunkZ());
-    }
-
     @Override
     public void writePosNoLevel(@NonNull ByteBuf dst) {
         dst.writeInt(this.x).writeInt(this.y).writeInt(this.z);

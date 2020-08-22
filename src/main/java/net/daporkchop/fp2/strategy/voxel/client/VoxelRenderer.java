@@ -60,10 +60,7 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece, Vox
 
     public VoxelRenderer(@NonNull WorldClient world) {
         super(world);
-    }
 
-    @Override
-    protected void createRenderData() {
         {
             ShortBuffer meshData = Constants.createShortBuffer(T_VOXELS * T_VOXELS * T_VOXELS);
             for (int x = 0; x < T_VOXELS; x++) {
@@ -81,7 +78,7 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece, Vox
         }
 
         {
-            ByteBuffer coordsData = Constants.createByteBuffer(T_VOXELS * T_VOXELS * 5);
+            ByteBuffer coordsData = Constants.createByteBuffer(T_VOXELS * T_VOXELS * T_VOXELS * 5);
             for (int x = 0; x < T_VOXELS; x++) {
                 for (int y = 0; y < T_VOXELS; y++) {
                     for (int z = 0; z < T_VOXELS; z++) {
@@ -119,6 +116,10 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece, Vox
 
             this.mesh.close();
         }
+    }
+
+    @Override
+    protected void createRenderData() {
     }
 
     @Override

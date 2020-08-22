@@ -46,5 +46,6 @@ public class VoxelScalerNone implements IFarScaler<VoxelPos, VoxelPiece> {
     @Override
     public void scale(@NonNull VoxelPiece[] srcs, @NonNull VoxelPiece dst) {
         //do nothing xd
+        dst.markDirty();
     }
 }
