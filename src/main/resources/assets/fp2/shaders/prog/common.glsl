@@ -18,8 +18,6 @@
  *
  */
 
-#version 430 core
-
 //
 //
 // MACROS

@@ -77,32 +77,8 @@ import static org.lwjgl.opengl.GL45.*;
  */
 @SideOnly(Side.CLIENT)
 public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPiece> {
-    public static ShaderProgram TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
-    public static ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
-
-    public static void reloadHeightShader(boolean notify) {
-        ShaderProgram terrain = TERRAIN_SHADER;
-        boolean skipWater = false;
-        ShaderProgram water = WATER_SHADER;
-        try {
-            TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
-            if (!skipWater) {
-                WATER_SHADER = ShaderManager.get("heightmap/water");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (notify) {
-                if (TERRAIN_SHADER == terrain || (!skipWater && WATER_SHADER == water)) {
-                    Minecraft.getMinecraft().player.sendMessage(new TextComponentString("§cheightmap shader reload failed (check console)."));
-                } else {
-                    Minecraft.getMinecraft().player.sendMessage(new TextComponentString("§aheightmap shader successfully reloaded."));
-                }
-            }
-        }
-        GlobalInfo.init();
-        GlobalInfo.reloadUVs();
-    }
+    public static final ShaderProgram TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
+    public static final ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
 
     private static int genMesh(int size, int edge, ShortBuffer out) {
         int verts = 0;
@@ -142,18 +118,8 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
 
     public HeightmapRenderer(@NonNull WorldClient world) {
         {
-            @RequiredArgsConstructor
-            class SchedulerReleaser implements Runnable {
-                @NonNull
-                protected final KeyedTaskScheduler<HeightmapPos> scheduler;
-
-                @Override
-                public void run() {
-                    //avoid calling shutdown on the reference handler thread
-                    GlobalEventExecutor.INSTANCE.execute(this.scheduler::shutdown);
-                }
-            }
-            PCleaner.cleaner(this, new SchedulerReleaser(this.scheduler));
+            KeyedTaskScheduler<HeightmapPos> scheduler = this.scheduler;
+            PCleaner.cleaner(this, () -> GlobalEventExecutor.INSTANCE.execute(scheduler::shutdown));
         }
 
         {

@@ -22,17 +22,15 @@ package net.daporkchop.fp2.client.gl.shader;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.experimental.Accessors;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.minecraft.client.Minecraft;
-import org.lwjgl.opengl.GL20;
 
 import java.util.Arrays;
 
-import static net.minecraft.client.renderer.OpenGlHelper.*;
+import static org.lwjgl.opengl.GL20.*;
 
 /**
- * A container for a vertex or fragment shader.
+ * Container for an actual vertex/geometry/fragment shader.
  *
  * @author DaPorkchop_
  */
@@ -41,29 +39,21 @@ class Shader {
     protected final ShaderType type;
     protected final int id;
 
-    protected Shader(@NonNull String[] names, @NonNull String[] code, @NonNull ShaderType type) {
+    protected Shader(@NonNull ShaderType type, @NonNull String[] names, @NonNull String[] code) {
         this.type = type;
 
         //allocate shader
-        this.id = glCreateShader(this.type().openGlId);
+        this.id = glCreateShader(type.id);
 
+        //allow garbage-collection of shader
         int id = this.id;
         PCleaner.cleaner(this, () -> Minecraft.getMinecraft().addScheduledTask(() -> glDeleteShader(id)));
 
         //set shader source code
-        GL20.glShaderSource(this.id, code);
+        glShaderSource(id, code);
 
         //compile and validate shader
-        glCompileShader(this.id);
+        glCompileShader(id);
         ShaderManager.validateShaderCompile(Arrays.toString(names), this.id);
-    }
-
-    /**
-     * Attaches this shader to the given shader program.
-     *
-     * @param program the program to which to attach this shader
-     */
-    protected void attach(@NonNull ShaderProgram program) {
-        glAttachShader(program.id, this.id);
     }
 }

@@ -20,6 +20,8 @@
 
 package net.daporkchop.fp2.util;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomCubicWorldType;
 import io.netty.buffer.ByteBuf;
@@ -67,23 +69,13 @@ public class Constants {
 
     public static Logger LOGGER;
 
-    //server-side task priorities
-    public static int loadPriority(int level) {
-        return level << 24;
-    }
-
-    public static int scalePriority(int level) {
-        return level;
-    }
-
-    public static int genPriority(int level) {
-        return level << 8;
-    }
-
     public static final SimpleNetworkWrapper NETWORK_WRAPPER = NetworkRegistry.INSTANCE.newSimpleChannel(FP2.MODID);
 
     public static final Ref<ZstdDeflater> ZSTD_DEF = ThreadRef.soft(() -> Zstd.PROVIDER.deflater(Zstd.PROVIDER.deflateOptions()));
     public static final Ref<ZstdInflater> ZSTD_INF = ThreadRef.soft(() -> Zstd.PROVIDER.inflater(Zstd.PROVIDER.inflateOptions()));
+
+    public static final Gson GSON = new Gson();
+    public static final Gson GSON_PRETTY = new GsonBuilder().setPrettyPrinting().create();
 
     public static final boolean CC = Loader.isModLoaded("cubicchunks");
     public static final boolean CWG = Loader.isModLoaded("cubicgen");

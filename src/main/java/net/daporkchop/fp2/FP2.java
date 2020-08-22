@@ -35,18 +35,17 @@ import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.ldbjni.LevelDB;
 import net.daporkchop.lib.compression.zstd.Zstd;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
-import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import org.lwjgl.opengl.GLContext;
 
@@ -69,10 +68,10 @@ public class FP2 {
         LOGGER = event.getModLog();
 
         System.setProperty("porklib.native.printStackTraces", "true");
-        if (!Zstd.PROVIDER.isNative())  {
+        if (!Zstd.PROVIDER.isNative()) {
             Constants.bigWarning("Native ZSTD could not be loaded! This will have SERIOUS performance implications!");
         }
-        if (!LevelDB.PROVIDER.isNative())  {
+        if (!LevelDB.PROVIDER.isNative()) {
             Constants.bigWarning("Native leveldb-mcpe could not be loaded! This will have SERIOUS performance implications!");
         }
 
@@ -80,9 +79,9 @@ public class FP2 {
 
         MinecraftForge.EVENT_BUS.register(new ServerEvents());
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-            if (!GLContext.getCapabilities().OpenGL43)  {
+            if (!GLContext.getCapabilities().OpenGL43) {
                 JOptionPane.showMessageDialog(null,
-                "Your system does not support OpenGL 4.3!\nRequired by FarPlaneTwo.",
+                        "Your system does not support OpenGL 4.3!\nRequired by FarPlaneTwo.",
                         null, JOptionPane.ERROR_MESSAGE);
                 FMLCommonHandler.instance().exitJava(1, true);
             }
@@ -103,7 +102,7 @@ public class FP2 {
     @Mod.EventHandler
     public void postInit(FMLPostInitializationEvent event) {
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-            HeightmapRenderer.reloadHeightShader(false); //load HeightmapRenderer on client thread
+            PUnsafe.ensureClassInitialized(HeightmapRenderer.class); //load HeightmapRenderer on client thread
         }
     }
 
