@@ -36,9 +36,18 @@ public interface IFarPos {
     int level();
 
     /**
+     * Gets the {@link IFarPos} containing this position at the given lower level of detail.
+     * @param targetLevel the level of detail to go up to
+     * @return the {@link IFarPos} containing this position at the given lower level of detail
+     */
+    IFarPos upTo(int targetLevel);
+
+    /**
      * @return the {@link IFarPos} containing this position at a lower level of detail
      */
-    IFarPos up();
+    default IFarPos up()    {
+        return this.upTo(this.level() + 1);
+    }
 
     /**
      * @return the {@link RenderMode} that this position is used for

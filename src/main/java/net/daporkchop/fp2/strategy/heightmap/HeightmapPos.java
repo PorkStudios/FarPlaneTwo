@@ -31,6 +31,7 @@ import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.minecraft.util.math.ChunkPos;
 
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -74,6 +75,17 @@ public class HeightmapPos implements IFarPos {
     }
 
     @Override
+    public IFarPos upTo(int targetLevel) {
+        if (targetLevel == this.level){
+            return this;
+        }
+        checkArg(targetLevel > this.level, "targetLevel (%d) must be greater than current level (%d)", targetLevel, this.level);
+
+        int shift = targetLevel - this.level;
+        return new HeightmapPos(this.x >> shift, this.z >> shift, targetLevel);
+    }
+
+    @Override
     public HeightmapPos up() {
         return new HeightmapPos(this.x >> 1, this.z >> 1, this.level + 1);
     }
@@ -86,9 +98,9 @@ public class HeightmapPos implements IFarPos {
     @Override
     public boolean contains(@NonNull IFarPos posIn) {
         HeightmapPos pos = (HeightmapPos) posIn;
-        int d = this.level - pos.level;
-        return d > 0
-               && (this.x << d) >= pos.x && ((this.x + 1) << d) <= pos.x
-               && (this.z << d) >= pos.z && ((this.z + 1) << d) <= pos.z;
+        int shift = this.level - pos.level;
+        return shift > 0
+               && (this.x << shift) >= pos.x && ((this.x + 1) << shift) <= pos.x
+               && (this.z << shift) >= pos.z && ((this.z + 1) << shift) <= pos.z;
     }
 }

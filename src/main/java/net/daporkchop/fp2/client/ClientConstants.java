@@ -21,7 +21,12 @@
 package net.daporkchop.fp2.client;
 
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.util.threading.KeyedTaskScheduler;
+import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
+import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.chunk.CompiledChunk;
@@ -32,16 +37,29 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.nio.IntBuffer;
 
+import static net.daporkchop.lib.common.util.PValidation.*;
+
 /**
  * @author DaPorkchop_
  */
 @UtilityClass
 @SideOnly(Side.CLIENT)
 public class ClientConstants {
-    public static void init() {
+    public static KeyedTaskScheduler<Object> RENDER_WORKERS;
+
+    public synchronized static void init() {
+        checkState(RENDER_WORKERS == null, "render workers already running?!?");
+
+        RENDER_WORKERS = new KeyedTaskScheduler<>(
+                FP2Config.client.renderThreads,
+                PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build());
     }
 
-    public static void shutdown() {
+    public synchronized static void shutdown() {
+        checkState(RENDER_WORKERS != null, "render workers not running?!?");
+
+        RENDER_WORKERS.shutdown();
+        RENDER_WORKERS = null;
     }
 
     public static IntBuffer renderableChunksMask(Minecraft mc, IntBuffer buffer) {

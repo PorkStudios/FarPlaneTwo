@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.strategy.heightmap.client;
 
-import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.client.ClientConstants;
@@ -35,15 +35,13 @@ import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.strategy.base.client.AbstractFarRenderCache;
+import net.daporkchop.fp2.strategy.base.client.AbstractFarRenderer;
 import net.daporkchop.fp2.strategy.common.client.IFarRenderer;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.daporkchop.fp2.util.math.Cylinder;
 import net.daporkchop.fp2.util.math.Volume;
-import net.daporkchop.fp2.util.threading.KeyedTaskScheduler;
-import net.daporkchop.fp2.util.threading.PriorityThreadFactory;
-import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
-import net.daporkchop.lib.unsafe.PCleaner;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
@@ -58,6 +56,7 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
+import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.GlobalInfo.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -72,7 +71,7 @@ import static org.lwjgl.opengl.GL45.*;
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPiece> {
+public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, HeightmapPiece, HeightmapRenderTile, HeightmapRenderIndex> {
     public static final ShaderProgram TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
     public static final ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
 
@@ -92,31 +91,15 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
         return verts;
     }
 
-    protected final int maxLevel = FP2Config.maxLevels - 1;
-
-    protected final HeightmapRenderCache cache;
-    protected IntBuffer renderableChunksMask;
-
     public final ElementArrayObject mesh = new ElementArrayObject();
     public final int meshVertexCount;
 
     public final VertexBufferObject coords = new VertexBufferObject();
 
-    public final UniformBufferObject uniforms = new UniformBufferObject();
-
     protected final VertexArrayObject vao = new VertexArrayObject();
 
-    protected final KeyedTaskScheduler<HeightmapPos> scheduler = new KeyedTaskScheduler<>(
-            FP2Config.client.renderThreads,
-            new PriorityThreadFactory(
-                    new ThreadFactoryBuilder().daemon().collapsingId().formatId().name("FP2 Rendering Thread #%d").priority(Thread.MIN_PRIORITY).build(),
-                    Thread.MIN_PRIORITY));
-
     public HeightmapRenderer(@NonNull WorldClient world) {
-        {
-            KeyedTaskScheduler<HeightmapPos> scheduler = this.scheduler;
-            PCleaner.cleaner(this, () -> GlobalEventExecutor.INSTANCE.execute(scheduler::shutdown));
-        }
+        super(world);
 
         {
             ShortBuffer meshData = BufferUtils.createShortBuffer(T_VERTS * T_VERTS * 6 + 1);
@@ -148,10 +131,6 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
             }
         }
 
-        try (UniformBufferObject uniforms = this.uniforms.bind()) {
-            glBufferData(GL_UNIFORM_BUFFER, 16L * 4L * 2L + 8L * 4L, GL_STATIC_DRAW);
-        }
-
         try (VertexArrayObject vao = this.vao.bind()) {
             for (int i = 0; i <= 2; i++) {
                 glEnableVertexAttribArray(i);
@@ -175,87 +154,42 @@ public class HeightmapRenderer implements IFarRenderer<HeightmapPos, HeightmapPi
 
             this.mesh.close();
         }
-
-        this.cache = new HeightmapRenderCache(this);
     }
 
     @Override
-    public void receivePiece(@NonNull HeightmapPiece piece) {
-        this.scheduler.submit(piece.pos(), () -> this.cache.receivePiece(piece));
+    protected void createRenderData() {
     }
 
     @Override
-    public void unloadPiece(@NonNull HeightmapPos pos) {
-        this.scheduler.submit(pos, () -> this.cache.unloadPiece(pos));
+    protected AbstractFarRenderCache<HeightmapPos, HeightmapPiece, HeightmapRenderTile, HeightmapRenderIndex> createCache() {
+        return new HeightmapRenderCache(this);
     }
 
     @Override
-    public void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum) {
-        OpenGL.checkGLError("pre fp2 render");
+    protected ByteBuf bake(@NonNull HeightmapPiece piece) {
+        return HeightmapRenderHelper.bakePiece(piece);
+    }
 
-        try (ShaderStorageBuffer loadedBuffer = new ShaderStorageBuffer().bind()) {
-            OpenGL.checkGLError("pre upload renderable chunks mask");
-            glBufferData(GL_SHADER_STORAGE_BUFFER, this.renderableChunksMask = ClientConstants.renderableChunksMask(mc, this.renderableChunksMask), GL_STATIC_DRAW);
-            OpenGL.checkGLError("post upload renderable chunks mask");
-            loadedBuffer.bindSSBO(0);
-        }
-        GLOBAL_INFO.bindSSBO(1);
+    @Override
+    protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum, int count) {
+        try (VertexArrayObject vao = this.vao.bind()) {
+            try (ShaderProgram shader = TERRAIN_SHADER.use()) {
+                GlStateManager.disableAlpha();
 
-        GlStateManager.disableCull();
+                glDrawElementsInstanced(GL_TRIANGLES, this.meshVertexCount, GL_UNSIGNED_SHORT, 0L, count);
 
-        GlStateManager.matrixMode(GL_PROJECTION);
-        GlStateManager.pushMatrix();
-        GlStateManager.loadIdentity();
-        MatrixHelper.reversedZ(mc.entityRenderer.getFOVModifier(partialTicks, true), (float) mc.displayWidth / (float) mc.displayHeight, 0.05f);
-
-        GlStateManager.depthFunc(GL_GREATER);
-
-        glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
-
-        GlStateManager.clearDepth(0.0d);
-        GlStateManager.clear(GL_DEPTH_BUFFER_BIT); //TODO: it might be better to use a separate depth buffer (maybe)
-
-        GlStateManager.matrixMode(GL_MODELVIEW);
-        GlStateManager.pushMatrix();
-
-        mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
-        mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
-
-        mc.entityRenderer.enableLightmap();
-
-        try {
-            ShaderGlStateHelper.updateAndBind(partialTicks, mc);
-            ShaderFP2StateHelper.updateAndBind(partialTicks, mc);
-
-            Volume[] ranges = new Volume[this.maxLevel + 1];
-            Entity entity = mc.getRenderViewEntity();
-            double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
-            double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
-            for (int i = 0; i < ranges.length; i++) {
-                ranges[i] = new Cylinder(x, z, FP2Config.levelCutoffDistance << i);
+                GlStateManager.enableAlpha();
             }
+            try (ShaderProgram shader = WATER_SHADER.use()) {
+                GlStateManager.enableBlend();
+                GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            this.cache.render(ranges, frustum);
-        } finally {
-            mc.entityRenderer.disableLightmap();
+                glUniform1f(shader.uniformLocation("seaLevel"), 63.0f);
 
-            mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
+                glDrawElementsInstanced(GL_TRIANGLES, this.meshVertexCount, GL_UNSIGNED_SHORT, 0L, count);
 
-            glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
-            GlStateManager.depthFunc(GL_LEQUAL);
-
-            GlStateManager.clearDepth(1.0d);
-            GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
-
-            GlStateManager.matrixMode(GL_PROJECTION);
-            GlStateManager.popMatrix();
-
-            GlStateManager.matrixMode(GL_MODELVIEW);
-            GlStateManager.popMatrix();
-
-            GlStateManager.enableCull();
-
-            OpenGL.checkGLError("post fp2 render");
+                GlStateManager.disableBlend();
+            }
         }
     }
 }

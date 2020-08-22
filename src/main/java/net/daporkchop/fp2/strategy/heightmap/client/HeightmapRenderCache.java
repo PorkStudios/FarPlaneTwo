@@ -25,6 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.strategy.base.client.AbstractFarRenderCache;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.daporkchop.fp2.util.Constants;
@@ -53,102 +54,14 @@ import static org.lwjgl.opengl.GL43.*;
 /**
  * @author DaPorkchop_
  */
-public class HeightmapRenderCache {
-    protected final HeightmapRenderer renderer;
-
-    protected final LongObjMap<HeightmapRenderTile> roots = new LongObjOpenHashMap<>();
-
-    protected final ShaderStorageBuffer dataSSBO = new ShaderStorageBuffer();
-    protected final ByteBuffer zeroData = Constants.createByteBuffer(HEIGHTMAP_RENDER_SIZE);
-    protected final Allocator dataAllocator = new FixedSizeAllocator(HEIGHTMAP_RENDER_SIZE, (oldSize, newSize) -> {
-        Constants.LOGGER.debug("Growing data SSBO from {} to {} bytes", oldSize, newSize);
-
-        try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
-            //grow SSBO
-            glBufferData(GL_SHADER_STORAGE_BUFFER, newSize, GL_STATIC_DRAW);
-
-            //re-upload data
-            glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0L, this.zeroData);
-            this.roots.forEach((l, root) -> root.forEach(tile -> {
-                if (tile.hasAddress()) {
-                    glBufferSubData(GL_SHADER_STORAGE_BUFFER, tile.address, tile.renderData);
-                }
-            }));
-        }
-    });
-
-    protected final ShaderStorageBuffer indexSSBO = new ShaderStorageBuffer();
-    protected final HeightmapRenderIndex index = new HeightmapRenderIndex();
-
+public class HeightmapRenderCache extends AbstractFarRenderCache<HeightmapPos, HeightmapPiece, HeightmapRenderTile, HeightmapRenderIndex> {
     public HeightmapRenderCache(@NonNull HeightmapRenderer renderer) {
-        this.renderer = renderer;
-
-        int size = glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
-        Constants.LOGGER.info(PStrings.fastFormat("Max SSBO size: %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
-
-        //allocate zero block
-        checkState(this.dataAllocator.alloc(HEIGHTMAP_RENDER_SIZE) == 0L);
+        super(renderer, new HeightmapRenderIndex(), HEIGHTMAP_RENDER_SIZE);
     }
 
-    public void receivePiece(@NonNull HeightmapPiece piece) {
-        ByteBuf bakedData = HeightmapRenderHelper.bakePiece(piece);
-        HeightmapPos pos = piece.pos();
-
-        Minecraft.getMinecraft().addScheduledTask(() -> {
-            try {
-                int maxLevel = this.renderer.maxLevel;
-                long rootKey = BinMath.packXY(pos.x() >> (maxLevel - pos.level()), pos.z() >> (maxLevel - pos.level()));
-                HeightmapRenderTile rootTile = this.roots.get(rootKey);
-                if (rootTile == null) {
-                    //create root tile if absent
-                    this.roots.put(rootKey, rootTile = new HeightmapRenderTile(this, null, pos.x() >> (maxLevel - pos.level()), pos.z() >> (maxLevel - pos.level()), maxLevel));
-                }
-                HeightmapRenderTile tile = rootTile.findOrCreateChild(pos.x(), pos.z(), pos.level());
-                if (!tile.hasAddress()) {
-                    //allocate address for tile
-                    tile.assignAddress(this.dataAllocator.alloc(HEIGHTMAP_RENDER_SIZE));
-                }
-
-                //TODO: set tile min- and maxY
-
-                //copy baked data into tile and upload to GPU
-                bakedData.readBytes(tile.renderData);
-                tile.renderData.clear();
-                try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
-                    glBufferSubData(GL_SHADER_STORAGE_BUFFER, tile.address, tile.renderData);
-                }
-            } finally {
-                bakedData.release();
-            }
-        });
-    }
-
-    public void unloadPiece(@NonNull HeightmapPos pos) {
-        Minecraft.getMinecraft().addScheduledTask(() -> {
-            int maxLevel = this.renderer.maxLevel;
-            long rootKey = BinMath.packXY(pos.x() >> (maxLevel - pos.level()), pos.z() >> (maxLevel - pos.level()));
-            HeightmapRenderTile rootTile = this.roots.get(rootKey);
-            if (rootTile != null) {
-                HeightmapRenderTile unloadedTile = rootTile.findChild(pos.x(), pos.z(), pos.level());
-                if (unloadedTile != null && unloadedTile.hasAddress()) {
-                    //free address
-                    this.dataAllocator.free(unloadedTile.address);
-
-                    //inform tile that the address has been freed
-                    if (unloadedTile.dropAddress()) {
-                        this.roots.remove(rootKey);
-                    }
-                    return;
-                }
-            }
-            Constants.LOGGER.warn("Attempted to unload already non-existent piece at {}!", pos);
-        });
-    }
-
-    public HeightmapRenderTile getTile(int x, int z, int level) {
-        int maxLevel = this.renderer.maxLevel;
-        HeightmapRenderTile rootTile = this.roots.get(BinMath.packXY(x >> (maxLevel - level), z >> (maxLevel - level)));
-        return rootTile != null ? rootTile.findChild(x, z, level) : null;
+    @Override
+    protected HeightmapRenderTile createTile(HeightmapRenderTile parent, @NonNull HeightmapPos pos) {
+        return new HeightmapRenderTile(this, parent, pos);
     }
 
     public void tileAdded(@NonNull HeightmapRenderTile tile) {
@@ -183,44 +96,6 @@ public class HeightmapRenderCache {
         t = this.getTile(tile.x - 1, tile.z - 1, tile.level);
         if (t != null) {
             t.neighbors[3] = null;
-        }
-    }
-
-    public void render(Volume[] ranges, ICamera frustum) {
-        //rebuild and upload index
-        this.index.reset();
-        this.roots.forEach((l, tile) -> tile.select(ranges, frustum, this.index));
-        if (this.index.size == 0) {
-            return;
-        }
-
-        try (ShaderStorageBuffer ssbo = this.indexSSBO.bind()) {
-            this.index.upload(GL_SHADER_STORAGE_BUFFER);
-        }
-
-        //bind SSBOs
-        this.indexSSBO.bindSSBO(2);
-        this.dataSSBO.bindSSBO(3);
-
-        //do the rendering stuff
-        try (VertexArrayObject vao = this.renderer.vao.bind()) {
-            try (ShaderProgram shader = TERRAIN_SHADER.use()) {
-                GlStateManager.disableAlpha();
-
-                glDrawElementsInstanced(GL_TRIANGLES, this.renderer.meshVertexCount, GL_UNSIGNED_SHORT, 0L, this.index.size);
-
-                GlStateManager.enableAlpha();
-            }
-            try (ShaderProgram shader = WATER_SHADER.use()) {
-                GlStateManager.enableBlend();
-                GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-                glUniform1f(shader.uniformLocation("seaLevel"), 63.0f);
-
-                glDrawElementsInstanced(GL_TRIANGLES, this.renderer.meshVertexCount, GL_UNSIGNED_SHORT, 0L, this.index.size);
-
-                GlStateManager.disableBlend();
-            }
         }
     }
 }

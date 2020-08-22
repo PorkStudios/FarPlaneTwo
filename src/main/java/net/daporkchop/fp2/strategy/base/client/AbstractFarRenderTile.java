@@ -18,26 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading;
+package net.daporkchop.fp2.strategy.base.client;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-
-import java.util.concurrent.ThreadFactory;
+import net.daporkchop.fp2.strategy.common.IFarPos;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public class PriorityThreadFactory implements ThreadFactory {
-    @NonNull
-    protected final ThreadFactory delegate;
-    protected final int priority;
-
-    @Override
-    public Thread newThread(Runnable r) {
-        Thread thread = this.delegate.newThread(r);
-        thread.setPriority(this.priority);
-        return thread;
-    }
+public abstract class AbstractFarRenderTile<POS extends IFarPos> {
 }
