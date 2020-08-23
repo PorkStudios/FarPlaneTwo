@@ -137,9 +137,14 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
             return;
         }
 
-        new ArrayList<>(this.entries.values()).stream()
-                .filter(e -> e.players.contains(player))
-                .forEach(e -> e.removePlayer(player));
+        Set<POS> trackingPositions = this.trackingPositions.get(player);
+        if (trackingPositions != null)  {
+            trackingPositions.clear();
+
+            new ArrayList<>(this.entries.values()).stream()
+                    .filter(e -> e.players.contains(player))
+                    .forEach(e -> e.removePlayer(player));
+        }
     }
 
     protected abstract Stream<POS> getPositions(@NonNull EntityPlayerMP player);

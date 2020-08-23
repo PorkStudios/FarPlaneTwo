@@ -68,7 +68,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
         this.zeroData = Constants.createByteBuffer(zeroSize);
         this.dataAllocator = this.createAllocator((oldSize, newSize) -> {
-            LOGGER.debug("Growing data SSBO from {} to {} bytes", oldSize, newSize);
+            LOGGER.info("Growing data SSBO from {} to {} bytes", oldSize, newSize);
 
             try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
                 //grow SSBO

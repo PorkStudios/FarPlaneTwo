@@ -19,18 +19,18 @@
  */
 
 layout(points) in;
-layout(triangle_strip, max_vertices = 3) out;
+layout(triangle_strip, max_vertices = 12) out;
 
 in VS_OUT {
-    vec3 pos;
+    //vec3 pos;
 
-    flat vec4 color;
+    //flat vec4 color;
+    flat int connections;
+    flat vec4 other[8];
 } gs_in[];
 
 in gl_PerVertex {
     vec4 gl_Position;
-    float gl_PointSize;
-    float gl_ClipDistance[];
 } gl_in[];
 
 out GS_OUT {
@@ -43,17 +43,44 @@ out gl_PerVertex {
     vec4 gl_Position;
 };
 
+/*const vec4 connections[3][4] = vec4[][](
+    vec4[](vec4(0.), vec4(1., 0., 0., 0.), vec4(0., 0., 1., 0.), vec4(1., 0., 1., 0.)),
+    vec4[](vec4(0.), vec4(1., 0., 0., 0.), vec4(0., 1., 0., 0.), vec4(1., 1., 0., 0.)),
+    vec4[](vec4(0.), vec4(0., 1., 0., 0.), vec4(0., 0., 1., 0.), vec4(0., 1., 1., 0.))
+);*/
+const int connections[3][4] = int[][](
+    int[](0, 4, 1, 5),
+    int[](0, 4, 2, 6),
+    int[](0, 2, 1, 3)
+);
+
 void main() {
-    gl_Position = cameraTransform(gl_in[0].gl_Position);
-    gs_out.pos = gs_in[0].pos;
-    gs_out.color = gs_in[0].color;
-    EmitVertex();
+    int c = gs_in[0].connections;
+    if (c == 0) {
+        return;
+    }
 
-    gl_Position = cameraTransform(gl_in[0].gl_Position + vec4(0., 1., 0., 0.));
-    gs_out.pos = gs_in[0].pos + vec3(0., 1., 0.);
-    EmitVertex();
+    vec4 pos = gl_in[0].gl_Position;
+    vec4 bbMin = floor(pos);
+    vec4 bbMax = ceil(pos);
 
-    gl_Position = cameraTransform(gl_in[0].gl_Position + vec4(1., 0., 0., 0.));
-    gs_out.pos = gs_in[0].pos + vec3(1., 0., 0.);
-    EmitVertex();
+    vec4 cam = vec4(vec3(glState.camera.position), 0.);
+
+    for (int i = 0; i < 3; i++) {
+        if ((c & (1 << i)) == 0)    {
+            continue;
+        }
+
+        //gs_out.pos = gl_in[0].gl_Position.xyz;
+        gs_out.color = vec4(1., 0., 0., 1.);
+
+        for (int j = 0; j < 4; j++) {
+            //gl_Position = cameraTransform(clamp(pos + gs_in[0].other[connections[i][j]], bbMin, bbMax) - cam);
+            vec4 worldPos = pos + gs_in[0].other[connections[i][j]];
+            gs_out.pos = worldPos.xyz;
+            gl_Position = cameraTransform(worldPos - cam);
+            EmitVertex();
+        }
+        EndPrimitive();
+    }
 }

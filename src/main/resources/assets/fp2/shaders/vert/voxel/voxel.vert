@@ -24,7 +24,12 @@
 //
 //
 
-#define VOXEL_TYPE vec4
+struct VoxelData {
+    vec3 offset;
+    int connections;
+};
+
+#define VOXEL_TYPE VoxelData
 
 //
 //
@@ -37,22 +42,16 @@ layout(location = 1) in int in_vertexID_chunk;
 
 //
 //
-// UNIFORMS
-//
-//
-
-uniform int current_base_level;
-
-//
-//
 // OUTPUTS
 //
 //
 
 out VS_OUT {
-    vec3 pos;
+    //vec3 pos;
 
-    flat vec4 color;
+    //flat vec4 color;
+    flat int connections;
+    flat vec4 other[8];
 } vs_out;
 
 //

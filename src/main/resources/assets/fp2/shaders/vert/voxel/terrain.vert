@@ -28,9 +28,21 @@ void main(){
 
     VOXEL_TYPE voxel = sampleVoxel(index);
 
-    dvec3 pos = dvec3(blockPos) + dvec3(voxel.xyz);
+    dvec3 pos = dvec3(blockPos) + dvec3(voxel.offset);
 
-    //convert position to vec3 afterwards to minimize precision loss
+    gl_Position = vec4(vec3(pos), 1.);
+    vs_out.connections = voxel.connections;
+    vs_out.other[0] = vec4(0.);
+
+    for (int i = 1; i < 8; i++) {
+        ivec3 delta = ivec3(i) >> ivec3(2, 1, 0) & 1;
+        ivec3 otherWorldPos = blockPos + delta;
+        int slot = toSlot(index, otherWorldPos);
+
+        vs_out.other[i] = vec4(sampleVoxel(entry.low[slot], otherWorldPos).offset + vec3(delta) - voxel.offset, 0.);
+    }
+
+    /*//convert position to vec3 afterwards to minimize precision loss
     vec3 relativePos = vec3(pos - glState.camera.position);
 
     //give raw position to fragment shader
@@ -42,5 +54,5 @@ void main(){
     //translate vertex position
     gl_Position = vec4(relativePos, 1.);
 
-    vs_out.color = vec4(vec3(voxel.w), 1.);
+    vs_out.color = voxel.connections == 0 ? vec4(0.) : vec4(1., 0., 0., 1.);*/
 }

@@ -26,6 +26,9 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
+import net.daporkchop.lib.noise.NoiseSource;
+import net.daporkchop.lib.noise.engine.PerlinNoiseEngine;
+import net.daporkchop.lib.random.impl.FastPRandom;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.init.Biomes;
@@ -36,6 +39,7 @@ import net.minecraft.world.biome.Biome;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
@@ -47,25 +51,44 @@ public class VoxelRenderHelper {
     public static final int VOXEL_RENDER_SIZE = T_VOXELS * T_VOXELS * T_VOXELS * VEC4_SIZE;
 
     public static ByteBuf bake(@NonNull VoxelPiece piece) {
-        ByteBuf buffer = Constants.allocateByteBuf(VOXEL_RENDER_SIZE);
+        ByteBuf buf = Constants.allocateByteBuf(VOXEL_RENDER_SIZE);
 
-        final int blockX = piece.pos().blockX();
-        final int blockY = piece.pos().blockY();
-        final int blockZ = piece.pos().blockZ();
+        final int baseX = piece.pos().blockX();
+        final int baseY = piece.pos().blockY();
+        final int baseZ = piece.pos().blockZ();
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
 
-        Random random = ThreadLocalRandom.current();
-        for (int x = 0; x < T_VOXELS; x++) {
-            for (int y = 0; y < T_VOXELS; y++) {
-                for (int z = 0; z < T_VOXELS; z++) {
-                    buffer.writeFloat(random.nextFloat()).writeFloat(random.nextFloat()).writeFloat(random.nextFloat());
+        NoiseSource noise = new PerlinNoiseEngine(new FastPRandom(1234)).scaled(1d / 16d);
 
-                    buffer.writeFloat(random.nextFloat());
+        Random random = ThreadLocalRandom.current();
+        for (int dx = 0; dx < T_VOXELS; dx++) {
+            for (int dy = 0; dy < T_VOXELS; dy++) {
+                for (int dz = 0; dz < T_VOXELS; dz++) {
+                    double x = baseX + dx;
+                    double y = baseY + dy;
+                    double z = baseZ + dz;
+
+                    double v000 = noise.get(x, y, z);
+                    double v001 = noise.get(x, y, z + 1);
+                    double v010 = noise.get(x, y + 1, z);
+                    double v011 = noise.get(x, y + 1, z + 1);
+                    double v100 = noise.get(x + 1, y, z);
+                    double v101 = noise.get(x + 1, y, z + 1);
+                    double v110 = noise.get(x + 1, y + 1, z);
+                    double v111 = noise.get(x + 1, y + 1, z + 1);
+
+                    buf.writeFloat(0f).writeFloat(0f).writeFloat(0f);
+
+                    if (signum(v000) != signum(v001))   {
+                        buf.writeInt(7);
+                    } else {
+                        buf.writeInt(0);
+                    }
                 }
             }
         }
-        return buffer;
+        return buf;
     }
 }

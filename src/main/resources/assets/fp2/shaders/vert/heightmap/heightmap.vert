@@ -38,14 +38,6 @@ layout(location = 2) in int in_vertexID_chunk;
 
 //
 //
-// UNIFORMS
-//
-//
-
-uniform int current_base_level;
-
-//
-//
 // OUTPUTS
 //
 //
