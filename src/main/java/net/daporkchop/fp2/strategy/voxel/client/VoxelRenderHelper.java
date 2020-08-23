@@ -45,7 +45,7 @@ import static net.daporkchop.lib.common.math.PMath.*;
 public class VoxelRenderHelper {
     public static final int VOXEL_RENDER_SIZE = T_VOXELS * T_VOXELS * T_VOXELS * VEC4_SIZE;
 
-    protected static final int MAX_EDGES = 6;
+    protected static final int MAX_EDGES = 12;
     protected static final int[] edgevmap = {
             0, 4, 1, 5, 2, 6, 3, 7,    // x-axis
             0, 2, 1, 3, 4, 6, 5, 7,    // y-axis
@@ -150,7 +150,7 @@ public class VoxelRenderHelper {
         double t = 0.0d;
         double currentT = 0.0d;
 
-        final double INCREMENT = 1.0d / 8;
+        final double INCREMENT = 1.0d / 16;
         while (currentT <= 1.0d) {
             double v = abs(noise.get(lerp(x0, x1, currentT), lerp(y0, y1, currentT), lerp(z0, z1, currentT)));
             if (v < minValue) {

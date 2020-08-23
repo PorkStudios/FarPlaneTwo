@@ -9,14 +9,11 @@
   "geom": [
     "prog/common.glsl",
     "geom/voxel/pre.geom",
-    "geom/voxel/terrain.geom",
+    "geom/voxel/wireframe.geom",
     "geom/voxel/post.geom"
   ],
   "frag": [
-    "prog/common.glsl",
     "frag/common.frag",
-    "frag/fog.frag",
-    "frag/voxel/voxel.frag",
-    "frag/voxel/terrain.frag"
+    "frag/black.frag"
   ]
 }

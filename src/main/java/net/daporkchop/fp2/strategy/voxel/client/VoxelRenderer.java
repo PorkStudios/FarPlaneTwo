@@ -51,6 +51,7 @@ import static org.lwjgl.opengl.GL31.*;
  */
 public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece, VoxelRenderTile, VoxelRenderIndex> {
     public static final ShaderProgram TERRAIN_SHADER = ShaderManager.get("voxel/terrain");
+    public static final ShaderProgram WIREFRAME_SHADER = ShaderManager.get("voxel/terrain_wireframe");
 
     public final ElementArrayObject mesh = new ElementArrayObject();
     public final int vertexCount = T_VOXELS * T_VOXELS * T_VOXELS;
@@ -136,11 +137,14 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece, Vox
     protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum, int count) {
         try (VertexArrayObject vao = this.vao.bind()) {
             try (ShaderProgram shader = TERRAIN_SHADER.use()) {
-                GlStateManager.disableAlpha();
+                //GlStateManager.disableAlpha();
 
                 glDrawElementsInstanced(GL_POINTS, this.vertexCount, GL_UNSIGNED_SHORT, 0L, count);
 
-                GlStateManager.enableAlpha();
+                //GlStateManager.enableAlpha();
+            }
+            try (ShaderProgram shader = WIREFRAME_SHADER.use()) {
+                glDrawElementsInstanced(GL_POINTS, this.vertexCount, GL_UNSIGNED_SHORT, 0L, count);
             }
         }
     }

@@ -18,69 +18,29 @@
  *
  */
 
-layout(points) in;
-layout(triangle_strip, max_vertices = 12) out;
+#define TYPE triangle_strip
 
-in VS_OUT {
-    //vec3 pos;
+void pre(vec4 bbMin, vec4 bbMax, vec4 cam)    {
+}
 
-    //flat vec4 color;
-    flat int connections;
-    flat vec4 other[8];
-} gs_in[];
+void fancyClamp(inout vec3 pos)   {
+    //pos = clamp(pos, vec3(0.), vec3(1.));
+}
 
-in gl_PerVertex {
-    vec4 gl_Position;
-} gl_in[];
+void quad(vec4 bbMin, vec4 bbMax, vec4 cam, int i)    {
+    gs_out.color = vec4(1.);
 
-out GS_OUT {
-    vec3 pos;
+    for (int j = 0; j < 4; j++) {
+        ivec3 vec = connections[i][j];
+        vec4 neighborOffset = gs_in[0].other[((vec.x + 1) * 3 + vec.y + 1) * 3 + vec.z + 1];
+        vec4 worldPos = neighborOffset + vec4(vec3(vec), 0.);
 
-    flat vec4 color;
-} gs_out;
+        fancyClamp(worldPos.xyz);
+        worldPos += bbMin;
 
-out gl_PerVertex {
-    vec4 gl_Position;
-};
-
-/*const vec4 connections[3][4] = vec4[][](
-    vec4[](vec4(0.), vec4(1., 0., 0., 0.), vec4(0., 0., 1., 0.), vec4(1., 0., 1., 0.)),
-    vec4[](vec4(0.), vec4(1., 0., 0., 0.), vec4(0., 1., 0., 0.), vec4(1., 1., 0., 0.)),
-    vec4[](vec4(0.), vec4(0., 1., 0., 0.), vec4(0., 0., 1., 0.), vec4(0., 1., 1., 0.))
-);*/
-const int connections[3][4] = int[][](
-    int[](0, 4, 1, 5),
-    int[](0, 4, 2, 6),
-    int[](0, 2, 1, 3)
-);
-
-void main() {
-    int c = gs_in[0].connections;
-    if (c == 0) {
-        return;
+        gs_out.pos = worldPos.xyz;
+        gl_Position = cameraTransform(worldPos - cam);
+        EmitVertex();
     }
-
-    vec4 pos = gl_in[0].gl_Position;
-    vec4 bbMin = floor(pos);
-    vec4 bbMax = ceil(pos);
-
-    vec4 cam = vec4(vec3(glState.camera.position), 0.);
-
-    for (int i = 0; i < 3; i++) {
-        if ((c & (1 << i)) == 0)    {
-            continue;
-        }
-
-        //gs_out.pos = gl_in[0].gl_Position.xyz;
-        gs_out.color = vec4(1., 0., 0., 1.);
-
-        for (int j = 0; j < 4; j++) {
-            //gl_Position = cameraTransform(clamp(pos + gs_in[0].other[connections[i][j]], bbMin, bbMax) - cam);
-            vec4 worldPos = pos + gs_in[0].other[connections[i][j]];
-            gs_out.pos = worldPos.xyz;
-            gl_Position = cameraTransform(worldPos - cam);
-            EmitVertex();
-        }
-        EndPrimitive();
-    }
+    EndPrimitive();
 }

@@ -51,7 +51,7 @@ out VS_OUT {
 
     //flat vec4 color;
     flat int connections;
-    flat vec4 other[8];
+    flat vec4 other[27]; //todo: only send required ones
 } vs_out;
 
 //

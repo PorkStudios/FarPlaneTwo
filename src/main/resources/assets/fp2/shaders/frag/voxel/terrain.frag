@@ -18,6 +18,11 @@
  *
  */
 
+vec3 diffuseLightColors(vec3 normal) {
+    //return min(normal.x * normal.x * .6 + normal.y * normal.y * ((3. + normal.y) / 4.) + normal.z * normal.z * .8, 1.);
+    return normal * normal;
+}
+
 void main() {
     //TODO: i really need a good solution for this
     if (isChunkSectionRenderable(ivec3(fs_in.pos) >> 4))    {
@@ -28,7 +33,8 @@ void main() {
     vec4 frag_color = fs_in.color;
 
     //shading
-    frag_color.rgb *= diffuseLight(normalVector());
+    //frag_color.rgb *= diffuseLight(normalVector());
+    frag_color.rgb *= diffuseLightColors(normalVector());
 
     //fog
     //frag_color = addFog(frag_color);

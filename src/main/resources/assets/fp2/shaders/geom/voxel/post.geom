@@ -18,36 +18,26 @@
  *
  */
 
-//
-//
-// TEXTURES
-//
-//
+layout(points) in;
+layout(TYPE, max_vertices = 48) out;
 
-//textures
-layout(binding = 0) uniform sampler2D terrain_texture;
-layout(binding = 1) uniform sampler2D lightmap_texture;
+void main() {
+    int c = gs_in[0].connections & 0xCCC;
+    if (c == 0) {
+        return;
+    }
 
-//
-//
-// INPUTS
-//
-//
+    vec4 bbMin = gl_in[0].gl_Position;
+    vec4 bbMax = bbMin + 1.;
 
-in GS_OUT {
-    vec3 pos;
+    vec4 cam = vec4(vec3(glState.camera.position), 0.);
 
-    vec4 color;
-} fs_in;
+    pre(bbMin, bbMax, cam);
+    for (int i = 0; i < 12; i++) {
+        if ((c & (1 << i)) == 0)    {
+            continue;
+        }
 
-//
-//
-// UTILITIES
-//
-//
-
-vec3 normalVector() {
-    vec3 fdx = dFdx(fs_in.pos);
-    vec3 fdy = dFdy(fs_in.pos);
-    return normalize(cross(fdx, fdy));
+        quad(bbMin, bbMax, cam, i);
+    }
 }

@@ -18,6 +18,36 @@
  *
  */
 
+ivec3 offsets[27] = ivec3[](
+    ivec3(-1, -1, -1),
+    ivec3(-1, -1, 0),
+    ivec3(-1, -1, 1),
+    ivec3(-1, 0, -1),
+    ivec3(-1, 0, 0),
+    ivec3(-1, 0, 1),
+    ivec3(-1, 1, -1),
+    ivec3(-1, 1, 0),
+    ivec3(-1, 1, 1),
+    ivec3(0, -1, -1),
+    ivec3(0, -1, 0),
+    ivec3(0, -1, 1),
+    ivec3(0, 0, -1),
+    ivec3(0, 0, 0),
+    ivec3(0, 0, 1),
+    ivec3(0, 1, -1),
+    ivec3(0, 1, 0),
+    ivec3(0, 1, 1),
+    ivec3(1, -1, -1),
+    ivec3(1, -1, 0),
+    ivec3(1, -1, 1),
+    ivec3(1, 0, -1),
+    ivec3(1, 0, 0),
+    ivec3(1, 0, 1),
+    ivec3(1, 1, -1),
+    ivec3(1, 1, 0),
+    ivec3(1, 1, 1)
+);
+
 void main(){
     TileIndexEntry entry = indexEntry();
     TileIndex index = entry.low[0];
@@ -28,18 +58,15 @@ void main(){
 
     VOXEL_TYPE voxel = sampleVoxel(index);
 
-    dvec3 pos = dvec3(blockPos) + dvec3(voxel.offset);
-
-    gl_Position = vec4(vec3(pos), 1.);
+    gl_Position = vec4(vec3(blockPos), 1.);
     vs_out.connections = voxel.connections;
-    vs_out.other[0] = vec4(0.);
 
-    for (int i = 1; i < 8; i++) {
-        ivec3 delta = ivec3(i) >> ivec3(2, 1, 0) & 1;
+    for (int i = 0; i < 27; i++) {
+        ivec3 delta = offsets[i];
         ivec3 otherWorldPos = blockPos + delta;
         int slot = toSlot(index, otherWorldPos);
 
-        vs_out.other[i] = vec4(sampleVoxel(entry.low[slot], otherWorldPos).offset + vec3(delta) - voxel.offset, 0.);
+        vs_out.other[i] = vec4(clamp(sampleVoxel(entry.low[slot], otherWorldPos).offset, vec3(0.), vec3(1.)) , 0.);
     }
 
     /*//convert position to vec3 afterwards to minimize precision loss
