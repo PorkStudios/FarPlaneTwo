@@ -27,10 +27,10 @@ import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.alloc.Allocator;
-import net.daporkchop.fp2.util.alloc.FixedSizeAllocator;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.util.PorkUtil;
+import net.daporkchop.lib.primitive.lambda.LongLongConsumer;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 import net.minecraft.client.renderer.culling.ICamera;
 
@@ -59,18 +59,15 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     protected final ShaderStorageBuffer indexSSBO = new ShaderStorageBuffer();
     protected final I index;
 
-    protected final int bakedSize;
-
-    public AbstractFarRenderCache(@NonNull AbstractFarRenderer<POS, P, T, I> renderer, @NonNull I index, int bakedSize) {
+    public AbstractFarRenderCache(@NonNull AbstractFarRenderer<POS, P, T, I> renderer, @NonNull I index, int zeroSize) {
         this.renderer = renderer;
         this.index = index;
-        this.bakedSize = positive(bakedSize, "bakedSize");
 
         int size = glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
         LOGGER.info(PStrings.fastFormat("Max SSBO size: %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
 
-        this.zeroData = Constants.createByteBuffer(this.bakedSize);
-        this.dataAllocator = new FixedSizeAllocator(this.bakedSize, (oldSize, newSize) -> {
+        this.zeroData = Constants.createByteBuffer(zeroSize);
+        this.dataAllocator = this.createAllocator((oldSize, newSize) -> {
             LOGGER.debug("Growing data SSBO from {} to {} bytes", oldSize, newSize);
 
             try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
@@ -88,8 +85,10 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
         });
 
         //allocate zero block
-        checkState(this.dataAllocator.alloc(this.bakedSize) == 0L);
+        checkState(this.dataAllocator.alloc(zeroSize) == 0L);
     }
+
+    public abstract Allocator createAllocator(@NonNull LongLongConsumer resizeCallback);
 
     public abstract T createTile(T parent, @NonNull POS pos);
 
@@ -106,12 +105,9 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
             this.roots.put(rootPos, rootTile = this.createTile(null, rootPos));
         }
         T tile = rootTile.findOrCreateChild(pos);
-        if (!tile.hasAddress()) {
-            //allocate address for tile
-            tile.assignAddress(this.dataAllocator.alloc(this.bakedSize));
-        }
 
-        //TODO: set tile min- and maxY
+        //allocate address for tile
+        tile.assignAddress(bakedData.readableBytes(), this.dataAllocator);
 
         //copy baked data into tile and upload to GPU
         bakedData.readBytes(tile.renderData);

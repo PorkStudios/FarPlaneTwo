@@ -24,6 +24,9 @@ import lombok.NonNull;
 import net.daporkchop.fp2.strategy.base.client.AbstractFarRenderCache;
 import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
 import net.daporkchop.fp2.strategy.voxel.VoxelPos;
+import net.daporkchop.fp2.util.alloc.Allocator;
+import net.daporkchop.fp2.util.alloc.VariableSizedAllocator;
+import net.daporkchop.lib.primitive.lambda.LongLongConsumer;
 
 import static net.daporkchop.fp2.strategy.voxel.client.VoxelRenderHelper.*;
 
@@ -33,6 +36,11 @@ import static net.daporkchop.fp2.strategy.voxel.client.VoxelRenderHelper.*;
 public class VoxelRenderCache extends AbstractFarRenderCache<VoxelPos, VoxelPiece, VoxelRenderTile, VoxelRenderIndex> {
     public VoxelRenderCache(@NonNull VoxelRenderer renderer) {
         super(renderer, new VoxelRenderIndex(VOXEL_RENDER_SIZE), VOXEL_RENDER_SIZE);
+    }
+
+    @Override
+    public Allocator createAllocator(@NonNull LongLongConsumer resizeCallback) {
+        return new VariableSizedAllocator(VOXEL_RENDER_SIZE, resizeCallback);
     }
 
     @Override

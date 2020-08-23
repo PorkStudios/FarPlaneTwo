@@ -24,6 +24,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.util.alloc.Allocator;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.renderer.culling.ICamera;
@@ -112,10 +113,22 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, I extends Abstr
         return this.address >= 0L;
     }
 
-    public void assignAddress(long address) {
-        checkState(!this.hasAddress(), "already has an address?!?");
-        this.address = address;
-        this.renderData = Constants.createByteBuffer(this.cache.bakedSize);
+    public void assignAddress(int size, @NonNull Allocator allocator) {
+        if (this.hasAddress())    {
+            if (this.renderData.capacity() == size) {
+                return; //already has correctly sized allocation, do nothing
+            }
+
+            //release all old allocations
+            allocator.free(this.address);
+            this.address = -1L;
+            PUnsafe.pork_releaseBuffer(this.renderData);
+            this.renderData = null;
+        }
+
+        //allocate new data
+        this.address = allocator.alloc(size);
+        this.renderData = Constants.createByteBuffer(size);
         this.markHasAddress(true);
     }
 
