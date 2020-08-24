@@ -144,7 +144,8 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece, Vox
                 //GlStateManager.enableAlpha();
             }
             try (ShaderProgram shader = WIREFRAME_SHADER.use()) {
-                glDrawElementsInstanced(GL_POINTS, this.vertexCount, GL_UNSIGNED_SHORT, 0L, count);
+                glLineWidth(4f);
+                //glDrawElementsInstanced(GL_POINTS, this.vertexCount, GL_UNSIGNED_SHORT, 0L, count);
             }
         }
     }

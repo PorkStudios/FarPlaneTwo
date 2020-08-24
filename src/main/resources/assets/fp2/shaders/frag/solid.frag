@@ -18,6 +18,11 @@
  *
  */
 
+in GS_OUT {
+    vec3 pos;
+    vec4 color;
+} fs_in;
+
 void main() {
-    color = vec4(0., 0., 0., 1.);
+    color = vec4(fs_in.color.rgb, 1.);
 }

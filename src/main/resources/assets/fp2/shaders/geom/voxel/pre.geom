@@ -51,10 +51,21 @@ out gl_PerVertex {
     int[](0, 2, 1, 3)
 );*/
 
-#define N ivec3[](ivec3(0), ivec3(0), ivec3(0), ivec3(0))
+#define MASK 0x999
+
+#define N ivec3[](ivec3(0), ivec3(0), ivec3(0))
 
 //this took me WAY too long to figure out
-const ivec3 connections[12][4] = ivec3[][](
+const ivec3 connections[6][3] = ivec3[][](
+    ivec3[](ivec3(0), ivec3(0, 0, -1), ivec3(0, -1, 0)),
+    ivec3[](ivec3(0), ivec3(0, 0, 1), ivec3(0, 1, 0)),
+    ivec3[](ivec3(0), ivec3(-1, 0, 0), ivec3(0, 0, -1)),
+    ivec3[](ivec3(0), ivec3(1, 0, 0), ivec3(0, 0, 1)),
+    ivec3[](ivec3(0), ivec3(-1, 0, 0), ivec3(0, -1, 0)),
+    ivec3[](ivec3(0), ivec3(1, 0, 0), ivec3(0, 1, 0))
+);
+
+/*const ivec3 connections[12][4] = ivec3[][](
     //x axis
     ivec3[](ivec3(0), ivec3(-1, 0, 0), ivec3(0, -1, 0), ivec3(-1, -1, 0)),
     ivec3[](ivec3(0), ivec3(1, 0, 0), ivec3(0, -1, 0), ivec3(1, -1, 0)),
@@ -70,4 +81,4 @@ const ivec3 connections[12][4] = ivec3[][](
     ivec3[](ivec3(0), ivec3(0, 0, 1), ivec3(0, -1, 0), ivec3(0, -1, 1)),
     ivec3[](ivec3(0), ivec3(0, 0, -1), ivec3(0, 1, 0), ivec3(0, 1, -1)),
     ivec3[](ivec3(0), ivec3(0, 0, 1), ivec3(0, 1, 0), ivec3(0, 1, 1))
-);
+);*/

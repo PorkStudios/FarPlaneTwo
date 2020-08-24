@@ -66,20 +66,7 @@ void main(){
         ivec3 otherWorldPos = blockPos + delta;
         int slot = toSlot(index, otherWorldPos);
 
-        vs_out.other[i] = vec4(clamp(sampleVoxel(entry.low[slot], otherWorldPos).offset, vec3(0.), vec3(1.)) , 0.);
+        VOXEL_TYPE voxel = sampleVoxel(entry.low[slot], otherWorldPos);
+        vs_out.other[i] = vec4(voxel.offset, 0.);
     }
-
-    /*//convert position to vec3 afterwards to minimize precision loss
-    vec3 relativePos = vec3(pos - glState.camera.position);
-
-    //give raw position to fragment shader
-    vs_out.pos = vec3(pos);
-
-    //set fog depth
-    fog_out.depth = length(relativePos);
-
-    //translate vertex position
-    gl_Position = vec4(relativePos, 1.);
-
-    vs_out.color = voxel.connections == 0 ? vec4(0.) : vec4(1., 0., 0., 1.);*/
 }

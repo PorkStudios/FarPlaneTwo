@@ -134,14 +134,7 @@ public class VoxelRenderHelper {
         Vector3f qefPosition = new Vector3f();
         qef.solve(qefPosition, 0.0001f, 4, 0.0001f);
 
-        if (qefPosition.x < x || qefPosition.x > x + 1.0d
-            || qefPosition.y < y || qefPosition.y > y + 1.0d
-            || qefPosition.z < z || qefPosition.z > z + 1.0d) {
-            qefPosition.set(qef.massPoint());
-        }
-
         buf.writeFloat((float) (qefPosition.x - x)).writeFloat((float) (qefPosition.y - y)).writeFloat((float) (qefPosition.z - z));
-        //buf.writeInt(((edgeMask >> 3) & 1) | (((edgeMask >> 7) & 1) << 2) | (((edgeMask >> 11) & 1) << 1));
         buf.writeInt(edgeMask);
     }
 

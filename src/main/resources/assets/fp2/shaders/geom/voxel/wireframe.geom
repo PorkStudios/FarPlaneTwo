@@ -25,8 +25,25 @@ void vertex(vec4 pos)   {
     EmitVertex();
 }
 
+const int lines[24] = int[](
+0, 4, 1, 5, 2, 6, 3, 7,    // x-axis
+0, 2, 1, 3, 4, 6, 5, 7,    // y-axis
+0, 1, 2, 3, 4, 5, 6, 7
+);
+
+void line(int i, vec4 a, vec4 b, vec4 cam) {
+    gs_out.color = (gs_in[0].connections & (1 << i) & MASK) == 0 ? vec4(0.) : vec4(1., 0., 0., 0.);
+    vertex(a + (b - a) * vec4(ivec3(lines[i << 1]) >> ivec3(2, 1, 0) & 1, 0.) - cam);
+    vertex(a + (b - a) * vec4(ivec3(lines[(i << 1) | 1]) >> ivec3(2, 1, 0) & 1, 0.) - cam);
+    EndPrimitive();
+}
+
 void pre(vec4 bbMin, vec4 bbMax, vec4 cam)    {
-    vertex(vec4(bbMin.x, bbMin.y, bbMin.z, 1.) - cam);
+    for (int i = 0; i < 12; i++)    {
+        line(i, bbMin + vec4(.05), bbMax - vec4(.05), cam);
+    }
+
+    /*vertex(vec4(bbMin.x, bbMin.y, bbMin.z, 1.) - cam);
     vertex(vec4(bbMin.x, bbMin.y, bbMax.z, 1.) - cam);
     vertex(vec4(bbMin.x, bbMax.y, bbMax.z, 1.) - cam);
     vertex(vec4(bbMin.x, bbMax.y, bbMin.z, 1.) - cam);
@@ -48,9 +65,10 @@ void pre(vec4 bbMin, vec4 bbMax, vec4 cam)    {
     vertex(vec4(bbMax.x, bbMin.y, bbMax.z, 1.) - cam);
     vertex(vec4(bbMax.x, bbMax.y, bbMax.z, 1.) - cam);
     vertex(vec4(bbMin.x, bbMax.y, bbMax.z, 1.) - cam);
-    EndPrimitive();
+    EndPrimitive();*/
 
-    vec4 neighborOffset = gs_in[0].other[14];
+    gs_out.color = vec4(0.);
+    vec4 neighborOffset = gs_in[0].other[13];
     bbMax = bbMin + neighborOffset + vec4(vec3(.025), 0.);
     bbMin = bbMin + neighborOffset - vec4(vec3(.025), 0.);
 
@@ -80,14 +98,4 @@ void pre(vec4 bbMin, vec4 bbMax, vec4 cam)    {
 }
 
 void quad(vec4 bbMin, vec4 bbMax, vec4 cam, int i)    {
-    /*for (int j = 0; j < 4; j++) {
-        //vec4 worldPos = pos + gs_in[0].other[connections[i][j]];
-        ivec3 vec = connections[i][j];
-        int index = ((vec.x + 1) * 3 + vec.y + 1) * 3 + vec.z + 1;
-        vec4 neighborOffset = gs_in[0].other[index];
-        vec4 worldPos = bbMin + vec4(neighborOffset.xyz, 0.);
-        gl_Position = cameraTransform(worldPos - cam);
-        EmitVertex();
-    }
-    EndPrimitive();*/
 }

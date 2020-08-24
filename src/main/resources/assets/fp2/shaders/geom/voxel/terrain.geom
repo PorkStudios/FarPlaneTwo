@@ -30,7 +30,9 @@ void fancyClamp(inout vec3 pos)   {
 void quad(vec4 bbMin, vec4 bbMax, vec4 cam, int i)    {
     gs_out.color = vec4(1.);
 
-    for (int j = 0; j < 4; j++) {
+    i = (i >> 1) | (i & 1);
+
+    for (int j = 0; j < 3; j++) {
         ivec3 vec = connections[i][j];
         vec4 neighborOffset = gs_in[0].other[((vec.x + 1) * 3 + vec.y + 1) * 3 + vec.z + 1];
         vec4 worldPos = neighborOffset + vec4(vec3(vec), 0.);
