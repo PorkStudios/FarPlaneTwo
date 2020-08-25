@@ -19,14 +19,13 @@
  */
 
 layout(points) in;
-layout(TYPE, max_vertices = 128) out;
+layout(TYPE, max_vertices = 128) out; //TODO: replace with 12
 
 void main() {
     int c = gs_in[0].connections;
-    if (c == 0 || gs_in[0].other[13] == vec4(0.)) {
+    if (c == 0) {
         return;
     }
-    c &= MASK;
 
     vec4 bbMin = gl_in[0].gl_Position;
     vec4 bbMax = bbMin + 1.;
@@ -34,9 +33,14 @@ void main() {
     vec4 cam = vec4(vec3(glState.camera.position), 0.);
 
     pre(bbMin, bbMax, cam);
-    for (int i = 0; i < 12; i++) {
-        if ((c & (1 << i)) != 0)    {
-            quad(bbMin, bbMax, cam, i);
-        }
+
+    if ((c & (1 << 0)) != 0)    {
+        quad(bbMin, bbMax, cam, 0);
+    }
+    if ((c & (1 << 4)) != 0)    {
+        quad(bbMin, bbMax, cam, 4);
+    }
+    if ((c & (1 << 8)) != 0)    {
+        quad(bbMin, bbMax, cam, 8);
     }
 }

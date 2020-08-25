@@ -32,7 +32,7 @@ const int lines[24] = int[](
 );
 
 void line(int i, vec4 a, vec4 b, vec4 cam) {
-    gs_out.color = (gs_in[0].connections & (1 << i) & MASK) == 0 ? vec4(0.) : vec4(1., 0., 0., 0.);
+    gs_out.color = (gs_in[0].connections & (1 << i)) == 0 ? vec4(0.) : vec4(1., 0., 0., 0.);
     vertex(a + (b - a) * vec4(ivec3(lines[i << 1]) >> ivec3(2, 1, 0) & 1, 0.) - cam);
     vertex(a + (b - a) * vec4(ivec3(lines[(i << 1) | 1]) >> ivec3(2, 1, 0) & 1, 0.) - cam);
     EndPrimitive();
@@ -43,34 +43,10 @@ void pre(vec4 bbMin, vec4 bbMax, vec4 cam)    {
         line(i, bbMin + vec4(.05), bbMax - vec4(.05), cam);
     }
 
-    /*vertex(vec4(bbMin.x, bbMin.y, bbMin.z, 1.) - cam);
-    vertex(vec4(bbMin.x, bbMin.y, bbMax.z, 1.) - cam);
-    vertex(vec4(bbMin.x, bbMax.y, bbMax.z, 1.) - cam);
-    vertex(vec4(bbMin.x, bbMax.y, bbMin.z, 1.) - cam);
-    EndPrimitive();
-
-    vertex(vec4(bbMax.x, bbMin.y, bbMax.z, 1.) - cam);
-    vertex(vec4(bbMax.x, bbMin.y, bbMin.z, 1.) - cam);
-    vertex(vec4(bbMax.x, bbMax.y, bbMin.z, 1.) - cam);
-    vertex(vec4(bbMax.x, bbMax.y, bbMax.z, 1.) - cam);
-    EndPrimitive();
-
-    vertex(vec4(bbMax.x, bbMin.y, bbMin.z, 1.) - cam);
-    vertex(vec4(bbMin.x, bbMin.y, bbMin.z, 1.) - cam);
-    vertex(vec4(bbMin.x, bbMax.y, bbMin.z, 1.) - cam);
-    vertex(vec4(bbMax.x, bbMax.y, bbMin.z, 1.) - cam);
-    EndPrimitive();
-
-    vertex(vec4(bbMin.x, bbMin.y, bbMax.z, 1.) - cam);
-    vertex(vec4(bbMax.x, bbMin.y, bbMax.z, 1.) - cam);
-    vertex(vec4(bbMax.x, bbMax.y, bbMax.z, 1.) - cam);
-    vertex(vec4(bbMin.x, bbMax.y, bbMax.z, 1.) - cam);
-    EndPrimitive();*/
-
     gs_out.color = vec4(0.);
-    vec4 neighborOffset = gs_in[0].other[13];
-    bbMax = bbMin + neighborOffset + vec4(vec3(.025), 0.);
-    bbMin = bbMin + neighborOffset - vec4(vec3(.025), 0.);
+    vec4 ownOffset = gs_in[0].other[0];
+    bbMax = ownOffset + vec4(vec3(.025), 0.);
+    bbMin = ownOffset - vec4(vec3(.025), 0.);
 
     vertex(vec4(bbMin.x, bbMin.y, bbMin.z, 1.) - cam);
     vertex(vec4(bbMin.x, bbMin.y, bbMax.z, 1.) - cam);

@@ -69,7 +69,6 @@ struct TileIndex {
 
 struct TileIndexEntry {
     TileIndex low[8];
-    TileIndex high[8];
 };
 
 layout(std430, binding = 2) buffer TILE_INDEX {
@@ -95,7 +94,7 @@ VOXEL_TYPE sampleVoxel(TileIndex index)   {
 
 VOXEL_TYPE sampleVoxel(TileIndex index, ivec3 blockPos)   {
     ivec3 p2 = (blockPos >> index.level) & T_MASK;
-    return tile_data.data[index.index][(((p2.x << T_SHIFT) | p2.y) << T_SHIFT) | p2.z];
+    return tile_data.data[index.index][(p2.x * T_VOXELS + p2.y) * T_VOXELS + p2.z];
 }
 
 int toSlot(TileIndex index, ivec3 blockPos)  {

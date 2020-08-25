@@ -42,13 +42,15 @@ public class VoxelRenderIndex extends AbstractFarRenderIndex<VoxelPos, VoxelRend
             return false;
         }
 
-        this.ensureWritable(8 * (8 * 2));
+        //this.ensureWritable(8 * (8 * 2));
+        this.ensureWritable(8 * 8);
 
         for (VoxelRenderTile t : tile.neighbors()) {
             this.writeTile(t);
         }
 
-        VoxelRenderTile parent = tile.parent();
+        //TODO: LoD
+        /*VoxelRenderTile parent = tile.parent();
         if (parent != null) {
             VoxelPos pos = tile.pos();
             int xLSB = (pos.x() & 1) << 2;
@@ -68,7 +70,7 @@ public class VoxelRenderIndex extends AbstractFarRenderIndex<VoxelPos, VoxelRend
             for (int i = 0; i < 8; i++) {
                 this.writeTile(null);
             }
-        }
+        }*/
 
         this.size++;
         return true;

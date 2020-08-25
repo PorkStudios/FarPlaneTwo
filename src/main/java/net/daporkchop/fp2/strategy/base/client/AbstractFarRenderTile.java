@@ -58,7 +58,7 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, I extends Abstr
 
     public boolean doesSelfOrAnyChildrenHaveAddress = false;
 
-    public AbstractFarRenderTile(@NonNull AbstractFarRenderCache<POS, ?, T, I> cache, T parent, @NonNull POS pos, @NonNull AxisAlignedBB bb, int childCount) {
+    public AbstractFarRenderTile(@NonNull AbstractFarRenderCache<POS, ?, T, I> cache, T parent, @NonNull POS pos, @NonNull AxisAlignedBB bb, int childCount, int neighborCount) {
         super(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
 
         this.level = (this.pos = pos).level();
@@ -66,7 +66,7 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, I extends Abstr
         this.parent = parent;
 
         this.children = pos.level() > 0 ? this.tileArray(childCount) : null;
-        this.neighbors = this.tileArray(childCount);
+        this.neighbors = this.tileArray(neighborCount);
 
         cache.tileAdded(uncheckedCast(this));
     }

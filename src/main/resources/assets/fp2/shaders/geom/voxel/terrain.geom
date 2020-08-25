@@ -23,22 +23,21 @@
 void pre(vec4 bbMin, vec4 bbMax, vec4 cam)    {
 }
 
-void fancyClamp(inout vec3 pos)   {
-    //pos = clamp(pos, vec3(0.), vec3(1.));
-}
+//this took me WAY too long to figure out
+const ivec3 connections[3][4] = ivec3[][](
+    ivec3[](ivec3(0), ivec3(0, 0, -1), ivec3(0, -1, 0), ivec3(0, -1, -1)),
+    ivec3[](ivec3(0), ivec3(-1, 0, 0), ivec3(0, 0, -1), ivec3(-1, 0, -1)),
+    ivec3[](ivec3(0), ivec3(-1, 0, 0), ivec3(0, -1, 0), ivec3(-1, -1, 0))
+);
 
 void quad(vec4 bbMin, vec4 bbMax, vec4 cam, int i)    {
     gs_out.color = vec4(1.);
 
-    i = (i >> 1) | (i & 1);
+    i >>= 2;
 
-    for (int j = 0; j < 3; j++) {
+    for (int j = 0; j < 4; j++) {
         ivec3 vec = connections[i][j];
-        vec4 neighborOffset = gs_in[0].other[((vec.x + 1) * 3 + vec.y + 1) * 3 + vec.z + 1];
-        vec4 worldPos = neighborOffset + vec4(vec3(vec), 0.);
-
-        fancyClamp(worldPos.xyz);
-        worldPos += bbMin;
+        vec4 worldPos = gs_in[0].other[((vec.x + 1) * 3 + vec.y + 1) * 3 + vec.z + 1];
 
         gs_out.pos = worldPos.xyz;
         gl_Position = cameraTransform(worldPos - cam);

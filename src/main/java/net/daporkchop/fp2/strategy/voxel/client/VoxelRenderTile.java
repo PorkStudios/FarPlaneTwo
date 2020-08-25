@@ -29,7 +29,7 @@ import net.daporkchop.fp2.strategy.voxel.VoxelPos;
  */
 public class VoxelRenderTile extends AbstractFarRenderTile<VoxelPos, VoxelRenderIndex, VoxelRenderTile> {
     public VoxelRenderTile(@NonNull VoxelRenderCache cache, VoxelRenderTile parent, @NonNull VoxelPos pos) {
-        super(cache, parent, pos, pos.bounds(), 8);
+        super(cache, parent, pos, pos.bounds(), 8, 8);
     }
 
     @Override

@@ -143,7 +143,7 @@ public class VoxelRenderHelper {
         double t = 0.0d;
         double currentT = 0.0d;
 
-        final double INCREMENT = 1.0d / 16;
+        final double INCREMENT = 1.0d / 8;
         while (currentT <= 1.0d) {
             double v = abs(noise.get(lerp(x0, x1, currentT), lerp(y0, y1, currentT), lerp(z0, z1, currentT)));
             if (v < minValue) {
