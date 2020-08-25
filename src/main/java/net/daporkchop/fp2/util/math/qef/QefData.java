@@ -29,10 +29,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class QefData {
-    protected float ata_00, ata_01, ata_02, ata_11, ata_12, ata_22;
-    protected float atb_x, atb_y, atb_z;
-    protected float btb;
-    protected float massPoint_x, massPoint_y, massPoint_z;
+    protected double ata_00, ata_01, ata_02, ata_11, ata_12, ata_22;
+    protected double atb_x, atb_y, atb_z;
+    protected double btb;
+    protected double massPoint_x, massPoint_y, massPoint_z;
     protected int numPoints;
 
     public QefData(QefData data) {
@@ -73,7 +73,7 @@ public class QefData {
         this.numPoints = 0;
     }
 
-    public void set(float ata_00, float ata_01, float ata_02, float ata_11, float ata_12, float ata_22, float atb_x, float atb_y, float atb_z, float btb, float massPoint_x, float massPoint_y, float massPoint_z, int numPoints) {
+    public void set(double ata_00, double ata_01, double ata_02, double ata_11, double ata_12, double ata_22, double atb_x, double atb_y, double atb_z, double btb, double massPoint_x, double massPoint_y, double massPoint_z, int numPoints) {
         this.ata_00 = ata_00;
         this.ata_01 = ata_01;
         this.ata_02 = ata_02;

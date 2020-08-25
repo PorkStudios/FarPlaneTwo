@@ -26,6 +26,7 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
+import net.daporkchop.fp2.util.math.Vector3d;
 import net.daporkchop.fp2.util.math.qef.QefSolver;
 import net.daporkchop.lib.noise.NoiseSource;
 import net.daporkchop.lib.noise.engine.PerlinNoiseEngine;
@@ -93,7 +94,7 @@ public class VoxelRenderHelper {
         }
 
         QefSolver qef = new QefSolver();
-        Vector3f averageNormal = new Vector3f();
+        Vector3d averageNormal = new Vector3d();
         int edges = 0;
         int edgeMask = 0;
 
@@ -121,23 +122,23 @@ public class VoxelRenderHelper {
             double dy = noise.get(px, py + 0.001d, pz) - noise.get(px, py - 0.001d, pz);
             double dz = noise.get(px, py, pz + 0.001d) - noise.get(px, py, pz - 0.001d);
             double length = sqrt(dx * dx + dy * dy + dz * dz);
-            float nx = (float) (dx / length);
-            float ny = (float) (dy / length);
-            float nz = (float) (dz / length);
+            double nx = dx / length;
+            double ny = dy / length;
+            double nz = dz / length;
 
-            qef.add((float) px, (float) py, (float) pz, nx, ny, nz);
+            qef.add(px, py, pz, nx, ny, nz);
             averageNormal.translate(nx, ny, nz);
             edges++;
             edgeMask |= 1 << i;
         }
 
-        Vector3f qefPosition = new Vector3f();
+        Vector3d qefPosition = new Vector3d();
         qef.solve(qefPosition, 0.0001f, 4, 0.0001f);
 
         if (qefPosition.x < x || qefPosition.x > x + 1.0d
             || qefPosition.y < y || qefPosition.y > y + 1.0d
             || qefPosition.z < z || qefPosition.z > z + 1.0d) {
-            qefPosition.set(qef.massPoint());
+            qefPosition.set(qef.massPoint().x, qef.massPoint().y, qef.massPoint().z);
         }
 
         buf.writeFloat((float) (qefPosition.x - x)).writeFloat((float) (qefPosition.y - y)).writeFloat((float) (qefPosition.z - z));

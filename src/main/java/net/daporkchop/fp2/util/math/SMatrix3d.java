@@ -22,26 +22,25 @@ package net.daporkchop.fp2.util.math;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import org.lwjgl.util.vector.Vector3f;
 
 /**
  * @author DaPorkchop_
  */
 @AllArgsConstructor
 @NoArgsConstructor
-public class SMatrix3f {
-    public float m00, m01, m02, m11, m12, m22;
+public class SMatrix3d {
+    public double m00, m01, m02, m11, m12, m22;
 
     public void clear() {
-        this.m00 = 0.0f;
-        this.m01 = 0.0f;
-        this.m02 = 0.0f;
-        this.m11 = 0.0f;
-        this.m12 = 0.0f;
-        this.m22 = 0.0f;
+        this.m00 = 0.0d;
+        this.m01 = 0.0d;
+        this.m02 = 0.0d;
+        this.m11 = 0.0d;
+        this.m12 = 0.0d;
+        this.m22 = 0.0d;
     }
 
-    public void set(float m00, float m01, float m02, float m11, float m12, float m22) {
+    public void set(double m00, double m01, double m02, double m11, double m12, double m22) {
         this.m00 = m00;
         this.m01 = m01;
         this.m02 = m02;
@@ -50,11 +49,11 @@ public class SMatrix3f {
         this.m22 = m22;
     }
 
-    public void set(SMatrix3f matrix) {
+    public void set(SMatrix3d matrix) {
         this.set(matrix.m00, matrix.m01, matrix.m02, matrix.m11, matrix.m12, matrix.m22);
     }
 
-    public void vmul(Vector3f out, Vector3f v) {
+    public void vmul(Vector3d out, Vector3d v) {
         out.x = this.m00 * v.x + this.m01 * v.y + this.m02 * v.z;
         out.y = this.m01 * v.x + this.m11 * v.y + this.m12 * v.z;
         out.z = this.m02 * v.x + this.m12 * v.y + this.m22 * v.z;
