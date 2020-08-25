@@ -36,7 +36,7 @@ void quad(vec4 bbMin, vec4 bbMax, vec4 cam, int i)    {
     i >>= 2;
 
     for (int j = 0; j < 4; j++) {
-        ivec3 vec = connections[i][j];
+        ivec3 vec = -connections[i][j];
         vec4 worldPos = gs_in[0].other[((vec.x + 1) * 3 + vec.y + 1) * 3 + vec.z + 1];
 
         gs_out.pos = worldPos.xyz;

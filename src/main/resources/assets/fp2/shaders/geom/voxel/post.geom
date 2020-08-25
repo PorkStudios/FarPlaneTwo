@@ -34,13 +34,14 @@ void main() {
 
     pre(bbMin, bbMax, cam);
 
-    if ((c & (1 << 0)) != 0)    {
+    int b = 3;
+    if ((c & (1 << (b + 0))) != 0)    {
         quad(bbMin, bbMax, cam, 0);
     }
-    if ((c & (1 << 4)) != 0)    {
-        quad(bbMin, bbMax, cam, 4);
+    if ((c & (1 << (b + 4))) != 0)    {
+        quad(bbMin, bbMax, cam, b + 4);
     }
-    if ((c & (1 << 8)) != 0)    {
-        quad(bbMin, bbMax, cam, 8);
+    if ((c & (1 << (b + 8))) != 0)    {
+        quad(bbMin, bbMax, cam, b + 8);
     }
 }
