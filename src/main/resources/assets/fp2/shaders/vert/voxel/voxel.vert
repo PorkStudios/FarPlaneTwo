@@ -33,6 +33,20 @@ struct VoxelData {
 
 //
 //
+// CONSTANTS
+//
+//
+
+const ivec3 otherOffsetCoords[7] = ivec3[](
+    ivec3(0), ivec3(0, 0, 1), ivec3(0, 1, 0), ivec3(0, 1, 1), ivec3(1, 0, 0), ivec3(1, 0, 1), ivec3(1, 1, 0)
+);
+
+const vec3 otherOffsetVectors[7] = vec3[](
+    vec3(0.), vec3(0., 0., 1.), vec3(0., 1., 0.), vec3(0., 1., 1.), vec3(1., 0., 0.), vec3(1., 0., 1.), vec3(1., 1., 0.)
+);
+
+//
+//
 // VERTEX ATTRIBUTES
 //
 //
@@ -47,11 +61,8 @@ layout(location = 1) in int in_vertexID_chunk;
 //
 
 out VS_OUT {
-    //vec3 pos;
-
-    //flat vec4 color;
     flat int connections;
-    flat vec4 other[27]; //todo: only send required ones
+    flat vec4 other[7];
 } vs_out;
 
 //
@@ -99,11 +110,5 @@ VOXEL_TYPE sampleVoxel(TileIndex index, ivec3 blockPos)   {
 
 int toSlot(TileIndex index, ivec3 blockPos)  {
     ivec3 p2 = (blockPos >> (index.level + T_SHIFT)) - index.tilePos;
-    return ((p2.x & 1) << 2) | ((p2.y & 1) << 1) | (p2.z & 1);
+    return (p2.x << 2) | (p2.y << 1) | p2.z;
 }
-
-//
-//
-// UTILITIES
-//
-//

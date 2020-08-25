@@ -18,30 +18,52 @@
  *
  */
 
-#define TYPE triangle_strip
+layout(points) in;
+layout(triangle_strip, max_vertices = 12) out;
 
-void pre(vec4 bbMin, vec4 bbMax, vec4 cam)    {
-}
+in VS_OUT {
+    flat int connections;
+    flat vec4 other[7];
+} gs_in[];
 
-//this took me WAY too long to figure out
-const ivec3 connections[3][4] = ivec3[][](
-    ivec3[](ivec3(0), ivec3(0, 0, -1), ivec3(0, -1, 0), ivec3(0, -1, -1)),
-    ivec3[](ivec3(0), ivec3(-1, 0, 0), ivec3(0, 0, -1), ivec3(-1, 0, -1)),
-    ivec3[](ivec3(0), ivec3(-1, 0, 0), ivec3(0, -1, 0), ivec3(-1, -1, 0))
+in gl_PerVertex {
+    vec4 gl_Position;
+} gl_in[];
+
+out GS_OUT {
+    vec3 pos;
+
+    vec4 color;
+} gs_out;
+
+out gl_PerVertex {
+    vec4 gl_Position;
+};
+
+const int connections[3][4] = int[][](
+    int[](0, 1, 2, 3),
+    int[](0, 1, 4, 5),
+    int[](0, 2, 4, 6)
 );
 
-void quad(vec4 bbMin, vec4 bbMax, vec4 cam, int i)    {
-    gs_out.color = vec4(1.);
-
-    i >>= 2;
-
-    for (int j = 0; j < 4; j++) {
-        ivec3 vec = -connections[i][j];
-        vec4 worldPos = gs_in[0].other[((vec.x + 1) * 3 + vec.y + 1) * 3 + vec.z + 1];
-
-        gs_out.pos = worldPos.xyz;
-        gl_Position = cameraTransform(worldPos - cam);
-        EmitVertex();
+void main() {
+    int c = gs_in[0].connections;
+    if (c == 0) {
+        return;
     }
-    EndPrimitive();
+
+    for (int i = 0; i < 3; i++) {
+        if ((c & (1 << i)) != 0)    {
+            gs_out.color = vec4(1.);
+
+            for (int j = 0; j < 4; j++) {
+                vec4 worldPos = gs_in[0].other[connections[i][j]];
+
+                gs_out.pos = worldPos.xyz;
+                gl_Position = cameraTransform(worldPos);
+                EmitVertex();
+            }
+            EndPrimitive();
+        }
+    }
 }

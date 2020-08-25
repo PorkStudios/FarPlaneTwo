@@ -45,8 +45,8 @@ import static net.daporkchop.lib.common.math.PMath.*;
 public class VoxelRenderHelper {
     public static final int VOXEL_RENDER_SIZE = T_VOXELS * T_VOXELS * T_VOXELS * VEC4_SIZE;
 
-    protected static final int MAX_EDGES = 12;
-    protected static final int[] edgevmap = {
+    protected static final int MAX_EDGES = 6;
+    protected static final int[] EDGEVMAP = {
             0, 4, 1, 5, 2, 6, 3, 7,    // x-axis
             0, 2, 1, 3, 4, 6, 5, 7,    // y-axis
             0, 1, 2, 3, 4, 5, 6, 7     // z-axis
@@ -98,8 +98,8 @@ public class VoxelRenderHelper {
         int edgeMask = 0;
 
         for (int i = 0; i < 12 && edges < MAX_EDGES; i++) {
-            int c0 = edgevmap[i << 1];
-            int c1 = edgevmap[(i << 1) | 1];
+            int c0 = EDGEVMAP[i << 1];
+            int c1 = EDGEVMAP[(i << 1) | 1];
 
             if (((corners >> c0) & 1) == ((corners >> c1) & 1)) {
                 continue;
@@ -134,8 +134,15 @@ public class VoxelRenderHelper {
         Vector3f qefPosition = new Vector3f();
         qef.solve(qefPosition, 0.0001f, 4, 0.0001f);
 
+        if (qefPosition.x < x || qefPosition.x > x + 1.0d
+            || qefPosition.y < y || qefPosition.y > y + 1.0d
+            || qefPosition.z < z || qefPosition.z > z + 1.0d) {
+            qefPosition.set(qef.massPoint());
+        }
+
         buf.writeFloat((float) (qefPosition.x - x)).writeFloat((float) (qefPosition.y - y)).writeFloat((float) (qefPosition.z - z));
-        buf.writeInt(edgeMask);
+        edgeMask &= 0x888;
+        buf.writeInt((edgeMask >> 9) | (edgeMask >> 6) | (edgeMask >> 3));
     }
 
     protected static double minimize(NoiseSource noise, double x0, double y0, double z0, double x1, double y1, double z1) {

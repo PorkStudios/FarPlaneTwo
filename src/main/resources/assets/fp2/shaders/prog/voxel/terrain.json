@@ -8,9 +8,7 @@
   ],
   "geom": [
     "prog/common.glsl",
-    "geom/voxel/pre.geom",
-    "geom/voxel/terrain.geom",
-    "geom/voxel/post.geom"
+    "geom/voxel/terrain.geom"
   ],
   "frag": [
     "prog/common.glsl",
