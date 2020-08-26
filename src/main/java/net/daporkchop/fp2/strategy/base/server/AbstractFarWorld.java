@@ -145,7 +145,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
 
                 @Override
                 public void generate(@NonNull P piece) {
-                    //TODO: this
+                    //TODO: optimize this lol
+                    generatorExact.generate(((CachedBlockAccess.Holder) AbstractFarWorld.this.world).cachedBlockAccess(), piece);
                 }
 
                 @Override

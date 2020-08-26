@@ -24,7 +24,7 @@ void main() {
     }
 
     //TODO: i really need a good solution for this
-    if (isChunkSectionRenderable(ivec3(fs_in.pos) >> 4))    {
+    if (false && isChunkSectionRenderable(ivec3(fs_in.pos) >> 4))    {
         discard;
     }
 
