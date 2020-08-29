@@ -20,14 +20,6 @@
 
 //
 //
-// MACROS
-//
-//
-
-#define HEIGHTMAP_TYPE ivec4
-
-//
-//
 // VERTEX ATTRIBUTES
 //
 //

@@ -74,24 +74,11 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     @Override
     public void receivePiece(@NonNull P piece) {
         ClientThreadExecutor.INSTANCE.execute(() -> this.cache.receivePiece(piece));
-        /*RENDER_WORKERS.submit(piece.pos(), () -> {
-            ByteBuf baked = this.bake(piece);
-            ClientThreadExecutor.INSTANCE.execute(() -> {
-                try {
-                    this.cache.addPiece(piece, baked);
-                } finally {
-                    baked.release();
-                }
-            });
-        });*/
     }
 
     @Override
     public void unloadPiece(@NonNull POS pos) {
         ClientThreadExecutor.INSTANCE.execute(() -> this.cache.unloadPiece(pos));
-        /*RENDER_WORKERS.submit(pos, () -> { //make sure that any in-progress bake tasks are finished before the piece is removed
-            ClientThreadExecutor.INSTANCE.execute(() -> this.cache.removePiece(pos));
-        });*/
     }
 
     /**

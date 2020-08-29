@@ -49,7 +49,6 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
     protected final int level;
 
     protected final T[] children; //non-null for levels above 0
-    protected final T[] neighbors;
 
     protected final AbstractFarRenderCache<POS, P, T> cache;
     protected final T parent;
@@ -62,7 +61,7 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
 
     public boolean doesSelfOrAnyChildrenHaveAddress = false;
 
-    public AbstractFarRenderTile(@NonNull AbstractFarRenderCache<POS, P, T> cache, T parent, @NonNull POS pos, @NonNull AxisAlignedBB bb, int childCount, int neighborCount) {
+    public AbstractFarRenderTile(@NonNull AbstractFarRenderCache<POS, P, T> cache, T parent, @NonNull POS pos, @NonNull AxisAlignedBB bb, int childCount) {
         super(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
 
         this.level = (this.pos = pos).level();
@@ -70,7 +69,6 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
         this.parent = parent;
 
         this.children = pos.level() > 0 ? cache.tileArray().apply(childCount) : null;
-        this.neighbors = cache.tileArray().apply(neighborCount);
 
         cache.tileAdded(uncheckedCast(this));
     }
@@ -155,8 +153,10 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
         }
     }
 
-    public boolean dropAddress() {
+    public synchronized boolean dropAddress() {
         checkState(this.hasAddress(), "doesn't have an address?!?");
+
+        this.piece = null;
 
         this.cache.verticesAllocator.free(this.addressVertices);
         this.addressVertices = -1L;

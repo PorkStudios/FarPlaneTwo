@@ -30,7 +30,7 @@ import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
  */
 class HeightmapRenderTile extends AbstractFarRenderTile<HeightmapPos, HeightmapPiece, HeightmapRenderTile> {
     public HeightmapRenderTile(HeightmapRenderCache cache, HeightmapRenderTile parent, @NonNull HeightmapPos pos) {
-        super(cache, parent, pos, pos.bounds(), 4, 4);
+        super(cache, parent, pos, pos.bounds(), 4);
     }
 
     @Override

@@ -40,7 +40,6 @@ import net.daporkchop.lib.primitive.lambda.LongLongConsumer;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 import net.minecraft.client.renderer.culling.ICamera;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.function.IntFunction;
 
@@ -50,7 +49,6 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.opengl.GL40.*;
 
 /**
@@ -174,19 +172,36 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     public abstract void tileRemoved(@NonNull T tile);
 
     public void receivePiece(@NonNull P piece) {
+        { //insert new tile with piece
+            POS rootPos = uncheckedCast(piece.pos().upTo(this.renderer.maxLevel));
+            T rootTile = this.roots.get(rootPos);
+            if (rootTile == null) {
+                //create root tile if absent
+                this.roots.put(rootPos, rootTile = this.createTile(null, rootPos));
+            }
+            rootTile.findOrCreateChild(piece.pos()).piece = piece;
+        }
+
         this.baker.bakeOutputs(piece.pos()).forEach(pos -> {
             P[] inputs = this.baker.bakeInputs(pos)
                     .map(inputPos -> {
-                        if (inputPos.equals(piece.pos())) {
-                            return piece;
-                        }
-
                         POS rootPos = uncheckedCast(inputPos.upTo(this.renderer.maxLevel));
                         T rootTile = this.roots.get(rootPos);
                         T tile = rootTile != null ? rootTile.findChild(inputPos) : null;
                         return tile != null ? tile.piece : null;
                     })
                     .toArray(this.pieceArray);
+
+            boolean found = false;
+            for (P p : inputs) {
+                if (p != null && pos.equals(p.pos())) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                return;
+            }
 
             RENDER_WORKERS.submit(pos, () -> {
                 ByteBuf vertices = Constants.allocateByteBuf(this.baker.estimatedVerticesBufferCapacity());
@@ -210,12 +225,16 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     public void addPiece(@NonNull P piece, @NonNull ByteBuf vertices, @NonNull ByteBuf indices) {
         POS pos = piece.pos();
         POS rootPos = uncheckedCast(pos.upTo(this.renderer.maxLevel));
+
+        //the tile should already have been created by the head of receivePiece, if it's not there it's been removed while the tile was baking
         T rootTile = this.roots.get(rootPos);
         if (rootTile == null) {
-            //create root tile if absent
-            this.roots.put(rootPos, rootTile = this.createTile(null, rootPos));
+            return;
         }
-        T tile = rootTile.findOrCreateChild(pos);
+        T tile = rootTile.findChild(pos);
+        if (tile == null || tile.piece != piece) {
+            return;
+        }
 
         //allocate address for tile
         tile.assignAddress(vertices.readableBytes(), indices.readableBytes());

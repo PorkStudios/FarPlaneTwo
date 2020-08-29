@@ -30,7 +30,6 @@ import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.init.Biomes;
-import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
 
@@ -69,12 +68,20 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
 
     @Override
     public Stream<HeightmapPos> bakeOutputs(@NonNull HeightmapPos srcPos) {
-        return Stream.of(srcPos);
+        int x = srcPos.x();
+        int z = srcPos.z();
+        int level = srcPos.level();
+
+        return Stream.of(srcPos, new HeightmapPos(x, z - 1, level), new HeightmapPos(x - 1, z, level), new HeightmapPos(x - 1, z - 1, level));
     }
 
     @Override
     public Stream<HeightmapPos> bakeInputs(@NonNull HeightmapPos dstPos) {
-        return Stream.of(dstPos);
+        int x = dstPos.x();
+        int z = dstPos.z();
+        int level = dstPos.level();
+
+        return Stream.of(dstPos, new HeightmapPos(x, z + 1, level), new HeightmapPos(x + 1, z, level), new HeightmapPos(x + 1, z + 1, level));
     }
 
     @Override
@@ -96,14 +103,39 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
 
-        for (int dx = 0; dx < T_VOXELS; dx++)   {
-            for (int dz = 0; dz < T_VOXELS; dz++)   {
+        for (int dx = 0; dx < T_VOXELS; dx++) {
+            for (int dz = 0; dz < T_VOXELS; dz++) {
                 this.writeVertex(baseX, baseZ, level, srcs[0], dx, dz, vertices, pos, biomeAccess);
             }
         }
 
-        for (int dx = 0; dx < T_VOXELS - 1; dx++)   {
-            for (int dz = 0; dz < T_VOXELS - 1; dz++)   {
+        int index = T_VOXELS * T_VOXELS;
+        int indexZ = -1;
+        if (srcs[1] != null) {
+            indexZ = index;
+            for (int dx = 0; dx < T_VOXELS; dx++) {
+                this.writeVertex(baseX, baseZ + (T_VOXELS << level), level, srcs[1], dx, 0, vertices, pos, biomeAccess);
+            }
+            index += T_VOXELS;
+        }
+
+        int indexX = -1;
+        if (srcs[2] != null) {
+            indexX = index;
+            for (int dz = 0; dz < T_VOXELS; dz++) {
+                this.writeVertex(baseX + (T_VOXELS << level), baseZ, level, srcs[2], 0, dz, vertices, pos, biomeAccess);
+            }
+            index += T_VOXELS;
+        }
+
+        int indexXZ = -1;
+        if (srcs[1] != null && srcs[2] != null && srcs[3] != null) {
+            indexXZ = index++;
+            this.writeVertex(baseX + (T_VOXELS << level), baseZ + (T_VOXELS << level), level, srcs[3], 0, 0, vertices, pos, biomeAccess);
+        }
+
+        for (int dx = 0; dx < T_VOXELS - 1; dx++) {
+            for (int dz = 0; dz < T_VOXELS - 1; dz++) {
                 indices.writeShort(dx * T_VOXELS + dz)
                         .writeShort(dx * T_VOXELS + (dz + 1))
                         .writeShort((dx + 1) * T_VOXELS + (dz + 1))
@@ -111,6 +143,37 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
                         .writeShort((dx + 1) * T_VOXELS + dz)
                         .writeShort((dx + 1) * T_VOXELS + (dz + 1));
             }
+        }
+
+        if (indexZ >= 0) {
+            for (int dx = 0; dx < T_VOXELS - 1; dx++) {
+                indices.writeShort(dx * T_VOXELS + (T_VOXELS - 1))
+                        .writeShort(indexZ + dx)
+                        .writeShort(indexZ + dx + 1)
+                        .writeShort(dx * T_VOXELS + (T_VOXELS - 1))
+                        .writeShort((dx + 1) * T_VOXELS + (T_VOXELS - 1))
+                        .writeShort(indexZ + dx + 1);
+            }
+        }
+
+        if (indexX >= 0) {
+            for (int dz = 0; dz < T_VOXELS - 1; dz++) {
+                indices.writeShort((T_VOXELS - 1) * T_VOXELS + dz)
+                        .writeShort((T_VOXELS - 1) * T_VOXELS + (dz + 1))
+                        .writeShort(indexX + dz + 1)
+                        .writeShort((T_VOXELS - 1) * T_VOXELS + dz)
+                        .writeShort(indexX + dz)
+                        .writeShort(indexX + dz + 1);
+            }
+        }
+
+        if (indexXZ >= 0) {
+            indices.writeShort((T_VOXELS - 1) * T_VOXELS + (T_VOXELS - 1))
+                    .writeShort(indexZ + (T_VOXELS - 1))
+                    .writeShort(indexXZ)
+                    .writeShort((T_VOXELS - 1) * T_VOXELS + (T_VOXELS - 1))
+                    .writeShort(indexX + (T_VOXELS - 1))
+                    .writeShort(indexXZ);
         }
     }
 
