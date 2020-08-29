@@ -21,71 +21,115 @@
 package net.daporkchop.fp2.strategy.base.client;
 
 import io.netty.buffer.ByteBuf;
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
+import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
+import net.daporkchop.fp2.client.gl.object.ElementArrayObject;
+import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
+import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.alloc.Allocator;
+import net.daporkchop.fp2.util.alloc.VariableSizedAllocator;
 import net.daporkchop.fp2.util.math.Volume;
+import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.primitive.lambda.LongLongConsumer;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.renderer.culling.ICamera;
 
-import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.function.IntFunction;
 
+import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL43.*;
+import static org.lwjgl.opengl.GL40.*;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFarPiece<POS>, T extends AbstractFarRenderTile<POS, I, T>, I extends AbstractFarRenderIndex<POS, T, I>> {
-    protected final AbstractFarRenderer<POS, P, T, I> renderer;
+@Getter
+public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFarPiece<POS>, T extends AbstractFarRenderTile<POS, P, T>> {
+    protected final AbstractFarRenderer<POS, P, T> renderer;
 
     protected final Map<POS, T> roots = new ObjObjOpenHashMap<>();
 
-    protected final ShaderStorageBuffer dataSSBO = new ShaderStorageBuffer();
-    protected final ByteBuffer zeroData;
-    protected final Allocator dataAllocator;
+    protected final IntFunction<T[]> tileArray;
+    protected final IntFunction<P[]> pieceArray;
 
-    protected final ShaderStorageBuffer indexSSBO = new ShaderStorageBuffer();
-    protected final I index;
+    protected final DrawIndirectBuffer drawCommandBuffer = new DrawIndirectBuffer();
+    protected final FarRenderIndex index = new FarRenderIndex();
 
-    public AbstractFarRenderCache(@NonNull AbstractFarRenderer<POS, P, T, I> renderer, @NonNull I index, int zeroSize) {
+    protected final VertexArrayObject vao = new VertexArrayObject();
+
+    protected final VertexBufferObject vertices = new VertexBufferObject();
+    protected final Allocator verticesAllocator;
+
+    protected final ElementArrayObject indices = new ElementArrayObject();
+    protected final Allocator indicesAllocator;
+
+    protected final IFarRenderBaker<POS, P> baker;
+    protected final int indexType;
+    protected final int indexSize;
+
+    public AbstractFarRenderCache(@NonNull AbstractFarRenderer<POS, P, T> renderer, @NonNull IntFunction<T[]> tileArray, @NonNull IntFunction<P[]> pieceArray) {
         this.renderer = renderer;
-        this.index = index;
 
-        int size = glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
-        LOGGER.info(PStrings.fastFormat("Max SSBO size: %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
+        this.tileArray = tileArray;
+        this.pieceArray = pieceArray;
 
-        this.zeroData = Constants.createByteBuffer(zeroSize);
-        this.dataAllocator = this.createAllocator((oldSize, newSize) -> {
-            LOGGER.info("Growing data SSBO from {} to {} bytes", oldSize, newSize);
+        switch (this.indexType = (this.baker = renderer.baker()).indexType()) {
+            case GL_UNSIGNED_BYTE:
+                this.indexSize = 1;
+                break;
+            case GL_UNSIGNED_SHORT:
+                this.indexSize = 2;
+                break;
+            case GL_UNSIGNED_INT:
+                this.indexSize = 4;
+                break;
+            default:
+                throw new IllegalArgumentException(PStrings.fastFormat("Invalid index type: %d", this.indexType));
+        }
 
-            try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
+        this.indicesAllocator = new VariableSizedAllocator(this.indexSize, (oldSize, newSize) -> {
+            LOGGER.info("Growing indices buffer from {} to {} bytes", oldSize, newSize);
+
+            try (ElementArrayObject indices = this.indices.bind()) {
                 //grow SSBO
-                glBufferData(GL_SHADER_STORAGE_BUFFER, newSize, GL_STATIC_DRAW);
+                glBufferData(GL_ELEMENT_ARRAY_BUFFER, newSize, GL_STATIC_DRAW);
 
                 //re-upload data
-                glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0L, this.zeroData);
                 this.roots.forEach((l, root) -> root.forEach(tile -> {
                     if (tile.hasAddress()) {
-                        glBufferSubData(GL_SHADER_STORAGE_BUFFER, tile.address, tile.renderData);
+                        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, tile.addressIndices, tile.renderDataIndices);
                     }
                 }));
             }
         });
 
-        //allocate zero block
-        checkState(this.dataAllocator.alloc(zeroSize) == 0L);
+        this.verticesAllocator = new VariableSizedAllocator(this.indexSize, (oldSize, newSize) -> {
+            LOGGER.info("Growing vertices buffer from {} to {} bytes", oldSize, newSize);
+
+            try (VertexBufferObject vertices = this.vertices.bind()) {
+                //grow SSBO
+                glBufferData(GL_ARRAY_BUFFER, newSize, GL_STATIC_DRAW);
+
+                //re-upload data
+                this.roots.forEach((l, root) -> root.forEach(tile -> {
+                    if (tile.hasAddress()) {
+                        glBufferSubData(GL_ARRAY_BUFFER, tile.addressVertices, tile.renderDataVertices);
+                    }
+                }));
+            }
+        });
     }
 
     public abstract Allocator createAllocator(@NonNull LongLongConsumer resizeCallback);
@@ -96,7 +140,46 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
     public abstract void tileRemoved(@NonNull T tile);
 
-    public void addPiece(@NonNull P piece, @NonNull ByteBuf bakedData) {
+    public void receivePiece(@NonNull P piece) {
+        this.baker.bakeOutputs(piece.pos()).forEach(pos -> {
+            T[] inputs = this.baker.bakeInputs(pos)
+                    .map(inputPos -> {
+                        POS rootPos = uncheckedCast(inputPos.upTo(this.renderer.maxLevel));
+                        T rootTile = this.roots.get(rootPos);
+                        return rootTile != null ? rootTile.findChild(inputPos) : null;
+                    })
+                    .toArray(this.tileArray);
+
+            RENDER_WORKERS.submit(pos, () -> {
+                ByteBuf vertices = Constants.allocateByteBuf(this.baker.estimatedVerticesBufferCapacity());
+                ByteBuf indices = Constants.allocateByteBuf(this.baker.estimatedIndicesBufferCapacity());
+
+                //TODO: figure out whether synchronization is even necessary here
+                for (int i = 0, len = inputs.length; i < len; i++) {
+                    PUnsafe.monitorEnter(inputs[i]);
+                }
+                try {
+                    this.baker.bake(pos, Arrays.stream(inputs).map(tile -> tile != null ? tile.piece : null).toArray(this.pieceArray), vertices, indices);
+                } finally {
+                    for (int i = 0, len = inputs.length; i < len; i++) {
+                        PUnsafe.monitorExit(inputs[i]);
+                    }
+                }
+
+                //upload to GPU on client thread
+                ClientThreadExecutor.INSTANCE.execute(() -> {
+                    try {
+                        this.addPiece(piece, vertices, indices);
+                    } finally {
+                        vertices.release();
+                        indices.release();
+                    }
+                });
+            });
+        });
+    }
+
+    public void addPiece(@NonNull P piece, @NonNull ByteBuf vertices, @NonNull ByteBuf indices) {
         POS pos = piece.pos();
         POS rootPos = uncheckedCast(pos.upTo(this.renderer.maxLevel));
         T rootTile = this.roots.get(rootPos);
@@ -107,14 +190,26 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
         T tile = rootTile.findOrCreateChild(pos);
 
         //allocate address for tile
-        tile.assignAddress(bakedData.readableBytes(), this.dataAllocator);
+        tile.assignAddress(vertices.readableBytes(), indices.readableBytes());
 
         //copy baked data into tile and upload to GPU
-        bakedData.readBytes(tile.renderData);
-        tile.renderData.clear();
-        try (ShaderStorageBuffer ssbo = this.dataSSBO.bind()) {
-            glBufferSubData(GL_SHADER_STORAGE_BUFFER, tile.address, tile.renderData);
+        vertices.readBytes(tile.renderDataVertices);
+        tile.renderDataVertices.clear();
+        try (VertexBufferObject verticesBuffer = this.vertices.bind()) {
+            glBufferSubData(GL_ARRAY_BUFFER, tile.addressVertices, tile.renderDataVertices);
         }
+
+        indices.readBytes(tile.renderDataIndices);
+        tile.renderDataIndices.clear();
+        try (ElementArrayObject indicesBuffer = this.indices.bind()) {
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, tile.addressIndices, tile.renderDataIndices);
+        }
+    }
+
+    public void unloadPiece(@NonNull POS pos) {
+        RENDER_WORKERS.submit(pos, () -> { //make sure that any in-progress bake tasks are finished before the piece is removed
+            ClientThreadExecutor.INSTANCE.execute(() -> this.removePiece(pos));
+        });
     }
 
     public void removePiece(@NonNull POS pos) {
@@ -123,9 +218,6 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
         if (rootTile != null) {
             T unloadedTile = rootTile.findChild(pos);
             if (unloadedTile != null && unloadedTile.hasAddress()) {
-                //free address
-                this.dataAllocator.free(unloadedTile.address);
-
                 //inform tile that the address has been freed
                 if (unloadedTile.dropAddress()) {
                     this.roots.remove(rootPos);
@@ -148,14 +240,9 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
             return 0;
         }
 
-        try (ShaderStorageBuffer ssbo = this.indexSSBO.bind()) {
-            this.index.upload(GL_SHADER_STORAGE_BUFFER);
+        try (DrawIndirectBuffer drawCommandBuffer = this.drawCommandBuffer.bind()) {
+            this.index.upload(GL_DRAW_INDIRECT_BUFFER);
         }
         return this.index.size;
-    }
-
-    public void bindIndex() {
-        this.indexSSBO.bindSSBO(2);
-        this.dataSSBO.bindSSBO(3);
     }
 }

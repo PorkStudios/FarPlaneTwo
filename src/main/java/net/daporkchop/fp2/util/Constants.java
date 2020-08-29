@@ -131,6 +131,12 @@ public class Constants {
         return (combinedLight >> 16) | ((combinedLight >> 4) & 0xF);
     }
 
+    public static int packedLightTo8BitVec2(int packedLight)    {
+        int blockLight = packedLight & 0xF;
+        int skyLight = packedLight >> 4;
+        return ((int) (skyLight / 15f * 255f) << 8) | ((int) (blockLight / 15f * 255f));
+    }
+
     //the following methods are copied from LWJGL's BufferUtils in order to ensure their availability on the dedicated server as well
 
     /**

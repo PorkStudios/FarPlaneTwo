@@ -28,13 +28,12 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.IntBuffer;
 
-import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL15.*;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractFarRenderIndex<POS extends IFarPos, T extends AbstractFarRenderTile<POS, I, T>, I extends AbstractFarRenderIndex<POS, T, I>> {
+public class FarRenderIndex {
     protected IntBuffer buffer = Constants.createIntBuffer(256);
     @Getter
     protected int size = 0;
@@ -48,9 +47,9 @@ public abstract class AbstractFarRenderIndex<POS extends IFarPos, T extends Abst
         this.size = mark;
     }
 
-    public abstract boolean add(@NonNull T tile);
-
-    protected abstract void writeTile(T tile);
+    public boolean add(@NonNull AbstractFarRenderTile tile) {
+        return false;
+    }
 
     protected void ensureWritable(int count) {
         while (this.buffer.remaining() < count) { //buffer doesn't have enough space, grow it

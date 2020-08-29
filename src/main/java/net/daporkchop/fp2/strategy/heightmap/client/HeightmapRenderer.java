@@ -20,15 +20,15 @@
 
 package net.daporkchop.fp2.strategy.heightmap.client;
 
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.OpenGL;
+import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
 import net.daporkchop.fp2.client.gl.object.ElementArrayObject;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.base.client.AbstractFarRenderer;
+import net.daporkchop.fp2.strategy.base.client.IFarRenderBaker;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.daporkchop.fp2.util.Constants;
@@ -47,15 +47,15 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL31.*;
+import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, HeightmapPiece, HeightmapRenderTile, HeightmapRenderIndex> {
+public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, HeightmapPiece, HeightmapRenderTile> {
     public static final ShaderProgram TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
-    public static final ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
+    //public static final ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
 
     private static int genMesh(int size, int edge, ShortBuffer out) {
         int verts = 0;
@@ -143,21 +143,22 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
     }
 
     @Override
-    protected ByteBuf bake(@NonNull HeightmapPiece piece) {
-        return HeightmapRenderHelper.bake(piece);
+    public IFarRenderBaker<HeightmapPos, HeightmapPiece> baker() {
+        return new HeightmapRenderBaker();
     }
 
     @Override
     protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum, int count) {
-        try (VertexArrayObject vao = this.vao.bind()) {
+        try (VertexArrayObject vao = this.cache.vao().bind();
+             DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBuffer().bind()) {
             try (ShaderProgram shader = TERRAIN_SHADER.use()) {
                 GlStateManager.disableAlpha();
 
-                glDrawElementsInstanced(GL_TRIANGLES, this.vertexCount, GL_UNSIGNED_SHORT, 0L, count);
+                glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, count, 0);
 
                 GlStateManager.enableAlpha();
             }
-            try (ShaderProgram shader = WATER_SHADER.use()) {
+            /*try (ShaderProgram shader = WATER_SHADER.use()) {
                 GlStateManager.enableBlend();
                 GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -166,7 +167,7 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
                 glDrawElementsInstanced(GL_TRIANGLES, this.vertexCount, GL_UNSIGNED_SHORT, 0L, count);
 
                 GlStateManager.disableBlend();
-            }
+            }*/
         }
     }
 }

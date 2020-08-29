@@ -128,4 +128,14 @@ public class HeightmapPos implements IFarPos {
     public int hashCode()   {
         return this.x * 1317194159 + this.z * 1656858407 + this.level;
     }
+
+    @Override
+    public int compareTo(IFarPos posIn) {
+        HeightmapPos pos = (HeightmapPos) posIn;
+        int d = Integer.compare(this.level, pos.level);
+        if (d == 0 && (d = Integer.compare(this.z, pos.z)) == 0) {
+            d = Integer.compare(this.x, pos.x);
+        }
+        return d;
+    }
 }

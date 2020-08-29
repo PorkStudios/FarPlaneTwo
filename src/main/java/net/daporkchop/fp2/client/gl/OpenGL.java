@@ -31,6 +31,7 @@ import static org.lwjgl.util.glu.GLU.*;
  */
 @UtilityClass
 public class OpenGL {
+    public final int SHORT_SIZE = Short.BYTES;
     public final int FLOAT_SIZE = Float.BYTES;
     public final int INT_SIZE = Integer.BYTES;
     public final int DOUBLE_SIZE = Double.BYTES;

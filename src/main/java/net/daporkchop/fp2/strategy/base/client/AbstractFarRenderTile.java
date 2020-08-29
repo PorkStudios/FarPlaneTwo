@@ -22,6 +22,7 @@ package net.daporkchop.fp2.strategy.base.client;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.alloc.Allocator;
@@ -40,7 +41,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarRenderTile<POS extends IFarPos, I extends AbstractFarRenderIndex<POS, T, I>, T extends AbstractFarRenderTile<POS, I, T>> extends AxisAlignedBB {
+public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarPiece<POS>, T extends AbstractFarRenderTile<POS, P, T>> extends AxisAlignedBB {
     protected static final long MINY_OFFSET = Constants.fieldOffset(AxisAlignedBB.class, "minY", "field_72338_b");
     protected static final long MAXY_OFFSET = Constants.fieldOffset(AxisAlignedBB.class, "maxY", "field_72337_e");
 
@@ -50,28 +51,29 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, I extends Abstr
     protected final T[] children; //non-null for levels above 0
     protected final T[] neighbors;
 
-    protected final AbstractFarRenderCache<POS, ?, T, I> cache;
+    protected final AbstractFarRenderCache<POS, P, T> cache;
     protected final T parent;
 
-    protected long address = -1L;
-    protected ByteBuffer renderData;
+    protected P piece;
+    protected long addressVertices = -1L;
+    protected long addressIndices = -1L;
+    protected ByteBuffer renderDataVertices;
+    protected ByteBuffer renderDataIndices;
 
     public boolean doesSelfOrAnyChildrenHaveAddress = false;
 
-    public AbstractFarRenderTile(@NonNull AbstractFarRenderCache<POS, ?, T, I> cache, T parent, @NonNull POS pos, @NonNull AxisAlignedBB bb, int childCount, int neighborCount) {
+    public AbstractFarRenderTile(@NonNull AbstractFarRenderCache<POS, P, T> cache, T parent, @NonNull POS pos, @NonNull AxisAlignedBB bb, int childCount, int neighborCount) {
         super(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
 
         this.level = (this.pos = pos).level();
         this.cache = cache;
         this.parent = parent;
 
-        this.children = pos.level() > 0 ? this.tileArray(childCount) : null;
-        this.neighbors = this.tileArray(neighborCount);
+        this.children = pos.level() > 0 ? cache.tileArray().apply(childCount) : null;
+        this.neighbors = cache.tileArray().apply(neighborCount);
 
         cache.tileAdded(uncheckedCast(this));
     }
-
-    protected abstract T[] tileArray(int size);
 
     protected abstract int childIndex(@NonNull POS pos);
 
@@ -110,33 +112,62 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, I extends Abstr
     }
 
     public boolean hasAddress() {
-        return this.address >= 0L;
+        return this.addressVertices >= 0L && this.addressIndices >= 0L;
     }
 
-    public void assignAddress(int size, @NonNull Allocator allocator) {
-        if (this.hasAddress())    {
-            if (this.renderData.capacity() == size) {
-                return; //already has correctly sized allocation, do nothing
+    public void assignAddress(int sizeVertices, int sizeIndices) {
+        VERTICES: {
+            if (this.hasAddress()) {
+                if (this.renderDataVertices.capacity() == sizeVertices) {
+                    break VERTICES; //already has correctly sized allocation, do nothing
+                }
+
+                //release all old allocations
+                this.cache.verticesAllocator.free(this.addressVertices);
+                this.addressVertices = -1L;
+                PUnsafe.pork_releaseBuffer(this.renderDataVertices);
+                this.renderDataVertices = null;
             }
 
-            //release all old allocations
-            allocator.free(this.address);
-            this.address = -1L;
-            PUnsafe.pork_releaseBuffer(this.renderData);
-            this.renderData = null;
+            //allocate new data
+            this.addressVertices = this.cache.verticesAllocator.alloc(sizeVertices);
+            this.renderDataVertices = Constants.createByteBuffer(sizeVertices);
+            this.markHasAddress(true);
         }
 
-        //allocate new data
-        this.address = allocator.alloc(size);
-        this.renderData = Constants.createByteBuffer(size);
-        this.markHasAddress(true);
+        INDICES: {
+            if (this.hasAddress()) {
+                if (this.renderDataIndices.capacity() == sizeIndices) {
+                    break INDICES; //already has correctly sized allocation, do nothing
+                }
+
+                //release all old allocations
+                this.cache.indicesAllocator.free(this.addressIndices);
+                this.addressIndices = -1L;
+                PUnsafe.pork_releaseBuffer(this.renderDataIndices);
+                this.renderDataIndices = null;
+            }
+
+            //allocate new data
+            this.addressIndices = this.cache.indicesAllocator.alloc(sizeIndices);
+            this.renderDataIndices = Constants.createByteBuffer(sizeIndices);
+            this.markHasAddress(true);
+        }
     }
 
     public boolean dropAddress() {
         checkState(this.hasAddress(), "doesn't have an address?!?");
-        this.address = -1L;
-        PUnsafe.pork_releaseBuffer(this.renderData);
-        this.renderData = null;
+
+        this.cache.verticesAllocator.free(this.addressVertices);
+        this.addressVertices = -1L;
+        PUnsafe.pork_releaseBuffer(this.renderDataVertices);
+        this.renderDataVertices = null;
+
+        this.cache.indicesAllocator.free(this.addressIndices);
+        this.addressIndices = -1L;
+        PUnsafe.pork_releaseBuffer(this.renderDataIndices);
+        this.renderDataIndices = null;
+
         return this.markHasAddress(false);
     }
 
@@ -168,7 +199,7 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, I extends Abstr
         return false;
     }
 
-    public boolean select(@NonNull Volume[] ranges, @NonNull ICamera frustum, @NonNull I index) {
+    public boolean select(@NonNull Volume[] ranges, @NonNull ICamera frustum, @NonNull FarRenderIndex index) {
         if (!ranges[this.level].intersects(this)) {
             //the view range for this level doesn't intersect this tile's bounding box,
             // so we can be certain that neither this tile nor any of its children would be contained

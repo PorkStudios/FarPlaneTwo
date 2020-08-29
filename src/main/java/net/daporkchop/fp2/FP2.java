@@ -35,6 +35,7 @@ import net.daporkchop.fp2.strategy.voxel.client.VoxelRenderer;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.ldbjni.LevelDB;
+import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
@@ -54,6 +55,8 @@ import javax.swing.JOptionPane;
 
 import static net.daporkchop.fp2.FP2.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_
@@ -86,6 +89,9 @@ public class FP2 {
                         null, JOptionPane.ERROR_MESSAGE);
                 FMLCommonHandler.instance().exitJava(1, true);
             }
+
+            int size = glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
+            LOGGER.info(PStrings.fastFormat("Max SSBO size: %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
 
             MinecraftForge.EVENT_BUS.register(new ClientEvents());
 

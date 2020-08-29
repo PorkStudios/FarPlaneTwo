@@ -18,24 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.heightmap.client;
+package net.daporkchop.fp2.client.gl.object;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.strategy.base.client.AbstractFarRenderTile;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
+import static org.lwjgl.opengl.GL40.*;
 
 /**
  * @author DaPorkchop_
  */
-class HeightmapRenderTile extends AbstractFarRenderTile<HeightmapPos, HeightmapPiece, HeightmapRenderTile> {
-    public HeightmapRenderTile(HeightmapRenderCache cache, HeightmapRenderTile parent, @NonNull HeightmapPos pos) {
-        super(cache, parent, pos, pos.bounds(), 4, 4);
+public final class DrawIndirectBuffer extends GLBufferObject<DrawIndirectBuffer> {
+    public DrawIndirectBuffer() {
+        super();
+    }
+
+    public DrawIndirectBuffer(int id) {
+        super(id);
     }
 
     @Override
-    protected int childIndex(@NonNull HeightmapPos pos) {
-        int shift = this.level - pos.level() - 1;
-        return (((pos.x() >> shift) & 1) << 1) | ((pos.z() >> shift) & 1);
+    protected int target() {
+        return GL_DRAW_INDIRECT_BUFFER;
     }
 }
