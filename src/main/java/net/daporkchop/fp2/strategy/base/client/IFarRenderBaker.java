@@ -66,7 +66,7 @@ public interface IFarRenderBaker<POS extends IFarPos, P extends IFarPiece<POS>> 
     /**
      * Gets the positions of all the pieces whose baked contents are affected by the content of the given piece.
      * <p>
-     * The returned {@link Stream} must be sequential and in sorted order!
+     * The returned {@link Stream} must be sequential!
      *
      * @param srcPos the position of the piece
      * @return the positions of all the pieces whose contents are affected by the content of the given piece

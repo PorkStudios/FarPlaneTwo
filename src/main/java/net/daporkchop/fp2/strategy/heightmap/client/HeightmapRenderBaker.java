@@ -96,6 +96,10 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
 
     @Override
     public void bake(@NonNull HeightmapPos dstPos, @NonNull HeightmapPiece[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf indices) {
+        if (srcs[0] == null) {
+            return;
+        }
+
         final int level = dstPos.level();
         final int baseX = dstPos.blockX();
         final int baseZ = dstPos.blockZ();

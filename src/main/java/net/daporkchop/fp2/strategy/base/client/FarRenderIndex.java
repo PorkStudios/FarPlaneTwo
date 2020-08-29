@@ -23,6 +23,7 @@ package net.daporkchop.fp2.strategy.base.client;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.unsafe.PUnsafe;
 

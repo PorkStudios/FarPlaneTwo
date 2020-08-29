@@ -115,7 +115,7 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
 
     public void assignAddress(int sizeVertices, int sizeIndices) {
         VERTICES: {
-            if (this.hasAddress()) {
+            if (this.addressVertices >= 0L) {
                 if (this.renderDataVertices.capacity() == sizeVertices) {
                     break VERTICES; //already has correctly sized allocation, do nothing
                 }
@@ -134,7 +134,7 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
         }
 
         INDICES: {
-            if (this.hasAddress()) {
+            if (this.addressIndices >= 0L) {
                 if (this.renderDataIndices.capacity() == sizeIndices) {
                     break INDICES; //already has correctly sized allocation, do nothing
                 }
