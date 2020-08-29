@@ -22,33 +22,51 @@ package net.daporkchop.fp2.strategy.base.client;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.common.IFarPos;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.IntBuffer;
 
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL15.*;
 
 /**
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
+@Getter
 public class FarRenderIndex {
     protected IntBuffer buffer = Constants.createIntBuffer(256);
-    @Getter
     protected int size = 0;
+
+    protected final int indicesSize;
+    protected final int vertexSize;
 
     public int mark() {
         return this.size;
     }
 
     public void restore(int mark) {
-        this.buffer.position(mark * 4 * 8);
+        this.buffer.position(mark * 5);
         this.size = mark;
     }
 
     public boolean add(@NonNull AbstractFarRenderTile tile) {
-        return false;
+        if (!tile.hasAddress()) {
+            return false;
+        }
+
+        this.ensureWritable(5);
+
+        this.buffer.put(tile.renderDataIndices.capacity() / this.indicesSize) //count
+                .put(1) //instanceCount
+                .put(toInt(tile.addressIndices / this.indicesSize)) //firstIndex
+                .put(toInt(tile.addressVertices / this.vertexSize)) //baseVertex
+                .put(0); //baseInstance
+
+        this.size++;
+        return true;
     }
 
     protected void ensureWritable(int count) {

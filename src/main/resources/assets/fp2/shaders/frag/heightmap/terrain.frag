@@ -19,10 +19,6 @@
  */
 
 void main() {
-    if (fs_in.cancel == 0)  {
-        discard;
-    }
-
     //TODO: i really need a good solution for this
     if (false && isChunkSectionRenderable(ivec3(fs_in.pos) >> 4))    {
         discard;

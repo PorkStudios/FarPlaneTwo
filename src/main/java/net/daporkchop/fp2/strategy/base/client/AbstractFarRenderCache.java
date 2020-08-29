@@ -38,7 +38,6 @@ import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.primitive.lambda.LongLongConsumer;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
-import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.renderer.culling.ICamera;
 
 import java.util.Arrays;
@@ -50,6 +49,8 @@ import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.opengl.GL40.*;
 
 /**
@@ -65,21 +66,22 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     protected final IntFunction<P[]> pieceArray;
 
     protected final DrawIndirectBuffer drawCommandBuffer = new DrawIndirectBuffer();
-    protected final FarRenderIndex index = new FarRenderIndex();
+    protected final FarRenderIndex index;
 
     protected final VertexArrayObject vao = new VertexArrayObject();
 
     protected final VertexBufferObject vertices = new VertexBufferObject();
     protected final Allocator verticesAllocator;
+    protected final int vertexSize;
 
     protected final ElementArrayObject indices = new ElementArrayObject();
     protected final Allocator indicesAllocator;
-
-    protected final IFarRenderBaker<POS, P> baker;
     protected final int indexType;
     protected final int indexSize;
 
-    public AbstractFarRenderCache(@NonNull AbstractFarRenderer<POS, P, T> renderer, @NonNull IntFunction<T[]> tileArray, @NonNull IntFunction<P[]> pieceArray) {
+    protected final IFarRenderBaker<POS, P> baker;
+
+    public AbstractFarRenderCache(@NonNull AbstractFarRenderer<POS, P, T> renderer, int vertexSize, @NonNull IntFunction<T[]> tileArray, @NonNull IntFunction<P[]> pieceArray) {
         this.renderer = renderer;
 
         this.tileArray = tileArray;
@@ -113,9 +115,11 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                     }
                 }));
             }
+
+            this.rebuildVAO();
         });
 
-        this.verticesAllocator = new VariableSizedAllocator(this.indexSize, (oldSize, newSize) -> {
+        this.verticesAllocator = new VariableSizedAllocator(this.vertexSize = vertexSize, (oldSize, newSize) -> {
             LOGGER.info("Growing vertices buffer from {} to {} bytes", oldSize, newSize);
 
             try (VertexBufferObject vertices = this.vertices.bind()) {
@@ -129,7 +133,36 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                     }
                 }));
             }
+
+            this.rebuildVAO();
         });
+
+        this.index = new FarRenderIndex(this.indexSize, this.vertexSize);
+    }
+
+    protected void rebuildVAO() {
+        int attribs = this.baker.vertexAttributes();
+        try (VertexArrayObject vao = this.vao.bind()) {
+            for (int i = 0; i <= attribs; i++) {
+                glEnableVertexAttribArray(i);
+            }
+
+            try (VertexBufferObject vbo = this.vertices.bind()) {
+                this.baker.assignVertexAttributes();
+
+                for (int i = 0; i <= attribs; i++) {
+                    vao.putDependency(i, vbo);
+                }
+            }
+
+            vao.putElementArray(this.indices.bind());
+        } finally {
+            for (int i = 0; i <= attribs; i++) {
+                glDisableVertexAttribArray(i);
+            }
+
+            this.indices.close();
+        }
     }
 
     public abstract Allocator createAllocator(@NonNull LongLongConsumer resizeCallback);
@@ -142,29 +175,24 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
     public void receivePiece(@NonNull P piece) {
         this.baker.bakeOutputs(piece.pos()).forEach(pos -> {
-            T[] inputs = this.baker.bakeInputs(pos)
+            P[] inputs = this.baker.bakeInputs(pos)
                     .map(inputPos -> {
+                        if (inputPos.equals(piece.pos())) {
+                            return piece;
+                        }
+
                         POS rootPos = uncheckedCast(inputPos.upTo(this.renderer.maxLevel));
                         T rootTile = this.roots.get(rootPos);
-                        return rootTile != null ? rootTile.findChild(inputPos) : null;
+                        T tile = rootTile != null ? rootTile.findChild(inputPos) : null;
+                        return tile != null ? tile.piece : null;
                     })
-                    .toArray(this.tileArray);
+                    .toArray(this.pieceArray);
 
             RENDER_WORKERS.submit(pos, () -> {
                 ByteBuf vertices = Constants.allocateByteBuf(this.baker.estimatedVerticesBufferCapacity());
                 ByteBuf indices = Constants.allocateByteBuf(this.baker.estimatedIndicesBufferCapacity());
 
-                //TODO: figure out whether synchronization is even necessary here
-                for (int i = 0, len = inputs.length; i < len; i++) {
-                    PUnsafe.monitorEnter(inputs[i]);
-                }
-                try {
-                    this.baker.bake(pos, Arrays.stream(inputs).map(tile -> tile != null ? tile.piece : null).toArray(this.pieceArray), vertices, indices);
-                } finally {
-                    for (int i = 0, len = inputs.length; i < len; i++) {
-                        PUnsafe.monitorExit(inputs[i]);
-                    }
-                }
+                this.baker.bake(pos, inputs, vertices, indices);
 
                 //upload to GPU on client thread
                 ClientThreadExecutor.INSTANCE.execute(() -> {

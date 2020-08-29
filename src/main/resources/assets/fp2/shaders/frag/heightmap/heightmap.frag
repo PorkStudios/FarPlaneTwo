@@ -40,7 +40,6 @@ in VS_OUT {
 
     flat vec4 color;
     flat int state;
-    flat int cancel;
 } fs_in;
 
 //

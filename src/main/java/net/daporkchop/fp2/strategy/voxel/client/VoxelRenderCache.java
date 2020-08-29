@@ -35,7 +35,7 @@ import static net.daporkchop.fp2.strategy.voxel.client.VoxelRenderHelper.*;
  */
 public class VoxelRenderCache extends AbstractFarRenderCache<VoxelPos, VoxelPiece, VoxelRenderTile> {
     public VoxelRenderCache(@NonNull VoxelRenderer renderer) {
-        super(renderer, VoxelRenderTile[]::new, VoxelPiece[]::new);
+        super(renderer, -1, VoxelRenderTile[]::new, VoxelPiece[]::new);
     }
 
     @Override

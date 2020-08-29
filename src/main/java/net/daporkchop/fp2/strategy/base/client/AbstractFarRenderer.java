@@ -103,8 +103,9 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
      * Actually renders the world.
      *
      * @param count the number of tiles that were added to the index
+     * @param commands
      */
-    protected abstract void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum, int count);
+    protected abstract void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum, int count, IntBuffer commands);
 
     @Override
     public void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum) {
@@ -121,7 +122,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
         try {
             this.updateAndBindUBOs(partialTicks, world, mc, frustum);
 
-            this.render0(partialTicks, world, mc, frustum, count);
+            this.render0(partialTicks, world, mc, frustum, count, this.cache.index().buffer);
         } finally {
             this.resetGlState(partialTicks, world, mc, frustum);
         }

@@ -46,8 +46,7 @@ import static org.lwjgl.opengl.GL30.*;
  * @author DaPorkchop_
  */
 public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, HeightmapPiece> {
-    public static final int HEIGHTMAP_VERTEX_SIZE = VEC3_SIZE + INT_SIZE + SHORT_SIZE + INT_SIZE;
-    public static final int HEIGHTMAP_RENDER_SIZE = T_VOXELS * T_VOXELS * HEIGHTMAP_VERTEX_SIZE;
+    public static final int HEIGHTMAP_VERTEX_SIZE = VEC3_ELEMENTS * FLOAT_SIZE + INT_SIZE + SHORT_SIZE + INT_SIZE;
 
     @Override
     public int indexType() {
@@ -63,19 +62,19 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
     public void assignVertexAttributes() {
         long offset = 0L;
         glVertexAttribPointer(0, 3, GL_FLOAT, false, HEIGHTMAP_VERTEX_SIZE, offset); //pos
-        glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, HEIGHTMAP_VERTEX_SIZE, offset += VEC3_SIZE); //state
+        glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, HEIGHTMAP_VERTEX_SIZE, offset += VEC3_ELEMENTS * FLOAT_SIZE); //state
         glVertexAttribPointer(2, 2, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += INT_SIZE); //light
         glVertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //color
     }
 
     @Override
     public Stream<HeightmapPos> bakeOutputs(@NonNull HeightmapPos srcPos) {
-        return null;
+        return Stream.of(srcPos);
     }
 
     @Override
     public Stream<HeightmapPos> bakeInputs(@NonNull HeightmapPos dstPos) {
-        return null;
+        return Stream.of(dstPos);
     }
 
     @Override
@@ -90,7 +89,29 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
 
     @Override
     public void bake(@NonNull HeightmapPos dstPos, @NonNull HeightmapPiece[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf indices) {
-        //TODO
+        final int level = dstPos.level();
+        final int baseX = dstPos.blockX();
+        final int baseZ = dstPos.blockZ();
+
+        final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
+
+        for (int dx = 0; dx < T_VOXELS; dx++)   {
+            for (int dz = 0; dz < T_VOXELS; dz++)   {
+                this.writeVertex(baseX, baseZ, level, srcs[0], dx, dz, vertices, pos, biomeAccess);
+            }
+        }
+
+        for (int dx = 0; dx < T_VOXELS - 1; dx++)   {
+            for (int dz = 0; dz < T_VOXELS - 1; dz++)   {
+                indices.writeShort(dx * T_VOXELS + dz)
+                        .writeShort(dx * T_VOXELS + (dz + 1))
+                        .writeShort((dx + 1) * T_VOXELS + (dz + 1))
+                        .writeShort(dx * T_VOXELS + dz)
+                        .writeShort((dx + 1) * T_VOXELS + dz)
+                        .writeShort((dx + 1) * T_VOXELS + (dz + 1));
+            }
+        }
     }
 
     private void writeVertex(int blockX, int blockZ, int level, HeightmapPiece piece, int x, int z, ByteBuf out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess) {
@@ -103,6 +124,6 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         out.writeFloat(blockX + (x << level)).writeFloat(height).writeFloat(blockZ + (z << level)); //pos
         out.writeInt(block); //state
         out.writeShort(Constants.packedLightTo8BitVec2(piece.light(x, z))); //light
-        out.writeInt(Minecraft.getMinecraft().getBlockColors().colorMultiplier(Block.getStateById(block), biomeAccess, pos, 0)); //color
+        out.writeInt(Constants.convertARGB_ABGR(Minecraft.getMinecraft().getBlockColors().colorMultiplier(Block.getStateById(block), biomeAccess, pos, 0))); //color
     }
 }

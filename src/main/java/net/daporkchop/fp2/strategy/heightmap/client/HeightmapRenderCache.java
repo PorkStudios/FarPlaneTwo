@@ -35,7 +35,7 @@ import static net.daporkchop.fp2.strategy.heightmap.client.HeightmapRenderHelper
  */
 public class HeightmapRenderCache extends AbstractFarRenderCache<HeightmapPos, HeightmapPiece, HeightmapRenderTile> {
     public HeightmapRenderCache(@NonNull HeightmapRenderer renderer) {
-        super(renderer, HeightmapRenderTile[]::new, HeightmapPiece[]::new);
+        super(renderer, HeightmapRenderBaker.HEIGHTMAP_VERTEX_SIZE, HeightmapRenderTile[]::new, HeightmapPiece[]::new);
     }
 
     @Override

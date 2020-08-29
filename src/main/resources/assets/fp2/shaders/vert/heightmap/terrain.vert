@@ -19,36 +19,11 @@
  */
 
 void main(){
-    TileIndexEntry entry = indexEntry();
-    TileIndex index = entry.low[0];
-    ivec2 posXZ = toWorldPos(index);
-
-    int slot = toSlot(index, posXZ);
-    index = entry.low[slot];
-
-    HEIGHTMAP_TYPE center = sampleHeightmap(index);
-    dvec3 pos = dvec3(double(posXZ.x), double(unpackHeight(center)), double(posXZ.y));
-
-    //sample above
-    TileIndex highIndex = entry.high[slot];
-    ivec2 pFloored = posXZ & ~((1 << highIndex.level) - 1);
-    HEIGHTMAP_TYPE above = sampleHeightmap(highIndex, pFloored);
-    dvec3 abovePos = dvec3(double(pFloored.x), double(unpackHeight(above)), double(pFloored.y));
-
-    //linear blending between the two positions
-    float start = float(fp2_state.view.levelCutoffDistance << index.level) * fp2_state.view.transitionStart;
-    float end = float(fp2_state.view.levelCutoffDistance << index.level) * fp2_state.view.transitionEnd;
-    float depth = float(distance(vec2(posXZ), glState.camera.position.xz));
-    float fac = min(float(highIndex.index), 1.);
-    //imagine that everything from the //sample above to this line were in an if(entry.high[slot] != 0) { ... },
-    // but i managed to implement it with 0 branches!
-    pos = mix(pos, abovePos, fac * (1. - clamp((end - depth) * (1. / (end - start)), 0., 1.)));
-
     //convert position to vec3 afterwards to minimize precision loss
-    vec3 relativePos = vec3(pos - glState.camera.position);
+    vec3 relativePos = vec3(dvec3(in_pos) - glState.camera.position);
 
     //give raw position to fragment shader
-    vs_out.pos = vec3(pos);
+    vs_out.pos = in_pos;
 
     //set fog depth
     fog_out.depth = length(relativePos);
@@ -57,9 +32,9 @@ void main(){
     gl_Position = cameraTransform(relativePos);
 
     //decode sky and block light
-    vs_out.light = unpackBlockLight(center);
+    vs_out.light = in_light;
 
     //store block state
-    vs_out.state = unpackBlock(center);
-    vs_out.color = unpackBlockColor(center);
+    vs_out.state = in_state;
+    vs_out.color = in_color;
 }
