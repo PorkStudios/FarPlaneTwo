@@ -47,6 +47,7 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.opengl.GL40.*;
 import static org.lwjgl.opengl.GL43.*;
 
 /**
@@ -55,7 +56,7 @@ import static org.lwjgl.opengl.GL43.*;
 @SideOnly(Side.CLIENT)
 public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, HeightmapPiece, HeightmapRenderTile> {
     public static final ShaderProgram TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
-    //public static final ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
+    public static final ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
 
     public HeightmapRenderer(@NonNull WorldClient world) {
         super(world);
@@ -84,16 +85,16 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
                 glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, count, 0);
                 GlStateManager.enableAlpha();
             }
-            /*try (ShaderProgram shader = WATER_SHADER.use()) {
+            try (ShaderProgram shader = WATER_SHADER.use()) {
                 GlStateManager.enableBlend();
                 GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-                glUniform1f(shader.uniformLocation("seaLevel"), 63.0f);
+                glUniform1d(shader.uniformLocation("seaLevel"), 63.0d);
 
-                glDrawElementsInstanced(GL_TRIANGLES, this.vertexCount, GL_UNSIGNED_SHORT, 0L, count);
+                glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, count, 0);
 
                 GlStateManager.disableBlend();
-            }*/
+            }
         }
     }
 }

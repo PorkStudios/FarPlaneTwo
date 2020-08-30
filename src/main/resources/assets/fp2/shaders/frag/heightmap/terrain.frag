@@ -19,25 +19,14 @@
  */
 
 void main() {
-    //TODO: i really need a good solution for this
-    if (false && isChunkSectionRenderable(ivec3(fs_in.pos) >> 4))    {
-        discard;
-    }
-
-    /*if (all(bvec4(
-    isChunkSectionRenderable((ivec3(fs_in.pos) >> 4) - ivec3(0, 0, 0)),
-    isChunkSectionRenderable((ivec3(fs_in.pos) >> 4) - ivec3(0, 0, 1)),
-    isChunkSectionRenderable((ivec3(fs_in.pos) >> 4) - ivec3(1, 0, 0)),
-    isChunkSectionRenderable((ivec3(fs_in.pos) >> 4) - ivec3(1, 0, 1))
-    )))    {
-        discard;
-    }*/
-
     TextureUV uvs = global_info.tex_uvs[fs_in.state];
     vec2 uv = uvs.min + (uvs.max - uvs.min) * fract(fs_in.pos.xz);
 
     //initial block texture sample
-    vec4 frag_color = fs_in.color * texture(terrain_texture, uv);
+    vec4 frag_color = texture(terrain_texture, uv);
+
+    //block color multiplier
+    frag_color.rgb *= fs_in.color;
 
     //block/sky light
     frag_color *= texture(lightmap_texture, fs_in.light);

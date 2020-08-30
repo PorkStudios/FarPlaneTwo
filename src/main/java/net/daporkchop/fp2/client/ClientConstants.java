@@ -44,6 +44,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @UtilityClass
 @SideOnly(Side.CLIENT)
 public class ClientConstants {
+    public static final Minecraft mc = Minecraft.getMinecraft();
+
     public static KeyedTaskScheduler<IFarPos> RENDER_WORKERS;
 
     public synchronized static void init() {

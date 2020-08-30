@@ -202,8 +202,17 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
         this.baker.bakeOutputs(piece.pos())
                 .forEach(pos -> {
+                    if (pos.level() < 0 || pos.level() > this.renderer.maxLevel)  {
+                        return;
+                    }
+
                     P[] inputs = this.baker.bakeInputs(pos)
                             .map(inputPos -> {
+                                int inputLevel = inputPos.level();
+                                if (inputLevel < 0 || inputLevel > this.renderer.maxLevel)  {
+                                    return null;
+                                }
+
                                 POS rootPos = uncheckedCast(inputPos.upTo(this.renderer.maxLevel));
                                 T rootTile = this.roots.get(rootPos);
                                 T tile = rootTile != null ? rootTile.findChild(inputPos) : null;
@@ -256,10 +265,6 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
             this.roots.put(rootPos, rootTile = this.createTile(null, rootPos));
         }
         T tile = rootTile.findOrCreateChild(pos);
-        if (tile.piece != piece) {
-            return;
-        }
-        tile.piece = piece;
 
         //allocate address for tile
         tile.assignAddress(vertices.readableBytes(), indices.readableBytes());

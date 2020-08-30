@@ -28,24 +28,33 @@ import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
 import net.minecraft.block.Block;
-import net.minecraft.client.Minecraft;
 import net.minecraft.init.Biomes;
+import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
 
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.opengl.GL41.*;
 
 /**
  * @author DaPorkchop_
  */
 public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, HeightmapPiece> {
-    public static final int HEIGHTMAP_VERTEX_SIZE = VEC3_ELEMENTS * FLOAT_SIZE + INT_SIZE + SHORT_SIZE + INT_SIZE;
+    public static final int HEIGHTMAP_VERTEX_SIZE = INT_SIZE //state
+                                                    + SHORT_SIZE //light
+                                                    + MEDIUM_SIZE //color
+                                                    + SHORT_SIZE //light_water
+                                                    + MEDIUM_SIZE //color_water
+                                                    + DVEC3_SIZE_TIGHT //pos_low
+                                                    + DVEC3_SIZE_TIGHT //pos_high
+                                                    + SHORT_SIZE; //level_scale
 
     @Override
     public int indexType() {
@@ -54,16 +63,20 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
 
     @Override
     public int vertexAttributes() {
-        return 3;
+        return 8;
     }
 
     @Override
     public void assignVertexAttributes() {
         long offset = 0L;
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, HEIGHTMAP_VERTEX_SIZE, offset); //pos
-        glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, HEIGHTMAP_VERTEX_SIZE, offset += VEC3_ELEMENTS * FLOAT_SIZE); //state
-        glVertexAttribPointer(2, 2, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += INT_SIZE); //light
-        glVertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //color
+        glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, HEIGHTMAP_VERTEX_SIZE, offset); //state
+        glVertexAttribPointer(1, 2, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += INT_SIZE); //light
+        glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //color
+        glVertexAttribPointer(3, 2, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += MEDIUM_SIZE); //light_water
+        glVertexAttribPointer(4, 4, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //color_water
+        glVertexAttribLPointer(5, 3, HEIGHTMAP_VERTEX_SIZE, offset += MEDIUM_SIZE); //pos_low
+        glVertexAttribLPointer(6, 3, HEIGHTMAP_VERTEX_SIZE, offset += DVEC3_SIZE_TIGHT); //pos_high
+        glVertexAttribPointer(7, 1, GL_UNSIGNED_SHORT, false, HEIGHTMAP_VERTEX_SIZE, offset += DVEC3_SIZE_TIGHT); //level_scale
     }
 
     @Override
@@ -72,7 +85,17 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         int z = srcPos.z();
         int level = srcPos.level();
 
-        return Stream.of(srcPos, new HeightmapPos(x, z - 1, level), new HeightmapPos(x - 1, z, level), new HeightmapPos(x - 1, z - 1, level));
+        return Stream.of(
+                //same level
+                srcPos,
+                new HeightmapPos(x, z - 1, level),
+                new HeightmapPos(x - 1, z, level),
+                new HeightmapPos(x - 1, z - 1, level),
+                //below level
+                new HeightmapPos(x, z, level - 1),
+                new HeightmapPos(x, (z >> 1) - 1, level - 1),
+                new HeightmapPos((x >> 1) - 1, z, level - 1),
+                new HeightmapPos((x >> 1) - 1, (z >> 1) - 1, level - 1));
     }
 
     @Override
@@ -81,7 +104,17 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         int z = dstPos.z();
         int level = dstPos.level();
 
-        return Stream.of(dstPos, new HeightmapPos(x, z + 1, level), new HeightmapPos(x + 1, z, level), new HeightmapPos(x + 1, z + 1, level));
+        return Stream.of(
+                //same level
+                dstPos,
+                new HeightmapPos(x, z + 1, level),
+                new HeightmapPos(x + 1, z, level),
+                new HeightmapPos(x + 1, z + 1, level),
+                //above level
+                new HeightmapPos(x >> 1, z >> 1, level + 1),
+                new HeightmapPos(x >> 1, (z >> 1) + 1, level + 1),
+                new HeightmapPos((x >> 1) + 1, z >> 1, level + 1),
+                new HeightmapPos((x >> 1) + 1, (z >> 1) + 1, level + 1));
     }
 
     @Override
@@ -109,7 +142,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
 
         for (int dx = 0; dx < T_VOXELS; dx++) {
             for (int dz = 0; dz < T_VOXELS; dz++) {
-                this.writeVertex(baseX, baseZ, level, srcs[0], dx, dz, vertices, pos, biomeAccess);
+                this.writeVertex(baseX, baseZ, level, 0, srcs, dx, dz, vertices, pos, biomeAccess);
             }
         }
 
@@ -118,7 +151,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         if (srcs[1] != null) {
             indexZ = index;
             for (int dx = 0; dx < T_VOXELS; dx++) {
-                this.writeVertex(baseX, baseZ + (T_VOXELS << level), level, srcs[1], dx, 0, vertices, pos, biomeAccess);
+                this.writeVertex(baseX, baseZ + (T_VOXELS << level), level, 1, srcs, dx, 0, vertices, pos, biomeAccess);
             }
             index += T_VOXELS;
         }
@@ -127,7 +160,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         if (srcs[2] != null) {
             indexX = index;
             for (int dz = 0; dz < T_VOXELS; dz++) {
-                this.writeVertex(baseX + (T_VOXELS << level), baseZ, level, srcs[2], 0, dz, vertices, pos, biomeAccess);
+                this.writeVertex(baseX + (T_VOXELS << level), baseZ, level, 2, srcs, 0, dz, vertices, pos, biomeAccess);
             }
             index += T_VOXELS;
         }
@@ -135,7 +168,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         int indexXZ = -1;
         if (srcs[1] != null && srcs[2] != null && srcs[3] != null) {
             indexXZ = index++;
-            this.writeVertex(baseX + (T_VOXELS << level), baseZ + (T_VOXELS << level), level, srcs[3], 0, 0, vertices, pos, biomeAccess);
+            this.writeVertex(baseX + (T_VOXELS << level), baseZ + (T_VOXELS << level), level, 3, srcs, 0, 0, vertices, pos, biomeAccess);
         }
 
         for (int dx = 0; dx < T_VOXELS - 1; dx++) {
@@ -181,16 +214,43 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         }
     }
 
-    private void writeVertex(int blockX, int blockZ, int level, HeightmapPiece piece, int x, int z, ByteBuf out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess) {
-        int height = piece.height(x, z);
-        int block = piece.block(x, z);
+    private void writeVertex(int baseX, int baseZ, int level, int i, HeightmapPiece[] srcs, int x, int z, ByteBuf out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess) {
+        HeightmapPiece piece = srcs[i];
+        final int height = piece.height(x, z);
+        final int state = piece.block(x, z);
 
-        pos.setPos(x, height, z);
+        final int blockX = baseX + (x << level);
+        final int blockZ = baseZ + (z << level);
+
+        pos.setPos(blockX, height, blockZ);
         biomeAccess.biome(Biome.getBiome(piece.biome(x, z), Biomes.PLAINS));
 
-        out.writeFloat(blockX + (x << level)).writeFloat(height).writeFloat(blockZ + (z << level)); //pos
-        out.writeInt(block); //state
+        //block
+        out.writeInt(state); //state
         out.writeShort(Constants.packedLightTo8BitVec2(piece.light(x, z))); //light
-        out.writeInt(Constants.convertARGB_ABGR(0xFF000000 | Minecraft.getMinecraft().getBlockColors().colorMultiplier(Block.getStateById(block), biomeAccess, pos, 0))); //color
+        out.writeMedium(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(state), biomeAccess, pos, 0))); //color
+
+        //water
+        biomeAccess.biome(Biome.getBiome(piece.waterBiome(x, z), Biomes.PLAINS));
+        out.writeShort(Constants.packedLightTo8BitVec2(piece.waterLight(x, z))); //light_water
+        out.writeMedium(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Blocks.WATER.getDefaultState(), biomeAccess, pos, 0))); //color_water
+
+        //position
+        out.writeDouble(blockX).writeDouble(height).writeDouble(blockZ); //pos_low
+
+        int basePieceX = (baseX >> (level + T_SHIFT)) - (i >> 1);
+        int basePieceZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
+        HeightmapPiece highPiece = srcs[4 | (i & (((basePieceX & 1) << 1) | (basePieceZ & 1)))];
+        if (highPiece == null)  { //pos_high
+            out.writeDouble(blockX).writeDouble(height).writeDouble(blockZ);
+        } else {
+            final int flooredX = blockX & -(1 << (level + 1));
+            final int flooredZ = blockZ & -(1 << (level + 1));
+
+            final int highHeight = highPiece.height((flooredX >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK);
+            out.writeDouble(flooredX).writeDouble(highHeight).writeDouble(flooredZ);
+        }
+
+        out.writeShort(1 << level); //level_scale
     }
 }

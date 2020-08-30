@@ -38,7 +38,7 @@ in VS_OUT {
     vec3 pos;
     vec2 light;
 
-    flat vec4 color;
+    flat vec3 color;
     flat int state;
 } fs_in;
 
