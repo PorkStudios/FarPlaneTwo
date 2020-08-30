@@ -35,11 +35,7 @@ class HeightmapRenderTile extends AbstractFarRenderTile<HeightmapPos, HeightmapP
 
     @Override
     protected int childIndex(@NonNull HeightmapPos pos) {
-        //int shift = this.level - pos.level() - 1;
-        //return (((pos.x() >> shift) & 1) << 1) | ((pos.z() >> shift) & 1);
-        int x = pos.x();
-        int z = pos.z();
-        int level = pos.level();
-        return (((x >> (this.level - level - 1)) & 1) << 1) | ((z >> (this.level - level - 1)) & 1);
+        int shift = this.level - pos.level() - 1;
+        return (((pos.x() >> shift) & 1) << 1) | ((pos.z() >> shift) & 1);
     }
 }
