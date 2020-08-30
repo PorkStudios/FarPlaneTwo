@@ -38,8 +38,12 @@ import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 import net.minecraft.client.renderer.culling.ICamera;
+import org.lwjgl.input.Keyboard;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.function.IntFunction;
 
@@ -170,17 +174,14 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
         }
     }
 
-    protected void reuploadTiles() {
-        try (ElementArrayObject indices = this.indices.bind();
-             VertexBufferObject vertices = this.vertices.bind()) {
-            this.roots.forEach((l, root) -> root.forEach(tile -> {
-                if (tile.hasAddress()) {
-                    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, tile.addressIndices, tile.renderDataIndices);
-                    glBufferSubData(GL_ARRAY_BUFFER, tile.addressVertices, tile.renderDataVertices);
-                }
-            }));
-        }
-        this.rebuildVAO();
+    public void debug_renderPieces() {
+        Collection<P> pieces = new ArrayList<>();
+        this.roots.values().forEach(tile -> tile.forEach(t -> {
+            if (t.piece != null)    {
+                pieces.add(t.piece);
+            }
+        }));
+        pieces.forEach(this::receivePiece);
     }
 
     public abstract T createTile(T parent, @NonNull POS pos);
@@ -206,7 +207,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                         return;
                     }
 
-                    P[] inputs = this.baker.bakeInputs(pos)
+                    T[] inputs = this.baker.bakeInputs(pos)
                             .map(inputPos -> {
                                 int inputLevel = inputPos.level();
                                 if (inputLevel < 0 || inputLevel > this.renderer.maxLevel)  {
@@ -215,21 +216,22 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
                                 POS rootPos = uncheckedCast(inputPos.upTo(this.renderer.maxLevel));
                                 T rootTile = this.roots.get(rootPos);
-                                T tile = rootTile != null ? rootTile.findChild(inputPos) : null;
-                                return tile != null ? tile.piece : null;
+                                return rootTile != null ? rootTile.findChild(inputPos) : null;
                             })
-                            .toArray(this.pieceArray);
-
-                    P thePiece = Arrays.stream(inputs).filter(p -> p != null && pos.equals(p.pos())).findAny().orElse(null);
-                    if (thePiece == null)   {
-                        return;
-                    }
+                            .toArray(this.tileArray);
 
                     RENDER_WORKERS.submit(pos, () -> {
+                        P[] _inputs = Arrays.stream(inputs).map(t -> t != null ? t.piece : null).toArray(this.pieceArray);
+
+                        P thePiece = Arrays.stream(_inputs).filter(p -> p != null && pos.equals(p.pos())).findAny().orElse(null);
+                        if (thePiece == null)   {
+                            return;
+                        }
+
                         ByteBuf vertices = Constants.allocateByteBuf(this.baker.estimatedVerticesBufferCapacity());
                         ByteBuf indices = Constants.allocateByteBuf(this.baker.estimatedIndicesBufferCapacity());
                         try {
-                            this.baker.bake(pos, inputs, vertices, indices);
+                            this.baker.bake(pos, _inputs, vertices, indices);
 
                             if (vertices.isReadable() && indices.isReadable()) {
                                 //retain buffers, since they're released by the finally block
@@ -265,6 +267,10 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
             this.roots.put(rootPos, rootTile = this.createTile(null, rootPos));
         }
         T tile = rootTile.findOrCreateChild(pos);
+
+        if (tile.piece != piece)    {
+            return;
+        }
 
         //allocate address for tile
         tile.assignAddress(vertices.readableBytes(), indices.readableBytes());

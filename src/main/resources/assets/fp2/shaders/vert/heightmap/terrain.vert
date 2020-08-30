@@ -37,7 +37,8 @@ void main(){
     gl_Position = cameraTransform(relativePos);
 
     //pass relative position to fragment shader (used to compute face normal)
-    vs_out.pos = relativePos;
+    //TODO: this is actually also used for the texture UV, which is why it is currently not using the relative position
+    vs_out.pos = vec3(mixedPos);
 
     //copy trivial attributes
     vs_out.light = in_light;

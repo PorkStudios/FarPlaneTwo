@@ -92,10 +92,10 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
                 new HeightmapPos(x - 1, z, level),
                 new HeightmapPos(x - 1, z - 1, level),
                 //below level
-                new HeightmapPos(x, z, level - 1),
-                new HeightmapPos(x, (z >> 1) - 1, level - 1),
-                new HeightmapPos((x >> 1) - 1, z, level - 1),
-                new HeightmapPos((x >> 1) - 1, (z >> 1) - 1, level - 1));
+                new HeightmapPos(x << 1, z << 1, level - 1),
+                new HeightmapPos(x << 1, (z << 1) - 1, level - 1),
+                new HeightmapPos((x << 1) - 1, z << 1, level - 1),
+                new HeightmapPos((x << 1) - 1, (z << 1) - 1, level - 1)); //TODO: possibly need to output a larger area below
     }
 
     @Override
@@ -241,16 +241,47 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         int basePieceX = (baseX >> (level + T_SHIFT)) - (i >> 1);
         int basePieceZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
         HeightmapPiece highPiece = srcs[4 | (i & (((basePieceX & 1) << 1) | (basePieceZ & 1)))];
-        if (highPiece == null)  { //pos_high
+        if (highPiece == null) { //pos_high
             out.writeDouble(blockX).writeDouble(height).writeDouble(blockZ);
         } else {
             final int flooredX = blockX & -(1 << (level + 1));
             final int flooredZ = blockZ & -(1 << (level + 1));
 
-            final int highHeight = highPiece.height((flooredX >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK);
-            out.writeDouble(flooredX).writeDouble(highHeight).writeDouble(flooredZ);
+            double highHeight = highPiece.height((flooredX >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK);
+
+            if (((x | z) & 1) != 0) {
+                highHeight = (highHeight + this.sampleHeight(baseX, baseZ, level, i, srcs, x + (x & 1), z + (z & 1), highHeight)) * 0.5d;
+            }
+
+            out.writeDouble(blockX).writeDouble(highHeight).writeDouble(blockZ);
         }
 
         out.writeShort(1 << level); //level_scale
+    }
+
+    private double sampleHeight(int baseX, int baseZ, int level, int i, HeightmapPiece[] srcs, int x, int z, double fallback) {
+        baseX += (x & 0x10) << level;
+        baseZ += (z & 0x10) << level;
+
+        i |= ((x & 0x10) >> 3) | ((z & 0x10) >> 4);
+
+        if (x == 16) {
+            x = 0;
+        }
+        if (z == 16) {
+            z = 0;
+        }
+
+        int basePieceX = (baseX >> (level + T_SHIFT)) - (i >> 1);
+        int basePieceZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
+        HeightmapPiece highPiece = srcs[4 | (i & (((basePieceX & 1) << 1) | (basePieceZ & 1)))];
+        if (highPiece == null) {
+            return fallback;
+        } else {
+            final int flooredX = (baseX + (x << level)) & -(1 << (level + 1));
+            final int flooredZ = (baseZ + (z << level)) & -(1 << (level + 1));
+
+            return highPiece.height((flooredX >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK);
+        }
     }
 }
