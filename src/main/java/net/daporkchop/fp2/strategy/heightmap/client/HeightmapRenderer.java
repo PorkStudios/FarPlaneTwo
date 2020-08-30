@@ -40,7 +40,6 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -58,80 +57,8 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
     public static final ShaderProgram TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
     //public static final ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
 
-    private static int genMesh(int size, int edge, ShortBuffer out) {
-        int verts = 0;
-        for (int x = 0; x < size - 1; x++) {
-            for (int z = 0; z < size - 1; z++) {
-                out.put((short) ((x + 1) * edge + z))
-                        .put((short) ((x + 1) * edge + (z + 1)))
-                        .put((short) (x * edge + z));
-                out.put((short) (x * edge + (z + 1)))
-                        .put((short) ((x + 1) * edge + (z + 1)))
-                        .put((short) (x * edge + z));
-                verts += 6;
-            }
-        }
-        return verts;
-    }
-
-    public final ElementArrayObject mesh = new ElementArrayObject();
-    public final int vertexCount;
-
-    public final VertexBufferObject coords = new VertexBufferObject();
-    public final VertexArrayObject vao = new VertexArrayObject();
-
     public HeightmapRenderer(@NonNull WorldClient world) {
         super(world);
-
-        {
-            ShortBuffer meshData = Constants.createShortBuffer(T_VERTS * T_VERTS * 6 + 1);
-            this.vertexCount = genMesh(T_VERTS, T_VERTS, meshData);
-            meshData.flip();
-
-            try (ElementArrayObject mesh = this.mesh.bind()) {
-                glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshData, GL_STATIC_DRAW);
-            }
-        }
-
-        {
-            ByteBuffer coordsData = Constants.createByteBuffer(T_VERTS * T_VERTS * 5);
-            for (int x = 0; x < T_VERTS; x++) {
-                for (int z = 0; z < T_VERTS; z++) {
-                    coordsData.put((byte) x).put((byte) z)
-                            .put((byte) (x & T_MASK)).put((byte) (z & T_MASK))
-                            .put((byte) ((x & T_MASK) * T_VOXELS + (z & T_MASK)));
-                }
-            }
-            coordsData.flip();
-
-            try (VertexBufferObject coords = this.coords.bind()) {
-                glBufferData(GL_ARRAY_BUFFER, coordsData, GL_STATIC_DRAW);
-            }
-        }
-
-        try (VertexArrayObject vao = this.vao.bind()) {
-            for (int i = 0; i <= 2; i++) {
-                glEnableVertexAttribArray(i);
-            }
-
-            try (VertexBufferObject vbo = this.coords.bind()) {
-                glVertexAttribIPointer(0, 2, GL_UNSIGNED_BYTE, 5, 0L);
-                glVertexAttribIPointer(1, 2, GL_UNSIGNED_BYTE, 5, 2L);
-                glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, 5, 4L);
-
-                for (int i = 0; i <= 2; i++) {
-                    vao.putDependency(i, vbo);
-                }
-            }
-
-            vao.putElementArray(this.mesh.bind());
-        } finally {
-            for (int i = 0; i <= 2; i++) {
-                glDisableVertexAttribArray(i);
-            }
-
-            this.mesh.close();
-        }
     }
 
     @Override
@@ -149,15 +76,14 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
     }
 
     @Override
-    protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum, int count, IntBuffer commands) {
+    protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum, int count) {
         try (VertexArrayObject vao = this.cache.vao().bind();
              DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBuffer().bind()) {
             try (ShaderProgram shader = TERRAIN_SHADER.use()) {
-                GlStateManager.disableAlpha();
-
+                GlStateManager.enableBlend();
+                GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
                 glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, count, 0);
-
-                GlStateManager.enableAlpha();
+                GlStateManager.disableBlend();
             }
             /*try (ShaderProgram shader = WATER_SHADER.use()) {
                 GlStateManager.enableBlend();

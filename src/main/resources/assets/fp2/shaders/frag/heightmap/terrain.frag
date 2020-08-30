@@ -48,5 +48,7 @@ void main() {
     //fog
     frag_color = addFog(frag_color);
 
+    //frag_color.rgb = vec3(1.);
+    //frag_color.a = 0.5;
     color = frag_color;
 }

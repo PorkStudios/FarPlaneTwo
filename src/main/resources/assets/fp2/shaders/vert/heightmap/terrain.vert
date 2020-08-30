@@ -20,7 +20,7 @@
 
 void main(){
     //convert position to vec3 afterwards to minimize precision loss
-    vec3 relativePos = vec3(dvec3(in_pos) - glState.camera.position);
+    vec3 relativePos = vec3(dvec3(in_pos - vec3(0., in_pos.y, 0.)) - glState.camera.position);
 
     //give raw position to fragment shader
     vs_out.pos = in_pos;

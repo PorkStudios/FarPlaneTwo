@@ -149,7 +149,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
             }
         }
 
-        if (indexZ >= 0) {
+        if (false &&indexZ >= 0) {
             for (int dx = 0; dx < T_VOXELS - 1; dx++) {
                 indices.writeShort(dx * T_VOXELS + (T_VOXELS - 1))
                         .writeShort(indexZ + dx)
@@ -160,7 +160,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
             }
         }
 
-        if (indexX >= 0) {
+        if (false &&indexX >= 0) {
             for (int dz = 0; dz < T_VOXELS - 1; dz++) {
                 indices.writeShort((T_VOXELS - 1) * T_VOXELS + dz)
                         .writeShort((T_VOXELS - 1) * T_VOXELS + (dz + 1))
@@ -171,7 +171,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
             }
         }
 
-        if (indexXZ >= 0) {
+        if (false &&indexXZ >= 0) {
             indices.writeShort((T_VOXELS - 1) * T_VOXELS + (T_VOXELS - 1))
                     .writeShort(indexZ + (T_VOXELS - 1))
                     .writeShort(indexXZ)
@@ -191,6 +191,6 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         out.writeFloat(blockX + (x << level)).writeFloat(height).writeFloat(blockZ + (z << level)); //pos
         out.writeInt(block); //state
         out.writeShort(Constants.packedLightTo8BitVec2(piece.light(x, z))); //light
-        out.writeInt(Constants.convertARGB_ABGR(Minecraft.getMinecraft().getBlockColors().colorMultiplier(Block.getStateById(block), biomeAccess, pos, 0))); //color
+        out.writeInt(Constants.convertARGB_ABGR(0xFF000000 | Minecraft.getMinecraft().getBlockColors().colorMultiplier(Block.getStateById(block), biomeAccess, pos, 0))); //color
     }
 }

@@ -39,11 +39,6 @@ public class HeightmapRenderCache extends AbstractFarRenderCache<HeightmapPos, H
     }
 
     @Override
-    public Allocator createAllocator(@NonNull LongLongConsumer resizeCallback) {
-        return new FixedSizeAllocator(HEIGHTMAP_RENDER_SIZE, resizeCallback);
-    }
-
-    @Override
     public HeightmapRenderTile createTile(HeightmapRenderTile parent, @NonNull HeightmapPos pos) {
         return new HeightmapRenderTile(this, parent, pos);
     }

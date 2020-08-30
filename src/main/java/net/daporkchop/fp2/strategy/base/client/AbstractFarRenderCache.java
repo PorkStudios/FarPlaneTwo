@@ -29,7 +29,6 @@ import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.alloc.Allocator;
 import net.daporkchop.fp2.util.alloc.VariableSizedAllocator;
@@ -37,10 +36,11 @@ import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.util.PorkUtil;
-import net.daporkchop.lib.primitive.lambda.LongLongConsumer;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.renderer.culling.ICamera;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.function.IntFunction;
 
@@ -171,7 +171,18 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
         }
     }
 
-    public abstract Allocator createAllocator(@NonNull LongLongConsumer resizeCallback);
+    protected void reuploadTiles()  {
+        try (ElementArrayObject indices = this.indices.bind();
+             VertexBufferObject vertices = this.vertices.bind()) {
+            this.roots.forEach((l, root) -> root.forEach(tile -> {
+                if (tile.hasAddress()) {
+                    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, tile.addressIndices, tile.renderDataIndices);
+                    glBufferSubData(GL_ARRAY_BUFFER, tile.addressVertices, tile.renderDataVertices);
+                }
+            }));
+        }
+        this.rebuildVAO();
+    }
 
     public abstract T createTile(T parent, @NonNull POS pos);
 
@@ -192,36 +203,53 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
         this.baker.bakeOutputs(piece.pos())
                 .forEach(pos -> {
-                    P[] inputs = this.baker.bakeInputs(pos)
+                    T[] inputs = this.baker.bakeInputs(pos)
                             .map(inputPos -> {
                                 POS rootPos = uncheckedCast(inputPos.upTo(this.renderer.maxLevel));
                                 T rootTile = this.roots.get(rootPos);
-                                T tile = rootTile != null ? rootTile.findChild(inputPos) : null;
-                                return tile != null ? tile.piece : null;
+                                return rootTile != null ? rootTile.findChild(inputPos) : null;
                             })
-                            .toArray(this.pieceArray);
+                            .toArray(this.tileArray);
 
-                    RENDER_WORKERS.submit(pos, () -> {
-                        ByteBuf vertices = Constants.allocateByteBuf(this.baker.estimatedVerticesBufferCapacity());
-                        ByteBuf indices = Constants.allocateByteBuf(this.baker.estimatedIndicesBufferCapacity());
+                    if (inputs[0] == null)  {
+                        return;
+                    }
 
-                        this.baker.bake(pos, inputs, vertices, indices);
+                    //RENDER_WORKERS.submit(pos, () -> {
+                    ByteBuf vertices = Constants.allocateByteBuf(this.baker.estimatedVerticesBufferCapacity());
+                    ByteBuf indices = Constants.allocateByteBuf(this.baker.estimatedIndicesBufferCapacity());
 
-                        if (vertices.isReadable() && indices.isReadable()) {
-                            //upload to GPU on client thread
-                            ClientThreadExecutor.INSTANCE.execute(() -> {
-                                try {
-                                    this.addPiece(piece, vertices, indices);
-                                } finally {
-                                    vertices.release();
-                                    indices.release();
-                                }
-                            });
-                        } else {
+                    for (Object o : inputs) {
+                        if (o != null) {
+                            PUnsafe.monitorEnter(o);
+                        }
+                    }
+                    try {
+                        P[] _inputs = Arrays.stream(inputs).map(t -> t != null ? t.piece : null).toArray(this.pieceArray);
+                        this.baker.bake(pos, _inputs, vertices, indices);
+                    } finally {
+                        for (Object o : inputs) {
+                            if (o != null) {
+                                PUnsafe.monitorExit(o);
+                            }
+                        }
+                    }
+
+                    if (vertices.isReadable() && indices.isReadable()) {
+                        //upload to GPU on client thread
+                        //ClientThreadExecutor.INSTANCE.execute(() -> {
+                        try {
+                            this.addPiece(piece, vertices, indices);
+                        } finally {
                             vertices.release();
                             indices.release();
                         }
-                    });
+                        //});
+                    } else {
+                        vertices.release();
+                        indices.release();
+                    }
+                    //});
                 });
     }
 
@@ -237,8 +265,16 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
         }
         T tile = rootTile.findOrCreateChild(pos);
         if (tile.piece != null && tile.piece != piece) {
+            //return;
+        }
+        /*if (rootTile == null) {
             return;
         }
+        T tile = rootTile.findChild(pos);
+        if (tile == null || tile.piece != piece) {
+            return;
+        }*/
+        tile.piece = piece;
 
         //allocate address for tile
         tile.assignAddress(vertices.readableBytes(), indices.readableBytes());

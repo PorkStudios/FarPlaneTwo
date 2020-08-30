@@ -39,11 +39,6 @@ public class VoxelRenderCache extends AbstractFarRenderCache<VoxelPos, VoxelPiec
     }
 
     @Override
-    public Allocator createAllocator(@NonNull LongLongConsumer resizeCallback) {
-        return new VariableSizedAllocator(VOXEL_RENDER_SIZE, resizeCallback);
-    }
-
-    @Override
     public VoxelRenderTile createTile(VoxelRenderTile parent, @NonNull VoxelPos pos) {
         return new VoxelRenderTile(this, parent, pos);
     }
