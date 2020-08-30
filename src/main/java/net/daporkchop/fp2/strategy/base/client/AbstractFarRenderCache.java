@@ -39,6 +39,7 @@ import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 import net.minecraft.client.renderer.culling.ICamera;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.function.IntFunction;
 
@@ -210,35 +211,37 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                             })
                             .toArray(this.pieceArray);
 
-                    P thePiece = null;
-                    for (P p : inputs) {
-                        if (p != null && p.pos().equals(pos)) {
-                            thePiece = p;
-                            break;
-                        }
+                    P thePiece = Arrays.stream(inputs).filter(p -> p != null && pos.equals(p.pos())).findAny().orElse(null);
+                    if (thePiece == null)   {
+                        return;
                     }
 
-                    //RENDER_WORKERS.submit(pos, () -> {
-                    ByteBuf vertices = Constants.allocateByteBuf(this.baker.estimatedVerticesBufferCapacity());
-                    ByteBuf indices = Constants.allocateByteBuf(this.baker.estimatedIndicesBufferCapacity());
-
-                    this.baker.bake(pos, inputs, vertices, indices);
-
-                    if (vertices.isReadable() && indices.isReadable()) {
-                        //upload to GPU on client thread
-                        //ClientThreadExecutor.INSTANCE.execute(() -> {
+                    RENDER_WORKERS.submit(pos, () -> {
+                        ByteBuf vertices = Constants.allocateByteBuf(this.baker.estimatedVerticesBufferCapacity());
+                        ByteBuf indices = Constants.allocateByteBuf(this.baker.estimatedIndicesBufferCapacity());
                         try {
-                            this.addPiece(thePiece, vertices, indices);
+                            this.baker.bake(pos, inputs, vertices, indices);
+
+                            if (vertices.isReadable() && indices.isReadable()) {
+                                //retain buffers, since they're released by the finally block
+                                vertices.retain();
+                                indices.retain();
+
+                                //upload to GPU on client thread
+                                ClientThreadExecutor.INSTANCE.execute(() -> {
+                                    try {
+                                        this.addPiece(thePiece, vertices, indices);
+                                    } finally {
+                                        vertices.release();
+                                        indices.release();
+                                    }
+                                });
+                            }
                         } finally {
                             vertices.release();
                             indices.release();
                         }
-                        //});
-                    } else {
-                        vertices.release();
-                        indices.release();
-                    }
-                    //});
+                    });
                 });
     }
 

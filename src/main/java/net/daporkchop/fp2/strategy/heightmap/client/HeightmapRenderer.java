@@ -80,10 +80,9 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
         try (VertexArrayObject vao = this.cache.vao().bind();
              DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBuffer().bind()) {
             try (ShaderProgram shader = TERRAIN_SHADER.use()) {
-                GlStateManager.enableBlend();
-                GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                GlStateManager.disableAlpha();
                 glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, count, 0);
-                GlStateManager.disableBlend();
+                GlStateManager.enableAlpha();
             }
             /*try (ShaderProgram shader = WATER_SHADER.use()) {
                 GlStateManager.enableBlend();

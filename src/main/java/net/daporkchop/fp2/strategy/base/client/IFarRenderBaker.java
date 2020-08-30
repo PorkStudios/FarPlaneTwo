@@ -96,11 +96,12 @@ public interface IFarRenderBaker<POS extends IFarPos, P extends IFarPiece<POS>> 
     /**
      * Takes the content of the given pieces and bakes it into a {@link ByteBuf} for rendering.
      *
-     * @param dstPos  the position of the piece to bake
-     * @param srcs    an array containing the input pieces. Pieces are in the same order as provided by the {@link Stream} returned by
-     *                {@link #bakeInputs(IFarPos)}, and will be {@code null} if not locally available.
-     * @param vertices   the {@link ByteBuf} to write baked data to
-     * @param indices the {@link ByteBuf} to write indices to
+     * @param dstPos   the position of the piece to bake
+     * @param srcs     an array containing the input pieces. Pieces are in the same order as provided by the {@link Stream} returned by
+     *                 {@link #bakeInputs(IFarPos)}, and will be {@code null} if not locally available. The piece at dstPos is guaranteed
+     *                 to be present (if requested by {@link #bakeInputs(IFarPos)})
+     * @param vertices the {@link ByteBuf} to write baked data to
+     * @param indices  the {@link ByteBuf} to write indices to
      */
     void bake(@NonNull POS dstPos, @NonNull P[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf indices);
 }
