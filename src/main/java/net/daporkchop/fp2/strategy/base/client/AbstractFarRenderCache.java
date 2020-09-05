@@ -35,15 +35,15 @@ import net.daporkchop.fp2.util.alloc.VariableSizedAllocator;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.daporkchop.lib.common.misc.string.PStrings;
+import net.daporkchop.lib.common.util.GenericMatcher;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 import net.minecraft.client.renderer.culling.ICamera;
-import org.lwjgl.input.Keyboard;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.function.IntFunction;
 
@@ -64,37 +64,35 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
     protected final Map<POS, T> roots = new ObjObjOpenHashMap<>();
 
-    protected final IntFunction<T[]> tileArray;
-
+    protected final IntFunction<POS[]> posArray;
     protected final IntFunction<P[]> pieceArray;
+    protected final IntFunction<T[]> tileArray;
 
     protected final DrawIndirectBuffer drawCommandBuffer = new DrawIndirectBuffer();
 
     protected final FarRenderIndex index;
-
     protected final VertexArrayObject vao = new VertexArrayObject();
 
     protected final VertexBufferObject vertices = new VertexBufferObject();
-
     protected final Allocator verticesAllocator;
-
     protected final int vertexSize;
 
     protected final ElementArrayObject indices = new ElementArrayObject();
-
     protected final Allocator indicesAllocator;
-
     protected final int indexType;
-
     protected final int indexSize;
 
     protected final IFarRenderBaker<POS, P> baker;
 
-    public AbstractFarRenderCache(@NonNull AbstractFarRenderer<POS, P, T> renderer, int vertexSize, @NonNull IntFunction<T[]> tileArray, @NonNull IntFunction<P[]> pieceArray) {
+    public AbstractFarRenderCache(@NonNull AbstractFarRenderer<POS, P, T> renderer, int vertexSize) {
         this.renderer = renderer;
 
-        this.tileArray = tileArray;
-        this.pieceArray = pieceArray;
+        Class<T> posClass = GenericMatcher.uncheckedFind(this.getClass(), AbstractFarRenderCache.class, "POS");
+        this.posArray = size -> uncheckedCast(Array.newInstance(posClass, size));
+        Class<T> pieceClass = GenericMatcher.uncheckedFind(this.getClass(), AbstractFarRenderCache.class, "P");
+        this.pieceArray = size -> uncheckedCast(Array.newInstance(pieceClass, size));
+        Class<T> tileClass = GenericMatcher.uncheckedFind(this.getClass(), AbstractFarRenderCache.class, "T");
+        this.tileArray = size -> uncheckedCast(Array.newInstance(tileClass, size));
 
         switch (this.indexType = (this.baker = renderer.baker()).indexType()) {
             case GL_UNSIGNED_BYTE:
@@ -177,7 +175,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     public void debug_renderPieces() {
         Collection<P> pieces = new ArrayList<>();
         this.roots.values().forEach(tile -> tile.forEach(t -> {
-            if (t.piece != null)    {
+            if (t.piece != null) {
                 pieces.add(t.piece);
             }
         }));
@@ -190,48 +188,50 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
     public abstract void tileRemoved(@NonNull T tile);
 
-    public void receivePiece(@NonNull P piece) {
+    public void receivePiece(@NonNull P pieceIn) {
+        final int maxLevel = this.renderer.maxLevel;
+
         { //insert new tile with piece
-            POS rootPos = uncheckedCast(piece.pos().upTo(this.renderer.maxLevel));
+            POS rootPos = uncheckedCast(pieceIn.pos().upTo(maxLevel));
             T rootTile = this.roots.get(rootPos);
             if (rootTile == null) {
                 //create root tile if absent
                 this.roots.put(rootPos, rootTile = this.createTile(null, rootPos));
             }
-            rootTile.findOrCreateChild(piece.pos()).piece = piece;
+            rootTile.findOrCreateChild(pieceIn.pos()).piece = pieceIn;
         }
 
-        this.baker.bakeOutputs(piece.pos())
+        this.baker.bakeOutputs(pieceIn.pos())
                 .forEach(pos -> {
-                    if (pos.level() < 0 || pos.level() > this.renderer.maxLevel)  {
+                    if (pos.level() < 0 || pos.level() > maxLevel) {
                         return;
                     }
 
-                    T[] inputs = this.baker.bakeInputs(pos)
+                    POS[] inputPositions = this.baker.bakeInputs(pos).toArray(this.posArray);
+                    P[] inputPieces = Arrays.stream(inputPositions)
                             .map(inputPos -> {
                                 int inputLevel = inputPos.level();
-                                if (inputLevel < 0 || inputLevel > this.renderer.maxLevel)  {
+                                if (inputLevel < 0 || inputLevel > maxLevel) {
                                     return null;
                                 }
 
-                                POS rootPos = uncheckedCast(inputPos.upTo(this.renderer.maxLevel));
+                                POS rootPos = uncheckedCast(inputPos.upTo(maxLevel));
                                 T rootTile = this.roots.get(rootPos);
                                 return rootTile != null ? rootTile.findChild(inputPos) : null;
                             })
-                            .toArray(this.tileArray);
+                            .map(t -> t != null ? t.piece : null)
+                            .toArray(this.pieceArray);
+
+                    P piece = Arrays.stream(inputPieces).filter(p -> p != null && pos.equals(p.pos())).findAny().orElse(null);
+                    if (piece == null) {
+                        return;
+                    }
 
                     RENDER_WORKERS.submit(pos, () -> {
-                        P[] _inputs = Arrays.stream(inputs).map(t -> t != null ? t.piece : null).toArray(this.pieceArray);
-
-                        P thePiece = Arrays.stream(_inputs).filter(p -> p != null && pos.equals(p.pos())).findAny().orElse(null);
-                        if (thePiece == null)   {
-                            return;
-                        }
-
                         ByteBuf vertices = Constants.allocateByteBuf(this.baker.estimatedVerticesBufferCapacity());
                         ByteBuf indices = Constants.allocateByteBuf(this.baker.estimatedIndicesBufferCapacity());
                         try {
-                            this.baker.bake(pos, _inputs, vertices, indices);
+                            this.baker.bake(pos, inputPieces, vertices, indices);
 
                             if (vertices.isReadable() && indices.isReadable()) {
                                 //retain buffers, since they're released by the finally block
@@ -241,7 +241,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                                 //upload to GPU on client thread
                                 ClientThreadExecutor.INSTANCE.execute(() -> {
                                     try {
-                                        this.addPiece(thePiece, vertices, indices);
+                                        this.addPiece(piece, vertices, indices);
                                     } finally {
                                         vertices.release();
                                         indices.release();
@@ -268,7 +268,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
         }
         T tile = rootTile.findOrCreateChild(pos);
 
-        if (tile.piece != piece)    {
+        if (tile.piece != piece) {
             return;
         }
 

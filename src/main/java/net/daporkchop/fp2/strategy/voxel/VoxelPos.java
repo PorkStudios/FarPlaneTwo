@@ -135,10 +135,16 @@ public class VoxelPos implements IFarPos {
 
     @Override
     public int compareTo(IFarPos posIn) {
-        VoxelPos pos = (VoxelPos) posIn;
-        int d = Integer.compare(this.level, pos.level);
-        if (d == 0 && (d = Integer.compare(this.z, pos.z)) == 0 && (d = Integer.compare(this.y, pos.y)) == 0) {
-            d = Integer.compare(this.x, pos.x);
+        int d = Integer.compare(this.level, posIn.level());
+        if (d == 0) {
+            if (posIn instanceof VoxelPos) {
+                VoxelPos pos = (VoxelPos) posIn;
+                if ((d = Integer.compare(this.x, pos.x)) == 0 && (d = Integer.compare(this.y, pos.y)) == 0) {
+                    d = Integer.compare(this.z, pos.z);
+                }
+            } else {
+                return VoxelPos.class.getCanonicalName().compareTo(posIn.getClass().getCanonicalName());
+            }
         }
         return d;
     }

@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.strategy.heightmap;
 
 import io.netty.buffer.ByteBuf;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -114,7 +113,7 @@ public class HeightmapPos implements IFarPos {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == this)    {
+        if (obj == this) {
             return true;
         } else if (obj instanceof HeightmapPos) {
             HeightmapPos pos = (HeightmapPos) obj;
@@ -125,16 +124,22 @@ public class HeightmapPos implements IFarPos {
     }
 
     @Override
-    public int hashCode()   {
+    public int hashCode() {
         return this.x * 1317194159 + this.z * 1656858407 + this.level;
     }
 
     @Override
     public int compareTo(IFarPos posIn) {
-        HeightmapPos pos = (HeightmapPos) posIn;
-        int d = Integer.compare(this.level, pos.level);
-        if (d == 0 && (d = Integer.compare(this.z, pos.z)) == 0) {
-            d = Integer.compare(this.x, pos.x);
+        int d = Integer.compare(this.level, posIn.level());
+        if (d == 0) {
+            if (posIn instanceof HeightmapPos) {
+                HeightmapPos pos = (HeightmapPos) posIn;
+                if ((d = Integer.compare(this.x, pos.x)) == 0) {
+                    d = Integer.compare(this.z, pos.z);
+                }
+            } else {
+                return HeightmapPos.class.getCanonicalName().compareTo(posIn.getClass().getCanonicalName());
+            }
         }
         return d;
     }

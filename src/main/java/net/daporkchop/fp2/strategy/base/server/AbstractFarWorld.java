@@ -40,7 +40,7 @@ import net.daporkchop.fp2.strategy.common.server.IFarWorld;
 import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.strategy.common.server.scale.IFarScaler;
-import net.daporkchop.fp2.util.threading.KeyedTaskScheduler;
+import net.daporkchop.fp2.util.threading.keyed.DefaultKeyedTaskScheduler;
 import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
@@ -50,7 +50,6 @@ import net.daporkchop.lib.common.function.io.IOConsumer;
 import net.daporkchop.lib.common.misc.file.PFiles;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
-import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.primitive.map.ObjLongMap;
 import net.daporkchop.lib.primitive.map.concurrent.ObjLongConcurrentHashMap;
@@ -107,7 +106,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
     protected final Queue<LazyTask<TaskKey, ?, ?>> pendingExactTasks = new ArrayDeque<>();
 
     protected final LazyPriorityExecutor<TaskKey> executor; //TODO: make these global rather than per-dimension
-    protected final KeyedTaskScheduler<POS> ioExecutor;
+    protected final DefaultKeyedTaskScheduler<POS> ioExecutor;
 
     protected final boolean lowResolution;
     protected final boolean inaccurate;
@@ -177,7 +176,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
                 FP2Config.generationThreads,
                 PThreadFactories.builder().daemon().minPriority()
                         .collapsingId().name(PStrings.fastFormat("FP2 DIM%d Generation Thread #%%d", world.provider.getDimension())).build());
-        this.ioExecutor = new KeyedTaskScheduler<>(
+        this.ioExecutor = new DefaultKeyedTaskScheduler<>(
                 FP2Config.ioThreads,
                 PThreadFactories.builder().daemon().minPriority()
                         .collapsingId().name(PStrings.fastFormat("FP2 DIM%d IO Thread #%%d", world.provider.getDimension())).build());

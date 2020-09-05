@@ -18,36 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.voxel.client;
+package net.daporkchop.fp2.util.threading.keyed;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.base.client.AbstractFarRenderCache;
-import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
-import net.daporkchop.fp2.strategy.voxel.VoxelPos;
-import net.daporkchop.fp2.util.alloc.Allocator;
-import net.daporkchop.fp2.util.alloc.VariableSizedAllocator;
-import net.daporkchop.lib.primitive.lambda.LongLongConsumer;
 
-import static net.daporkchop.fp2.strategy.voxel.client.VoxelRenderHelper.*;
+import java.util.concurrent.Executor;
 
 /**
+ * An executor which organizes submitted tasks based on a key.
+ * <p>
+ * It is guaranteed that no two tasks with the same key will be executed at once.
+ *
  * @author DaPorkchop_
  */
-public class VoxelRenderCache extends AbstractFarRenderCache<VoxelPos, VoxelPiece, VoxelRenderTile> {
-    public VoxelRenderCache(@NonNull VoxelRenderer renderer) {
-        super(renderer, -1);
-    }
+public interface KeyedTaskScheduler<K> {
+    void submit(@NonNull K key, @NonNull Runnable task);
 
-    @Override
-    public VoxelRenderTile createTile(VoxelRenderTile parent, @NonNull VoxelPos pos) {
-        return new VoxelRenderTile(this, parent, pos);
-    }
+    Executor keyed(@NonNull K key);
 
-    @Override
-    public void tileAdded(@NonNull VoxelRenderTile tile) {
-    }
-
-    @Override
-    public void tileRemoved(@NonNull VoxelRenderTile tile) {
-    }
+    void shutdown();
 }
