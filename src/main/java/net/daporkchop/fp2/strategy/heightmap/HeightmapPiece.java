@@ -56,10 +56,10 @@ public class HeightmapPiece extends AbstractFarPiece<HeightmapPos> {
 
     private static int index(int x, int z) {
         checkArg(x >= 0 && x < T_VOXELS && z >= 0 && z < T_VOXELS, "coordinates out of bounds (x=%d, z=%d)", x, z);
-        return (x * T_VOXELS + z) * 4;
+        return (x * T_VOXELS + z) * ENTRY_SIZE;
     }
 
-    protected final IntBuffer data = Constants.createIntBuffer(ENTRY_COUNT * 4);
+    protected final IntBuffer data = Constants.createIntBuffer(TOTAL_SIZE);
 
     public HeightmapPiece(@NonNull HeightmapPos pos) {
         super(pos, RenderMode.HEIGHTMAP);

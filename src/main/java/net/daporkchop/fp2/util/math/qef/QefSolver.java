@@ -269,7 +269,7 @@ public class QefSolver {
     public void add(double px, double py, double pz, double nx, double ny, double nz) {
         this.hasSolution = false;
 
-        double length = (double) sqrt(nx * nx + ny * ny + nz * nz);
+        double length = sqrt(nx * nx + ny * ny + nz * nz);
         nx /= length;
         ny /= length;
         nz /= length;

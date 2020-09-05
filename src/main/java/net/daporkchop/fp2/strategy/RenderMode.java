@@ -49,6 +49,7 @@ import net.daporkchop.fp2.strategy.voxel.server.VoxelPlayerTracker;
 import net.daporkchop.fp2.strategy.voxel.server.VoxelStorage;
 import net.daporkchop.fp2.strategy.voxel.server.VoxelWorld;
 import net.daporkchop.fp2.strategy.voxel.server.gen.exact.VoxelNoiseGenerator;
+import net.daporkchop.fp2.strategy.voxel.server.gen.rough.PerlinNoiseVoxelGenerator;
 import net.daporkchop.fp2.strategy.voxel.server.scale.VoxelScalerNone;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.PriorityCollection;
@@ -129,10 +130,11 @@ public enum RenderMode {
             return new HeightmapPiece[size];
         }
     },
-    VOXEL("3D", -1) {
+    VOXEL("3D", 0) {
         @Override
         protected void registerDefaultGenerators() {
             //rough
+            this.generatorsRough().add(0, world -> new PerlinNoiseVoxelGenerator());
 
             //exact
             this.generatorsExact().add(0, world -> new VoxelNoiseGenerator());
