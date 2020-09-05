@@ -22,19 +22,15 @@ package net.daporkchop.fp2.strategy.voxel.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.base.client.AbstractFarRenderTile;
+import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
 import net.daporkchop.fp2.strategy.voxel.VoxelPos;
 
 /**
  * @author DaPorkchop_
  */
-public class VoxelRenderTile extends AbstractFarRenderTile<VoxelPos, VoxelRenderIndex, VoxelRenderTile> {
+public class VoxelRenderTile extends AbstractFarRenderTile<VoxelPos, VoxelPiece, VoxelRenderTile> {
     public VoxelRenderTile(@NonNull VoxelRenderCache cache, VoxelRenderTile parent, @NonNull VoxelPos pos) {
-        super(cache, parent, pos, pos.bounds(), 8, 8);
-    }
-
-    @Override
-    protected VoxelRenderTile[] tileArray(int size) {
-        return new VoxelRenderTile[size];
+        super(cache, parent, pos, pos.bounds(), 8);
     }
 
     @Override

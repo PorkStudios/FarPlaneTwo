@@ -33,14 +33,9 @@ import static net.daporkchop.fp2.strategy.heightmap.client.HeightmapRenderHelper
 /**
  * @author DaPorkchop_
  */
-public class HeightmapRenderCache extends AbstractFarRenderCache<HeightmapPos, HeightmapPiece, HeightmapRenderTile, HeightmapRenderIndex> {
+public class HeightmapRenderCache extends AbstractFarRenderCache<HeightmapPos, HeightmapPiece, HeightmapRenderTile> {
     public HeightmapRenderCache(@NonNull HeightmapRenderer renderer) {
-        super(renderer, new HeightmapRenderIndex(HEIGHTMAP_RENDER_SIZE), HEIGHTMAP_RENDER_SIZE);
-    }
-
-    @Override
-    public Allocator createAllocator(@NonNull LongLongConsumer resizeCallback) {
-        return new FixedSizeAllocator(HEIGHTMAP_RENDER_SIZE, resizeCallback);
+        super(renderer, HeightmapRenderBaker.HEIGHTMAP_VERTEX_SIZE, HeightmapRenderTile[]::new, HeightmapPiece[]::new);
     }
 
     @Override
@@ -50,46 +45,9 @@ public class HeightmapRenderCache extends AbstractFarRenderCache<HeightmapPos, H
 
     @Override
     public void tileAdded(@NonNull HeightmapRenderTile tile) {
-        int x = tile.pos().x();
-        int z = tile.pos().z();
-        int level = tile.pos().level();
-
-        tile.neighbors()[0] = tile;
-        tile.neighbors()[1] = this.getTile(new HeightmapPos(x, z + 1, level));
-        tile.neighbors()[2] = this.getTile(new HeightmapPos(x + 1, z, level));
-        tile.neighbors()[3] = this.getTile(new HeightmapPos(x + 1, z + 1, level));
-
-        HeightmapRenderTile t = this.getTile(new HeightmapPos(x, z - 1, level));
-        if (t != null) {
-            t.neighbors()[1] = tile;
-        }
-        t = this.getTile(new HeightmapPos(x - 1, z, level));
-        if (t != null) {
-            t.neighbors()[2] = tile;
-        }
-        t = this.getTile(new HeightmapPos(x - 1, z - 1, level));
-        if (t != null) {
-            t.neighbors()[3] = tile;
-        }
     }
 
     @Override
     public void tileRemoved(@NonNull HeightmapRenderTile tile) {
-        int x = tile.pos().x();
-        int z = tile.pos().z();
-        int level = tile.pos().level();
-
-        HeightmapRenderTile t = this.getTile(new HeightmapPos(x, z - 1, level));
-        if (t != null) {
-            t.neighbors()[1] = null;
-        }
-        t = this.getTile(new HeightmapPos(x - 1, z, level));
-        if (t != null) {
-            t.neighbors()[2] = null;
-        }
-        t = this.getTile(new HeightmapPos(x - 1, z - 1, level));
-        if (t != null) {
-            t.neighbors()[3] = null;
-        }
     }
 }

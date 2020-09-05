@@ -28,7 +28,6 @@ import lombok.ToString;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.ChunkPos;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -132,5 +131,15 @@ public class VoxelPos implements IFarPos {
     @Override
     public int hashCode() {
         return this.x * 1317194159 + this.y * 1964379643 + this.z * 1656858407 + this.level;
+    }
+
+    @Override
+    public int compareTo(IFarPos posIn) {
+        VoxelPos pos = (VoxelPos) posIn;
+        int d = Integer.compare(this.level, pos.level);
+        if (d == 0 && (d = Integer.compare(this.z, pos.z)) == 0 && (d = Integer.compare(this.y, pos.y)) == 0) {
+            d = Integer.compare(this.x, pos.x);
+        }
+        return d;
     }
 }

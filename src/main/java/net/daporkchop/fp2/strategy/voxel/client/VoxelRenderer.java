@@ -20,7 +20,6 @@
 
 package net.daporkchop.fp2.strategy.voxel.client;
 
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.object.ElementArrayObject;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
@@ -28,6 +27,7 @@ import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.base.client.AbstractFarRenderer;
+import net.daporkchop.fp2.strategy.base.client.IFarRenderBaker;
 import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
 import net.daporkchop.fp2.strategy.voxel.VoxelPos;
 import net.daporkchop.fp2.util.Constants;
@@ -49,7 +49,7 @@ import static org.lwjgl.opengl.GL31.*;
 /**
  * @author DaPorkchop_
  */
-public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece, VoxelRenderTile, VoxelRenderIndex> {
+public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece, VoxelRenderTile> {
     public static final ShaderProgram TERRAIN_SHADER = ShaderManager.get("voxel/terrain");
 
     public final ElementArrayObject mesh = new ElementArrayObject();
@@ -128,8 +128,8 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece, Vox
     }
 
     @Override
-    protected ByteBuf bake(@NonNull VoxelPiece piece) {
-        return VoxelRenderHelper.bake(piece);
+    public IFarRenderBaker<VoxelPos, VoxelPiece> baker() {
+        return null; //TODO
     }
 
     @Override

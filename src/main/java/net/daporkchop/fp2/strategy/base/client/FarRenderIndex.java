@@ -22,7 +22,8 @@ package net.daporkchop.fp2.strategy.base.client;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.common.IFarPos;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -34,23 +35,44 @@ import static org.lwjgl.opengl.GL15.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractFarRenderIndex<POS extends IFarPos, T extends AbstractFarRenderTile<POS, I, T>, I extends AbstractFarRenderIndex<POS, T, I>> {
+@RequiredArgsConstructor
+@Getter
+public class FarRenderIndex {
     protected IntBuffer buffer = Constants.createIntBuffer(256);
-    @Getter
     protected int size = 0;
+
+    protected final int indicesSize;
+    protected final int vertexSize;
 
     public int mark() {
         return this.size;
     }
 
     public void restore(int mark) {
-        this.buffer.position(mark * 4 * 8);
+        this.buffer.position(mark * 5);
         this.size = mark;
     }
 
-    public abstract boolean add(@NonNull T tile);
+    public boolean add(@NonNull AbstractFarRenderTile tile) {
+        if (!tile.hasAddress()) {
+            return false;
+        }
 
-    protected abstract void writeTile(T tile);
+        if (tile.pos.equals(new HeightmapPos(-22, -14, 0)))  {
+            int i = 0;
+        }
+
+        this.ensureWritable(5);
+
+        this.buffer.put(tile.renderDataIndices.capacity() / this.indicesSize) //count
+                .put(1) //instanceCount
+                .put(toInt(tile.addressIndices / this.indicesSize)) //firstIndex
+                .put(toInt(tile.addressVertices / this.vertexSize)) //baseVertex
+                .put(0); //baseInstance
+
+        this.size++;
+        return true;
+    }
 
     protected void ensureWritable(int count) {
         while (this.buffer.remaining() < count) { //buffer doesn't have enough space, grow it

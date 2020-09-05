@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-$today.year DaPorkchop_
+ * Copyright (c) 2020-2020 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,23 +18,24 @@
  *
  */
 
-uniform double seaLevel;
+package net.daporkchop.fp2.client.gl.object;
 
-void main(){
-    //convert position to vec3 afterwards to minimize precision loss
-    dvec3 pos = dvec3(in_pos_low.x, seaLevel, in_pos_low.z);
-    vec3 relativePos = vec3(pos - glState.camera.position);
+import static org.lwjgl.opengl.GL40.*;
 
-    //vertex position is detail mixed
-    gl_Position = cameraTransform(relativePos);
+/**
+ * @author DaPorkchop_
+ */
+public final class DrawIndirectBuffer extends GLBufferObject<DrawIndirectBuffer> {
+    public DrawIndirectBuffer() {
+        super();
+    }
 
-    //set fog depth
-    fog_out.depth = length(relativePos);
+    public DrawIndirectBuffer(int id) {
+        super(id);
+    }
 
-    //state is always 9 (still water)
-    vs_out.state = 9;
-
-    //copy trivial attributes
-    vs_out.light = in_light_water;
-    vs_out.color = in_color_water;
+    @Override
+    protected int target() {
+        return GL_DRAW_INDIRECT_BUFFER;
+    }
 }

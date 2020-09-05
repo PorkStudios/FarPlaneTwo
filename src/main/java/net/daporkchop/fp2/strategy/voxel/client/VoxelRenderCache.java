@@ -33,14 +33,9 @@ import static net.daporkchop.fp2.strategy.voxel.client.VoxelRenderHelper.*;
 /**
  * @author DaPorkchop_
  */
-public class VoxelRenderCache extends AbstractFarRenderCache<VoxelPos, VoxelPiece, VoxelRenderTile, VoxelRenderIndex> {
+public class VoxelRenderCache extends AbstractFarRenderCache<VoxelPos, VoxelPiece, VoxelRenderTile> {
     public VoxelRenderCache(@NonNull VoxelRenderer renderer) {
-        super(renderer, new VoxelRenderIndex(VOXEL_RENDER_SIZE), VOXEL_RENDER_SIZE);
-    }
-
-    @Override
-    public Allocator createAllocator(@NonNull LongLongConsumer resizeCallback) {
-        return new VariableSizedAllocator(VOXEL_RENDER_SIZE, resizeCallback);
+        super(renderer, -1, VoxelRenderTile[]::new, VoxelPiece[]::new);
     }
 
     @Override
@@ -50,72 +45,9 @@ public class VoxelRenderCache extends AbstractFarRenderCache<VoxelPos, VoxelPiec
 
     @Override
     public void tileAdded(@NonNull VoxelRenderTile tile) {
-        int x = tile.pos().x();
-        int y = tile.pos().y();
-        int z = tile.pos().z();
-        int level = tile.pos().level();
-
-        tile.neighbors()[0] = tile;
-        tile.neighbors()[1] = this.getTile(new VoxelPos(x, y, z + 1, level));
-        tile.neighbors()[2] = this.getTile(new VoxelPos(x, y + 1, z, level));
-        tile.neighbors()[3] = this.getTile(new VoxelPos(x, y + 1, z + 1, level));
-        tile.neighbors()[4] = this.getTile(new VoxelPos(x + 1, y, z, level));
-        tile.neighbors()[5] = this.getTile(new VoxelPos(x + 1, y, z + 1, level));
-        tile.neighbors()[6] = this.getTile(new VoxelPos(x + 1, y + 1, z, level));
-        tile.neighbors()[7] = this.getTile(new VoxelPos(x + 1, y + 1, z + 1, level));
-
-        VoxelRenderTile t;
-        if ((t = this.getTile(new VoxelPos(x, y, z - 1, level))) != null) {
-            t.neighbors()[1] = tile;
-        }
-        if ((t = this.getTile(new VoxelPos(x, y - 1, z, level))) != null) {
-            t.neighbors()[2] = tile;
-        }
-        if ((t = this.getTile(new VoxelPos(x, y - 1, z - 1, level))) != null) {
-            t.neighbors()[3] = tile;
-        }
-        if ((t = this.getTile(new VoxelPos(x - 1, y, z, level))) != null) {
-            t.neighbors()[4] = tile;
-        }
-        if ((t = this.getTile(new VoxelPos(x - 1, y, z - 1, level))) != null) {
-            t.neighbors()[5] = tile;
-        }
-        if ((t = this.getTile(new VoxelPos(x - 1, y - 1, z, level))) != null) {
-            t.neighbors()[6] = tile;
-        }
-        if ((t = this.getTile(new VoxelPos(x - 1, y - 1, z - 1, level))) != null) {
-            t.neighbors()[7] = tile;
-        }
     }
 
     @Override
     public void tileRemoved(@NonNull VoxelRenderTile tile) {
-        int x = tile.pos().x();
-        int y = tile.pos().y();
-        int z = tile.pos().z();
-        int level = tile.pos().level();
-
-        VoxelRenderTile t;
-        if ((t = this.getTile(new VoxelPos(x, y, z - 1, level))) != null) {
-            t.neighbors()[1] = null;
-        }
-        if ((t = this.getTile(new VoxelPos(x, y - 1, z, level))) != null) {
-            t.neighbors()[2] = null;
-        }
-        if ((t = this.getTile(new VoxelPos(x, y - 1, z - 1, level))) != null) {
-            t.neighbors()[3] = null;
-        }
-        if ((t = this.getTile(new VoxelPos(x - 1, y, z, level))) != null) {
-            t.neighbors()[4] = null;
-        }
-        if ((t = this.getTile(new VoxelPos(x - 1, y, z - 1, level))) != null) {
-            t.neighbors()[5] = null;
-        }
-        if ((t = this.getTile(new VoxelPos(x - 1, y - 1, z, level))) != null) {
-            t.neighbors()[6] = null;
-        }
-        if ((t = this.getTile(new VoxelPos(x - 1, y - 1, z - 1, level))) != null) {
-            t.neighbors()[7] = null;
-        }
     }
 }

@@ -104,9 +104,6 @@ public class LazyPriorityExecutor<K extends LazyKey<K>> {
             }
         }
 
-        protected void runSingle() throws InterruptedException {
-        }
-
         protected <T, R> void runLazy(@NonNull LazyTask<K, T, R> task) throws InterruptedException {
             try {
                 List<T> params = this.runBefore(task.before(task.key().raiseTie()).collect(Collectors.toList()));

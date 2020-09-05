@@ -20,7 +20,6 @@
 
 package net.daporkchop.fp2.strategy.base.client;
 
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.client.ClientConstants;
@@ -44,7 +43,6 @@ import net.minecraft.entity.Entity;
 
 import java.nio.IntBuffer;
 
-import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.GlobalInfo.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
@@ -55,12 +53,13 @@ import static org.lwjgl.opengl.GL45.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPiece<POS>, T extends AbstractFarRenderTile<POS, I, T>, I extends AbstractFarRenderIndex<POS, T, I>> implements IFarRenderer<POS, P> {
-    protected final AbstractFarRenderCache<POS, P, T, I> cache;
+public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPiece<POS>, T extends AbstractFarRenderTile<POS, P, T>> implements IFarRenderer<POS, P> {
+    protected final AbstractFarRenderCache<POS, P, T> cache;
 
     protected final int maxLevel = FP2Config.maxLevels - 1;
 
     protected final ShaderStorageBuffer loadedSSBO = new ShaderStorageBuffer();
+
     protected IntBuffer loadedBuffer;
 
     public AbstractFarRenderer(@NonNull WorldClient world) {
@@ -71,36 +70,27 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
 
     protected abstract void createRenderData();
 
-    protected abstract AbstractFarRenderCache<POS, P, T, I> createCache();
+    protected abstract AbstractFarRenderCache<POS, P, T> createCache();
 
     @Override
     public void receivePiece(@NonNull P piece) {
-        RENDER_WORKERS.submit(piece.pos(), () -> {
-            ByteBuf baked = this.bake(piece);
-            ClientThreadExecutor.INSTANCE.execute(() -> {
-                try {
-                    this.cache.addPiece(piece, baked);
-                } finally {
-                    baked.release();
-                }
-            });
-        });
+        ClientThreadExecutor.INSTANCE.execute(() -> this.cache.receivePiece(piece));
     }
 
     @Override
     public void unloadPiece(@NonNull POS pos) {
-        RENDER_WORKERS.submit(pos, () -> { //make sure that any in-progress bake tasks are finished before the piece is removed
-            ClientThreadExecutor.INSTANCE.execute(() -> this.cache.removePiece(pos));
-        });
+        ClientThreadExecutor.INSTANCE.execute(() -> this.cache.unloadPiece(pos));
+    }
+
+    @Override
+    public void debug_renderPieces() {
+        this.cache.debug_renderPieces();
     }
 
     /**
-     * Bakes the given piece, producing a {@link ByteBuf} containing data that will be provided to the shader.
-     *
-     * @param piece the piece to bake
-     * @return the baked piece data
+     * @return the {@link IFarRenderBaker} used by this renderer
      */
-    protected abstract ByteBuf bake(@NonNull P piece);
+    public abstract IFarRenderBaker<POS, P> baker();
 
     /**
      * Actually renders the world.
@@ -149,8 +139,6 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
             loadedBuffer.bindSSBO(0);
         }
         GLOBAL_INFO.bindSSBO(1);
-
-        this.cache.bindIndex();
     }
 
     protected void updateAndBindUBOs(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum) {

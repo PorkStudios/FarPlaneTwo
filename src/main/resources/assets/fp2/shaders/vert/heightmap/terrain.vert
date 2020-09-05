@@ -19,47 +19,29 @@
  */
 
 void main(){
-    TileIndexEntry entry = indexEntry();
-    TileIndex index = entry.low[0];
-    ivec2 posXZ = toWorldPos(index);
-
-    int slot = toSlot(index, posXZ);
-    index = entry.low[slot];
-
-    HEIGHTMAP_TYPE center = sampleHeightmap(index);
-    dvec3 pos = dvec3(double(posXZ.x), double(unpackHeight(center)), double(posXZ.y));
-
-    //sample above
-    TileIndex highIndex = entry.high[slot];
-    ivec2 pFloored = posXZ & ~((1 << highIndex.level) - 1);
-    HEIGHTMAP_TYPE above = sampleHeightmap(highIndex, pFloored);
-    dvec3 abovePos = dvec3(double(pFloored.x), double(unpackHeight(above)), double(pFloored.y));
-
-    //linear blending between the two positions
-    float start = float(fp2_state.view.levelCutoffDistance << index.level) * fp2_state.view.transitionStart;
-    float end = float(fp2_state.view.levelCutoffDistance << index.level) * fp2_state.view.transitionEnd;
-    float depth = float(distance(vec2(posXZ), glState.camera.position.xz));
-    float fac = min(float(highIndex.index), 1.);
-    //imagine that everything from the //sample above to this line were in an if(entry.high[slot] != 0) { ... },
-    // but i managed to implement it with 0 branches!
-    pos = mix(pos, abovePos, fac * (1. - clamp((end - depth) * (1. / (end - start)), 0., 1.)));
-
     //convert position to vec3 afterwards to minimize precision loss
-    vec3 relativePos = vec3(pos - glState.camera.position);
+    vec3 relativePos = vec3(in_pos_low - glState.camera.position);
 
-    //give raw position to fragment shader
-    vs_out.pos = vec3(pos);
+    float depth = float(length(relativePos));
 
-    //set fog depth
-    fog_out.depth = length(relativePos);
+    //set fog depth here, simply because it's going to change by at most a few blocks (negligable) and this prevents us from having to compute the depth twice
+    fog_out.depth = depth;
 
-    //translate vertex position
+    //mix low and high vertex positions based on depth
+    float start = float(fp2_state.view.levelCutoffDistance) * in_level_scale * fp2_state.view.transitionStart;
+    float end = float(fp2_state.view.levelCutoffDistance) * in_level_scale * fp2_state.view.transitionEnd;
+    dvec3 mixedPos = mix(in_pos_low, in_pos_high, 1. - clamp((end - depth) * (1. / (end - start)), 0., 1.));
+    relativePos = vec3(mixedPos - glState.camera.position);
+
+    //vertex position is detail mixed
     gl_Position = cameraTransform(relativePos);
 
-    //decode sky and block light
-    vs_out.light = unpackBlockLight(center);
+    //pass relative position to fragment shader (used to compute face normal)
+    //TODO: this is actually also used for the texture UV, which is why it is currently not using the relative position
+    vs_out.pos = vec3(mixedPos);
 
-    //store block state
-    vs_out.state = unpackBlock(center);
-    vs_out.color = unpackBlockColor(center);
+    //copy trivial attributes
+    vs_out.light = in_light;
+    vs_out.state = in_state;
+    vs_out.color = in_color;
 }
