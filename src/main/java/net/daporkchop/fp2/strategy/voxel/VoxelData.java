@@ -18,47 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.strategy.voxel.server.gen;
-
-import lombok.experimental.UtilityClass;
+package net.daporkchop.fp2.strategy.voxel;
 
 /**
- * Constants and helpers to be used by voxel generators.
+ * Represents the data stored at a voxel that is not absent.
  *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class VoxelGeneratorConstants {
-    /**
-     * The maximum number of edges intersecting the surface that may be considered by the QEF.
-     */
-    public static final int MAX_EDGES = 6;
-
-    /**
-     * Defines all of the edges of a cube based on their point indices.
-     */
-    public static final int[] EDGEVMAP = {
-            0, 4, 1, 5, 2, 6, 3, 7, // x-axis
-            0, 2, 1, 3, 4, 6, 5, 7, // y-axis
-            0, 1, 2, 3, 4, 5, 6, 7  // z-axis
-    };
-
-    /**
-     * The number of vertex indices emitted on a connected edge.
-     */
-    public static final int CONNECTION_INDEX_COUNT = 6;
-
-    /**
-     * Defines the offsets of all connections for all vertices on the three flagged edges on a voxel.
-     */
-    public static final int[] CONNECTION_INDICES = {
-            0, 1, 3, 0, 2, 3,
-            0, 1, 5, 0, 4, 5,
-            0, 2, 6, 0, 4, 6
-    };
-    /*public static final int[] CONNECTION_INDICES = {
-            0, 1, 2, 3,
-            0, 1, 4, 5,
-            0, 2, 4, 6
-    };*/
+public class VoxelData {
+    public double dx;
+    public double dy;
+    public double dz;
+    public int edges;
 }

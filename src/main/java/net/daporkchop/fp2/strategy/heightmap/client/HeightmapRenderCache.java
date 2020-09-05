@@ -24,11 +24,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.strategy.base.client.AbstractFarRenderCache;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
-import net.daporkchop.fp2.util.alloc.Allocator;
-import net.daporkchop.fp2.util.alloc.FixedSizeAllocator;
-import net.daporkchop.lib.primitive.lambda.LongLongConsumer;
-
-import static net.daporkchop.fp2.strategy.heightmap.client.HeightmapRenderHelper.*;
 
 /**
  * @author DaPorkchop_

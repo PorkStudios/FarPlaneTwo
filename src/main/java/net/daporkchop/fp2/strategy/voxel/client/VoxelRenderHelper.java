@@ -56,7 +56,7 @@ public class VoxelRenderHelper {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
 
-        for (int dx = 0; dx < T_VOXELS; dx++) {
+        /*for (int dx = 0; dx < T_VOXELS; dx++) {
             for (int dy = 0; dy < T_VOXELS; dy++) {
                 for (int dz = 0; dz < T_VOXELS; dz++) {
                     buf.writeFloat((float) piece.dx(dx, dy, dz))
@@ -65,7 +65,7 @@ public class VoxelRenderHelper {
                             .writeInt(piece.edgeMask(dx, dy, dz));
                 }
             }
-        }
+        }*/
         return buf;
     }
 }

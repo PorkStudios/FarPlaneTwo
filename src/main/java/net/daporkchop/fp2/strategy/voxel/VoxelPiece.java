@@ -26,6 +26,9 @@ import lombok.NonNull;
 import net.daporkchop.fp2.strategy.RenderMode;
 import net.daporkchop.fp2.strategy.base.AbstractFarPiece;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.lib.primitive.map.IntIntMap;
+import net.daporkchop.lib.primitive.map.open.IntIntOpenHashMap;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.IntBuffer;
 
@@ -40,54 +43,79 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class VoxelPiece extends AbstractFarPiece<VoxelPos> {
     public static final int ENTRY_SIZE = 1;
 
-    public static final int ENTRY_COUNT = T_VOXELS * T_VOXELS * T_VOXELS;
+    public static final int MAX_ENTRY_COUNT = T_VOXELS * T_VOXELS * T_VOXELS;
 
-    public static final int TOTAL_SIZE = ENTRY_COUNT * ENTRY_SIZE;
+    public static final int MAX_CAPACITY = MAX_ENTRY_COUNT * ENTRY_SIZE;
+    public static final int DEFAULT_CAPACITY = MAX_CAPACITY / 32;
 
     private static int index(int x, int y, int z) {
         checkArg(x >= 0 && x < T_VOXELS && y >= 0 && y < T_VOXELS && z >= 0 && z < T_VOXELS, "coordinates out of bounds (x=%d, y=%d, z=%d)", x, y, z);
-        return ((x * T_VOXELS + y) * T_VOXELS + z) * ENTRY_SIZE;
+        return (x * T_VOXELS + y) * T_VOXELS + z;
     }
 
-    protected final IntBuffer data = Constants.createIntBuffer(TOTAL_SIZE);
+    protected final IntIntMap indices = new IntIntOpenHashMap();
+    protected IntBuffer data;
 
     public VoxelPiece(@NonNull VoxelPos pos) {
         super(pos, RenderMode.VOXEL);
+
+        this.data = Constants.createIntBuffer(DEFAULT_CAPACITY);
     }
 
     public VoxelPiece(@NonNull ByteBuf src) {
         super(src, RenderMode.VOXEL);
 
-        for (int i = 0; i < TOTAL_SIZE; i++) {
+        int size = src.readInt();
+        for (int i = 0; i < size; i++)  { //indices
+            this.indices.put(src.readUnsignedShort(), src.readUnsignedShort());
+        }
+
+        int capacity = DEFAULT_CAPACITY;
+        while (capacity < size * ENTRY_SIZE)    {
+            capacity <<= 1;
+        }
+        this.data = Constants.createIntBuffer(capacity);
+
+        for (int i = 0; i < size * ENTRY_SIZE; i++) { //data
             this.data.put(i, src.readInt());
         }
     }
 
     @Override
     protected void writeBody(@NonNull ByteBuf dst) {
-        for (int i = 0; i < TOTAL_SIZE; i++) {
+        int size = this.indices.size();
+        dst.writeInt(size);
+        this.indices.forEach((i, j) -> dst.writeShort(i).writeShort(j));
+        for (int i = 0; i < size * ENTRY_SIZE; i++) {
             dst.writeInt(this.data.get(i));
         }
     }
 
-    public double dx(int x, int y, int z) {
-        return (this.data.get(index(x, y, z)) >>> 24) / 255.0d;
+    public int getIndex(int x, int y, int z)    {
+        return this.indices.getOrDefault(index(x, y, z), -1);
     }
 
-    public double dy(int x, int y, int z) {
-        return ((this.data.get(index(x, y, z)) >>> 16) & 0xFF) / 255.0d;
-    }
+    public boolean get(int x, int y, int z, VoxelData data) {
+        int index = this.getIndex(x, y, z);
+        if (index < 0) { //there is no value at the given position
+            return false;
+        }
 
-    public double dz(int x, int y, int z) {
-        return ((this.data.get(index(x, y, z)) >>> 8) & 0xFF) / 255.0d;
-    }
+        index *= ENTRY_SIZE;
+        int i = this.data.get(index);
 
-    public int edgeMask(int x, int y, int z) {
-        return this.data.get(index(x, y, z)) & 0xFF;
+        data.dx = (i >>> 24) / 255.0d;
+        data.dy = ((i >> 16) & 0xFF) / 255.0d;
+        data.dz = ((i >> 8) & 0xFF) / 255.0d;
+        data.edges = i & 0xFF;
+        return true;
     }
 
     public VoxelPiece set(int x, int y, int z, double dx, double dy, double dz, int edgeMask) {
-        int base = index(x, y, z);
+        int index = this.indices.getOrDefault(index(x, y, z), -1);
+        if (index < 0)  { //allocate new index
+            index = this.nextIndex(x, y, z);
+        }
 
         edgeMask = ((edgeMask & 0x800) >> 9) | ((edgeMask & 0x80) >> 6) | ((edgeMask & 0x8) >> 3);
 
@@ -95,8 +123,28 @@ public class VoxelPiece extends AbstractFarPiece<VoxelPos> {
         dy = clamp(dy, 0., 1.) * 255.0d;
         dz = clamp(dz, 0., 1.) * 255.0d;
 
-        this.data.put(base, (floorI(dx) << 24) | (floorI(dy) << 16) | (floorI(dz) << 8) | edgeMask);
+        this.data.put(index, (floorI(dx) << 24) | (floorI(dy) << 16) | (floorI(dz) << 8) | edgeMask);
         this.markDirty();
         return this;
+    }
+
+    protected int nextIndex(int x, int y, int z)   {
+        int size = this.indices.size();
+        if (size * ENTRY_SIZE == this.data.capacity())   {
+            IntBuffer newData = Constants.createIntBuffer(this.data.capacity() << 1);
+            newData.put(this.data);
+            PUnsafe.pork_releaseBuffer(this.data);
+            this.data = newData;
+        }
+        this.indices.put(index(x, y, z), size);
+        return size;
+    }
+
+    public void clear() {
+        this.indices.clear();
+        if (this.data.capacity() >= DEFAULT_CAPACITY)   {
+            PUnsafe.pork_releaseBuffer(this.data);
+            this.data = Constants.createIntBuffer(DEFAULT_CAPACITY);
+        }
     }
 }

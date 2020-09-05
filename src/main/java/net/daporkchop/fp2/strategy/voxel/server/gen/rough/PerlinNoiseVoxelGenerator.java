@@ -52,6 +52,8 @@ public class PerlinNoiseVoxelGenerator extends AbstractFarGenerator implements I
 
     @Override
     public void generate(@NonNull VoxelPiece piece) {
+        piece.clear();
+
         final int baseX = piece.pos().blockX();
         final int baseY = piece.pos().blockY();
         final int baseZ = piece.pos().blockZ();

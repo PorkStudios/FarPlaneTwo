@@ -130,7 +130,7 @@ public enum RenderMode {
             return new HeightmapPiece[size];
         }
     },
-    VOXEL("3D", 0) {
+    VOXEL("3D", 1) {
         @Override
         protected void registerDefaultGenerators() {
             //rough

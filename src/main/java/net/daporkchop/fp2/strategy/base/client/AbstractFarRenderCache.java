@@ -207,8 +207,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                         return;
                     }
 
-                    POS[] inputPositions = this.baker.bakeInputs(pos).toArray(this.posArray);
-                    P[] inputPieces = Arrays.stream(inputPositions)
+                    P[] inputPieces = this.baker.bakeInputs(pos)
                             .map(inputPos -> {
                                 int inputLevel = inputPos.level();
                                 if (inputLevel < 0 || inputLevel > maxLevel) {
