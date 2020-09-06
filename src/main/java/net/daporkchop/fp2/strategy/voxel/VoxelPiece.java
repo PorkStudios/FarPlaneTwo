@@ -98,8 +98,17 @@ public class VoxelPiece extends AbstractFarPiece<VoxelPos> {
     public boolean get(int x, int y, int z, VoxelData data) {
         int index = this.getIndex(x, y, z);
         if (index < 0) { //there is no value at the given position
+            data.dx = data.dy = data.dz = 0.0d;
+            data.edges = 0;
             return false;
         }
+
+        this.get(index, data);
+        return true;
+    }
+
+    public void get(int index, VoxelData data) {
+        checkArg(index >= 0 && index < this.indices.size(), index);
 
         index *= ENTRY_SIZE;
         int i = this.data.get(index);
@@ -108,7 +117,6 @@ public class VoxelPiece extends AbstractFarPiece<VoxelPos> {
         data.dy = ((i >> 16) & 0xFF) / 255.0d;
         data.dz = ((i >> 8) & 0xFF) / 255.0d;
         data.edges = i & 0xFF;
-        return true;
     }
 
     public VoxelPiece set(int x, int y, int z, double dx, double dy, double dz, int edgeMask) {

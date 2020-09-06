@@ -23,19 +23,20 @@ void main() {
     vec2 uv = uvs.min + (uvs.max - uvs.min) * fract(fs_in.pos.xz);
 
     //initial block texture sample
-    vec4 frag_color = texture(terrain_texture, uv);
+    //vec4 frag_color = texture(terrain_texture, uv);
+    vec4 frag_color = vec4(normalVector(), 1.);
 
     //block color multiplier
-    frag_color.rgb *= fs_in.color;
+    //frag_color.rgb *= fs_in.color;
 
     //block/sky light
-    frag_color *= texture(lightmap_texture, fs_in.light);
+    //frag_color *= texture(lightmap_texture, fs_in.light);
 
     //shading
-    frag_color.rgb *= diffuseLight(normalVector());
+    //frag_color.rgb *= diffuseLight(normalVector());
 
     //fog
-    frag_color = addFog(frag_color);
+    //frag_color = addFog(frag_color);
 
     color = frag_color;
 }

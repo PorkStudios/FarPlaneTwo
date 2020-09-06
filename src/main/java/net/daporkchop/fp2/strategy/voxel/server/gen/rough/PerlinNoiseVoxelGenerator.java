@@ -34,6 +34,7 @@ import net.daporkchop.lib.random.impl.FastPRandom;
 import net.minecraft.world.WorldServer;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.strategy.voxel.server.gen.VoxelGeneratorConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
@@ -83,6 +84,7 @@ public class PerlinNoiseVoxelGenerator extends AbstractFarGenerator implements I
         }
 
         if (corners == 0 || corners == 0xFF) {
+            //piece.set(dx, dy, dz, 0.0d, 0.0d, 0.0d, 0);
             return;
         }
 
@@ -90,7 +92,7 @@ public class PerlinNoiseVoxelGenerator extends AbstractFarGenerator implements I
         int edges = 0;
         int edgeMask = 0;
 
-        for (int i = 0; i < 12; i++) {
+        for (int i = 0; i < 12 && edges < MAX_EDGES; i++) {
             int c0 = VoxelGeneratorConstants.EDGEVMAP[i << 1];
             int c1 = VoxelGeneratorConstants.EDGEVMAP[(i << 1) | 1];
 

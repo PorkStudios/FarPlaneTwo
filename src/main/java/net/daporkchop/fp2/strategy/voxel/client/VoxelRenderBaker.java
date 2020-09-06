@@ -21,6 +21,8 @@
 package net.daporkchop.fp2.strategy.voxel.client;
 
 import io.netty.buffer.ByteBuf;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.base.client.IFarRenderBaker;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
@@ -29,15 +31,10 @@ import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
 import net.daporkchop.fp2.strategy.voxel.VoxelPos;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
-import net.minecraft.block.Block;
-import net.minecraft.init.Biomes;
-import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.biome.Biome;
 
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.strategy.voxel.server.gen.VoxelGeneratorConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -142,12 +139,33 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
         final VoxelData data = new VoxelData();
 
+        Int2IntMap map = new Int2IntOpenHashMap();
+        map.defaultReturnValue(0);
+
+        {
+            vertices.writeInt(0); //state
+            vertices.writeShort(Constants.packedLightTo8BitVec2(0xFF)); //light
+            vertices.writeMedium(Constants.convertARGB_ABGR(0xFFFFFFFF)); //color
+
+            vertices.writeShort(Constants.packedLightTo8BitVec2(0xFF)); //light_water
+            vertices.writeMedium(Constants.convertARGB_ABGR(0xFFFFFFFF)); //color_water
+
+            vertices.writeDouble(baseX).writeDouble(baseY).writeDouble(baseZ); //pos_low
+            vertices.writeDouble(baseX).writeDouble(baseY).writeDouble(baseZ); //pos_high
+
+            vertices.writeShort(1 << level); //level_scale
+        }
+
+        int indexCounter = 1;
+
         for (int dx = 0; dx < T_VOXELS; dx++) {
             for (int dy = 0; dy < T_VOXELS; dy++) {
                 for (int dz = 0; dz < T_VOXELS; dz++) {
                     if (!srcs[0].get(dx, dy, dz, data)) {
                         continue;
                     }
+
+                    map.put((dx * (T_VOXELS + 1) + dy) * (T_VOXELS + 1) + dz, indexCounter++);
 
                     vertices.writeInt(0); //state
                     vertices.writeShort(Constants.packedLightTo8BitVec2(0xFF)); //light
@@ -164,8 +182,6 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
             }
         }
 
-        checkState(vertices.readableBytes() % VOXEL_VERTEX_SIZE == 0, vertices.readableBytes());
-
         for (int dx = 0; dx < T_VOXELS - 1; dx++) {
             for (int dy = 0; dy < T_VOXELS - 1; dy++) {
                 for (int dz = 0; dz < T_VOXELS - 1; dz++) {
@@ -173,20 +189,15 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                         continue;
                     }
 
-                    for (int edge = 0; edge < 3; edge++)    {
-                        if ((data.edges & (1 << edge)) == 0)    {
+                    for (int edge = 0; edge < 3; edge++) {
+                        if ((data.edges & (1 << edge)) == 0) {
                             continue;
                         }
 
-                        indices.markWriterIndex();
-
-                        int base = edge * CONNECTION_INDEX_COUNT;
-                        try {
-                            for (int i = 0; i < CONNECTION_INDEX_COUNT; i++) {
-                                this.putIndex(dx, dy, dz, CONNECTION_INDICES[base + i], srcs[0], indices);
-                            }
-                        } catch (IllegalStateException e)   {
-                            indices.resetWriterIndex();
+                        for (int base = edge * CONNECTION_INDEX_COUNT, i = 0; i < CONNECTION_INDEX_COUNT; i++) {
+                            int j = CONNECTION_INDICES[base + i];
+                            int index = map.get(((dx + ((j >> 2) & 1)) * (T_VOXELS + 1) + (dy + ((j >> 1) & 1))) * (T_VOXELS + 1) + (dz + (j & 1)));
+                            indices.writeShort(index);
                         }
                     }
                 }
@@ -194,9 +205,9 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         }
     }
 
-    protected void putIndex(int dx, int dy, int dz, int i, VoxelPiece piece, ByteBuf indices)   {
+    protected void putIndex(int dx, int dy, int dz, int i, VoxelPiece piece, ByteBuf indices) {
         int index = piece.getIndex(dx + ((i >> 2) & 1), dy + ((i >> 1) & 1), dz + (i & 1));
         checkState(index >= 0);
-        indices.writeInt(index);
+        indices.writeShort(index);
     }
 }

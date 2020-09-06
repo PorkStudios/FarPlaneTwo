@@ -58,10 +58,6 @@ public class FarRenderIndex {
             return false;
         }
 
-        if (tile.pos.equals(new HeightmapPos(-22, -14, 0)))  {
-            int i = 0;
-        }
-
         this.ensureWritable(5);
 
         this.buffer.put(tile.renderDataIndices.capacity() / this.indicesSize) //count
