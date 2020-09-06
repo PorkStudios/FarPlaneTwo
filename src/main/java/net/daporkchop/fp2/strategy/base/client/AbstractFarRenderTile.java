@@ -204,7 +204,8 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
             //the view range for this level doesn't intersect this tile's bounding box,
             // so we can be certain that neither this tile nor any of its children would be contained
             return false;
-        } else if (!frustum.isBoundingBoxInFrustum(this)) {
+        } else if (this.parent == null //don't do frustum culling on child nodes, as we currently cannot render only part of the parent
+                   && !frustum.isBoundingBoxInFrustum(this)) {
             //the frustum doesn't contain this tile's bounding box, so we can be certain that neither
             // this tile nor any of its children would be visible
             return false;

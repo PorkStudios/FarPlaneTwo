@@ -67,17 +67,17 @@ public class PerlinNoiseVoxelGenerator extends AbstractFarGenerator implements I
                     double y = baseY + (dy << level);
                     double z = baseZ + (dz << level);
 
-                    this.buildVoxel(piece, dx, dy, dz, x, y, z);
+                    this.buildVoxel(piece, dx, dy, dz, x, y, z, 1 << level);
                 }
             }
         }
         piece.markDirty();
     }
 
-    protected void buildVoxel(VoxelPiece piece, int dx, int dy, int dz, double x, double y, double z)   {
+    protected void buildVoxel(VoxelPiece piece, int dx, int dy, int dz, double x, double y, double z, double scale)   {
         int corners = 0;
         for (int i = 0; i < 8; i++) {
-            double density = this.noise.get(x + ((i >> 2) & 1), y + ((i >> 1) & 1), z + (i & 1));
+            double density = this.noise.get(x + ((i >> 2) & 1) * scale, y + ((i >> 1) & 1) * scale, z + (i & 1) * scale);
             if (density < 0.0d) {
                 corners |= 1 << i;
             }
@@ -99,21 +99,21 @@ public class PerlinNoiseVoxelGenerator extends AbstractFarGenerator implements I
                 continue;
             }
 
-            double x0 = x + ((c0 >> 2) & 1);
-            double y0 = y + ((c0 >> 1) & 1);
-            double z0 = z + (c0 & 1);
-            double x1 = x + ((c1 >> 2) & 1);
-            double y1 = y + ((c1 >> 1) & 1);
-            double z1 = z + (c1 & 1);
+            double x0 = x + ((c0 >> 2) & 1) * scale;
+            double y0 = y + ((c0 >> 1) & 1) * scale;
+            double z0 = z + (c0 & 1) * scale;
+            double x1 = x + ((c1 >> 2) & 1) * scale;
+            double y1 = y + ((c1 >> 1) & 1) * scale;
+            double z1 = z + (c1 & 1) * scale;
 
             double t = this.minimize(x0, y0, z0, x1, y1, z1);
             double px = lerp(x0, x1, t);
             double py = lerp(y0, y1, t);
             double pz = lerp(z0, z1, t);
 
-            double dX = this.noise.get(px + 0.001d, py, pz) - this.noise.get(px - 0.001d, py, pz);
-            double dY = this.noise.get(px, py + 0.001d, pz) - this.noise.get(px, py - 0.001d, pz);
-            double dZ = this.noise.get(px, py, pz + 0.001d) - this.noise.get(px, py, pz - 0.001d);
+            double dX = this.noise.get(px + 0.001d * scale, py, pz) - this.noise.get(px - 0.001d * scale, py, pz);
+            double dY = this.noise.get(px, py + 0.001d * scale, pz) - this.noise.get(px, py - 0.001d * scale, pz);
+            double dZ = this.noise.get(px, py, pz + 0.001d * scale) - this.noise.get(px, py, pz - 0.001d * scale);
 
             qef.add(px, py, pz, dX, dY, dZ);
             edges++;
@@ -123,13 +123,13 @@ public class PerlinNoiseVoxelGenerator extends AbstractFarGenerator implements I
         Vector3d qefPosition = new Vector3d();
         qef.solve(qefPosition, 0.0001f, 4, 0.0001f);
 
-        if (qefPosition.x < x || qefPosition.x > x + 1.0d
-            || qefPosition.y < y || qefPosition.y > y + 1.0d
-            || qefPosition.z < z || qefPosition.z > z + 1.0d) {
+        if (qefPosition.x < x || qefPosition.x > x + scale
+            || qefPosition.y < y || qefPosition.y > y + scale
+            || qefPosition.z < z || qefPosition.z > z + scale) {
             qefPosition.set(qef.massPoint().x, qef.massPoint().y, qef.massPoint().z);
         }
 
-        piece.set(dx, dy, dz, qefPosition.x - x, qefPosition.y - y, qefPosition.z - z, edgeMask);
+        piece.set(dx, dy, dz, (qefPosition.x - x) / scale, (qefPosition.y - y) / scale, (qefPosition.z - z) / scale, edgeMask);
     }
 
     protected double minimize(double x0, double y0, double z0, double x1, double y1, double z1) {

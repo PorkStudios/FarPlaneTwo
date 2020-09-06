@@ -21,15 +21,18 @@
 package net.daporkchop.fp2.strategy.voxel.client;
 
 import io.netty.buffer.ByteBuf;
-import it.unimi.dsi.fastutil.ints.Int2IntMap;
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import io.netty.util.concurrent.FastThreadLocal;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.base.client.IFarRenderBaker;
 import net.daporkchop.fp2.strategy.voxel.VoxelData;
 import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
 import net.daporkchop.fp2.strategy.voxel.VoxelPos;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
+import net.daporkchop.fp2.util.threading.DefaultFastThreadLocal;
+import net.daporkchop.lib.common.ref.Ref;
+import net.daporkchop.lib.common.ref.ThreadRef;
 import net.daporkchop.lib.primitive.map.IntIntMap;
 import net.daporkchop.lib.primitive.map.open.IntIntOpenHashMap;
 import net.minecraft.util.math.BlockPos;
@@ -39,7 +42,6 @@ import java.util.stream.Stream;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.strategy.voxel.server.gen.VoxelGeneratorConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
@@ -49,6 +51,18 @@ import static org.lwjgl.opengl.GL41.*;
  * @author DaPorkchop_
  */
 public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
+    public static final Ref<SimpleRecycler<IntIntMap>> MAP_RECYCLER = ThreadRef.soft(() -> new SimpleRecycler<IntIntMap>() {
+        @Override
+        protected IntIntMap allocate0() {
+            return new IntIntOpenHashMap();
+        }
+
+        @Override
+        protected void reset0(@NonNull IntIntMap map) {
+            map.clear();
+        }
+    });
+
     public static final int VOXEL_VERTEX_SIZE = INT_SIZE //state
                                                 + SHORT_SIZE //light
                                                 + MEDIUM_SIZE //color
@@ -88,15 +102,14 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         int z = srcPos.z();
         int level = srcPos.level();
 
-        /*return Stream.of(
+        return Stream.of(
                 //same level
                 srcPos, new VoxelPos(x, y, z - 1, level),
                 new VoxelPos(x, y - 1, z, level), new VoxelPos(x, y - 1, z - 1, level),
                 new VoxelPos(x - 1, y, z, level), new VoxelPos(x - 1, y, z - 1, level),
                 new VoxelPos(x - 1, y - 1, z, level), new VoxelPos(x - 1, y - 1, z - 1, level)//,
                 //below level
-        );*/
-        return Stream.of(srcPos);
+        );
     }
 
     @Override
@@ -106,15 +119,14 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         int z = dstPos.z();
         int level = dstPos.level();
 
-        /*return Stream.of(
+        return Stream.of(
                 //same level
                 dstPos, new VoxelPos(x, y, z + 1, level),
                 new VoxelPos(x, y + 1, z, level), new VoxelPos(x, y + 1, z + 1, level),
                 new VoxelPos(x + 1, y, z, level), new VoxelPos(x + 1, y, z + 1, level),
                 new VoxelPos(x + 1, y + 1, z, level), new VoxelPos(x + 1, y + 1, z + 1, level)//,
                 //below level
-        );*/
-        return Stream.of(dstPos);
+        );
     }
 
     @Override
@@ -142,48 +154,134 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
         final VoxelData data = new VoxelData();
 
-        IntIntMap map = new IntIntOpenHashMap();
+        final IntIntMap map = MAP_RECYCLER.get().allocate();
 
-        int indexCounter = 0;
-        for (int dx = 0; dx < T_VOXELS; dx++) {
-            for (int dy = 0; dy < T_VOXELS; dy++) {
-                for (int dz = 0; dz < T_VOXELS; dz++) {
-                    if (!srcs[0].get(dx, dy, dz, data)) {
-                        continue;
-                    }
-
-                    map.put((dx * T_VERTS + dy) * T_VERTS + dz, indexCounter++);
-                    this.vertex(baseX, baseY, baseZ, level, dx, dy, dz, data, vertices);
-                }
-            }
-        }
-
-        for (int dx = 0; dx < T_VOXELS - 1; dx++) {
-            for (int dy = 0; dy < T_VOXELS - 1; dy++) {
-                for (int dz = 0; dz < T_VOXELS - 1; dz++) {
-                    if (!srcs[0].get(dx, dy, dz, data)) {
-                        continue;
-                    }
-
-                    for (int edge = 0; edge < 3; edge++) {
-                        if ((data.edges & (1 << edge)) == 0) {
+        try {
+            //step 1: simply write vertices for all source pieces, and assign indices
+            int indexCounter = 0;
+            for (int dx = 0; dx < T_VOXELS; dx++) { //center
+                for (int dy = 0; dy < T_VOXELS; dy++) {
+                    for (int dz = 0; dz < T_VOXELS; dz++) {
+                        if (!srcs[0].get(dx, dy, dz, data)) {
                             continue;
                         }
 
-                        for (int base = edge * CONNECTION_INDEX_COUNT, i = 0; i < CONNECTION_INDEX_COUNT; i++) {
-                            int j = CONNECTION_INDICES[base + i];
-                            int ddx = dx + ((j >> 2) & 1);
-                            int ddy = dy + ((j >> 1) & 1);
-                            int ddz = dz + (j & 1);
+                        map.put((dx * T_VERTS + dy) * T_VERTS + dz, indexCounter++);
+                        this.vertex(baseX, baseY, baseZ, level, dx, dy, dz, data, vertices);
+                    }
+                }
+            }
 
-                            int mapIndex = (ddx * T_VERTS + ddy) * T_VERTS + ddz;
-                            int index = map.getOrDefault(mapIndex, -1);
-                            checkState(index >= 0);
-                            indices.writeShort(index);
+            if (srcs[1] != null) { //+z
+                for (int dx = 0; dx < T_VOXELS; dx++) { //center
+                    for (int dy = 0; dy < T_VOXELS; dy++) {
+                        if (!srcs[1].get(dx, dy, 0, data)) {
+                            continue;
+                        }
+
+                        map.put((dx * T_VERTS + dy) * T_VERTS + T_VOXELS, indexCounter++);
+                        this.vertex(baseX, baseY, baseZ, level, dx, dy, T_VOXELS, data, vertices);
+                    }
+                }
+            }
+
+            if (srcs[2] != null) { //+y
+                for (int dx = 0; dx < T_VOXELS; dx++) {
+                    for (int dz = 0; dz < T_VOXELS; dz++) {
+                        if (!srcs[2].get(dx, 0, dz, data)) {
+                            continue;
+                        }
+
+                        map.put((dx * T_VERTS + T_VOXELS) * T_VERTS + dz, indexCounter++);
+                        this.vertex(baseX, baseY, baseZ, level, dx, T_VOXELS, dz, data, vertices);
+                    }
+                }
+            }
+
+            if (srcs[3] != null) { //+y,+z
+                for (int dx = 0; dx < T_VOXELS; dx++) {
+                    if (!srcs[3].get(dx, 0, 0, data)) {
+                        continue;
+                    }
+
+                    map.put((dx * T_VERTS + T_VOXELS) * T_VERTS + T_VOXELS, indexCounter++);
+                    this.vertex(baseX, baseY, baseZ, level, dx, T_VOXELS, T_VOXELS, data, vertices);
+                }
+            }
+
+            if (srcs[4] != null) { //+x
+                for (int dy = 0; dy < T_VOXELS; dy++) {
+                    for (int dz = 0; dz < T_VOXELS; dz++) {
+                        if (!srcs[4].get(0, dy, dz, data)) {
+                            continue;
+                        }
+
+                        map.put((T_VOXELS * T_VERTS + dy) * T_VERTS + dz, indexCounter++);
+                        this.vertex(baseX, baseY, baseZ, level, T_VOXELS, dy, dz, data, vertices);
+                    }
+                }
+            }
+
+            if (srcs[5] != null) { //+x,+z
+                for (int dy = 0; dy < T_VOXELS; dy++) {
+                    if (!srcs[5].get(0, dy, 0, data)) {
+                        continue;
+                    }
+
+                    map.put((T_VOXELS * T_VERTS + dy) * T_VERTS + T_VOXELS, indexCounter++);
+                    this.vertex(baseX, baseY, baseZ, level, T_VOXELS, dy, T_VOXELS, data, vertices);
+                }
+            }
+
+            if (srcs[6] != null) { //+x,+y
+                for (int dz = 0; dz < T_VOXELS; dz++) {
+                    if (!srcs[6].get(0, 0, dz, data)) {
+                        continue;
+                    }
+
+                    map.put((T_VOXELS * T_VERTS + T_VOXELS) * T_VERTS + dz, indexCounter++);
+                    this.vertex(baseX, baseY, baseZ, level, T_VOXELS, T_VOXELS, dz, data, vertices);
+                }
+            }
+
+            if (srcs[7] != null && srcs[7].get(0, 0, 0, data)) { //+x,+y,+z
+                map.put((T_VOXELS * T_VERTS + T_VOXELS) * T_VERTS + T_VOXELS, indexCounter++);
+                this.vertex(baseX, baseY, baseZ, level, T_VOXELS, T_VOXELS, T_VOXELS, data, vertices);
+            }
+
+            //step 2: write indices to actually connect the vertices and build the mesh
+            for (int dx = 0; dx < T_VOXELS; dx++) {
+                for (int dy = 0; dy < T_VOXELS; dy++) {
+                    for (int dz = 0; dz < T_VOXELS; dz++) {
+                        if (!srcs[0].get(dx, dy, dz, data)) {
+                            continue;
+                        }
+
+                        for (int edge = 0; edge < 3; edge++) {
+                            if ((data.edges & (1 << edge)) == 0) {
+                                continue;
+                            }
+
+                            int writerIndex = indices.writerIndex();
+                            for (int base = edge * CONNECTION_INDEX_COUNT, i = 0; i < CONNECTION_INDEX_COUNT; i++) {
+                                int j = CONNECTION_INDICES[base + i];
+                                int ddx = dx + ((j >> 2) & 1);
+                                int ddy = dy + ((j >> 1) & 1);
+                                int ddz = dz + (j & 1);
+
+                                int index = map.getOrDefault((ddx * T_VERTS + ddy) * T_VERTS + ddz, -1);
+                                if (index < 0) { //skip if any of the vertices are missing
+                                    indices.writerIndex(writerIndex);
+                                    break;
+                                }
+                                indices.writeShort(index);
+                            }
                         }
                     }
                 }
             }
+        } finally {
+            MAP_RECYCLER.get().release(map);
         }
     }
 
@@ -195,8 +293,13 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         vertices.writeShort(Constants.packedLightTo8BitVec2(0xFF)); //light_water
         vertices.writeMedium(Constants.convertARGB_ABGR(0xFFFFFFFF)); //color_water
 
-        vertices.writeDouble(baseX + dx + data.dx).writeDouble(baseY + dy + data.dy).writeDouble(baseZ + dz + data.dz); //pos_low
-        vertices.writeDouble(baseX + dx + data.dx).writeDouble(baseY + dy + data.dy).writeDouble(baseZ + dz + data.dz); //pos_high
+        double scale = 1 << level;
+        vertices.writeDouble(baseX + (dx + data.dx) * scale)
+                .writeDouble(baseY + (dy + data.dy) * scale)
+                .writeDouble(baseZ + (dz + data.dz) * scale); //pos_low
+        vertices.writeDouble(baseX + (dx + data.dx) * scale)
+                .writeDouble(baseY + (dy + data.dy) * scale)
+                .writeDouble(baseZ + (dz + data.dz) * scale); //pos_high
 
         vertices.writeShort(1 << level);
     }

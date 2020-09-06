@@ -32,6 +32,7 @@ import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.client.IFarRenderer;
 import net.daporkchop.fp2.util.math.Cylinder;
+import net.daporkchop.fp2.util.math.Sphere;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.minecraft.client.Minecraft;
@@ -122,13 +123,15 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
         OpenGL.checkGLError("post fp2 render");
     }
 
+    //TODO: use cylinders for heightmap and spheres for voxel
     protected Volume[] createVolumesForSelection(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum) {
         Volume[] ranges = new Volume[this.maxLevel + 1];
         Entity entity = mc.getRenderViewEntity();
         double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
+        double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks;
         double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
         for (int i = 0; i < ranges.length; i++) {
-            ranges[i] = new Cylinder(x, z, FP2Config.levelCutoffDistance << i);
+            ranges[i] = new Sphere(x, y, z, FP2Config.levelCutoffDistance << i);
         }
         return ranges;
     }
