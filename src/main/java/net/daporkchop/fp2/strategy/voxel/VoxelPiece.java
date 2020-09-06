@@ -21,6 +21,8 @@
 package net.daporkchop.fp2.strategy.voxel;
 
 import io.netty.buffer.ByteBuf;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.RenderMode;
@@ -55,6 +57,7 @@ public class VoxelPiece extends AbstractFarPiece<VoxelPos> {
 
     protected final IntIntMap indices = new IntIntOpenHashMap();
     protected IntBuffer data;
+    protected int indexCounter;
 
     public VoxelPiece(@NonNull VoxelPos pos) {
         super(pos, RenderMode.VOXEL);
@@ -65,7 +68,7 @@ public class VoxelPiece extends AbstractFarPiece<VoxelPos> {
     public VoxelPiece(@NonNull ByteBuf src) {
         super(src, RenderMode.VOXEL);
 
-        int size = src.readInt();
+        int size = this.indexCounter = src.readInt();
         for (int i = 0; i < size; i++)  { //indices
             this.indices.put(src.readUnsignedShort(), src.readUnsignedShort());
         }
@@ -83,7 +86,7 @@ public class VoxelPiece extends AbstractFarPiece<VoxelPos> {
 
     @Override
     protected void writeBody(@NonNull ByteBuf dst) {
-        int size = this.indices.size();
+        int size = this.indexCounter;
         dst.writeInt(size);
         this.indices.forEach((i, j) -> dst.writeShort(i).writeShort(j));
         for (int i = 0; i < size * ENTRY_SIZE; i++) {
@@ -108,7 +111,7 @@ public class VoxelPiece extends AbstractFarPiece<VoxelPos> {
     }
 
     public void get(int index, VoxelData data) {
-        checkArg(index >= 0 && index < this.indices.size(), index);
+        checkArg(index >= 0 && index < this.indexCounter, index);
 
         index *= ENTRY_SIZE;
         int i = this.data.get(index);
@@ -137,20 +140,24 @@ public class VoxelPiece extends AbstractFarPiece<VoxelPos> {
     }
 
     protected int nextIndex(int x, int y, int z)   {
-        int size = this.indices.size();
-        if (size * ENTRY_SIZE == this.data.capacity())   {
-            IntBuffer newData = Constants.createIntBuffer(this.data.capacity() << 1);
-            newData.put(this.data);
-            PUnsafe.pork_releaseBuffer(this.data);
-            this.data = newData;
+        int index = this.indexCounter++;
+        if (index * ENTRY_SIZE == this.data.capacity())   { //grow data buffer
+            IntBuffer oldData = this.data;
+            IntBuffer newData = this.data = Constants.createIntBuffer(oldData.capacity() << 1);
+
+            oldData.clear(); //copy old data to new buffer
+            newData.put(oldData);
+
+            PUnsafe.pork_releaseBuffer(oldData);
         }
-        this.indices.put(index(x, y, z), size);
-        return size;
+        this.indices.put(index(x, y, z), index);
+        return index;
     }
 
     public void clear() {
+        this.indexCounter = 0;
         this.indices.clear();
-        if (this.data.capacity() >= DEFAULT_CAPACITY)   {
+        if (this.data.capacity() > DEFAULT_CAPACITY)   {
             PUnsafe.pork_releaseBuffer(this.data);
             this.data = Constants.createIntBuffer(DEFAULT_CAPACITY);
         }

@@ -84,7 +84,6 @@ public class PerlinNoiseVoxelGenerator extends AbstractFarGenerator implements I
         }
 
         if (corners == 0 || corners == 0xFF) {
-            //piece.set(dx, dy, dz, 0.0d, 0.0d, 0.0d, 0);
             return;
         }
 

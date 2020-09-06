@@ -24,10 +24,11 @@ void main() {
 
     //initial block texture sample
     //vec4 frag_color = texture(terrain_texture, uv);
-    vec4 frag_color = vec4(normalVector(), 1.);
+    vec3 normal = normalVector();
+    vec4 frag_color = vec4(normal * normal, 1.);
 
     //block color multiplier
-    //frag_color.rgb *= fs_in.color;
+    frag_color.rgb *= fs_in.color;
 
     //block/sky light
     //frag_color *= texture(lightmap_texture, fs_in.light);

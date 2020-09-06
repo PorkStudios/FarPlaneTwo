@@ -24,11 +24,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.strategy.base.client.AbstractFarRenderCache;
 import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
 import net.daporkchop.fp2.strategy.voxel.VoxelPos;
-import net.daporkchop.fp2.util.alloc.Allocator;
-import net.daporkchop.fp2.util.alloc.VariableSizedAllocator;
-import net.daporkchop.lib.primitive.lambda.LongLongConsumer;
-
-import static net.daporkchop.fp2.strategy.voxel.client.VoxelRenderHelper.*;
 
 /**
  * @author DaPorkchop_

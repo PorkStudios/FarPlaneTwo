@@ -25,12 +25,13 @@ import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.base.client.IFarRenderBaker;
-import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.voxel.VoxelData;
 import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
 import net.daporkchop.fp2.strategy.voxel.VoxelPos;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
+import net.daporkchop.lib.primitive.map.IntIntMap;
+import net.daporkchop.lib.primitive.map.open.IntIntOpenHashMap;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.stream.Stream;
@@ -87,14 +88,15 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         int z = srcPos.z();
         int level = srcPos.level();
 
-        return Stream.of(
+        /*return Stream.of(
                 //same level
                 srcPos, new VoxelPos(x, y, z - 1, level),
                 new VoxelPos(x, y - 1, z, level), new VoxelPos(x, y - 1, z - 1, level),
                 new VoxelPos(x - 1, y, z, level), new VoxelPos(x - 1, y, z - 1, level),
                 new VoxelPos(x - 1, y - 1, z, level), new VoxelPos(x - 1, y - 1, z - 1, level)//,
                 //below level
-        );
+        );*/
+        return Stream.of(srcPos);
     }
 
     @Override
@@ -104,14 +106,15 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         int z = dstPos.z();
         int level = dstPos.level();
 
-        return Stream.of(
+        /*return Stream.of(
                 //same level
                 dstPos, new VoxelPos(x, y, z + 1, level),
                 new VoxelPos(x, y + 1, z, level), new VoxelPos(x, y + 1, z + 1, level),
                 new VoxelPos(x + 1, y, z, level), new VoxelPos(x + 1, y, z + 1, level),
                 new VoxelPos(x + 1, y + 1, z, level), new VoxelPos(x + 1, y + 1, z + 1, level)//,
                 //below level
-        );
+        );*/
+        return Stream.of(dstPos);
     }
 
     @Override
@@ -139,25 +142,9 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
         final VoxelData data = new VoxelData();
 
-        Int2IntMap map = new Int2IntOpenHashMap();
-        map.defaultReturnValue(0);
+        IntIntMap map = new IntIntOpenHashMap();
 
-        {
-            vertices.writeInt(0); //state
-            vertices.writeShort(Constants.packedLightTo8BitVec2(0xFF)); //light
-            vertices.writeMedium(Constants.convertARGB_ABGR(0xFFFFFFFF)); //color
-
-            vertices.writeShort(Constants.packedLightTo8BitVec2(0xFF)); //light_water
-            vertices.writeMedium(Constants.convertARGB_ABGR(0xFFFFFFFF)); //color_water
-
-            vertices.writeDouble(baseX).writeDouble(baseY).writeDouble(baseZ); //pos_low
-            vertices.writeDouble(baseX).writeDouble(baseY).writeDouble(baseZ); //pos_high
-
-            vertices.writeShort(1 << level); //level_scale
-        }
-
-        int indexCounter = 1;
-
+        int indexCounter = 0;
         for (int dx = 0; dx < T_VOXELS; dx++) {
             for (int dy = 0; dy < T_VOXELS; dy++) {
                 for (int dz = 0; dz < T_VOXELS; dz++) {
@@ -165,19 +152,8 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                         continue;
                     }
 
-                    map.put((dx * (T_VOXELS + 1) + dy) * (T_VOXELS + 1) + dz, indexCounter++);
-
-                    vertices.writeInt(0); //state
-                    vertices.writeShort(Constants.packedLightTo8BitVec2(0xFF)); //light
-                    vertices.writeMedium(Constants.convertARGB_ABGR(0xFFFFFFFF)); //color
-
-                    vertices.writeShort(Constants.packedLightTo8BitVec2(0xFF)); //light_water
-                    vertices.writeMedium(Constants.convertARGB_ABGR(0xFFFFFFFF)); //color_water
-
-                    vertices.writeDouble(baseX + dx + data.dx).writeDouble(baseY + dy + data.dy).writeDouble(baseZ + dz + data.dz); //pos_low
-                    vertices.writeDouble(baseX + dx + data.dx).writeDouble(baseY + dy + data.dy).writeDouble(baseZ + dz + data.dz); //pos_high
-
-                    vertices.writeShort(1 << level); //level_scale
+                    map.put((dx * T_VERTS + dy) * T_VERTS + dz, indexCounter++);
+                    this.vertex(baseX, baseY, baseZ, level, dx, dy, dz, data, vertices);
                 }
             }
         }
@@ -196,7 +172,13 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
 
                         for (int base = edge * CONNECTION_INDEX_COUNT, i = 0; i < CONNECTION_INDEX_COUNT; i++) {
                             int j = CONNECTION_INDICES[base + i];
-                            int index = map.get(((dx + ((j >> 2) & 1)) * (T_VOXELS + 1) + (dy + ((j >> 1) & 1))) * (T_VOXELS + 1) + (dz + (j & 1)));
+                            int ddx = dx + ((j >> 2) & 1);
+                            int ddy = dy + ((j >> 1) & 1);
+                            int ddz = dz + (j & 1);
+
+                            int mapIndex = (ddx * T_VERTS + ddy) * T_VERTS + ddz;
+                            int index = map.getOrDefault(mapIndex, -1);
+                            checkState(index >= 0);
                             indices.writeShort(index);
                         }
                     }
@@ -205,9 +187,17 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         }
     }
 
-    protected void putIndex(int dx, int dy, int dz, int i, VoxelPiece piece, ByteBuf indices) {
-        int index = piece.getIndex(dx + ((i >> 2) & 1), dy + ((i >> 1) & 1), dz + (i & 1));
-        checkState(index >= 0);
-        indices.writeShort(index);
+    protected void vertex(int baseX, int baseY, int baseZ, int level, int dx, int dy, int dz, VoxelData data, ByteBuf vertices) {
+        vertices.writeInt(1); //state
+        vertices.writeShort(Constants.packedLightTo8BitVec2(0xFF)); //light
+        vertices.writeMedium(Constants.convertARGB_ABGR(0xFFFFFFFF)); //color
+
+        vertices.writeShort(Constants.packedLightTo8BitVec2(0xFF)); //light_water
+        vertices.writeMedium(Constants.convertARGB_ABGR(0xFFFFFFFF)); //color_water
+
+        vertices.writeDouble(baseX + dx + data.dx).writeDouble(baseY + dy + data.dy).writeDouble(baseZ + dz + data.dz); //pos_low
+        vertices.writeDouble(baseX + dx + data.dx).writeDouble(baseY + dy + data.dy).writeDouble(baseZ + dz + data.dz); //pos_high
+
+        vertices.writeShort(1 << level);
     }
 }
