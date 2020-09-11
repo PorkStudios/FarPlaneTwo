@@ -26,8 +26,14 @@ package net.daporkchop.fp2.strategy.voxel;
  * @author DaPorkchop_
  */
 public class VoxelData {
+    //vertex position and mesh intersection data
     public double dx;
     public double dy;
     public double dz;
     public int edges;
+
+    //block data (for texturing and shading)
+    public int state;
+    public int biome;
+    public int light;
 }
