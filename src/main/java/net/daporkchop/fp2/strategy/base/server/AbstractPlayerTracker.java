@@ -137,9 +137,14 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
             return;
         }
 
-        new ArrayList<>(this.entries.values()).stream()
-                .filter(e -> e.players.contains(player))
-                .forEach(e -> e.removePlayer(player));
+        Set<POS> trackingPositions = this.trackingPositions.get(player);
+        if (trackingPositions != null)  {
+            trackingPositions.clear();
+
+            new ArrayList<>(this.entries.values()).stream()
+                    .filter(e -> e.players.contains(player))
+                    .forEach(e -> e.removePlayer(player));
+        }
     }
 
     protected abstract Stream<POS> getPositions(@NonNull EntityPlayerMP player);
@@ -202,7 +207,9 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
             //send packet to all players
             SPacketPieceData packet = new SPacketPieceData().piece(piece);
             //TODO: make this not be async after fixing exact generator
-            this.players.forEach(player -> GlobalEventExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(packet, player)));
+            //this.players.forEach(player -> GlobalEventExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(packet, player)));
+            //TODO: figure out what the above TODO was referring to
+            this.players.forEach(player -> NETWORK_WRAPPER.sendTo(packet, player));
         }
     }
 }

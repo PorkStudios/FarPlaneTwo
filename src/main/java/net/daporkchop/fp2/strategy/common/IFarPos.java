@@ -30,7 +30,7 @@ import net.minecraft.util.math.AxisAlignedBB;
  *
  * @author DaPorkchop_
  */
-public interface IFarPos {
+public interface IFarPos extends Comparable<IFarPos> {
     /**
      * @return the level of detail at this position
      */
@@ -87,4 +87,17 @@ public interface IFarPos {
      * @return the maximum volume that the piece at this position could possibly occupy
      */
     AxisAlignedBB bounds();
+
+    /**
+     * Compares two positions in some arbitrary manner.
+     * <p>
+     * The function may be implemented in any way, but must be consistent and must only return {@code 0} for positions that are also considered
+     * identical by {@link #equals(Object)}.
+     * <p>
+     * Failure to implement this correctly will result in a deadlock of the rendering threads!
+     *
+     * @see Comparable#compareTo(Object)
+     */
+    @Override
+    int compareTo(IFarPos o);
 }

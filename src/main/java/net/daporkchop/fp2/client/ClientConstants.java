@@ -24,9 +24,10 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.KeyedTaskScheduler;
+import net.daporkchop.fp2.util.threading.keyed.DefaultKeyedTaskScheduler;
+import net.daporkchop.fp2.util.threading.keyed.KeyedTaskScheduler;
+import net.daporkchop.fp2.util.threading.keyed.PriorityKeyedTaskScheduler;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
-import net.daporkchop.lib.common.misc.threadfactory.ThreadFactoryBuilder;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.chunk.CompiledChunk;
@@ -45,12 +46,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @UtilityClass
 @SideOnly(Side.CLIENT)
 public class ClientConstants {
-    public static KeyedTaskScheduler<Object> RENDER_WORKERS;
+    public static final Minecraft mc = Minecraft.getMinecraft();
+
+    public static KeyedTaskScheduler<IFarPos> RENDER_WORKERS;
 
     public synchronized static void init() {
         checkState(RENDER_WORKERS == null, "render workers already running?!?");
 
-        RENDER_WORKERS = new KeyedTaskScheduler<>(
+        RENDER_WORKERS = new PriorityKeyedTaskScheduler<>(
                 FP2Config.client.renderThreads,
                 PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build());
     }

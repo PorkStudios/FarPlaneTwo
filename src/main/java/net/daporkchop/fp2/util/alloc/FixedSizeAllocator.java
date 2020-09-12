@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.util.alloc;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.lib.primitive.lambda.IntIntFunction;
 import net.daporkchop.lib.primitive.lambda.LongLongConsumer;
 
@@ -34,8 +33,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public class FixedSizeAllocator extends BitSet implements Allocator { //extend BitSet to eliminate an indirection
+public final class FixedSizeAllocator extends BitSet implements Allocator { //extend BitSet to eliminate an indirection
     public static final IntIntFunction DEFAULT_GROW_FUNCTION = i -> {
         if (i == 0) {
             return 1;
@@ -78,7 +76,7 @@ public class FixedSizeAllocator extends BitSet implements Allocator { //extend B
         this.set(slot);
         this.fromIndex = slot;
 
-        if (slot >= this.size)   {
+        if (slot >= this.size) {
             int oldSize = this.size;
             this.size = this.growFunction.applyAsInt(oldSize);
             checkState(this.size > oldSize, "size (%d) must be greater than previous size (%d)", this.size, oldSize);
@@ -91,7 +89,7 @@ public class FixedSizeAllocator extends BitSet implements Allocator { //extend B
     public void free(long address) {
         int slot = toInt(address / this.block);
         this.clear(slot);
-        if (slot < this.fromIndex)  {
+        if (slot < this.fromIndex) {
             this.fromIndex = slot;
         }
     }

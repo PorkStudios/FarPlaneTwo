@@ -56,10 +56,10 @@ public class HeightmapPiece extends AbstractFarPiece<HeightmapPos> {
 
     private static int index(int x, int z) {
         checkArg(x >= 0 && x < T_VOXELS && z >= 0 && z < T_VOXELS, "coordinates out of bounds (x=%d, z=%d)", x, z);
-        return (x * T_VOXELS + z) * 4;
+        return (x * T_VOXELS + z) * ENTRY_SIZE;
     }
 
-    protected final IntBuffer data = Constants.createIntBuffer(ENTRY_COUNT * 4);
+    protected final IntBuffer data = Constants.createIntBuffer(TOTAL_SIZE);
 
     public HeightmapPiece(@NonNull HeightmapPos pos) {
         super(pos, RenderMode.HEIGHTMAP);
@@ -77,6 +77,13 @@ public class HeightmapPiece extends AbstractFarPiece<HeightmapPos> {
     protected void writeBody(@NonNull ByteBuf dst) {
         for (int i = 0; i < TOTAL_SIZE; i++) {
             dst.writeInt(this.data.get(i));
+        }
+    }
+
+    @Override
+    public void clear() {
+        for (int i = 0; i < TOTAL_SIZE; i++) {
+            this.data.put(i, 0);
         }
     }
 
@@ -115,7 +122,6 @@ public class HeightmapPiece extends AbstractFarPiece<HeightmapPos> {
                 .put(base + 1, (light << 24) | state)
                 .put(base + 2, (waterBiome << 16) | (waterLight << 8) | biome)
                 .put(base + 3, 0);
-        this.markDirty();
         return this;
     }
 
@@ -133,9 +139,9 @@ public class HeightmapPiece extends AbstractFarPiece<HeightmapPos> {
         this.data.put(base + 2, i2);
         this.data.put(base + 3, i3);
 
+        //TODO: figure out why i manually unrolled this loop
         /*for (int i = 0; i < 4; i++) {
             this.data.put(base + i, src.data.get(srcBase + i));
         }*/
-        this.markDirty();
     }
 }

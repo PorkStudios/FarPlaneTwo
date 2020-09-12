@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.strategy.heightmap;
 
 import io.netty.buffer.ByteBuf;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +39,6 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @RequiredArgsConstructor
 @Getter
 @ToString
-@EqualsAndHashCode
 public class HeightmapPos implements IFarPos {
     protected final int x;
     protected final int z;
@@ -76,7 +74,7 @@ public class HeightmapPos implements IFarPos {
     }
 
     @Override
-    public IFarPos upTo(int targetLevel) {
+    public HeightmapPos upTo(int targetLevel) {
         if (targetLevel == this.level) {
             return this;
         }
@@ -111,5 +109,38 @@ public class HeightmapPos implements IFarPos {
         return new AxisAlignedBB(
                 this.x << shift, Integer.MIN_VALUE, this.z << shift,
                 (this.x + 1) << shift, Integer.MAX_VALUE, (this.z + 1) << shift);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        } else if (obj instanceof HeightmapPos) {
+            HeightmapPos pos = (HeightmapPos) obj;
+            return this.x == pos.x && this.z == pos.z && this.level == pos.level;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return this.x * 1317194159 + this.z * 1656858407 + this.level;
+    }
+
+    @Override
+    public int compareTo(IFarPos posIn) {
+        int d = Integer.compare(this.level, posIn.level());
+        if (d == 0) {
+            if (posIn instanceof HeightmapPos) {
+                HeightmapPos pos = (HeightmapPos) posIn;
+                if ((d = Integer.compare(this.x, pos.x)) == 0) {
+                    d = Integer.compare(this.z, pos.z);
+                }
+            } else {
+                return HeightmapPos.class.getCanonicalName().compareTo(posIn.getClass().getCanonicalName());
+            }
+        }
+        return d;
     }
 }

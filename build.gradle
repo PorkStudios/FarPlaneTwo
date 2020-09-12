@@ -44,7 +44,7 @@ apply plugin: "org.spongepowered.mixin"
 ext {
     //general things
     javaVersion = "1.8"
-    fp2Version = "0.0.1"
+    fp2Version = "0.0.1." + ('git rev-list --count HEAD'.execute().text.trim())
 
     //minecraft things
     mcpmappingsVersion = "stable_39"

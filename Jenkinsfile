@@ -1,3 +1,22 @@
+String getDiscordMessage() {
+    def msg = "**Status:** " + currentBuild.currentResult.toLowerCase() + "\n**Branch:** ${BRANCH_NAME}\n**Changes:**"
+    if (!currentBuild.changeSets.isEmpty()) {
+        currentBuild.changeSets.first().getLogs().any {
+            def line = "\n- `" + it.getCommitId().substring(0, 8) + "` *" + it.getComment().split("\n")[0].replaceAll('(?<!\\\\)([_*~`])', '\\\\$1') + "*"
+            if (msg.length() + line.length() <= 2000)   {
+                msg += line
+                return
+            } else {
+                return true
+            }
+        }
+    } else {
+        msg += "\n- no changes"
+    }
+
+    return msg
+}
+
 /*
  * Adapted from The MIT License (MIT)
  *
@@ -28,7 +47,7 @@ pipeline {
         buildDiscarder(logRotator(artifactNumToKeepStr: '5'))
     }
     stages {
-        stage("Prepare workspace ") {
+        stage("Prepare workspace") {
             steps {
                 sh "./gradlew setupCiWorkspace"
             }
@@ -39,7 +58,6 @@ pipeline {
             }
             post {
                 success {
-                    sh "bash ./add_jar_suffix.sh " + sh(script: "git log -n 1 --pretty=format:'%H'", returnStdout: true).substring(0, 8) + "-" + env.BRANCH_NAME.replaceAll("[^a-zA-Z0-9.]", "_")
                     archiveArtifacts artifacts: "build/libs/*.jar", fingerprint: true
                 }
             }
@@ -50,6 +68,15 @@ pipeline {
         always {
             sh "./gradlew --stop"
             deleteDir()
+
+            withCredentials([string(credentialsId: "daporkchop_discord_webhook", variable: "discordWebhook")]) {
+                discordSend thumbnail: "https://cloud.daporkchop.net/static/img/logo/128/farplanetwo.png",
+                        result: currentBuild.currentResult,
+                        description: getDiscordMessage(),
+                        link: env.BUILD_URL,
+                        title: "FarPlaneTwo/${BRANCH_NAME} #${BUILD_NUMBER}",
+                        webhookURL: "${discordWebhook}"
+            }
         }
     }
 }

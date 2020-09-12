@@ -76,8 +76,10 @@ public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS
                 return piece;
             }
 
-            this.world.generatorRough().generate(piece);
+            piece.clear(); //reset piece contents
+            this.world.generatorRough().generate(piece); //generate piece
             piece.updateTimestamp(newTimestamp);
+            piece.markDirty();
 
             piece.readLock().lock(); //downgrade lock
         } finally {

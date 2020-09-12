@@ -60,8 +60,8 @@ public class GetPieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends
                 //this adds the piece to the cache, unmarks it as not done and notifies the player tracker
                 this.world.pieceChanged(piece);
             } else { //the piece has not been fully generated yet
-                if (this.requestedBy == TaskStage.GET //only allow rough generation if the piece was requested for loading by a player's presence
-                    && (this.pos.level() == 0 || this.world.lowResolution())) {
+                if (this.pos.level() == 0 //only allow rough generation if the piece was requested for loading by a player's presence
+                    || (this.requestedBy == TaskStage.GET && this.world.lowResolution())) {
                     //the piece can be generated using the rough generator
                     executor.submit(new RoughGeneratePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_GENERATE), this.pos)
                             .thenCopyStatusTo(this));

@@ -20,29 +20,19 @@
 
 //
 //
-// MACROS
-//
-//
-
-#define HEIGHTMAP_TYPE ivec4
-
-//
-//
 // VERTEX ATTRIBUTES
 //
 //
 
-layout(location = 0) in ivec2 in_offset_absolute;
-layout(location = 1) in ivec2 in_offset_chunk;
-layout(location = 2) in int in_vertexID_chunk;
+layout(location = 0) in int in_state;
+layout(location = 1) in vec2 in_light;
+layout(location = 2) in vec3 in_color;
+layout(location = 3) in vec2 in_light_water;
+layout(location = 4) in vec3 in_color_water;
 
-//
-//
-// UNIFORMS
-//
-//
-
-uniform int current_base_level;
+layout(location = 5) in dvec3 in_pos_low;
+layout(location = 6) in dvec3 in_pos_high;
+layout(location = 7) in float in_level_scale;
 
 //
 //
@@ -54,89 +44,6 @@ out VS_OUT {
     vec3 pos;
     vec2 light;
 
-    flat vec4 color;
+    flat vec3 color;
     flat int state;
-    flat int cancel;
 } vs_out;
-
-//
-//
-// BUFFERS
-//
-//
-
-//positions
-struct TileIndex {
-    ivec2 tilePos;
-    int level;
-    int index;
-};
-
-struct TileIndexEntry {
-    TileIndex low[4];
-    TileIndex high[4];
-};
-
-layout(std430, binding = 2) buffer TILE_INDEX {
-    TileIndexEntry data[];
-} tile_index;
-
-TileIndexEntry indexEntry()   {
-    return tile_index.data[gl_InstanceID];
-}
-
-ivec2 toWorldPos(TileIndex index) {
-    return (index.tilePos * HEIGHTMAP_VOXELS + in_offset_absolute) << index.level;
-}
-
-//tile data
-layout(std430, binding = 3) buffer TILE_DATA {
-    HEIGHTMAP_TYPE data[][HEIGHTMAP_VOXELS * HEIGHTMAP_VOXELS];
-} tile_data;
-
-HEIGHTMAP_TYPE sampleHeightmap(TileIndex index)   {
-    vs_out.cancel = index.index;
-    return tile_data.data[index.index][in_vertexID_chunk];
-}
-
-HEIGHTMAP_TYPE sampleHeightmap(TileIndex index, ivec2 posXZ)   {
-    posXZ = (posXZ >> index.level) & HEIGHTMAP_MASK;
-    return tile_data.data[index.index][(posXZ.x << HEIGHTMAP_SHIFT) | posXZ.y];
-}
-
-int toSlot(TileIndex index, ivec2 posXZ)  {
-    ivec2 p2 = (posXZ >> (index.level + HEIGHTMAP_SHIFT)) - index.tilePos;
-    return ((p2.x & 1) << 1) | (p2.y & 1);
-}
-
-//
-//
-// UTILITIES
-//
-//
-
-//heightmap data unpacking
-
-int unpackHeight(HEIGHTMAP_TYPE p)  {
-    return p[0];
-}
-
-int unpackBlock(HEIGHTMAP_TYPE p)   {
-    return p[1] & 0xFFFFFF;
-}
-
-vec2 unpackBlockLight(HEIGHTMAP_TYPE p)   {
-    return unpackCombinedLight(p[1] >> 24);
-}
-
-vec4 unpackBlockColor(HEIGHTMAP_TYPE p)  {
-    return fromARGB(p[2]);
-}
-
-vec2 unpackWaterLight(HEIGHTMAP_TYPE p) {
-    return unpackCombinedLight(p[3] >> 24);
-}
-
-vec4 unpackWaterColor(HEIGHTMAP_TYPE p) {
-    return fromRGB(p[3]);
-}

@@ -136,7 +136,7 @@ public class Frustum implements ICamera {
         for (int i = 0; i < 6; i++) {
             int off = i * 4;
 
-            if (this.dot(frustum, off, x, y, z, 1.0d) <= 0.0d) {
+            if (dot(frustum, off, x, y, z, 1.0d) <= 0.0d) {
                 return false;
             }
         }
@@ -161,14 +161,14 @@ public class Frustum implements ICamera {
         for (int i = 0; i < 6; i++) {
             int off = i * 4;
 
-            if (this.dot(frustum, off, minX, minY, minZ, 1.0d) <= 0.0d
-                && this.dot(frustum, off, maxX, minY, minZ, 1.0d) <= 0.0d
-                && this.dot(frustum, off, minX, maxY, minZ, 1.0d) <= 0.0d
-                && this.dot(frustum, off, maxX, maxY, minZ, 1.0d) <= 0.0d
-                && this.dot(frustum, off, minX, minY, maxZ, 1.0d) <= 0.0d
-                && this.dot(frustum, off, maxX, minY, maxZ, 1.0d) <= 0.0d
-                && this.dot(frustum, off, minX, maxY, maxZ, 1.0d) <= 0.0d
-                && this.dot(frustum, off, maxX, maxY, maxZ, 1.0d) <= 0.0d) {
+            if (dot(frustum, off, minX, minY, minZ, 1.0d) <= 0.0d
+                && dot(frustum, off, maxX, minY, minZ, 1.0d) <= 0.0d
+                && dot(frustum, off, minX, maxY, minZ, 1.0d) <= 0.0d
+                && dot(frustum, off, maxX, maxY, minZ, 1.0d) <= 0.0d
+                && dot(frustum, off, minX, minY, maxZ, 1.0d) <= 0.0d
+                && dot(frustum, off, maxX, minY, maxZ, 1.0d) <= 0.0d
+                && dot(frustum, off, minX, maxY, maxZ, 1.0d) <= 0.0d
+                && dot(frustum, off, maxX, maxY, maxZ, 1.0d) <= 0.0d) {
                 return false;
             }
         }

@@ -25,6 +25,7 @@ import net.daporkchop.fp2.asm.client.gui.IGuiScreen;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
 import net.daporkchop.fp2.net.client.CPacketDropAllPieces;
+import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiVideoSettings;
 import net.minecraftforge.client.event.GuiScreenEvent;
@@ -38,6 +39,7 @@ import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -68,6 +70,8 @@ public class ClientEvents {
             ShaderManager.reload();
         } else if (KeyBindings.DROP_PIECES.isPressed()) {
             NETWORK_WRAPPER.sendToServer(new CPacketDropAllPieces());
+        } else if (KeyBindings.RENDER_PIECES.isPressed()) {
+            ((IFarContext) mc.world).renderer().debug_renderPieces();
         }
     }
 

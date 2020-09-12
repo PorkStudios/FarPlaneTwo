@@ -27,6 +27,7 @@ import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 import net.minecraft.entity.player.EntityPlayerMP;
 
+import java.util.Arrays;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -49,14 +50,10 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
         final int levels = FP2Config.maxLevels;
         final int d = (FP2Config.levelCutoffDistance >> T_SHIFT) + 1;
 
-        HeightmapPos[] positions = new HeightmapPos[(d * 2 + 1) * (d * 2 + 1) * levels];
+        HeightmapPos[] positions = new HeightmapPos[pow(d * 2 + 1, 2) * levels];
         int i = 0;
 
         for (int lvl = 0; lvl < levels; lvl++) {
-            /*int xMin = ((baseX >> lvl) - d) & ~1;
-            int xMax = ((baseX >> lvl) + d) | 1;
-            int zMin = ((baseZ >> lvl) - d) & ~1;
-            int zMax = ((baseZ >> lvl) + d) | 1;*/
             int xMin = ((baseX >> lvl) - d);
             int xMax = ((baseX >> lvl) + d);
             int zMin = ((baseZ >> lvl) - d);
@@ -69,6 +66,6 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
             }
         }
 
-        return Stream.of(positions);
+        return Arrays.stream(positions, 0, i);
     }
 }

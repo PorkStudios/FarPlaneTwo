@@ -31,6 +31,9 @@ import static org.lwjgl.util.glu.GLU.*;
  */
 @UtilityClass
 public class OpenGL {
+    public final int BYTE_SIZE = Byte.BYTES;
+    public final int SHORT_SIZE = Short.BYTES;
+    public final int MEDIUM_SIZE = SHORT_SIZE + BYTE_SIZE;
     public final int FLOAT_SIZE = Float.BYTES;
     public final int INT_SIZE = Integer.BYTES;
     public final int DOUBLE_SIZE = Double.BYTES;
@@ -41,6 +44,9 @@ public class OpenGL {
     public final int DVEC2_SIZE = VEC2_ELEMENTS * DOUBLE_SIZE;
 
     public final int VEC3_ELEMENTS = 3;
+    public final int VEC3_SIZE_TIGHT = VEC3_ELEMENTS * FLOAT_SIZE;
+    public final int IVEC3_SIZE_TIGHT = VEC3_ELEMENTS * INT_SIZE;
+    public final int DVEC3_SIZE_TIGHT = VEC3_ELEMENTS * DOUBLE_SIZE;
     public final int VEC3_SIZE = (VEC3_ELEMENTS + 1) * FLOAT_SIZE;
     public final int IVEC3_SIZE = (VEC3_ELEMENTS + 1) * INT_SIZE;
     public final int DVEC3_SIZE = (VEC3_ELEMENTS + 1) * DOUBLE_SIZE;

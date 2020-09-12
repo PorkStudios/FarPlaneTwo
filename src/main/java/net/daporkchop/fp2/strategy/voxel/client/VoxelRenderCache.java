@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-$today.year DaPorkchop_
+ * Copyright (c) 2020-2020 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,13 +18,31 @@
  *
  */
 
-//
-//
-// MACROS
-//
-//
+package net.daporkchop.fp2.strategy.voxel.client;
 
-#define HEIGHTMAP_SHIFT (4)
-#define HEIGHTMAP_MASK ((1 << HEIGHTMAP_SHIFT) - 1)
-#define HEIGHTMAP_VOXELS (1 << HEIGHTMAP_SHIFT)
-#define HEIGHTMAP_VERTS (HEIGHTMAP_VOXELS + 1)
+import lombok.NonNull;
+import net.daporkchop.fp2.strategy.base.client.AbstractFarRenderCache;
+import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
+import net.daporkchop.fp2.strategy.voxel.VoxelPos;
+
+/**
+ * @author DaPorkchop_
+ */
+public class VoxelRenderCache extends AbstractFarRenderCache<VoxelPos, VoxelPiece, VoxelRenderTile> {
+    public VoxelRenderCache(@NonNull VoxelRenderer renderer) {
+        super(renderer, VoxelRenderBaker.VOXEL_VERTEX_SIZE);
+    }
+
+    @Override
+    public VoxelRenderTile createTile(VoxelRenderTile parent, @NonNull VoxelPos pos) {
+        return new VoxelRenderTile(this, parent, pos);
+    }
+
+    @Override
+    public void tileAdded(@NonNull VoxelRenderTile tile) {
+    }
+
+    @Override
+    public void tileRemoved(@NonNull VoxelRenderTile tile) {
+    }
+}

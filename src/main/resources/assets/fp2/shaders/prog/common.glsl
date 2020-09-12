@@ -33,6 +33,11 @@
 #define FOG_EXP (2048)
 #define FOG_EXP2 (2049)
 
+#define T_SHIFT (4)
+#define T_MASK ((1 << T_SHIFT) - 1)
+#define T_VOXELS (1 << T_SHIFT)
+#define T_VERTS (T_VOXELS + 1)
+
 //
 //
 // UNIFORMS

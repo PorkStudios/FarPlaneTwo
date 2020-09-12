@@ -22,19 +22,15 @@ package net.daporkchop.fp2.strategy.heightmap.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.base.client.AbstractFarRenderTile;
+import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
 
 /**
  * @author DaPorkchop_
  */
-class HeightmapRenderTile extends AbstractFarRenderTile<HeightmapPos, HeightmapRenderIndex, HeightmapRenderTile> {
+class HeightmapRenderTile extends AbstractFarRenderTile<HeightmapPos, HeightmapPiece, HeightmapRenderTile> {
     public HeightmapRenderTile(HeightmapRenderCache cache, HeightmapRenderTile parent, @NonNull HeightmapPos pos) {
         super(cache, parent, pos, pos.bounds(), 4);
-    }
-
-    @Override
-    protected HeightmapRenderTile[] tileArray(int size) {
-        return new HeightmapRenderTile[size];
     }
 
     @Override
