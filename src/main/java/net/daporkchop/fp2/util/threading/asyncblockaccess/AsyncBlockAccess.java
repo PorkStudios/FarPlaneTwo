@@ -18,33 +18,53 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.cachedblockaccess;
+package net.daporkchop.fp2.util.threading.asyncblockaccess;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
+import net.daporkchop.lib.concurrent.PFuture;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
-import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
+
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * Thread-safe cache for block data in a world.
  *
  * @author DaPorkchop_
  */
-public interface CachedBlockAccess extends IBlockHeightAccess {
+public interface AsyncBlockAccess extends IBlockHeightAccess {
     /**
-     * Requests that all blocks in the given range be fetched into the cache.
+     * Asynchronously prefetches the chunks at the given positions into a single {@link IBlockHeightAccess}.
      * <p>
-     * This can help prevent multiple consecutive cache misses when a large area is going to be accessed.
+     * The returned {@link IBlockHeightAccess} will be able to respond to queries outside of the requested area, but they will be significantly
+     * slower.
      *
-     * @param range   a bounding box containing the region to prefetch
-     * @param ignoreY whether or not the Y value should be ignored
+     * @param chunks a {@link Stream} containing the positions of all the chunks to get
+     * @return a single {@link IBlockHeightAccess} covering all of the given chunks
      */
-    void prefetch(@NonNull AxisAlignedBB range, boolean ignoreY);
+    PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> chunks);
+
+    /**
+     * Asynchronously prefetches the chunks and cubes at the given positions into a single {@link IBlockHeightAccess}.
+     * <p>
+     * The returned {@link IBlockHeightAccess} will be able to respond to queries outside of the requested area, but they will be significantly
+     * slower.
+     *
+     * @param chunks               a {@link Stream} containing the positions of all the chunks to get
+     * @param cubesMappingFunction a function to produce a {@link Stream} containing the positions of all the cubes to get. The input parameter
+     *                             is an {@link IBlockHeightAccess} containing only the requested chunks, but no cubes. Note that implementations
+     *                             may choose to ignore this parameter.
+     * @return a single {@link IBlockHeightAccess} covering all of the given chunks and cubes
+     */
+    PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> chunks, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction);
 
     /**
      * Drops some data from the cache.
@@ -99,11 +119,11 @@ public interface CachedBlockAccess extends IBlockHeightAccess {
     }
 
     /**
-     * Allows access to the {@link CachedBlockAccess} belonging to a {@link net.minecraft.world.WorldServer}.
+     * Allows access to the {@link AsyncBlockAccess} belonging to a {@link net.minecraft.world.WorldServer}.
      *
      * @author DaPorkchop_
      */
     interface Holder {
-        CachedBlockAccess cachedBlockAccess();
+        AsyncBlockAccess asyncBlockAccess();
     }
 }

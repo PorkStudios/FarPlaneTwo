@@ -81,10 +81,20 @@ public class HeightmapPiece extends AbstractFarPiece<HeightmapPos> {
     }
 
     @Override
+    public boolean isBlank() {
+        return false;
+    }
+
+    @Override
     public void clear() {
         for (int i = 0; i < TOTAL_SIZE; i++) {
             this.data.put(i, 0);
         }
+    }
+
+    @Override
+    public void postGenerate() {
+        //no-op
     }
 
     public int height(int x, int z) {

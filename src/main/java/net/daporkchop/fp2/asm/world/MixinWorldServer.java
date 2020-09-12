@@ -26,9 +26,9 @@ import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.daporkchop.fp2.strategy.common.server.IFarPlayerTracker;
 import net.daporkchop.fp2.strategy.common.server.IFarWorld;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
-import net.daporkchop.fp2.util.threading.cachedblockaccess.CCCachedBlockAccessImpl;
-import net.daporkchop.fp2.util.threading.cachedblockaccess.VanillaCachedBlockAccessImpl;
+import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
+import net.daporkchop.fp2.util.threading.asyncblockaccess.cc.CCAsyncBlockAccessImpl;
+import net.daporkchop.fp2.util.threading.asyncblockaccess.vanilla.VanillaAsyncBlockAccessImpl;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import org.spongepowered.asm.mixin.Implements;
@@ -47,10 +47,10 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Mixin(WorldServer.class)
 @Implements({
         @Interface(iface = IFarContext.class, prefix = "fp2_world$", unique = true),
-        @Interface(iface = CachedBlockAccess.Holder.class, prefix = "fp2_cachedBlockAccess$", unique = true)
+        @Interface(iface = AsyncBlockAccess.Holder.class, prefix = "fp2_asyncBlockAccess$", unique = true)
 })
-public abstract class MixinWorldServer extends World implements IFarContext, CachedBlockAccess.Holder {
-    protected CachedBlockAccess cachedBlockAccess;
+public abstract class MixinWorldServer extends World implements IFarContext, AsyncBlockAccess.Holder {
+    protected AsyncBlockAccess asyncBlockAccess;
 
     protected RenderMode mode;
     protected IFarWorld world;
@@ -66,8 +66,8 @@ public abstract class MixinWorldServer extends World implements IFarContext, Cac
     }
 
     @Override
-    public CachedBlockAccess cachedBlockAccess() {
-        return this.cachedBlockAccess;
+    public AsyncBlockAccess asyncBlockAccess() {
+        return this.asyncBlockAccess;
     }
 
     @Inject(method = "Lnet/minecraft/world/WorldServer;tick()V",
@@ -77,7 +77,7 @@ public abstract class MixinWorldServer extends World implements IFarContext, Cac
     private void tick_postChunkProviderTick(CallbackInfo ci) {
         if (this.cbaGcTicks++ > 40) {
             this.cbaGcTicks = 0;
-            this.cachedBlockAccess.gc();
+            this.asyncBlockAccess.gc();
         }
         if (this.saveTicks > 1200) {
             this.saveTicks = 0;
@@ -87,9 +87,9 @@ public abstract class MixinWorldServer extends World implements IFarContext, Cac
 
     @Override
     public void init(@NonNull RenderMode mode) {
-        this.cachedBlockAccess = Constants.isCubicWorld(this)
-                                 ? new CCCachedBlockAccessImpl((WorldServer) (Object) this)
-                                 : new VanillaCachedBlockAccessImpl((WorldServer) (Object) this);
+        this.asyncBlockAccess = Constants.isCubicWorld(this)
+                                 ? new CCAsyncBlockAccessImpl((WorldServer) (Object) this)
+                                 : new VanillaAsyncBlockAccessImpl((WorldServer) (Object) this);
         this.world = mode.createWorld((WorldServer) (Object) this);
         this.tracker = mode.createPlayerTracker(this.world);
         this.mode = mode;

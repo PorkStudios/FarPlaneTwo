@@ -27,7 +27,7 @@ import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.strategy.common.server.scale.IFarScaler;
-import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
+import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.minecraft.world.WorldServer;
 
 import java.io.Closeable;
@@ -39,7 +39,7 @@ import java.io.IOException;
 public interface IFarWorld<POS extends IFarPos, P extends IFarPiece<POS>> extends Closeable {
     WorldServer world();
 
-    CachedBlockAccess blockAccess();
+    AsyncBlockAccess blockAccess();
 
     /**
      * Gets the {@link IFarPiece} at the given position.

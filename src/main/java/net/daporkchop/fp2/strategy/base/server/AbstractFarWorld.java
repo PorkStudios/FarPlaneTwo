@@ -41,7 +41,7 @@ import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.strategy.common.server.scale.IFarScaler;
 import net.daporkchop.fp2.util.threading.keyed.DefaultKeyedTaskScheduler;
-import net.daporkchop.fp2.util.threading.cachedblockaccess.CachedBlockAccess;
+import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
 import net.daporkchop.lib.binary.stream.DataIn;
@@ -145,7 +145,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
                 @Override
                 public void generate(@NonNull P piece) {
                     //TODO: optimize this lol
-                    generatorExact.generate(((CachedBlockAccess.Holder) AbstractFarWorld.this.world).cachedBlockAccess(), piece);
+                    generatorExact.generate(((AsyncBlockAccess.Holder) AbstractFarWorld.this.world).asyncBlockAccess(), piece);
                 }
 
                 @Override
@@ -273,8 +273,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
     protected abstract POS fromBlockCoords(int x, int y, int z);
 
     @Override
-    public CachedBlockAccess blockAccess() {
-        return ((CachedBlockAccess.Holder) this.world).cachedBlockAccess();
+    public AsyncBlockAccess blockAccess() {
+        return ((AsyncBlockAccess.Holder) this.world).asyncBlockAccess();
     }
 
     @Override

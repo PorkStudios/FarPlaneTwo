@@ -18,22 +18,28 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.cachedblockaccess;
+package net.daporkchop.fp2.util.threading.asyncblockaccess.cc;
 
 import io.github.opencubicchunks.cubicchunks.api.util.CubePos;
 import io.github.opencubicchunks.cubicchunks.api.world.IColumn;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import lombok.NonNull;
+import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
+import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.util.PorkUtil;
+import net.daporkchop.lib.concurrent.PFuture;
+import net.daporkchop.lib.concurrent.PFutures;
 import net.daporkchop.lib.primitive.map.LongObjMap;
 import net.daporkchop.lib.primitive.map.concurrent.LongObjConcurrentHashMap;
 import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldType;
@@ -42,30 +48,30 @@ import net.minecraft.world.chunk.Chunk;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.LongFunction;
+import java.util.stream.Stream;
 
 /**
- * Default implementation of {@link CachedBlockAccess} for vanilla worlds.
+ * Default implementation of {@link AsyncBlockAccess} for vanilla worlds.
  *
  * @author DaPorkchop_
  */
 //this makes the assumption that asynchronous read-only access to Chunk is safe, which seems to be the case although i'm not entirely sure. testing needed
-public class CCCachedBlockAccessImpl implements CachedBlockAccess {
+public class CCAsyncBlockAccessImpl implements AsyncBlockAccess {
     protected final WorldServer world;
 
     protected final LongObjMap<Object> cache2d = new LongObjConcurrentHashMap<>();
-    protected final LongFunction<CompletableFuture<Chunk>> cacheMiss2d;
+    protected final LongFunction<PFuture<Chunk>> cacheMiss2d;
 
     protected final Map<CubePos, Object> cache3d = new ObjObjConcurrentHashMap<>();
-    protected final Function<CubePos, CompletableFuture<ICube>> cacheMiss3d;
+    protected final Function<CubePos, PFuture<ICube>> cacheMiss3d;
 
-    public CCCachedBlockAccessImpl(@NonNull WorldServer world) {
+    public CCAsyncBlockAccessImpl(@NonNull WorldServer world) {
         this.world = world;
 
         this.cacheMiss2d = l -> {
-            CompletableFuture<Chunk> future = CompletableFuture.supplyAsync(
+            PFuture<Chunk> future = PFutures.computeAsync(
                     () -> this.world.getChunk(BinMath.unpackX(l), BinMath.unpackY(l)),
                     ServerThreadExecutor.INSTANCE);
             future.thenAcceptAsync(chunk -> this.cache2d.replace(l, future, chunk)); //replace future with chunk instance in cache, to avoid indirection
@@ -73,7 +79,7 @@ public class CCCachedBlockAccessImpl implements CachedBlockAccess {
         };
 
         this.cacheMiss3d = pos -> {
-            CompletableFuture<ICube> future = CompletableFuture.supplyAsync(
+            PFuture<ICube> future = PFutures.computeAsync(
                     () -> ((ICubicWorld) this.world).getCubeFromCubeCoords(pos),
                     ServerThreadExecutor.INSTANCE);
             future.thenAcceptAsync(cube -> this.cache3d.replace(pos, future, cube));
@@ -89,8 +95,8 @@ public class CCCachedBlockAccessImpl implements CachedBlockAccess {
         Object o = this.fetchChunk(chunkX, chunkZ);
         if (o instanceof Chunk) {
             return (Chunk) o;
-        } else if (o instanceof CompletableFuture) {
-            return PorkUtil.<CompletableFuture<Chunk>>uncheckedCast(o).join();
+        } else if (o instanceof PFuture) {
+            return PorkUtil.<PFuture<Chunk>>uncheckedCast(o).join();
         } else {
             throw new RuntimeException(Objects.toString(o));
         }
@@ -104,33 +110,21 @@ public class CCCachedBlockAccessImpl implements CachedBlockAccess {
         Object o = this.fetchCube(chunkX, cubeY, chunkZ);
         if (o instanceof ICube) {
             return (ICube) o;
-        } else if (o instanceof CompletableFuture) {
-            return PorkUtil.<CompletableFuture<ICube>>uncheckedCast(o).join();
+        } else if (o instanceof PFuture) {
+            return PorkUtil.<PFuture<ICube>>uncheckedCast(o).join();
         } else {
             throw new RuntimeException(Objects.toString(o));
         }
     }
 
     @Override
-    public void prefetch(@NonNull AxisAlignedBB range, boolean ignoreY) {
-        int minX = (int) range.minX >> 4;
-        int maxX = (int) range.maxX >> 4;
-        int minZ = (int) range.minZ >> 4;
-        int maxZ = (int) range.maxZ >> 4;
-        int minY = (int) range.minY >> 4;
-        int maxY = (int) range.maxY >> 4;
+    public PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> chunks) {
+        return null; //TODO: implement this
+    }
 
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                this.fetchChunk(x, z); //worker threads will only create a future and submit it to the main thread without blocking
-
-                if (!ignoreY) {
-                    for (int y = minY; y <= maxY; y++) {
-                        this.fetchCube(x, y, z);
-                    }
-                }
-            }
-        }
+    @Override
+    public PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> chunks, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) {
+        return null; //TODO: implement this
     }
 
     @Override
@@ -152,7 +146,7 @@ public class CCCachedBlockAccessImpl implements CachedBlockAccess {
     @Override
     public int getCombinedLight(BlockPos pos, int lightValue) {
         return (this.getLightFromNeighborsFor(EnumSkyBlock.SKY, pos) << 20)
-                | (Math.max(this.getLightFromNeighborsFor(EnumSkyBlock.BLOCK, pos), lightValue) << 4);
+               | (Math.max(this.getLightFromNeighborsFor(EnumSkyBlock.BLOCK, pos), lightValue) << 4);
     }
 
     @Override

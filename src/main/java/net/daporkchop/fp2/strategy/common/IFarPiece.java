@@ -99,9 +99,21 @@ public interface IFarPiece<POS extends IFarPos> extends ReadWriteLock {
     }
 
     /**
+     * @return whether or not this piece has been generated, but still has no contents
+     */
+    boolean isBlank();
+
+    /**
      * Clears the contents of this piece.
      */
     void clear();
+
+    /**
+     * Called after generation on this piece has finished.
+     * <p>
+     * Allows the piece to compact the internal data representation.
+     */
+    void postGenerate();
 
     boolean isDirty();
 

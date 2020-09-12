@@ -52,7 +52,7 @@ public interface IFarGeneratorExact<POS extends IFarPos, P extends IFarPiece<POS
     /**
      * Gets the positions of all of the cubes that need to be loaded in order for this generator to generate the piece at the given position.
      * <p>
-     * Note that this method will only be called in cubic chunks worlds.
+     * Note that this method is only guaranteed to be called in cubic chunks worlds.
      *
      * @param world the {@link IBlockHeightAccess} providing access to block/height data in the world
      * @param pos   the position of the piece to generate

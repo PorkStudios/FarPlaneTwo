@@ -78,6 +78,7 @@ public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS
 
             piece.clear(); //reset piece contents
             this.world.generatorRough().generate(piece); //generate piece
+            piece.postGenerate();
             piece.updateTimestamp(newTimestamp);
             piece.markDirty();
 

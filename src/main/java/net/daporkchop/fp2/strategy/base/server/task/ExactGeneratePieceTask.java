@@ -72,6 +72,7 @@ public class ExactGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS
 
             piece.clear(); //reset piece contents
             this.world.generatorExact().generate(this.world.blockAccess(), piece); //generate piece
+            piece.postGenerate();
             piece.updateTimestamp(newTimestamp);
             piece.markDirty();
 
