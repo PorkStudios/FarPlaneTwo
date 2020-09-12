@@ -69,8 +69,6 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
     public static final int VOXEL_VERTEX_SIZE = INT_SIZE //state
                                                 + SHORT_SIZE //light
                                                 + MEDIUM_SIZE //color
-                                                + SHORT_SIZE //light_water
-                                                + MEDIUM_SIZE //color_water
                                                 + DVEC3_SIZE_TIGHT //pos_low
                                                 + DVEC3_SIZE_TIGHT //pos_high
                                                 + SHORT_SIZE; //level_scale
@@ -82,7 +80,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
 
     @Override
     public int vertexAttributes() {
-        return 8;
+        return 6;
     }
 
     @Override
@@ -91,11 +89,9 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, VOXEL_VERTEX_SIZE, offset); //state
         glVertexAttribPointer(1, 2, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, offset += INT_SIZE); //light
         glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, offset += SHORT_SIZE); //color
-        glVertexAttribPointer(3, 2, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, offset += MEDIUM_SIZE); //light_water
-        glVertexAttribPointer(4, 4, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, offset += SHORT_SIZE); //color_water
-        glVertexAttribLPointer(5, 3, VOXEL_VERTEX_SIZE, offset += MEDIUM_SIZE); //pos_low
-        glVertexAttribLPointer(6, 3, VOXEL_VERTEX_SIZE, offset += DVEC3_SIZE_TIGHT); //pos_high
-        glVertexAttribPointer(7, 1, GL_UNSIGNED_SHORT, false, VOXEL_VERTEX_SIZE, offset += DVEC3_SIZE_TIGHT); //level_scale
+        glVertexAttribLPointer(3, 3, VOXEL_VERTEX_SIZE, offset += MEDIUM_SIZE); //pos_low
+        glVertexAttribLPointer(4, 3, VOXEL_VERTEX_SIZE, offset += DVEC3_SIZE_TIGHT); //pos_high
+        glVertexAttribPointer(5, 1, GL_UNSIGNED_SHORT, false, VOXEL_VERTEX_SIZE, offset += DVEC3_SIZE_TIGHT); //level_scale
     }
 
     @Override
@@ -302,10 +298,6 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         vertices.writeInt(data.state); //state
         vertices.writeShort(Constants.packedLightTo8BitVec2(data.light)); //light
         vertices.writeMedium(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.state), biomeAccess, pos, 0))); //color
-
-        //TODO: remove these two fields
-        vertices.writeShort(Constants.packedLightTo8BitVec2(0xFF)); //light_water
-        vertices.writeMedium(Constants.convertARGB_ABGR(0xFFFFFFFF)); //color_water
 
         vertices.writeDouble(baseX + (dx + data.x) * scale)
                 .writeDouble(baseY + (dy + data.y) * scale)

@@ -1,16 +1,15 @@
 {
   "vert": [
-    "prog/common.glsl",
+    "common.glsl",
     "vert/common.vert",
     "vert/fog.vert",
-    "vert/heightmap/heightmap.vert",
-    "vert/heightmap/terrain.vert"
+    "vert/heightmap/terrain.vert",
+    "vert/block_3d_lod.vert"
   ],
   "frag": [
-    "prog/common.glsl",
+    "common.glsl",
     "frag/common.frag",
     "frag/fog.frag",
-    "frag/heightmap/heightmap.frag",
-    "frag/heightmap/terrain.frag"
+    "frag/block.frag"
   ]
 }

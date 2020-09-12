@@ -18,36 +18,32 @@
  *
  */
 
-//
-//
-// TEXTURES
-//
-//
+//makes the fragment color be the normal vector
+//#define BLOCK_FRAG_DEBUG_COLOR_NORMALS
 
-//textures
-layout(binding = 0) uniform sampler2D terrain_texture;
-layout(binding = 1) uniform sampler2D lightmap_texture;
+void main() {
+    TextureUV uvs = global_info.tex_uvs[fs_in.state];
+    vec2 uv = uvs.min + (uvs.max - uvs.min) * fract(fs_in.pos.xz);
 
-//
-//
-// INPUTS
-//
-//
+    //initial block texture sample
+#ifndef BLOCK_FRAG_DEBUG_COLOR_NORMALS
+    vec4 frag_color = texture(terrain_texture, uv);
 
-in GS_OUT {
-    vec3 pos;
+    //block color multiplier
+    frag_color.rgb *= fs_in.color;
 
-    vec4 color;
-} fs_in;
+    //block/sky light
+    frag_color *= texture(lightmap_texture, fs_in.light);
 
-//
-//
-// UTILITIES
-//
-//
+    //shading
+    frag_color.rgb *= diffuseLight(normalVector());
+#else
+    vec3 normal = normalVector();
+    vec4 frag_color = vec4(normal * normal, 1.);
+#endif
 
-vec3 normalVector() {
-    vec3 fdx = dFdx(fs_in.pos);
-    vec3 fdy = dFdy(fs_in.pos);
-    return normalize(cross(fdx, fdy));
+    //fog
+    frag_color = addFog(frag_color);
+
+    color = frag_color;
 }

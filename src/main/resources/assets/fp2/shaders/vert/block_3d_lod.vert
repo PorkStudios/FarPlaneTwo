@@ -18,30 +18,30 @@
  *
  */
 
-void main() {
-    TextureUV uvs = global_info.tex_uvs[fs_in.state];
-    vec2 uv = uvs.min + (uvs.max - uvs.min) * fract(fs_in.pos.xz);
+void main(){
+    //convert position to vec3 afterwards to minimize precision loss
+    vec3 relativePos = vec3(in_pos_low - glState.camera.position);
 
-    //initial block texture sample
-//#define DEBUG
-#ifndef DEBUG
-    vec4 frag_color = texture(terrain_texture, uv);
+    float depth = length(relativePos);
 
-    //block color multiplier
-    frag_color.rgb *= fs_in.color;
+    //set fog depth here, simply because it's going to change by at most a few blocks (negligable) and this prevents us from having to compute the depth twice
+    fog_out.depth = depth;
 
-    //block/sky light
-    frag_color *= texture(lightmap_texture, fs_in.light);
+    //mix low and high vertex positions based on depth
+    float start = float(fp2_state.view.levelCutoffDistance) * in_level_scale * fp2_state.view.transitionStart;
+    float end = float(fp2_state.view.levelCutoffDistance) * in_level_scale * fp2_state.view.transitionEnd;
+    dvec3 mixedPos = mix(in_pos_low, in_pos_high, 1. - clamp((end - depth) * (1. / (end - start)), 0., 1.));
+    relativePos = vec3(mixedPos - glState.camera.position);
 
-    //shading
-    frag_color.rgb *= diffuseLight(normalVector());
-#else
-    vec3 normal = normalVector();
-    vec4 frag_color = vec4(normal * normal, 1.);
-#endif
+    //vertex position is detail mixed
+    gl_Position = cameraTransform(relativePos);
 
-    //fog
-    frag_color = addFog(frag_color);
+    //pass relative position to fragment shader (used to compute face normal)
+    //TODO: this is actually also used for the texture UV, which is why it is currently not using the relative position
+    vs_out.pos = vec3(mixedPos);
 
-    color = frag_color;
+    //copy trivial attributes
+    vs_out.light = in_light;
+    vs_out.state = in_state;
+    vs_out.color = in_color;
 }

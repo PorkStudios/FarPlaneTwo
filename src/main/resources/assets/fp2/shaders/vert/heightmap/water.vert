@@ -18,7 +18,26 @@
  *
  */
 
+//
+//
+// UNIFORMS
+//
+//
+
 uniform double seaLevel;
+
+//
+//
+// VERTEX ATTRIBUTES
+//
+//
+
+layout(location = 3) in vec2 in_light_water;
+layout(location = 4) in vec3 in_color_water;
+
+layout(location = 5) in dvec3 in_pos_low;
+layout(location = 6) in dvec3 in_pos_high;
+layout(location = 7) in float in_level_scale;
 
 void main(){
     //convert position to vec3 afterwards to minimize precision loss

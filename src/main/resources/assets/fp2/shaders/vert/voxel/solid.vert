@@ -27,23 +27,7 @@
 layout(location = 0) in int in_state;
 layout(location = 1) in vec2 in_light;
 layout(location = 2) in vec3 in_color;
-layout(location = 3) in vec2 in_light_water;
-layout(location = 4) in vec3 in_color_water;
 
-layout(location = 5) in dvec3 in_pos_low;
-layout(location = 6) in dvec3 in_pos_high;
-layout(location = 7) in float in_level_scale;
-
-//
-//
-// OUTPUTS
-//
-//
-
-out VS_OUT {
-    vec3 pos;
-    vec2 light;
-
-    flat vec3 color;
-    flat int state;
-} vs_out;
+layout(location = 3) in dvec3 in_pos_low;
+layout(location = 4) in dvec3 in_pos_high;
+layout(location = 5) in float in_level_scale;

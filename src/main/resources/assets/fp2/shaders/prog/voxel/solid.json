@@ -3,7 +3,8 @@
     "common.glsl",
     "vert/common.vert",
     "vert/fog.vert",
-    "vert/heightmap/water.vert"
+    "vert/voxel/solid.vert",
+    "vert/block_3d_lod.vert"
   ],
   "frag": [
     "common.glsl",

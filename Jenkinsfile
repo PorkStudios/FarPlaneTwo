@@ -3,7 +3,7 @@ String getDiscordMessage() {
     if (!currentBuild.changeSets.isEmpty()) {
         currentBuild.changeSets.first().getLogs().any {
             def line = "\n- `" + it.getCommitId().substring(0, 8) + "` *" + it.getComment().split("\n")[0].replaceAll('(?<!\\\\)([_*~`])', '\\\\$1') + "*"
-            if (msg.length() + line.length() <= 2000)   {
+            if (msg.length() + line.length() <= 1500)   {
                 msg += line
                 return
             } else {
@@ -14,6 +14,16 @@ String getDiscordMessage() {
         msg += "\n- no changes"
     }
 
+    msg += "\n**Artifacts:**"
+    currentBuild.rawBuild.getArtifacts().any {
+        def line = "\n- [" + it.getDisplayPath() + "](" + env.BUILD_URL + "artifact/" + it.getHref() + ")"
+        if (msg.length() + line.length() <= 2000)   {
+            msg += line
+            return
+        } else {
+            return true
+        }
+    }
     return msg
 }
 

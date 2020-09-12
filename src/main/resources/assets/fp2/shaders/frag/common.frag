@@ -20,8 +20,44 @@
 
 //
 //
+// TEXTURES
+//
+//
+
+//textures
+layout(binding = 0) uniform sampler2D terrain_texture;
+layout(binding = 1) uniform sampler2D lightmap_texture;
+
+//
+//
+// INPUTS
+//
+//
+
+in VS_OUT {
+    vec3 pos;
+    vec2 light;
+
+    flat vec3 color;
+    flat int state;
+} fs_in;
+
+//
+//
 // OUTPUTS
 //
 //
 
 out vec4 color;
+
+//
+//
+// UTILITIES
+//
+//
+
+vec3 normalVector() {
+    vec3 fdx = dFdx(fs_in.pos);
+    vec3 fdy = dFdy(fs_in.pos);
+    return normalize(cross(fdx, fdy));
+}

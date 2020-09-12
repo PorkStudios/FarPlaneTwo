@@ -20,10 +20,14 @@
 
 //
 //
-// UTILITIES
+// OUTPUTS
 //
 //
 
-vec2 unpackCombinedLight(int packedCombinedLight)   {
-    return vec2(ivec2(packedCombinedLight) >> ivec2(0, 4) & 0xF) / 16.;
-}
+out VS_OUT {
+    vec3 pos;
+    vec2 light;
+
+    flat vec3 color;
+    flat int state;
+} vs_out;

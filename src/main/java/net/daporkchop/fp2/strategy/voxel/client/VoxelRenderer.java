@@ -22,38 +22,26 @@ package net.daporkchop.fp2.strategy.voxel.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
-import net.daporkchop.fp2.client.gl.object.ElementArrayObject;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
-import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.strategy.base.client.AbstractFarRenderer;
 import net.daporkchop.fp2.strategy.base.client.IFarRenderBaker;
 import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
 import net.daporkchop.fp2.strategy.voxel.VoxelPos;
-import net.daporkchop.fp2.util.Constants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.culling.ICamera;
 
-import java.nio.ByteBuffer;
-import java.nio.ShortBuffer;
-
-import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL31.*;
-import static org.lwjgl.opengl.GL40.*;
 import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_
  */
 public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece, VoxelRenderTile> {
-    public static final ShaderProgram TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
+    public static final ShaderProgram SOLID_SHADER = ShaderManager.get("voxel/solid");
 
     public VoxelRenderer(@NonNull WorldClient world) {
         super(world);
@@ -77,10 +65,10 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece, Vox
     protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum, int count) {
         try (VertexArrayObject vao = this.cache.vao().bind();
              DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBuffer().bind()) {
-            try (ShaderProgram shader = TERRAIN_SHADER.use()) {
-                //GlStateManager.disableAlpha();
+            try (ShaderProgram shader = SOLID_SHADER.use()) {
+                GlStateManager.disableAlpha();
                 glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, count, 0);
-                //GlStateManager.enableAlpha();
+                GlStateManager.enableAlpha();
             }
         }
     }

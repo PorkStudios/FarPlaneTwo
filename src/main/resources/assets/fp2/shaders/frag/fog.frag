@@ -34,7 +34,7 @@ in FOG {
 //
 //
 
-float getFogFactor()    { //this shouldn't cause any significant performance drop because the result is constant for every invocation
+float getFogFactor() { //this shouldn't cause any significant performance drop because the result is constant for every invocation
     if (glState.fog.mode == FOG_LINEAR) {
         return clamp((glState.fog.end - fog_in.depth) * glState.fog.scale, 0., 1.);
     } else if (glState.fog.mode == FOG_EXP)  {
