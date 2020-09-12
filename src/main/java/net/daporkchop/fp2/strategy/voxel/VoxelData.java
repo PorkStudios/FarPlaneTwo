@@ -20,20 +20,35 @@
 
 package net.daporkchop.fp2.strategy.voxel;
 
+import net.daporkchop.fp2.util.math.Vector3d;
+
 /**
  * Represents the data stored at a voxel that is not absent.
  *
  * @author DaPorkchop_
  */
-public class VoxelData {
+public class VoxelData extends Vector3d {
     //vertex position and mesh intersection data
-    public double dx;
-    public double dy;
-    public double dz;
     public int edges;
 
     //block data (for texturing and shading)
     public int state;
     public int biome;
     public int light;
+
+    /**
+     * Resets this instance.
+     *
+     * @return this instance
+     */
+    public VoxelData reset() {
+        this.x = 0.0d;
+        this.y = 0.0d;
+        this.z = 0.0d;
+        this.edges = 0;
+        this.state = 0;
+        this.biome = 0;
+        this.light = 0;
+        return this;
+    }
 }

@@ -21,8 +21,6 @@
 package net.daporkchop.fp2.strategy.voxel;
 
 import io.netty.buffer.ByteBuf;
-import it.unimi.dsi.fastutil.ints.Int2IntMap;
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.strategy.RenderMode;
@@ -39,11 +37,18 @@ import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
+ * Stores server-side data for the voxel strategy.
+ *
  * @author DaPorkchop_
  */
 @Getter
 public class VoxelPiece extends AbstractFarPiece<VoxelPos> {
-    public static final int ENTRY_SIZE = 1;
+    //layout (in ints):
+    //0: (dx << 24) | (dy << 16) | (dz << 8) | edges
+    //1: (biome << 8) | light
+    //2: state
+
+    public static final int ENTRY_SIZE = 3;
 
     public static final int MAX_ENTRY_COUNT = T_VOXELS * T_VOXELS * T_VOXELS;
 
@@ -52,7 +57,7 @@ public class VoxelPiece extends AbstractFarPiece<VoxelPos> {
 
     private static int index(int x, int y, int z) {
         checkArg(x >= 0 && x < T_VOXELS && y >= 0 && y < T_VOXELS && z >= 0 && z < T_VOXELS, "coordinates out of bounds (x=%d, y=%d, z=%d)", x, y, z);
-        return (x * T_VOXELS + y) * T_VOXELS + z;
+        return ((x * T_VOXELS + y) * T_VOXELS + z) * ENTRY_SIZE;
     }
 
     protected final IntIntMap indices = new IntIntOpenHashMap();
@@ -94,6 +99,16 @@ public class VoxelPiece extends AbstractFarPiece<VoxelPos> {
         }
     }
 
+    @Override
+    public void clear() {
+        this.indexCounter = 0;
+        this.indices.clear();
+        if (this.data.capacity() > DEFAULT_CAPACITY)   {
+            PUnsafe.pork_releaseBuffer(this.data);
+            this.data = Constants.createIntBuffer(DEFAULT_CAPACITY);
+        }
+    }
+
     public int getIndex(int x, int y, int z)    {
         return this.indices.getOrDefault(index(x, y, z), -1);
     }
@@ -101,8 +116,7 @@ public class VoxelPiece extends AbstractFarPiece<VoxelPos> {
     public boolean get(int x, int y, int z, VoxelData data) {
         int index = this.getIndex(x, y, z);
         if (index < 0) { //there is no value at the given position
-            data.dx = data.dy = data.dz = 0.0d;
-            data.edges = 0;
+            data.reset();
             return false;
         }
 
@@ -114,28 +128,38 @@ public class VoxelPiece extends AbstractFarPiece<VoxelPos> {
         checkArg(index >= 0 && index < this.indexCounter, index);
 
         index *= ENTRY_SIZE;
-        int i = this.data.get(index);
+        int i0 = this.data.get(index);
+        int i1 = this.data.get(index + 1);
+        int i2 = this.data.get(index + 2);
 
-        data.dx = (i >>> 24) / 255.0d;
-        data.dy = ((i >> 16) & 0xFF) / 255.0d;
-        data.dz = ((i >> 8) & 0xFF) / 255.0d;
-        data.edges = i & 0xFF;
+        data.x = (i0 >>> 24) / 255.0d;
+        data.y = ((i0 >> 16) & 0xFF) / 255.0d;
+        data.z = ((i0 >> 8) & 0xFF) / 255.0d;
+        data.edges = i0 & 0xFF;
+
+        data.state = i2;
+        data.biome = i1 >>> 8;
+        data.light = i1 & 0xFF;
     }
 
-    public VoxelPiece set(int x, int y, int z, double dx, double dy, double dz, int edgeMask) {
+    public VoxelPiece set(int x, int y, int z, VoxelData data) {
         int index = this.indices.getOrDefault(index(x, y, z), -1);
         if (index < 0)  { //allocate new index
             index = this.nextIndex(x, y, z);
         }
 
-        edgeMask = ((edgeMask & 0x800) >> 9) | ((edgeMask & 0x80) >> 6) | ((edgeMask & 0x8) >> 3);
+        index *= ENTRY_SIZE;
 
-        dx = clamp(dx, 0., 1.) * 255.0d;
-        dy = clamp(dy, 0., 1.) * 255.0d;
-        dz = clamp(dz, 0., 1.) * 255.0d;
+        int dx = floorI(clamp(data.x, 0., 1.) * 255.0d);
+        int dy = floorI(clamp(data.y, 0., 1.) * 255.0d);
+        int dz = floorI(clamp(data.z, 0., 1.) * 255.0d);
 
-        this.data.put(index, (floorI(dx) << 24) | (floorI(dy) << 16) | (floorI(dz) << 8) | edgeMask);
-        this.markDirty();
+        int edges = data.edges;
+        edges = ((edges & 0x800) >> 9) | ((edges & 0x80) >> 6) | ((edges & 0x8) >> 3);
+
+        this.data.put(index, (dx << 24) | (dy << 16) | (dz << 8) | edges);
+        this.data.put(index + 1, (data.biome << 8) | data.light);
+        this.data.put(index + 2, data.state);
         return this;
     }
 
@@ -152,14 +176,5 @@ public class VoxelPiece extends AbstractFarPiece<VoxelPos> {
         }
         this.indices.put(index(x, y, z), index);
         return index;
-    }
-
-    public void clear() {
-        this.indexCounter = 0;
-        this.indices.clear();
-        if (this.data.capacity() > DEFAULT_CAPACITY)   {
-            PUnsafe.pork_releaseBuffer(this.data);
-            this.data = Constants.createIntBuffer(DEFAULT_CAPACITY);
-        }
     }
 }

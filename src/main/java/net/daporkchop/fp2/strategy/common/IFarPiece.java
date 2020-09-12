@@ -59,6 +59,10 @@ public interface IFarPiece<POS extends IFarPos> extends ReadWriteLock {
      */
     POS pos();
 
+    default int level() {
+        return this.pos().level();
+    }
+
     /**
      * Gets this piece's timestamp.
      * <p>
@@ -94,6 +98,11 @@ public interface IFarPiece<POS extends IFarPos> extends ReadWriteLock {
         return this.timestamp() >= PIECE_ROUGH_COMPLETE;
     }
 
+    /**
+     * Clears the contents of this piece.
+     */
+    void clear();
+
     boolean isDirty();
 
     void markDirty();
@@ -108,8 +117,4 @@ public interface IFarPiece<POS extends IFarPos> extends ReadWriteLock {
      * @param dst the {@link ByteBuf} to write to
      */
     void writePiece(@NonNull ByteBuf dst);
-
-    default int level() {
-        return this.pos().level();
-    }
 }

@@ -292,9 +292,9 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         final double scale = 1 << level;
 
         //these lose precision, so i don't use them for the actual vertex position
-        final int blockX = baseX + floorI((dx + data.dx) * scale);
-        final int blockY = baseY + floorI((dy + data.dy) * scale);
-        final int blockZ = baseZ + floorI((dz + data.dz) * scale);
+        final int blockX = baseX + floorI((dx + data.x) * scale);
+        final int blockY = baseY + floorI((dy + data.y) * scale);
+        final int blockZ = baseZ + floorI((dz + data.z) * scale);
 
         pos.setPos(blockX, blockY, blockZ);
         biomeAccess.biome(Biome.getBiome(data.biome, Biomes.PLAINS));
@@ -307,12 +307,12 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         vertices.writeShort(Constants.packedLightTo8BitVec2(0xFF)); //light_water
         vertices.writeMedium(Constants.convertARGB_ABGR(0xFFFFFFFF)); //color_water
 
-        vertices.writeDouble(baseX + (dx + data.dx) * scale)
-                .writeDouble(baseY + (dy + data.dy) * scale)
-                .writeDouble(baseZ + (dz + data.dz) * scale); //pos_low
-        vertices.writeDouble(baseX + (dx + data.dx) * scale)
-                .writeDouble(baseY + (dy + data.dy) * scale)
-                .writeDouble(baseZ + (dz + data.dz) * scale); //pos_high
+        vertices.writeDouble(baseX + (dx + data.x) * scale)
+                .writeDouble(baseY + (dy + data.y) * scale)
+                .writeDouble(baseZ + (dz + data.z) * scale); //pos_low
+        vertices.writeDouble(baseX + (dx + data.x) * scale)
+                .writeDouble(baseY + (dy + data.y) * scale)
+                .writeDouble(baseZ + (dz + data.z) * scale); //pos_high
 
         vertices.writeShort(1 << level);
     }

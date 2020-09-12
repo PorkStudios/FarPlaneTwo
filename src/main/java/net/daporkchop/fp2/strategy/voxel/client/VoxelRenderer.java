@@ -78,9 +78,9 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece, Vox
         try (VertexArrayObject vao = this.cache.vao().bind();
              DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBuffer().bind()) {
             try (ShaderProgram shader = TERRAIN_SHADER.use()) {
-                GlStateManager.disableAlpha();
+                //GlStateManager.disableAlpha();
                 glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, count, 0);
-                GlStateManager.enableAlpha();
+                //GlStateManager.enableAlpha();
             }
         }
     }

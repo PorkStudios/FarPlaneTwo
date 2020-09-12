@@ -23,9 +23,9 @@ void main() {
     vec2 uv = uvs.min + (uvs.max - uvs.min) * fract(fs_in.pos.xz);
 
     //initial block texture sample
+//#define DEBUG
+#ifndef DEBUG
     vec4 frag_color = texture(terrain_texture, uv);
-    /*vec3 normal = normalVector();
-    vec4 frag_color = vec4(normal * normal, 1.);*/
 
     //block color multiplier
     frag_color.rgb *= fs_in.color;
@@ -35,6 +35,10 @@ void main() {
 
     //shading
     frag_color.rgb *= diffuseLight(normalVector());
+#else
+    vec3 normal = normalVector();
+    vec4 frag_color = vec4(normal * normal, 1.);
+#endif
 
     //fog
     frag_color = addFog(frag_color);
