@@ -74,7 +74,8 @@ public class CCAsyncBlockAccessImpl implements AsyncBlockAccess {
             PFuture<Chunk> future = PFutures.computeAsync(
                     () -> this.world.getChunk(BinMath.unpackX(l), BinMath.unpackY(l)),
                     ServerThreadExecutor.INSTANCE);
-            future.thenAcceptAsync(chunk -> this.cache2d.replace(l, future, chunk)); //replace future with chunk instance in cache, to avoid indirection
+            future.thenAccept(chunk -> this.cache2d.replace(l, future, chunk)); //replace future with chunk instance in cache, to avoid indirection
+            future.thenAcceptAsync(chunk -> System.out.printf("loaded chunk (%d,%d) into cache\n", chunk.x, chunk.z));
             return future;
         };
 
@@ -144,22 +145,23 @@ public class CCAsyncBlockAccessImpl implements AsyncBlockAccess {
     }
 
     @Override
-    public int getCombinedLight(BlockPos pos, int lightValue) {
-        return (this.getLightFromNeighborsFor(EnumSkyBlock.SKY, pos) << 20)
-               | (Math.max(this.getLightFromNeighborsFor(EnumSkyBlock.BLOCK, pos), lightValue) << 4);
-    }
-
-    @Override
     public int getBlockLight(BlockPos pos) {
-        return this.getCube(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4).getLightFor(EnumSkyBlock.BLOCK, pos);
+        if (!this.world.isValid(pos))    {
+            return 0;
+        } else {
+            return this.getCube(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4).getLightFor(EnumSkyBlock.BLOCK, pos);
+        }
     }
 
     @Override
     public int getSkyLight(BlockPos pos) {
         if (!this.world.provider.hasSkyLight()) {
             return 0;
+        } else if (!this.world.isValid(pos))    {
+            return 15;
+        } else {
+            return this.getCube(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4).getLightFor(EnumSkyBlock.SKY, pos);
         }
-        return this.getCube(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4).getLightFor(EnumSkyBlock.SKY, pos);
     }
 
     @Override
@@ -175,56 +177,5 @@ public class CCAsyncBlockAccessImpl implements AsyncBlockAccess {
     @Override
     public WorldType getWorldType() {
         return this.world.getWorldType();
-    }
-
-    public int getLightFromNeighborsFor(EnumSkyBlock type, BlockPos pos) {
-        if (!this.world.provider.hasSkyLight() && type == EnumSkyBlock.SKY) {
-            return 0;
-        } else {
-            if (pos.getY() < 0) {
-                pos = new BlockPos(pos.getX(), 0, pos.getZ());
-            }
-
-            if (!this.world.isValid(pos)) {
-                return type.defaultLightValue;
-            }
-            Chunk chunk = this.getChunk(pos.getX() >> 4, pos.getZ() >> 4);
-            if (chunk.getBlockState(pos).useNeighborBrightness()) {
-                int i1 = this.getLightFor(type, pos.up());
-                int i = this.getLightFor(type, pos.east());
-                int j = this.getLightFor(type, pos.west());
-                int k = this.getLightFor(type, pos.south());
-                int l = this.getLightFor(type, pos.north());
-
-                if (i > i1) {
-                    i1 = i;
-                }
-                if (j > i1) {
-                    i1 = j;
-                }
-                if (k > i1) {
-                    i1 = k;
-                }
-                if (l > i1) {
-                    i1 = l;
-                }
-
-                return i1;
-            } else {
-                return chunk.getLightFor(type, pos);
-            }
-        }
-    }
-
-    public int getLightFor(EnumSkyBlock type, BlockPos pos) {
-        if (pos.getY() < 0) {
-            pos = new BlockPos(pos.getX(), 0, pos.getZ());
-        }
-
-        if (!this.world.isValid(pos)) {
-            return type.defaultLightValue;
-        } else {
-            return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4).getLightFor(type, pos);
-        }
     }
 }

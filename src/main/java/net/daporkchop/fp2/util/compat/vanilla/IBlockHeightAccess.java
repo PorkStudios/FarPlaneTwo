@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.util.compat.vanilla;
 
 import net.daporkchop.fp2.util.IHeightMap;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 
 /**
@@ -29,4 +30,13 @@ import net.minecraft.world.IBlockAccess;
  * @author DaPorkchop_
  */
 public interface IBlockHeightAccess extends IBlockAccess, IHeightMap {
+    int getSkyLight(BlockPos pos);
+
+    int getBlockLight(BlockPos pos);
+
+    @Override
+    default int getCombinedLight(BlockPos pos, int defaultBlockLightValue)  {
+        return (this.getSkyLight(pos) << 20)
+                | (Math.max(this.getBlockLight(pos), defaultBlockLightValue) << 4);
+    }
 }

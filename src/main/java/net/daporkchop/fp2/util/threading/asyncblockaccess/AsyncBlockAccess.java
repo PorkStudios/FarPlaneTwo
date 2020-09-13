@@ -72,37 +72,15 @@ public interface AsyncBlockAccess extends IBlockHeightAccess {
     void gc();
 
     @Override
-    int getTopBlockY(int blockX, int blockZ);
-
-    @Override
-    int getTopBlockYBelow(int blockX, int blockY, int blockZ);
-
-    @Override
-    int getCombinedLight(BlockPos pos, int lightValue);
-
-    int getBlockLight(BlockPos pos);
-
-    int getSkyLight(BlockPos pos);
-
-    @Override
-    IBlockState getBlockState(BlockPos pos);
-
-    @Override
     default boolean isAirBlock(BlockPos pos) {
         IBlockState state = this.getBlockState(pos);
         return state.getBlock().isAir(state, this, pos);
     }
 
     @Override
-    Biome getBiome(BlockPos pos);
-
-    @Override
     default int getStrongPower(BlockPos pos, EnumFacing direction) {
         return this.getBlockState(pos).getStrongPower(this, pos, direction);
     }
-
-    @Override
-    WorldType getWorldType();
 
     @Override
     default boolean isSideSolid(BlockPos pos, EnumFacing side, boolean _default) {

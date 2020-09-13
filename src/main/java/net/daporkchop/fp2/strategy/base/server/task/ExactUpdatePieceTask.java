@@ -54,11 +54,14 @@ public class ExactUpdatePieceTask<POS extends IFarPos, P extends IFarPiece<POS>>
     public P run(@NonNull List<P> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
         if (this.pos.level() == 0) {
             //generate piece with exact generator
-            executor.submit(new ExactGeneratePieceTask<>(this.world, this.key.withStage(TaskStage.EXACT_GENERATE), this.pos).thenCopyStatusTo(this));
+            this.world.blockAccess().prefetchAsync(
+                    this.world.generatorExact().neededColumns(this.pos),
+                    world -> this.world.generatorExact().neededCubes(world, this.pos))
+                    .thenAccept(world -> executor.submit(new ExactGeneratePieceTask<>(this.world, this.key.withStage(TaskStage.EXACT_GENERATE), this.pos)));
         } else {
             //scale piece
-            executor.submit(new ExactScalePieceTask<>(this.world, this.key.withStage(TaskStage.EXACT_SCALE), this.pos, TaskStage.EXACT).thenCopyStatusTo(this));
+            executor.submit(new ExactScalePieceTask<>(this.world, this.key.withStage(TaskStage.EXACT_SCALE), this.pos, TaskStage.EXACT));
         }
-        return null; //return null because we won't be finished until whatever our delegate task that we spawned is is complete
+        return params.get(0);
     }
 }
