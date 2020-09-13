@@ -101,14 +101,14 @@ public class VanillaAsyncBlockAccessImpl implements AsyncBlockAccess {
     }
 
     @Override
-    public PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> chunks) {
-        return PFutures.mergeToList(chunks.map(pos -> this.getChunkFuture(pos.x, pos.z)).collect(Collectors.toList()))
-                .thenApply(list -> new PrefetchedColumnsVanillaAsyncBlockAccess(this, this.world, list.stream()));
+    public PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> columns) {
+        return PFutures.mergeToList(columns.map(pos -> this.getChunkFuture(pos.x, pos.z)).collect(Collectors.toList()))
+                .thenApply(chunkList -> new PrefetchedColumnsVanillaAsyncBlockAccess(this, this.world, chunkList.stream()));
     }
 
     @Override
-    public PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> chunks, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) {
-        return this.prefetchAsync(chunks); //silently ignore cubes
+    public PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) {
+        return this.prefetchAsync(columns); //silently ignore cubes
     }
 
     @Override

@@ -29,8 +29,6 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.WorldType;
-import net.minecraft.world.biome.Biome;
 
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -42,29 +40,29 @@ import java.util.stream.Stream;
  */
 public interface AsyncBlockAccess extends IBlockHeightAccess {
     /**
-     * Asynchronously prefetches the chunks at the given positions into a single {@link IBlockHeightAccess}.
+     * Asynchronously prefetches the columns at the given positions into a single {@link IBlockHeightAccess}.
      * <p>
      * The returned {@link IBlockHeightAccess} will be able to respond to queries outside of the requested area, but they will be significantly
      * slower.
      *
-     * @param chunks a {@link Stream} containing the positions of all the chunks to get
-     * @return a single {@link IBlockHeightAccess} covering all of the given chunks
+     * @param columns a {@link Stream} containing the positions of all the columns to get
+     * @return a single {@link IBlockHeightAccess} covering all of the given columns
      */
-    PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> chunks);
+    PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> columns);
 
     /**
-     * Asynchronously prefetches the chunks and cubes at the given positions into a single {@link IBlockHeightAccess}.
+     * Asynchronously prefetches the columns and cubes at the given positions into a single {@link IBlockHeightAccess}.
      * <p>
      * The returned {@link IBlockHeightAccess} will be able to respond to queries outside of the requested area, but they will be significantly
      * slower.
      *
-     * @param chunks               a {@link Stream} containing the positions of all the chunks to get
+     * @param columns              a {@link Stream} containing the positions of all the columns to get
      * @param cubesMappingFunction a function to produce a {@link Stream} containing the positions of all the cubes to get. The input parameter
      *                             is an {@link IBlockHeightAccess} containing only the requested chunks, but no cubes. Note that implementations
      *                             may choose to ignore this parameter.
-     * @return a single {@link IBlockHeightAccess} covering all of the given chunks and cubes
+     * @return a single {@link IBlockHeightAccess} covering all of the given columns and cubes
      */
-    PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> chunks, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction);
+    PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction);
 
     /**
      * Drops some data from the cache.

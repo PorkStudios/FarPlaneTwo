@@ -210,6 +210,9 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
             this.players.forEach(player -> GlobalEventExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(packet, player)));
             //TODO: figure out what the above TODO was referring to
             //TODO: i have now figured out what it was referring to, actually fix it now
+            //TODO: actually, i don't think there's any way i can reasonably fix this without breaking AsyncBlockAccess. i'll need to rework
+            // how pieces are stored on the server (the issue is a deadlock when the server thread is trying to serialize a piece while a worker
+            // generating said piece is waiting for the server thread to load a chunk required for generating the piece into AsyncBlockAccess)
             //this.players.forEach(player -> NETWORK_WRAPPER.sendTo(packet, player));
         }
     }

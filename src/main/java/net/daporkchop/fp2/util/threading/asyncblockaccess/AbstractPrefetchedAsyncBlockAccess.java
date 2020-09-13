@@ -53,13 +53,13 @@ public abstract class AbstractPrefetchedAsyncBlockAccess implements AsyncBlockAc
     protected final WorldServer world;
 
     @Override
-    public final PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> chunks) {
-        return this.parent.prefetchAsync(chunks);
+    public final PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> columns) {
+        return this.parent.prefetchAsync(columns);
     }
 
     @Override
-    public final PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> chunks, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) {
-        return this.parent.prefetchAsync(chunks, cubesMappingFunction);
+    public final PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) {
+        return this.parent.prefetchAsync(columns, cubesMappingFunction);
     }
 
     @Override

@@ -26,6 +26,7 @@ import net.daporkchop.fp2.strategy.base.server.TaskKey;
 import net.daporkchop.fp2.strategy.base.server.TaskStage;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
+import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
 
@@ -39,10 +40,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public class ExactGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractPieceTask<POS, P, Void> {
-    public ExactGeneratePieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos) {
+    protected final IBlockHeightAccess access;
+
+    public ExactGeneratePieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull IBlockHeightAccess access) {
         super(world, key, pos, TaskStage.EXACT);
 
         checkArg(pos.level() == 0, "cannot do exact generation at level %d!", pos.level());
+
+        this.access = access;
     }
 
     @Override
@@ -71,7 +76,7 @@ public class ExactGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS
             }
 
             piece.clear(); //reset piece contents
-            this.world.generatorExact().generate(this.world.blockAccess(), piece); //generate piece
+            this.world.generatorExact().generate(this.access, piece); //generate piece
             piece.postGenerate();
             piece.updateTimestamp(newTimestamp);
             piece.markDirty();

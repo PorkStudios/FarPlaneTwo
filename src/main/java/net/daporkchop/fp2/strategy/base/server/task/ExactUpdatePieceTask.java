@@ -57,7 +57,7 @@ public class ExactUpdatePieceTask<POS extends IFarPos, P extends IFarPiece<POS>>
             this.world.blockAccess().prefetchAsync(
                     this.world.generatorExact().neededColumns(this.pos),
                     world -> this.world.generatorExact().neededCubes(world, this.pos))
-                    .thenAccept(world -> executor.submit(new ExactGeneratePieceTask<>(this.world, this.key.withStage(TaskStage.EXACT_GENERATE), this.pos)));
+                    .thenAccept(world -> executor.submit(new ExactGeneratePieceTask<>(this.world, this.key.withStage(TaskStage.EXACT_GENERATE), this.pos, world)));
         } else {
             //scale piece
             executor.submit(new ExactScalePieceTask<>(this.world, this.key.withStage(TaskStage.EXACT_SCALE), this.pos, TaskStage.EXACT));

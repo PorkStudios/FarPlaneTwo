@@ -37,6 +37,7 @@ import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.server.IFarStorage;
 import net.daporkchop.fp2.strategy.common.server.IFarWorld;
+import net.daporkchop.fp2.strategy.common.server.gen.ExactAsRoughGeneratorFallbackWrapper;
 import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.strategy.common.server.scale.IFarScaler;
@@ -99,7 +100,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
             .build();
 
     //contains positions of all tiles that aren't done
-    protected final Map<POS, Boolean> notDone = new ConcurrentHashMap<>();
+    protected final Map<POS, Boolean> notDone = new ConcurrentHashMap<>(); //TODO: make this (and also exactActive) (and also the task queue) lazily overflow to disk, because the queue might get REALLY big
 
     //contains positions of all tiles that are going to be updated with the exact generator
     protected final ObjLongMap<POS> exactActive = new ObjLongConcurrentHashMap<>(-1L);
@@ -132,37 +133,15 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
                         this.mode()
                 )));
 
-        if (generatorRough != null) { //rough generator has been set, so use it
-            generatorRough.init(world);
-        } else { //rough generator wasn't set, use the exact generator for this as well
+        if (generatorRough == null) {
             LOGGER.warn("No rough generator exists for world {} (type: {})! Falling back to exact generator, this will have serious performance implications.", world.provider.getDimension(), world.getWorldType());
-            generatorRough = new IFarGeneratorRough<POS, P>() {
-                @Override
-                public void init(@NonNull WorldServer world) {
-                    //no-op
-                }
-
-                @Override
-                public void generate(@NonNull P piece) {
-                    //TODO: optimize this lol
-                    generatorExact.generate(((AsyncBlockAccess.Holder) AbstractFarWorld.this.world).asyncBlockAccess(), piece);
-                }
-
-                @Override
-                public boolean supportsLowResolution() {
-                    return false;
-                }
-
-                @Override
-                public boolean isLowResolutionInaccurate() {
-                    return false;
-                }
-            };
+            generatorRough = new ExactAsRoughGeneratorFallbackWrapper<>(this.blockAccess(), generatorExact);
+            //TODO: make the fallback generator smart! rather than simply getting the chunks from the world, do generation and population in
+            // a volatile, in-memory world clone to prevent huge numbers of chunks/cubes from potentially being generated (and therefore saved)
         }
-        generatorExact.init(world);
 
-        this.generatorRough = generatorRough;
-        this.generatorExact = generatorExact;
+        (this.generatorRough = generatorRough).init(world);
+        (this.generatorExact = generatorExact).init(world);
 
         this.lowResolution = FP2Config.performance.lowResolutionEnable && this.generatorRough.supportsLowResolution();
         this.inaccurate = this.lowResolution && this.generatorRough.isLowResolutionInaccurate();
@@ -237,6 +216,10 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
     }
 
     protected void schedulePieceForUpdate(@NonNull POS pos, long newTimestamp) {
+        //TODO: this is a race condition if an exact generation task queued in a previous tick occurs in between multiple block updates to
+        // the same position during the current tick
+        //TODO: wait, is this actually correct? actually, i think the above condition might actually cause it to regenerate the same piece
+        // multiple times for that tick
         if (this.exactActive.put(pos, newTimestamp) < 0L) {
             //position wasn't previously queued for update
             synchronized (this.pendingExactTasks) {
@@ -347,6 +330,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
 
     protected void loadNotDone() {
         Collection<GetPieceTask<POS, P>> loadTasks = new ArrayList<>();
+        Collection<ExactUpdatePieceTask<POS, P>> exactGenerateTasks = new ArrayList<>();
 
         try {
             File file = new File(this.storage.storageRoot(), "notDone");
@@ -372,16 +356,19 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
                     long newTimestamp = in.readVarLong();
 
                     POS pos = uncheckedCast(this.mode.readPos(buf));
-                    //TODO: do something with it
+                    if (this.exactActive.put(pos, newTimestamp) < 0L && pos.level() < FP2Config.maxLevels)  {
+                        exactGenerateTasks.add(new ExactUpdatePieceTask<>(this, new TaskKey(TaskStage.EXACT, pos.level()), pos, TaskStage.EXACT));
+                    }
                 }
             } finally {
                 buf.release();
             }
         } catch (IOException e) {
-            LOGGER.error("Unable to load notDone pieces!", e);
+            LOGGER.error("Unable to load incomplete tasks!", e);
         } finally {
-            LOGGER.info("Loaded {} persisted piece load tasks", loadTasks.size());
+            LOGGER.info("Loaded {} persisted piece load tasks and {} persisted exact generate tasks", loadTasks.size(), exactGenerateTasks.size());
             this.executor.submit(PorkUtil.<Collection<LazyTask<TaskKey, ?, ?>>>uncheckedCast(loadTasks));
+            this.executor.submit(PorkUtil.<Collection<LazyTask<TaskKey, ?, ?>>>uncheckedCast(exactGenerateTasks));
         }
     }
 }

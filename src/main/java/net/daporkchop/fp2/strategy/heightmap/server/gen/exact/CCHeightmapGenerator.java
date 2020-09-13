@@ -25,6 +25,7 @@ import net.daporkchop.fp2.strategy.base.server.AbstractFarGenerator;
 import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;

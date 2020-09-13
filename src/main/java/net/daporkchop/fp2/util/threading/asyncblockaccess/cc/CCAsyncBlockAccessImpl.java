@@ -24,7 +24,9 @@ import io.github.opencubicchunks.cubicchunks.api.util.CubePos;
 import io.github.opencubicchunks.cubicchunks.api.world.IColumn;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 import lombok.NonNull;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
@@ -36,7 +38,6 @@ import net.daporkchop.lib.primitive.map.LongObjMap;
 import net.daporkchop.lib.primitive.map.concurrent.LongObjConcurrentHashMap;
 import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
@@ -50,7 +51,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.LongFunction;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Default implementation of {@link AsyncBlockAccess} for vanilla worlds.
@@ -62,7 +66,7 @@ public class CCAsyncBlockAccessImpl implements AsyncBlockAccess {
     protected final WorldServer world;
 
     protected final LongObjMap<Object> cache2d = new LongObjConcurrentHashMap<>();
-    protected final LongFunction<PFuture<Chunk>> cacheMiss2d;
+    protected final LongFunction<PFuture<IColumn>> cacheMiss2d;
 
     protected final Map<CubePos, Object> cache3d = new ObjObjConcurrentHashMap<>();
     protected final Function<CubePos, PFuture<ICube>> cacheMiss3d;
@@ -71,11 +75,11 @@ public class CCAsyncBlockAccessImpl implements AsyncBlockAccess {
         this.world = world;
 
         this.cacheMiss2d = l -> {
-            PFuture<Chunk> future = PFutures.computeAsync(
-                    () -> this.world.getChunk(BinMath.unpackX(l), BinMath.unpackY(l)),
+            PFuture<IColumn> future = PFutures.computeAsync(
+                    () -> (IColumn) this.world.getChunk(BinMath.unpackX(l), BinMath.unpackY(l)),
                     ServerThreadExecutor.INSTANCE);
-            future.thenAccept(chunk -> this.cache2d.replace(l, future, chunk)); //replace future with chunk instance in cache, to avoid indirection
-            future.thenAcceptAsync(chunk -> System.out.printf("loaded chunk (%d,%d) into cache\n", chunk.x, chunk.z));
+            future.thenAccept(column -> this.cache2d.replace(l, future, column)); //replace future with chunk instance in cache, to avoid indirection
+            future.thenAccept(column -> Constants.LOGGER.info("loaded column ({},{}}) into cache", column.getX(), column.getZ()));
             return future;
         };
 
@@ -88,16 +92,27 @@ public class CCAsyncBlockAccessImpl implements AsyncBlockAccess {
         };
     }
 
-    protected Object fetchChunk(int chunkX, int chunkZ) {
+    protected Object fetchColumn(int chunkX, int chunkZ) {
         return this.cache2d.computeIfAbsent(BinMath.packXY(chunkX, chunkZ), this.cacheMiss2d);
     }
 
-    protected Chunk getChunk(int chunkX, int chunkZ) {
-        Object o = this.fetchChunk(chunkX, chunkZ);
-        if (o instanceof Chunk) {
-            return (Chunk) o;
+    protected IColumn getColumn(int chunkX, int chunkZ) {
+        Object o = this.fetchColumn(chunkX, chunkZ);
+        if (o instanceof IColumn) {
+            return (IColumn) o;
         } else if (o instanceof PFuture) {
-            return PorkUtil.<PFuture<Chunk>>uncheckedCast(o).join();
+            return PorkUtil.<PFuture<IColumn>>uncheckedCast(o).join();
+        } else {
+            throw new RuntimeException(Objects.toString(o));
+        }
+    }
+
+    protected PFuture<IColumn> getColumnFuture(int chunkX, int chunkZ) {
+        Object o = this.fetchColumn(chunkX, chunkZ);
+        if (o instanceof IColumn) {
+            return PFutures.successful((IColumn) o, ImmediateEventExecutor.INSTANCE);
+        } else if (o instanceof PFuture) {
+            return uncheckedCast(o);
         } else {
             throw new RuntimeException(Objects.toString(o));
         }
@@ -118,14 +133,32 @@ public class CCAsyncBlockAccessImpl implements AsyncBlockAccess {
         }
     }
 
-    @Override
-    public PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> chunks) {
-        return null; //TODO: implement this
+    protected PFuture<ICube> getCubeFuture(int chunkX, int cubeY, int chunkZ) {
+        Object o = this.fetchCube(chunkX, cubeY, chunkZ);
+        if (o instanceof ICube) {
+            return PFutures.successful((ICube) o, ImmediateEventExecutor.INSTANCE);
+        } else if (o instanceof PFuture) {
+            return uncheckedCast(o);
+        } else {
+            throw new RuntimeException(Objects.toString(o));
+        }
     }
 
     @Override
-    public PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> chunks, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) {
-        return null; //TODO: implement this
+    public PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> columns) {
+        return PFutures.mergeToList(columns.map(pos -> this.getColumnFuture(pos.x, pos.z)).collect(Collectors.toList()))
+                .thenApply(columnList -> new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, columnList.stream()));
+    }
+
+    @Override
+    public PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) {
+        return PFutures.mergeToList(columns.map(pos -> this.getColumnFuture(pos.x, pos.z)).collect(Collectors.toList()))
+                .thenCompose(columnList -> {
+                    IBlockHeightAccess tempColumnsAccess = new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, columnList.stream());
+                    return PFutures.mergeToList(cubesMappingFunction.apply(tempColumnsAccess)
+                            .map(pos -> this.getCubeFuture(pos.getX(), pos.getY(), pos.getZ())).collect(Collectors.toList()))
+                            .thenApply(cubeList -> new PrefetchedCubesCCAsyncBlockAccess(this, this.world, columnList.stream(), cubeList.stream()));
+                });
     }
 
     @Override
@@ -136,17 +169,17 @@ public class CCAsyncBlockAccessImpl implements AsyncBlockAccess {
 
     @Override
     public int getTopBlockY(int blockX, int blockZ) {
-        return ((IColumn) this.getChunk(blockX >> 4, blockZ >> 4)).getOpacityIndex().getTopBlockY(blockX & 0xF, blockZ & 0xF);
+        return this.getColumn(blockX >> 4, blockZ >> 4).getOpacityIndex().getTopBlockY(blockX & 0xF, blockZ & 0xF);
     }
 
     @Override
     public int getTopBlockYBelow(int blockX, int blockY, int blockZ) {
-        return ((IColumn) this.getChunk(blockX >> 4, blockZ >> 4)).getOpacityIndex().getTopBlockYBelow(blockX & 0xF, blockY, blockZ & 0xF);
+        return this.getColumn(blockX >> 4, blockZ >> 4).getOpacityIndex().getTopBlockYBelow(blockX & 0xF, blockY, blockZ & 0xF);
     }
 
     @Override
     public int getBlockLight(BlockPos pos) {
-        if (!this.world.isValid(pos))    {
+        if (!this.world.isValid(pos)) {
             return 0;
         } else {
             return this.getCube(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4).getLightFor(EnumSkyBlock.BLOCK, pos);
@@ -157,7 +190,7 @@ public class CCAsyncBlockAccessImpl implements AsyncBlockAccess {
     public int getSkyLight(BlockPos pos) {
         if (!this.world.provider.hasSkyLight()) {
             return 0;
-        } else if (!this.world.isValid(pos))    {
+        } else if (!this.world.isValid(pos)) {
             return 15;
         } else {
             return this.getCube(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4).getLightFor(EnumSkyBlock.SKY, pos);
