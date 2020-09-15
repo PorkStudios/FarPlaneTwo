@@ -91,7 +91,8 @@ public class PerlinNoiseVoxelGenerator extends AbstractVoxelGenerator<Void> impl
         final int level = piece.level();
 
         //populate density map
-        double[] densityMap = this.terrainNoise.get(null, baseX, baseY, baseZ, 1 << level, 1 << level, 1 << level, DMAP_SIZE, DMAP_SIZE, DMAP_SIZE);
+        double[] densityMap = DMAP_CACHE.get();
+        this.terrainNoise.get(densityMap, baseX, baseY, baseZ, 1 << level, 1 << level, 1 << level, DMAP_SIZE, DMAP_SIZE, DMAP_SIZE);
 
         this.buildMesh(baseX, baseY, baseZ, level, piece, densityMap, null);
     }

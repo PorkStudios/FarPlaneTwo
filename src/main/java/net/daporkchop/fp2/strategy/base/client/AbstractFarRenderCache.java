@@ -307,7 +307,8 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                 return;
             }
         }
-        Constants.LOGGER.warn("Attempted to unload already non-existent piece at {}!", pos);
+        //TODO: uncomment this
+        //Constants.LOGGER.warn("Attempted to unload already non-existent piece at {}!", pos);
     }
 
     public T getTile(@NonNull POS pos) {

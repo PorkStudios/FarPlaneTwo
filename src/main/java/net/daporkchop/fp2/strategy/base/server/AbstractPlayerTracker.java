@@ -36,9 +36,9 @@ import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Deque;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -62,7 +62,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
 
     @Override
     public void playerAdd(@NonNull EntityPlayerMP player) {
-        if (!ServerThreadExecutor.INSTANCE.isServerThread())    {
+        if (!ServerThreadExecutor.INSTANCE.isServerThread()) {
             ServerThreadExecutor.INSTANCE.execute(() -> this.playerAdd(player));
             return;
         }
@@ -74,7 +74,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
 
     @Override
     public void playerRemove(@NonNull EntityPlayerMP player) {
-        if (!ServerThreadExecutor.INSTANCE.isServerThread())    {
+        if (!ServerThreadExecutor.INSTANCE.isServerThread()) {
             ServerThreadExecutor.INSTANCE.execute(() -> this.playerRemove(player));
             return;
         }
@@ -106,7 +106,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
                 });
 
         oldPositions.forEach(pos -> {
-            if (!newPositions.contains(pos))    {
+            if (!newPositions.contains(pos)) {
                 this.entries.get(pos).removePlayer(player);
             }
         });
@@ -117,7 +117,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
 
     @Override
     public void pieceChanged(@NonNull P piece) {
-        if (!ServerThreadExecutor.INSTANCE.isServerThread())    {
+        if (!ServerThreadExecutor.INSTANCE.isServerThread()) {
             ServerThreadExecutor.INSTANCE.execute(() -> this.pieceChanged(piece));
             return;
         }
@@ -131,36 +131,45 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
     }
 
     @Override
-    public void debug_dropAllPieces(@NonNull EntityPlayerMP player) {
-        if (!ServerThreadExecutor.INSTANCE.isServerThread())    {
-            ServerThreadExecutor.INSTANCE.execute(() -> this.debug_dropAllPieces(player));
+    public void debug_dropAllPieces() {
+        if (!ServerThreadExecutor.INSTANCE.isServerThread()) {
+            ServerThreadExecutor.INSTANCE.execute(this::debug_dropAllPieces);
             return;
         }
 
-        Set<POS> trackingPositions = this.trackingPositions.get(player);
-        if (trackingPositions != null)  {
-            trackingPositions.clear();
+        this.trackingPositions.forEach((player, trackingPositions) -> {
+            trackingPositions.stream()
+                    .map(this.entries::get)
+                    .filter(Objects::nonNull)
+                    .forEach(entry -> entry.removePlayer(player));
 
-            new ArrayList<>(this.entries.values()).stream()
-                    .filter(e -> e.players.contains(player))
-                    .forEach(e -> e.removePlayer(player));
+            trackingPositions.clear();
+        });
+
+        if (this.world instanceof AbstractFarWorld) {
+            if (((AbstractFarWorld) this.world).notDone.isEmpty()) {
+                LOGGER.info("Invalidating piece cache");
+                ((AbstractFarWorld) this.world).cache.invalidateAll();
+            } else {
+                LOGGER.info("Not invalidating piece cache because some pieces are still queued");
+            }
         }
     }
 
     protected abstract Stream<POS> getPositions(@NonNull EntityPlayerMP player);
 
-    protected Set<POS> allocateSet()    {
+    protected Set<POS> allocateSet() {
         return this.setAllocator.isEmpty() ? new ReferenceOpenHashSet<>() : this.setAllocator.pop();
     }
 
-    protected void releaseSet(@NonNull Set<POS> set)     {
+    protected void releaseSet(@NonNull Set<POS> set) {
         if (!set.isEmpty()) {
             set.clear();
         }
         this.setAllocator.push(set);
     }
 
-    protected Entry getOrCreateEntry(@NonNull POS pos)  {
+    protected Entry getOrCreateEntry(@NonNull POS pos) {
         return this.entries.computeIfAbsent(pos, this.entryCreator);
     }
 
@@ -175,14 +184,14 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
 
         protected P piece;
 
-        public Entry(@NonNull POS pos)  {
+        public Entry(@NonNull POS pos) {
             this.pos = pos;
 
             //attempt to get piece now
             this.piece = AbstractPlayerTracker.this.world.getPieceLazy(pos);
         }
 
-        public void addPlayer(@NonNull EntityPlayerMP player)   {
+        public void addPlayer(@NonNull EntityPlayerMP player) {
             if (this.players.add(player) && this.piece != null) {
                 //player was newly added and the piece has been set, send it
                 //TODO: make this not be async after fixing exact generator
@@ -201,7 +210,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
             NETWORK_WRAPPER.sendTo(new SPacketUnloadPiece().pos(this.pos), player);
         }
 
-        public void pieceChanged(@NonNull P piece)  {
+        public void pieceChanged(@NonNull P piece) {
             this.piece = piece;
 
             //send packet to all players

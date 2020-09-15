@@ -48,7 +48,7 @@ import net.daporkchop.fp2.strategy.voxel.client.VoxelRenderer;
 import net.daporkchop.fp2.strategy.voxel.server.VoxelPlayerTracker;
 import net.daporkchop.fp2.strategy.voxel.server.VoxelStorage;
 import net.daporkchop.fp2.strategy.voxel.server.VoxelWorld;
-import net.daporkchop.fp2.strategy.voxel.server.gen.exact.VoxelNoiseGenerator;
+import net.daporkchop.fp2.strategy.voxel.server.gen.exact.CCVoxelGenerator;
 import net.daporkchop.fp2.strategy.voxel.server.gen.rough.PerlinNoiseVoxelGenerator;
 import net.daporkchop.fp2.strategy.voxel.server.scale.VoxelScalerNone;
 import net.daporkchop.fp2.util.Constants;
@@ -134,10 +134,11 @@ public enum RenderMode {
         @Override
         protected void registerDefaultGenerators() {
             //rough
-            this.generatorsRough().add(0, world -> new PerlinNoiseVoxelGenerator());
+            //this.generatorsRough().add(0, world -> new PerlinNoiseVoxelGenerator());
 
             //exact
-            this.generatorsExact().add(0, world -> new VoxelNoiseGenerator());
+            this.generatorsExact().add(-100, world -> Constants.isCubicWorld(world) ? new CCVoxelGenerator() : null);
+            this.generatorsExact().add(Integer.MAX_VALUE, world -> new CCVoxelGenerator()); //TODO: remove this
         }
 
         @Override

@@ -51,8 +51,8 @@ public class CPacketDropAllPieces implements IMessage {
             }
             IFarContext context = (IFarContext) ctx.getServerHandler().player.world;
             ServerThreadExecutor.INSTANCE.execute(() -> {
-                Constants.LOGGER.info("Dropping all pieces for player {}", ctx.getServerHandler().player.getName());
-                context.tracker().debug_dropAllPieces(ctx.getServerHandler().player);
+                Constants.LOGGER.info("Dropping all pieces");
+                context.tracker().debug_dropAllPieces();
             });
             return null;
         }

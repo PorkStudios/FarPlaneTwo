@@ -25,7 +25,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.alloc.Allocator;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.renderer.culling.ICamera;
@@ -114,7 +113,8 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
     }
 
     public void assignAddress(int sizeVertices, int sizeIndices) {
-        VERTICES: {
+        VERTICES:
+        {
             if (this.addressVertices >= 0L) {
                 if (this.renderDataVertices.capacity() == sizeVertices) {
                     break VERTICES; //already has correctly sized allocation, do nothing
@@ -133,7 +133,8 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
             this.markHasAddress(true);
         }
 
-        INDICES: {
+        INDICES:
+        {
             if (this.addressIndices >= 0L) {
                 if (this.renderDataIndices.capacity() == sizeIndices) {
                     break INDICES; //already has correctly sized allocation, do nothing
@@ -200,7 +201,8 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
     }
 
     public boolean select(@NonNull Volume[] ranges, @NonNull ICamera frustum, @NonNull FarRenderIndex index) {
-        if (!ranges[this.level].intersects(this)) {
+        if (this.parent != null //don't do range checking for top level, as it will cause a bunch of pieces to be loaded but never rendered
+            && !ranges[this.level].intersects(this)) {
             //the view range for this level doesn't intersect this tile's bounding box,
             // so we can be certain that neither this tile nor any of its children would be contained
             return false;

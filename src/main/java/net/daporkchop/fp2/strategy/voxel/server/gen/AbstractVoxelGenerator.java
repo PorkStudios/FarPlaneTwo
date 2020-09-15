@@ -24,6 +24,8 @@ import net.daporkchop.fp2.strategy.base.server.AbstractFarGenerator;
 import net.daporkchop.fp2.strategy.voxel.VoxelData;
 import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
 import net.daporkchop.fp2.util.math.qef.QefSolver;
+import net.daporkchop.lib.common.ref.Ref;
+import net.daporkchop.lib.common.ref.ThreadRef;
 
 import static net.daporkchop.fp2.strategy.voxel.server.gen.VoxelGeneratorConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -33,7 +35,37 @@ import static net.daporkchop.lib.common.math.PMath.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
-    public static final int DMAP_SIZE = T_VOXELS + 2;
+    public static final int DMAP_MIN = -1;
+    public static final int DMAP_SIZE = T_VOXELS + 2 - DMAP_MIN;
+
+    protected static final Ref<double[]> DMAP_CACHE = ThreadRef.soft(() -> new double[DMAP_SIZE * DMAP_SIZE * DMAP_SIZE]);
+
+    protected static int densityIndex(int x, int y, int z)  {
+        return ((x - DMAP_MIN) * DMAP_SIZE + y - DMAP_MIN) * DMAP_SIZE + z - DMAP_MIN;
+    }
+
+    protected static double sampleDensity(double x, double y, double z, double[] densityMap)    {
+        int xI = floorI(x);
+        int yI = floorI(y);
+        int zI = floorI(z);
+
+        x -= xI;
+        y -= yI;
+        z -= zI;
+
+        double xyz = densityMap[densityIndex(xI, yI, zI)];
+        double xyZ = densityMap[densityIndex(xI, yI, zI + 1)];
+        double xYz = densityMap[densityIndex(xI, yI + 1, zI)];
+        double xYZ = densityMap[densityIndex(xI, yI + 1, zI + 1)];
+        double Xyz = densityMap[densityIndex(xI + 1, yI, zI)];
+        double XyZ = densityMap[densityIndex(xI + 1, yI, zI + 1)];
+        double XYz = densityMap[densityIndex(xI + 1, yI + 1, zI)];
+        double XYZ = densityMap[densityIndex(xI + 1, yI + 1, zI + 1)];
+
+        return lerp(
+                lerp(lerp(xyz, xyZ, z), lerp(xYz, xYZ, z), y),
+                lerp(lerp(Xyz, XyZ, z), lerp(XYz, XYZ, z), y), x);
+    }
 
     protected void buildMesh(int baseX, int baseY, int baseZ, int level, VoxelPiece piece, double[] densityMap, P param) {
         QefSolver qef = new QefSolver();
@@ -48,7 +80,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                         int offsetSubX = dx + ((i >> 2) & 1);
                         int offsetSubY = dy + ((i >> 1) & 1);
                         int offsetSubZ = dz + (i & 1);
-                        double density = densityMap[(offsetSubX * DMAP_SIZE + offsetSubY) * DMAP_SIZE + offsetSubZ];
+                        double density = densityMap[densityIndex(offsetSubX, offsetSubY, offsetSubZ)];
                         if (density < 0.0d) {
                             corners |= 1 << i;
                         }
@@ -77,23 +109,17 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                         int offsetSubY1 = (dy + ((c1 >> 1) & 1)) << level;
                         int offsetSubZ1 = (dz + (c1 & 1)) << level;
 
-                        double density0 = densityMap[(offsetSubX0 * DMAP_SIZE + offsetSubY0) * DMAP_SIZE + offsetSubZ0];
-                        double density1 = densityMap[(offsetSubX1 * DMAP_SIZE + offsetSubY1) * DMAP_SIZE + offsetSubZ1];
+                        double density0 = densityMap[densityIndex(offsetSubX0, offsetSubY0, offsetSubZ0)];
+                        double density1 = densityMap[densityIndex(offsetSubX1, offsetSubY1, offsetSubZ1)];
 
                         double t = minimize(density0, density1);
                         double px = lerp((c0 >> 2) & 1, (c1 >> 2) & 1, t);
                         double py = lerp((c0 >> 1) & 1, (c1 >> 1) & 1, t);
                         double pz = lerp(c0 & 1, c1 & 1, t);
 
-                        int offsetSubXP = t < 0.5d ? offsetSubX0 : offsetSubX1;
-                        int offsetSubYP = t < 0.5d ? offsetSubY0 : offsetSubY1;
-                        int offsetSubZP = t < 0.5d ? offsetSubZ0 : offsetSubZ1;
-
-                        double pDensity = densityMap[((offsetSubXP) * DMAP_SIZE + offsetSubYP) * DMAP_SIZE + offsetSubZP];
-
-                        double nx = densityMap[((offsetSubXP + 1) * DMAP_SIZE + offsetSubYP) * DMAP_SIZE + offsetSubZP] - pDensity;
-                        double ny = densityMap[(offsetSubXP * DMAP_SIZE + offsetSubYP + 1) * DMAP_SIZE + offsetSubZP] - pDensity;
-                        double nz = densityMap[(offsetSubXP * DMAP_SIZE + offsetSubYP) * DMAP_SIZE + offsetSubZP + 1] - pDensity;
+                        double nx = sampleDensity(dx + px + 0.001d, dy + py, dz + pz, densityMap) - sampleDensity(dx + px - 0.001d, dy + py, dz + pz, densityMap);
+                        double ny = sampleDensity(dx + px, dy + py + 0.001d, dz + pz, densityMap) - sampleDensity(dx + px, dy + py - 0.001d, dz + pz, densityMap);
+                        double nz = sampleDensity(dx + px, dy + py, dz + pz + 0.001d, densityMap) - sampleDensity(dx + px, dy + py, dz + pz - 0.001d, densityMap);
 
                         qef.add(px, py, pz, nx, ny, nz);
                         edgeCount++;
