@@ -37,12 +37,14 @@ public class KeyBindings {
     public final KeyBinding RELOAD_SHADERS = new KeyBinding("key.fp2.debug.reloadShaders", Keyboard.KEY_0, "key.categories.fp2.debug");
     public final KeyBinding DROP_PIECES = new KeyBinding("key.fp2.debug.dropPieces", Keyboard.KEY_9, "key.categories.fp2.debug");
     public final KeyBinding RENDER_PIECES = new KeyBinding("key.fp2.debug.renderPieces", Keyboard.KEY_8, "key.categories.fp2.debug");
+    public final KeyBinding TOGGLE_VANILLA_RENDER = new KeyBinding("key.fp2.debug.toggleVanillaRender", Keyboard.KEY_7, "key.categories.fp2.debug");
 
     public void register() {
         if (FP2Config.debug.debug)   {
             ClientRegistry.registerKeyBinding(RELOAD_SHADERS);
             ClientRegistry.registerKeyBinding(DROP_PIECES);
             ClientRegistry.registerKeyBinding(RENDER_PIECES);
+            ClientRegistry.registerKeyBinding(TOGGLE_VANILLA_RENDER);
         }
     }
 }

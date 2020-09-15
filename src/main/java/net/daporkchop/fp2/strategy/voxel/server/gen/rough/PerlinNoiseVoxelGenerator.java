@@ -98,7 +98,7 @@ public class PerlinNoiseVoxelGenerator extends AbstractVoxelGenerator<Void> impl
     }
 
     @Override
-    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, VoxelData data, Void param) {
+    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, VoxelData data, Void param, double nx, double ny, double nz) {
         double x = blockX;
         double y = blockY;
         double z = blockZ;

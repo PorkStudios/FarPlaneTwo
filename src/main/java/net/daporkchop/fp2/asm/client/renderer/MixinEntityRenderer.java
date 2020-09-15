@@ -131,7 +131,7 @@ public abstract class MixinEntityRenderer {
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;DILnet/minecraft/entity/Entity;)I"))
     private int debug_skipRenderBlockLayer(RenderGlobal r, BlockRenderLayer layer, double d, int i, Entity e)   {
-        if (false)   {
+        if (!FP2Config.debug.skipRenderWorld)   {
             return r.renderBlockLayer(layer, d, i, e);
         } else {
             return 0;

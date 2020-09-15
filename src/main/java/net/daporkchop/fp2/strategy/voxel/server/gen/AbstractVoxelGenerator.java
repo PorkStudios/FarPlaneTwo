@@ -27,6 +27,7 @@ import net.daporkchop.fp2.util.math.qef.QefSolver;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.strategy.voxel.server.gen.VoxelGeneratorConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
@@ -35,16 +36,21 @@ import static net.daporkchop.lib.common.math.PMath.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
-    public static final int DMAP_MIN = -1;
+    public static final int DMAP_MIN = -2;
     public static final int DMAP_SIZE = T_VOXELS + 2 - DMAP_MIN;
 
     protected static final Ref<double[]> DMAP_CACHE = ThreadRef.soft(() -> new double[DMAP_SIZE * DMAP_SIZE * DMAP_SIZE]);
 
-    protected static int densityIndex(int x, int y, int z)  {
+    protected static int densityIndex(int x, int y, int z) {
         return ((x - DMAP_MIN) * DMAP_SIZE + y - DMAP_MIN) * DMAP_SIZE + z - DMAP_MIN;
     }
 
-    protected static double sampleDensity(double x, double y, double z, double[] densityMap)    {
+    protected static double sampleDensity(double x, double y, double z, double[] densityMap) {
+        double delta = -0.5d;
+        x += delta;
+        y += delta;
+        z += delta;
+
         int xI = floorI(x);
         int yI = floorI(y);
         int zI = floorI(z);
@@ -71,16 +77,19 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
         QefSolver qef = new QefSolver();
         VoxelData data = new VoxelData();
 
+        double edgeScaleFactor = 1d;
+        double dn = 0.002d * (1 << level);
+
         for (int dx = 0; dx < T_VOXELS; dx++) {
             for (int dy = 0; dy < T_VOXELS; dy++) {
                 for (int dz = 0; dz < T_VOXELS; dz++) {
                     //check for intersection data for each corner
                     int corners = 0;
                     for (int i = 0; i < 8; i++) {
-                        int offsetSubX = dx + ((i >> 2) & 1);
-                        int offsetSubY = dy + ((i >> 1) & 1);
-                        int offsetSubZ = dz + (i & 1);
-                        double density = densityMap[densityIndex(offsetSubX, offsetSubY, offsetSubZ)];
+                        double offsetSubX = dx + edgeScaleFactor * ((i >> 2) & 1);
+                        double offsetSubY = dy + edgeScaleFactor * ((i >> 1) & 1);
+                        double offsetSubZ = dz + edgeScaleFactor * (i & 1);
+                        double density = sampleDensity(offsetSubX, offsetSubY, offsetSubZ, densityMap);
                         if (density < 0.0d) {
                             corners |= 1 << i;
                         }
@@ -102,24 +111,24 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                             continue;
                         }
 
-                        int offsetSubX0 = (dx + ((c0 >> 2) & 1)) << level;
-                        int offsetSubY0 = (dy + ((c0 >> 1) & 1)) << level;
-                        int offsetSubZ0 = (dz + (c0 & 1)) << level;
-                        int offsetSubX1 = (dx + ((c1 >> 2) & 1)) << level;
-                        int offsetSubY1 = (dy + ((c1 >> 1) & 1)) << level;
-                        int offsetSubZ1 = (dz + (c1 & 1)) << level;
+                        double offsetSubX0 = dx + edgeScaleFactor * ((c0 >> 2) & 1);
+                        double offsetSubY0 = dy + edgeScaleFactor * ((c0 >> 1) & 1);
+                        double offsetSubZ0 = dz + edgeScaleFactor * (c0 & 1);
+                        double offsetSubX1 = dx + edgeScaleFactor * ((c1 >> 2) & 1);
+                        double offsetSubY1 = dy + edgeScaleFactor * ((c1 >> 1) & 1);
+                        double offsetSubZ1 = dz + edgeScaleFactor * (c1 & 1);
 
-                        double density0 = densityMap[densityIndex(offsetSubX0, offsetSubY0, offsetSubZ0)];
-                        double density1 = densityMap[densityIndex(offsetSubX1, offsetSubY1, offsetSubZ1)];
+                        double density0 = sampleDensity(offsetSubX0, offsetSubY0, offsetSubZ0, densityMap);
+                        double density1 = sampleDensity(offsetSubX1, offsetSubY1, offsetSubZ1, densityMap);
 
                         double t = minimize(density0, density1);
                         double px = lerp((c0 >> 2) & 1, (c1 >> 2) & 1, t);
                         double py = lerp((c0 >> 1) & 1, (c1 >> 1) & 1, t);
                         double pz = lerp(c0 & 1, c1 & 1, t);
 
-                        double nx = sampleDensity(dx + px + 0.001d, dy + py, dz + pz, densityMap) - sampleDensity(dx + px - 0.001d, dy + py, dz + pz, densityMap);
-                        double ny = sampleDensity(dx + px, dy + py + 0.001d, dz + pz, densityMap) - sampleDensity(dx + px, dy + py - 0.001d, dz + pz, densityMap);
-                        double nz = sampleDensity(dx + px, dy + py, dz + pz + 0.001d, densityMap) - sampleDensity(dx + px, dy + py, dz + pz - 0.001d, densityMap);
+                        double nx = sampleDensity(dx + px + dn, dy + py, dz + pz, densityMap) - sampleDensity(dx + px - dn, dy + py, dz + pz, densityMap);
+                        double ny = sampleDensity(dx + px, dy + py + dn, dz + pz, densityMap) - sampleDensity(dx + px, dy + py - dn, dz + pz, densityMap);
+                        double nz = sampleDensity(dx + px, dy + py, dz + pz + dn, densityMap) - sampleDensity(dx + px, dy + py, dz + pz - dn, densityMap);
 
                         qef.add(px, py, pz, nx, ny, nz);
                         edgeCount++;
@@ -127,7 +136,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                     }
 
                     //solve QEF and set the piece data
-                    qef.solve(data.reset(), 0.0001f, 4, 0.0001f);
+                    qef.solve(data.reset(), 0.0001d, 4, 0.0001d);
 
                     if (data.x < 0.0d || data.x > 1.0d
                         || data.y < 0.0d || data.y > 1.0d
@@ -137,7 +146,16 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                     qef.reset();
 
                     data.edges = edgeMask;
-                    this.populateVoxelBlockData(baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level), data, param);
+
+                    double nx = sampleDensity(dx + data.x + dn, dy + data.y, dz + data.z, densityMap) - sampleDensity(dx + data.x - dn, dy + data.y, dz + data.z, densityMap);
+                    double ny = sampleDensity(dx + data.x, dy + data.y + dn, dz + data.z, densityMap) - sampleDensity(dx + data.x, dy + data.y - dn, dz + data.z, densityMap);
+                    double nz = sampleDensity(dx + data.x, dy + data.y, dz + data.z + dn, densityMap) - sampleDensity(dx + data.x, dy + data.y, dz + data.z - dn, densityMap);
+                    double nLen = sqrt(nx * nx + ny * ny + nz * nz);
+                    nx /= nLen;
+                    ny /= nLen;
+                    nz /= nLen;
+
+                    this.populateVoxelBlockData(baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level), data, param, nx, ny, nz);
 
                     piece.set(dx, dy, dz, data);
                 }
@@ -153,6 +171,9 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
      * @param blockZ the voxel's Z coordinate
      * @param data   the {@link VoxelData} to store data into
      * @param param  an additional user parameter
+     * @param nx
+     * @param ny
+     * @param nz
      */
-    protected abstract void populateVoxelBlockData(int blockX, int blockY, int blockZ, VoxelData data, P param);
+    protected abstract void populateVoxelBlockData(int blockX, int blockY, int blockZ, VoxelData data, P param, double nx, double ny, double nz);
 }

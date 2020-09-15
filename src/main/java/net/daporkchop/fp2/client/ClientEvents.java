@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.client;
 
 import net.daporkchop.fp2.FP2;
+import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.asm.client.gui.IGuiScreen;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
@@ -28,6 +29,7 @@ import net.daporkchop.fp2.net.client.CPacketDropAllPieces;
 import net.daporkchop.fp2.strategy.common.IFarContext;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiVideoSettings;
+import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.event.world.WorldEvent;
@@ -68,10 +70,16 @@ public class ClientEvents {
     public void keyInput(InputEvent.KeyInputEvent event) {
         if (KeyBindings.RELOAD_SHADERS.isPressed()) {
             ShaderManager.reload();
-        } else if (KeyBindings.DROP_PIECES.isPressed()) {
+        }
+        if (KeyBindings.DROP_PIECES.isPressed()) {
             NETWORK_WRAPPER.sendToServer(new CPacketDropAllPieces());
-        } else if (KeyBindings.RENDER_PIECES.isPressed()) {
+        }
+        if (KeyBindings.RENDER_PIECES.isPressed()) {
             ((IFarContext) mc.world).renderer().debug_renderPieces();
+        }
+        if (KeyBindings.TOGGLE_VANILLA_RENDER.isPressed())  {
+            FP2Config.debug.skipRenderWorld ^= true;
+            mc.player.sendMessage(new TextComponentString((FP2Config.debug.skipRenderWorld ? "§cDisabled" : "§aEnabled") + " vanilla terrain."));
         }
     }
 

@@ -253,5 +253,11 @@ public class FP2Config {
         })
         @Config.LangKey("config.fp2.debug.disablePersistence")
         public boolean disablePersistence = false;
+
+        @Config.Comment({
+                "If true, the vanilla world will not be rendered."
+        })
+        @Config.LangKey("config.fp2.debug.skipRenderWorld")
+        public boolean skipRenderWorld = false;
     }
 }

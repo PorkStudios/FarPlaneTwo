@@ -40,6 +40,7 @@ config.fp2.debug.debug=Debug mode
 config.fp2.debug.disableRead=Disable read
 config.fp2.debug.disableWrite=Disable write
 config.fp2.debug.disablePersistence=Disable persistence
+config.fp2.debug.skipRenderWorld=Skip vanilla render
 
 config.fp2.storage=Storage options
 config.fp2.storage.leveldb=leveldb options
