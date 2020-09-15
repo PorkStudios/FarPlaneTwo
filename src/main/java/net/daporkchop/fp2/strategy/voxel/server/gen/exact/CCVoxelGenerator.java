@@ -26,12 +26,15 @@ import net.daporkchop.fp2.strategy.voxel.VoxelData;
 import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
 import net.daporkchop.fp2.strategy.voxel.VoxelPos;
 import net.daporkchop.fp2.strategy.voxel.server.gen.AbstractVoxelGenerator;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
+import net.minecraft.world.biome.Biome;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -95,14 +98,13 @@ public class CCVoxelGenerator extends AbstractVoxelGenerator<IBlockHeightAccess>
                     for (int ddx = -1; ddx <= 1; ddx++) {
                         for (int ddy = -1; ddy <= 1; ddy++) {
                             for (int ddz = -1; ddz <= 1; ddz++) {
-                                if ((ddx != 0 && ddy != 0) || (ddx != 0 && ddz != 0) || (ddy != 0 && ddz != 0)) {
+                                if (false && (ddx != 0 && ddy != 0) || (ddx != 0 && ddz != 0) || (ddy != 0 && ddz != 0)) {
                                     continue;
                                 }
                                 double weight = 1.0d;
-                                double w = 0.333d;
-                                weight *= ddx == 0 ? 1.0d : w;
-                                weight *= ddy == 0 ? 1.0d : w;
-                                weight *= ddz == 0 ? 1.0d : w;
+                                weight *= ddx == 0 ? 1.0d : 0.1;
+                                weight *= ddy == 0 ? 1.0d : 0.1;
+                                weight *= ddz == 0 ? 1.0d : 0.1;
 
                                 pos.setPos(baseX + dx + ddx, baseY + dy + ddy, baseZ + dz + ddz);
                                 density += ((solidFlags & (1 << (((ddx + 1) * 3 + ddy + 1) * 3 + ddz + 1))) != 0 ? -1d : 0.2d) * weight;
@@ -111,7 +113,7 @@ public class CCVoxelGenerator extends AbstractVoxelGenerator<IBlockHeightAccess>
                     }
 
                     FILL_HOLES:
-                    if (!world.getBlockState(pos.setPos(baseX + dx, baseY + dy, baseZ + dz)).isOpaqueCube()) {
+                    if (false && !world.getBlockState(pos.setPos(baseX + dx, baseY + dy, baseZ + dz)).isOpaqueCube()) {
                         for (int ddx = -1; ddx <= 1; ddx++) {
                             for (int ddy = -1; ddy <= 1; ddy++) {
                                 for (int ddz = -1; ddz <= 1; ddz++) {
@@ -159,40 +161,26 @@ public class CCVoxelGenerator extends AbstractVoxelGenerator<IBlockHeightAccess>
 
     @Override
     protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, VoxelData data, IBlockHeightAccess world, double nx, double ny, double nz) {
-        if (blockX == 230 && blockY == 136 && blockZ == -95)    {
-            System.out.printf("                              %f,%f,%f\n", data.x, data.y, data.z);
-        }
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(blockX, blockY, blockZ);
 
-        data.light = 0xFF;
-
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        IBlockState state = world.getBlockState(pos.setPos(blockX, blockY, blockZ));
-        SEARCH:
-        if (!state.isOpaqueCube()) {
-            /*for (int dx = -1; dx <= 1; dx++) {
-                for (int dy = -1; dy <= 1; dy++) {
-                    for (int dz = -1; dz <= 1; dz++) {
-                        if ((state = world.getBlockState(pos.setPos(blockX + dx, blockY + dy, blockZ + dz))).isOpaqueCube()) {
-                            break SEARCH;
-                        }
-                    }
-                }
-            }*/
-
-            Vec3i[] arr = new Vec3i[27];
-            for (int i = 0, dx = -1; dx <= 1; dx++) {
-                for (int dy = -1; dy <= 1; dy++) {
-                    for (int dz = -1; dz <= 1; dz++) {
-                        arr[i++] = new Vec3i(dx, dy, dz);
-                    }
+        Vec3i[] arr = new Vec3i[27];
+        for (int i = 0, dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    arr[i++] = new Vec3i(dx, dy, dz);
                 }
             }
-            Arrays.sort(arr, Comparator.comparingDouble(vec -> {
-                double dx = vec.getX() - nx;
-                double dy = vec.getY() - ny;
-                double dz = vec.getZ() - nz;
-                return dx * dx + dy * dy + dz * dz;
-            }));
+        }
+        Arrays.sort(arr, Comparator.comparingDouble(vec -> {
+            double dx = vec.getX() - nx;
+            double dy = vec.getY() - ny;
+            double dz = vec.getZ() - nz;
+            return dx * dx + dy * dy + dz * dz;
+        }));
+
+        IBlockState state = world.getBlockState(pos);
+        SEARCH:
+        if (!state.isOpaqueCube()) {
             for (Vec3i v : arr) {
                 if ((state = world.getBlockState(pos.setPos(blockX + v.getX(), blockY + v.getY(), blockZ + v.getZ()))).isOpaqueCube()) {
                     break SEARCH;
@@ -200,5 +188,18 @@ public class CCVoxelGenerator extends AbstractVoxelGenerator<IBlockHeightAccess>
             }
         }
         data.state = Block.getStateId(state);
+        data.biome = Biome.getIdForBiome(world.getBiome(pos));
+
+        //find neighbor that isn't opaque
+        blockX = pos.getX();
+        blockY = pos.getY();
+        blockZ = pos.getZ();
+
+        for (Vec3i v : arr) {
+            if (!world.getBlockState(pos.setPos(blockX + v.getX(), blockY + v.getY(), blockZ + v.getZ())).isOpaqueCube()) {
+                data.light = Constants.packCombinedLight(world.getCombinedLight(pos, 0));
+                break;
+            }
+        }
     }
 }

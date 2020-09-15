@@ -77,7 +77,6 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
         QefSolver qef = new QefSolver();
         VoxelData data = new VoxelData();
 
-        double edgeScaleFactor = 1d;
         double dn = 0.002d * (1 << level);
 
         for (int dx = 0; dx < T_VOXELS; dx++) {
@@ -86,9 +85,9 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                     //check for intersection data for each corner
                     int corners = 0;
                     for (int i = 0; i < 8; i++) {
-                        double offsetSubX = dx + edgeScaleFactor * ((i >> 2) & 1);
-                        double offsetSubY = dy + edgeScaleFactor * ((i >> 1) & 1);
-                        double offsetSubZ = dz + edgeScaleFactor * (i & 1);
+                        double offsetSubX = dx + ((i >> 2) & 1);
+                        double offsetSubY = dy + ((i >> 1) & 1);
+                        double offsetSubZ = dz + (i & 1);
                         double density = sampleDensity(offsetSubX, offsetSubY, offsetSubZ, densityMap);
                         if (density < 0.0d) {
                             corners |= 1 << i;
@@ -111,12 +110,12 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                             continue;
                         }
 
-                        double offsetSubX0 = dx + edgeScaleFactor * ((c0 >> 2) & 1);
-                        double offsetSubY0 = dy + edgeScaleFactor * ((c0 >> 1) & 1);
-                        double offsetSubZ0 = dz + edgeScaleFactor * (c0 & 1);
-                        double offsetSubX1 = dx + edgeScaleFactor * ((c1 >> 2) & 1);
-                        double offsetSubY1 = dy + edgeScaleFactor * ((c1 >> 1) & 1);
-                        double offsetSubZ1 = dz + edgeScaleFactor * (c1 & 1);
+                        double offsetSubX0 = dx + ((c0 >> 2) & 1);
+                        double offsetSubY0 = dy + ((c0 >> 1) & 1);
+                        double offsetSubZ0 = dz + (c0 & 1);
+                        double offsetSubX1 = dx + ((c1 >> 2) & 1);
+                        double offsetSubY1 = dy + ((c1 >> 1) & 1);
+                        double offsetSubZ1 = dz + (c1 & 1);
 
                         double density0 = sampleDensity(offsetSubX0, offsetSubY0, offsetSubZ0, densityMap);
                         double density1 = sampleDensity(offsetSubX1, offsetSubY1, offsetSubZ1, densityMap);
