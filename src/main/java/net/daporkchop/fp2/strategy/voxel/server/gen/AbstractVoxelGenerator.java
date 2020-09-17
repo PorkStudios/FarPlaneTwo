@@ -46,7 +46,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
     }
 
     protected static double sampleDensity(double x, double y, double z, double[] densityMap) {
-        double delta = -0.5d;
+        double delta = -0.0d;
         x += delta;
         y += delta;
         z += delta;
@@ -77,7 +77,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
         QefSolver qef = new QefSolver();
         VoxelData data = new VoxelData();
 
-        double dn = 0.002d * (1 << level);
+        double dn = 0.001d * (1 << level);
 
         for (int dx = 0; dx < T_VOXELS; dx++) {
             for (int dy = 0; dy < T_VOXELS; dy++) {
@@ -135,7 +135,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                     }
 
                     //solve QEF and set the piece data
-                    qef.solve(data.reset(), 0.0001d, 4, 0.0001d);
+                    qef.solve(data.reset(), 0.1d, 4, 0.1d);
 
                     if (data.x < 0.0d || data.x > 1.0d
                         || data.y < 0.0d || data.y > 1.0d

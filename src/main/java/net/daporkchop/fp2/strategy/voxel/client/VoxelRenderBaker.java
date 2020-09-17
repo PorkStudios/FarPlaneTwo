@@ -299,12 +299,12 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         vertices.writeShort(Constants.packedLightTo8BitVec2(data.light)); //light
         vertices.writeMedium(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.state), biomeAccess, pos, 0))); //color
 
-        vertices.writeDouble(baseX + (dx + data.x) * scale)
-                .writeDouble(baseY + (dy + data.y) * scale)
-                .writeDouble(baseZ + (dz + data.z) * scale); //pos_low
-        vertices.writeDouble(baseX + (dx + data.x) * scale)
-                .writeDouble(baseY + (dy + data.y) * scale)
-                .writeDouble(baseZ + (dz + data.z) * scale); //pos_high
+        vertices.writeDouble(baseX + (dx + data.x + 0.5d) * scale)
+                .writeDouble(baseY + (dy + data.y + 0.5d) * scale)
+                .writeDouble(baseZ + (dz + data.z + 0.5d) * scale); //pos_low
+        vertices.writeDouble(baseX + (dx + data.x + 0.5d) * scale)
+                .writeDouble(baseY + (dy + data.y + 0.5d) * scale)
+                .writeDouble(baseZ + (dz + data.z + 0.5d) * scale); //pos_high
 
         vertices.writeShort(1 << level);
     }

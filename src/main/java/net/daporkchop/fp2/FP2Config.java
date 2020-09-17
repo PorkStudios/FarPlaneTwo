@@ -63,7 +63,7 @@ public class FP2Config {
             "The distance (in blocks) between LoD transitions.",
             "Note that this value is doubled for each level, so a setting of 64 will mean 64 blocks for the first layer, 128 blocks for the second layer, etc."
     })
-    @Config.RangeInt(min = 16)
+    @Config.RangeInt(min = 0)
     @Config.LangKey("config.fp2.levelCutoffDistance")
     public static int levelCutoffDistance = 64;
 

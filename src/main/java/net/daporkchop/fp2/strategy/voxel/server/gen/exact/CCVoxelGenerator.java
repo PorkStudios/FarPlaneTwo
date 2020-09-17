@@ -40,6 +40,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.stream.Stream;
 
+import static java.lang.Math.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
@@ -84,7 +85,7 @@ public class CCVoxelGenerator extends AbstractVoxelGenerator<IBlockHeightAccess>
                         density += world.getBlockState(pos).isOpaqueCube() ? -1.0d : 1.0d;
                     }*/
 
-                    int solidFlags = 0;
+                    /*int solidFlags = 0;
                     for (int ddx = -1; ddx <= 1; ddx++) {
                         for (int ddy = -1; ddy <= 1; ddy++) {
                             for (int ddz = -1; ddz <= 1; ddz++) {
@@ -107,7 +108,7 @@ public class CCVoxelGenerator extends AbstractVoxelGenerator<IBlockHeightAccess>
                                 weight *= ddz == 0 ? 1.0d : 0.1;
 
                                 pos.setPos(baseX + dx + ddx, baseY + dy + ddy, baseZ + dz + ddz);
-                                density += ((solidFlags & (1 << (((ddx + 1) * 3 + ddy + 1) * 3 + ddz + 1))) != 0 ? -1d : 0.2d) * weight;
+                                density += ((solidFlags & (1 << (((ddx + 1) * 3 + ddy + 1) * 3 + ddz + 1))) != 0 ? -1d : .5d) * weight;
                             }
                         }
                     }
@@ -129,9 +130,11 @@ public class CCVoxelGenerator extends AbstractVoxelGenerator<IBlockHeightAccess>
                                 }
                             }
                         }
-                    }
+                    }*/
 
-                    //density = world.getBlockState(pos.setPos(baseX + dx, baseY + dy, baseZ + dz)).isOpaqueCube() ? -1d : 0.01d;
+                    //density = clamp(density, -1.0d, 1.0d);
+
+                    density = world.getBlockState(pos.setPos(baseX + dx, baseY + dy, baseZ + dz)).isOpaqueCube() ? -1d : 1d;
 
                     /*for (int ddx = -1; ddx <= 0; ddx++) {
                         for (int ddy = -1; ddy <= 0; ddy++) {
@@ -151,7 +154,7 @@ public class CCVoxelGenerator extends AbstractVoxelGenerator<IBlockHeightAccess>
                     density += (world.getBlockState(pos.setPos(baseX + dx + 1, baseY + dy, baseZ + dz)).isOpaqueCube() ? -1.0d : 1.0d) * 0.05d;
                     density += (world.getBlockState(pos.setPos(baseX + dx - 1, baseY + dy, baseZ + dz)).isOpaqueCube() ? -1.0d : 1.0d) * 0.05d;*/
 
-                    densityMap[((dx - DMAP_MIN) * DMAP_SIZE + dy - DMAP_MIN) * DMAP_SIZE + dz - DMAP_MIN] = clamp(density, -1.0d, 1.0d);
+                    densityMap[((dx - DMAP_MIN) * DMAP_SIZE + dy - DMAP_MIN) * DMAP_SIZE + dz - DMAP_MIN] = density;
                 }
             }
         }
