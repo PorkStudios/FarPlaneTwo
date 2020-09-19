@@ -63,8 +63,8 @@ vec3 normalVector() {
     return normalize(cross(fdx, fdy));
 }
 
-vec2 texUvFactor(vec3 normal)  {
-    vec3 delta = fs_in.pos - fs_in.base_pos;
+vec2 texUvFactor(vec3 normal, vec3 pos)  {
+    vec3 delta = pos - fs_in.base_pos;
 
     vec3 s = sign(normal);
     normal = -abs(normal);
@@ -75,28 +75,29 @@ vec2 texUvFactor(vec3 normal)  {
     uv_factor += vec2(-s.z * delta.x, delta.y) * normal.z;
     uv_factor += vec2(s.x * delta.z, delta.y) * normal.x;
 
-    return fract(uv_factor);
+    return uv_factor;
 }
 
 vec4 sampleTerrain(vec3 normal)  {
-    vec2 factor = texUvFactor(normal);
+    vec2 factor = texUvFactor(normal, fs_in.pos);
     ivec2 list = quad_lists[fs_in.state * 6 + normalToFaceIndex(normal)];
 
     BakedQuad quad = quad_data[list[0]];
 
-    vec4 color_out = texture(terrain_texture, lerp(vec2(quad.minU, quad.minV), vec2(quad.maxU, quad.maxV), factor));
+    vec2 uv = mix(vec2(quad.minU, quad.minV), vec2(quad.maxU, quad.maxV), factor);
+    vec4 color_out = textureGrad(terrain_texture, mix(vec2(quad.minU, quad.minV), vec2(quad.maxU, quad.maxV), fract(factor)), dFdx(uv), dFdy(uv));
 
     //apply tint if the quad allows it (branchless implementation)
     color_out.rgb *= max(fs_in.color, vec3(quad.tintFactor));
 
     //this shouldn't be too bad performance-wise, because in all likelihood it'll have the same number of loops for all neighboring fragments
     // almost all the time
-    //for (int i = list[1] - 1; i >= list[0]; i--) {
     for (int i = list[0] + 1; i < list[1]; i++) {
         quad = quad_data[i];
 
         //raw color
-        vec4 frag_color = texture(terrain_texture, lerp(vec2(quad.minU, quad.minV), vec2(quad.maxU, quad.maxV), factor));
+        uv = mix(vec2(quad.minU, quad.minV), vec2(quad.maxU, quad.maxV), factor);
+        vec4 frag_color = textureGrad(terrain_texture, mix(vec2(quad.minU, quad.minV), vec2(quad.maxU, quad.maxV), fract(factor)), dFdx(uv), dFdy(uv));
 
         //possibly apply tint (branchless implementation)
         frag_color.rgb *= max(fs_in.color, vec3(quad.tintFactor));
