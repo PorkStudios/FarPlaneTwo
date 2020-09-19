@@ -52,7 +52,7 @@ public class ClientEvents {
     @SubscribeEvent
     public void worldLoad(WorldEvent.Load event) {
         if (event.getWorld().isRemote) {
-            GlobalInfo.reloadUVs();
+            TexUVs.reloadUVs();
         }
     }
 
@@ -83,7 +83,7 @@ public class ClientEvents {
                 mc.player.sendMessage(new TextComponentString((FP2Config.debug.skipRenderWorld ? "§cDisabled" : "§aEnabled") + " vanilla terrain."));
             }
             if (KeyBindings.REBUILD_UVS.isPressed()) {
-                GlobalInfo.reloadUVs();
+                TexUVs.reloadUVs();
                 mc.player.sendMessage(new TextComponentString("§aRebuilt texture UVs."));
             }
         }

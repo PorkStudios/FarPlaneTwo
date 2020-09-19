@@ -25,6 +25,7 @@ import com.google.gson.GsonBuilder;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomCubicWorldType;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
@@ -53,6 +54,8 @@ import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
+
+import static java.lang.Math.*;
 
 /**
  * Various constants and helper methods used throughout the mod.
@@ -201,7 +204,7 @@ public class Constants {
      */
     @SuppressWarnings("deprecation")
     public static ByteBuf allocateByteBuf(int capacity) {
-        return PooledByteBufAllocator.DEFAULT.directBuffer(capacity, capacity)
+        return ByteBufAllocator.DEFAULT.directBuffer(capacity, capacity)
                 .order(ByteOrder.nativeOrder());
     }
 
@@ -237,5 +240,19 @@ public class Constants {
      */
     public static double minimize(double d0, double d1) {
         return d0 / (d0 - d1);
+    }
+
+    public static int normalToFaceIndex(double x, double y, double z)  {
+        //TODO: make this branchless
+        double nx = abs(x);
+        double ny = abs(x);
+        double nz = abs(x);
+        if (ny > nx && ny > nz)  {
+            return ny < 0.0d ? 0 : 1;
+        } else if (nz > nx && nz > ny) {
+            return nz < 0.0d ? 2 : 3;
+        } else {
+            return nx < 0.0d ? 4 : 5;
+        }
     }
 }

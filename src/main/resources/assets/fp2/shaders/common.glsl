@@ -104,22 +104,24 @@ bool isChunkSectionRenderable(ivec3 chunk)  {
     return (renderable_chunks.data[index >> 5] & (1 << (index & 0x1F))) != 0;
 }
 
-struct TextureUV {
-    vec2 min;
-    vec2 max;
+struct BakedQuadList {
+    int firstIndex;
+    int lastIndex;
 };
 
-layout(std430, binding = 1) buffer GLOBAL_INFO {
-    vec2 biome_climate[256];
-    int biome_watercolor[256];
+layout(std430, binding = 1) buffer QUAD_LISTS {
+    BakedQuadList quad_lists[];
+};
 
-    int colormap_grass[256 * 256];
-    int colormap_foliage[256 * 256];
+struct BakedQuad {
+    vec2 min;
+    vec2 max;
+    float tintFactor;
+};
 
-    int map_colors[64];
-
-    TextureUV tex_uvs[];
-} global_info;
+layout(std430, binding = 2) buffer QUAD_DATA {
+    BakedQuad quad_data[];
+};
 
 //
 //
@@ -145,38 +147,6 @@ vec4 fromRGB(int rgb)   {
     return fromRGB(uint(rgb));
 }
 
-// biome climate data access
-
-float getTemperature(dvec3 pos, int biome) {
-    if (pos.y > 64.)   {
-        return global_info.biome_climate[biome].x - float(pos.y - 64.) * .05 / 30.;
-    } else {
-        return global_info.biome_climate[biome].x;
-    }
-}
-
-vec4 getGrassColor(float temperature, float humidity){
-    humidity = humidity * temperature;
-    int i = int((1. - temperature) * 255.);
-    int j = int((1. - humidity) * 255.);
-    return fromARGB(global_info.colormap_grass[(j << 8) | i]);
-}
-
-vec4 getGrassColorAtPos(dvec3 pos, int biome){
-    return getGrassColor(clamp(getTemperature(pos, biome), 0., 1.), clamp(global_info.biome_climate[biome].y, 0., 1.));
-}
-
-vec4 getFoliageColor(float temperature, float humidity){
-    humidity = humidity * temperature;
-    int i = int((1. - temperature) * 255.);
-    int j = int((1. - humidity) * 255.);
-    return fromARGB(global_info.colormap_foliage[(j << 8) | i]);
-}
-
-vec4 getFoliageColorAtPos(dvec3 pos, int biome){
-    return getGrassColor(clamp(getTemperature(pos, biome), 0., 1.), clamp(global_info.biome_climate[biome].y, 0., 1.));
-}
-
 // vertex transformation
 
 vec4 cameraTransform(vec4 point) {
@@ -193,7 +163,8 @@ float diffuseLight(vec3 normal) {
     return min(normal.x * normal.x * .6 + normal.y * normal.y * ((3. + normal.y) / 4.) + normal.z * normal.z * .8, 1.);
 }
 
-//misc. stuff
+// vector math
+
 int normalToFaceIndex(vec3 normal)  {
     //TODO: make this branchless
     vec3 n = abs(normal);
@@ -204,4 +175,10 @@ int normalToFaceIndex(vec3 normal)  {
     } else {
         return n.x < 0. ? 4 : 5;
     }
+}
+
+// general math
+
+vec2 lerp(vec2 a, vec2 b, vec2 t)   {
+    return a + (b - a) * t;
 }

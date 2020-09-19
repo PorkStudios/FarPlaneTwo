@@ -19,14 +19,15 @@
  */
 
 void main() {
-    TextureUV uvs = global_info.tex_uvs[fs_in.state * 6 + 1]; //up
-    vec2 uv = uvs.min + (uvs.max - uvs.min) * fract(fs_in.pos.xz);
+    //TextureUV uvs = global_info.tex_uvs[fs_in.state * 6 + 1];
+    //vec2 uv = uvs.min + (uvs.max - uvs.min) * fract(fs_in.pos.xz);
 
     //initial block texture sample
-    vec4 frag_color = texture(terrain_texture, uv);
+    //vec4 frag_color = texture(terrain_texture, uv);
+    vec4 frag_color = sampleTerrain(fs_in.state, vec3(0., 1., 0.), fs_in.color);
 
     //block color multiplier
-    frag_color.rgb *= fs_in.color;
+    //frag_color.rgb *= fs_in.color;
 
     //block/sky light
     frag_color *= texture(lightmap_texture, fs_in.light);

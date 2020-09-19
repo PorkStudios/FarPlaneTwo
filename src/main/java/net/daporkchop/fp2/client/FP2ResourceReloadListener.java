@@ -32,19 +32,20 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import java.io.IOException;
 import java.nio.IntBuffer;
 
-import static net.daporkchop.fp2.client.GlobalInfo.*;
+import static net.daporkchop.fp2.client.TexUVs.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_
  */
+//TODO: possibly delete this
 @SideOnly(Side.CLIENT)
 @SuppressWarnings("deprecation")
 public class FP2ResourceReloadListener implements IResourceManagerReloadListener {
     @Override
     public void onResourceManagerReload(IResourceManager resourceManager) {
-        try (ShaderStorageBuffer globalInfo = GLOBAL_INFO.bind()) {
+        /*try (ShaderStorageBuffer globalInfo = GLOBAL_INFO.bind()) {
             IntBuffer buffer = Constants.createIntBuffer(COLORMAP_FOLIAGE_SIZE >> 2);
             buffer.put(TextureUtil.readImageData(resourceManager, new ResourceLocation("textures/colormap/foliage.png"))).clear();
             glBufferSubData(GL_SHADER_STORAGE_BUFFER, COLORMAP_FOLIAGE_OFFSET, buffer);
@@ -53,6 +54,6 @@ public class FP2ResourceReloadListener implements IResourceManagerReloadListener
             buffer.put(TextureUtil.readImageData(resourceManager, new ResourceLocation("textures/colormap/grass.png"))).clear();
             glBufferSubData(GL_SHADER_STORAGE_BUFFER, COLORMAP_GRASS_OFFSET, buffer);
         } catch (IOException e) {
-        }
+        }*/
     }
 }

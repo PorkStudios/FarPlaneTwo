@@ -22,6 +22,7 @@ package net.daporkchop.fp2.strategy.voxel.client;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.strategy.base.client.IFarRenderBaker;
 import net.daporkchop.fp2.strategy.voxel.VoxelData;
 import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
@@ -294,8 +295,9 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
 
         pos.setPos(blockX, blockY, blockZ);
         biomeAccess.biome(Biome.getBiome(data.biome, Biomes.PLAINS));
-        
-        vertices.writeInt(data.state); //state
+
+        //vertices.writeInt(data.state); //state
+        vertices.writeInt(TexUVs.STATES_TO_IDS.get(Block.getStateById(data.state))[1]); //state
         vertices.writeShort(Constants.packedLightTo8BitVec2(data.light)); //light
         vertices.writeMedium(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.state), biomeAccess, pos, 0))); //color
 

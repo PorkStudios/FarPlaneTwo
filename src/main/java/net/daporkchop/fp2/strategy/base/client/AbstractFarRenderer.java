@@ -31,7 +31,6 @@ import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.strategy.common.client.IFarRenderer;
-import net.daporkchop.fp2.util.math.Cylinder;
 import net.daporkchop.fp2.util.math.Sphere;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
@@ -44,7 +43,7 @@ import net.minecraft.entity.Entity;
 
 import java.nio.IntBuffer;
 
-import static net.daporkchop.fp2.client.GlobalInfo.*;
+import static net.daporkchop.fp2.client.TexUVs.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
@@ -141,7 +140,8 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
             glBufferData(GL_SHADER_STORAGE_BUFFER, this.loadedBuffer = ClientConstants.renderableChunksMask(mc, this.loadedBuffer), GL_STATIC_DRAW);
             loadedBuffer.bindSSBO(0);
         }
-        GLOBAL_INFO.bindSSBO(1);
+        QUAD_LISTS.bindSSBO(1);
+        QUAD_DATA.bindSSBO(2);
     }
 
     protected void updateAndBindUBOs(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum) {
