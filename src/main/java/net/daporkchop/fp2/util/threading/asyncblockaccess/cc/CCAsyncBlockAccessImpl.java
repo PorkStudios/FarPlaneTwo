@@ -23,6 +23,7 @@ package net.daporkchop.fp2.util.threading.asyncblockaccess.cc;
 import io.github.opencubicchunks.cubicchunks.api.util.CubePos;
 import io.github.opencubicchunks.cubicchunks.api.world.IColumn;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
+import io.github.opencubicchunks.cubicchunks.api.world.ICubeProviderServer;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import lombok.NonNull;
@@ -85,7 +86,7 @@ public class CCAsyncBlockAccessImpl implements AsyncBlockAccess {
 
         this.cacheMiss3d = pos -> {
             PFuture<ICube> future = PFutures.computeAsync(
-                    () -> ((ICubicWorld) this.world).getCubeFromCubeCoords(pos),
+                    () -> ((ICubeProviderServer) ((ICubicWorld) this.world).getCubeCache()).getCube(pos.getX(), pos.getY(), pos.getZ(), ICubeProviderServer.Requirement.LIGHT),
                     ServerThreadExecutor.INSTANCE);
             future.thenAcceptAsync(cube -> this.cache3d.replace(pos, future, cube));
             return future;

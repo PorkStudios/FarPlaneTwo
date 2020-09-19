@@ -130,7 +130,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                     }
 
                     //solve QEF and set the piece data
-                    qef.solve(data.reset(), 0.1d, 4, 0.1d);
+                    qef.solve(data.reset(), 0.1, 1, 0.5);
 
                     if (data.x < 0.0d || data.x > 1.0d
                         || data.y < 0.0d || data.y > 1.0d

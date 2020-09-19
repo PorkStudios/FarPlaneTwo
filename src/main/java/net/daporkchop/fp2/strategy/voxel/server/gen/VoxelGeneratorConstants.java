@@ -56,10 +56,4 @@ public class VoxelGeneratorConstants {
             0, 1, 5, 0, 4, 5,
             0, 2, 6, 0, 4, 6
     };
-
-    /*public static final int[] CONNECTION_INDICES = {
-            0, 1, 2, 3,
-            0, 1, 4, 5,
-            0, 2, 4, 6
-    };*/
 }

@@ -49,6 +49,7 @@ import net.daporkchop.fp2.strategy.voxel.server.VoxelPlayerTracker;
 import net.daporkchop.fp2.strategy.voxel.server.VoxelStorage;
 import net.daporkchop.fp2.strategy.voxel.server.VoxelWorld;
 import net.daporkchop.fp2.strategy.voxel.server.gen.exact.CCVoxelGenerator;
+import net.daporkchop.fp2.strategy.voxel.server.gen.exact.VanillaVoxelGenerator;
 import net.daporkchop.fp2.strategy.voxel.server.gen.rough.PerlinNoiseVoxelGenerator;
 import net.daporkchop.fp2.strategy.voxel.server.scale.VoxelScalerNone;
 import net.daporkchop.fp2.util.Constants;
@@ -138,7 +139,7 @@ public enum RenderMode {
 
             //exact
             this.generatorsExact().add(-100, world -> Constants.isCubicWorld(world) ? new CCVoxelGenerator() : null);
-            this.generatorsExact().add(Integer.MAX_VALUE, world -> new CCVoxelGenerator()); //TODO: remove this
+            this.generatorsExact().add(100, world -> new VanillaVoxelGenerator());
         }
 
         @Override

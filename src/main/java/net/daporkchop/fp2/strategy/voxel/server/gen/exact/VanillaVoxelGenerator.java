@@ -31,22 +31,18 @@ import java.util.stream.Stream;
 /**
  * @author DaPorkchop_
  */
-public class CCVoxelGenerator extends AbstractExactVoxelGenerator {
+public class VanillaVoxelGenerator extends AbstractExactVoxelGenerator {
     @Override
     public Stream<ChunkPos> neededColumns(@NonNull VoxelPos pos) {
-        return Stream.empty();
+        return Stream.of(
+                new ChunkPos(pos.x(), pos.z()),
+                new ChunkPos(pos.x(), pos.z() + 1),
+                new ChunkPos(pos.x() + 1, pos.z()),
+                new ChunkPos(pos.x() + 1, pos.z() + 1));
     }
 
     @Override
     public Stream<Vec3i> neededCubes(@NonNull IBlockHeightAccess world, @NonNull VoxelPos pos) {
-        Vec3i[] arr = new Vec3i[8];
-        for (int i = 0, dx = 0; dx <= 1; dx++) {
-            for (int dy = 0; dy <= 1; dy++) {
-                for (int dz = 0; dz <= 1; dz++) {
-                    arr[i++] = new Vec3i(pos.x() + dx, pos.y() + dy, pos.z() + dz);
-                }
-            }
-        }
-        return Stream.of(arr);
+        return Stream.empty();
     }
 }
