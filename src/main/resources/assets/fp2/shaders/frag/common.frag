@@ -66,25 +66,44 @@ vec3 normalVector() {
 vec2 texUvFactor(vec3 normal)  {
     vec3 delta = fs_in.pos - fs_in.base_pos;
 
+    vec3 s = sign(normal);
     normal = -abs(normal);
 
     //does this have some special name? i have no idea, but i'm pretty proud of it
     vec2 uv_factor = vec2(0.);
-    uv_factor += delta.xz * normal.y;
-    uv_factor += delta.xy * normal.z;
-    uv_factor += delta.zy * normal.x;
+    uv_factor += vec2(1. - delta.x, -s.y * delta.z) * normal.y;
+    uv_factor += vec2(-s.z * delta.x, delta.y) * normal.z;
+    uv_factor += vec2(s.x * delta.z, delta.y) * normal.x;
 
     return fract(uv_factor);
 }
 
 vec4 sampleTerrain(vec3 normal)  {
-    BakedQuad quad = quad_data[quad_indices[fs_in.state * 6 + normalToFaceIndex(normal)]];
+    vec2 factor = texUvFactor(normal);
+    ivec2 list = quad_lists[fs_in.state * 6 + normalToFaceIndex(normal)];
 
-    //raw color
-    vec4 frag_color = texture(terrain_texture, lerp(quad.min, quad.max, texUvFactor(normal)));
+    BakedQuad quad = quad_data[list[0]];
+
+    vec4 color_out = texture(terrain_texture, lerp(vec2(quad.minU, quad.minV), vec2(quad.maxU, quad.maxV), factor));
 
     //apply tint if the quad allows it (branchless implementation)
-    frag_color.rgb *= max(fs_in.color, vec3(quad.tintFactor));
+    color_out.rgb *= max(fs_in.color, vec3(quad.tintFactor));
 
-    return frag_color;
+    //this shouldn't be too bad performance-wise, because in all likelihood it'll have the same number of loops for all neighboring fragments
+    // almost all the time
+    //for (int i = list[1] - 1; i >= list[0]; i--) {
+    for (int i = list[0] + 1; i < list[1]; i++) {
+        quad = quad_data[i];
+
+        //raw color
+        vec4 frag_color = texture(terrain_texture, lerp(vec2(quad.minU, quad.minV), vec2(quad.maxU, quad.maxV), factor));
+
+        //possibly apply tint (branchless implementation)
+        frag_color.rgb *= max(fs_in.color, vec3(quad.tintFactor));
+
+        //apply texture over previous layers if possible (branchless implementation)
+        color_out = color_out * (1. - frag_color.a) + frag_color * frag_color.a;
+    }
+
+    return color_out;
 }

@@ -33,6 +33,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.culling.ICamera;
+import net.minecraft.client.renderer.texture.TextureMap;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL43.*;
@@ -66,9 +67,11 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece, Vox
         try (VertexArrayObject vao = this.cache.vao().bind();
              DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBuffer().bind()) {
             try (ShaderProgram shader = SOLID_SHADER.use()) {
+                //mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, true);
                 GlStateManager.disableAlpha();
                 glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, count, 0);
                 GlStateManager.enableAlpha();
+                //mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
             }
         }
     }

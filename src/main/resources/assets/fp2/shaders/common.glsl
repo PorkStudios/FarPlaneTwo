@@ -104,13 +104,15 @@ bool isChunkSectionRenderable(ivec3 chunk)  {
     return (renderable_chunks.data[index >> 5] & (1 << (index & 0x1F))) != 0;
 }
 
-layout(std430, binding = 1) buffer QUAD_INDICES {
-    int quad_indices[];
+layout(std430, binding = 1) buffer QUAD_LISTS {
+    ivec2 quad_lists[];
 };
 
 struct BakedQuad {
-    vec2 min;
-    vec2 max;
+    float minU; //written out to avoid padding
+    float minV;
+    float maxU;
+    float maxV;
     float tintFactor;
 };
 

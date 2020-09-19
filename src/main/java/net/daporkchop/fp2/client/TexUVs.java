@@ -29,6 +29,7 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
 import net.daporkchop.fp2.util.DirectBufferReuse;
 import net.daporkchop.lib.common.util.PorkUtil;
+import net.daporkchop.lib.math.vector.i.Vec2i;
 import net.daporkchop.lib.primitive.map.IntIntMap;
 import net.daporkchop.lib.primitive.map.ObjIntMap;
 import net.daporkchop.lib.primitive.map.open.IntIntOpenHashMap;
@@ -46,6 +47,7 @@ import net.minecraft.util.EnumFacing;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +64,7 @@ import static org.lwjgl.opengl.GL43.*;
  */
 @UtilityClass
 public class TexUVs {
-    public static final ShaderStorageBuffer QUAD_INDICES = new ShaderStorageBuffer();
+    public static final ShaderStorageBuffer QUAD_LISTS = new ShaderStorageBuffer();
     public static final ShaderStorageBuffer QUAD_DATA = new ShaderStorageBuffer();
 
     private static final Map<IBlockState, StateFaceReplacer> STATE_TO_REPLACER = new IdentityHashMap<>();
@@ -71,7 +73,14 @@ public class TexUVs {
     private static final Map<IBlockState, StateFaceQuadRenderer> STATE_TO_RENDERER = new IdentityHashMap<>();
     private static final StateFaceQuadRenderer DEFAULT_RENDERER = (state, face, model) -> {
         List<BakedQuad> quads = model.getQuads(state, face, 0L);
-        return quads != null && !quads.isEmpty() ? new PackedBakedQuad(quads.get(0)) : null;
+        if (quads != null && !quads.isEmpty()) {
+            List<PackedBakedQuad> out = new ArrayList<>(quads.size());
+            for (int i = 0, len = quads.size(); i < len; i++) {
+                out.add(new PackedBakedQuad(quads.get(i)));
+            }
+            return out;
+        }
+        return null;
     };
 
     public static IntIntMap STATEID_TO_INDEXID;
@@ -98,26 +107,30 @@ public class TexUVs {
 
     public static void initDefault() {
         //fluids use their own system for rendering
-        putRenderer(Blocks.WATER, (state, face, model) -> new PackedBakedQuad(mc.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/water_still"), 0));
-        putRenderer(Blocks.FLOWING_WATER, (state, face, model) -> new PackedBakedQuad(mc.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/water_flow"), 0));
-        putRenderer(Blocks.LAVA, (state, face, model) -> new PackedBakedQuad(mc.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/lava_still"), -1));
-        putRenderer(Blocks.FLOWING_LAVA, (state, face, model) -> new PackedBakedQuad(mc.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/lava_flow"), -1));
+        putRenderer(Blocks.WATER, (state, face, model) ->
+                Collections.singletonList(new PackedBakedQuad(mc.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/water_still"), 0)));
+        putRenderer(Blocks.FLOWING_WATER, (state, face, model) ->
+                Collections.singletonList(new PackedBakedQuad(mc.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/water_flow"), 0)));
+        putRenderer(Blocks.LAVA, (state, face, model) ->
+                Collections.singletonList(new PackedBakedQuad(mc.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/lava_still"), -1)));
+        putRenderer(Blocks.FLOWING_LAVA, (state, face, model) ->
+                Collections.singletonList(new PackedBakedQuad(mc.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/lava_flow"), -1)));
 
         //grass renders in two layers, which is somewhat expensive to simulate with shaders. we render the sides as dirt, you can't tell the difference
         // from far away anyway
         putReplacer(Blocks.GRASS, (state, face) -> {
             if (OF && PUnsafe.getInt(mc.gameSettings, OF_BETTERGRASS_OFFSET) != OF_OFF) {
-                if (face != EnumFacing.DOWN)    {
+                if (face != EnumFacing.DOWN) {
                     return state;
                 }
-            } else if (face == EnumFacing.UP)   {
+            } else if (true || face == EnumFacing.UP) {
                 return state;
             }
             return Blocks.DIRT.getDefaultState();
         });
         putRenderer(Blocks.GRASS, (state, face, model) -> {
             if (OF && PUnsafe.getInt(mc.gameSettings, OF_BETTERGRASS_OFFSET) != OF_OFF) {
-                if (face != EnumFacing.DOWN)    {
+                if (face != EnumFacing.DOWN) {
                     return DEFAULT_RENDERER.render(state, EnumFacing.UP, model); //use the top texture for the sides
                 }
             }
@@ -126,15 +139,17 @@ public class TexUVs {
     }
 
     public static void reloadUVs() {
-        ObjIntMap<PackedBakedQuad> distinctQuadsToId = new ObjIntOpenHashMap<>();
-        List<PackedBakedQuad> distinctQuadsById = new ArrayList<>();
+        int quadIdAllocator = 0;
+        ObjIntMap<List<PackedBakedQuad>> distinctQuadsToId = new ObjIntOpenHashMap<>();
+        List<List<PackedBakedQuad>> distinctQuadsById = new ArrayList<>();
 
         ObjIntMap<int[]> distinctIndicesToId = new IntArrayEqualsMap();
         List<int[]> distinctIndicesById = new ArrayList<>();
 
         IntIntMap stateIdToIndexId = new IntIntOpenHashMap();
 
-        PackedBakedQuad missingTextureQuad = new PackedBakedQuad(mc.getTextureMapBlocks().getMissingSprite(), -1);
+        List<PackedBakedQuad> missingTextureQuads = new ArrayList<>();
+        missingTextureQuads.add(new PackedBakedQuad(mc.getTextureMapBlocks().getMissingSprite(), -1));
 
         BlockModelShapes shapes = mc.getBlockRendererDispatcher().getBlockModelShapes();
         for (Block block : Block.REGISTRY) {
@@ -146,12 +161,16 @@ public class TexUVs {
                 for (EnumFacing face : EnumFacing.VALUES) {
                     IBlockState replacedState = replacer.replace(state, face);
                     IBakedModel model = shapes.getModelForState(replacedState);
-                    PackedBakedQuad quad = PorkUtil.fallbackIfNull(renderer.render(replacedState, face, model), missingTextureQuad);
+                    List<PackedBakedQuad> quads = PorkUtil.fallbackIfNull(renderer.render(replacedState, face, model), missingTextureQuads);
 
-                    int id = distinctQuadsToId.getOrDefault(quad, -1);
+                    if (block == Blocks.LEAVES) {
+                        int i = 0;
+                    }
+
+                    int id = distinctQuadsToId.getOrDefault(quads, -1);
                     if (id < 0) { //allocate new ID
-                        distinctQuadsToId.put(quad, id = distinctQuadsToId.size());
-                        distinctQuadsById.add(quad);
+                        distinctQuadsToId.put(quads, id = distinctQuadsToId.size());
+                        distinctQuadsById.add(quads);
                     }
 
                     faceIds[face.getIndex()] = id;
@@ -172,11 +191,18 @@ public class TexUVs {
         @SuppressWarnings("deprecation")
         ByteBuf buffer = ByteBufAllocator.DEFAULT.directBuffer().order(ByteOrder.nativeOrder());
         try {
-            for (PackedBakedQuad quad : distinctQuadsById) {
-                buffer.writeFloat(quad.minU).writeFloat(quad.minV)
-                        .writeFloat(quad.maxU).writeFloat(quad.maxV)
-                        .writeFloat(quad.tintFactor)
-                        .writeFloat(0.0f); //padding
+            List<Vec2i> quadIdToList = new ArrayList<>(distinctQuadsById.size());
+            int quadIndices = 0;
+            for (int i = 0, len = distinctQuadsById.size(); i < len; i++) {
+                List<PackedBakedQuad> quads = distinctQuadsById.get(i);
+                quadIdToList.add(new Vec2i(quadIndices, quadIndices += quads.size()));
+                for (PackedBakedQuad quad : quads) {
+                    buffer.writeFloat(quad.minU).writeFloat(quad.minV)
+                            .writeFloat(quad.maxU).writeFloat(quad.maxV)
+                            .writeFloat(quad.tintFactor)
+                            //.writeFloat(0.0f)
+                    ;
+                }
             }
             try (ShaderStorageBuffer ssbo = QUAD_DATA.bind()) { //upload data
                 glBufferData(GL_SHADER_STORAGE_BUFFER, DirectBufferReuse.wrapByte(buffer.memoryAddress(), buffer.readableBytes()), GL_STATIC_DRAW);
@@ -186,10 +212,11 @@ public class TexUVs {
 
             for (int[] faceIds : distinctIndicesById) {
                 for (int i : faceIds) {
-                    buffer.writeInt(i);
+                    Vec2i list = quadIdToList.get(i);
+                    buffer.writeInt(list.getX()).writeInt(list.getY());
                 }
             }
-            try (ShaderStorageBuffer ssbo = QUAD_INDICES.bind()) { //upload data
+            try (ShaderStorageBuffer ssbo = QUAD_LISTS.bind()) { //upload data
                 glBufferData(GL_SHADER_STORAGE_BUFFER, DirectBufferReuse.wrapByte(buffer.memoryAddress(), buffer.readableBytes()), GL_STATIC_DRAW);
             }
         } finally {
@@ -204,7 +231,7 @@ public class TexUVs {
 
     @FunctionalInterface
     public interface StateFaceQuadRenderer {
-        PackedBakedQuad render(IBlockState state, EnumFacing face, IBakedModel model);
+        List<PackedBakedQuad> render(IBlockState state, EnumFacing face, IBakedModel model);
     }
 
     @AllArgsConstructor
