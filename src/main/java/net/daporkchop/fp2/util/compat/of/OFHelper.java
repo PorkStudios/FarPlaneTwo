@@ -71,4 +71,5 @@ public class OFHelper {
     public static final int OF_ANIM_OFF = !OF ? -1 : PUnsafe.pork_getStaticField(GameSettings.class, "ANIM_OFF").getInt();
 
     public static final long OF_FOGTYPE_OFFSET = !OF ? -1L : PUnsafe.pork_getOffset(GameSettings.class, "ofFogType");
+    public static final long OF_BETTERGRASS_OFFSET = !OF ? -1L : PUnsafe.pork_getOffset(GameSettings.class, "ofBetterGrass");
 }

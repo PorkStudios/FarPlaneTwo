@@ -88,30 +88,14 @@ vec2 texUvFactor(vec3 normal)  {
     return fract(uv_factor);
 }
 
-vec4 sampleTerrain(int state, vec3 normal, vec3 tint)  {
-    vec2 factor = texUvFactor(normal);
-    BakedQuadList list = quad_lists[state];
+vec4 sampleTerrain(vec3 normal)  {
+    BakedQuad quad = quad_data[quad_indices[fs_in.state * 6 + normalToFaceIndex(normal)]];
 
-    vec4 color_out = vec4(0.);
+    //raw color
+    vec4 frag_color = texture(terrain_texture, lerp(quad.min, quad.max, texUvFactor(normal)));
 
-    //this shouldn't be too bad performance-wise, because in all likelihood it'll have the same number of loops for all neighboring fragments
-    // almost all the time
-    //for (int i = list.lastIndex - 1; i >= list.firstIndex; i--) {
-    for (int i = list.firstIndex; i < list.lastIndex; i++) {
-        BakedQuad quad = quad_data[i];
+    //apply tint if the quad allows it (branchless implementation)
+    frag_color.rgb *= max(fs_in.color, vec3(quad.tintFactor));
 
-        //raw color
-        vec4 frag_color = texture(terrain_texture, lerp(quad.min, quad.max, factor));
-
-        //possibly apply tint (branchless implementation)
-        frag_color.rgb *= max(tint, vec3(quad.tintFactor));
-
-        //apply texture over previous layers if possible (branchless implementation)
-        //color_out += frag_color * step(0.001, frag_color.a) * (1. - color_out.a);
-        float mixFactor = step(0.01, frag_color.a);
-        color_out = color_out * (1. - mixFactor) + frag_color * mixFactor;
-        //TODO: this doesn't handle alpha blending correctly
-    }
-
-    return color_out;
+    return frag_color;
 }

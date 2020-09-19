@@ -24,13 +24,9 @@
 void main() {
     vec3 normal = normalVector();
 
-    //initial block texture sample
 #ifndef BLOCK_FRAG_DEBUG_COLOR_NORMALS
-    //vec4 frag_color = texture(terrain_texture, texUv(fs_in.state, normal));
-    vec4 frag_color = sampleTerrain(fs_in.state, normal, fs_in.color);
-
-    //block color multiplier
-    //frag_color.rgb *= fs_in.color;
+    //initial block texture sample
+    vec4 frag_color = sampleTerrain(normal);
 
     //block/sky light
     frag_color *= texture(lightmap_texture, fs_in.light);

@@ -23,6 +23,7 @@ package net.daporkchop.fp2;
 import net.daporkchop.fp2.client.ClientEvents;
 import net.daporkchop.fp2.client.FP2ResourceReloadListener;
 import net.daporkchop.fp2.client.KeyBindings;
+import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.net.client.CPacketDropAllPieces;
 import net.daporkchop.fp2.net.client.CPacketRenderMode;
 import net.daporkchop.fp2.net.server.SPacketPieceData;
@@ -109,6 +110,8 @@ public class FP2 {
     @Mod.EventHandler
     public void postInit(FMLPostInitializationEvent event) {
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
+            TexUVs.initDefault();
+
             //load render classes on client thread
             PUnsafe.ensureClassInitialized(HeightmapRenderer.class);
             PUnsafe.ensureClassInitialized(VoxelRenderer.class);

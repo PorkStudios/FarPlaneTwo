@@ -24,28 +24,34 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
+import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
 import net.daporkchop.fp2.util.DirectBufferReuse;
 import net.daporkchop.lib.common.util.PorkUtil;
+import net.daporkchop.lib.primitive.map.IntIntMap;
 import net.daporkchop.lib.primitive.map.ObjIntMap;
+import net.daporkchop.lib.primitive.map.open.IntIntOpenHashMap;
 import net.daporkchop.lib.primitive.map.open.ObjIntOpenHashMap;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockModelShapes;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.init.Blocks;
 import net.minecraft.util.EnumFacing;
 
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
+import static net.daporkchop.fp2.util.compat.of.OFHelper.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL43.*;
 
@@ -56,98 +62,149 @@ import static org.lwjgl.opengl.GL43.*;
  */
 @UtilityClass
 public class TexUVs {
-    public static final ShaderStorageBuffer QUAD_LISTS = new ShaderStorageBuffer();
+    public static final ShaderStorageBuffer QUAD_INDICES = new ShaderStorageBuffer();
     public static final ShaderStorageBuffer QUAD_DATA = new ShaderStorageBuffer();
 
-    private static final Map<IBlockState, StateFaceQuadRenderer> STATE_TO_RENDERER = new IdentityHashMap<>();
-    private static final StateFaceQuadRenderer DEFAULT_RENDERER = (state, model, face) -> {
-        List<BakedQuad> quads = model.getQuads(state, face, 0L);
-        if (quads == null || quads.isEmpty()) {
-            return null;
-        }
+    private static final Map<IBlockState, StateFaceReplacer> STATE_TO_REPLACER = new IdentityHashMap<>();
+    private static final StateFaceReplacer DEFAULT_REPLACER = (state, face) -> state;
 
-        List<PackedBakedQuad> packedQuads = new ArrayList<>(quads.size());
-        for (int i = 0, len = quads.size(); i < len; i++) {
-            packedQuads.add(new PackedBakedQuad(quads.get(i)));
-        }
-        return packedQuads;
+    private static final Map<IBlockState, StateFaceQuadRenderer> STATE_TO_RENDERER = new IdentityHashMap<>();
+    private static final StateFaceQuadRenderer DEFAULT_RENDERER = (state, face, model) -> {
+        List<BakedQuad> quads = model.getQuads(state, face, 0L);
+        return quads != null && !quads.isEmpty() ? new PackedBakedQuad(quads.get(0)) : null;
     };
 
-    public static Map<IBlockState, int[]> STATES_TO_IDS;
+    public static IntIntMap STATEID_TO_INDEXID;
+
+    public static void putReplacer(@NonNull Block block, @NonNull StateFaceReplacer replacer) {
+        for (IBlockState state : block.getBlockState().getValidStates()) {
+            putReplacer(state, replacer);
+        }
+    }
+
+    public static void putReplacer(@NonNull IBlockState state, @NonNull StateFaceReplacer replacer) {
+        STATE_TO_REPLACER.put(state, replacer);
+    }
+
+    public static void putRenderer(@NonNull Block block, @NonNull StateFaceQuadRenderer renderer) {
+        for (IBlockState state : block.getBlockState().getValidStates()) {
+            putRenderer(state, renderer);
+        }
+    }
+
+    public static void putRenderer(@NonNull IBlockState state, @NonNull StateFaceQuadRenderer renderer) {
+        STATE_TO_RENDERER.put(state, renderer);
+    }
+
+    public static void initDefault() {
+        //fluids use their own system for rendering
+        putRenderer(Blocks.WATER, (state, face, model) -> new PackedBakedQuad(mc.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/water_still"), 0));
+        putRenderer(Blocks.FLOWING_WATER, (state, face, model) -> new PackedBakedQuad(mc.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/water_flow"), 0));
+        putRenderer(Blocks.LAVA, (state, face, model) -> new PackedBakedQuad(mc.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/lava_still"), -1));
+        putRenderer(Blocks.FLOWING_LAVA, (state, face, model) -> new PackedBakedQuad(mc.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/lava_flow"), -1));
+
+        //grass renders in two layers, which is somewhat expensive to simulate with shaders. we render the sides as dirt, you can't tell the difference
+        // from far away anyway
+        putReplacer(Blocks.GRASS, (state, face) -> {
+            if (OF && PUnsafe.getInt(mc.gameSettings, OF_BETTERGRASS_OFFSET) != OF_OFF) {
+                if (face != EnumFacing.DOWN)    {
+                    return state;
+                }
+            } else if (face == EnumFacing.UP)   {
+                return state;
+            }
+            return Blocks.DIRT.getDefaultState();
+        });
+        putRenderer(Blocks.GRASS, (state, face, model) -> {
+            if (OF && PUnsafe.getInt(mc.gameSettings, OF_BETTERGRASS_OFFSET) != OF_OFF) {
+                if (face != EnumFacing.DOWN)    {
+                    return DEFAULT_RENDERER.render(state, EnumFacing.UP, model); //use the top texture for the sides
+                }
+            }
+            return DEFAULT_RENDERER.render(state, face, model);
+        });
+    }
 
     public static void reloadUVs() {
-        //note to self: tint index -1 = biome color is ignored, everything else = biome color is used
+        ObjIntMap<PackedBakedQuad> distinctQuadsToId = new ObjIntOpenHashMap<>();
+        List<PackedBakedQuad> distinctQuadsById = new ArrayList<>();
 
-        ObjIntMap<List<PackedBakedQuad>> distinctQuadsToId = new ObjIntOpenHashMap<>();
-        List<List<PackedBakedQuad>> distinctQuadsById = new ArrayList<>();
-        Map<IBlockState, int[]> statesToIds = new IdentityHashMap<>();
+        ObjIntMap<int[]> distinctIndicesToId = new IntArrayEqualsMap();
+        List<int[]> distinctIndicesById = new ArrayList<>();
 
-        List<PackedBakedQuad> missingTextureQuads = new ArrayList<>(1);
-        missingTextureQuads.add(new PackedBakedQuad(mc.getTextureMapBlocks().getMissingSprite(), -1));
+        IntIntMap stateIdToIndexId = new IntIntOpenHashMap();
 
-        BlockModelShapes shapes = Minecraft.getMinecraft().getBlockRendererDispatcher().getBlockModelShapes();
+        PackedBakedQuad missingTextureQuad = new PackedBakedQuad(mc.getTextureMapBlocks().getMissingSprite(), -1);
+
+        BlockModelShapes shapes = mc.getBlockRendererDispatcher().getBlockModelShapes();
         for (Block block : Block.REGISTRY) {
-            /*TextureAtlasSprite t = null;
-            if (block == Blocks.WATER) {
-                t = Minecraft.getMinecraft().getTextureMapBlocks().getAtlasSprite("minecraft:blocks/water_still");
-            }*/
             for (IBlockState state : block.getBlockState().getValidStates()) {
-                int[] faceIds = new int[EnumFacing.VALUES.length];
+                int[] faceIds = new int[6];
 
-                IBakedModel model = shapes.getModelForState(state);
+                StateFaceReplacer replacer = STATE_TO_REPLACER.getOrDefault(state, DEFAULT_REPLACER);
                 StateFaceQuadRenderer renderer = STATE_TO_RENDERER.getOrDefault(state, DEFAULT_RENDERER);
                 for (EnumFacing face : EnumFacing.VALUES) {
-                    List<PackedBakedQuad> quads = PorkUtil.fallbackIfNull(renderer.render(state, model, face), missingTextureQuads);
+                    IBlockState replacedState = replacer.replace(state, face);
+                    IBakedModel model = shapes.getModelForState(replacedState);
+                    PackedBakedQuad quad = PorkUtil.fallbackIfNull(renderer.render(replacedState, face, model), missingTextureQuad);
 
-                    int id = distinctQuadsToId.getOrDefault(quads, -1);
+                    int id = distinctQuadsToId.getOrDefault(quad, -1);
                     if (id < 0) { //allocate new ID
-                        distinctQuadsToId.put(quads, id = distinctQuadsToId.size());
-                        distinctQuadsById.add(quads);
+                        distinctQuadsToId.put(quad, id = distinctQuadsToId.size());
+                        distinctQuadsById.add(quad);
                     }
 
                     faceIds[face.getIndex()] = id;
                 }
 
-                statesToIds.put(state, faceIds);
+                int id = distinctIndicesToId.get(faceIds);
+                if (id < 0) { //allocate new ID
+                    distinctIndicesToId.put(faceIds, id = distinctIndicesToId.size());
+                    distinctIndicesById.add(faceIds);
+                }
+
+                stateIdToIndexId.put(Block.getStateId(state), id);
             }
         }
 
-        STATES_TO_IDS = statesToIds;
+        STATEID_TO_INDEXID = stateIdToIndexId;
 
         @SuppressWarnings("deprecation")
-        ByteBuf listsBuffer = ByteBufAllocator.DEFAULT.directBuffer().order(ByteOrder.nativeOrder());
-        @SuppressWarnings("deprecation")
-        ByteBuf quadsBuffer = ByteBufAllocator.DEFAULT.directBuffer().order(ByteOrder.nativeOrder());
+        ByteBuf buffer = ByteBufAllocator.DEFAULT.directBuffer().order(ByteOrder.nativeOrder());
         try {
-            int quadIndices = 0;
-            for (List<PackedBakedQuad> list : distinctQuadsById) {
-                listsBuffer.writeInt(quadIndices); //start
-                for (PackedBakedQuad quad : list) {
-                    quadsBuffer.writeFloat(quad.minU).writeFloat(quad.minV)
-                            .writeFloat(quad.maxU).writeFloat(quad.maxV)
-                            .writeFloat(quad.tintFactor)
-                    .writeFloat(0.0f);
-                    quadIndices++;
-                }
-                listsBuffer.writeInt(quadIndices); //end
+            for (PackedBakedQuad quad : distinctQuadsById) {
+                buffer.writeFloat(quad.minU).writeFloat(quad.minV)
+                        .writeFloat(quad.maxU).writeFloat(quad.maxV)
+                        .writeFloat(quad.tintFactor)
+                        .writeFloat(0.0f); //padding
+            }
+            try (ShaderStorageBuffer ssbo = QUAD_DATA.bind()) { //upload data
+                glBufferData(GL_SHADER_STORAGE_BUFFER, DirectBufferReuse.wrapByte(buffer.memoryAddress(), buffer.readableBytes()), GL_STATIC_DRAW);
             }
 
-            //upload data
-            try (ShaderStorageBuffer ssbo = QUAD_LISTS.bind()) {
-                glBufferData(GL_SHADER_STORAGE_BUFFER, DirectBufferReuse.wrapByte(listsBuffer.memoryAddress(), listsBuffer.readableBytes()), GL_STATIC_DRAW);
+            buffer.clear();
+
+            for (int[] faceIds : distinctIndicesById) {
+                for (int i : faceIds) {
+                    buffer.writeInt(i);
+                }
             }
-            try (ShaderStorageBuffer ssbo = QUAD_DATA.bind()) {
-                glBufferData(GL_SHADER_STORAGE_BUFFER, DirectBufferReuse.wrapByte(quadsBuffer.memoryAddress(), quadsBuffer.readableBytes()), GL_STATIC_DRAW);
+            try (ShaderStorageBuffer ssbo = QUAD_INDICES.bind()) { //upload data
+                glBufferData(GL_SHADER_STORAGE_BUFFER, DirectBufferReuse.wrapByte(buffer.memoryAddress(), buffer.readableBytes()), GL_STATIC_DRAW);
             }
         } finally {
-            quadsBuffer.release();
-            listsBuffer.release();
+            buffer.release();
         }
     }
 
     @FunctionalInterface
+    public interface StateFaceReplacer {
+        IBlockState replace(IBlockState state, EnumFacing face);
+    }
+
+    @FunctionalInterface
     public interface StateFaceQuadRenderer {
-        List<PackedBakedQuad> render(IBlockState state, IBakedModel model, EnumFacing face);
+        PackedBakedQuad render(IBlockState state, EnumFacing face, IBakedModel model);
     }
 
     @AllArgsConstructor
@@ -169,6 +226,18 @@ public class TexUVs {
 
         public PackedBakedQuad(BakedQuad quad) {
             this(quad.getSprite(), quad.getTintIndex());
+        }
+    }
+
+    private static class IntArrayEqualsMap extends ObjIntOpenHashMap<int[]> {
+        @Override
+        protected int hash0(int[] key) {
+            return Arrays.hashCode(key);
+        }
+
+        @Override
+        protected boolean equals0(int[] k1, int[] k2) {
+            return Arrays.equals(k1, k2);
         }
     }
 }

@@ -104,13 +104,8 @@ bool isChunkSectionRenderable(ivec3 chunk)  {
     return (renderable_chunks.data[index >> 5] & (1 << (index & 0x1F))) != 0;
 }
 
-struct BakedQuadList {
-    int firstIndex;
-    int lastIndex;
-};
-
-layout(std430, binding = 1) buffer QUAD_LISTS {
-    BakedQuadList quad_lists[];
+layout(std430, binding = 1) buffer QUAD_INDICES {
+    int quad_indices[];
 };
 
 struct BakedQuad {

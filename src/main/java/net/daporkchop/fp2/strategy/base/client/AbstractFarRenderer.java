@@ -140,7 +140,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
             glBufferData(GL_SHADER_STORAGE_BUFFER, this.loadedBuffer = ClientConstants.renderableChunksMask(mc, this.loadedBuffer), GL_STATIC_DRAW);
             loadedBuffer.bindSSBO(0);
         }
-        QUAD_LISTS.bindSSBO(1);
+        QUAD_INDICES.bindSSBO(1);
         QUAD_DATA.bindSSBO(2);
     }
 
