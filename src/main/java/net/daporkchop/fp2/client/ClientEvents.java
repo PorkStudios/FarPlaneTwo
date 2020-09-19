@@ -68,18 +68,24 @@ public class ClientEvents {
 
     @SubscribeEvent
     public void keyInput(InputEvent.KeyInputEvent event) {
-        if (KeyBindings.RELOAD_SHADERS.isPressed()) {
-            ShaderManager.reload();
-        }
-        if (KeyBindings.DROP_PIECES.isPressed()) {
-            NETWORK_WRAPPER.sendToServer(new CPacketDropAllPieces());
-        }
-        if (KeyBindings.RENDER_PIECES.isPressed()) {
-            ((IFarContext) mc.world).renderer().debug_renderPieces();
-        }
-        if (KeyBindings.TOGGLE_VANILLA_RENDER.isPressed())  {
-            FP2Config.debug.skipRenderWorld ^= true;
-            mc.player.sendMessage(new TextComponentString((FP2Config.debug.skipRenderWorld ? "§cDisabled" : "§aEnabled") + " vanilla terrain."));
+        if (FP2Config.debug.debug) {
+            if (KeyBindings.RELOAD_SHADERS.isPressed()) {
+                ShaderManager.reload();
+            }
+            if (KeyBindings.DROP_PIECES.isPressed()) {
+                NETWORK_WRAPPER.sendToServer(new CPacketDropAllPieces());
+            }
+            if (KeyBindings.RENDER_PIECES.isPressed()) {
+                ((IFarContext) mc.world).renderer().debug_renderPieces();
+            }
+            if (KeyBindings.TOGGLE_VANILLA_RENDER.isPressed()) {
+                FP2Config.debug.skipRenderWorld ^= true;
+                mc.player.sendMessage(new TextComponentString((FP2Config.debug.skipRenderWorld ? "§cDisabled" : "§aEnabled") + " vanilla terrain."));
+            }
+            if (KeyBindings.REBUILD_UVS.isPressed()) {
+                GlobalInfo.reloadUVs();
+                mc.player.sendMessage(new TextComponentString("§aRebuilt texture UVs."));
+            }
         }
     }
 

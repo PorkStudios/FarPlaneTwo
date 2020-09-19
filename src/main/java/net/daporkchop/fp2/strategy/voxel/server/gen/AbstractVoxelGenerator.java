@@ -36,7 +36,7 @@ import static net.daporkchop.lib.common.math.PMath.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
-    public static final int DMAP_MIN = -2;
+    public static final int DMAP_MIN = -1;
     public static final int DMAP_SIZE = T_VOXELS + 2 - DMAP_MIN;
 
     protected static final Ref<double[]> DMAP_CACHE = ThreadRef.soft(() -> new double[DMAP_SIZE * DMAP_SIZE * DMAP_SIZE]);
@@ -46,11 +46,6 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
     }
 
     protected static double sampleDensity(double x, double y, double z, double[] densityMap) {
-        double delta = -0.0d;
-        x += delta;
-        y += delta;
-        z += delta;
-
         int xI = floorI(x);
         int yI = floorI(y);
         int zI = floorI(z);

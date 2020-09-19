@@ -19,7 +19,7 @@
  */
 
 void main() {
-    TextureUV uvs = global_info.tex_uvs[fs_in.state];
+    TextureUV uvs = global_info.tex_uvs[fs_in.state * 6 + 1]; //up
     vec2 uv = uvs.min + (uvs.max - uvs.min) * fract(fs_in.pos.xz);
 
     //initial block texture sample

@@ -192,3 +192,16 @@ vec4 cameraTransform(vec3 point)   {
 float diffuseLight(vec3 normal) {
     return min(normal.x * normal.x * .6 + normal.y * normal.y * ((3. + normal.y) / 4.) + normal.z * normal.z * .8, 1.);
 }
+
+//misc. stuff
+int normalToFaceIndex(vec3 normal)  {
+    //TODO: make this branchless
+    vec3 n = abs(normal);
+    if (n.y > n.x && n.y > n.z)  {
+        return n.y < 0. ? 0 : 1;
+    } else if (n.z > n.x && n.z > n.y) {
+        return n.z < 0. ? 2 : 3;
+    } else {
+        return n.x < 0. ? 4 : 5;
+    }
+}

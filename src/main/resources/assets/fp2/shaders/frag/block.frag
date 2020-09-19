@@ -22,8 +22,7 @@
 //#define BLOCK_FRAG_DEBUG_COLOR_NORMALS
 
 void main() {
-    TextureUV uvs = global_info.tex_uvs[fs_in.state];
-    vec2 uv = uvs.min + (uvs.max - uvs.min) * fract(fs_in.pos.xz);
+    vec2 uv = texUv(fs_in.state, normalVector());
 
     //initial block texture sample
 #ifndef BLOCK_FRAG_DEBUG_COLOR_NORMALS

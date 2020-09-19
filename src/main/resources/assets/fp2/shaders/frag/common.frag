@@ -39,6 +39,7 @@ in VS_OUT {
     vec2 light;
 
     flat vec3 color;
+    flat vec3 base_pos;
     flat int state;
 } fs_in;
 
@@ -60,4 +61,17 @@ vec3 normalVector() {
     vec3 fdx = dFdx(fs_in.pos);
     vec3 fdy = dFdy(fs_in.pos);
     return normalize(cross(fdx, fdy));
+}
+
+vec2 texUv(int state, vec3 normal)  {
+    vec3 delta = fs_in.pos - fs_in.base_pos;
+
+    //does this have some special name? i have no idea, but i'm pretty proud of it
+    vec2 uv_factor = vec2(0.);
+    uv_factor += delta.xz * normal.y;
+    uv_factor += delta.xy * normal.z;
+    uv_factor += delta.zy * normal.x;
+
+    TextureUV tex_uv = global_info.tex_uvs[state * 6 + normalToFaceIndex(normal)];
+    return tex_uv.min + (tex_uv.max - tex_uv.min) * fract(uv_factor);
 }

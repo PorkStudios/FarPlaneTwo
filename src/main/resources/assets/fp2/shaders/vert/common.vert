@@ -29,5 +29,6 @@ out VS_OUT {
     vec2 light;
 
     flat vec3 color;
+    flat vec3 base_pos;
     flat int state;
 } vs_out;

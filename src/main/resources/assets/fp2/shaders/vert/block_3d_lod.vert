@@ -39,6 +39,7 @@ void main(){
     //pass relative position to fragment shader (used to compute face normal)
     //TODO: this is actually also used for the texture UV, which is why it is currently not using the relative position
     vs_out.pos = vec3(mixedPos);
+    vs_out.base_pos = vec3(mixedPos);
 
     //copy trivial attributes
     vs_out.light = in_light;

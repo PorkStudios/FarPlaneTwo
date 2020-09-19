@@ -40,6 +40,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.List;
 
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL43.*;
 
@@ -68,7 +69,7 @@ public class GlobalInfo {
     public static final int MAPCOLORS_SIZE = 64 * 4;
 
     public static final long UVS_OFFSET = MAPCOLORS_OFFSET + MAPCOLORS_SIZE;
-    public static final int UVS_SIZE = 4096 * 16 * 4 * 4; //4096 ids, 16 meta values, 4 floats
+    public static final int UVS_SIZE = 4096 * 16 * 6 * 2 * VEC2_SIZE; //4096 ids, 16 meta values, 6 faces, 2 vec2s
 
     public static final long TOTAL_SIZE = UVS_OFFSET + UVS_SIZE;
 
@@ -115,21 +116,22 @@ public class GlobalInfo {
         BlockModelShapes shapes = Minecraft.getMinecraft().getBlockRendererDispatcher().getBlockModelShapes();
         for (Block block : Block.REGISTRY) {
             TextureAtlasSprite t = null;
-            if (block == Blocks.WATER)  {
+            if (block == Blocks.WATER) {
                 t = Minecraft.getMinecraft().getTextureMapBlocks().getAtlasSprite("minecraft:blocks/water_still");
             }
             for (IBlockState state : block.getBlockState().getValidStates()) {
                 int id = Block.getStateId(state);
-                buffer.position(id * 4);
                 //TextureAtlasSprite texture = shapes.getTexture(state);
                 IBakedModel model = shapes.getModelForState(state);
-                List<BakedQuad> quads = model.getQuads(state, EnumFacing.UP, 0L);
-                if (quads == null || quads.isEmpty())   {
-                    continue;
+                for (EnumFacing face : EnumFacing.VALUES) {
+                    List<BakedQuad> quads = model.getQuads(state, face, 0L);
+                    if (quads != null && !quads.isEmpty()) {
+                        TextureAtlasSprite texture = t != null ? t : quads.get(0).getSprite();
+                        buffer.position((id * 6 + face.getIndex()) * 2 * VEC2_ELEMENTS);
+                        buffer.put(texture.getMinU()).put(texture.getMinV())
+                                .put(texture.getMaxU()).put(texture.getMaxV());
+                    }
                 }
-                TextureAtlasSprite texture = t != null ? t : quads.get(0).getSprite();
-                buffer.put(texture.getMinU()).put(texture.getMinV())
-                        .put(texture.getMaxU()).put(texture.getMaxV());
             }
         }
         buffer.clear();
