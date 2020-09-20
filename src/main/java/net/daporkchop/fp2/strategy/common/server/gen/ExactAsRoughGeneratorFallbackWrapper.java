@@ -48,10 +48,14 @@ public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, P extends
 
     @Override
     public void generate(@NonNull P piece) {
-        IBlockHeightAccess prefetched = this.blockAccess.prefetchAsync(this.exactGenerator.neededColumns(piece.pos()),
-                world -> this.exactGenerator.neededCubes(world, piece.pos()))
-                .join();
-        this.exactGenerator.generate(prefetched, piece);
+        try {
+            IBlockHeightAccess prefetched = this.blockAccess.prefetchAsync(this.exactGenerator.neededColumns(piece.pos()),
+                    world -> this.exactGenerator.neededCubes(world, piece.pos()))
+                    .sync().getNow();
+            this.exactGenerator.generate(prefetched, piece);
+        } catch (InterruptedException e)    {
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Override

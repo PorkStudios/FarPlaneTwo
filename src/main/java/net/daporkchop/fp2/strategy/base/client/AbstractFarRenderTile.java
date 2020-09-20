@@ -202,7 +202,7 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
     }
 
     public boolean select(@NonNull Volume[] ranges, @NonNull ICamera frustum, @NonNull FarRenderIndex index) {
-        if (this.parent != null //don't do range checking for top level, as it will cause a bunch of pieces to be loaded but never rendered
+        if (false && this.parent != null //don't do range checking for top level, as it will cause a bunch of pieces to be loaded but never rendered
             && !ranges[this.level].intersects(this)) {
             //the view range for this level doesn't intersect this tile's bounding box,
             // so we can be certain that neither this tile nor any of its children would be contained
@@ -217,7 +217,7 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
         if (this.children != null && ranges[this.level - 1].intersects(this)) {
             //this tile intersects with the view distance for tiles below it, consider selecting them as well
             //if all children are selectable, select all of them
-            if (this.hasAddress()) {
+            if (this.piece != null) {
                 //this tile contains renderable data, so only add below pieces if all of them are present
                 //this is necessary because there is no mechanism for rendering part of a tile
                 int mark = index.mark();

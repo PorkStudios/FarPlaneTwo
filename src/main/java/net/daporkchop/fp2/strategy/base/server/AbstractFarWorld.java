@@ -250,7 +250,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
 
     @Override
     public void blockChanged(int x, int y, int z) {
-        this.schedulePieceForUpdate(this.fromBlockCoords(x, y, z), this.world.getTotalWorldTime());
+        //TODO: uncomment this
+        //this.schedulePieceForUpdate(this.fromBlockCoords(x, y, z), this.world.getTotalWorldTime());
     }
 
     protected abstract POS fromBlockCoords(int x, int y, int z);

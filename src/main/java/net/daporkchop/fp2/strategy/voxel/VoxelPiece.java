@@ -105,7 +105,7 @@ public class VoxelPiece extends AbstractFarPiece<VoxelPos> {
 
     @Override
     public boolean isBlank() {
-        return this.indices != null;
+        return this.indices == null;
     }
 
     @Override

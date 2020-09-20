@@ -31,7 +31,6 @@ void main(){
     float start = float(fp2_state.view.levelCutoffDistance) * in_level_scale * fp2_state.view.transitionStart;
     float end = float(fp2_state.view.levelCutoffDistance) * in_level_scale * fp2_state.view.transitionEnd;
     dvec3 mixedPos = mix(in_pos_low, in_pos_high, 1. - clamp((end - depth) * (1. / (end - start)), 0., 1.));
-    mixedPos = in_pos_high;
     relativePos = vec3(mixedPos - glState.camera.position);
 
     //vertex position is detail mixed

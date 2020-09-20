@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.server;
 
+import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorldServer;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.net.server.SPacketReady;
 import net.daporkchop.fp2.strategy.common.IFarContext;
@@ -28,6 +29,7 @@ import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.text.TextComponentString;
+import net.minecraft.world.WorldServer;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
@@ -84,12 +86,15 @@ public class ServerEvents {
 
     @SubscribeEvent
     public void onWorldTick(TickEvent.WorldTickEvent event) {
-        if (!event.world.isRemote) {
-            IFarPlayerTracker tracker = ((IFarContext) event.world).tracker();
-            event.world.playerEntities.stream()
-                    .map(EntityPlayerMP.class::cast)
-                    .filter(player -> ((IFarPlayer) player).isReady())
-                    .forEach(tracker::playerMove);
+        if (!event.world.isRemote && event.phase == TickEvent.Phase.END) {
+            long time = event.world.getTotalWorldTime();
+            if (time % 20L == 0L) {
+                IFarPlayerTracker tracker = ((IFarContext) event.world).tracker();
+                event.world.playerEntities.stream()
+                        .map(EntityPlayerMP.class::cast)
+                        .filter(player -> ((IFarPlayer) player).isReady())
+                        .forEach(tracker::playerMove);
+            }
         }
     }
 }

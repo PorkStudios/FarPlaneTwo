@@ -25,6 +25,7 @@ import net.daporkchop.fp2.strategy.common.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.strategy.voxel.VoxelData;
 import net.daporkchop.fp2.strategy.voxel.VoxelPiece;
 import net.daporkchop.fp2.strategy.voxel.VoxelPos;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.block.Block;
 import net.minecraft.util.math.BlockPos;
@@ -88,8 +89,15 @@ public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<
                     pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
 
                     data.state = Block.getStateId(world.getBlockState(pos));
-                    data.light = 0xFF;
                     data.biome = Biome.getIdForBiome(world.getBiome(pos));
+
+                    for (i = 0; i < 8; i++) {
+                        if ((corners & (1 << i)) == 0)  {
+                            pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
+                            break;
+                        }
+                    }
+                    data.light = Constants.packCombinedLight(world.getCombinedLight(pos, 0));
 
                     piece.set(dx, dy, dz, data);
                 }

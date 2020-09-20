@@ -30,8 +30,6 @@ import net.daporkchop.fp2.strategy.voxel.VoxelPos;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
-import net.daporkchop.lib.common.misc.string.PStrings;
-import net.daporkchop.lib.common.misc.string.PUnsafeStrings;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
 import net.daporkchop.lib.primitive.map.IntIntMap;
@@ -47,7 +45,6 @@ import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.strategy.voxel.server.gen.VoxelGeneratorConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.math.PMath.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
@@ -104,7 +101,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         int z = srcPos.z();
         int level = srcPos.level();
 
-        return Stream.of(
+        /*return Stream.of(
                 //same level
                 srcPos, new VoxelPos(x, y, z - 1, level),
                 new VoxelPos(x, y - 1, z, level), new VoxelPos(x, y - 1, z - 1, level),
@@ -114,7 +111,25 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                 new VoxelPos(x << 1, y << 1, z << 1, level - 1), new VoxelPos(x << 1, y << 1, (z << 1) - 1, level - 1),
                 new VoxelPos(x << 1, (y << 1) - 1, z << 1, level - 1), new VoxelPos(x << 1, (y << 1) - 1, (z << 1) - 1, level - 1),
                 new VoxelPos((x << 1) - 1, y << 1, z << 1, level - 1), new VoxelPos((x << 1) - 1, y << 1, (z << 1) - 1, level - 1),
-                new VoxelPos((x << 1) - 1, (y << 1) - 1, z << 1, level - 1), new VoxelPos((x << 1) - 1, (y << 1) - 1, (z << 1) - 1, level - 1));
+                new VoxelPos((x << 1) - 1, (y << 1) - 1, z << 1, level - 1), new VoxelPos((x << 1) - 1, (y << 1) - 1, (z << 1) - 1, level - 1));*/
+
+        VoxelPos[] arr = new VoxelPos[8 + 27];
+        int i = 0;
+        for (int dx = -1; dx <= 0; dx++)    {
+            for (int dy = -1; dy <= 0; dy++)    {
+                for (int dz = -1; dz <= 0; dz++)    {
+                    arr[i++] = new VoxelPos(x + dx, y + dy, z + dz, level);
+                }
+            }
+        }
+        for (int dx = -2; dx <= 0; dx++)    {
+            for (int dy = -2; dy <= 0; dy++)    {
+                for (int dz = -2; dz <= 0; dz++)    {
+                    arr[i++] = new VoxelPos((x << 1) + dx, (y << 1) + dy, (z << 1) + dz, level - 1);
+                }
+            }
+        }
+        return Stream.of(arr);
     }
 
     @Override
@@ -149,16 +164,8 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
 
     @Override
     public void bake(@NonNull VoxelPos dstPos, @NonNull VoxelPiece[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf indices) {
-        if (srcs[0] == null) {
+        if (srcs[0] == null || srcs[0].isBlank()) {
             return;
-        }
-
-        {
-            char[] c = new char[srcs.length];
-            for (int j = 0; j < srcs.length; j++) {
-                c[j] = srcs[j] == null ? '0' : '1';
-            }
-            //LOGGER.info("baking {}: {}", PUnsafeStrings.wrap(c), dstPos);
         }
 
         final int level = dstPos.level();
@@ -306,18 +313,9 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         baseY += (y & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
 
-        /*x &= ~(x & T_VOXELS);
+        x &= ~(x & T_VOXELS);
         y &= ~(y & T_VOXELS);
-        z &= ~(z & T_VOXELS);*/
-        if (x == 16) {
-            x = 0;
-        }
-        if (y == 16) {
-            y = 0;
-        }
-        if (z == 16) {
-            z = 0;
-        }
+        z &= ~(z & T_VOXELS);
 
         final double scale = 1 << level;
 
@@ -336,22 +334,22 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         vertices.writeShort(Constants.packedLightTo8BitVec2(data.light)); //light
         vertices.writeMedium(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.state), biomeAccess, pos, 0))); //color
 
-        vertices.writeDouble(baseX + (x + data.x) * scale + 0.5d)
-                .writeDouble(baseY + (y + data.y) * scale + 0.5d)
-                .writeDouble(baseZ + (z + data.z) * scale + 0.5d); //pos_low
+        vertices.writeDouble(blockX + data.x * scale + 0.5d)
+                .writeDouble(blockY + data.y * scale + 0.5d)
+                .writeDouble(blockZ + data.z * scale + 0.5d); //pos_low
 
         int basePieceX = (baseX >> (level + T_SHIFT)) - ((i >> 2) & 1);
         int basePieceY = (baseY >> (level + T_SHIFT)) - ((i >> 1) & 1);
         int basePieceZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
         VoxelPiece highPiece = srcs[8 | (i & (((basePieceX & 1) << 2) | ((basePieceY & 1) << 1) | (basePieceZ & 1)))];
-        if (highPiece == null) { //pos_high
-            vertices.writeDouble(baseX + (x + data.x) * scale + 0.5d)
-                    .writeDouble(baseY + (y + data.y) * scale + 0.5d)
-                    .writeDouble(baseZ + (z + data.z) * scale + 0.5d);
+        if (level == 1 || highPiece == null) { //pos_high
+            vertices.writeDouble(blockX + data.x * scale + 0.5d)
+                    .writeDouble(blockY + data.y * scale + 0.5d)
+                    .writeDouble(blockZ + data.z * scale + 0.5d);
         } else {
-            final int flooredX = (baseX + (x << level)) & -(1 << (level + 1));
-            final int flooredY = (baseY + (y << level)) & -(1 << (level + 1));
-            final int flooredZ = (baseZ + (z << level)) & -(1 << (level + 1));
+            final int flooredX = blockX & -(1 << (level + 1));
+            final int flooredY = blockY & -(1 << (level + 1));
+            final int flooredZ = blockZ & -(1 << (level + 1));
 
             double highX = 0.0d;
             double highY = 0.0d;
@@ -362,15 +360,9 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                 highZ = data.z;
             }
 
-            if (((x | y | z) & 1) != 0 && this.samplePos(baseX, baseY, baseZ, level, i, srcs, x + (x & 1), y + (y & 1), z + (z & 1), data)) {
-                highX = (highX + data.x) * 0.5d;
-                highY = (highY + data.y) * 0.5d;
-                highZ = (highZ + data.z) * 0.5d;
-            }
-
-            vertices.writeDouble((baseX & ~1) + (x + highX * 2.0d) * scale + 0.5d)
-                    .writeDouble((baseY & ~1) + (y + highY * 2.0d) * scale + 0.5d)
-                    .writeDouble((baseZ & ~1) + (z + highZ * 2.0d) * scale + 0.5d);
+            vertices.writeDouble(flooredX + highX * 2 * scale + 0.5d)
+                    .writeDouble(flooredY + highY * 2 * scale + 0.5d)
+                    .writeDouble(flooredZ + highZ * 2 * scale + 0.5d);
         }
 
         vertices.writeShort(1 << level);
