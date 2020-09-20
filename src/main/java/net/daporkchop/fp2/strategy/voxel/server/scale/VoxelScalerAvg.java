@@ -109,16 +109,22 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece> {
 
         VoxelData data = datas[8].reset();
 
+        double x = 0.0d;
+        double y = 0.0d;
+        double z = 0.0d;
         for (int i = 0; i < 8; i++) { //compute average voxel position
             if ((validFlags & (1 << i)) != 0) {
-                data.x += (datas[i].x + ((i >> 2) & 1)) * 0.5d;
-                data.y += (datas[i].y + ((i >> 1) & 1)) * 0.5d;
-                data.z += (datas[i].z + (i & 1)) * 0.5d;
+                x += datas[i].x + ((i >> 2) & 1);
+                y += datas[i].y + ((i >> 1) & 1);
+                z += datas[i].z + (i & 1);
             }
         }
-        data.x /= validCount;
-        data.y /= validCount;
-        data.z /= validCount;
+        x /= validCount;
+        y /= validCount;
+        z /= validCount;
+        data.x = x * 0.5d;
+        data.y = y * 0.5d;
+        data.z = z * 0.5d;
 
         int edges = 0;
         for (int edge = 0; edge < 3; edge++) { //compute connection edges
@@ -131,21 +137,24 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece> {
         }
         data.edges = ((edges & 4) << 9) | ((edges & 2) << 6) | ((edges & 1) << 3);
 
-        int j = (floorI(data.x * 2.0d) << 2) | (floorI(data.y * 2.0d) << 1) | floorI(data.z * 2.0d);
+        //compute appearance data
+        //TODO: i need a better algorithm for selecting which voxel to use
+        int j = (floorI(x) << 2) | (floorI(y) << 1) | floorI(z);
         if ((validFlags & (1 << j)) != 0)   {
             data.state = datas[j].state;
             data.biome = datas[j].biome;
             data.light = datas[j].light;
-        }
-
-        /*for (int i = 0; i < 8; i++) { //compute other data
-            if ((validFlags & (1 << i)) != 0) {
-                data.state = datas[i].state;
-                data.biome = datas[i].biome;
-                data.light = datas[i].light;
-                break;
+        } else {
+            //fall back to using anything
+            for (int i = 0; i < 8; i++) {
+                if ((validFlags & (1 << i)) != 0) {
+                    data.state = datas[i].state;
+                    data.biome = datas[i].biome;
+                    data.light = datas[i].light;
+                    break;
+                }
             }
-        }*/
+        }
 
         dst.set(dstX, dstY, dstZ, data);
     }

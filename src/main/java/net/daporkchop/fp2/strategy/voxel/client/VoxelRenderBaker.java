@@ -30,6 +30,8 @@ import net.daporkchop.fp2.strategy.voxel.VoxelPos;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
+import net.daporkchop.lib.common.misc.string.PStrings;
+import net.daporkchop.lib.common.misc.string.PUnsafeStrings;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
 import net.daporkchop.lib.primitive.map.IntIntMap;
@@ -107,9 +109,12 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                 srcPos, new VoxelPos(x, y, z - 1, level),
                 new VoxelPos(x, y - 1, z, level), new VoxelPos(x, y - 1, z - 1, level),
                 new VoxelPos(x - 1, y, z, level), new VoxelPos(x - 1, y, z - 1, level),
-                new VoxelPos(x - 1, y - 1, z, level), new VoxelPos(x - 1, y - 1, z - 1, level)//,
+                new VoxelPos(x - 1, y - 1, z, level), new VoxelPos(x - 1, y - 1, z - 1, level),
                 //below level
-        );
+                new VoxelPos(x << 1, y << 1, z << 1, level - 1), new VoxelPos(x << 1, y << 1, (z << 1) - 1, level - 1),
+                new VoxelPos(x << 1, (y << 1) - 1, z << 1, level - 1), new VoxelPos(x << 1, (y << 1) - 1, (z << 1) - 1, level - 1),
+                new VoxelPos((x << 1) - 1, y << 1, z << 1, level - 1), new VoxelPos((x << 1) - 1, y << 1, (z << 1) - 1, level - 1),
+                new VoxelPos((x << 1) - 1, (y << 1) - 1, z << 1, level - 1), new VoxelPos((x << 1) - 1, (y << 1) - 1, (z << 1) - 1, level - 1));
     }
 
     @Override
@@ -124,9 +129,12 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                 dstPos, new VoxelPos(x, y, z + 1, level),
                 new VoxelPos(x, y + 1, z, level), new VoxelPos(x, y + 1, z + 1, level),
                 new VoxelPos(x + 1, y, z, level), new VoxelPos(x + 1, y, z + 1, level),
-                new VoxelPos(x + 1, y + 1, z, level), new VoxelPos(x + 1, y + 1, z + 1, level)//,
+                new VoxelPos(x + 1, y + 1, z, level), new VoxelPos(x + 1, y + 1, z + 1, level),
                 //below level
-        );
+                new VoxelPos(x >> 1, y >> 1, z >> 1, level + 1), new VoxelPos(x >> 1, y >> 1, (z >> 1) + 1, level + 1),
+                new VoxelPos(x >> 1, (y >> 1) + 1, z >> 1, level + 1), new VoxelPos(x >> 1, (y >> 1) + 1, (z >> 1) + 1, level + 1),
+                new VoxelPos((x >> 1) + 1, y >> 1, z >> 1, level + 1), new VoxelPos((x >> 1) + 1, y >> 1, (z >> 1) + 1, level + 1),
+                new VoxelPos((x >> 1) + 1, (y >> 1) + 1, z >> 1, level + 1), new VoxelPos((x >> 1) + 1, (y >> 1) + 1, (z >> 1) + 1, level + 1));
     }
 
     @Override
@@ -143,6 +151,14 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
     public void bake(@NonNull VoxelPos dstPos, @NonNull VoxelPiece[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf indices) {
         if (srcs[0] == null) {
             return;
+        }
+
+        {
+            char[] c = new char[srcs.length];
+            for (int j = 0; j < srcs.length; j++) {
+                c[j] = srcs[j] == null ? '0' : '1';
+            }
+            //LOGGER.info("baking {}: {}", PUnsafeStrings.wrap(c), dstPos);
         }
 
         final int level = dstPos.level();
@@ -167,7 +183,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                         }
 
                         map.put((dx * T_VERTS + dy) * T_VERTS + dz, indexCounter++);
-                        this.vertex(baseX, baseY, baseZ, level, dx, dy, dz, data, vertices, pos, biomeAccess);
+                        this.vertex(baseX, baseY, baseZ, level, 0, srcs, dx, dy, dz, data, vertices, pos, biomeAccess);
                     }
                 }
             }
@@ -180,7 +196,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                         }
 
                         map.put((dx * T_VERTS + dy) * T_VERTS + T_VOXELS, indexCounter++);
-                        this.vertex(baseX, baseY, baseZ, level, dx, dy, T_VOXELS, data, vertices, pos, biomeAccess);
+                        this.vertex(baseX, baseY, baseZ, level, 1, srcs, dx, dy, T_VOXELS, data, vertices, pos, biomeAccess);
                     }
                 }
             }
@@ -193,7 +209,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                         }
 
                         map.put((dx * T_VERTS + T_VOXELS) * T_VERTS + dz, indexCounter++);
-                        this.vertex(baseX, baseY, baseZ, level, dx, T_VOXELS, dz, data, vertices, pos, biomeAccess);
+                        this.vertex(baseX, baseY, baseZ, level, 2, srcs, dx, T_VOXELS, dz, data, vertices, pos, biomeAccess);
                     }
                 }
             }
@@ -205,7 +221,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                     }
 
                     map.put((dx * T_VERTS + T_VOXELS) * T_VERTS + T_VOXELS, indexCounter++);
-                    this.vertex(baseX, baseY, baseZ, level, dx, T_VOXELS, T_VOXELS, data, vertices, pos, biomeAccess);
+                    this.vertex(baseX, baseY, baseZ, level, 3, srcs, dx, T_VOXELS, T_VOXELS, data, vertices, pos, biomeAccess);
                 }
             }
 
@@ -217,7 +233,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                         }
 
                         map.put((T_VOXELS * T_VERTS + dy) * T_VERTS + dz, indexCounter++);
-                        this.vertex(baseX, baseY, baseZ, level, T_VOXELS, dy, dz, data, vertices, pos, biomeAccess);
+                        this.vertex(baseX, baseY, baseZ, level, 4, srcs, T_VOXELS, dy, dz, data, vertices, pos, biomeAccess);
                     }
                 }
             }
@@ -229,7 +245,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                     }
 
                     map.put((T_VOXELS * T_VERTS + dy) * T_VERTS + T_VOXELS, indexCounter++);
-                    this.vertex(baseX, baseY, baseZ, level, T_VOXELS, dy, T_VOXELS, data, vertices, pos, biomeAccess);
+                    this.vertex(baseX, baseY, baseZ, level, 5, srcs, T_VOXELS, dy, T_VOXELS, data, vertices, pos, biomeAccess);
                 }
             }
 
@@ -240,13 +256,13 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                     }
 
                     map.put((T_VOXELS * T_VERTS + T_VOXELS) * T_VERTS + dz, indexCounter++);
-                    this.vertex(baseX, baseY, baseZ, level, T_VOXELS, T_VOXELS, dz, data, vertices, pos, biomeAccess);
+                    this.vertex(baseX, baseY, baseZ, level, 6, srcs, T_VOXELS, T_VOXELS, dz, data, vertices, pos, biomeAccess);
                 }
             }
 
             if (srcs[7] != null && srcs[7].get(0, 0, 0, data)) { //+x,+y,+z
                 map.put((T_VOXELS * T_VERTS + T_VOXELS) * T_VERTS + T_VOXELS, indexCounter++);
-                this.vertex(baseX, baseY, baseZ, level, T_VOXELS, T_VOXELS, T_VOXELS, data, vertices, pos, biomeAccess);
+                this.vertex(baseX, baseY, baseZ, level, 7, srcs, T_VOXELS, T_VOXELS, T_VOXELS, data, vertices, pos, biomeAccess);
             }
 
             //step 2: write indices to actually connect the vertices and build the mesh
@@ -285,13 +301,33 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         }
     }
 
-    protected void vertex(int baseX, int baseY, int baseZ, int level, int dx, int dy, int dz, VoxelData data, ByteBuf vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess) {
+    protected void vertex(int baseX, int baseY, int baseZ, int level, int i, VoxelPiece[] srcs, int x, int y, int z, VoxelData data, ByteBuf vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess) {
+        baseX += (x & T_VOXELS) << level;
+        baseY += (y & T_VOXELS) << level;
+        baseZ += (z & T_VOXELS) << level;
+
+        /*x &= ~(x & T_VOXELS);
+        y &= ~(y & T_VOXELS);
+        z &= ~(z & T_VOXELS);*/
+        if (x == 16) {
+            x = 0;
+        }
+        if (y == 16) {
+            y = 0;
+        }
+        if (z == 16) {
+            z = 0;
+        }
+
         final double scale = 1 << level;
 
         //these lose precision, so i don't use them for the actual vertex position
-        final int blockX = baseX + floorI((dx + data.x) * scale);
-        final int blockY = baseY + floorI((dy + data.y) * scale);
-        final int blockZ = baseZ + floorI((dz + data.z) * scale);
+        /*final int blockX = baseX + floorI((x + data.x) * scale);
+        final int blockY = baseY + floorI((y + data.y) * scale);
+        final int blockZ = baseZ + floorI((z + data.z) * scale);*/
+        final int blockX = baseX + (x << level);
+        final int blockY = baseY + (y << level);
+        final int blockZ = baseZ + (z << level);
 
         pos.setPos(blockX, blockY, blockZ);
         biomeAccess.biome(Biome.getBiome(data.biome, Biomes.PLAINS));
@@ -300,13 +336,75 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         vertices.writeShort(Constants.packedLightTo8BitVec2(data.light)); //light
         vertices.writeMedium(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.state), biomeAccess, pos, 0))); //color
 
-        vertices.writeDouble(baseX + (dx + data.x + 0.5d) * scale)
-                .writeDouble(baseY + (dy + data.y + 0.5d) * scale)
-                .writeDouble(baseZ + (dz + data.z + 0.5d) * scale); //pos_low
-        vertices.writeDouble(baseX + (dx + data.x + 0.5d) * scale)
-                .writeDouble(baseY + (dy + data.y + 0.5d) * scale)
-                .writeDouble(baseZ + (dz + data.z + 0.5d) * scale); //pos_high
+        vertices.writeDouble(baseX + (x + data.x) * scale + 0.5d)
+                .writeDouble(baseY + (y + data.y) * scale + 0.5d)
+                .writeDouble(baseZ + (z + data.z) * scale + 0.5d); //pos_low
+
+        int basePieceX = (baseX >> (level + T_SHIFT)) - ((i >> 2) & 1);
+        int basePieceY = (baseY >> (level + T_SHIFT)) - ((i >> 1) & 1);
+        int basePieceZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
+        VoxelPiece highPiece = srcs[8 | (i & (((basePieceX & 1) << 2) | ((basePieceY & 1) << 1) | (basePieceZ & 1)))];
+        if (highPiece == null) { //pos_high
+            vertices.writeDouble(baseX + (x + data.x) * scale + 0.5d)
+                    .writeDouble(baseY + (y + data.y) * scale + 0.5d)
+                    .writeDouble(baseZ + (z + data.z) * scale + 0.5d);
+        } else {
+            final int flooredX = (baseX + (x << level)) & -(1 << (level + 1));
+            final int flooredY = (baseY + (y << level)) & -(1 << (level + 1));
+            final int flooredZ = (baseZ + (z << level)) & -(1 << (level + 1));
+
+            double highX = 0.0d;
+            double highY = 0.0d;
+            double highZ = 0.0d;
+            if (highPiece.get((flooredX >> (level + 1)) & T_MASK, (flooredY >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK, data)) {
+                highX = data.x;
+                highY = data.y;
+                highZ = data.z;
+            }
+
+            if (((x | y | z) & 1) != 0 && this.samplePos(baseX, baseY, baseZ, level, i, srcs, x + (x & 1), y + (y & 1), z + (z & 1), data)) {
+                highX = (highX + data.x) * 0.5d;
+                highY = (highY + data.y) * 0.5d;
+                highZ = (highZ + data.z) * 0.5d;
+            }
+
+            vertices.writeDouble((baseX & ~1) + (x + highX * 2.0d) * scale + 0.5d)
+                    .writeDouble((baseY & ~1) + (y + highY * 2.0d) * scale + 0.5d)
+                    .writeDouble((baseZ & ~1) + (z + highZ * 2.0d) * scale + 0.5d);
+        }
 
         vertices.writeShort(1 << level);
+    }
+
+    private boolean samplePos(int baseX, int baseY, int baseZ, int level, int i, VoxelPiece[] srcs, int x, int y, int z, VoxelData data) {
+        baseX += (x & 0x10) << level;
+        baseY += (y & 0x10) << level;
+        baseZ += (z & 0x10) << level;
+
+        i |= ((x & 0x10) >> 2) | ((y & 0x10) >> 3) | ((z & 0x10) >> 4);
+
+        if (x == 16) {
+            x = 0;
+        }
+        if (y == 16) {
+            y = 0;
+        }
+        if (z == 16) {
+            z = 0;
+        }
+
+        int basePieceX = (baseX >> (level + T_SHIFT)) - ((i >> 2) & 1);
+        int basePieceY = (baseY >> (level + T_SHIFT)) - ((i >> 1) & 1);
+        int basePieceZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
+        VoxelPiece highPiece = srcs[8 | (i & (((basePieceX & 1) << 2) | ((basePieceY & 1) << 1) | (basePieceZ & 1)))];
+        if (highPiece == null) {
+            return false;
+        } else {
+            final int flooredX = (baseX + (x << level)) & -(1 << (level + 1));
+            final int flooredY = (baseY + (y << level)) & -(1 << (level + 1));
+            final int flooredZ = (baseZ + (z << level)) & -(1 << (level + 1));
+
+            return highPiece.get((flooredX >> (level + 1)) & T_MASK, (flooredY >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK, data);
+        }
     }
 }

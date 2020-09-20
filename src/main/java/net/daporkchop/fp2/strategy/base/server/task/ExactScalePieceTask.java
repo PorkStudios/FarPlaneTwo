@@ -73,7 +73,8 @@ public class ExactScalePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> 
         }
 
         try {
-            if (srcs.length > 0) { //get actual timestamp by computing the maximum input timestamp
+            //TODO: re-enable this
+            if (false && srcs.length > 0) { //get actual timestamp by computing the maximum input timestamp
                 long effectiveNewTimestamp = Arrays.stream(srcs).mapToLong(IFarPiece::timestamp).max().orElse(newTimestamp);
                 checkState(effectiveNewTimestamp >= newTimestamp, "effectiveNewTimestamp (%d) is somehow less than newTimestamp (%d)", effectiveNewTimestamp, newTimestamp);
                 newTimestamp = effectiveNewTimestamp;
