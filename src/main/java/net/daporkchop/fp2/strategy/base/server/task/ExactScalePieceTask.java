@@ -88,8 +88,11 @@ public class ExactScalePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> 
                     return piece;
                 }
 
+                piece.clear(); //reset piece contents
                 this.world.scaler().scale(srcs, piece);
+                piece.postGenerate();
                 piece.updateTimestamp(newTimestamp);
+                piece.markDirty();
 
                 piece.readLock().lock(); //downgrade lock
             } finally {

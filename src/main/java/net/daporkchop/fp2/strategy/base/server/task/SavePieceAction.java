@@ -32,6 +32,8 @@ import net.daporkchop.fp2.util.threading.executor.LazyTask;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.util.Constants.*;
+
 /**
  * @author DaPorkchop_
  */

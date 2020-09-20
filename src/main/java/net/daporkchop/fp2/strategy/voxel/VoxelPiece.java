@@ -141,7 +141,7 @@ public class VoxelPiece extends AbstractFarPiece<VoxelPos> {
     }
 
     public int getIndex(int x, int y, int z) {
-        return this.indices.getOrDefault(index(x, y, z), -1);
+        return this.indices != null ? this.indices.getOrDefault(index(x, y, z), -1) : -1;
     }
 
     public boolean get(int x, int y, int z, VoxelData data) {

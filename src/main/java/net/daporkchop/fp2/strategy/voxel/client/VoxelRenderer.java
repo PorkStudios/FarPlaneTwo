@@ -67,11 +67,9 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece, Vox
         try (VertexArrayObject vao = this.cache.vao().bind();
              DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBuffer().bind()) {
             try (ShaderProgram shader = SOLID_SHADER.use()) {
-                //mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, true);
                 GlStateManager.disableAlpha();
                 glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, count, 0);
                 GlStateManager.enableAlpha();
-                //mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
             }
         }
     }

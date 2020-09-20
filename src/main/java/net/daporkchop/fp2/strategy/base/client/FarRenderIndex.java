@@ -54,8 +54,10 @@ public class FarRenderIndex {
     }
 
     public boolean add(@NonNull AbstractFarRenderTile tile) {
-        if (!tile.hasAddress()) {
+        if (tile.piece == null) {
             return false;
+        } else if (!tile.hasAddress())  {
+            return true;
         }
 
         this.ensureWritable(5);

@@ -56,4 +56,18 @@ public class VoxelGeneratorConstants {
             0, 1, 5, 0, 4, 5,
             0, 2, 6, 0, 4, 6
     };
+
+    /**
+     * The number of high-resolution neighbor voxels for a low-resolution connected edge.
+     */
+    public static final int CONNECTION_SUB_NEIGHBOR_COUNT = 6;
+
+    /**
+     * Defines the offsets of all high-resolution neighbor voxels for all connectable edges on a low-resolution connected voxel.
+     */
+    public static final int[] CONNECTION_SUB_NEIGHBORS = {
+            1, 2, 3, 5, 6, 7,
+            2, 3, 4, 5, 6, 7,
+            1, 3, 4, 5, 6, 7
+    };
 }

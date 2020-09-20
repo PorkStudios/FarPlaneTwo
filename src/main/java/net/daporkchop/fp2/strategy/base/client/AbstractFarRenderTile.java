@@ -39,6 +39,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
+//TODO: urgent: i need to separate the logic of having data from having an address, because the voxel renderer can have tiles with a piece but no data
 @Getter
 public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarPiece<POS>, T extends AbstractFarRenderTile<POS, P, T>> extends AxisAlignedBB {
     protected static final long MINY_OFFSET = Constants.fieldOffset(AxisAlignedBB.class, "minY", "field_72338_b");

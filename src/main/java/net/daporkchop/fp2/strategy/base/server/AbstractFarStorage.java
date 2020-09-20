@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.strategy.base.server;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.ByteBufAllocator;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
@@ -84,7 +84,7 @@ public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiec
 
         try {
             //read from db
-            ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer();
+            ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
             ByteBuf packed;
             try {
                 pos.writePosNoLevel(buf);
@@ -100,7 +100,7 @@ public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiec
             try {
                 if (packed.readInt() == this.mode().storageVersion()) {
                     int uncompressedSize = packed.readInt();
-                    buf = PooledByteBufAllocator.DEFAULT.buffer(uncompressedSize, uncompressedSize);
+                    buf = ByteBufAllocator.DEFAULT.buffer(uncompressedSize, uncompressedSize);
                     try {
                         checkState(ZSTD_INF.get().decompress(packed, buf));
                         packed.release();
@@ -131,7 +131,7 @@ public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiec
         ByteBuf packed = null;
         try {
             //pack piece
-            ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer();
+            ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
             try {
                 piece.readLock().lock();
                 try {
@@ -140,8 +140,8 @@ public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiec
                     piece.readLock().unlock();
                 }
 
-                packed = PooledByteBufAllocator.DEFAULT.ioBuffer(8 + Zstd.PROVIDER.compressBound(buf.readableBytes()))
-                        .writeInt(RenderMode.HEIGHTMAP.storageVersion())
+                packed = ByteBufAllocator.DEFAULT.buffer(8 + Zstd.PROVIDER.compressBound(buf.readableBytes()))
+                        .writeInt(this.mode().storageVersion())
                         .writeInt(buf.readableBytes());
                 checkState(ZSTD_DEF.get().compress(buf, packed));
             } finally {
@@ -149,7 +149,7 @@ public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiec
             }
 
             //write to db
-            buf = PooledByteBufAllocator.DEFAULT.buffer();
+            buf = ByteBufAllocator.DEFAULT.buffer();
             try {
                 pos.writePosNoLevel(buf);
                 this.dbs.computeIfAbsent(pos.level(), this.dbOpenFunction).put(buf, packed);

@@ -50,8 +50,7 @@ import net.daporkchop.fp2.strategy.voxel.server.VoxelStorage;
 import net.daporkchop.fp2.strategy.voxel.server.VoxelWorld;
 import net.daporkchop.fp2.strategy.voxel.server.gen.exact.CCVoxelGenerator;
 import net.daporkchop.fp2.strategy.voxel.server.gen.exact.VanillaVoxelGenerator;
-import net.daporkchop.fp2.strategy.voxel.server.gen.rough.PerlinNoiseVoxelGenerator;
-import net.daporkchop.fp2.strategy.voxel.server.scale.VoxelScalerNone;
+import net.daporkchop.fp2.strategy.voxel.server.scale.VoxelScalerAvg;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.PriorityCollection;
 import net.daporkchop.lib.common.misc.string.PUnsafeStrings;
@@ -144,7 +143,7 @@ public enum RenderMode {
 
         @Override
         public IFarScaler createScaler(@NonNull WorldServer world) {
-            return new VoxelScalerNone();
+            return new VoxelScalerAvg();
         }
 
         @Override

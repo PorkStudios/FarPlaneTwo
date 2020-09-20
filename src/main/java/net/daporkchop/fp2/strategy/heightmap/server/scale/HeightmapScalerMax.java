@@ -45,12 +45,16 @@ public class HeightmapScalerMax implements IFarScaler<HeightmapPos, HeightmapPie
     @Override
     public Stream<HeightmapPos> inputs(@NonNull HeightmapPos dstPos) {
         checkArg(dstPos.level() > 0, "cannot generate inputs for level 0!");
+
+        int x = dstPos.x() << 1;
+        int z = dstPos.z() << 1;
+        int level = dstPos.level();
+
         return Stream.of(
-                new HeightmapPos(dstPos.x() << 1, dstPos.z() << 1, dstPos.level() - 1),
-                new HeightmapPos(dstPos.x() << 1, (dstPos.z() << 1) + 1, dstPos.level() - 1),
-                new HeightmapPos((dstPos.x() << 1) + 1, dstPos.z() << 1, dstPos.level() - 1),
-                new HeightmapPos((dstPos.x() << 1) + 1, (dstPos.z() << 1) + 1, dstPos.level() - 1)
-        );
+                new HeightmapPos(x, z, level - 1),
+                new HeightmapPos(x, z + 1, level - 1),
+                new HeightmapPos(x + 1, z, level - 1),
+                new HeightmapPos(x + 1, z + 1, level - 1));
     }
 
     @Override

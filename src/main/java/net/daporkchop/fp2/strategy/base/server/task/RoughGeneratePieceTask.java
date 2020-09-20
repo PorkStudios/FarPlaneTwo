@@ -27,6 +27,7 @@ import net.daporkchop.fp2.strategy.base.server.TaskKey;
 import net.daporkchop.fp2.strategy.base.server.TaskStage;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
+import net.daporkchop.fp2.strategy.common.server.gen.ExactAsRoughGeneratorFallbackWrapper;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
 
