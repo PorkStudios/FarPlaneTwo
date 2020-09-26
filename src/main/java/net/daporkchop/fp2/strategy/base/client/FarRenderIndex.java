@@ -54,21 +54,22 @@ public class FarRenderIndex {
     }
 
     public boolean add(@NonNull AbstractFarRenderTile tile) {
-        if (tile.piece == null) {
+        if (!tile.rendered) {
             return false;
-        } else if (!tile.hasAddress())  {
-            return true;
         }
 
-        this.ensureWritable(5);
+        if (tile.renderOpaque != null) { //TODO: transparent data as well
+            this.ensureWritable(5);
 
-        this.buffer.put(tile.renderDataIndices.capacity() / this.indicesSize) //count
-                .put(1) //instanceCount
-                .put(toInt(tile.addressIndices / this.indicesSize)) //firstIndex
-                .put(toInt(tile.addressVertices / this.vertexSize)) //baseVertex
-                .put(0); //baseInstance
+            FarRenderData data = tile.renderOpaque;
+            this.buffer.put(data.sizeIndices / this.indicesSize) //count
+                    .put(1) //instanceCount
+                    .put(toInt(data.gpuIndices / this.indicesSize)) //firstIndex
+                    .put(toInt(data.gpuVertices / this.vertexSize)) //baseVertex
+                    .put(0); //baseInstance
 
-        this.size++;
+            this.size++;
+        }
         return true;
     }
 

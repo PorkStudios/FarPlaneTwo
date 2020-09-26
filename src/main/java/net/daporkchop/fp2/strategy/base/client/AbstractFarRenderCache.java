@@ -116,11 +116,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                 glBufferData(GL_ELEMENT_ARRAY_BUFFER, newSize, GL_STATIC_DRAW);
 
                 //re-upload data
-                this.roots.forEach((l, root) -> root.forEach(tile -> {
-                    if (tile.hasAddress()) {
-                        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, tile.addressIndices, tile.renderDataIndices);
-                    }
-                }));
+                this.roots.forEach((l, root) -> root.forEach(AbstractFarRenderTile::uploadIndices));
             }
 
             this.rebuildVAO();
@@ -134,11 +130,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                 glBufferData(GL_ARRAY_BUFFER, newSize, GL_STATIC_DRAW);
 
                 //re-upload data
-                this.roots.forEach((l, root) -> root.forEach(tile -> {
-                    if (tile.hasAddress()) {
-                        glBufferSubData(GL_ARRAY_BUFFER, tile.addressVertices, tile.renderDataVertices);
-                    }
-                }));
+                this.roots.forEach((l, root) -> root.forEach(AbstractFarRenderTile::uploadVertices));
             }
 
             this.rebuildVAO();
@@ -194,7 +186,9 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                 //create root tile if absent
                 this.roots.put(rootPos, rootTile = this.createTile(null, rootPos));
             }
-            rootTile.findOrCreateChild(pieceIn.pos()).piece = pieceIn;
+            T tile = rootTile.findOrCreateChild(pieceIn.pos());
+            tile.piece = pieceIn;
+            tile.markHasPiece(true);
         }
 
         this.baker.bakeOutputs(pieceIn.pos())
@@ -228,7 +222,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                         try {
                             this.baker.bake(pos, inputPieces, vertices, indices);
 
-                            if (vertices.isReadable() && indices.isReadable()) {
+                            if (true || (vertices.isReadable() && indices.isReadable())) {
                                 //retain buffers, since they're released by the finally block
                                 vertices.retain();
                                 indices.retain();
@@ -268,20 +262,8 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
         }
 
         //allocate address for tile
-        tile.assignAddress(vertices.readableBytes(), indices.readableBytes());
-
-        //copy baked data into tile and upload to GPU
-        vertices.readBytes(tile.renderDataVertices);
-        tile.renderDataVertices.clear();
-        try (VertexBufferObject verticesBuffer = this.vertices.bind()) {
-            glBufferSubData(GL_ARRAY_BUFFER, tile.addressVertices, tile.renderDataVertices);
-        }
-
-        indices.readBytes(tile.renderDataIndices);
-        tile.renderDataIndices.clear();
-        try (ElementArrayObject indicesBuffer = this.indices.bind()) {
-            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, tile.addressIndices, tile.renderDataIndices);
-        }
+        tile.setOpaque(vertices, indices);
+        tile.rendered = true;
     }
 
     public void unloadPiece(@NonNull POS pos) {
@@ -295,9 +277,9 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
         T rootTile = this.roots.get(rootPos);
         if (rootTile != null) {
             T unloadedTile = rootTile.findChild(pos);
-            if (unloadedTile != null && unloadedTile.hasAddress()) {
+            if (unloadedTile != null && unloadedTile.hasPiece()) {
                 //inform tile that the address has been freed
-                if (unloadedTile.dropAddress()) {
+                if (unloadedTile.dropPiece()) {
                     this.roots.remove(rootPos);
                 }
                 return;

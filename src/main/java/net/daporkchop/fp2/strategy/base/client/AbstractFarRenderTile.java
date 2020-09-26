@@ -20,14 +20,18 @@
 
 package net.daporkchop.fp2.strategy.base.client;
 
+import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.client.gl.object.ElementArrayObject;
+import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.util.DirectBufferReuse;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import net.daporkchop.lib.unsafe.capability.Releasable;
 import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.util.math.AxisAlignedBB;
 
@@ -36,6 +40,7 @@ import java.util.function.Consumer;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
+import static org.lwjgl.opengl.GL15.*;
 
 /**
  * An entry in the client-side quad-/octree which stores the data for tiles to be rendered.
@@ -54,12 +59,11 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
     protected final AbstractFarRenderCache<POS, P, T> cache;
 
     protected P piece;
-    protected long addressVertices = -1L;
-    protected long addressIndices = -1L;
-    protected ByteBuffer renderDataVertices;
-    protected ByteBuffer renderDataIndices;
+    protected boolean rendered = false; //whether or not this tile has been rendered
+    protected FarRenderData renderOpaque;
+    protected FarRenderData renderTransparent;
 
-    public boolean doesSelfOrAnyChildrenHaveAddress = false;
+    public boolean doesSelfOrAnyChildrenHavePiece = false;
 
     public AbstractFarRenderTile(@NonNull AbstractFarRenderCache<POS, P, T> cache, T parent, @NonNull POS pos, @NonNull AxisAlignedBB bb, int childCount) {
         super(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
@@ -107,88 +111,110 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
         }
     }
 
-    public boolean hasAddress() {
-        return this.addressVertices >= 0L && this.addressIndices >= 0L;
+    public boolean hasPiece()  {
+        return this.piece != null;
     }
 
-    public void assignAddress(int sizeVertices, int sizeIndices) {
-        VERTICES:
-        {
-            if (this.addressVertices >= 0L) {
-                if (this.renderDataVertices.capacity() == sizeVertices) {
-                    break VERTICES; //already has correctly sized allocation, do nothing
-                }
-
-                //release all old allocations
-                this.cache.verticesAllocator.free(this.addressVertices);
-                this.addressVertices = -1L;
-                PUnsafe.pork_releaseBuffer(this.renderDataVertices);
-                this.renderDataVertices = null;
-            }
-
-            //allocate new data
-            this.addressVertices = this.cache.verticesAllocator.alloc(sizeVertices);
-            this.renderDataVertices = Constants.createByteBuffer(sizeVertices);
-            this.markHasAddress(true);
+    public void uploadVertices() {
+        if (this.renderOpaque != null)  {
+            this.renderOpaque.uploadVertices();
         }
-
-        INDICES:
-        {
-            if (this.addressIndices >= 0L) {
-                if (this.renderDataIndices.capacity() == sizeIndices) {
-                    break INDICES; //already has correctly sized allocation, do nothing
-                }
-
-                //release all old allocations
-                this.cache.indicesAllocator.free(this.addressIndices);
-                this.addressIndices = -1L;
-                PUnsafe.pork_releaseBuffer(this.renderDataIndices);
-                this.renderDataIndices = null;
+        if (this.renderTransparent != null)  {
+            this.renderTransparent.uploadVertices();
+        }
+    }
+    
+    public void uploadIndices() {
+        if (this.renderOpaque != null)  {
+            this.renderOpaque.uploadIndices();
+        }
+        if (this.renderTransparent != null)  {
+            this.renderTransparent.uploadIndices();
+        }
+    }
+    
+    public void setOpaque(@NonNull ByteBuf vertices, @NonNull ByteBuf indices)  {
+        //allocate render data
+        if ((this.renderOpaque = this.preallocateRenderData(this.renderOpaque, vertices.readableBytes(), indices.readableBytes())) != null) {
+            //copy data from buffers
+            vertices.readBytes(DirectBufferReuse.wrapByte(this.renderOpaque.addressVertices, this.renderOpaque.sizeVertices));
+            indices.readBytes(DirectBufferReuse.wrapByte(this.renderOpaque.addressIndices, this.renderOpaque.sizeIndices));
+            
+            //upload to gpu
+            try (VertexBufferObject verticesBuffer = this.cache.vertices.bind()) {
+                this.renderOpaque.uploadVertices();
             }
-
-            //allocate new data
-            this.addressIndices = this.cache.indicesAllocator.alloc(sizeIndices);
-            this.renderDataIndices = Constants.createByteBuffer(sizeIndices);
-            this.markHasAddress(true);
+            try (ElementArrayObject indicesBuffer = this.cache.indices.bind()) {
+                this.renderOpaque.uploadIndices();
+            }
         }
     }
 
-    public synchronized boolean dropAddress() {
-        checkState(this.hasAddress(), "doesn't have an address?!?");
+    public FarRenderData preallocateRenderData(FarRenderData data, int sizeVertices, int sizeIndices)  {
+        if (sizeVertices == 0 || sizeIndices == 0)  { //there is nothing to render
+            this.releaseRenderData(data);
+            return null;
+        } else if (data != null && data.sizeVertices == sizeVertices && data.sizeIndices == sizeIndices)    { //data already exists and is the same size as the new data
+            return data;
+        } else { //new data is a different size or old data doesn't exist, allocate new data
+            this.releaseRenderData(data);
+
+            return new FarRenderData(
+                    this.cache.verticesAllocator.alloc(sizeVertices), PUnsafe.allocateMemory(sizeVertices), sizeVertices,
+                    this.cache.indicesAllocator.alloc(sizeIndices), PUnsafe.allocateMemory(sizeIndices), sizeIndices);
+        }
+    }
+
+    protected void releaseRenderData(FarRenderData data)    {
+        if (data != null)   {
+            data.release(this.cache.verticesAllocator, this.cache.indicesAllocator);
+        }
+    }
+
+    public void releaseOpaque() {
+        if (this.renderOpaque != null)  {
+            this.renderOpaque.release(this.cache.verticesAllocator, this.cache.indicesAllocator);
+            this.renderOpaque = null;
+        }
+    }
+
+    public void releaseTransparent() {
+        if (this.renderTransparent != null)  {
+            this.renderTransparent.release(this.cache.verticesAllocator, this.cache.indicesAllocator);
+            this.renderTransparent = null;
+        }
+    }
+
+    public boolean dropPiece() {
+        //checkState(this.rendered, "hasn't been rendered?!?");
+        this.rendered = false;
 
         this.piece = null;
 
-        this.cache.verticesAllocator.free(this.addressVertices);
-        this.addressVertices = -1L;
-        PUnsafe.pork_releaseBuffer(this.renderDataVertices);
-        this.renderDataVertices = null;
+        this.releaseOpaque();
+        this.releaseTransparent();
 
-        this.cache.indicesAllocator.free(this.addressIndices);
-        this.addressIndices = -1L;
-        PUnsafe.pork_releaseBuffer(this.renderDataIndices);
-        this.renderDataIndices = null;
-
-        return this.markHasAddress(false);
+        return this.markHasPiece(false);
     }
 
-    protected boolean markHasAddress(boolean hasAddress) {
-        if (!hasAddress && this.children != null) {
+    protected boolean markHasPiece(boolean hasPiece) {
+        if (!hasPiece && this.children != null) {
             //check if any children have an address
-            for (int i = 0, len = this.children.length; !hasAddress && i < len; i++) {
+            for (int i = 0, len = this.children.length; !hasPiece && i < len; i++) {
                 if (this.children[i] != null) {
-                    hasAddress = this.children[i].doesSelfOrAnyChildrenHaveAddress;
+                    hasPiece = this.children[i].doesSelfOrAnyChildrenHavePiece;
                 }
             }
         }
-        this.doesSelfOrAnyChildrenHaveAddress = hasAddress;
-        if (!hasAddress) {
+        this.doesSelfOrAnyChildrenHavePiece = hasPiece;
+        if (!hasPiece) {
             //neither this tile nor any of its children has an address
             if (this.parent != null) {
                 //this tile has a parent, remove it from the parent
                 this.parent.children[this.parent.childIndex(this.pos)] = null;
 
                 //notify the parent that this tile has been removed
-                return this.parent.markHasAddress(this.parent.hasAddress());
+                return this.parent.markHasPiece(this.parent.hasPiece());
             } else {
                 //this tile is the root, return true to inform render cache to delete the root
                 return true;
@@ -210,10 +236,11 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
             return false;
         }
 
+        CHILDREN:
         if (this.children != null && ranges[this.level - 1].intersects(this)) {
             //this tile intersects with the view distance for tiles below it, consider selecting them as well
             //if all children are selectable, select all of them
-            if (this.piece != null) {
+            if (this.rendered) {
                 //this tile contains renderable data, so only add below pieces if all of them are present
                 //this is necessary because there is no mechanism for rendering part of a tile
                 int mark = index.mark();
@@ -221,7 +248,7 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
                     if (this.children[i] == null || !this.children[i].select(ranges, frustum, index)) {
                         //if any one of the children cannot be added, abort and add this tile over the whole area instead
                         index.restore(mark);
-                        return index.add(uncheckedCast(this));
+                        break CHILDREN;
                     }
                 }
                 return true;
