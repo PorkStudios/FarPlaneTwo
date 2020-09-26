@@ -37,12 +37,4 @@ public class VoxelRenderCache extends AbstractFarRenderCache<VoxelPos, VoxelPiec
     public VoxelRenderTile createTile(VoxelRenderTile parent, @NonNull VoxelPos pos) {
         return new VoxelRenderTile(this, parent, pos);
     }
-
-    @Override
-    public void tileAdded(@NonNull VoxelRenderTile tile) {
-    }
-
-    @Override
-    public void tileRemoved(@NonNull VoxelRenderTile tile) {
-    }
 }

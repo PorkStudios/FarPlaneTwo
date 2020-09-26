@@ -22,6 +22,7 @@ package net.daporkchop.fp2.strategy.base.client;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.strategy.common.IFarPiece;
 import net.daporkchop.fp2.strategy.common.IFarPos;
 import net.daporkchop.fp2.util.Constants;
@@ -37,21 +38,20 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
+ * An entry in the client-side quad-/octree which stores the data for tiles to be rendered.
+ *
  * @author DaPorkchop_
  */
 //TODO: urgent: i need to separate the logic of having data from having an address, because the voxel renderer can have tiles with a piece but no data
 @Getter
 public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarPiece<POS>, T extends AbstractFarRenderTile<POS, P, T>> extends AxisAlignedBB {
-    protected static final long MINY_OFFSET = Constants.fieldOffset(AxisAlignedBB.class, "minY", "field_72338_b");
-    protected static final long MAXY_OFFSET = Constants.fieldOffset(AxisAlignedBB.class, "maxY", "field_72337_e");
-
-    protected final POS pos;
-    protected final int level;
+    protected final POS pos; //position of the piece wrapped by this tile
+    protected final int level; //detail level that this tile is at
 
     protected final T[] children; //non-null for levels above 0
+    protected final T parent; //non-null for levels below max
 
     protected final AbstractFarRenderCache<POS, P, T> cache;
-    protected final T parent;
 
     protected P piece;
     protected long addressVertices = -1L;
@@ -69,8 +69,6 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
         this.parent = parent;
 
         this.children = pos.level() > 0 ? cache.tileArray().apply(childCount) : null;
-
-        cache.tileAdded(uncheckedCast(this));
     }
 
     protected abstract int childIndex(@NonNull POS pos);
@@ -184,8 +182,6 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
         }
         this.doesSelfOrAnyChildrenHaveAddress = hasAddress;
         if (!hasAddress) {
-            this.cache.tileRemoved(uncheckedCast(this));
-
             //neither this tile nor any of its children has an address
             if (this.parent != null) {
                 //this tile has a parent, remove it from the parent
@@ -202,7 +198,7 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
     }
 
     public boolean select(@NonNull Volume[] ranges, @NonNull ICamera frustum, @NonNull FarRenderIndex index) {
-        if (false && this.parent != null //don't do range checking for top level, as it will cause a bunch of pieces to be loaded but never rendered
+        if (this.parent != null //don't do range checking for top level, as it will cause a bunch of pieces to be loaded but never rendered
             && !ranges[this.level].intersects(this)) {
             //the view range for this level doesn't intersect this tile's bounding box,
             // so we can be certain that neither this tile nor any of its children would be contained

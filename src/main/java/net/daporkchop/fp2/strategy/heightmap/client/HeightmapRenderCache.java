@@ -37,12 +37,4 @@ public class HeightmapRenderCache extends AbstractFarRenderCache<HeightmapPos, H
     public HeightmapRenderTile createTile(HeightmapRenderTile parent, @NonNull HeightmapPos pos) {
         return new HeightmapRenderTile(this, parent, pos);
     }
-
-    @Override
-    public void tileAdded(@NonNull HeightmapRenderTile tile) {
-    }
-
-    @Override
-    public void tileRemoved(@NonNull HeightmapRenderTile tile) {
-    }
 }

@@ -184,10 +184,6 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
     public abstract T createTile(T parent, @NonNull POS pos);
 
-    public abstract void tileAdded(@NonNull T tile);
-
-    public abstract void tileRemoved(@NonNull T tile);
-
     public void receivePiece(@NonNull P pieceIn) {
         final int maxLevel = this.renderer.maxLevel;
 
