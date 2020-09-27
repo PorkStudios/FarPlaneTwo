@@ -21,10 +21,14 @@
 package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.client.gl.camera.Frustum;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
+
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -51,5 +55,21 @@ public class HeightmapRenderTree extends AbstractFarRenderTree<HeightmapPos, Hei
     protected int childIndex(int level, @NonNull HeightmapPos pos) {
         int shift = level - pos.level() - 1;
         return (((pos.x() >> shift) & 1) << 1) | ((pos.z() >> shift) & 1);
+    }
+
+    @Override
+    protected boolean intersects(int level, long node, @NonNull Volume volume) {
+        int x = PUnsafe.getInt(node + this.pos + 0 * 4L);
+        int z = PUnsafe.getInt(node + this.pos + 1 * 4L);
+        int shift = level + T_SHIFT;
+        return volume.intersects(x << shift, Integer.MIN_VALUE, z << shift, (x + 1) << shift, Integer.MAX_VALUE, (z + 1) << shift);
+    }
+
+    @Override
+    protected boolean isNodeInFrustum(int level, long node, @NonNull Frustum frustum) {
+        int x = PUnsafe.getInt(node + this.pos + 0 * 4L);
+        int z = PUnsafe.getInt(node + this.pos + 1 * 4L);
+        int shift = level + T_SHIFT;
+        return frustum.isBoundingBoxInFrustum(x << shift, Integer.MIN_VALUE, z << shift, (x + 1) << shift, Integer.MAX_VALUE, (z + 1) << shift);
     }
 }

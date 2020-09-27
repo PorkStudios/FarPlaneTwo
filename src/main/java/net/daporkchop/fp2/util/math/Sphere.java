@@ -44,35 +44,45 @@ public class Sphere extends Vec3d implements Volume {
 
     @Override
     public boolean intersects(AxisAlignedBB bb) {
+        return this.intersects(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
+    }
+
+    @Override
+    public boolean intersects(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
         double dist = sq(this.radius);
-        if (this.x < bb.minX) {
-            dist -= sq(this.x - bb.minX);
-        } else if (this.x > bb.maxX) {
-            dist -= sq(this.x - bb.maxX);
+        if (this.x < minX) {
+            dist -= sq(this.x - minX);
+        } else if (this.x > maxX) {
+            dist -= sq(this.x - maxX);
         }
-        if (this.y < bb.minY) {
-            dist -= sq(this.y - bb.minY);
-        } else if (this.x > bb.maxY) {
-            dist -= sq(this.y - bb.maxY);
+        if (this.y < minY) {
+            dist -= sq(this.y - minY);
+        } else if (this.x > maxY) {
+            dist -= sq(this.y - maxY);
         }
-        if (this.z < bb.minZ) {
-            dist -= sq(this.z - bb.minZ);
-        } else if (this.x > bb.maxZ) {
-            dist -= sq(this.z - bb.maxZ);
+        if (this.z < minZ) {
+            dist -= sq(this.z - minZ);
+        } else if (this.x > maxZ) {
+            dist -= sq(this.z - maxZ);
         }
         return dist > 0.0d;
     }
 
     @Override
     public boolean contains(AxisAlignedBB bb) {
-        return this.contains(bb.minX, bb.minY, bb.minZ)
-                && this.contains(bb.minX, bb.minY, bb.maxZ)
-                && this.contains(bb.minX, bb.maxY, bb.minZ)
-                && this.contains(bb.minX, bb.maxY, bb.maxZ)
-                && this.contains(bb.maxX, bb.minY, bb.minZ)
-                && this.contains(bb.maxX, bb.minY, bb.maxZ)
-                && this.contains(bb.maxX, bb.maxY, bb.minZ)
-                && this.contains(bb.maxX, bb.maxY, bb.maxZ);
+        return this.contains(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
+    }
+
+    @Override
+    public boolean contains(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+        return this.contains(minX, minY, minZ)
+                && this.contains(minX, minY, maxZ)
+                && this.contains(minX, maxY, minZ)
+                && this.contains(minX, maxY, maxZ)
+                && this.contains(maxX, minY, minZ)
+                && this.contains(maxX, minY, maxZ)
+                && this.contains(maxX, maxY, minZ)
+                && this.contains(maxX, maxY, maxZ);
     }
 
     @Override

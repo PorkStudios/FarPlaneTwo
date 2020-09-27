@@ -28,6 +28,7 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.IntBuffer;
 
+import static net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL15.*;
 
@@ -52,6 +53,7 @@ public class FarRenderIndex {
         this.size = mark;
     }
 
+    @Deprecated
     public boolean add(@NonNull AbstractFarRenderTile tile) {
         if (!tile.rendered) {
             return false;
@@ -65,6 +67,26 @@ public class FarRenderIndex {
                     .put(1) //instanceCount
                     .put(toInt(data.gpuIndices / this.indicesSize)) //firstIndex
                     .put(toInt(data.gpuVertices / this.vertexSize)) //baseVertex
+                    .put(0); //baseInstance
+
+            this.size++;
+        }
+        return true;
+    }
+
+    public boolean add(AbstractFarRenderTree tree, long node) {
+        if (!tree.checkFlags(node, FLAG_RENDERED)) {
+            return false;
+        }
+
+        if (tree.checkFlags(node, FLAG_OPAQUE)) { //TODO: transparent data as well
+            this.ensureWritable(5);
+
+            long data = node + tree.opaque;
+            this.buffer.put(PUnsafe.getInt(data + RENDERDATA_INDICES + GPUBUFFER_SIZE)) //count
+                    .put(1) //instanceCount
+                    .put(PUnsafe.getInt(data + RENDERDATA_INDICES + GPUBUFFER_OFF)) //firstIndex
+                    .put(PUnsafe.getInt(data + RENDERDATA_VERTICES + GPUBUFFER_OFF)) //baseVertex
                     .put(0); //baseInstance
 
             this.size++;

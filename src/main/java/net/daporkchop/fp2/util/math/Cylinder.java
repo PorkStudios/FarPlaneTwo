@@ -42,26 +42,36 @@ public class Cylinder implements Volume {
 
     @Override
     public boolean intersects(AxisAlignedBB bb) {
+        return this.intersects(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
+    }
+
+    @Override
+    public boolean intersects(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
         double dist = sq(this.radius);
-        if (this.x < bb.minX) {
-            dist -= sq(this.x - bb.minX);
-        } else if (this.x > bb.maxX) {
-            dist -= sq(this.x - bb.maxX);
+        if (this.x < minX) {
+            dist -= sq(this.x - minX);
+        } else if (this.x > maxX) {
+            dist -= sq(this.x - maxX);
         }
-        if (this.z < bb.minZ) {
-            dist -= sq(this.z - bb.minZ);
-        } else if (this.x > bb.maxZ) {
-            dist -= sq(this.z - bb.maxZ);
+        if (this.z < minZ) {
+            dist -= sq(this.z - minZ);
+        } else if (this.x > maxZ) {
+            dist -= sq(this.z - maxZ);
         }
         return dist > 0.0d;
     }
 
     @Override
     public boolean contains(AxisAlignedBB bb) {
-        return this.contains(bb.minX, 0.0d, bb.minZ)
-                && this.contains(bb.minX, 0.0d, bb.maxZ)
-                && this.contains(bb.minX, 0.0d, bb.minZ)
-                && this.contains(bb.minX, 0.0d, bb.maxZ);
+        return this.contains(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
+    }
+
+    @Override
+    public boolean contains(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+        return this.contains(minX, 0.0d, minZ)
+               && this.contains(minX, 0.0d, maxZ)
+               && this.contains(minX, 0.0d, minZ)
+               && this.contains(minX, 0.0d, maxZ);
     }
 
     @Override

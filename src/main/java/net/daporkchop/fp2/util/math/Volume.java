@@ -27,14 +27,24 @@ import net.minecraft.util.math.AxisAlignedBB;
  */
 public interface Volume {
     /**
-     * @return whether or not this volume intersects with the given bounding box
+     * @return whether or not this volume intersects the given bounding box
      */
     boolean intersects(AxisAlignedBB bb);
+
+    /**
+     * @return whether or not this volume intersects the given bounding box
+     */
+    boolean intersects(double minX, double minY, double minZ, double maxX, double maxY, double maxZ);
 
     /**
      * @return whether or not this volume contains the entire bounding box
      */
     boolean contains(AxisAlignedBB bb);
+
+    /**
+     * @return whether or not this volume contains the entire bounding box
+     */
+    boolean contains(double minX, double minY, double minZ, double maxX, double maxY, double maxZ);
 
     /**
      * @return whether or not this volume contains the given point

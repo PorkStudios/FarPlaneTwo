@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.common.client;
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.client.gl.camera.Frustum;
 import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
 import net.daporkchop.fp2.client.gl.object.ElementArrayObject;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
@@ -37,14 +38,12 @@ import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.util.GenericMatcher;
 import net.daporkchop.lib.common.util.PorkUtil;
-import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 import net.minecraft.client.renderer.culling.ICamera;
 
 import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntFunction;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
@@ -64,6 +63,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     protected final AbstractFarRenderer<POS, P, T> renderer;
 
     protected final AbstractFarRenderTree<POS, P> tree;
+    protected final Map<POS, P> pieces = new ConcurrentHashMap<>();
 
     protected final IntFunction<POS[]> posArray;
     protected final IntFunction<P[]> pieceArray;
@@ -95,6 +95,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
         Class<T> tileClass = GenericMatcher.uncheckedFind(this.getClass(), AbstractFarRenderCache.class, "T");
         this.tileArray = size -> uncheckedCast(Array.newInstance(tileClass, size));
 
+        this.vertexSize = vertexSize;
         switch (this.indexType = (this.baker = renderer.baker()).indexType()) {
             case GL_UNSIGNED_BYTE:
                 this.indexSize = 1;
@@ -111,7 +112,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
         this.tree = this.createTree();
 
-        this.verticesAllocator = new VariableSizedAllocator(this.vertexSize = vertexSize, (oldSize, newSize) -> {
+        this.verticesAllocator = new VariableSizedAllocator(this.vertexSize, (oldSize, newSize) -> {
             LOGGER.info("Growing vertices buffer from {} to {} bytes", oldSize, newSize);
 
             try (VertexBufferObject vertices = this.vertices.bind()) {
@@ -174,15 +175,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     public void receivePiece(@NonNull P pieceIn) {
         final int maxLevel = this.renderer.maxLevel;
 
-        { //insert new tile with piece
-            POS rootPos = uncheckedCast(pieceIn.pos().upTo(maxLevel));
-            T rootTile = this.roots.get(rootPos);
-            if (rootTile == null) {
-                //create root tile if absent
-                this.roots.put(rootPos, rootTile = this.createTile(null, rootPos));
-            }
-            rootTile.findOrCreateChild(pieceIn.pos()).setPiece(pieceIn);
-        }
+        this.pieces.put(pieceIn.pos(), pieceIn);
 
         this.baker.bakeOutputs(pieceIn.pos())
                 .forEach(pos -> {
@@ -191,17 +184,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                     }
 
                     P[] inputPieces = this.baker.bakeInputs(pos)
-                            .map(inputPos -> {
-                                int inputLevel = inputPos.level();
-                                if (inputLevel < 0 || inputLevel > maxLevel) {
-                                    return null;
-                                }
-
-                                POS rootPos = uncheckedCast(inputPos.upTo(maxLevel));
-                                T rootTile = this.roots.get(rootPos);
-                                return rootTile != null ? rootTile.findChild(inputPos) : null;
-                            })
-                            .map(t -> t != null ? t.piece : null)
+                            .map(this.pieces::get)
                             .toArray(this.pieceArray);
 
                     P piece = Arrays.stream(inputPieces).filter(p -> p != null && pos.equals(p.pos())).findAny().orElse(null);
@@ -210,53 +193,35 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                     }
 
                     RENDER_WORKERS.submit(pos, () -> {
+                        if (this.pieces.get(pos) != piece) { //piece was modified before this task could be executed
+                            return;
+                        }
+
                         ByteBuf vertices = Constants.allocateByteBuf(this.baker.estimatedVerticesBufferCapacity());
                         ByteBuf indices = Constants.allocateByteBuf(this.baker.estimatedIndicesBufferCapacity());
-                        try {
-                            this.baker.bake(pos, inputPieces, vertices, indices);
+                        this.baker.bake(pos, inputPieces, vertices, indices);
 
-                            if (true || (vertices.isReadable() && indices.isReadable())) {
-                                //retain buffers, since they're released by the finally block
-                                vertices.retain();
-                                indices.retain();
-
-                                //upload to GPU on client thread
-                                ClientThreadExecutor.INSTANCE.execute(() -> {
-                                    try {
-                                        this.addPiece(piece, vertices, indices);
-                                    } finally {
-                                        vertices.release();
-                                        indices.release();
-                                    }
-                                });
-                            }
-                        } finally {
-                            vertices.release();
-                            indices.release();
-                        }
+                        //upload to GPU on client thread
+                        ClientThreadExecutor.INSTANCE.execute(() -> this.addPiece(piece, vertices, indices));
                     });
                 });
     }
 
     public void addPiece(@NonNull P piece, @NonNull ByteBuf vertices, @NonNull ByteBuf indices) {
-        POS pos = piece.pos();
-        POS rootPos = uncheckedCast(pos.upTo(this.renderer.maxLevel));
+        try {
+            POS pos = piece.pos();
+            if (this.pieces.get(pos) != piece) {
+                return;
+            }
 
-        //the tile should already have been created by the head of receivePiece, if it's not there it's been removed while the tile was baking
-        T rootTile = this.roots.get(rootPos);
-        if (rootTile == null) {
-            //create root tile if absent
-            this.roots.put(rootPos, rootTile = this.createTile(null, rootPos));
+            try (VertexBufferObject verticesBuffer = this.vertices.bind();
+                 ElementArrayObject indicesBuffer = this.indices.bind()) {
+                this.tree.putRenderData(pos, vertices, indices);
+            }
+        } finally {
+            vertices.release();
+            indices.release();
         }
-        T tile = rootTile.findOrCreateChild(pos);
-
-        if (tile.piece != piece) {
-            return;
-        }
-
-        //allocate address for tile
-        tile.setOpaque(vertices, indices);
-        tile.rendered = true;
     }
 
     public void unloadPiece(@NonNull POS pos) {
@@ -266,29 +231,15 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     }
 
     public void removePiece(@NonNull POS pos) {
-        POS rootPos = uncheckedCast(pos.upTo(this.renderer.maxLevel));
-        T rootTile = this.roots.get(rootPos);
-        if (rootTile != null) {
-            T unloadedTile = rootTile.findChild(pos);
-            if (unloadedTile != null && unloadedTile.hasPiece()) {
-                //inform tile that the address has been freed
-                if (unloadedTile.dropPiece()) {
-                    this.roots.remove(rootPos);
-                }
-                return;
-            }
+        if (this.pieces.remove(pos) == null) {
+            Constants.LOGGER.warn("Attempted to unload already non-existent piece at {}!", pos);
         }
-        Constants.LOGGER.warn("Attempted to unload already non-existent piece at {}!", pos);
-    }
-
-    public T getTile(@NonNull POS pos) {
-        T rootTile = this.roots.get(PorkUtil.<POS>uncheckedCast(pos.upTo(this.renderer.maxLevel)));
-        return rootTile != null ? rootTile.findChild(pos) : null;
+        this.tree.removeNode(pos);
     }
 
     public int rebuildIndex(@NonNull Volume[] ranges, @NonNull ICamera frustum) {
         this.index.reset();
-        this.roots.forEach((l, tile) -> tile.select(ranges, frustum, this.index));
+        this.tree.select(ranges, (Frustum) frustum, this.index);
         if (this.index.size == 0) {
             return 0;
         }
