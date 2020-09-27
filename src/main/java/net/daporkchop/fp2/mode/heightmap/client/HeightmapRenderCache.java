@@ -22,6 +22,7 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderCache;
+import net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 
@@ -31,6 +32,11 @@ import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 public class HeightmapRenderCache extends AbstractFarRenderCache<HeightmapPos, HeightmapPiece, HeightmapRenderTile> {
     public HeightmapRenderCache(@NonNull HeightmapRenderer renderer) {
         super(renderer, HeightmapRenderBaker.HEIGHTMAP_VERTEX_SIZE);
+    }
+
+    @Override
+    protected HeightmapRenderTree createTree() {
+        return new HeightmapRenderTree(this);
     }
 
     @Override

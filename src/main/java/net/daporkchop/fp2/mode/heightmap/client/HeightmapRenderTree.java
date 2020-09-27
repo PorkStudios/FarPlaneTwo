@@ -24,13 +24,27 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 /**
  * @author DaPorkchop_
  */
 public class HeightmapRenderTree extends AbstractFarRenderTree<HeightmapPos, HeightmapPiece> {
-    public HeightmapRenderTree() {
-        super(2);
+    public HeightmapRenderTree(@NonNull HeightmapRenderCache cache) {
+        super(cache, 2);
+    }
+
+    @Override
+    protected void storePos(long pos, @NonNull HeightmapPos toStore) {
+        PUnsafe.putInt(pos + 0 * 4L, toStore.x());
+        PUnsafe.putInt(pos + 1 * 4L, toStore.z());
+    }
+
+    @Override
+    protected boolean isPosEqual(int aLevel, long aPos, @NonNull HeightmapPos b) {
+        return aLevel == b.level()
+               && PUnsafe.getInt(aPos + 0 * 4L) == b.x()
+               && PUnsafe.getInt(aPos + 1 * 4L) == b.z();
     }
 
     @Override

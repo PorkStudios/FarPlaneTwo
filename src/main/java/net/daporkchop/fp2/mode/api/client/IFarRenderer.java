@@ -39,6 +39,4 @@ public interface IFarRenderer<POS extends IFarPos, P extends IFarPiece<POS>> {
     void receivePiece(@NonNull P piece);
 
     void unloadPiece(@NonNull POS pos);
-
-    void debug_renderPieces();
 }

@@ -75,9 +75,6 @@ public class ClientEvents {
             if (KeyBindings.DROP_PIECES.isPressed()) {
                 NETWORK_WRAPPER.sendToServer(new CPacketDropAllPieces());
             }
-            if (KeyBindings.RENDER_PIECES.isPressed()) {
-                ((IFarContext) mc.world).renderer().debug_renderPieces();
-            }
             if (KeyBindings.TOGGLE_VANILLA_RENDER.isPressed()) {
                 FP2Config.debug.skipRenderWorld ^= true;
                 mc.player.sendMessage(new TextComponentString((FP2Config.debug.skipRenderWorld ? "§cDisabled" : "§aEnabled") + " vanilla terrain."));

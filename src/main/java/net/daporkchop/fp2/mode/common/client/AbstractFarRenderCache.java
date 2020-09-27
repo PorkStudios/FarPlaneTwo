@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.function.IntFunction;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
+import static net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -62,7 +63,7 @@ import static org.lwjgl.opengl.GL40.*;
 public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFarPiece<POS>, T extends AbstractFarRenderTile<POS, P, T>> {
     protected final AbstractFarRenderer<POS, P, T> renderer;
 
-    protected final Map<POS, T> roots = new ObjObjOpenHashMap<>();
+    protected final AbstractFarRenderTree<POS, P> tree;
 
     protected final IntFunction<POS[]> posArray;
     protected final IntFunction<P[]> pieceArray;
@@ -108,19 +109,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                 throw new IllegalArgumentException(PStrings.fastFormat("Invalid index type: %d", this.indexType));
         }
 
-        this.indicesAllocator = new VariableSizedAllocator(this.indexSize, (oldSize, newSize) -> {
-            LOGGER.info("Growing indices buffer from {} to {} bytes", oldSize, newSize);
-
-            try (ElementArrayObject indices = this.indices.bind()) {
-                //grow SSBO
-                glBufferData(GL_ELEMENT_ARRAY_BUFFER, newSize, GL_STATIC_DRAW);
-
-                //re-upload data
-                this.roots.forEach((l, root) -> root.forEach(AbstractFarRenderTile::uploadIndices));
-            }
-
-            this.rebuildVAO();
-        });
+        this.tree = this.createTree();
 
         this.verticesAllocator = new VariableSizedAllocator(this.vertexSize = vertexSize, (oldSize, newSize) -> {
             LOGGER.info("Growing vertices buffer from {} to {} bytes", oldSize, newSize);
@@ -130,7 +119,21 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                 glBufferData(GL_ARRAY_BUFFER, newSize, GL_STATIC_DRAW);
 
                 //re-upload data
-                this.roots.forEach((l, root) -> root.forEach(AbstractFarRenderTile::uploadVertices));
+                this.tree.forEach(this.tree::uploadVertices, FLAG_RENDERED);
+            }
+
+            this.rebuildVAO();
+        });
+
+        this.indicesAllocator = new VariableSizedAllocator(this.indexSize, (oldSize, newSize) -> {
+            LOGGER.info("Growing indices buffer from {} to {} bytes", oldSize, newSize);
+
+            try (ElementArrayObject indices = this.indices.bind()) {
+                //grow SSBO
+                glBufferData(GL_ELEMENT_ARRAY_BUFFER, newSize, GL_STATIC_DRAW);
+
+                //re-upload data
+                this.tree.forEach(this.tree::uploadIndices, FLAG_RENDERED);
             }
 
             this.rebuildVAO();
@@ -164,15 +167,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
         }
     }
 
-    public void debug_renderPieces() {
-        Collection<P> pieces = new ArrayList<>();
-        this.roots.values().forEach(tile -> tile.forEach(t -> {
-            if (t.piece != null) {
-                pieces.add(t.piece);
-            }
-        }));
-        pieces.forEach(this::receivePiece);
-    }
+    protected abstract AbstractFarRenderTree<POS, P> createTree();
 
     public abstract T createTile(T parent, @NonNull POS pos);
 

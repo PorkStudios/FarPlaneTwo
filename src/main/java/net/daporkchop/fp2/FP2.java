@@ -37,12 +37,14 @@ import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.ldbjni.LevelDB;
 import net.daporkchop.lib.common.misc.string.PStrings;
+import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
@@ -72,6 +74,16 @@ public class FP2 {
     public void preInit(FMLPreInitializationEvent event) {
         LOGGER = event.getModLog();
 
+        if (!PlatformInfo.IS_64BIT) { //require 64-bit
+            bigWarning("Your system or JVM is not 64-bit!\nRequired by FarPlaneTwo.");
+            if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
+                JOptionPane.showMessageDialog(null,
+                        "Your system or JVM is not 64-bit!\nRequired by FarPlaneTwo.",
+                        null, JOptionPane.ERROR_MESSAGE);
+            }
+            FMLCommonHandler.instance().exitJava(1, true);
+        }
+
         System.setProperty("porklib.native.printStackTraces", "true");
         if (!Zstd.PROVIDER.isNative()) {
             Constants.bigWarning("Native ZSTD could not be loaded! This will have SERIOUS performance implications!");
@@ -83,8 +95,9 @@ public class FP2 {
         this.registerPackets();
 
         MinecraftForge.EVENT_BUS.register(new ServerEvents());
+
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-            if (!GLContext.getCapabilities().OpenGL43) {
+            if (!GLContext.getCapabilities().OpenGL43) { //require at least OpenGL 4.3
                 JOptionPane.showMessageDialog(null,
                         "Your system does not support OpenGL 4.3!\nRequired by FarPlaneTwo.",
                         null, JOptionPane.ERROR_MESSAGE);

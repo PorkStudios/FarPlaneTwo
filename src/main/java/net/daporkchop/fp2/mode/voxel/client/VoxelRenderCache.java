@@ -22,6 +22,7 @@ package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderCache;
+import net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree;
 import net.daporkchop.fp2.mode.voxel.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 
@@ -31,6 +32,11 @@ import net.daporkchop.fp2.mode.voxel.VoxelPos;
 public class VoxelRenderCache extends AbstractFarRenderCache<VoxelPos, VoxelPiece, VoxelRenderTile> {
     public VoxelRenderCache(@NonNull VoxelRenderer renderer) {
         super(renderer, VoxelRenderBaker.VOXEL_VERTEX_SIZE);
+    }
+
+    @Override
+    protected VoxelRenderTree createTree() {
+        return new VoxelRenderTree(this);
     }
 
     @Override

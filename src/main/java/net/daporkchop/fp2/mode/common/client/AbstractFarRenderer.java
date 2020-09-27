@@ -82,11 +82,6 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
         ClientThreadExecutor.INSTANCE.execute(() -> this.cache.unloadPiece(pos));
     }
 
-    @Override
-    public void debug_renderPieces() {
-        this.cache.debug_renderPieces();
-    }
-
     /**
      * @return the {@link IFarRenderBaker} used by this renderer
      */

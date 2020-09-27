@@ -24,13 +24,29 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree;
 import net.daporkchop.fp2.mode.voxel.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 /**
  * @author DaPorkchop_
  */
 public class VoxelRenderTree extends AbstractFarRenderTree<VoxelPos, VoxelPiece> {
-    public VoxelRenderTree() {
-        super(3);
+    public VoxelRenderTree(@NonNull VoxelRenderCache cache) {
+        super(cache, 3);
+    }
+
+    @Override
+    protected void storePos(long pos, @NonNull VoxelPos toStore) {
+        PUnsafe.putInt(pos + 0 * 4L, toStore.x());
+        PUnsafe.putInt(pos + 1 * 4L, toStore.y());
+        PUnsafe.putInt(pos + 2 * 4L, toStore.z());
+    }
+
+    @Override
+    protected boolean isPosEqual(int aLevel, long aPos, @NonNull VoxelPos b) {
+        return aLevel == b.level()
+               && PUnsafe.getInt(aPos + 0 * 4L) == b.x()
+               && PUnsafe.getInt(aPos + 1 * 4L) == b.y()
+               && PUnsafe.getInt(aPos + 2 * 4L) == b.z();
     }
 
     @Override
