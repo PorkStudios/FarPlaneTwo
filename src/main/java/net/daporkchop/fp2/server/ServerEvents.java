@@ -20,16 +20,14 @@
 
 package net.daporkchop.fp2.server;
 
-import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorldServer;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.net.server.SPacketReady;
-import net.daporkchop.fp2.strategy.common.IFarContext;
-import net.daporkchop.fp2.strategy.common.server.IFarPlayerTracker;
+import net.daporkchop.fp2.mode.api.IFarContext;
+import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.text.TextComponentString;
-import net.minecraft.world.WorldServer;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;

@@ -22,9 +22,8 @@ package net.daporkchop.fp2.client;
 
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2Config;
-import net.daporkchop.fp2.strategy.common.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.keyed.DefaultKeyedTaskScheduler;
 import net.daporkchop.fp2.util.threading.keyed.KeyedTaskScheduler;
 import net.daporkchop.fp2.util.threading.keyed.PriorityKeyedTaskScheduler;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;

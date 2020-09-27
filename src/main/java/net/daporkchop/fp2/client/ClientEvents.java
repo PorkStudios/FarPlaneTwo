@@ -26,7 +26,7 @@ import net.daporkchop.fp2.asm.client.gui.IGuiScreen;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
 import net.daporkchop.fp2.net.client.CPacketDropAllPieces;
-import net.daporkchop.fp2.strategy.common.IFarContext;
+import net.daporkchop.fp2.mode.api.IFarContext;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiVideoSettings;
 import net.minecraft.util.text.TextComponentString;

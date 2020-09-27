@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2;
 
-import net.daporkchop.fp2.strategy.RenderMode;
+import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.fml.relauncher.Side;

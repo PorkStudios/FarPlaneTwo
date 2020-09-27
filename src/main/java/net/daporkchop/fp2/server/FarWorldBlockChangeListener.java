@@ -22,7 +22,7 @@ package net.daporkchop.fp2.server;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.strategy.common.server.IFarWorld;
+import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;

@@ -21,9 +21,9 @@
 package net.daporkchop.fp2.asm.client.multiplayer;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.RenderMode;
-import net.daporkchop.fp2.strategy.common.IFarContext;
-import net.daporkchop.fp2.strategy.common.client.IFarRenderer;
+import net.daporkchop.fp2.mode.RenderMode;
+import net.daporkchop.fp2.mode.api.IFarContext;
+import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Implements;

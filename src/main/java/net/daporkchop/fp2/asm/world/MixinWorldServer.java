@@ -21,10 +21,10 @@
 package net.daporkchop.fp2.asm.world;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.strategy.RenderMode;
-import net.daporkchop.fp2.strategy.common.IFarContext;
-import net.daporkchop.fp2.strategy.common.server.IFarPlayerTracker;
-import net.daporkchop.fp2.strategy.common.server.IFarWorld;
+import net.daporkchop.fp2.mode.RenderMode;
+import net.daporkchop.fp2.mode.api.IFarContext;
+import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
+import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.cc.CCAsyncBlockAccessImpl;
