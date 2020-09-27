@@ -44,7 +44,7 @@ import static org.lwjgl.opengl.GL43.*;
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, HeightmapPiece, HeightmapRenderTile> {
+public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, HeightmapPiece> {
     public static final ShaderProgram TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
     public static final ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
 

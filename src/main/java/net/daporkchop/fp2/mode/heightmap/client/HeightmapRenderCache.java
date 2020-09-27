@@ -29,7 +29,7 @@ import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 /**
  * @author DaPorkchop_
  */
-public class HeightmapRenderCache extends AbstractFarRenderCache<HeightmapPos, HeightmapPiece, HeightmapRenderTile> {
+public class HeightmapRenderCache extends AbstractFarRenderCache<HeightmapPos, HeightmapPiece> {
     public HeightmapRenderCache(@NonNull HeightmapRenderer renderer) {
         super(renderer, HeightmapRenderBaker.HEIGHTMAP_VERTEX_SIZE);
     }
@@ -37,10 +37,5 @@ public class HeightmapRenderCache extends AbstractFarRenderCache<HeightmapPos, H
     @Override
     protected HeightmapRenderTree createTree() {
         return new HeightmapRenderTree(this);
-    }
-
-    @Override
-    public HeightmapRenderTile createTile(HeightmapRenderTile parent, @NonNull HeightmapPos pos) {
-        return new HeightmapRenderTile(this, parent, pos);
     }
 }

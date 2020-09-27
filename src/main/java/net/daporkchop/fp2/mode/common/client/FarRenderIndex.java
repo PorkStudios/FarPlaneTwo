@@ -53,33 +53,12 @@ public class FarRenderIndex {
         this.size = mark;
     }
 
-    @Deprecated
-    public boolean add(@NonNull AbstractFarRenderTile tile) {
-        if (!tile.rendered) {
-            return false;
-        }
-
-        if (tile.renderOpaque != null) { //TODO: transparent data as well
-            this.ensureWritable(5);
-
-            FarRenderData data = tile.renderOpaque;
-            this.buffer.put(data.sizeIndices / this.indicesSize) //count
-                    .put(1) //instanceCount
-                    .put(toInt(data.gpuIndices / this.indicesSize)) //firstIndex
-                    .put(toInt(data.gpuVertices / this.vertexSize)) //baseVertex
-                    .put(0); //baseInstance
-
-            this.size++;
-        }
-        return true;
-    }
-
     public boolean add(AbstractFarRenderTree tree, long node) {
-        if (!tree.checkFlags(node, FLAG_RENDERED)) {
+        if (!tree.checkFlagsAND(node, FLAG_RENDERED)) {
             return false;
         }
 
-        if (tree.checkFlags(node, FLAG_OPAQUE)) { //TODO: transparent data as well
+        if (tree.checkFlagsAND(node, FLAG_OPAQUE)) { //TODO: transparent data as well
             this.ensureWritable(5);
 
             long data = node + tree.opaque;

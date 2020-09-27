@@ -59,15 +59,14 @@ import static org.lwjgl.opengl.GL40.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFarPiece<POS>, T extends AbstractFarRenderTile<POS, P, T>> {
-    protected final AbstractFarRenderer<POS, P, T> renderer;
+public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFarPiece<POS>> {
+    protected final AbstractFarRenderer<POS, P> renderer;
 
     protected final AbstractFarRenderTree<POS, P> tree;
     protected final Map<POS, P> pieces = new ConcurrentHashMap<>();
 
     protected final IntFunction<POS[]> posArray;
     protected final IntFunction<P[]> pieceArray;
-    protected final IntFunction<T[]> tileArray;
 
     protected final DrawIndirectBuffer drawCommandBuffer = new DrawIndirectBuffer();
 
@@ -85,15 +84,13 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
     protected final IFarRenderBaker<POS, P> baker;
 
-    public AbstractFarRenderCache(@NonNull AbstractFarRenderer<POS, P, T> renderer, int vertexSize) {
+    public AbstractFarRenderCache(@NonNull AbstractFarRenderer<POS, P> renderer, int vertexSize) {
         this.renderer = renderer;
 
-        Class<T> posClass = GenericMatcher.uncheckedFind(this.getClass(), AbstractFarRenderCache.class, "POS");
+        Class<POS> posClass = GenericMatcher.uncheckedFind(this.getClass(), AbstractFarRenderCache.class, "POS");
         this.posArray = size -> uncheckedCast(Array.newInstance(posClass, size));
-        Class<T> pieceClass = GenericMatcher.uncheckedFind(this.getClass(), AbstractFarRenderCache.class, "P");
+        Class<P> pieceClass = GenericMatcher.uncheckedFind(this.getClass(), AbstractFarRenderCache.class, "P");
         this.pieceArray = size -> uncheckedCast(Array.newInstance(pieceClass, size));
-        Class<T> tileClass = GenericMatcher.uncheckedFind(this.getClass(), AbstractFarRenderCache.class, "T");
-        this.tileArray = size -> uncheckedCast(Array.newInstance(tileClass, size));
 
         this.vertexSize = vertexSize;
         switch (this.indexType = (this.baker = renderer.baker()).indexType()) {
@@ -169,8 +166,6 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     }
 
     protected abstract AbstractFarRenderTree<POS, P> createTree();
-
-    public abstract T createTile(T parent, @NonNull POS pos);
 
     public void receivePiece(@NonNull P pieceIn) {
         final int maxLevel = this.renderer.maxLevel;

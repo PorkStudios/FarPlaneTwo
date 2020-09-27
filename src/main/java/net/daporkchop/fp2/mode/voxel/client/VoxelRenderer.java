@@ -40,7 +40,7 @@ import static org.lwjgl.opengl.GL43.*;
 /**
  * @author DaPorkchop_
  */
-public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece, VoxelRenderTile> {
+public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
     public static final ShaderProgram SOLID_SHADER = ShaderManager.get("voxel/solid");
 
     public VoxelRenderer(@NonNull WorldClient world) {

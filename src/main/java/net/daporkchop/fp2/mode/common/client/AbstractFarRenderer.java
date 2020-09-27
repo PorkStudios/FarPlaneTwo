@@ -44,6 +44,7 @@ import net.minecraft.entity.Entity;
 import java.nio.IntBuffer;
 
 import static net.daporkchop.fp2.client.TexUVs.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
@@ -53,8 +54,8 @@ import static org.lwjgl.opengl.GL45.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPiece<POS>, T extends AbstractFarRenderTile<POS, P, T>> implements IFarRenderer<POS, P> {
-    protected final AbstractFarRenderCache<POS, P, T> cache;
+public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPiece<POS>> implements IFarRenderer<POS, P> {
+    protected final AbstractFarRenderCache<POS, P> cache;
 
     protected final int maxLevel = FP2Config.maxLevels - 1;
 
@@ -70,7 +71,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
 
     protected abstract void createRenderData();
 
-    protected abstract AbstractFarRenderCache<POS, P, T> createCache();
+    protected abstract AbstractFarRenderCache<POS, P> createCache();
 
     @Override
     public void receivePiece(@NonNull P piece) {
@@ -125,7 +126,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
         double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks;
         double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
         for (int i = 0; i < ranges.length; i++) {
-            ranges[i] = new Sphere(x, y, z, FP2Config.levelCutoffDistance << i);
+            ranges[i] = new Sphere(x, y, z, FP2Config.levelCutoffDistance + T_VOXELS << i);
         }
         return ranges;
     }

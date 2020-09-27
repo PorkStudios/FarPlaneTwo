@@ -53,7 +53,7 @@ import static org.lwjgl.opengl.GL15.*;
  */
 public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractReleasable {
     //this is enough levels for the tree to encompass the entire minecraft world
-    public static final int DEPTH = 31 - Integer.numberOfLeadingZeros(60_000_000 >> T_SHIFT);
+    public static final int DEPTH = 32 - Integer.numberOfLeadingZeros(60_000_000 >> T_SHIFT);
 
     /*
      * Constants:
@@ -65,9 +65,8 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
      *   - 0x01: bottom
      *   - 0x02: placeholder //whether or not this node is a placeholder and cannot actually store any data
      *   - 0x03: rendered
-     *   //- 0x04: selfOrAnyChildrenRendered
-     *   - 0x05: opaque
-     *   - 0x06: transparent
+     *   - 0x04: opaque
+     *   - 0x05: transparent
      *   int pos[D]; //only stores X(Y)Z coordinates, level is computed dynamically based on recursion depth
      *   RenderData opaque;
      *   RenderData transparent;
@@ -91,9 +90,8 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
     public static final int FLAG_BOTTOM = 1 << 1;
     public static final int FLAG_PLACEHOLDER = 1 << 2;
     public static final int FLAG_RENDERED = 1 << 3;
-    //public static final int FLAG_SELFORANYCHILDRENRENDERED = 1 << 4;
-    public static final int FLAG_OPAQUE = 1 << 5;
-    public static final int FLAG_TRANSPARENT = 1 << 6;
+    public static final int FLAG_OPAQUE = 1 << 4;
+    public static final int FLAG_TRANSPARENT = 1 << 5;
 
     protected static final long GPUBUFFER_ADDR = 0L;
     protected static final long GPUBUFFER_OFF = GPUBUFFER_ADDR + 8L;
@@ -118,11 +116,11 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
     protected final int maxLevel;
 
     protected final long root;
-    protected final AbstractFarRenderCache<POS, P, ?> cache;
+    protected final AbstractFarRenderCache<POS, P> cache;
 
     protected final PCleaner cleaner;
 
-    public AbstractFarRenderTree(@NonNull AbstractFarRenderCache<POS, P, ?> cache, int d) {
+    public AbstractFarRenderTree(@NonNull AbstractFarRenderCache<POS, P> cache, int d) {
         this.d = positive(d, "d");
 
         this.flags = 0L;
@@ -194,8 +192,8 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
     /**
      * Checks whether or not the given node is in the given frustum.
      *
-     * @param level  the node's level
-     * @param node   the node
+     * @param level   the node's level
+     * @param node    the node
      * @param frustum the frustum to check for intersection with
      * @return whether or not the given node is in the given frustum
      */
@@ -208,8 +206,19 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
      * @param flags the flags to check for
      * @return whether or not the given node has all of the given flags set
      */
-    public boolean checkFlags(long node, int flags) {
+    public boolean checkFlagsAND(long node, int flags) {
         return (PUnsafe.getInt(node + this.flags) & flags) == flags;
+    }
+
+    /**
+     * Checks whether or not the given node has any of the given flags set.
+     *
+     * @param node  the node to check
+     * @param flags the flags to check for
+     * @return whether or not the given node has any of the given flags set
+     */
+    public boolean checkFlagsOR(long node, int flags) {
+        return (PUnsafe.getInt(node + this.flags) & flags) != 0;
     }
 
     /**
@@ -245,7 +254,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
     }
 
     protected void forEach0(long node, LongConsumer action, int requiredFlags) {
-        if (this.checkFlags(node, requiredFlags)) {
+        if (this.checkFlagsAND(node, requiredFlags)) {
             action.accept(node);
         }
 
@@ -291,7 +300,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
     }
 
     protected void setRenderData(long node, long data, int layerFlag, ByteBuf vertices, ByteBuf indices) {
-        if (this.checkFlags(node, layerFlag)) { //render layer already has data which needs to be released first
+        if (this.checkFlagsAND(node, layerFlag)) { //render layer already has data which needs to be released first
             //free vertex data
             PUnsafe.freeMemory(PUnsafe.getLong(data + RENDERDATA_VERTICES + GPUBUFFER_ADDR));
             this.cache.verticesAllocator.free((long) PUnsafe.getInt(data + RENDERDATA_VERTICES + GPUBUFFER_OFF) * this.vertexSize);
@@ -326,31 +335,6 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
         } else {
             this.clearFlags(node, layerFlag);
         }
-    }
-
-    /**
-     * Gets the node at the given position, creating it if it doesn't exist.
-     *
-     * @param pos the position of the node to get
-     * @return the node at the given position
-     */
-    public long getOrCreateNode(@NonNull POS pos) {
-        return this.getOrCreateNode0(DEPTH, this.root, pos);
-    }
-
-    protected long getOrCreateNode0(int level, long node, POS pos) {
-        long child = this.findChildStep(level, node, pos);
-        if (child == 0L) { //next node doesn't exist
-            //allocate new node
-            child = this.createNode(level - 1, uncheckedCast(pos.upTo(level - 1)));
-
-            //store pointer into children array
-            PUnsafe.putLong(node + this.children + this.childIndex(level, pos) * 8L, child);
-        } else if (child == node) { //we are currently at the target node
-            return node;
-        }
-
-        return this.getOrCreateNode0(level - 1, child, pos);
     }
 
     protected long createNode(int level, POS pos) {
@@ -400,7 +384,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
                 //remove reference to child from children array
                 PUnsafe.putLong(node + this.children + this.childIndex(level, pos) * 8L, 0L);
 
-                if (!this.checkFlags(node, FLAG_RENDERED)) { //node itself hasn't been rendered
+                if (!this.checkFlagsAND(node, FLAG_RENDERED)) { //node itself hasn't been rendered
                     //search for any other non-null children
                     for (int i = 0, childCount = this.childCount(); i < childCount; i++) {
                         if (PUnsafe.getLong(node + this.children + i * 8L) != 0L) { //if a non-null child is found, this node cannot be deleted
@@ -415,11 +399,11 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
             return false; //no further changes are necessary
         } else { //current node is the target node
             //free render data allocations
-            if (this.checkFlags(node, FLAG_OPAQUE)) {
+            if (this.checkFlagsAND(node, FLAG_OPAQUE)) {
                 PUnsafe.freeMemory(PUnsafe.getLong(node + this.opaque + RENDERDATA_VERTICES + GPUBUFFER_ADDR));
                 PUnsafe.freeMemory(PUnsafe.getLong(node + this.opaque + RENDERDATA_INDICES + GPUBUFFER_ADDR));
             }
-            if (this.checkFlags(node, FLAG_TRANSPARENT)) {
+            if (this.checkFlagsAND(node, FLAG_TRANSPARENT)) {
                 PUnsafe.freeMemory(PUnsafe.getLong(node + this.transparent + RENDERDATA_VERTICES + GPUBUFFER_ADDR));
                 PUnsafe.freeMemory(PUnsafe.getLong(node + this.transparent + RENDERDATA_INDICES + GPUBUFFER_ADDR));
             }
@@ -445,19 +429,19 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
     }
 
     public void uploadVertices(long node) {
-        if (this.checkFlags(node, FLAG_RENDERED | FLAG_OPAQUE)) {
+        if (this.checkFlagsAND(node, FLAG_RENDERED | FLAG_OPAQUE)) {
             this.uploadGpuBuffer(GL_ARRAY_BUFFER, node + this.opaque + RENDERDATA_VERTICES, this.vertexSize);
         }
-        if (this.checkFlags(node, FLAG_RENDERED | FLAG_TRANSPARENT)) {
+        if (this.checkFlagsAND(node, FLAG_RENDERED | FLAG_TRANSPARENT)) {
             this.uploadGpuBuffer(GL_ARRAY_BUFFER, node + this.transparent + RENDERDATA_VERTICES, this.vertexSize);
         }
     }
 
     public void uploadIndices(long node) {
-        if (this.checkFlags(node, FLAG_RENDERED | FLAG_OPAQUE)) {
+        if (this.checkFlagsAND(node, FLAG_RENDERED | FLAG_OPAQUE)) {
             this.uploadGpuBuffer(GL_ELEMENT_ARRAY_BUFFER, node + this.opaque + RENDERDATA_INDICES, this.indexSize);
         }
-        if (this.checkFlags(node, FLAG_RENDERED | FLAG_TRANSPARENT)) {
+        if (this.checkFlagsAND(node, FLAG_RENDERED | FLAG_TRANSPARENT)) {
             this.uploadGpuBuffer(GL_ELEMENT_ARRAY_BUFFER, node + this.transparent + RENDERDATA_INDICES, this.indexSize);
         }
     }
@@ -480,7 +464,11 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
     }
 
     protected boolean select0(int level, long node, Volume[] ranges, Frustum frustum, FarRenderIndex index) {
-        if (this.checkFlags(node, FLAG_PLACEHOLDER)) { //this is a placeholder node
+        if (!this.isNodeInFrustum(level, node, frustum)) {
+            //the frustum doesn't contain this tile's bounding box, so we can be certain that neither
+            // this tile nor any of its children would be visible
+            return true; //return true to prevent parent node from skipping all high-res pieces if some of them were outside of the frustum
+        } else if (this.checkFlagsAND(node, FLAG_PLACEHOLDER)) { //this is a placeholder node
             //simply recurse all valid children
             for (int i = 0, childCount = this.childCount(); i < childCount; i++) {
                 long child = PUnsafe.getLong(node + this.children + i * 8L);
@@ -490,32 +478,32 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
             }
 
             return true; //this value really doesn't matter, it's guaranteed to be discarded
-        }
-
-        boolean top = this.checkFlags(node, FLAG_TOP);
-        if (top //don't do range checking for top level, as it will cause a bunch of pieces to be loaded but never rendered
-            && !this.intersects(level, node, ranges[level])) {
+        } else if (!this.checkFlagsAND(node, FLAG_TOP) //don't do range checking for top level, as it will cause a bunch of pieces to be loaded but never rendered
+                   && !this.intersects(level, node, ranges[level])) {
             //the view range for this level doesn't intersect this tile's bounding box,
             // so we can be certain that neither this tile nor any of its children would be contained
-            return false;
-        } else if (!top //don't do frustum culling on child nodes, as we currently cannot render only part of the parent
-                   && !this.isNodeInFrustum(level, node, frustum)) {
-            //the frustum doesn't contain this tile's bounding box, so we can be certain that neither
-            // this tile nor any of its children would be visible
             return false;
         }
 
         CHILDREN:
-        if (!this.checkFlags(node, FLAG_BOTTOM) && this.intersects(level, node, ranges[level - 1])) {
+        if (!this.checkFlagsAND(node, FLAG_BOTTOM) && this.intersects(level, node, ranges[level - 1])) {
             //this tile intersects with the view distance for tiles below it, consider selecting them as well
             //if all children are selectable, select all of them
-            if (this.checkFlags(node, FLAG_RENDERED)) {
+            if (this.checkFlagsAND(node, FLAG_RENDERED)) {
                 //this tile contains renderable data, so only add below pieces if all of them are present
                 //this is necessary because there is no mechanism for rendering part of a tile
+
+                //first pass to simply check for any null children before recursing into any of them
+                for (int i = 0, childCount = this.childCount(); i < childCount; i++) {
+                    if (PUnsafe.getLong(node + this.children + i * 8L) == 0L) {
+                        break CHILDREN;
+                    }
+                }
+
                 int mark = index.mark();
                 for (int i = 0, childCount = this.childCount(); i < childCount; i++) {
                     long child = PUnsafe.getLong(node + this.children + i * 8L);
-                    if (child == 0L || !this.select0(level - 1, child, ranges, frustum, index)) {
+                    if (!this.select0(level - 1, child, ranges, frustum, index)) {
                         //if any one of the children cannot be added, abort and add this tile over the whole area instead
                         index.restore(mark);
                         break CHILDREN;

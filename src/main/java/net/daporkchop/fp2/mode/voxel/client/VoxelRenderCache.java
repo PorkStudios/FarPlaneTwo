@@ -29,7 +29,7 @@ import net.daporkchop.fp2.mode.voxel.VoxelPos;
 /**
  * @author DaPorkchop_
  */
-public class VoxelRenderCache extends AbstractFarRenderCache<VoxelPos, VoxelPiece, VoxelRenderTile> {
+public class VoxelRenderCache extends AbstractFarRenderCache<VoxelPos, VoxelPiece> {
     public VoxelRenderCache(@NonNull VoxelRenderer renderer) {
         super(renderer, VoxelRenderBaker.VOXEL_VERTEX_SIZE);
     }
@@ -37,10 +37,5 @@ public class VoxelRenderCache extends AbstractFarRenderCache<VoxelPos, VoxelPiec
     @Override
     protected VoxelRenderTree createTree() {
         return new VoxelRenderTree(this);
-    }
-
-    @Override
-    public VoxelRenderTile createTile(VoxelRenderTile parent, @NonNull VoxelPos pos) {
-        return new VoxelRenderTile(this, parent, pos);
     }
 }
