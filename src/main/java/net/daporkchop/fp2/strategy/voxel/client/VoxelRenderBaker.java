@@ -319,10 +319,6 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
 
         final double scale = 1 << level;
 
-        //these lose precision, so i don't use them for the actual vertex position
-        /*final int blockX = baseX + floorI((x + data.x) * scale);
-        final int blockY = baseY + floorI((y + data.y) * scale);
-        final int blockZ = baseZ + floorI((z + data.z) * scale);*/
         final int blockX = baseX + (x << level);
         final int blockY = baseY + (y << level);
         final int blockZ = baseZ + (z << level);
@@ -366,37 +362,5 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         }
 
         vertices.writeShort(1 << level);
-    }
-
-    private boolean samplePos(int baseX, int baseY, int baseZ, int level, int i, VoxelPiece[] srcs, int x, int y, int z, VoxelData data) {
-        baseX += (x & 0x10) << level;
-        baseY += (y & 0x10) << level;
-        baseZ += (z & 0x10) << level;
-
-        i |= ((x & 0x10) >> 2) | ((y & 0x10) >> 3) | ((z & 0x10) >> 4);
-
-        if (x == 16) {
-            x = 0;
-        }
-        if (y == 16) {
-            y = 0;
-        }
-        if (z == 16) {
-            z = 0;
-        }
-
-        int basePieceX = (baseX >> (level + T_SHIFT)) - ((i >> 2) & 1);
-        int basePieceY = (baseY >> (level + T_SHIFT)) - ((i >> 1) & 1);
-        int basePieceZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
-        VoxelPiece highPiece = srcs[8 | (i & (((basePieceX & 1) << 2) | ((basePieceY & 1) << 1) | (basePieceZ & 1)))];
-        if (highPiece == null) {
-            return false;
-        } else {
-            final int flooredX = (baseX + (x << level)) & -(1 << (level + 1));
-            final int flooredY = (baseY + (y << level)) & -(1 << (level + 1));
-            final int flooredZ = (baseZ + (z << level)) & -(1 << (level + 1));
-
-            return highPiece.get((flooredX >> (level + 1)) & T_MASK, (flooredY >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK, data);
-        }
     }
 }

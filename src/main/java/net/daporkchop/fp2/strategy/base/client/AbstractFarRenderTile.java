@@ -148,6 +148,7 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
                 this.renderOpaque.uploadIndices();
             }
         }
+        this.rendered = true;
     }
 
     public FarRenderData preallocateRenderData(FarRenderData data, int sizeVertices, int sizeIndices)  {
@@ -185,10 +186,14 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
         }
     }
 
-    public boolean dropPiece() {
-        //checkState(this.rendered, "hasn't been rendered?!?");
-        this.rendered = false;
+    public void setPiece(@NonNull P piece)  {
+        this.piece = piece;
+        this.markHasPiece(true);
+    }
 
+    public boolean dropPiece() {
+        checkState(this.rendered, "hasn't been rendered?!?");
+        this.rendered = false;
         this.piece = null;
 
         this.releaseOpaque();
@@ -207,7 +212,12 @@ public abstract class AbstractFarRenderTile<POS extends IFarPos, P extends IFarP
             }
         }
         this.doesSelfOrAnyChildrenHavePiece = hasPiece;
-        if (!hasPiece) {
+        if (hasPiece) {
+            if (this.parent != null)    {
+                //inform parent that this tile has a piece now
+                this.parent.markHasPiece(true);
+            }
+        } else {
             //neither this tile nor any of its children has an address
             if (this.parent != null) {
                 //this tile has a parent, remove it from the parent

@@ -186,9 +186,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                 //create root tile if absent
                 this.roots.put(rootPos, rootTile = this.createTile(null, rootPos));
             }
-            T tile = rootTile.findOrCreateChild(pieceIn.pos());
-            tile.piece = pieceIn;
-            tile.markHasPiece(true);
+            rootTile.findOrCreateChild(pieceIn.pos()).setPiece(pieceIn);
         }
 
         this.baker.bakeOutputs(pieceIn.pos())
@@ -285,8 +283,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                 return;
             }
         }
-        //TODO: uncomment this
-        //Constants.LOGGER.warn("Attempted to unload already non-existent piece at {}!", pos);
+        Constants.LOGGER.warn("Attempted to unload already non-existent piece at {}!", pos);
     }
 
     public T getTile(@NonNull POS pos) {

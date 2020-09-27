@@ -22,6 +22,7 @@ package net.daporkchop.fp2.strategy.heightmap.client;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.strategy.base.client.IFarRenderBaker;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.strategy.heightmap.HeightmapPos;
@@ -226,7 +227,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         biomeAccess.biome(Biome.getBiome(piece.biome(x, z), Biomes.PLAINS));
 
         //block
-        out.writeInt(state); //state
+        out.writeInt(TexUVs.STATEID_TO_INDEXID.get(state)); //state
         out.writeShort(Constants.packedLightTo8BitVec2(piece.light(x, z))); //light
         out.writeMedium(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(state), biomeAccess, pos, 0))); //color
 
@@ -249,6 +250,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
 
             double highHeight = highPiece.height((flooredX >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK);
 
+            //lerp between the higher vertex positions
             if (((x | z) & 1) != 0) {
                 highHeight = (highHeight + this.sampleHeight(baseX, baseZ, level, i, srcs, x + (x & 1), z + (z & 1), highHeight)) * 0.5d;
             }
