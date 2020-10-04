@@ -399,11 +399,11 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
             return false; //no further changes are necessary
         } else { //current node is the target node
             //free render data allocations
-            if (this.checkFlagsAND(node, FLAG_OPAQUE)) {
+            if (this.checkFlagsAND(node, FLAG_RENDERED | FLAG_OPAQUE)) {
                 PUnsafe.freeMemory(PUnsafe.getLong(node + this.opaque + RENDERDATA_VERTICES + GPUBUFFER_ADDR));
                 PUnsafe.freeMemory(PUnsafe.getLong(node + this.opaque + RENDERDATA_INDICES + GPUBUFFER_ADDR));
             }
-            if (this.checkFlagsAND(node, FLAG_TRANSPARENT)) {
+            if (this.checkFlagsAND(node, FLAG_RENDERED | FLAG_TRANSPARENT)) {
                 PUnsafe.freeMemory(PUnsafe.getLong(node + this.transparent + RENDERDATA_VERTICES + GPUBUFFER_ADDR));
                 PUnsafe.freeMemory(PUnsafe.getLong(node + this.transparent + RENDERDATA_INDICES + GPUBUFFER_ADDR));
             }

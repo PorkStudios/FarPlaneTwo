@@ -22,6 +22,7 @@ package net.daporkchop.fp2.mode.common.server.task;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.mode.api.CompressedPiece;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
@@ -64,8 +65,8 @@ public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS
     public P run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
         P piece = this.world.getRawPieceBlocking(this.pos);
         long newTimestamp = this.inaccurate && this.world.refine()
-                ? IFarPiece.pieceRough(this.pos.level()) //if the piece is inaccurate, it will need to be re-generated later based on scaled data
-                : IFarPiece.PIECE_ROUGH_COMPLETE;
+                ? CompressedPiece.pieceRough(this.pos.level()) //if the piece is inaccurate, it will need to be re-generated later based on scaled data
+                : CompressedPiece.PIECE_ROUGH_COMPLETE;
         if (piece.timestamp() >= newTimestamp) {
             return piece;
         }

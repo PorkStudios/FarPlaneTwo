@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.common.server.task;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.CompressedPiece;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
@@ -70,7 +71,7 @@ public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> 
     @Override
     public P run(@NonNull List<P> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
         P piece = this.world.getRawPieceBlocking(this.pos);
-        long newTimestamp = IFarPiece.pieceRough(this.targetDetail);
+        long newTimestamp = CompressedPiece.pieceRough(this.targetDetail);
         if (piece.timestamp() >= newTimestamp) {
             return piece;
         }

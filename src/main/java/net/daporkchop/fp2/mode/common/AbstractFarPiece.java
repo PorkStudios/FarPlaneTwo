@@ -25,6 +25,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.RenderMode;
+import net.daporkchop.fp2.mode.api.CompressedPiece;
 import net.daporkchop.fp2.mode.api.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.lib.common.misc.string.PStrings;
@@ -51,7 +52,7 @@ public abstract class AbstractFarPiece<POS extends IFarPos> implements IFarPiece
     protected final Lock readLock;
     protected final Lock writeLock;
 
-    protected volatile long timestamp = PIECE_EMPTY;
+    protected volatile long timestamp = CompressedPiece.PIECE_EMPTY;
     @Getter(AccessLevel.NONE)
     protected transient volatile int dirty = 0;
 
@@ -73,7 +74,7 @@ public abstract class AbstractFarPiece<POS extends IFarPos> implements IFarPiece
     @Override
     public void writePiece(@NonNull ByteBuf dst) {
         long timestamp = this.timestamp;
-        checkState(timestamp != PIECE_EMPTY, "piece (%s) does not contain any data! %d", this.pos, timestamp);
+        checkState(timestamp != CompressedPiece.PIECE_EMPTY, "piece (%s) does not contain any data! %d", this.pos, timestamp);
         this.pos.writePos(dst);
 
         dst.writeLong(timestamp);

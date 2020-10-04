@@ -26,13 +26,14 @@ import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomCubicWorldType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.PooledByteBufAllocator;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.lib.common.misc.string.PStrings;
+import net.daporkchop.lib.common.pool.handle.Handle;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
+import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.compression.zstd.ZstdDeflater;
 import net.daporkchop.lib.compression.zstd.ZstdInflater;
@@ -202,12 +203,19 @@ public class Constants {
 
     /**
      * @param capacity the capacity of the buffer
+     * @return a {@link ByteBuf}
+     */
+    public static ByteBuf allocateByteBuf(int capacity) {
+        return ByteBufAllocator.DEFAULT.directBuffer(capacity, capacity);
+    }
+
+    /**
+     * @param capacity the capacity of the buffer
      * @return a {@link ByteBuf} using the native byte order
      */
     @SuppressWarnings("deprecation")
-    public static ByteBuf allocateByteBuf(int capacity) {
-        return ByteBufAllocator.DEFAULT.directBuffer(capacity, capacity)
-                .order(ByteOrder.nativeOrder());
+    public static ByteBuf allocateByteBufNativeOrder(int capacity) {
+        return allocateByteBuf(capacity).order(ByteOrder.nativeOrder());
     }
 
     //reflection
@@ -244,17 +252,98 @@ public class Constants {
         return d0 / (d0 - d1);
     }
 
-    public static int normalToFaceIndex(double x, double y, double z)  {
+    public static int normalToFaceIndex(double x, double y, double z) {
         //TODO: make this branchless
         double nx = abs(x);
         double ny = abs(x);
         double nz = abs(x);
-        if (ny > nx && ny > nz)  {
+        if (ny > nx && ny > nz) {
             return ny < 0.0d ? 0 : 1;
         } else if (nz > nx && nz > ny) {
             return nz < 0.0d ? 2 : 3;
         } else {
             return nx < 0.0d ? 4 : 5;
         }
+    }
+
+    //buffer I/O
+    public static void writeVarInt(@NonNull ByteBuf dst, int value) {
+        try (Handle<byte[]> handle = PorkUtil.TINY_BUFFER_POOL.get()) {
+            byte[] arr = handle.get();
+            int i = 0;
+            do {
+                byte temp = (byte) (value & 0b01111111);
+                value >>>= 7;
+                if (value != 0) {
+                    temp |= 0b10000000;
+                }
+                arr[i++] = temp;
+            } while (value != 0);
+            dst.writeBytes(arr, 0, i);
+        }
+    }
+
+    public static void writeVarIntZigZag(@NonNull ByteBuf dst, int value) {
+        writeVarInt(dst, (value << 1) ^ (value >> 31));
+    }
+
+    public static void writeVarLong(@NonNull ByteBuf dst, long value) {
+        try (Handle<byte[]> handle = PorkUtil.TINY_BUFFER_POOL.get()) {
+            byte[] arr = handle.get();
+            int i = 0;
+            do {
+                byte temp = (byte) (value & 0b01111111);
+                value >>>= 7L;
+                if (value != 0) {
+                    temp |= 0b10000000;
+                }
+                arr[i++] = temp;
+            } while (value != 0);
+            dst.writeBytes(arr, 0, i);
+        }
+    }
+
+    public static void writeVarLongZigZag(@NonNull ByteBuf dst, long value) {
+        writeVarLong(dst, (value << 1L) ^ (value >> 63L));
+    }
+
+    public static int readVarInt(@NonNull ByteBuf src) {
+        int bytesRead = 0;
+        int value = 0;
+        int b;
+        do {
+            b = src.readUnsignedByte();
+            value |= ((b & 0b01111111) << (7 * bytesRead));
+
+            if (++bytesRead > 5) {
+                throw new RuntimeException("VarInt is too big");
+            }
+        } while ((b & 0b10000000) != 0);
+        return value;
+    }
+
+    public static int readVarIntZigZag(@NonNull ByteBuf src) {
+        int i = readVarInt(src);
+        return (i >> 1) ^ -(i & 1);
+    }
+
+    public static long readVarLong(@NonNull ByteBuf src) {
+        int bytesRead = 0;
+        long value = 0;
+        int b;
+        do {
+            b = src.readUnsignedByte();
+            value |= ((b & 0b01111111L) << (7 * bytesRead));
+
+            if (++bytesRead > 10) {
+                throw new RuntimeException("VarLong is too big");
+            }
+        } while ((b & 0b10000000) != 0);
+        return value;
+    }
+
+    public static long readVarLongZigZag(@NonNull ByteBuf src) {
+        long l = readVarLong(src);
+        return (l >> 1L) ^ -(l & 1L);
     }
 }

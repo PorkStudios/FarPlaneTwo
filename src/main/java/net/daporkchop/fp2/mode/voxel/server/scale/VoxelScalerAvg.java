@@ -36,6 +36,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
+//TODO: figure out whether or not this is actually correct
 public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece> {
     @Override
     public Stream<VoxelPos> outputs(@NonNull VoxelPos srcPos) {

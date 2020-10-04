@@ -37,7 +37,6 @@ import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.util.GenericMatcher;
-import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.client.renderer.culling.ICamera;
 
 import java.lang.reflect.Array;
@@ -192,8 +191,8 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                             return;
                         }
 
-                        ByteBuf vertices = Constants.allocateByteBuf(this.baker.estimatedVerticesBufferCapacity());
-                        ByteBuf indices = Constants.allocateByteBuf(this.baker.estimatedIndicesBufferCapacity());
+                        ByteBuf vertices = Constants.allocateByteBufNativeOrder(this.baker.estimatedVerticesBufferCapacity());
+                        ByteBuf indices = Constants.allocateByteBufNativeOrder(this.baker.estimatedIndicesBufferCapacity());
                         this.baker.bake(pos, inputPieces, vertices, indices);
 
                         //upload to GPU on client thread

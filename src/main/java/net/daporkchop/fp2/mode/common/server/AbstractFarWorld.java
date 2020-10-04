@@ -28,6 +28,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.mode.RenderMode;
+import net.daporkchop.fp2.mode.api.CompressedPiece;
 import net.daporkchop.fp2.mode.common.server.task.ExactUpdatePieceTask;
 import net.daporkchop.fp2.mode.common.server.task.GetPieceTask;
 import net.daporkchop.fp2.mode.common.server.task.LoadPieceAction;
@@ -168,7 +169,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
     @Override
     public P getPieceLazy(@NonNull POS pos) {
         P piece = this.cache.getIfPresent(pos);
-        if (piece == null || piece.timestamp() == IFarPiece.PIECE_EMPTY) {
+        if (piece == null || piece.timestamp() == CompressedPiece.PIECE_EMPTY) {
             if (this.notDone(pos, true)) {
                 //piece is not in cache and was newly marked as queued
                 TaskKey key = new TaskKey(TaskStage.GET, pos.level());
