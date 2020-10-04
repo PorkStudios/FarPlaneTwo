@@ -24,7 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
-import net.daporkchop.fp2.mode.api.IFarPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
@@ -76,7 +76,7 @@ public class ExactGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS
             }
 
             piece.clear(); //reset piece contents
-            this.world.generatorExact().generate(this.access, piece); //generate piece
+            this.world.generatorExact().generate(this.access, , piece); //generate piece
             piece.postGenerate();
             piece.updateTimestamp(newTimestamp);
             piece.markDirty();

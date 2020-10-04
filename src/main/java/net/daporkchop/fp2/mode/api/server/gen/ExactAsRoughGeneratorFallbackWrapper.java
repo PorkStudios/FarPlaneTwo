@@ -22,8 +22,8 @@ package net.daporkchop.fp2.mode.api.server.gen;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.mode.api.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.minecraft.world.WorldServer;
@@ -35,11 +35,11 @@ import net.minecraft.world.WorldServer;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, P extends IFarPiece<POS>> implements IFarGeneratorRough<POS, P> {
+public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, B extends IFarPieceBuilder> implements IFarGeneratorRough<POS, B> {
     @NonNull
     protected final AsyncBlockAccess blockAccess;
     @NonNull
-    protected final IFarGeneratorExact<POS, P> exactGenerator;
+    protected final IFarGeneratorExact<POS, B> exactGenerator;
 
     @Override
     public void init(@NonNull WorldServer world) {
@@ -47,12 +47,12 @@ public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, P extends
     }
 
     @Override
-    public void generate(@NonNull P piece) {
+    public void generate(@NonNull POS pos, @NonNull B builder) {
         try {
-            IBlockHeightAccess prefetched = this.blockAccess.prefetchAsync(this.exactGenerator.neededColumns(piece.pos()),
-                    world -> this.exactGenerator.neededCubes(world, piece.pos()))
+            IBlockHeightAccess prefetched = this.blockAccess.prefetchAsync(this.exactGenerator.neededColumns(pos),
+                    world -> this.exactGenerator.neededCubes(world, pos))
                     .sync().getNow();
-            this.exactGenerator.generate(prefetched, piece);
+            this.exactGenerator.generate(prefetched, pos, builder);
         } catch (InterruptedException e)    {
             Thread.currentThread().interrupt();
         }

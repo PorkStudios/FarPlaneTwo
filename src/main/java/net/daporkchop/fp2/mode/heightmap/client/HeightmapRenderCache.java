@@ -22,8 +22,7 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderCache;
-import net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 
 /**

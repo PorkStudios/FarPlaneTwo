@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.mode.api.server.gen;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.minecraft.world.WorldServer;
 
 /**
@@ -32,16 +32,17 @@ import net.minecraft.world.WorldServer;
  *
  * @author DaPorkchop_
  */
-public interface IFarGeneratorRough<POS extends IFarPos, P extends IFarPiece<POS>> extends IFarGenerator {
+public interface IFarGeneratorRough<POS extends IFarPos, B extends IFarPieceBuilder> extends IFarGenerator {
     @Override
     void init(@NonNull WorldServer world);
 
     /**
      * Generates a rough estimate of the terrain in the given piece.
      *
+     * @param pos   the position of the piece to generate
      * @param piece the piece to generate
      */
-    void generate(@NonNull P piece);
+    void generate(@NonNull POS pos, @NonNull B piece);
 
     /**
      * @return whether or not this generator can generate pieces at low resolution

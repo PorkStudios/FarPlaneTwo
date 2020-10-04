@@ -24,7 +24,7 @@ import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.client.gl.camera.Frustum;
-import net.daporkchop.fp2.mode.api.IFarPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.util.DirectBufferReuse;
 import net.daporkchop.fp2.util.math.Volume;

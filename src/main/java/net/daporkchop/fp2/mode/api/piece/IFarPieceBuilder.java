@@ -18,21 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api;
+package net.daporkchop.fp2.mode.api.piece;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.lib.common.misc.refcount.RefCounted;
-
-import java.util.concurrent.locks.ReadWriteLock;
 
 /**
+ * Builder for piece contents.
+ *
  * @author DaPorkchop_
  */
-public interface IFarPiece<POS extends IFarPos> extends RefCounted {
+public interface IFarPieceBuilder {
     /**
-     * @return the {@link RenderMode} that this piece is used for
+     * Resets this builder instance so that it can be re-used for building another piece.
      */
-    RenderMode mode();
+    void reset();
+
+    /**
+     * Writes the piece data for this piece to the given {@link ByteBuf}.
+     *
+     * @param dst the {@link ByteBuf} to write to
+     * @return whether or not this builder is empty
+     */
+    boolean write(@NonNull ByteBuf dst);
 }

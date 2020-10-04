@@ -23,6 +23,8 @@ package net.daporkchop.fp2.mode.api;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.minecraftforge.fml.relauncher.Side;
@@ -31,7 +33,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 /**
  * @author DaPorkchop_
  */
-public interface IFarContext<POS extends IFarPos, P extends IFarPiece<POS>, W extends IFarWorld<POS, P>, T extends IFarPlayerTracker<POS, P>, R extends IFarRenderer<POS, P>> {
+public interface IFarContext<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder, W extends IFarWorld<POS, P, B>, T extends IFarPlayerTracker<POS>, R extends IFarRenderer<POS, P>> {
     /**
      * Initializes this context.
      *

@@ -26,6 +26,8 @@ import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.RenderMode;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.compression.zstd.Zstd;
 
@@ -41,11 +43,11 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public class CompressedPiece<POS extends IFarPos, P extends IFarPiece<POS>> extends ReentrantReadWriteLock {
+public class CompressedPiece<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends ReentrantReadWriteLock {
     /**
      * Timestamp indicating that the piece does not contain any data.
      */
-    public static final long PIECE_EMPTY = Long.MIN_VALUE;
+    public static final long PIECE_BLANK = Long.MIN_VALUE;
 
     /**
      * Timestamp indicating that the piece's rough generation has been completed.
@@ -66,7 +68,7 @@ public class CompressedPiece<POS extends IFarPos, P extends IFarPiece<POS>> exte
     protected long extra;
     protected byte[] data;
 
-    protected long timestamp = PIECE_EMPTY;
+    protected long timestamp = PIECE_BLANK;
 
     /**
      * Creates a new compressed piece with no data at the given position.
@@ -140,23 +142,28 @@ public class CompressedPiece<POS extends IFarPos, P extends IFarPiece<POS>> exte
      * @param dst the {@link ByteBuf} to write to
      */
     public void write(@NonNull ByteBuf dst) {
-        writeVarLong(dst, this.extra);
-        writeVarLongZigZag(dst, this.timestamp);
+        this.readLock().lock();
+        try {
+            writeVarLong(dst, this.extra);
+            writeVarLongZigZag(dst, this.timestamp);
 
-        byte[] data = this.data;
-        if (data == null) {
-            writeVarInt(dst, 0);
-        } else {
-            writeVarInt(dst, data.length + 1);
-            dst.writeBytes(data);
+            byte[] data = this.data;
+            if (data == null) {
+                writeVarInt(dst, 0);
+            } else {
+                writeVarInt(dst, data.length + 1);
+                dst.writeBytes(data);
+            }
+        } finally {
+            this.readLock().unlock();
         }
     }
 
     /**
-     * @return whether or not this piece is empty (i.e. has not been generated)
+     * @return whether or not this piece is blank (i.e. has not been generated)
      */
-    public boolean isEmpty() {
-        return this.timestamp() == CompressedPiece.PIECE_EMPTY;
+    public boolean isBlank() {
+        return this.timestamp() == CompressedPiece.PIECE_BLANK;
     }
 
     /**
@@ -169,7 +176,7 @@ public class CompressedPiece<POS extends IFarPos, P extends IFarPiece<POS>> exte
     /**
      * @return whether or not this piece is empty, or has been generated but still has no contents
      */
-    public boolean isBlank()    {
+    public boolean todo_renameTo_isEmpty() {
         return this.data == null;
     }
 
@@ -177,27 +184,40 @@ public class CompressedPiece<POS extends IFarPos, P extends IFarPiece<POS>> exte
      * @return the inflated, parsed piece
      */
     public P inflate() {
-        //TODO: figure out whether it will be more efficient to pool piece objects or weakly reference the inflated piece and re-use it
-
-        ByteBuf compressed = Unpooled.wrappedBuffer(this.data);
-        ByteBuf uncompressed = Constants.allocateByteBuf(Zstd.PROVIDER.frameContentSize(compressed));
+        this.readLock().lock();
         try {
-            checkState(ZSTD_INF.get().decompress(compressed, uncompressed));
-            return uncheckedCast(this.pos.mode().readPiece(uncompressed));
+            checkState(!this.isBlank(), "piece hasn't been generated!");
+
+            byte[] data = this.data;
+            if (data == null) {
+                return null;
+            }
+
+            ByteBuf compressed = Unpooled.wrappedBuffer(data);
+            ByteBuf uncompressed = Constants.allocateByteBuf(Zstd.PROVIDER.frameContentSize(compressed));
+            try {
+                checkState(ZSTD_INF.get().decompress(compressed, uncompressed));
+                return uncheckedCast(this.pos.mode().readPiece(uncompressed));
+            } finally {
+                uncompressed.release();
+                //no reason to release the wrapped buffer lmao
+            }
         } finally {
-            uncompressed.release();
-            //no reason to release the wrapped buffer lmao
+            this.readLock().unlock();
         }
     }
 
-    public void set(long timestamp, long extra, @NonNull P piece) throws IllegalArgumentException {
+    public void set(long timestamp, long extra, @NonNull B builder) throws IllegalArgumentException {
         //before doing anything we compress the piece data into an array
-        byte[] data;
+        byte[] data = null;
         ByteBuf compressed = null;
+        COMPRESS:
         try {
             ByteBuf uncompressed = ByteBufAllocator.DEFAULT.buffer();
             try {
-                piece.writePiece(uncompressed); //write piece
+                if (builder.write(uncompressed))    { //write piece
+                    break COMPRESS; //skip compression if builder is empty
+                }
                 compressed = Constants.allocateByteBuf(Zstd.PROVIDER.compressBound(uncompressed.readableBytes())); //allocate dst buffer
                 checkState(ZSTD_DEF.get().compress(uncompressed, compressed)); //compress piece
             } finally {

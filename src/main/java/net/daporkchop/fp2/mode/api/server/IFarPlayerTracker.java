@@ -21,21 +21,22 @@
 package net.daporkchop.fp2.mode.api.server;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.CompressedPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarPlayerTracker<POS extends IFarPos, P extends IFarPiece<POS>> {
+public interface IFarPlayerTracker<POS extends IFarPos> {
     void playerAdd(@NonNull EntityPlayerMP player);
 
     void playerRemove(@NonNull EntityPlayerMP player);
 
     void playerMove(@NonNull EntityPlayerMP player);
 
-    void pieceChanged(@NonNull P piece);
+    void pieceChanged(@NonNull CompressedPiece<POS, ?, ?> piece);
 
     void debug_dropAllPieces();
 }

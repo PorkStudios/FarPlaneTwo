@@ -25,12 +25,12 @@ import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
-import net.daporkchop.fp2.net.server.SPacketPieceData;
-import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
-import net.daporkchop.fp2.mode.api.IFarPiece;
+import net.daporkchop.fp2.mode.api.CompressedPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
+import net.daporkchop.fp2.net.server.SPacketPieceData;
+import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -50,9 +50,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarPiece<POS>> implements IFarPlayerTracker<POS, P> {
+public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFarPlayerTracker<POS> {
     @NonNull
-    protected final IFarWorld<POS, P> world;
+    protected final IFarWorld<POS, ?, ?> world;
 
     protected final Map<POS, Entry> entries = new ObjObjOpenHashMap<>();
     protected final Map<EntityPlayerMP, Set<POS>> trackingPositions = new ObjObjOpenHashMap.Identity<>();
@@ -116,13 +116,13 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
     }
 
     @Override
-    public void pieceChanged(@NonNull P piece) {
+    public void pieceChanged(@NonNull CompressedPiece<POS, ?, ?> piece) {
         if (!ServerThreadExecutor.INSTANCE.isServerThread()) {
             ServerThreadExecutor.INSTANCE.execute(() -> this.pieceChanged(piece));
             return;
         }
 
-        if (!piece.isEmpty()) {
+        if (!piece.isBlank()) {
             Entry entry = this.entries.get(piece.pos());
             if (entry != null) {
                 entry.pieceChanged(piece);
@@ -182,7 +182,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
         protected final POS pos;
         protected final Set<EntityPlayerMP> players = new ReferenceOpenHashSet<>();
 
-        protected P piece;
+        protected CompressedPiece<POS, ?, ?> piece;
 
         public Entry(@NonNull POS pos) {
             this.pos = pos;
@@ -210,7 +210,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, P extends IFarP
             NETWORK_WRAPPER.sendTo(new SPacketUnloadPiece().pos(this.pos), player);
         }
 
-        public void pieceChanged(@NonNull P piece) {
+        public void pieceChanged(@NonNull CompressedPiece<POS, ?, ?> piece) {
             this.piece = piece;
 
             //send packet to all players

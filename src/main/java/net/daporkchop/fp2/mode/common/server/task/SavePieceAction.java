@@ -22,31 +22,29 @@ package net.daporkchop.fp2.mode.common.server.task;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
-import net.daporkchop.fp2.mode.api.IFarPiece;
+import net.daporkchop.fp2.mode.api.CompressedPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class SavePieceAction<POS extends IFarPos, P extends IFarPiece<POS>> implements Runnable {
+public class SavePieceAction<POS extends IFarPos> implements Runnable {
     @NonNull
-    protected final AbstractFarWorld<POS, P> world;
+    protected final AbstractFarWorld<POS, ?, ?> world;
     @NonNull
-    protected final P piece;
+    protected final CompressedPiece<POS, ?, ?> piece;
 
     @Override
     public void run() {
-        if (this.piece.isDirty()) {
-            this.piece.readLock().lock();
-            try {
-                if (this.piece.clearDirty()) {
-                    this.world.storage().store(this.piece.pos(), this.piece);
-                }
-            } finally {
-                this.piece.readLock().unlock();
-            }
+        this.piece.readLock().lock();
+        try {
+            this.world.storage().store(this.piece.pos(), uncheckedCast(this.piece));
+        } finally {
+            this.piece.readLock().unlock();
         }
     }
 }

@@ -18,26 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.client;
+package net.daporkchop.fp2.mode.heightmap.piece;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.client.renderer.culling.ICamera;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
+import net.daporkchop.lib.unsafe.PCleaner;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public interface IFarRenderer<POS extends IFarPos, P extends IFarPiece> {
-    void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum);
+public class HeightmapPieceBuilder implements IFarPieceBuilder {
+    protected final long addr = PUnsafe.allocateMemory(this, HeightmapPiece.TOTAL_SIZE);
 
-    void receivePiece(@NonNull CompressedPiece<POS, P, ?> piece);
+    public HeightmapPieceBuilder set(int x, int z, HeightmapData data)  {
+        long base = this.addr + HeightmapPiece.index(x, z);
+        PUnsafe.putInt(base + 0L, data.height);
+        PUnsafe.putInt(base + 4L, (data.light << 24) | data.state);
+        PUnsafe.putInt(base + 8L, (data.waterBiome << 16) | (data.waterLight << 8) | data.biome);
+        return this;
+    }
 
-    void unloadPiece(@NonNull POS pos);
+    @Override
+    public void reset() {
+        PUnsafe.setMemory(this.addr, HeightmapPiece.TOTAL_SIZE, (byte) 0); //just clear it
+    }
+
+    @Override
+    public boolean write(@NonNull ByteBuf dst) {
+        dst.writeBytes(Unpooled.wrappedBuffer(this.addr, HeightmapPiece.TOTAL_SIZE, false)); //just copy it
+        return false;
+    }
 }

@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.voxel.server.scale;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.api.server.scale.IFarScaler;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPiece;
@@ -64,7 +65,7 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece> {
     }
 
     @Override
-    public void scale(@NonNull VoxelPiece[] srcs, @NonNull VoxelPiece dst) {
+    public void scale(@NonNull VoxelPiece[] srcs, @NonNull IFarPieceBuilder dst) {
         VoxelData[] datas = new VoxelData[9];
         for (int i = 0; i < 9; i++) {
             datas[i] = new VoxelData();

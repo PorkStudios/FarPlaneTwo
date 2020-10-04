@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.common.client;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;

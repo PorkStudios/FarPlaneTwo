@@ -24,9 +24,8 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import net.daporkchop.fp2.mode.RenderMode;
+import net.daporkchop.fp2.mode.api.CompressedPiece;
 import net.daporkchop.fp2.mode.api.IFarContext;
-import net.daporkchop.fp2.mode.api.IFarPiece;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -39,23 +38,16 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 @Setter
 public class SPacketPieceData implements IMessage {
     @NonNull
-    protected IFarPiece piece;
+    protected CompressedPiece piece;
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.piece = RenderMode.fromOrdinal(buf.readInt()).readPiece(buf);
+        this.piece = new CompressedPiece(buf);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeInt(this.piece.mode().ordinal());
-
-        this.piece.readLock().lock();
-        try {
-            this.piece.writePiece(buf);
-        } finally {
-            this.piece.readLock().unlock();
-        }
+        this.piece.writeWithModeAndPos(buf);
     }
 
     public static class Handler implements IMessageHandler<SPacketPieceData, IMessage> {
@@ -63,9 +55,7 @@ public class SPacketPieceData implements IMessage {
         @SuppressWarnings("unchecked")
         public IMessage onMessage(SPacketPieceData message, MessageContext ctx) {
             IFarContext farContext = (IFarContext) ctx.getClientHandler().world;
-            ClientThreadExecutor.INSTANCE.execute(() -> {
-                farContext.renderer().receivePiece(message.piece);
-            });
+            ClientThreadExecutor.INSTANCE.execute(() -> farContext.renderer().receivePiece(message.piece));
             return null;
         }
     }

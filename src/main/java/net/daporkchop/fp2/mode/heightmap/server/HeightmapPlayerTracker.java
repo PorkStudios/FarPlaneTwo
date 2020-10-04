@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.heightmap.server;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.mode.common.server.AbstractPlayerTracker;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.minecraft.entity.player.EntityPlayerMP;
 
@@ -36,7 +36,7 @@ import static net.daporkchop.lib.common.math.PMath.*;
 /**
  * @author DaPorkchop_
  */
-public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, HeightmapPiece> {
+public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos> {
     public HeightmapPlayerTracker(@NonNull HeightmapWorld world) {
         super(world);
     }

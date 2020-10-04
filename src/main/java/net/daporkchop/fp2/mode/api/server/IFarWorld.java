@@ -22,8 +22,10 @@ package net.daporkchop.fp2.mode.api.server;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.api.IFarPiece;
+import net.daporkchop.fp2.mode.api.CompressedPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.scale.IFarScaler;
@@ -36,7 +38,7 @@ import java.io.IOException;
 /**
  * @author DaPorkchop_
  */
-public interface IFarWorld<POS extends IFarPos, P extends IFarPiece<POS>> extends Closeable {
+public interface IFarWorld<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends Closeable {
     WorldServer world();
 
     AsyncBlockAccess blockAccess();
@@ -49,7 +51,7 @@ public interface IFarWorld<POS extends IFarPos, P extends IFarPiece<POS>> extend
      * @param pos the position of the piece to get
      * @return the piece, or {@code null} if it isn't loaded yet
      */
-    P getPieceLazy(@NonNull POS pos);
+    CompressedPiece<POS, P, B> getPieceLazy(@NonNull POS pos);
 
     /**
      * Fired whenever a block state changes.
@@ -63,22 +65,22 @@ public interface IFarWorld<POS extends IFarPos, P extends IFarPiece<POS>> extend
     /**
      * @return the (possibly {@code null}) {@link IFarGeneratorRough} used for rough generation of far terrain
      */
-    IFarGeneratorRough<POS, P> generatorRough();
+    IFarGeneratorRough<POS, B> generatorRough();
 
     /**
      * @return the {@link IFarGeneratorExact} used for block-accurate generation of far terrain
      */
-    IFarGeneratorExact<POS, P> generatorExact();
+    IFarGeneratorExact<POS, B> generatorExact();
 
     /**
      * @return the {@link IFarScaler} used for downscaling the far terrain pieces
      */
-    IFarScaler<POS, P> scaler();
+    IFarScaler<POS, P, B> scaler();
 
     /**
      * @return the {@link IFarStorage} used for persistence of far terrain pieces
      */
-    IFarStorage<POS, P> storage();
+    IFarStorage<POS, P, B> storage();
 
     /**
      * @return the {@link RenderMode} that this world is used for

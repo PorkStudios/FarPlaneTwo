@@ -23,14 +23,15 @@ package net.daporkchop.fp2.mode.heightmap.server;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.common.server.AbstractFarStorage;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPieceBuilder;
 import net.minecraft.world.WorldServer;
 
 /**
  * @author DaPorkchop_
  */
-public class HeightmapStorage extends AbstractFarStorage<HeightmapPos, HeightmapPiece> {
+public class HeightmapStorage extends AbstractFarStorage<HeightmapPos, HeightmapPiece, HeightmapPieceBuilder> {
     public HeightmapStorage(@NonNull WorldServer world) {
         super(world, RenderMode.HEIGHTMAP);
     }

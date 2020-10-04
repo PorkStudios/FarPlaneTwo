@@ -22,8 +22,10 @@ package net.daporkchop.fp2.mode.heightmap.server.scale;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.scale.IFarScaler;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPieceBuilder;
 
 import java.util.stream.Stream;
 
@@ -36,7 +38,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public class HeightmapScalerMax implements IFarScaler<HeightmapPos, HeightmapPiece> {
+public class HeightmapScalerMax implements IFarScaler<HeightmapPos, HeightmapPiece, HeightmapPieceBuilder> {
     @Override
     public Stream<HeightmapPos> outputs(@NonNull HeightmapPos srcPos) {
         return Stream.of(srcPos.up());
@@ -58,7 +60,9 @@ public class HeightmapScalerMax implements IFarScaler<HeightmapPos, HeightmapPie
     }
 
     @Override
-    public void scale(@NonNull HeightmapPiece[] srcs, @NonNull HeightmapPiece dst) {
+    public void scale(@NonNull HeightmapPiece[] srcs, @NonNull HeightmapPieceBuilder dst) {
+        HeightmapData data = new HeightmapData();
+
         for (int subX = 0; subX < 2; subX++) {
             for (int subZ = 0; subZ < 2; subZ++) {
                 HeightmapPiece src = srcs[subX * 2 + subZ];
@@ -70,14 +74,14 @@ public class HeightmapScalerMax implements IFarScaler<HeightmapPos, HeightmapPie
                         int dstX = baseX + (x >> 1);
                         int dstZ = baseZ + (z >> 1);
 
-                        this.scaleSample(src, x, z, dst, dstX, dstZ);
+                        this.scaleSample(src, x, z, dst, dstX, dstZ, data);
                     }
                 }
             }
         }
     }
 
-    protected void scaleSample(HeightmapPiece src, int srcX, int srcZ, HeightmapPiece dst, int dstX, int dstZ) {
+    protected void scaleSample(HeightmapPiece src, int srcX, int srcZ, HeightmapPieceBuilder dst, int dstX, int dstZ, HeightmapData data) {
         int height0 = src.height(srcX, srcZ);
         int height1 = src.height(srcX, srcZ + 1);
         int height2 = src.height(srcX + 1, srcZ);
@@ -89,15 +93,16 @@ public class HeightmapScalerMax implements IFarScaler<HeightmapPos, HeightmapPie
         int d2 = abs(height2 - avgHeight);
         int d3 = abs(height3 - avgHeight);
 
-        if (d1 > d0 && d1 > d2 && d1 > d3) {
-            srcZ++;
+        if (d0 > d1 && d0 > d2 && d0 > d3) {
+            src.get(srcX, srcZ, data);
+        } else if (d1 > d0 && d1 > d2 && d1 > d3) {
+            src.get(srcX, srcZ + 1, data);
         } else if (d2 > d0 && d2 > d1 && d2 > d3) {
-            srcX++;
+            src.get(srcX + 1, srcZ, data);
         } else {
-            srcX++;
-            srcZ++;
+            src.get(srcX + 1, srcZ + 1, data);
         }
 
-        dst.copy(srcX, srcZ, src, dstX, dstZ);
+        dst.set(dstX, dstZ, data);
     }
 }

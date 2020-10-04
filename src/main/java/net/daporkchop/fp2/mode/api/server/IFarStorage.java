@@ -22,8 +22,10 @@ package net.daporkchop.fp2.mode.api.server;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.api.IFarPiece;
+import net.daporkchop.fp2.mode.api.CompressedPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 
 import java.io.Closeable;
 import java.io.File;
@@ -34,7 +36,7 @@ import java.io.IOException;
  *
  * @author DaPorkchop_
  */
-public interface IFarStorage<POS extends IFarPos, P extends IFarPiece<POS>> extends Closeable {
+public interface IFarStorage<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends Closeable {
     /**
      * @return the root directory for piece storage
      */
@@ -46,7 +48,7 @@ public interface IFarStorage<POS extends IFarPos, P extends IFarPiece<POS>> exte
      * @param pos the position of the piece to load
      * @return the loaded piece, or {@code null} if it doesn't exist
      */
-    P load(@NonNull POS pos);
+    CompressedPiece<POS, P, B> load(@NonNull POS pos);
 
     /**
      * Stores the given piece at the given position, atomically replacing any existing piece.
@@ -54,7 +56,7 @@ public interface IFarStorage<POS extends IFarPos, P extends IFarPiece<POS>> exte
      * @param pos   the position to save the data at
      * @param piece the piece to save
      */
-    void store(@NonNull POS pos, @NonNull P piece);
+    void store(@NonNull POS pos, @NonNull CompressedPiece<POS, P, B> piece);
 
     /**
      * @return the {@link RenderMode} that this storage is used for

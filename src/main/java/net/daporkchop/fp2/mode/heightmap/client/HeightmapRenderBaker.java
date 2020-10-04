@@ -24,7 +24,8 @@ import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.mode.common.client.IFarRenderBaker;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
@@ -140,10 +141,11 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
 
         final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
+        final HeightmapData data = new HeightmapData();
 
         for (int dx = 0; dx < T_VOXELS; dx++) {
             for (int dz = 0; dz < T_VOXELS; dz++) {
-                this.writeVertex(baseX, baseZ, level, 0, srcs, dx, dz, vertices, pos, biomeAccess);
+                this.writeVertex(baseX, baseZ, level, 0, srcs, dx, dz, vertices, pos, biomeAccess, data);
             }
         }
 
@@ -152,7 +154,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         if (srcs[1] != null) {
             indexZ = index;
             for (int dx = 0; dx < T_VOXELS; dx++) {
-                this.writeVertex(baseX, baseZ + (T_VOXELS << level), level, 1, srcs, dx, 0, vertices, pos, biomeAccess);
+                this.writeVertex(baseX, baseZ + (T_VOXELS << level), level, 1, srcs, dx, 0, vertices, pos, biomeAccess, data);
             }
             index += T_VOXELS;
         }
@@ -161,7 +163,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         if (srcs[2] != null) {
             indexX = index;
             for (int dz = 0; dz < T_VOXELS; dz++) {
-                this.writeVertex(baseX + (T_VOXELS << level), baseZ, level, 2, srcs, 0, dz, vertices, pos, biomeAccess);
+                this.writeVertex(baseX + (T_VOXELS << level), baseZ, level, 2, srcs, 0, dz, vertices, pos, biomeAccess, data);
             }
             index += T_VOXELS;
         }
@@ -169,7 +171,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         int indexXZ = -1;
         if (srcs[1] != null && srcs[2] != null && srcs[3] != null) {
             indexXZ = index++;
-            this.writeVertex(baseX + (T_VOXELS << level), baseZ + (T_VOXELS << level), level, 3, srcs, 0, 0, vertices, pos, biomeAccess);
+            this.writeVertex(baseX + (T_VOXELS << level), baseZ + (T_VOXELS << level), level, 3, srcs, 0, 0, vertices, pos, biomeAccess, data);
         }
 
         for (int dx = 0; dx < T_VOXELS - 1; dx++) {
@@ -215,35 +217,33 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         }
     }
 
-    private void writeVertex(int baseX, int baseZ, int level, int i, HeightmapPiece[] srcs, int x, int z, ByteBuf out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess) {
-        HeightmapPiece piece = srcs[i];
-        final int height = piece.height(x, z);
-        final int state = piece.block(x, z);
+    private void writeVertex(int baseX, int baseZ, int level, int i, HeightmapPiece[] srcs, int x, int z, ByteBuf out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, HeightmapData data) {
+        srcs[i].get(x, z, data);
 
         final int blockX = baseX + (x << level);
         final int blockZ = baseZ + (z << level);
 
-        pos.setPos(blockX, height, blockZ);
-        biomeAccess.biome(Biome.getBiome(piece.biome(x, z), Biomes.PLAINS));
+        pos.setPos(blockX, data.height, blockZ);
+        biomeAccess.biome(Biome.getBiome(data.biome, Biomes.PLAINS));
 
         //block
-        out.writeInt(TexUVs.STATEID_TO_INDEXID.get(state)); //state
-        out.writeShort(Constants.packedLightTo8BitVec2(piece.light(x, z))); //light
-        out.writeMedium(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(state), biomeAccess, pos, 0))); //color
+        out.writeInt(TexUVs.STATEID_TO_INDEXID.get(data.state)); //state
+        out.writeShort(Constants.packedLightTo8BitVec2(data.light)); //light
+        out.writeMedium(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.state), biomeAccess, pos, 0))); //color
 
         //water
-        biomeAccess.biome(Biome.getBiome(piece.waterBiome(x, z), Biomes.PLAINS));
-        out.writeShort(Constants.packedLightTo8BitVec2(piece.waterLight(x, z))); //light_water
+        biomeAccess.biome(Biome.getBiome(data.waterBiome, Biomes.PLAINS));
+        out.writeShort(Constants.packedLightTo8BitVec2(data.waterLight)); //light_water
         out.writeMedium(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Blocks.WATER.getDefaultState(), biomeAccess, pos, 0))); //color_water
 
         //position
-        out.writeDouble(blockX).writeDouble(height).writeDouble(blockZ); //pos_low
+        out.writeDouble(blockX).writeDouble(data.height).writeDouble(blockZ); //pos_low
 
         int basePieceX = (baseX >> (level + T_SHIFT)) - (i >> 1);
         int basePieceZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
         HeightmapPiece highPiece = srcs[4 | (i & (((basePieceX & 1) << 1) | (basePieceZ & 1)))];
         if (highPiece == null) { //pos_high
-            out.writeDouble(blockX).writeDouble(height).writeDouble(blockZ);
+            out.writeDouble(blockX).writeDouble(data.height).writeDouble(blockZ);
         } else {
             final int flooredX = blockX & -(1 << (level + 1));
             final int flooredZ = blockZ & -(1 << (level + 1));

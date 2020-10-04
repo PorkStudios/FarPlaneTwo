@@ -26,8 +26,10 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.api.IFarPiece;
+import net.daporkchop.fp2.mode.api.CompressedPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.api.server.IFarStorage;
 import net.daporkchop.ldbjni.LevelDB;
 import net.daporkchop.ldbjni.direct.DirectDB;
@@ -50,7 +52,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiece<POS>> implements IFarStorage<POS, P> {
+public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> implements IFarStorage<POS, P, B> {
     protected final IntObjMap<DirectDB> dbs = new IntObjConcurrentHashMap<>();
     @Getter
     protected final File storageRoot;
@@ -76,7 +78,7 @@ public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiec
     }
 
     @Override
-    public P load(@NonNull POS pos) {
+    public CompressedPiece<POS, P, B> load(@NonNull POS pos) {
         if (FP2Config.debug.disableRead || FP2Config.debug.disablePersistence) {
             return null;
         }
@@ -122,7 +124,7 @@ public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiec
     }
 
     @Override
-    public void store(@NonNull POS pos, @NonNull P piece) {
+    public void store(@NonNull POS pos, @NonNull CompressedPiece<POS, P, B> piece) {
         if (FP2Config.debug.disableWrite || FP2Config.debug.disablePersistence) {
             return;
         }

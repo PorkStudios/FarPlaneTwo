@@ -29,12 +29,13 @@ import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.CompressedPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.common.server.task.ExactUpdatePieceTask;
 import net.daporkchop.fp2.mode.common.server.task.GetPieceTask;
 import net.daporkchop.fp2.mode.common.server.task.LoadPieceAction;
 import net.daporkchop.fp2.mode.common.server.task.SavePieceAction;
 import net.daporkchop.fp2.mode.api.IFarContext;
-import net.daporkchop.fp2.mode.api.IFarPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.server.IFarStorage;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
@@ -83,19 +84,19 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<POS>> implements IFarWorld<POS, P> {
+public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> implements IFarWorld<POS, P, B> {
     protected static final BiFunction<Boolean, Boolean, Boolean> BOOLEAN_OR = (a, b) -> a | b;
 
     protected final WorldServer world;
     protected final RenderMode mode;
 
-    protected final IFarGeneratorRough<POS, P> generatorRough;
-    protected final IFarGeneratorExact<POS, P> generatorExact;
-    protected final IFarScaler<POS, P> scaler;
-    protected final IFarStorage<POS, P> storage;
+    protected final IFarGeneratorRough<POS, B> generatorRough;
+    protected final IFarGeneratorExact<POS, B> generatorExact;
+    protected final IFarScaler<POS, P, B> scaler;
+    protected final IFarStorage<POS, P, B> storage;
 
     //cache for loaded tiles
-    protected final Cache<POS, P> cache = CacheBuilder.newBuilder()
+    protected final Cache<POS, CompressedPiece<POS, P, B>> cache = CacheBuilder.newBuilder()
             .concurrencyLevel(FP2Config.generationThreads)
             .softValues()
             .build();
@@ -119,12 +120,12 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
         this.world = world;
         this.mode = mode;
 
-        IFarGeneratorRough<POS, P> generatorRough = this.mode().<POS, P>uncheckedGeneratorsRough().stream()
+        IFarGeneratorRough<POS, B> generatorRough = this.mode().<POS, B>uncheckedGeneratorsRough().stream()
                 .map(f -> f.apply(world))
                 .filter(Objects::nonNull)
                 .findFirst().orElse(null);
 
-        IFarGeneratorExact<POS, P> generatorExact = this.mode().<POS, P>uncheckedGeneratorsExact().stream()
+        IFarGeneratorExact<POS, B> generatorExact = this.mode().<POS, B>uncheckedGeneratorsExact().stream()
                 .map(f -> f.apply(world))
                 .filter(Objects::nonNull)
                 .findFirst().orElseThrow(() -> new IllegalStateException(PStrings.fastFormat(
@@ -167,9 +168,9 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
     }
 
     @Override
-    public P getPieceLazy(@NonNull POS pos) {
-        P piece = this.cache.getIfPresent(pos);
-        if (piece == null || piece.timestamp() == CompressedPiece.PIECE_EMPTY) {
+    public CompressedPiece<POS, P, B> getPieceLazy(@NonNull POS pos) {
+        CompressedPiece<POS, P, B> piece = this.cache.getIfPresent(pos);
+        if (piece == null || piece.timestamp() == CompressedPiece.PIECE_BLANK) {
             if (this.notDone(pos, true)) {
                 //piece is not in cache and was newly marked as queued
                 TaskKey key = new TaskKey(TaskStage.GET, pos.level());
@@ -180,7 +181,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
         return piece;
     }
 
-    public P getRawPieceBlocking(@NonNull POS pos) {
+    public CompressedPiece<POS, P, B> getRawPieceBlocking(@NonNull POS pos) {
         try {
             return this.cache.get(pos, new LoadPieceAction<>(this, pos));
         } catch (ExecutionException e) {
@@ -190,8 +191,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
     }
 
     @SuppressWarnings("unchecked")
-    public void pieceChanged(@NonNull P piece) {
-        if (piece.isEmpty()) {
+    public void pieceChanged(@NonNull CompressedPiece<POS, P, B> piece) {
+        if (piece.isBlank()) {
             return;
         }
 
@@ -203,12 +204,12 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece<
             this.notDone.remove(piece.pos());
         }
 
-        if ((FP2Config.performance.savePartial || piece.isDone()) && piece.isDirty()) {
+        if (FP2Config.performance.savePartial || piece.isDone()) {
             //save the piece
             this.ioExecutor.submit(piece.pos(), new SavePieceAction<>(this, piece));
         }
 
-        if (piece.timestamp() >= 0L && piece.isDirty() && piece.level() < FP2Config.maxLevels - 1) {
+        if (piece.timestamp() >= 0L && piece.pos().level() < FP2Config.maxLevels - 1) {
             //the piece has been generated with the exact generator, schedule all output pieces for scaling
             long currTimestamp = piece.timestamp();
 

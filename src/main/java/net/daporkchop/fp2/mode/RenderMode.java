@@ -23,16 +23,17 @@ package net.daporkchop.fp2.mode;
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarStorage;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.scale.IFarScaler;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.client.HeightmapRenderer;
 import net.daporkchop.fp2.mode.heightmap.server.HeightmapPlayerTracker;
@@ -73,7 +74,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Getter
 public enum RenderMode {
-    HEIGHTMAP("2D", 6) {
+    HEIGHTMAP("2D", 7) {
         @Override
         protected void registerDefaultGenerators() {
             //rough
@@ -130,7 +131,7 @@ public enum RenderMode {
             return new HeightmapPiece[size];
         }
     },
-    VOXEL("3D", 1) {
+    VOXEL("3D", 2) {
         @Override
         protected void registerDefaultGenerators() {
             //rough
@@ -217,14 +218,14 @@ public enum RenderMode {
     /**
      * {@link #generatorsRough}, but with an unchecked generic cast
      */
-    public <POS extends IFarPos, P extends IFarPiece<POS>> PriorityCollection<Function<WorldServer, IFarGeneratorRough<POS, P>>> uncheckedGeneratorsRough() {
+    public <POS extends IFarPos, B extends IFarPieceBuilder> PriorityCollection<Function<WorldServer, IFarGeneratorRough<POS, B>>> uncheckedGeneratorsRough() {
         return uncheckedCast(this.generatorsRough);
     }
 
     /**
      * {@link #generatorsExact}, but with an unchecked generic cast
      */
-    public <POS extends IFarPos, P extends IFarPiece<POS>> PriorityCollection<Function<WorldServer, IFarGeneratorExact<POS, P>>> uncheckedGeneratorsExact() {
+    public <POS extends IFarPos, B extends IFarPieceBuilder> PriorityCollection<Function<WorldServer, IFarGeneratorExact<POS, B>>> uncheckedGeneratorsExact() {
         return uncheckedCast(this.generatorsExact);
     }
 
@@ -239,7 +240,7 @@ public enum RenderMode {
     /**
      * {@link #createScaler(WorldServer)}, but with an unchecked generic cast
      */
-    public <POS extends IFarPos, P extends IFarPiece<POS>> IFarScaler<POS, P> uncheckedCreateScaler(@NonNull WorldServer world) {
+    public <POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> IFarScaler<POS, P, B> uncheckedCreateScaler(@NonNull WorldServer world) {
         return uncheckedCast(this.createScaler(world));
     }
 
@@ -254,7 +255,7 @@ public enum RenderMode {
     /**
      * {@link #createStorage(WorldServer)}, but with an unchecked generic cast
      */
-    public <POS extends IFarPos, P extends IFarPiece<POS>> IFarStorage<POS, P> uncheckedCreateStorage(@NonNull WorldServer world) {
+    public <POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> IFarStorage<POS, P, B> uncheckedCreateStorage(@NonNull WorldServer world) {
         return uncheckedCast(this.createStorage(world));
     }
 

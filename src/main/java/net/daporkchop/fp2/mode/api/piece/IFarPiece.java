@@ -18,26 +18,25 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.client;
+package net.daporkchop.fp2.mode.api.piece;
 
+import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.client.renderer.culling.ICamera;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.daporkchop.fp2.mode.RenderMode;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public interface IFarRenderer<POS extends IFarPos, P extends IFarPiece> {
-    void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum);
+public interface IFarPiece {
+    /**
+     * @return the {@link RenderMode} that this piece is used for
+     */
+    RenderMode mode();
 
-    void receivePiece(@NonNull CompressedPiece<POS, P, ?> piece);
-
-    void unloadPiece(@NonNull POS pos);
+    /**
+     * Populates this piece with piece data stored in the given {@link ByteBuf}.
+     *
+     * @param src the {@link ByteBuf} to read from
+     */
+    void read(@NonNull ByteBuf src);
 }

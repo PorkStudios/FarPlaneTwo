@@ -18,26 +18,34 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.client;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.client.renderer.culling.ICamera;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+package net.daporkchop.fp2.mode.heightmap.piece;
 
 /**
+ * Represents the data stored in a single heightmap entry.
+ *
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public interface IFarRenderer<POS extends IFarPos, P extends IFarPiece> {
-    void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum);
+public class HeightmapData {
+    public int height;
+    public int state;
+    public int light;
+    public int biome;
 
-    void receivePiece(@NonNull CompressedPiece<POS, P, ?> piece);
+    public int waterLight;
+    public int waterBiome;
 
-    void unloadPiece(@NonNull POS pos);
+    /**
+     * Resets this instance.
+     *
+     * @return this instance
+     */
+    public HeightmapData reset() {
+        this.height = 0;
+        this.state = 0;
+        this.light = 0;
+        this.biome = 0;
+        this.waterLight = 0;
+        this.waterBiome = 0;
+        return this;
+    }
 }

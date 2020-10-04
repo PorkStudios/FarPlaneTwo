@@ -24,11 +24,14 @@ import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockRe
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.common.server.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPieceBuilder;
 import net.daporkchop.fp2.util.compat.cwg.CWGContext;
 import net.daporkchop.fp2.util.compat.cwg.CWGHelper;
 import net.daporkchop.lib.common.ref.Ref;
+import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.world.WorldServer;
@@ -41,7 +44,7 @@ import static net.daporkchop.fp2.util.compat.cwg.CWGContext.*;
 /**
  * @author DaPorkchop_
  */
-public class CWGHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorRough<HeightmapPos, HeightmapPiece> {
+public class CWGHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorRough<HeightmapPos, HeightmapPieceBuilder> {
     protected Ref<CWGContext> ctx;
 
     @Override
@@ -51,13 +54,15 @@ public class CWGHeightmapGenerator extends AbstractFarGenerator implements IFarG
     }
 
     @Override
-    public void generate(@NonNull HeightmapPiece piece) {
-        int level = piece.level();
-        int baseX = piece.pos().blockX();
-        int baseZ = piece.pos().blockZ();
+    public void generate(@NonNull HeightmapPos pos, @NonNull HeightmapPieceBuilder piece) {
+        int level = pos.level();
+        int baseX = pos.blockX();
+        int baseZ = pos.blockZ();
+
+        HeightmapData data = new HeightmapData();
 
         CWGContext ctx = this.ctx.get();
-        Biome[] biomes = ctx.getBiomes(baseX, baseZ, piece.level());
+        Biome[] biomes = ctx.getBiomes(baseX, baseZ, pos.level());
 
         for (int x = 0; x < T_VOXELS; x++) {
             for (int z = 0; z < T_VOXELS; z++) {
@@ -78,8 +83,14 @@ public class CWGHeightmapGenerator extends AbstractFarGenerator implements IFarG
                     state = replacer.getReplacedBlock(state, blockX, height, blockZ, dx, dy, dz, density);
                 }
 
-                piece.set(x, z, height, state, packCombinedLight((height < this.seaLevel ? max(15 - (this.seaLevel - height) * 3, 0) : 15) << 20), biome,
-                        packCombinedLight(15 << 20), biome);
+                data.height = height;
+                data.state = Block.getStateId(state);
+                data.light = packCombinedLight((height < this.seaLevel ? max(15 - (this.seaLevel - height) * 3, 0) : 15) << 20);
+                data.biome = Biome.getIdForBiome(biome);
+                data.waterLight = packCombinedLight(15 << 20);
+                data.waterBiome = Biome.getIdForBiome(biome);
+
+                piece.set(x, z, data);
             }
         }
     }

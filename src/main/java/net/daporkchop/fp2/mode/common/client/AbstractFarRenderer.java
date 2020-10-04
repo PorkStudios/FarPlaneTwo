@@ -28,7 +28,8 @@ import net.daporkchop.fp2.client.ShaderGlStateHelper;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
-import net.daporkchop.fp2.mode.api.IFarPiece;
+import net.daporkchop.fp2.mode.api.CompressedPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.util.math.Sphere;
@@ -54,7 +55,7 @@ import static org.lwjgl.opengl.GL45.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPiece<POS>> implements IFarRenderer<POS, P> {
+public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPiece> implements IFarRenderer<POS, P> {
     protected final AbstractFarRenderCache<POS, P> cache;
 
     protected final int maxLevel = FP2Config.maxLevels - 1;
@@ -74,7 +75,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     protected abstract AbstractFarRenderCache<POS, P> createCache();
 
     @Override
-    public void receivePiece(@NonNull P piece) {
+    public void receivePiece(@NonNull CompressedPiece<POS, P, ?> piece) {
         ClientThreadExecutor.INSTANCE.execute(() -> this.cache.receivePiece(piece));
     }
 

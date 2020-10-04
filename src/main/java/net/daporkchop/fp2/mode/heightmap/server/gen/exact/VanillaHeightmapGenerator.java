@@ -21,11 +21,13 @@
 package net.daporkchop.fp2.mode.heightmap.server.gen.exact;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.common.server.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPiece;
+import net.daporkchop.fp2.mode.common.server.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPieceBuilder;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
+import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -39,7 +41,7 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public class VanillaHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorExact<HeightmapPos, HeightmapPiece> {
+public class VanillaHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorExact<HeightmapPos, HeightmapPieceBuilder> {
     @Override
     public Stream<ChunkPos> neededColumns(@NonNull HeightmapPos pos) {
         return Stream.of(pos.flooredChunkPos());
@@ -51,10 +53,11 @@ public class VanillaHeightmapGenerator extends AbstractFarGenerator implements I
     }
 
     @Override
-    public void generate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPiece piece) {
-        int pieceX = piece.pos().x();
-        int pieceZ = piece.pos().z();
+    public void generate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos posIn, @NonNull HeightmapPieceBuilder builder) {
+        int pieceX = posIn.x();
+        int pieceZ = posIn.z();
 
+        HeightmapData data = new HeightmapData();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         for (int x = 0; x < T_VOXELS; x++) {
@@ -63,20 +66,21 @@ public class VanillaHeightmapGenerator extends AbstractFarGenerator implements I
                 pos.setPos(pieceX * T_VOXELS + x, height, pieceZ * T_VOXELS + z);
 
                 IBlockState state = world.getBlockState(pos);
-
                 while (state.getMaterial().isLiquid()) {
                     pos.setY(--height);
                     state = world.getBlockState(pos);
                 }
 
+                data.height = height;
+                data.state = Block.getStateId(state);
                 pos.setY(height + 1);
-                int light = world.getCombinedLight(pos, 0);
-                Biome biome = world.getBiome(pos);
-
+                data.light = packCombinedLight(world.getCombinedLight(pos, 0));
+                data.biome = Biome.getIdForBiome(world.getBiome(pos));
                 pos.setY(this.seaLevel);
-                int waterLight = world.getCombinedLight(pos, 0);
-                Biome waterBiome = world.getBiome(pos);
-                piece.set(x, z, height, state, packCombinedLight(light), biome, packCombinedLight(waterLight), waterBiome);
+                data.waterLight = packCombinedLight(world.getCombinedLight(pos, 0));
+                data.waterBiome = Biome.getIdForBiome(world.getBiome(pos));
+
+                builder.set(x, z, data);
             }
         }
     }

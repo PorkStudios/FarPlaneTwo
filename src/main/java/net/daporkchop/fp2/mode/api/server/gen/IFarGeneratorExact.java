@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.mode.api.server.gen;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
@@ -37,7 +37,7 @@ import java.util.stream.Stream;
  *
  * @author DaPorkchop_
  */
-public interface IFarGeneratorExact<POS extends IFarPos, P extends IFarPiece<POS>> extends IFarGenerator {
+public interface IFarGeneratorExact<POS extends IFarPos, B extends IFarPieceBuilder> extends IFarGenerator {
     @Override
     void init(@NonNull WorldServer world);
 
@@ -63,8 +63,9 @@ public interface IFarGeneratorExact<POS extends IFarPos, P extends IFarPiece<POS
     /**
      * Generates a rough estimate of the terrain in the given piece.
      *
-     * @param world the {@link IBlockHeightAccess} providing access to block/height data in the world
-     * @param piece the piece to generate
+     * @param world   the {@link IBlockHeightAccess} providing access to block/height data in the world
+     * @param pos     the position of the piece to generate
+     * @param builder the piece to generate
      */
-    void generate(@NonNull IBlockHeightAccess world, @NonNull P piece);
+    void generate(@NonNull IBlockHeightAccess world, @NonNull POS pos, @NonNull B builder);
 }

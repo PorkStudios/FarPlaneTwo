@@ -82,6 +82,14 @@ public class FP2 {
                         null, JOptionPane.ERROR_MESSAGE);
             }
             FMLCommonHandler.instance().exitJava(1, true);
+        } else if (!PlatformInfo.IS_LITTLE_ENDIAN) { //require little-endian
+            bigWarning("Your system is not little-endian!\nRequired by FarPlaneTwo.");
+            if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
+                JOptionPane.showMessageDialog(null,
+                        "Your system is not little-endian!\nRequired by FarPlaneTwo.",
+                        null, JOptionPane.ERROR_MESSAGE);
+            }
+            FMLCommonHandler.instance().exitJava(1, true);
         }
 
         System.setProperty("porklib.native.printStackTraces", "true");
