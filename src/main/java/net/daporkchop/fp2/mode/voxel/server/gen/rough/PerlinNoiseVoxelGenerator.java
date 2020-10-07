@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.voxel.server.gen.rough;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
-import net.daporkchop.fp2.mode.voxel.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.server.gen.AbstractVoxelGenerator;
 import net.daporkchop.lib.noise.NoiseSource;

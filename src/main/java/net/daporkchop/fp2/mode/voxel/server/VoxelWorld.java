@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.voxel.server;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
-import net.daporkchop.fp2.mode.voxel.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.minecraft.world.WorldServer;
 

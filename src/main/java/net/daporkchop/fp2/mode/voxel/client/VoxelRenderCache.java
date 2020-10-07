@@ -22,8 +22,7 @@ package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderCache;
-import net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree;
-import net.daporkchop.fp2.mode.voxel.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 
 /**

@@ -24,7 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.api.server.scale.IFarScaler;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
-import net.daporkchop.fp2.mode.voxel.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 
 import java.util.stream.Stream;

@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.voxel.server.gen;
 
 import net.daporkchop.fp2.mode.common.server.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
-import net.daporkchop.fp2.mode.voxel.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.util.math.qef.QefSolver;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;

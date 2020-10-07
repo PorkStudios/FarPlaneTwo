@@ -31,24 +31,32 @@ import net.daporkchop.lib.unsafe.PUnsafe;
  * @author DaPorkchop_
  */
 public class HeightmapPieceBuilder implements IFarPieceBuilder {
-    protected final long addr = PUnsafe.allocateMemory(this, HeightmapPiece.TOTAL_SIZE);
+    protected final long addr = PUnsafe.allocateMemory(this, HeightmapPiece.TOTAL_SIZE_BYTES);
 
     public HeightmapPieceBuilder set(int x, int z, HeightmapData data)  {
-        long base = this.addr + HeightmapPiece.index(x, z);
-        PUnsafe.putInt(base + 0L, data.height);
-        PUnsafe.putInt(base + 4L, (data.light << 24) | data.state);
-        PUnsafe.putInt(base + 8L, (data.waterBiome << 16) | (data.waterLight << 8) | data.biome);
+        HeightmapPiece.writeData(this.addr + HeightmapPiece.index(x, z) * 4L, data);
         return this;
+    }
+
+    public HeightmapData get(int x, int z, HeightmapData data)  {
+        HeightmapPiece.readData(this.addr + HeightmapPiece.index(x, z) * 4L, data);
+        return data;
     }
 
     @Override
     public void reset() {
-        PUnsafe.setMemory(this.addr, HeightmapPiece.TOTAL_SIZE, (byte) 0); //just clear it
+        PUnsafe.setMemory(this.addr, HeightmapPiece.TOTAL_SIZE_BYTES, (byte) 0); //just clear it
     }
 
     @Override
     public boolean write(@NonNull ByteBuf dst) {
-        dst.writeBytes(Unpooled.wrappedBuffer(this.addr, HeightmapPiece.TOTAL_SIZE, false)); //just copy it
+        dst.writeBytes(Unpooled.wrappedBuffer(this.addr, HeightmapPiece.TOTAL_SIZE_BYTES, false)); //just copy it
+        //screw endianess, we ensure that only little-endian machines can boot this during startup
+        // now, i could make an implementation for big-endian machines that flips the order, but i won't because that would be a pain
+        // nobody with a non-x86 machine will likely ever run this mod
+        // ...except people running the new macs with apple silicon
+        // ...but screw them, lol
+        // "think different" my ass
         return false;
     }
 }

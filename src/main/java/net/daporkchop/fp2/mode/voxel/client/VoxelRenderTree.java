@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.voxel.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.Frustum;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree;
-import net.daporkchop.fp2.mode.voxel.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;

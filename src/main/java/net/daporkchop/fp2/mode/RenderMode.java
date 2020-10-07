@@ -43,7 +43,7 @@ import net.daporkchop.fp2.mode.heightmap.server.gen.exact.CCHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.exact.VanillaHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.rough.CWGHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.scale.HeightmapScalerMax;
-import net.daporkchop.fp2.mode.voxel.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.client.VoxelRenderer;
 import net.daporkchop.fp2.mode.voxel.server.VoxelPlayerTracker;
