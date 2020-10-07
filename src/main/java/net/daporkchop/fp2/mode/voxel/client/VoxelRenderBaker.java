@@ -164,7 +164,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
 
     @Override
     public void bake(@NonNull VoxelPos dstPos, @NonNull VoxelPiece[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf indices) {
-        if (srcs[0] == null || srcs[0].isBlank()) {
+        if (srcs[0] == null) {
             return;
         }
 

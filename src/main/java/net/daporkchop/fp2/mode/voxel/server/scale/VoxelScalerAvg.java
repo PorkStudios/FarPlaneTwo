@@ -26,6 +26,7 @@ import net.daporkchop.fp2.mode.api.server.scale.IFarScaler;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
 
 import java.util.stream.Stream;
 
@@ -38,7 +39,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 //TODO: figure out whether or not this is actually correct
-public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece> {
+public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPieceBuilder> {
     @Override
     public Stream<VoxelPos> outputs(@NonNull VoxelPos srcPos) {
         return Stream.of(srcPos.up());
@@ -65,7 +66,7 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece> {
     }
 
     @Override
-    public void scale(@NonNull VoxelPiece[] srcs, @NonNull IFarPieceBuilder dst) {
+    public void scale(@NonNull VoxelPiece[] srcs, @NonNull VoxelPieceBuilder dst) {
         VoxelData[] datas = new VoxelData[9];
         for (int i = 0; i < 9; i++) {
             datas[i] = new VoxelData();
@@ -95,7 +96,7 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece> {
         }
     }
 
-    protected void scaleSample(VoxelPiece src, int srcX, int srcY, int srcZ, VoxelPiece dst, int dstX, int dstY, int dstZ, VoxelData[] datas) {
+    protected void scaleSample(VoxelPiece src, int srcX, int srcY, int srcZ, VoxelPieceBuilder dst, int dstX, int dstY, int dstZ, VoxelData[] datas) {
         int validFlags = 0;
         int validCount = 0;
         for (int i = 0; i < 8; i++) { //fetch data from all 8 contributing voxels

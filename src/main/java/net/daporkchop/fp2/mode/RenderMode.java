@@ -113,17 +113,14 @@ public enum RenderMode {
 
         @Override
         public IFarPiece readPiece(@NonNull ByteBuf src) {
-            return new HeightmapPiece(src);
+            HeightmapPiece piece = new HeightmapPiece(); //TODO: allocate from pool
+            piece.read(src);
+            return piece;
         }
 
         @Override
         public IFarPos readPos(@NonNull ByteBuf src) {
             return new HeightmapPos(src);
-        }
-
-        @Override
-        public IFarPiece piece(@NonNull IFarPos posIn) {
-            return new HeightmapPiece((HeightmapPos) posIn);
         }
 
         @Override
@@ -170,17 +167,14 @@ public enum RenderMode {
 
         @Override
         public IFarPiece readPiece(@NonNull ByteBuf src) {
-            return new VoxelPiece(src);
+            VoxelPiece piece = new VoxelPiece(); //TODO: allocate from pool
+            piece.read(src);
+            return piece;
         }
 
         @Override
         public IFarPos readPos(@NonNull ByteBuf src) {
             return new VoxelPos(src);
-        }
-
-        @Override
-        public IFarPiece piece(@NonNull IFarPos pos) {
-            return new VoxelPiece((VoxelPos) pos);
         }
 
         @Override
@@ -287,7 +281,7 @@ public enum RenderMode {
     /**
      * Reads a {@link IFarPiece} from its binary format.
      * <p>
-     * The format is compatible with {@link IFarPiece#writePiece(ByteBuf)}.
+     * The format is compatible with {@link IFarPieceBuilder#write(ByteBuf)}.
      *
      * @param src the {@link ByteBuf} containing the encoded data
      * @return the decoded {@link IFarPiece}
@@ -303,8 +297,6 @@ public enum RenderMode {
      * @return the decoded {@link IFarPos}
      */
     public abstract IFarPos readPos(@NonNull ByteBuf src);
-
-    public abstract IFarPiece piece(@NonNull IFarPos pos);
 
     public abstract IFarPiece[] pieceArray(int size);
 }

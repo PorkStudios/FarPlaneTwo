@@ -26,15 +26,12 @@ import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
-import static net.daporkchop.lib.common.math.PMath.*;
-
 /**
  * @author DaPorkchop_
  */
 public class VoxelPieceBuilder implements IFarPieceBuilder {
-    protected static final int INDEX_SIZE = VoxelPiece.ENTRY_COUNT * 2;
     protected static final int DATA_SIZE = VoxelPiece.ENTRY_COUNT * VoxelPiece.ENTRY_DATA_SIZE_BYTES;
-    protected static final int BUILDER_SIZE = INDEX_SIZE + DATA_SIZE;
+    protected static final int BUILDER_SIZE = VoxelPiece.INDEX_SIZE + DATA_SIZE;
 
     protected final long addr = PUnsafe.allocateMemory(this, BUILDER_SIZE);
 
@@ -47,7 +44,7 @@ public class VoxelPieceBuilder implements IFarPieceBuilder {
             PUnsafe.putShort(indexAddr, (short) (index = this.nextSlot++));
         }
 
-        VoxelPiece.writeData(this.addr + INDEX_SIZE + index * VoxelPiece.ENTRY_DATA_SIZE_BYTES, data);
+        VoxelPiece.writeData(this.addr + VoxelPiece.INDEX_SIZE + index * VoxelPiece.ENTRY_DATA_SIZE_BYTES, data);
         return this;
     }
 
@@ -59,7 +56,7 @@ public class VoxelPieceBuilder implements IFarPieceBuilder {
             return false;
         }
 
-        VoxelPiece.readData(this.addr + INDEX_SIZE + index * VoxelPiece.ENTRY_DATA_SIZE_BYTES, data);
+        VoxelPiece.readData(this.addr + VoxelPiece.INDEX_SIZE + index * VoxelPiece.ENTRY_DATA_SIZE_BYTES, data);
         return true;
     }
 
@@ -67,7 +64,7 @@ public class VoxelPieceBuilder implements IFarPieceBuilder {
     public void reset() {
         if (this.nextSlot != 0) {
             this.nextSlot = 0;
-            PUnsafe.setMemory(this.addr, INDEX_SIZE, (byte) 0xFF); //fill index with -1
+            PUnsafe.setMemory(this.addr, VoxelPiece.INDEX_SIZE, (byte) 0xFF); //fill index with -1
             //data doesn't need to be cleared, it's effectively wiped along with the index
         }
     }
@@ -86,7 +83,7 @@ public class VoxelPieceBuilder implements IFarPieceBuilder {
             int index = PUnsafe.getShort(this.addr + i * 2L);
             if (index >= 0) { //voxel is set
                 dst.writeShortLE(index); //write index
-                long base = this.addr + INDEX_SIZE + index * VoxelPiece.ENTRY_DATA_SIZE_BYTES;
+                long base = this.addr + VoxelPiece.INDEX_SIZE + index * VoxelPiece.ENTRY_DATA_SIZE_BYTES;
                 for (int j = 0; j < VoxelPiece.ENTRY_DATA_SIZE; j++) { //write voxel data
                     dst.writeIntLE(PUnsafe.getInt(base + j * 4L));
                 }

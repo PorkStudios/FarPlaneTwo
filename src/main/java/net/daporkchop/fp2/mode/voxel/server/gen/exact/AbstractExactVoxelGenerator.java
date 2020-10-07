@@ -25,6 +25,7 @@ import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.block.Block;
@@ -38,16 +39,17 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<VoxelPos, VoxelPiece> {
+public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<VoxelPos, VoxelPieceBuilder> {
     @Override
     public void init(@NonNull WorldServer world) {
         //no-op
     }
 
     @Override
-    public void generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPiece piece) {        final int baseX = piece.pos().blockX();
-        final int baseY = piece.pos().blockY();
-        final int baseZ = piece.pos().blockZ();
+    public void generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelPieceBuilder builder) {
+        final int baseX = posIn.blockX();
+        final int baseY = posIn.blockY();
+        final int baseZ = posIn.blockZ();
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         VoxelData data = new VoxelData();
@@ -99,7 +101,7 @@ public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<
                     }
                     data.light = Constants.packCombinedLight(world.getCombinedLight(pos, 0));
 
-                    piece.set(dx, dy, dz, data);
+                    builder.set(dx, dy, dz, data);
                 }
             }
         }

@@ -25,6 +25,7 @@ import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
 import net.minecraft.world.WorldServer;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -32,7 +33,7 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelPiece> {
+public class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelPiece, VoxelPieceBuilder> {
     public VoxelWorld(@NonNull WorldServer world) {
         super(world, RenderMode.VOXEL);
     }

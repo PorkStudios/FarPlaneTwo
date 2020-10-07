@@ -25,12 +25,13 @@ import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.common.server.AbstractFarStorage;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
 import net.minecraft.world.WorldServer;
 
 /**
  * @author DaPorkchop_
  */
-public class VoxelStorage extends AbstractFarStorage<VoxelPos, VoxelPiece> {
+public class VoxelStorage extends AbstractFarStorage<VoxelPos, VoxelPiece, VoxelPieceBuilder> {
     public VoxelStorage(@NonNull WorldServer world) {
         super(world, RenderMode.VOXEL);
     }

@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.voxel.server.gen;
 import net.daporkchop.fp2.mode.common.server.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
 import net.daporkchop.fp2.util.math.qef.QefSolver;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
@@ -68,7 +69,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                 lerp(lerp(Xyz, XyZ, z), lerp(XYz, XYZ, z), y), x);
     }
 
-    protected void buildMesh(int baseX, int baseY, int baseZ, int level, VoxelPiece piece, double[] densityMap, P param) {
+    protected void buildMesh(int baseX, int baseY, int baseZ, int level, VoxelPieceBuilder builder, double[] densityMap, P param) {
         QefSolver qef = new QefSolver();
         VoxelData data = new VoxelData();
 
@@ -151,7 +152,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
 
                     this.populateVoxelBlockData(baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level), data, param, nx, ny, nz);
 
-                    piece.set(dx, dy, dz, data);
+                    builder.set(dx, dy, dz, data);
                 }
             }
         }

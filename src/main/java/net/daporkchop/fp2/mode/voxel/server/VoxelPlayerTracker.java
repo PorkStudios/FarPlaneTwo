@@ -36,7 +36,7 @@ import static net.daporkchop.lib.common.math.PMath.*;
 /**
  * @author DaPorkchop_
  */
-public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelPiece> {
+public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos> {
     public VoxelPlayerTracker(@NonNull VoxelWorld world) {
         super(world);
     }

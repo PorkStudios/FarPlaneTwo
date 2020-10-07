@@ -45,12 +45,14 @@ public class VoxelPiece implements IFarPiece {
     //2: state
     //   ^ top 8 bits are free
 
+    public static final int ENTRY_COUNT = T_VOXELS * T_VOXELS * T_VOXELS;
+    protected static final int INDEX_SIZE = ENTRY_COUNT * 2;
+
     public static final int ENTRY_DATA_SIZE = 3;
     public static final int ENTRY_DATA_SIZE_BYTES = ENTRY_DATA_SIZE * 4;
-    public static final int ENTRY_COUNT = T_VOXELS * T_VOXELS * T_VOXELS;
 
     public static final int ENTRY_FULL_SIZE_BYTES = ENTRY_DATA_SIZE * 4 + 2;
-    public static final int PIECE_SIZE = ENTRY_FULL_SIZE_BYTES * ENTRY_COUNT;
+    public static final int PIECE_SIZE = INDEX_SIZE + ENTRY_FULL_SIZE_BYTES * ENTRY_COUNT;
 
     static int index(int x, int y, int z) {
         checkArg(x >= 0 && x < T_VOXELS && y >= 0 && y < T_VOXELS && z >= 0 && z < T_VOXELS, "coordinates out of bounds (x=%d, y=%d, z=%d)", x, y, z);
@@ -95,11 +97,18 @@ public class VoxelPiece implements IFarPiece {
 
     @Override
     public void read(@NonNull ByteBuf src) {
+        if (this.count != 0) { //index needs to be cleared
+            PUnsafe.setMemory(this.addr, INDEX_SIZE, (byte) 0xFF); //fill index with -1
+        }
+
         int count = this.count = src.readIntLE();
 
-        long addr = this.addr;
+        long addr = this.addr + INDEX_SIZE;
         for (int i = 0; i < count; i++) { //copy data
-            PUnsafe.putShort(addr, src.readShortLE());
+            short pos = src.readShortLE();
+            PUnsafe.putShort(this.addr + pos * 2L, (short) i); //put data slot into index
+
+            PUnsafe.putShort(addr, pos); //prefix data with pos
             addr += 2L;
             for (int j = 0; j < ENTRY_DATA_SIZE; j++, addr += 4L) {
                 PUnsafe.putInt(addr, src.readIntLE());
@@ -122,8 +131,20 @@ public class VoxelPiece implements IFarPiece {
      * @return the relative offset of the voxel (combined XYZ coords)
      */
     public int get(int index, VoxelData data) {
-        long base = this.addr + checkIndex(this.count, index) * ENTRY_FULL_SIZE_BYTES;
+        long base = this.addr + INDEX_SIZE + checkIndex(this.count, index) * ENTRY_FULL_SIZE_BYTES;
         readData(base + 2L, data);
         return PUnsafe.getChar(base);
+    }
+
+    public boolean get(int x, int y, int z, VoxelData data)   {
+        long indexAddr = this.addr + index(x, y, z) * 2L;
+        int index = PUnsafe.getShort(indexAddr);
+        if (index < 0)  { //index is unset, don't read data
+            data.reset();
+            return false;
+        }
+
+        readData(this.addr + INDEX_SIZE + index * ENTRY_FULL_SIZE_BYTES + 2L, data);
+        return true;
     }
 }
