@@ -21,11 +21,12 @@
 package net.daporkchop.fp2.mode;
 
 import io.netty.buffer.ByteBuf;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarStorage;
@@ -33,9 +34,10 @@ import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.scale.IFarScaler;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.client.HeightmapRenderer;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPieceBuilder;
 import net.daporkchop.fp2.mode.heightmap.server.HeightmapPlayerTracker;
 import net.daporkchop.fp2.mode.heightmap.server.HeightmapStorage;
 import net.daporkchop.fp2.mode.heightmap.server.HeightmapWorld;
@@ -43,9 +45,10 @@ import net.daporkchop.fp2.mode.heightmap.server.gen.exact.CCHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.exact.VanillaHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.rough.CWGHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.scale.HeightmapScalerMax;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.client.VoxelRenderer;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
 import net.daporkchop.fp2.mode.voxel.server.VoxelPlayerTracker;
 import net.daporkchop.fp2.mode.voxel.server.VoxelStorage;
 import net.daporkchop.fp2.mode.voxel.server.VoxelWorld;
@@ -54,7 +57,10 @@ import net.daporkchop.fp2.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerAvg;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.PriorityCollection;
+import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.lib.common.misc.string.PUnsafeStrings;
+import net.daporkchop.lib.common.ref.Ref;
+import net.daporkchop.lib.common.ref.ThreadRef;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.relauncher.Side;
@@ -86,6 +92,34 @@ public enum RenderMode {
         }
 
         @Override
+        protected SimpleRecycler<IFarPiece> pieceRecycler0() {
+            return new SimpleRecycler<IFarPiece>() {
+                @Override
+                protected IFarPiece allocate0() {
+                    return new HeightmapPiece();
+                }
+
+                @Override
+                protected void reset0(@NonNull IFarPiece value) {
+                }
+            };
+        }
+
+        @Override
+        protected SimpleRecycler<IFarPieceBuilder> builderRecycler0() {
+            return new SimpleRecycler<IFarPieceBuilder>() {
+                @Override
+                protected IFarPieceBuilder allocate0() {
+                    return new HeightmapPieceBuilder();
+                }
+
+                @Override
+                protected void reset0(@NonNull IFarPieceBuilder value) {
+                }
+            };
+        }
+
+        @Override
         public IFarScaler createScaler(@NonNull WorldServer world) {
             return new HeightmapScalerMax();
         }
@@ -112,13 +146,6 @@ public enum RenderMode {
         }
 
         @Override
-        public IFarPiece readPiece(@NonNull ByteBuf src) {
-            HeightmapPiece piece = new HeightmapPiece(); //TODO: allocate from pool
-            piece.read(src);
-            return piece;
-        }
-
-        @Override
         public IFarPos readPos(@NonNull ByteBuf src) {
             return new HeightmapPos(src);
         }
@@ -137,6 +164,34 @@ public enum RenderMode {
             //exact
             this.generatorsExact().add(-100, world -> Constants.isCubicWorld(world) ? new CCVoxelGenerator() : null);
             this.generatorsExact().add(100, world -> new VanillaVoxelGenerator());
+        }
+
+        @Override
+        protected SimpleRecycler<IFarPiece> pieceRecycler0() {
+            return new SimpleRecycler<IFarPiece>() {
+                @Override
+                protected IFarPiece allocate0() {
+                    return new VoxelPiece();
+                }
+
+                @Override
+                protected void reset0(@NonNull IFarPiece value) {
+                }
+            };
+        }
+
+        @Override
+        protected SimpleRecycler<IFarPieceBuilder> builderRecycler0() {
+            return new SimpleRecycler<IFarPieceBuilder>() {
+                @Override
+                protected IFarPieceBuilder allocate0() {
+                    return new VoxelPieceBuilder();
+                }
+
+                @Override
+                protected void reset0(@NonNull IFarPieceBuilder value) {
+                }
+            };
         }
 
         @Override
@@ -166,13 +221,6 @@ public enum RenderMode {
         }
 
         @Override
-        public IFarPiece readPiece(@NonNull ByteBuf src) {
-            VoxelPiece piece = new VoxelPiece(); //TODO: allocate from pool
-            piece.read(src);
-            return piece;
-        }
-
-        @Override
         public IFarPos readPos(@NonNull ByteBuf src) {
             return new VoxelPos(src);
         }
@@ -198,6 +246,11 @@ public enum RenderMode {
     private final PriorityCollection<Function<WorldServer, IFarGeneratorRough>> generatorsRough = new PriorityCollection<>();
     private final PriorityCollection<Function<WorldServer, IFarGeneratorExact>> generatorsExact = new PriorityCollection<>();
 
+    @Getter(AccessLevel.NONE)
+    private final Ref<SimpleRecycler<IFarPiece>> pieceRecycler = ThreadRef.late(this::pieceRecycler0);
+    @Getter(AccessLevel.NONE)
+    private final Ref<SimpleRecycler<IFarPieceBuilder>> builderRecycler = ThreadRef.late(this::builderRecycler0);
+
     private final int storageVersion;
 
     RenderMode(@NonNull String name, int storageVersion) {
@@ -208,6 +261,18 @@ public enum RenderMode {
     }
 
     protected abstract void registerDefaultGenerators();
+
+    public SimpleRecycler<IFarPiece> pieceRecycler() {
+        return this.pieceRecycler.get();
+    }
+
+    protected abstract SimpleRecycler<IFarPiece> pieceRecycler0();
+
+    public SimpleRecycler<IFarPieceBuilder> builderRecycler() {
+        return this.builderRecycler.get();
+    }
+
+    protected abstract SimpleRecycler<IFarPieceBuilder> builderRecycler0();
 
     /**
      * {@link #generatorsRough}, but with an unchecked generic cast
@@ -286,7 +351,11 @@ public enum RenderMode {
      * @param src the {@link ByteBuf} containing the encoded data
      * @return the decoded {@link IFarPiece}
      */
-    public abstract IFarPiece readPiece(@NonNull ByteBuf src);
+    public IFarPiece readPiece(@NonNull ByteBuf src)    {
+        IFarPiece piece = this.pieceRecycler().allocate();
+        piece.read(src);
+        return piece;
+    }
 
     /**
      * Reads a {@link IFarPos} from its binary format.

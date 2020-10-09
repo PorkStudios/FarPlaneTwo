@@ -51,7 +51,7 @@ import static org.lwjgl.opengl.GL15.*;
  *
  * @author DaPorkchop_
  */
-public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractReleasable {
+public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarPiece> extends AbstractReleasable {
     //this is enough levels for the tree to encompass the entire minecraft world
     public static final int DEPTH = 32 - Integer.numberOfLeadingZeros(60_000_000 >> T_SHIFT);
 

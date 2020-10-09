@@ -22,6 +22,8 @@ package net.daporkchop.fp2.mode.common.server.task;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.mode.api.CompressedPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
@@ -36,18 +38,18 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class LoadPieceAction<POS extends IFarPos, P extends IFarPiece<POS>> implements Callable<P> {
+public class LoadPieceAction<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> implements Callable<CompressedPiece<POS, P, B>> {
     @NonNull
-    protected final AbstractFarWorld<POS, P> world;
+    protected final AbstractFarWorld<POS, P, B> world;
     @NonNull
     protected final POS pos;
 
     @Override
-    public P call() throws Exception {
-        P piece = this.world.storage().load(this.pos);
+    public CompressedPiece<POS, P, B> call() throws Exception {
+        CompressedPiece<POS, P, B> piece = this.world.storage().load(this.pos);
         if (piece == null) {
             //piece doesn't exist on disk, let's make a new one!
-            return uncheckedCast(this.world.mode().piece(this.pos));
+            return new CompressedPiece<>(this.pos);
         }
         return piece;
     }

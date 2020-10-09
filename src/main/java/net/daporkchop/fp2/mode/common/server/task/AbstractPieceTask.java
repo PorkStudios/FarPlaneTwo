@@ -24,6 +24,8 @@ import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.CompressedPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
@@ -36,13 +38,13 @@ import net.daporkchop.lib.concurrent.future.DefaultPFuture;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractPieceTask<POS extends IFarPos, P extends IFarPiece<POS>, T> extends DefaultPFuture<P> implements LazyTask<TaskKey, T, P> {
-    protected final AbstractFarWorld<POS, P> world;
+public abstract class AbstractPieceTask<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder, T> extends DefaultPFuture<CompressedPiece<POS, P, B>> implements LazyTask<TaskKey, T, CompressedPiece<POS, P, B>> {
+    protected final AbstractFarWorld<POS, P, B> world;
     protected final TaskKey key;
     protected final POS pos;
     protected final TaskStage requestedBy;
 
-    public AbstractPieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
+    public AbstractPieceTask(@NonNull AbstractFarWorld<POS, P, B> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
         super(ImmediateEventExecutor.INSTANCE);
 
         this.world = world;
@@ -52,13 +54,13 @@ public abstract class AbstractPieceTask<POS extends IFarPos, P extends IFarPiece
     }
 
     @Override
-    public AbstractPieceTask<POS, P, T> setSuccess(@NonNull P result) {
+    public AbstractPieceTask<POS, P, B, T> setSuccess(@NonNull CompressedPiece<POS, P, B> result) {
         super.setSuccess(result);
         return this;
     }
 
     @Override
-    public AbstractPieceTask<POS, P, T> setFailure(Throwable cause) {
+    public AbstractPieceTask<POS, P, B, T> setFailure(Throwable cause) {
         super.setFailure(cause);
         return this;
     }
@@ -68,8 +70,8 @@ public abstract class AbstractPieceTask<POS extends IFarPos, P extends IFarPiece
         super.cancel(false);
     }
 
-    public AbstractPieceTask<POS, P, T> thenCopyStatusTo(@NonNull AbstractPieceTask<POS, P, ?> dst) {
-        this.addListener((GenericFutureListener<AbstractPieceTask<POS, P, T>>) f -> {
+    public AbstractPieceTask<POS, P, B, T> thenCopyStatusTo(@NonNull AbstractPieceTask<POS, P, B, ?> dst) {
+        this.addListener((GenericFutureListener<AbstractPieceTask<POS, P, B, T>>) f -> {
             if (f.isSuccess()) {
                 dst.setSuccess(f.getNow());
             } else if (f.isCancelled()) {

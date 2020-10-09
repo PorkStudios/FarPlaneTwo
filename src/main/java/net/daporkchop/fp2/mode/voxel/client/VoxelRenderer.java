@@ -25,6 +25,7 @@ import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.IFarRenderBaker;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
@@ -71,5 +72,10 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
                 GlStateManager.enableAlpha();
             }
         }
+    }
+
+    @Override
+    public RenderMode mode() {
+        return RenderMode.VOXEL;
     }
 }

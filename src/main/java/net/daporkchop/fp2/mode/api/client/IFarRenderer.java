@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.api.client;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.CompressedPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
@@ -40,4 +41,6 @@ public interface IFarRenderer<POS extends IFarPos, P extends IFarPiece> {
     void receivePiece(@NonNull CompressedPiece<POS, P, ?> piece);
 
     void unloadPiece(@NonNull POS pos);
+
+    RenderMode mode();
 }
