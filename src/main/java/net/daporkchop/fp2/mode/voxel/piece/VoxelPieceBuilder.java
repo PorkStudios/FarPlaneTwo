@@ -21,7 +21,9 @@
 package net.daporkchop.fp2.mode.voxel.piece;
 
 import io.netty.buffer.ByteBuf;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -34,6 +36,10 @@ public class VoxelPieceBuilder implements IFarPieceBuilder {
     protected static final int BUILDER_SIZE = VoxelPiece.INDEX_SIZE + DATA_SIZE;
 
     protected final long addr = PUnsafe.allocateMemory(this, BUILDER_SIZE);
+
+    @Getter
+    @Setter
+    protected long extra;
 
     protected int nextSlot = 0; //next data slot to use
 
@@ -67,6 +73,7 @@ public class VoxelPieceBuilder implements IFarPieceBuilder {
             PUnsafe.setMemory(this.addr, VoxelPiece.INDEX_SIZE, (byte) 0xFF); //fill index with -1
             //data doesn't need to be cleared, it's effectively wiped along with the index
         }
+        this.extra = 0L;
     }
 
     @Override

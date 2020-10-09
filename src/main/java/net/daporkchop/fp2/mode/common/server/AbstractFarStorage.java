@@ -27,15 +27,14 @@ import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.api.server.IFarStorage;
 import net.daporkchop.ldbjni.LevelDB;
 import net.daporkchop.ldbjni.direct.DirectDB;
 import net.daporkchop.lib.common.misc.file.PFiles;
 import net.daporkchop.lib.common.misc.string.PStrings;
-import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.primitive.map.IntObjMap;
 import net.daporkchop.lib.primitive.map.concurrent.IntObjConcurrentHashMap;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -46,8 +45,6 @@ import java.io.IOException;
 import java.util.function.IntFunction;
 
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -85,31 +82,22 @@ public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiec
 
         try {
             //read from db
-            ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
+            ByteBuf key = ByteBufAllocator.DEFAULT.buffer();
             ByteBuf packed;
             try {
-                pos.writePosNoLevel(buf);
-                if ((packed = this.dbs.computeIfAbsent(pos.level(), this.dbOpenFunction).getZeroCopy(buf)) == null) {
+                pos.writePosNoLevel(key);
+                if ((packed = this.dbs.computeIfAbsent(pos.level(), this.dbOpenFunction).getZeroCopy(key)) == null) {
                     return null;
                 }
             } finally {
-                buf.release();
+                key.release();
             }
 
             //unpack
             boolean release = true;
             try {
-                if (packed.readInt() == this.mode().storageVersion()) {
-                    int uncompressedSize = packed.readInt();
-                    buf = ByteBufAllocator.DEFAULT.buffer(uncompressedSize, uncompressedSize);
-                    try {
-                        checkState(ZSTD_INF.get().decompress(packed, buf));
-                        packed.release();
-                        release = false;
-                        return uncheckedCast(this.mode().readPiece(buf));
-                    } finally {
-                        buf.release();
-                    }
+                if (readVarInt(packed) == this.mode().storageVersion()) {
+                    return new CompressedPiece<>(pos, packed);
                 }
                 return null;
             } finally {
@@ -129,33 +117,19 @@ public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiec
             return;
         }
 
-        ByteBuf packed = null;
+        ByteBuf packed = ByteBufAllocator.DEFAULT.buffer();
         try {
-            //pack piece
-            ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
-            try {
-                piece.readLock().lock();
-                try {
-                    piece.writePiece(buf);
-                } finally {
-                    piece.readLock().unlock();
-                }
-
-                packed = ByteBufAllocator.DEFAULT.buffer(8 + Zstd.PROVIDER.compressBound(buf.readableBytes()))
-                        .writeInt(this.mode().storageVersion())
-                        .writeInt(buf.readableBytes());
-                checkState(ZSTD_DEF.get().compress(buf, packed));
-            } finally {
-                buf.release();
-            }
+            //write piece
+            writeVarInt(packed, this.mode().storageVersion()); //prefix with version
+            piece.write(packed);
 
             //write to db
-            buf = ByteBufAllocator.DEFAULT.buffer();
+            ByteBuf key = ByteBufAllocator.DEFAULT.buffer();
             try {
-                pos.writePosNoLevel(buf);
-                this.dbs.computeIfAbsent(pos.level(), this.dbOpenFunction).put(buf, packed);
+                pos.writePosNoLevel(key);
+                this.dbs.computeIfAbsent(pos.level(), this.dbOpenFunction).put(key, packed);
             } finally {
-                buf.release();
+                key.release();
             }
         } catch (Exception e) {
             LOGGER.error(PStrings.fastFormat("Unable to save tile %s to DB at %s", pos, this.storageRoot), e);

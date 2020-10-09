@@ -23,11 +23,13 @@ package net.daporkchop.fp2.mode.common.server.task;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.mode.api.CompressedPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
 
@@ -35,16 +37,17 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Generates a piece using the rough generator.
  *
  * @author DaPorkchop_
  */
-public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractPieceTask<POS, P, Void> {
+public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends AbstractPieceTask<POS, P, B, Void> {
     protected final boolean inaccurate;
 
-    public RoughGeneratePieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos) {
+    public RoughGeneratePieceTask(@NonNull AbstractFarWorld<POS, P, B> world, @NonNull TaskKey key, @NonNull POS pos) {
         super(world, key, pos, TaskStage.GET);
 
         boolean lowRes = pos.level() != 0;
@@ -62,8 +65,8 @@ public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS
     }
 
     @Override
-    public P run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
-        P piece = this.world.getRawPieceBlocking(this.pos);
+    public CompressedPiece<POS, P, B> run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
+        CompressedPiece<POS, P, B> piece = this.world.getRawPieceBlocking(this.pos);
         long newTimestamp = this.inaccurate && this.world.refine()
                 ? CompressedPiece.pieceRough(this.pos.level()) //if the piece is inaccurate, it will need to be re-generated later based on scaled data
                 : CompressedPiece.PIECE_ROUGH_COMPLETE;
@@ -77,11 +80,16 @@ public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS
                 return piece;
             }
 
-            piece.clear(); //reset piece contents
-            this.world.generatorRough().generate(, piece); //generate piece
-            piece.postGenerate();
-            piece.updateTimestamp(newTimestamp);
-            piece.markDirty();
+            SimpleRecycler<B> builderRecycler = uncheckedCast(this.pos.mode().builderRecycler());
+            B builder = builderRecycler.allocate();
+            try {
+                builder.reset(); //ensure builder is reset
+
+                this.world.generatorRough().generate(this.pos, builder);
+                piece.set(newTimestamp, builder);
+            } finally {
+                builderRecycler.release(builder);
+            }
 
             piece.readLock().lock(); //downgrade lock
         } finally {

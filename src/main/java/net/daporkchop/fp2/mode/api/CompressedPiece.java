@@ -207,7 +207,7 @@ public class CompressedPiece<POS extends IFarPos, P extends IFarPiece, B extends
         }
     }
 
-    public void set(long timestamp, long extra, @NonNull B builder) throws IllegalArgumentException {
+    public void set(long timestamp, @NonNull B builder) throws IllegalArgumentException {
         //before doing anything we compress the piece data into an array
         byte[] data = null;
         ByteBuf compressed = null;
@@ -236,7 +236,7 @@ public class CompressedPiece<POS extends IFarPos, P extends IFarPiece, B extends
             long current = this.timestamp;
             checkArg(timestamp > current, "new timestamp (%d) must be greater than current timestamp (%d)!", timestamp, current);
             this.timestamp = timestamp;
-            this.extra = extra;
+            this.extra = builder.extra();
             this.data = data;
         } finally {
             this.writeLock().unlock();

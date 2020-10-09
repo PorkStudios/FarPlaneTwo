@@ -22,7 +22,9 @@ package net.daporkchop.fp2.mode.heightmap.piece;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -32,6 +34,10 @@ import net.daporkchop.lib.unsafe.PUnsafe;
  */
 public class HeightmapPieceBuilder implements IFarPieceBuilder {
     protected final long addr = PUnsafe.allocateMemory(this, HeightmapPiece.TOTAL_SIZE_BYTES);
+
+    @Getter
+    @Setter
+    protected long extra;
 
     public HeightmapPieceBuilder set(int x, int z, HeightmapData data)  {
         HeightmapPiece.writeData(this.addr + HeightmapPiece.index(x, z) * 4L, data);
@@ -46,6 +52,7 @@ public class HeightmapPieceBuilder implements IFarPieceBuilder {
     @Override
     public void reset() {
         PUnsafe.setMemory(this.addr, HeightmapPiece.TOTAL_SIZE_BYTES, (byte) 0); //just clear it
+        this.extra = 0L;
     }
 
     @Override

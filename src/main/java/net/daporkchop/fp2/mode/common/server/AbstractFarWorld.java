@@ -332,8 +332,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
     }
 
     protected void loadNotDone() {
-        Collection<GetPieceTask<POS, P>> loadTasks = new ArrayList<>();
-        Collection<ExactUpdatePieceTask<POS, P>> exactGenerateTasks = new ArrayList<>();
+        Collection<GetPieceTask<POS, P, B>> loadTasks = new ArrayList<>();
+        Collection<ExactUpdatePieceTask<POS, P, B>> exactGenerateTasks = new ArrayList<>();
 
         try {
             File file = new File(this.storage.storageRoot(), "notDone");

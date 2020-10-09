@@ -143,7 +143,7 @@ public class VoxelPos implements IFarPos {
                     d = Integer.compare(this.z, pos.z);
                 }
             } else {
-                return VoxelPos.class.getCanonicalName().compareTo(posIn.getClass().getCanonicalName());
+                return VoxelPos.class.getName().compareTo(posIn.getClass().getName());
             }
         }
         return d;

@@ -21,6 +21,8 @@
 package net.daporkchop.fp2.mode.common.server.task;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.CompressedPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
@@ -39,19 +41,19 @@ import java.util.stream.Stream;
  *
  * @author DaPorkchop_
  */
-public class ExactUpdatePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractPieceTask<POS, P, P> {
-    public ExactUpdatePieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
+public class ExactUpdatePieceTask<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends AbstractPieceTask<POS, P, B, CompressedPiece<POS, P, B>> {
+    public ExactUpdatePieceTask(@NonNull AbstractFarWorld<POS, P, B> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
         super(world, key, pos, requestedBy);
     }
 
     @Override
-    public Stream<? extends LazyTask<TaskKey, ?, P>> before(@NonNull TaskKey key) throws Exception {
+    public Stream<? extends LazyTask<TaskKey, ?, CompressedPiece<POS, P, B>>> before(@NonNull TaskKey key) throws Exception {
         //fully generate the piece before attempting an exact update
         return Stream.of(new GetPieceTask<>(this.world, key.withStage(TaskStage.GET), this.pos, TaskStage.EXACT));
     }
 
     @Override
-    public P run(@NonNull List<P> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
+    public CompressedPiece<POS, P, B> run(@NonNull List<CompressedPiece<POS, P, B>> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
         if (this.pos.level() == 0) {
             //generate piece with exact generator
             this.world.blockAccess().prefetchAsync(

@@ -35,6 +35,11 @@ public interface IFarPieceBuilder {
     void reset();
 
     /**
+     * @return this piece's extra data
+     */
+    long extra();
+
+    /**
      * Writes the piece data for this piece to the given {@link ByteBuf}.
      *
      * @param dst the {@link ByteBuf} to write to

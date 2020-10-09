@@ -22,11 +22,13 @@ package net.daporkchop.fp2.mode.common.server.task;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.CompressedPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
 
@@ -43,10 +45,10 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  *
  * @author DaPorkchop_
  */
-public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractPieceTask<POS, P, P> {
+public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends AbstractPieceTask<POS, P, B, CompressedPiece<POS, P, B>> {
     protected final int targetDetail;
 
-    public RoughScalePieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy, int targetDetail) {
+    public RoughScalePieceTask(@NonNull AbstractFarWorld<POS, P, B> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy, int targetDetail) {
         super(world, key, pos, requestedBy);
 
         checkArg(pos.level() != 0, "cannot do scaling at level %d!", pos.level());
@@ -57,7 +59,7 @@ public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> 
     }
 
     @Override
-    public Stream<? extends LazyTask<TaskKey, ?, P>> before(@NonNull TaskKey key) throws Exception {
+    public Stream<? extends LazyTask<TaskKey, ?, CompressedPiece<POS, P, B>>> before(@NonNull TaskKey key) throws Exception {
         Stream<POS> inputs = this.world.scaler().inputs(this.pos);
         if (this.targetDetail == this.pos.level() - 1) {
             //this piece is one level above the target level, so the pieces should be read directly rather than scaling them
@@ -69,34 +71,45 @@ public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> 
     }
 
     @Override
-    public P run(@NonNull List<P> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
-        P piece = this.world.getRawPieceBlocking(this.pos);
+    public CompressedPiece<POS, P, B> run(@NonNull List<CompressedPiece<POS, P, B>> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
+        CompressedPiece<POS, P, B> piece = this.world.getRawPieceBlocking(this.pos);
         long newTimestamp = CompressedPiece.pieceRough(this.targetDetail);
         if (piece.timestamp() >= newTimestamp) {
             return piece;
         }
 
-        P[] srcs = params.toArray(uncheckedCast(this.world.mode().pieceArray(params.size())));
+        //inflate pieces into array
+        P[] srcs = uncheckedCast(this.world.mode().pieceArray(params.size()));
         for (int i = 0, len = srcs.length; i < len; i++) {
-            srcs[i].readLock().lock();
+            params.get(i).readLock().lock();
+            srcs[i] = params.get(i).inflate();
         }
+
         piece.writeLock().lock();
         try {
             if (piece.timestamp() >= newTimestamp) {
                 return piece;
             }
 
-            piece.clear(); //reset piece contents
-            this.world.scaler().scale(srcs, piece);
-            piece.postGenerate();
-            piece.updateTimestamp(newTimestamp);
-            piece.markDirty();
+            SimpleRecycler<B> builderRecycler = uncheckedCast(this.pos.mode().builderRecycler());
+            B builder = builderRecycler.allocate();
+            try {
+                builder.reset(); //ensure builder is reset
+
+                this.world.scaler().scale(srcs, builder);
+                piece.set(newTimestamp, builder);
+            } finally {
+                builderRecycler.release(builder);
+            }
 
             piece.readLock().lock(); //downgrade lock
         } finally {
             piece.writeLock().unlock();
-            for (int i = 0, len = srcs.length; i < len; i++) {
-                srcs[i].readLock().unlock();
+
+            SimpleRecycler<P> pieceRecycler = uncheckedCast(this.pos.mode().pieceRecycler());
+            for (int i = 0, len = srcs.length; i < len && srcs[i] != null; i++) {
+                pieceRecycler.release(srcs[i]);
+                params.get(i).readLock().unlock();
             }
         }
 

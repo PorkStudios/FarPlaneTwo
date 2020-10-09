@@ -21,6 +21,8 @@
 package net.daporkchop.fp2.mode.common.server.task;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.CompressedPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
@@ -38,8 +40,8 @@ import java.util.stream.Stream;
  *
  * @author DaPorkchop_
  */
-public class GetPieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractPieceTask<POS, P, Void> {
-    public GetPieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
+public class GetPieceTask<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends AbstractPieceTask<POS, P, B, Void> {
+    public GetPieceTask(@NonNull AbstractFarWorld<POS, P, B> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
         super(world, key, pos, requestedBy);
 
         world.notDone(pos, requestedBy == TaskStage.GET);
@@ -51,8 +53,8 @@ public class GetPieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends
     }
 
     @Override
-    public P run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) {
-        P piece = this.world.getRawPieceBlocking(this.pos);
+    public CompressedPiece<POS, P, B> run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) {
+        CompressedPiece<POS, P, B> piece = this.world.getRawPieceBlocking(this.pos);
 
         piece.readLock().lock();
         try {
@@ -71,7 +73,7 @@ public class GetPieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends
                     executor.submit(new RoughScalePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_SCALE), this.pos, TaskStage.GET, 0)
                             .thenCopyStatusTo(this));
                 }
-                if (piece.isEmpty()) {
+                if (piece.isBlank()) {
                     return null; //don't store the piece in the world until it contains at least SOME data
                 }
             }

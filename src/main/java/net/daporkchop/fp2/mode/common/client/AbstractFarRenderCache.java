@@ -29,8 +29,8 @@ import net.daporkchop.fp2.client.gl.object.ElementArrayObject;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.alloc.Allocator;
@@ -201,17 +201,23 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                             P[] inputPieces = this.pieceArray.apply(compressedInputPieces.length);
                             try {
                                 for (int i = 0; i < inputPieces.length; i++) { //inflate pieces
-                                    inputPieces[i] = compressedInputPieces[i].inflate();
+                                    if (compressedInputPieces[i] != null) {
+                                        inputPieces[i] = compressedInputPieces[i].inflate();
+                                    }
                                 }
 
                                 this.baker.bake(pos, inputPieces, vertices, indices);
 
                                 //upload to GPU on client thread
+                                vertices.retain();
+                                indices.retain();
                                 ClientThreadExecutor.INSTANCE.execute(() -> this.addPiece(piece, vertices, indices));
                             } finally { //release pieces again
                                 SimpleRecycler<P> recycler = uncheckedCast(this.renderer.mode().pieceRecycler());
-                                for (int i = 0; i < inputPieces.length && inputPieces[i] != null; i++) {
-                                    recycler.release(inputPieces[i]);
+                                for (int i = 0; i < inputPieces.length; i++) {
+                                    if (inputPieces[i] != null) {
+                                        recycler.release(inputPieces[i]);
+                                    }
                                 }
                             }
                         } finally {

@@ -21,11 +21,14 @@
 package net.daporkchop.fp2.mode.common.server.task;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.CompressedPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
@@ -35,14 +38,15 @@ import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-public class ExactGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS>> extends AbstractPieceTask<POS, P, Void> {
+public class ExactGeneratePieceTask<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends AbstractPieceTask<POS, P, B, Void> {
     protected final IBlockHeightAccess access;
 
-    public ExactGeneratePieceTask(@NonNull AbstractFarWorld<POS, P> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull IBlockHeightAccess access) {
+    public ExactGeneratePieceTask(@NonNull AbstractFarWorld<POS, P, B> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull IBlockHeightAccess access) {
         super(world, key, pos, TaskStage.EXACT);
 
         checkArg(pos.level() == 0, "cannot do exact generation at level %d!", pos.level());
@@ -56,7 +60,7 @@ public class ExactGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS
     }
 
     @Override
-    public P run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
+    public CompressedPiece<POS, P, B> run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
         long newTimestamp = this.world.exactActive().remove(this.pos);
         if (newTimestamp < 0L) { //probably impossible, but this means that another task scheduled for the same piece already ran before this one
             LOGGER.warn("Duplicate generation task scheduled for piece at {}!", this.pos);
@@ -64,7 +68,7 @@ public class ExactGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS
             return null;
         }
 
-        P piece = this.world.getRawPieceBlocking(this.pos);
+        CompressedPiece<POS, P, B> piece = this.world.getRawPieceBlocking(this.pos);
         if (piece.timestamp() >= newTimestamp) {
             return piece;
         }
@@ -75,11 +79,16 @@ public class ExactGeneratePieceTask<POS extends IFarPos, P extends IFarPiece<POS
                 return piece;
             }
 
-            piece.clear(); //reset piece contents
-            this.world.generatorExact().generate(this.access, , piece); //generate piece
-            piece.postGenerate();
-            piece.updateTimestamp(newTimestamp);
-            piece.markDirty();
+            SimpleRecycler<B> builderRecycler = uncheckedCast(this.pos.mode().builderRecycler());
+            B builder = builderRecycler.allocate();
+            try {
+                builder.reset(); //ensure builder is reset
+
+                this.world.generatorExact().generate(this.access, this.pos, builder);
+                piece.set(newTimestamp, builder);
+            } finally {
+                builderRecycler.release(builder);
+            }
 
             piece.readLock().lock(); //downgrade lock
         } finally {
