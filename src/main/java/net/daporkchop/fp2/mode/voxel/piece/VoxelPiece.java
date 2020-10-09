@@ -88,7 +88,7 @@ public class VoxelPiece implements IFarPiece {
 
     protected final long addr = PUnsafe.allocateMemory(this, PIECE_SIZE);
 
-    protected int count; //the number of voxels in the piece that are set
+    protected int count = -1; //the number of voxels in the piece that are set
 
     @Override
     public RenderMode mode() {
@@ -105,10 +105,10 @@ public class VoxelPiece implements IFarPiece {
 
         long addr = this.addr + INDEX_SIZE;
         for (int i = 0; i < count; i++) { //copy data
-            short pos = src.readShortLE();
+            int pos = src.readShortLE();
             PUnsafe.putShort(this.addr + pos * 2L, (short) i); //put data slot into index
 
-            PUnsafe.putShort(addr, pos); //prefix data with pos
+            PUnsafe.putChar(addr, (char) pos); //prefix data with pos
             addr += 2L;
             for (int j = 0; j < ENTRY_DATA_SIZE; j++, addr += 4L) {
                 PUnsafe.putInt(addr, src.readIntLE());
@@ -137,8 +137,7 @@ public class VoxelPiece implements IFarPiece {
     }
 
     public boolean get(int x, int y, int z, VoxelData data)   {
-        long indexAddr = this.addr + index(x, y, z) * 2L;
-        int index = PUnsafe.getShort(indexAddr);
+        int index = PUnsafe.getShort(this.addr + index(x, y, z) * 2L);
         if (index < 0)  { //index is unset, don't read data
             data.reset();
             return false;

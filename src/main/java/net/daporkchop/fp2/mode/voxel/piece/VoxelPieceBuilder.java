@@ -41,7 +41,7 @@ public class VoxelPieceBuilder implements IFarPieceBuilder {
     @Setter
     protected long extra;
 
-    protected int nextSlot = 0; //next data slot to use
+    protected int nextSlot = -1; //next data slot to use
 
     public VoxelPieceBuilder set(int x, int y, int z, VoxelData data)   {
         long indexAddr = this.addr + VoxelPiece.index(x, y, z) * 2L;
@@ -89,7 +89,7 @@ public class VoxelPieceBuilder implements IFarPieceBuilder {
         for (int i = 0; i < VoxelPiece.ENTRY_COUNT; i++)  { //iterate through the index and search for set voxels
             int index = PUnsafe.getShort(this.addr + i * 2L);
             if (index >= 0) { //voxel is set
-                dst.writeShortLE(index); //write index
+                dst.writeShortLE(i); //write position
                 long base = this.addr + VoxelPiece.INDEX_SIZE + index * VoxelPiece.ENTRY_DATA_SIZE_BYTES;
                 for (int j = 0; j < VoxelPiece.ENTRY_DATA_SIZE; j++) { //write voxel data
                     dst.writeIntLE(PUnsafe.getInt(base + j * 4L));
