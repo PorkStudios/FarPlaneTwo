@@ -25,12 +25,12 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.common.server.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPieceBuilder;
 import net.daporkchop.fp2.util.compat.cwg.CWGContext;
 import net.daporkchop.fp2.util.compat.cwg.CWGHelper;
 import net.daporkchop.lib.common.ref.Ref;
+import net.daporkchop.lib.common.ref.ThreadRef;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
@@ -50,7 +50,7 @@ public class CWGHeightmapGenerator extends AbstractFarGenerator implements IFarG
     @Override
     public void init(@NonNull WorldServer world) {
         super.init(world);
-        this.ctx = CWGHelper.tlCWGCtx(world);
+        this.ctx = ThreadRef.soft(() -> new CWGContext(world, 0, 2));
     }
 
     @Override
@@ -62,24 +62,28 @@ public class CWGHeightmapGenerator extends AbstractFarGenerator implements IFarG
         HeightmapData data = new HeightmapData();
 
         CWGContext ctx = this.ctx.get();
-        Biome[] biomes = ctx.getBiomes(baseX, baseZ, pos.level());
+        ctx.init(baseX >> 4, 0, baseZ >> 4, level);
+
+        int gbCacheStart = ctx.gbCacheStart();
+        int gbCacheSize = ctx.gbCacheSize();
+        Biome[] gbCache = ctx.gbCache();
 
         for (int x = 0; x < T_VOXELS; x++) {
             for (int z = 0; z < T_VOXELS; z++) {
                 int blockX = baseX + (x << level);
                 int blockZ = baseZ + (z << level);
 
-                int height = CWGHelper.getHeight(ctx.terrainBuilder(), blockX, blockZ);
-                double density = ctx.terrainBuilder().get(blockX, height, blockZ);
+                int height = CWGHelper.getHeight(ctx, blockX, blockZ);
+                double density = ctx.get(blockX, height, blockZ);
 
-                double dx = ctx.terrainBuilder().get(blockX + 1, height, blockZ) - density;
-                double dy = ctx.terrainBuilder().get(blockX, height + 1, blockZ) - density;
-                double dz = ctx.terrainBuilder().get(blockX, height, blockZ + 1) - density;
+                double dx = ctx.get(blockX + 1, height, blockZ) - density;
+                double dy = ctx.get(blockX, height + 1, blockZ) - density;
+                double dz = ctx.get(blockX, height, blockZ + 1) - density;
 
-                Biome biome = biomes[(z + 1) * BIOME_CACHE_SIZE + (x + 1)];
+                Biome biome = gbCache[((z >> 2) + gbCacheStart) * gbCacheSize + ((x >> 2) + gbCacheStart)];
 
                 IBlockState state = Blocks.AIR.getDefaultState();
-                for (IBiomeBlockReplacer replacer : ctx.biomeBlockReplacers().get(biome)) {
+                for (IBiomeBlockReplacer replacer : ctx.replacersForBiome(biome)) {
                     state = replacer.getReplacedBlock(state, blockX, height, blockZ, dx, dy, dz, density);
                 }
 

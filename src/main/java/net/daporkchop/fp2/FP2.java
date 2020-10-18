@@ -66,6 +66,7 @@ import static org.lwjgl.opengl.GL43.*;
  */
 @Mod(modid = MODID,
         useMetadata = true,
+        dependencies = "after:cubicchunks@[1.12.2-0.0.1126.0,)",
         acceptedMinecraftVersions = "1.12.2")
 public class FP2 {
     public static final String MODID = "fp2";
