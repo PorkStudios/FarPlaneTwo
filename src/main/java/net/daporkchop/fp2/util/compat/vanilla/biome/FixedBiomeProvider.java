@@ -18,50 +18,51 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.server.gen.rough;
+package net.daporkchop.fp2.util.compat.vanilla.biome;
 
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.voxel.VoxelData;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
-import net.daporkchop.fp2.mode.voxel.server.gen.AbstractVoxelGenerator;
-import net.minecraft.world.WorldServer;
+import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.world.biome.Biome;
+
+import java.util.Arrays;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
+ * Implementation of {@link IBiomeProvider} which uses a constant, fixed biome.
+ *
  * @author DaPorkchop_
  */
-public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements IFarGeneratorRough<VoxelPos, VoxelPieceBuilder> {
-    //protected Ref<CWGContext> ctx;
+@Getter
+public class FixedBiomeProvider implements IBiomeProvider {
+    protected final Biome biome;
+    protected final int biomeId;
 
-    @Override
-    public void init(@NonNull WorldServer world) {
-        super.init(world);
-        //this.ctx = ThreadRef.soft(() -> new CWGContext(world, 1, 2));
+    public FixedBiomeProvider(@NonNull Biome biome) {
+        this.biome = biome;
+        this.biomeId = Biome.getIdForBiome(biome);
     }
 
     @Override
-    public void generate(@NonNull VoxelPos pos, @NonNull VoxelPieceBuilder piece) {
-        int level = pos.level();
-        int baseX = pos.blockX();
-        int baseY = pos.blockY();
-        int baseZ = pos.blockZ();
-
-        //CWGContext ctx = this.ctx.get();
-        //ctx.init(baseX >> 4, baseY >> 4, baseZ >> 4, level);
+    public Biome biome(int blockX, int blockZ) {
+        return this.biome;
     }
 
     @Override
-    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, VoxelData data, Void param, double nx, double ny, double nz) {
+    public int biomeId(int blockX, int blockZ) {
+        return this.biomeId;
     }
 
     @Override
-    public boolean supportsLowResolution() {
-        return true;
+    public void biomes(@NonNull Biome[] arr, int blockX, int blockZ, int sizeX, int sizeZ) {
+        checkArg(arr.length >= sizeX * sizeZ, "array (%d) too small! required: %d", arr.length, sizeX * sizeZ);
+        Arrays.fill(arr, 0, sizeX * sizeZ, this.biome);
     }
 
     @Override
-    public boolean isLowResolutionInaccurate() {
-        return true;
+    public void biomeIds(@NonNull byte[] arr, int blockX, int blockZ, int sizeX, int sizeZ) {
+        checkArg(arr.length >= sizeX * sizeZ, "array (%d) too small! required: %d", arr.length, sizeX * sizeZ);
+        PUnsafe.setMemory(arr, PUnsafe.ARRAY_BYTE_BASE_OFFSET, sizeX * sizeZ, (byte) this.biomeId);
     }
 }
