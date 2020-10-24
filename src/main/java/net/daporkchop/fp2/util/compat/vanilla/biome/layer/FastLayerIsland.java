@@ -20,6 +20,10 @@
 
 package net.daporkchop.fp2.util.compat.vanilla.biome.layer;
 
+import lombok.NonNull;
+
+import static net.daporkchop.fp2.util.compat.vanilla.biome.BiomeHelper.*;
+
 /**
  * @author DaPorkchop_
  */
@@ -30,6 +34,11 @@ public class FastLayerIsland extends FastLayer {
 
     @Override
     public int getSingle(int x, int z) {
-        return 0; //TODO
+        return (x | z) == 0 || nextInt(start(this.seed, x, z), 10) == 0 ? 1 : 0;
+    }
+
+    @Override
+    public void init(@NonNull FastLayer[] children) {
+        //no-op
     }
 }

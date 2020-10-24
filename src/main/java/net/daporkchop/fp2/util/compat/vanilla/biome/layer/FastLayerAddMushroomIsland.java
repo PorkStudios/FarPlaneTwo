@@ -20,16 +20,12 @@
 
 package net.daporkchop.fp2.util.compat.vanilla.biome.layer;
 
-import net.minecraft.init.Biomes;
-import net.minecraft.world.biome.Biome;
-
 import static net.daporkchop.fp2.util.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
  */
 public class FastLayerAddMushroomIsland extends FastLayer {
-    private static final int MUSHROOM_ISLAND = Biome.getIdForBiome(Biomes.MUSHROOM_ISLAND);
 
     public FastLayerAddMushroomIsland(long seed) {
         super(seed);
@@ -45,7 +41,7 @@ public class FastLayerAddMushroomIsland extends FastLayer {
         int v3 = this.parent.getSingle(x, z + 1);
 
         if ((v0 | v1 | v2 | v3) == 0 && nextInt(start(this.seed, x, z), 100) == 0) {
-            return MUSHROOM_ISLAND;
+            return ID_MUSHROOM_ISLAND;
         } else {
             return center;
         }

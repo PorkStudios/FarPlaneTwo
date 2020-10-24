@@ -20,15 +20,12 @@
 
 package net.daporkchop.fp2.util.compat.vanilla.biome.layer;
 
-import net.minecraft.init.Biomes;
-import net.minecraft.world.biome.Biome;
+import static net.daporkchop.fp2.util.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
  */
 public class FastLayerDeepOcean extends FastLayer {
-    private static final int OCEAN = Biome.getIdForBiome(Biomes.OCEAN);
-    private static final int DEEP_OCEAN = Biome.getIdForBiome(Biomes.DEEP_OCEAN);
 
     public FastLayerDeepOcean(long seed) {
         super(seed);
@@ -38,12 +35,12 @@ public class FastLayerDeepOcean extends FastLayer {
     public int getSingle(int x, int z) {
         int center = this.parent.getSingle(x, z);
 
-        if (center == OCEAN
-            && this.parent.getSingle(x - 1, z) == OCEAN
-            && this.parent.getSingle(x, z - 1) == OCEAN
-            && this.parent.getSingle(x + 1, z) == OCEAN
-            && this.parent.getSingle(x, z + 1) == OCEAN) {
-            return DEEP_OCEAN;
+        if (center == ID_OCEAN
+            && this.parent.getSingle(x - 1, z) == ID_OCEAN
+            && this.parent.getSingle(x, z - 1) == ID_OCEAN
+            && this.parent.getSingle(x + 1, z) == ID_OCEAN
+            && this.parent.getSingle(x, z + 1) == ID_OCEAN) {
+            return ID_DEEP_OCEAN;
         } else {
             return center;
         }

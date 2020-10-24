@@ -21,17 +21,15 @@
 package biome;
 
 import net.daporkchop.fp2.util.compat.vanilla.biome.layer.FastLayer;
+import net.minecraft.init.Bootstrap;
 import net.minecraft.world.gen.layer.GenLayer;
 import net.minecraft.world.gen.layer.GenLayerFuzzyZoom;
+import net.minecraft.world.gen.layer.GenLayerIsland;
 import net.minecraft.world.gen.layer.GenLayerZoom;
 import net.minecraft.world.gen.layer.IntCache;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.IdentityHashMap;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Function;
 
 import static net.daporkchop.fp2.util.compat.vanilla.biome.BiomeHelper.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -41,6 +39,10 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 public class TestFastBiomeGen {
     static {
+        if (!Bootstrap.isRegistered()) {
+            Bootstrap.register();
+        }
+
         GET_CHILDREN.put(GenLayerRandomValues.class, layer -> new GenLayer[0]);
 
         FAST_MAPPERS.put(GenLayerRandomValues.class, layer -> new FastLayerRandomValues(layer.worldGenSeed));
@@ -57,6 +59,11 @@ public class TestFastBiomeGen {
     }
 
     @Test
+    public void testIsland() {
+        this.testLayers(new GenLayerIsland(0L));
+    }
+
+    @Test
     public void testFuzzyZoom() {
         this.testLayers(new GenLayerFuzzyZoom(1L, new GenLayerRandomValues(0L)));
     }
@@ -68,6 +75,8 @@ public class TestFastBiomeGen {
         FastLayer fast = makeFast(vanilla)[0];
 
         this.testAreas(vanilla, fast, 0, 0, 2, 2);
+        this.testAreas(vanilla, fast, -1, -1, 2, 2);
+        this.testAreas(vanilla, fast, -10, -10, 21, 21);
 
         for (int i = 0; i < 256; i++) {
             this.testAreas(vanilla, fast, r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(256) + 1, r.nextInt(256) + 1);

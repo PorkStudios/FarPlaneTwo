@@ -12,6 +12,7 @@ run/
 # misc.
 *.class
 *.log
+/logs/
 
 classes/
 
