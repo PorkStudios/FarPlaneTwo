@@ -18,25 +18,28 @@
  *
  */
 
-package net.daporkchop.fp2.util.compat.vanilla.biome.layer;
+package biome;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.world.gen.layer.GenLayer;
+import net.minecraft.world.gen.layer.IntCache;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public abstract class FastLayer {
-    public static final long PARENT_OFFSET = PUnsafe.pork_getOffset(FastLayer.class, "parent");
-
-    protected final long seed;
-    protected final FastLayer parent = null;
-
-    public void init(@NonNull FastLayer[] children) {
-        PUnsafe.putObject(this, PARENT_OFFSET, children[0]);
+public class GenLayerRandomValues extends GenLayer {
+    public GenLayerRandomValues(long seed) {
+        super(seed);
     }
 
-    public abstract int getSingle(int x, int z);
+    @Override
+    public int[] getInts(int areaX, int areaY, int areaWidth, int areaHeight) {
+        int[] arr = IntCache.getIntCache(areaWidth * areaHeight);
+        for (int dy = 0; dy < areaHeight; ++dy) {
+            for (int dx = 0; dx < areaWidth; ++dx) {
+                this.initChunkSeed(areaX + dx, areaY + dy);
+                arr[dy * areaWidth + dx] = this.nextInt(256);
+            }
+        }
+        return arr;
+    }
 }

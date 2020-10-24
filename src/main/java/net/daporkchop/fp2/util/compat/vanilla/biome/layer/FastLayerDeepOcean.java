@@ -20,23 +20,32 @@
 
 package net.daporkchop.fp2.util.compat.vanilla.biome.layer;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.init.Biomes;
+import net.minecraft.world.biome.Biome;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public abstract class FastLayer {
-    public static final long PARENT_OFFSET = PUnsafe.pork_getOffset(FastLayer.class, "parent");
+public class FastLayerDeepOcean extends FastLayer {
+    private static final int OCEAN = Biome.getIdForBiome(Biomes.OCEAN);
+    private static final int DEEP_OCEAN = Biome.getIdForBiome(Biomes.DEEP_OCEAN);
 
-    protected final long seed;
-    protected final FastLayer parent = null;
-
-    public void init(@NonNull FastLayer[] children) {
-        PUnsafe.putObject(this, PARENT_OFFSET, children[0]);
+    public FastLayerDeepOcean(long seed) {
+        super(seed);
     }
 
-    public abstract int getSingle(int x, int z);
+    @Override
+    public int getSingle(int x, int z) {
+        int center = this.parent.getSingle(x, z);
+
+        if (center == OCEAN
+            && this.parent.getSingle(x - 1, z) == OCEAN
+            && this.parent.getSingle(x, z - 1) == OCEAN
+            && this.parent.getSingle(x + 1, z) == OCEAN
+            && this.parent.getSingle(x, z + 1) == OCEAN) {
+            return DEEP_OCEAN;
+        } else {
+            return center;
+        }
+    }
 }

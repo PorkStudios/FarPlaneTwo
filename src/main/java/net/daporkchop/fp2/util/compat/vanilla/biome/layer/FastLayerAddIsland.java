@@ -20,11 +20,68 @@
 
 package net.daporkchop.fp2.util.compat.vanilla.biome.layer;
 
+import static net.daporkchop.fp2.util.compat.vanilla.biome.BiomeHelper.*;
+
 /**
  * @author DaPorkchop_
  */
 public class FastLayerAddIsland extends FastLayer {
     public FastLayerAddIsland(long seed) {
         super(seed);
+    }
+
+    @Override
+    public int getSingle(int x, int z) {
+        int center = this.parent.getSingle(x, z);
+
+        int v0 = this.parent.getSingle(x - 1, z);
+        int v1 = this.parent.getSingle(x, z - 1);
+        int v2 = this.parent.getSingle(x + 1, z);
+        int v3 = this.parent.getSingle(x, z + 1);
+
+        if (center != 0 || (v0 | v1 | v2 | v3) == 0) {
+            if (center != 0 && (v0 == 0 || v1 == 0 || v2 == 0 || v3 == 0)) {
+                long state = start(this.seed, x, z);
+                if (nextInt(state, 5) == 0) {
+                    return center == 4 ? 4 : 0;
+                }
+            }
+            return center;
+        } else {
+            long state = start(this.seed, x, z);
+            int limit = 1;
+            int next = 1;
+
+            if (v0 != 0) {
+                if (nextInt(state, limit++) == 0) {
+                    next = v0;
+                }
+                state = update(state, this.seed);
+            }
+            if (v1 != 0) {
+                if (nextInt(state, limit++) == 0) {
+                    next = v1;
+                }
+                state = update(state, this.seed);
+            }
+            if (v2 != 0) {
+                if (nextInt(state, limit++) == 0) {
+                    next = v2;
+                }
+                state = update(state, this.seed);
+            }
+            if (v3 != 0) {
+                if (nextInt(state, limit) == 0) {
+                    next = v3;
+                }
+                state = update(state, this.seed);
+            }
+
+            if (nextInt(state, 3) == 0) {
+                return next;
+            } else {
+                return next == 4 ? 4 : 0;
+            }
+        }
     }
 }

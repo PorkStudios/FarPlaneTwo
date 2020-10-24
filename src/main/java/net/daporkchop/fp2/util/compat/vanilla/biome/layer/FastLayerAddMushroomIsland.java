@@ -20,23 +20,34 @@
 
 package net.daporkchop.fp2.util.compat.vanilla.biome.layer;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.init.Biomes;
+import net.minecraft.world.biome.Biome;
+
+import static net.daporkchop.fp2.util.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public abstract class FastLayer {
-    public static final long PARENT_OFFSET = PUnsafe.pork_getOffset(FastLayer.class, "parent");
+public class FastLayerAddMushroomIsland extends FastLayer {
+    private static final int MUSHROOM_ISLAND = Biome.getIdForBiome(Biomes.MUSHROOM_ISLAND);
 
-    protected final long seed;
-    protected final FastLayer parent = null;
-
-    public void init(@NonNull FastLayer[] children) {
-        PUnsafe.putObject(this, PARENT_OFFSET, children[0]);
+    public FastLayerAddMushroomIsland(long seed) {
+        super(seed);
     }
 
-    public abstract int getSingle(int x, int z);
+    @Override
+    public int getSingle(int x, int z) {
+        int center = this.parent.getSingle(x, z);
+
+        int v0 = this.parent.getSingle(x - 1, z);
+        int v1 = this.parent.getSingle(x, z - 1);
+        int v2 = this.parent.getSingle(x + 1, z);
+        int v3 = this.parent.getSingle(x, z + 1);
+
+        if ((v0 | v1 | v2 | v3) == 0 && nextInt(start(this.seed, x, z), 100) == 0) {
+            return MUSHROOM_ISLAND;
+        } else {
+            return center;
+        }
+    }
 }

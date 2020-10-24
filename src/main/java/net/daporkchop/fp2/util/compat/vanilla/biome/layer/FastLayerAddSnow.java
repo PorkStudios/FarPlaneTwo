@@ -20,23 +20,30 @@
 
 package net.daporkchop.fp2.util.compat.vanilla.biome.layer;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.lib.unsafe.PUnsafe;
+import static net.daporkchop.fp2.util.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public abstract class FastLayer {
-    public static final long PARENT_OFFSET = PUnsafe.pork_getOffset(FastLayer.class, "parent");
-
-    protected final long seed;
-    protected final FastLayer parent = null;
-
-    public void init(@NonNull FastLayer[] children) {
-        PUnsafe.putObject(this, PARENT_OFFSET, children[0]);
+public class FastLayerAddSnow extends FastLayer {
+    public FastLayerAddSnow(long seed) {
+        super(seed);
     }
 
-    public abstract int getSingle(int x, int z);
+    @Override
+    public int getSingle(int x, int z) {
+        int v = this.parent.getSingle(x, z);
+        if (v == 0) {
+            return 0;
+        }
+
+        int r = nextInt(start(this.seed, x, z), 6);
+        if (r == 0) {
+            return 4;
+        } else if (r == 1) {
+            return 3;
+        } else {
+            return 1;
+        }
+    }
 }

@@ -22,97 +22,17 @@ package net.daporkchop.fp2.util.compat.vanilla.biome;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.util.compat.vanilla.biome.layer.FastLayer;
-import net.daporkchop.fp2.util.compat.vanilla.biome.layer.FastLayerAddIsland;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
-import net.minecraft.world.gen.layer.GenLayer;
-import net.minecraft.world.gen.layer.GenLayerAddIsland;
-import net.minecraft.world.gen.layer.GenLayerAddMushroomIsland;
-import net.minecraft.world.gen.layer.GenLayerAddSnow;
-import net.minecraft.world.gen.layer.GenLayerBiome;
-import net.minecraft.world.gen.layer.GenLayerBiomeEdge;
-import net.minecraft.world.gen.layer.GenLayerDeepOcean;
-import net.minecraft.world.gen.layer.GenLayerEdge;
-import net.minecraft.world.gen.layer.GenLayerFuzzyZoom;
-import net.minecraft.world.gen.layer.GenLayerHills;
-import net.minecraft.world.gen.layer.GenLayerIsland;
-import net.minecraft.world.gen.layer.GenLayerRareBiome;
-import net.minecraft.world.gen.layer.GenLayerRemoveTooMuchOcean;
-import net.minecraft.world.gen.layer.GenLayerRiver;
-import net.minecraft.world.gen.layer.GenLayerRiverInit;
-import net.minecraft.world.gen.layer.GenLayerRiverMix;
-import net.minecraft.world.gen.layer.GenLayerShore;
-import net.minecraft.world.gen.layer.GenLayerSmooth;
-import net.minecraft.world.gen.layer.GenLayerVoronoiZoom;
-import net.minecraft.world.gen.layer.GenLayerZoom;
 
-import java.util.IdentityHashMap;
-import java.util.Map;
-import java.util.function.Function;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.fp2.util.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
  */
 public class FastThreadSafeBiomeProvider implements IBiomeProvider {
-    //gets all direct children of a GenLayer
-    public static final Map<Class<? extends GenLayer>, Function<GenLayer, GenLayer[]>> GET_CHILDREN = new IdentityHashMap<>();
-
-    static {
-        Function<GenLayer, GenLayer[]> parent = genLayer -> new GenLayer[]{ genLayer.parent };
-
-        GET_CHILDREN.put(GenLayerAddIsland.class, parent);
-        GET_CHILDREN.put(GenLayerAddMushroomIsland.class, parent);
-        GET_CHILDREN.put(GenLayerAddSnow.class, parent);
-        GET_CHILDREN.put(GenLayerBiome.class, parent);
-        GET_CHILDREN.put(GenLayerBiomeEdge.class, parent);
-        GET_CHILDREN.put(GenLayerDeepOcean.class, parent);
-        GET_CHILDREN.put(GenLayerEdge.class, parent);
-        GET_CHILDREN.put(GenLayerFuzzyZoom.class, parent);
-        GET_CHILDREN.put(GenLayerHills.class, genLayer -> new GenLayer[]{ genLayer.parent, ((GenLayerHills) genLayer).riverLayer });
-        GET_CHILDREN.put(GenLayerIsland.class, parent);
-        GET_CHILDREN.put(GenLayerRareBiome.class, parent);
-        GET_CHILDREN.put(GenLayerRemoveTooMuchOcean.class, parent);
-        GET_CHILDREN.put(GenLayerRiver.class, parent);
-        GET_CHILDREN.put(GenLayerRiverInit.class, parent);
-        GET_CHILDREN.put(GenLayerRiverMix.class, genLayer -> {
-            GenLayerRiverMix l = (GenLayerRiverMix) genLayer;
-            return new GenLayer[]{ l.biomePatternGeneratorChain, l.riverPatternGeneratorChain };
-        });
-        GET_CHILDREN.put(GenLayerShore.class, parent);
-        GET_CHILDREN.put(GenLayerSmooth.class, parent);
-        GET_CHILDREN.put(GenLayerVoronoiZoom.class, parent);
-        GET_CHILDREN.put(GenLayerZoom.class, parent);
-    }
-
-    public static final Map<Class<? extends GenLayer>, Function<GenLayer, FastLayer>> FAST_MAPPERS = new IdentityHashMap<>();
-
-    static {
-        FAST_MAPPERS.put(GenLayerAddIsland.class, layer -> new FastLayerAddIsland(layer.worldGenSeed));
-    }
-
-    protected static void addAllLayers(Map<GenLayer, GenLayer[]> childrenMap, GenLayer layer) {
-        if (childrenMap.containsKey(layer)) {
-            return; //don't re-add the same layer twice
-        }
-
-        Function<GenLayer, GenLayer[]> getChildren = GET_CHILDREN.get(layer.getClass());
-        checkArg(getChildren != null, "invalid GenLayer class: %s", layer.getClass().getCanonicalName());
-        GenLayer[] children = getChildren.apply(layer);
-        childrenMap.put(layer, children);
-
-        //add children recursively
-        for (GenLayer child : children) {
-            addAllLayers(childrenMap, child);
-        }
-    }
-
     public FastThreadSafeBiomeProvider(@NonNull BiomeProvider provider) {
-        Map<GenLayer, GenLayer[]> children = new IdentityHashMap<>();
-        addAllLayers(children, provider.genBiomes);
-        addAllLayers(children, provider.biomeIndexLayer);
-        Map<GenLayer, FastLayer> fastLayers = children.entrySet();
+        FastLayer[] fastLayers = makeFast(provider.genBiomes, provider.biomeIndexLayer);
     }
 
     //TODO: implement everything

@@ -20,23 +20,32 @@
 
 package net.daporkchop.fp2.util.compat.vanilla.biome.layer;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.lib.unsafe.PUnsafe;
+import static net.daporkchop.fp2.util.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public abstract class FastLayer {
-    public static final long PARENT_OFFSET = PUnsafe.pork_getOffset(FastLayer.class, "parent");
-
-    protected final long seed;
-    protected final FastLayer parent = null;
-
-    public void init(@NonNull FastLayer[] children) {
-        PUnsafe.putObject(this, PARENT_OFFSET, children[0]);
+public class FastLayerFuzzyZoom extends FastLayerZoom {
+    public FastLayerFuzzyZoom(long seed) {
+        super(seed);
     }
 
-    public abstract int getSingle(int x, int z);
+    @Override
+    protected int sampleXZLast(int lowX, int lowZ) {
+        //random
+        long state = start(this.seed, lowX << 1, lowZ << 1);
+        state = update(state, this.seed);
+        state = update(state, this.seed);
+        switch (nextInt(state, 4)) {
+            case 0:
+                return this.parent.getSingle(lowX, lowZ);
+            case 1:
+                return this.parent.getSingle(lowX + 1, lowZ);
+            case 2:
+                return this.parent.getSingle(lowX, lowZ + 1);
+            case 3:
+                return this.parent.getSingle(lowX + 1, lowZ + 1);
+        }
+        throw new IllegalStateException();
+    }
 }
