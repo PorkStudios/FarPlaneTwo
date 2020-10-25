@@ -139,7 +139,6 @@ public class TexUVs {
     }
 
     public static void reloadUVs() {
-        int quadIdAllocator = 0;
         ObjIntMap<List<PackedBakedQuad>> distinctQuadsToId = new ObjIntOpenHashMap<>();
         List<List<PackedBakedQuad>> distinctQuadsById = new ArrayList<>();
 
@@ -162,10 +161,6 @@ public class TexUVs {
                     IBlockState replacedState = replacer.replace(state, face);
                     IBakedModel model = shapes.getModelForState(replacedState);
                     List<PackedBakedQuad> quads = PorkUtil.fallbackIfNull(renderer.render(replacedState, face, model), missingTextureQuads);
-
-                    if (block == Blocks.LEAVES) {
-                        int i = 0;
-                    }
 
                     int id = distinctQuadsToId.getOrDefault(quads, -1);
                     if (id < 0) { //allocate new ID
@@ -199,9 +194,7 @@ public class TexUVs {
                 for (PackedBakedQuad quad : quads) {
                     buffer.writeFloat(quad.minU).writeFloat(quad.minV)
                             .writeFloat(quad.maxU).writeFloat(quad.maxV)
-                            .writeFloat(quad.tintFactor)
-                            //.writeFloat(0.0f)
-                    ;
+                            .writeFloat(quad.tintFactor);
                 }
             }
             try (ShaderStorageBuffer ssbo = QUAD_DATA.bind()) { //upload data

@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
@@ -31,13 +32,16 @@ import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.IFarRenderBaker;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
+import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.init.Blocks;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL40.*;
 import static org.lwjgl.opengl.GL43.*;
 
@@ -81,6 +85,7 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
                 GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
                 glUniform1d(shader.uniformLocation("seaLevel"), 63.0d);
+                glUniform1i(shader.uniformLocation("water"), TexUVs.STATEID_TO_INDEXID.get(Block.getStateId(Blocks.WATER.getDefaultState())));
 
                 glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, opaqueCount, 0);
 

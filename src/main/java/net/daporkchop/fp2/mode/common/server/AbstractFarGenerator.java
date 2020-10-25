@@ -31,7 +31,11 @@ import net.minecraft.world.WorldServer;
 public abstract class AbstractFarGenerator implements IFarGenerator {
     protected static final long SEALEVEL_OFFSET = PUnsafe.pork_getOffset(AbstractFarGenerator.class, "seaLevel");
 
-    protected final int seaLevel = 0; //this is final to allow JIT to hoist slow getfield opcodes out of the main loop when referenced in a loop
+    protected final int seaLevel; //this is final to allow JIT to hoist slow getfield opcodes out of the main loop when referenced in a loop
+
+    public AbstractFarGenerator() {
+        this.seaLevel = Integer.MIN_VALUE;
+    }
 
     @Override
     public void init(@NonNull WorldServer world) {

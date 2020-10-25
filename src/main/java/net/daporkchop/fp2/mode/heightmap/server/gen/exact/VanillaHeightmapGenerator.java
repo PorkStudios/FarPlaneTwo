@@ -71,12 +71,11 @@ public class VanillaHeightmapGenerator extends AbstractFarGenerator implements I
                     state = world.getBlockState(pos);
                 }
 
-                data.height = height;
+                pos.setY(data.height = ++height);
                 data.state = Block.getStateId(state);
-                pos.setY(height + 1);
                 data.light = packCombinedLight(world.getCombinedLight(pos, 0));
                 data.biome = Biome.getIdForBiome(world.getBiome(pos));
-                pos.setY(this.seaLevel);
+                pos.setY(this.seaLevel + 1);
                 data.waterLight = packCombinedLight(world.getCombinedLight(pos, 0));
                 data.waterBiome = Biome.getIdForBiome(world.getBiome(pos));
 

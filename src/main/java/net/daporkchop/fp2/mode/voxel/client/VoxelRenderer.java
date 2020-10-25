@@ -72,6 +72,16 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
                 glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, opaqueCount, 0);
                 GlStateManager.enableAlpha();
             }
+            try (ShaderProgram shader = TRANSPARENT_SHADER.use()) {
+                GlStateManager.enableBlend();
+                GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+                //TODO: order-independent transparency?
+                // (that'll be a BIG project...)
+                glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, opaqueCount, 0);
+
+                GlStateManager.disableBlend();
+            }
         }
     }
 

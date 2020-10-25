@@ -23,10 +23,9 @@ package net.daporkchop.fp2.mode.common.client;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.client.gl.camera.Frustum;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.DirectBufferReuse;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.unsafe.PCleaner;
@@ -272,10 +271,10 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
     /**
      * Sets the render data for the piece at the given position.
      *
-     * @param pos            the position of the piece to set the render data for
-     * @param vertices a {@link ByteBuf} containing the vertex data
-     * @param opaqueIndices  a {@link ByteBuf} containing the opaque index data
-     * @param opaqueIndices  a {@link ByteBuf} containing the transparent index data
+     * @param pos                the position of the piece to set the render data for
+     * @param vertices           a {@link ByteBuf} containing the vertex data
+     * @param opaqueIndices      a {@link ByteBuf} containing the opaque index data
+     * @param transparentIndices a {@link ByteBuf} containing the transparent index data
      */
     public void putRenderData(@NonNull POS pos, @NonNull ByteBuf vertices, @NonNull ByteBuf opaqueIndices, @NonNull ByteBuf transparentIndices) {
         this.putRenderData0(DEPTH, this.root, pos, vertices, opaqueIndices, transparentIndices);

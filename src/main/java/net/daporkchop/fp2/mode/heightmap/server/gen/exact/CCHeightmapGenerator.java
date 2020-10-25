@@ -81,9 +81,8 @@ public class CCHeightmapGenerator extends AbstractFarGenerator implements IFarGe
                     state = world.getBlockState(pos);
                 }
 
-                data.height = height;
+                pos.setY(data.height = ++height);
                 data.state = Block.getStateId(state);
-                pos.setY(height + 1);
                 data.light = packCombinedLight(world.getCombinedLight(pos, 0));
                 data.biome = Biome.getIdForBiome(world.getBiome(pos));
                 pos.setY(this.seaLevel);

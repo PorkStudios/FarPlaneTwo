@@ -18,14 +18,7 @@
  *
  */
 
-//
-//
-// UNIFORMS
-//
-//
-
-uniform double seaLevel;
-uniform int water;
+//TODO: currently, this is just a copypasta of vert/heightmap/water.vert
 
 //
 //
@@ -38,22 +31,21 @@ layout(location = 4) in vec3 in_color_water;
 
 layout(location = 5) in dvec3 in_pos_low;
 
-void main() {
+void main(){
     //convert position to vec3 afterwards to minimize precision loss
-    dvec3 pos = dvec3(in_pos_low.x, seaLevel, in_pos_low.z);
+    dvec3 pos = dvec3(in_pos_low.x, 63., in_pos_low.z);
     vec3 relativePos = vec3(pos - glState.camera.position);
 
     //vertex position is detail mixed
     gl_Position = cameraTransform(relativePos);
 
-    vs_out.pos = relativePos;
-    vs_out.base_pos = relativePos;
-
     //set fog depth
     fog_out.depth = length(relativePos);
 
+    //state is always 9 (still water)
+    vs_out.state = 22;
+
     //copy trivial attributes
     vs_out.light = in_light_water;
-    vs_out.state = water;
     vs_out.color = in_color_water;
 }
