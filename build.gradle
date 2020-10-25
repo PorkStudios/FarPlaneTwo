@@ -123,7 +123,6 @@ dependencies {
     annotationProcessor "org.ow2.asm:asm-debug-all:5.2"
     annotationProcessor "org.spongepowered:mixin:$mixinVersion"
 
-
     compileOnly "org.projectlombok:lombok:$lombokVersion"
     annotationProcessor "org.projectlombok:lombok:$lombokVersion"
 

@@ -24,6 +24,7 @@ import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.client.gl.camera.Frustum;
+import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.util.DirectBufferReuse;
@@ -59,7 +60,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
      * Constants:
      * - D: number of dimensions
      *
-     * Node structure:
+     * struct Node {
      *   int flags;
      *   - 0x00: top
      *   - 0x01: bottom
@@ -68,22 +69,25 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
      *   - 0x04: opaque
      *   - 0x05: transparent
      *   int pos[D]; //only stores X(Y)Z coordinates, level is computed dynamically based on recursion depth
-     *   RenderData opaque;
-     *   RenderData transparent;
+     *   RenderData data;
      *   Node* children[1 << D];
+     * };
      *
-     * RenderData structure:
+     * struct RenderData {
      *   GpuBuffer vertices;
-     *   GpuBuffer indices;
+     *   GpuBuffer opaqueIndices;
+     *   GpuBuffer transparentIndices;
+     * };
      *
-     * GpuBuffer structure:
+     * struct GpuBuffer {
      *   void* addr; //address of data in main memory
      *   int off; //offset of data in gpu memory
      *   int count;
+     * };
      *
-     * Total size: 4+2*(2*(8+2*4))+D*4+2^D*8
-     * - 2D: 108 bytes //~1.7 cache lines
-     * - 3D: 144 bytes //~2.25 cache lines
+     * Total size: 4+3*(8+2*4)+D*4+2^D*8
+     * - 2D: 92 bytes //~1.4 cache lines
+     * - 3D: 128 bytes //exactly 2 cache lines
      */
 
     public static final int FLAG_TOP = 1 << 0;
@@ -99,14 +103,14 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
     protected static final long GPUBUFFER_STRUCT_SIZE = GPUBUFFER_SIZE + 4L;
 
     protected static final long RENDERDATA_VERTICES = 0L;
-    protected static final long RENDERDATA_INDICES = RENDERDATA_VERTICES + GPUBUFFER_STRUCT_SIZE;
-    protected static final long RENDERDATA_STRUCT_SIZE = RENDERDATA_INDICES + GPUBUFFER_STRUCT_SIZE;
+    protected static final long RENDERDATA_OPAQUE_INDICES = RENDERDATA_VERTICES + GPUBUFFER_STRUCT_SIZE;
+    protected static final long RENDERDATA_TRANSPARENT_INDICES = RENDERDATA_OPAQUE_INDICES + GPUBUFFER_STRUCT_SIZE;
+    protected static final long RENDERDATA_STRUCT_SIZE = RENDERDATA_TRANSPARENT_INDICES + GPUBUFFER_STRUCT_SIZE;
 
     //the following 5 fields are the offsets of the actual node member variables from the node's pointer
     protected final long flags;
     protected final long pos;
-    protected final long opaque;
-    protected final long transparent;
+    protected final long data;
     protected final long children;
 
     protected final long nodeSize;
@@ -125,9 +129,8 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
 
         this.flags = 0L;
         this.pos = this.flags + 4L;
-        this.opaque = this.pos + d * 4L;
-        this.transparent = this.opaque + RENDERDATA_STRUCT_SIZE;
-        this.children = this.transparent + RENDERDATA_STRUCT_SIZE;
+        this.data = this.pos + d * 4L;
+        this.children = this.data + RENDERDATA_STRUCT_SIZE;
 
         this.nodeSize = this.children + this.childCount() * 8L;
         LOGGER.info("{}D tree node size: {} bytes", d, this.nodeSize);
@@ -135,7 +138,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
         PUnsafe.setMemory(this.root = PUnsafe.allocateMemory(this.nodeSize), this.nodeSize, (byte) 0);
         PUnsafe.putInt(this.root + this.flags, FLAG_PLACEHOLDER);
 
-        this.cleaner = PCleaner.cleaner(this, new ReleaseFunction(this.root, this.flags, this.opaque, this.transparent, this.children, this.childCount()));
+        this.cleaner = PCleaner.cleaner(this, new ReleaseFunction(this.root, this.flags, this.data, this.children, this.childCount()));
 
         this.cache = cache;
         this.vertexSize = this.cache.vertexSize();
@@ -197,7 +200,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
      * @param frustum the frustum to check for intersection with
      * @return whether or not the given node is in the given frustum
      */
-    protected abstract boolean isNodeInFrustum(int level, long node, @NonNull Frustum frustum);
+    protected abstract boolean isNodeInFrustum(int level, long node, @NonNull IFrustum frustum);
 
     /**
      * Checks whether or not the given node has all of the given flags set.
@@ -270,14 +273,15 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
      * Sets the render data for the piece at the given position.
      *
      * @param pos            the position of the piece to set the render data for
-     * @param opaqueVertices a {@link ByteBuf} containing the opaque vertex data
+     * @param vertices a {@link ByteBuf} containing the vertex data
      * @param opaqueIndices  a {@link ByteBuf} containing the opaque index data
+     * @param opaqueIndices  a {@link ByteBuf} containing the transparent index data
      */
-    public void putRenderData(@NonNull POS pos, @NonNull ByteBuf opaqueVertices, @NonNull ByteBuf opaqueIndices) {
-        this.putRenderData0(DEPTH, this.root, pos, opaqueVertices, opaqueIndices);
+    public void putRenderData(@NonNull POS pos, @NonNull ByteBuf vertices, @NonNull ByteBuf opaqueIndices, @NonNull ByteBuf transparentIndices) {
+        this.putRenderData0(DEPTH, this.root, pos, vertices, opaqueIndices, transparentIndices);
     }
 
-    protected void putRenderData0(int level, long node, POS pos, ByteBuf opaqueVertices, ByteBuf opaqueIndices) {
+    protected void putRenderData0(int level, long node, POS pos, ByteBuf vertices, ByteBuf opaqueIndices, ByteBuf transparentIndices) {
         long child = this.findChildStep(level, node, pos);
         if (child != node) {
             if (child == 0L) { //next node doesn't exist
@@ -288,32 +292,35 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
                 PUnsafe.putLong(node + this.children + this.childIndex(level, pos) * 8L, child);
             }
 
-            this.putRenderData0(level - 1, child, pos, opaqueVertices, opaqueIndices);
+            this.putRenderData0(level - 1, child, pos, vertices, opaqueIndices, transparentIndices);
         } else { //current node is the target node
             this.clearFlags(node, FLAG_RENDERED);
 
-            this.setRenderData(node, node + this.opaque, FLAG_OPAQUE, opaqueVertices, opaqueIndices);
-            //TODO: set transparent render data here
+            this.setRenderData(node, node + this.data, vertices, opaqueIndices, transparentIndices);
 
             this.setFlags(node, FLAG_RENDERED);
         }
     }
 
-    protected void setRenderData(long node, long data, int layerFlag, ByteBuf vertices, ByteBuf indices) {
-        if (this.checkFlagsAND(node, layerFlag)) { //render layer already has data which needs to be released first
-            //free vertex data
+    protected void setRenderData(long node, long data, ByteBuf vertices, ByteBuf opaqueIndices, ByteBuf transparentIndices) {
+        //free any data that needs to be freed
+        if (this.checkFlagsOR(node, FLAG_OPAQUE | FLAG_TRANSPARENT)) { //free vertex data
             PUnsafe.freeMemory(PUnsafe.getLong(data + RENDERDATA_VERTICES + GPUBUFFER_ADDR));
             this.cache.verticesAllocator.free((long) PUnsafe.getInt(data + RENDERDATA_VERTICES + GPUBUFFER_OFF) * this.vertexSize);
-
-            //free index data
-            PUnsafe.freeMemory(PUnsafe.getLong(data + RENDERDATA_INDICES + GPUBUFFER_ADDR));
-            this.cache.indicesAllocator.free((long) PUnsafe.getInt(data + RENDERDATA_INDICES + GPUBUFFER_OFF) * this.indexSize);
+        }
+        if (this.checkFlagsAND(node, FLAG_OPAQUE)) { //free opaque index data
+            PUnsafe.freeMemory(PUnsafe.getLong(data + RENDERDATA_OPAQUE_INDICES + GPUBUFFER_ADDR));
+            this.cache.indicesAllocator.free((long) PUnsafe.getInt(data + RENDERDATA_OPAQUE_INDICES + GPUBUFFER_OFF) * this.indexSize);
+        }
+        if (this.checkFlagsAND(node, FLAG_TRANSPARENT)) { //free transparent index data
+            PUnsafe.freeMemory(PUnsafe.getLong(data + RENDERDATA_TRANSPARENT_INDICES + GPUBUFFER_ADDR));
+            this.cache.indicesAllocator.free((long) PUnsafe.getInt(data + RENDERDATA_TRANSPARENT_INDICES + GPUBUFFER_OFF) * this.indexSize);
         }
 
-        if (vertices.isReadable() && indices.isReadable()) {
-            //mark layer as rendered
-            this.setFlags(node, layerFlag);
+        //clear all flags initially
+        this.clearFlags(node, FLAG_OPAQUE | FLAG_TRANSPARENT);
 
+        if (vertices.isReadable() && (opaqueIndices.isReadable() || transparentIndices.isReadable())) {
             //copy vertex data
             int sizeBytes = vertices.readableBytes();
             long addr = PUnsafe.allocateMemory(sizeBytes);
@@ -322,18 +329,40 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
             PUnsafe.putInt(data + RENDERDATA_VERTICES + GPUBUFFER_OFF, toInt(this.cache.verticesAllocator.alloc(sizeBytes) / this.vertexSize));
             PUnsafe.putInt(data + RENDERDATA_VERTICES + GPUBUFFER_SIZE, sizeBytes / this.vertexSize);
 
-            //copy index data
-            sizeBytes = indices.readableBytes();
-            addr = PUnsafe.allocateMemory(sizeBytes);
-            indices.readBytes(DirectBufferReuse.wrapByte(addr, sizeBytes));
-            PUnsafe.putLong(data + RENDERDATA_INDICES + GPUBUFFER_ADDR, addr);
-            PUnsafe.putInt(data + RENDERDATA_INDICES + GPUBUFFER_OFF, toInt(this.cache.indicesAllocator.alloc(sizeBytes) / this.indexSize));
-            PUnsafe.putInt(data + RENDERDATA_INDICES + GPUBUFFER_SIZE, sizeBytes / this.indexSize);
-
             //upload data to gpu
-            this.uploadRenderData(data);
-        } else {
-            this.clearFlags(node, layerFlag);
+            this.uploadGpuBuffer(GL_ARRAY_BUFFER, data + RENDERDATA_VERTICES, this.vertexSize);
+
+            if (opaqueIndices.isReadable()) {
+                //mark layer as rendered
+                this.setFlags(node, FLAG_OPAQUE);
+
+                //copy index data
+                sizeBytes = opaqueIndices.readableBytes();
+                addr = PUnsafe.allocateMemory(sizeBytes);
+                opaqueIndices.readBytes(DirectBufferReuse.wrapByte(addr, sizeBytes));
+                PUnsafe.putLong(data + RENDERDATA_OPAQUE_INDICES + GPUBUFFER_ADDR, addr);
+                PUnsafe.putInt(data + RENDERDATA_OPAQUE_INDICES + GPUBUFFER_OFF, toInt(this.cache.indicesAllocator.alloc(sizeBytes) / this.indexSize));
+                PUnsafe.putInt(data + RENDERDATA_OPAQUE_INDICES + GPUBUFFER_SIZE, sizeBytes / this.indexSize);
+
+                //upload data to gpu
+                this.uploadGpuBuffer(GL_ELEMENT_ARRAY_BUFFER, data + RENDERDATA_OPAQUE_INDICES, this.indexSize);
+            }
+
+            if (transparentIndices.isReadable()) {
+                //mark layer as rendered
+                this.setFlags(node, FLAG_TRANSPARENT);
+
+                //copy index data
+                sizeBytes = transparentIndices.readableBytes();
+                addr = PUnsafe.allocateMemory(sizeBytes);
+                transparentIndices.readBytes(DirectBufferReuse.wrapByte(addr, sizeBytes));
+                PUnsafe.putLong(data + RENDERDATA_TRANSPARENT_INDICES + GPUBUFFER_ADDR, addr);
+                PUnsafe.putInt(data + RENDERDATA_TRANSPARENT_INDICES + GPUBUFFER_OFF, toInt(this.cache.indicesAllocator.alloc(sizeBytes) / this.indexSize));
+                PUnsafe.putInt(data + RENDERDATA_TRANSPARENT_INDICES + GPUBUFFER_SIZE, sizeBytes / this.indexSize);
+
+                //upload data to gpu
+                this.uploadGpuBuffer(GL_ELEMENT_ARRAY_BUFFER, data + RENDERDATA_TRANSPARENT_INDICES, this.indexSize);
+            }
         }
     }
 
@@ -399,13 +428,18 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
             return false; //no further changes are necessary
         } else { //current node is the target node
             //free render data allocations
-            if (this.checkFlagsAND(node, FLAG_RENDERED | FLAG_OPAQUE)) {
-                PUnsafe.freeMemory(PUnsafe.getLong(node + this.opaque + RENDERDATA_VERTICES + GPUBUFFER_ADDR));
-                PUnsafe.freeMemory(PUnsafe.getLong(node + this.opaque + RENDERDATA_INDICES + GPUBUFFER_ADDR));
+            long data = node + this.data;
+            if (this.checkFlagsOR(node, FLAG_OPAQUE | FLAG_TRANSPARENT)) { //free vertex data
+                PUnsafe.freeMemory(PUnsafe.getLong(data + RENDERDATA_VERTICES + GPUBUFFER_ADDR));
+                this.cache.verticesAllocator.free((long) PUnsafe.getInt(data + RENDERDATA_VERTICES + GPUBUFFER_OFF) * this.vertexSize);
             }
-            if (this.checkFlagsAND(node, FLAG_RENDERED | FLAG_TRANSPARENT)) {
-                PUnsafe.freeMemory(PUnsafe.getLong(node + this.transparent + RENDERDATA_VERTICES + GPUBUFFER_ADDR));
-                PUnsafe.freeMemory(PUnsafe.getLong(node + this.transparent + RENDERDATA_INDICES + GPUBUFFER_ADDR));
+            if (this.checkFlagsAND(node, FLAG_OPAQUE)) { //free opaque index data
+                PUnsafe.freeMemory(PUnsafe.getLong(data + RENDERDATA_OPAQUE_INDICES + GPUBUFFER_ADDR));
+                this.cache.indicesAllocator.free((long) PUnsafe.getInt(data + RENDERDATA_OPAQUE_INDICES + GPUBUFFER_OFF) * this.indexSize);
+            }
+            if (this.checkFlagsAND(node, FLAG_TRANSPARENT)) { //free transparent index data
+                PUnsafe.freeMemory(PUnsafe.getLong(data + RENDERDATA_TRANSPARENT_INDICES + GPUBUFFER_ADDR));
+                this.cache.indicesAllocator.free((long) PUnsafe.getInt(data + RENDERDATA_TRANSPARENT_INDICES + GPUBUFFER_OFF) * this.indexSize);
             }
 
             return true; //return true, indicating that this node is now empty and should be deleted
@@ -423,26 +457,18 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
         return PUnsafe.getLong(node + this.children + childIndex * 8L);
     }
 
-    public void uploadRenderData(long data) {
-        this.uploadGpuBuffer(GL_ARRAY_BUFFER, data + RENDERDATA_VERTICES, this.vertexSize);
-        this.uploadGpuBuffer(GL_ELEMENT_ARRAY_BUFFER, data + RENDERDATA_INDICES, this.indexSize);
-    }
-
     public void uploadVertices(long node) {
-        if (this.checkFlagsAND(node, FLAG_RENDERED | FLAG_OPAQUE)) {
-            this.uploadGpuBuffer(GL_ARRAY_BUFFER, node + this.opaque + RENDERDATA_VERTICES, this.vertexSize);
-        }
-        if (this.checkFlagsAND(node, FLAG_RENDERED | FLAG_TRANSPARENT)) {
-            this.uploadGpuBuffer(GL_ARRAY_BUFFER, node + this.transparent + RENDERDATA_VERTICES, this.vertexSize);
+        if (this.checkFlagsOR(node, FLAG_OPAQUE | FLAG_TRANSPARENT)) {
+            this.uploadGpuBuffer(GL_ARRAY_BUFFER, node + this.data + RENDERDATA_VERTICES, this.vertexSize);
         }
     }
 
     public void uploadIndices(long node) {
-        if (this.checkFlagsAND(node, FLAG_RENDERED | FLAG_OPAQUE)) {
-            this.uploadGpuBuffer(GL_ELEMENT_ARRAY_BUFFER, node + this.opaque + RENDERDATA_INDICES, this.indexSize);
+        if (this.checkFlagsAND(node, FLAG_OPAQUE)) {
+            this.uploadGpuBuffer(GL_ELEMENT_ARRAY_BUFFER, node + this.data + RENDERDATA_OPAQUE_INDICES, this.indexSize);
         }
-        if (this.checkFlagsAND(node, FLAG_RENDERED | FLAG_TRANSPARENT)) {
-            this.uploadGpuBuffer(GL_ELEMENT_ARRAY_BUFFER, node + this.transparent + RENDERDATA_INDICES, this.indexSize);
+        if (this.checkFlagsAND(node, FLAG_TRANSPARENT)) {
+            this.uploadGpuBuffer(GL_ELEMENT_ARRAY_BUFFER, node + this.data + RENDERDATA_TRANSPARENT_INDICES, this.indexSize);
         }
     }
 
@@ -459,12 +485,13 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
      * @param frustum the view frustum
      * @param index   the render index to add pieces to
      */
-    public void select(@NonNull Volume[] ranges, @NonNull Frustum frustum, @NonNull FarRenderIndex index) {
+    public void select(@NonNull Volume[] ranges, @NonNull IFrustum frustum, @NonNull FarRenderIndex index) {
         this.select0(DEPTH, this.root, ranges, frustum, index);
     }
 
-    protected boolean select0(int level, long node, Volume[] ranges, Frustum frustum, FarRenderIndex index) {
-        if (!this.isNodeInFrustum(level, node, frustum)) {
+    protected boolean select0(int level, long node, Volume[] ranges, IFrustum frustum, FarRenderIndex index) {
+        if (level < DEPTH //don't do frustum culling on the top level, as it doesn't have a valid position because it's not really "there"
+            && !this.isNodeInFrustum(level, node, frustum)) {
             //the frustum doesn't contain this tile's bounding box, so we can be certain that neither
             // this tile nor any of its children would be visible
             return true; //return true to prevent parent node from skipping all high-res pieces if some of them were outside of the frustum
@@ -478,7 +505,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
             }
 
             return true; //this value really doesn't matter, it's guaranteed to be discarded
-        } else if (!this.checkFlagsAND(node, FLAG_TOP) //don't do range checking for top level, as it will cause a bunch of pieces to be loaded but never rendered
+        } else if (level < DEPTH //don't do range checking for top level, as it will cause a bunch of pieces to be loaded but never rendered
                    && !this.intersects(level, node, ranges[level])) {
             //the view range for this level doesn't intersect this tile's bounding box,
             // so we can be certain that neither this tile nor any of its children would be contained
@@ -500,7 +527,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
                     }
                 }
 
-                int mark = index.mark();
+                long mark = index.mark();
                 for (int i = 0, childCount = this.childCount(); i < childCount; i++) {
                     long child = PUnsafe.getLong(node + this.children + i * 8L);
                     if (!this.select0(level - 1, child, ranges, frustum, index)) {
@@ -541,8 +568,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
     private static final class ReleaseFunction implements Runnable {
         protected final long root;
         protected final long flags;
-        protected final long opaque;
-        protected final long transparent;
+        protected final long data;
         protected final long children;
         protected final int childCount;
 
@@ -560,13 +586,14 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
             }
 
             //free render data allocations
-            if ((PUnsafe.getInt(node + this.flags) & FLAG_OPAQUE) == FLAG_OPAQUE) {
-                PUnsafe.freeMemory(PUnsafe.getLong(node + this.opaque + RENDERDATA_VERTICES + GPUBUFFER_ADDR));
-                PUnsafe.freeMemory(PUnsafe.getLong(node + this.opaque + RENDERDATA_INDICES + GPUBUFFER_ADDR));
+            if ((PUnsafe.getInt(node + this.flags) & (FLAG_OPAQUE | FLAG_TRANSPARENT)) != 0) {
+                PUnsafe.freeMemory(PUnsafe.getLong(node + this.data + RENDERDATA_VERTICES + GPUBUFFER_ADDR));
             }
-            if ((PUnsafe.getInt(node + this.flags) & FLAG_TRANSPARENT) == FLAG_TRANSPARENT) {
-                PUnsafe.freeMemory(PUnsafe.getLong(node + this.transparent + RENDERDATA_VERTICES + GPUBUFFER_ADDR));
-                PUnsafe.freeMemory(PUnsafe.getLong(node + this.transparent + RENDERDATA_INDICES + GPUBUFFER_ADDR));
+            if ((PUnsafe.getInt(node + this.flags) & FLAG_OPAQUE) != 0) {
+                PUnsafe.freeMemory(PUnsafe.getLong(node + this.data + RENDERDATA_OPAQUE_INDICES + GPUBUFFER_ADDR));
+            }
+            if ((PUnsafe.getInt(node + this.flags) & FLAG_TRANSPARENT) != 0) {
+                PUnsafe.freeMemory(PUnsafe.getLong(node + this.data + RENDERDATA_TRANSPARENT_INDICES + GPUBUFFER_ADDR));
             }
 
             PUnsafe.freeMemory(node);

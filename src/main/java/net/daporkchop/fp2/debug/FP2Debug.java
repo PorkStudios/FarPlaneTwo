@@ -18,29 +18,45 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.client;
+package net.daporkchop.fp2.debug;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
+import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.debug.client.DebugClientEvents;
+import net.daporkchop.fp2.debug.client.DebugKeyBindings;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
+ * Container class for all FP2 debug mode stuff.
+ *
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public interface IFarRenderer<POS extends IFarPos, P extends IFarPiece> {
-    void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum);
+@UtilityClass
+public class FP2Debug {
+    public static final boolean FP2_DEBUG = Boolean.parseBoolean(System.getProperty("fp2.debug", "false"));
 
-    void receivePiece(@NonNull CompressedPiece<POS, P, ?> piece);
+    public void preInit() {
+        if (!FP2_DEBUG) {
+            return;
+        }
 
-    void unloadPiece(@NonNull POS pos);
+        bigWarning("FarPlaneTwo debug mode enabled!");
 
-    RenderMode mode();
+        if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
+            MinecraftForge.EVENT_BUS.register(new DebugClientEvents());
+        }
+    }
+
+    public void init() {
+        if (!FP2_DEBUG) {
+            return;
+        }
+
+        if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
+            DebugKeyBindings.register();
+        }
+    }
 }

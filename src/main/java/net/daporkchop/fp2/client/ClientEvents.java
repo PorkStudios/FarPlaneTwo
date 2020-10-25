@@ -21,28 +21,19 @@
 package net.daporkchop.fp2.client;
 
 import net.daporkchop.fp2.FP2;
-import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.asm.client.gui.IGuiScreen;
-import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
-import net.daporkchop.fp2.net.client.CPacketDropAllPieces;
-import net.daporkchop.fp2.mode.api.IFarContext;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiVideoSettings;
-import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-
-import static net.daporkchop.fp2.client.ClientConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -64,26 +55,6 @@ public class ClientEvents {
     @SubscribeEvent
     public void disconnectedFromServer(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
         ClientConstants.shutdown();
-    }
-
-    @SubscribeEvent
-    public void keyInput(InputEvent.KeyInputEvent event) {
-        if (FP2Config.debug.debug) {
-            if (KeyBindings.RELOAD_SHADERS.isPressed()) {
-                ShaderManager.reload();
-            }
-            if (KeyBindings.DROP_PIECES.isPressed()) {
-                NETWORK_WRAPPER.sendToServer(new CPacketDropAllPieces());
-            }
-            if (KeyBindings.TOGGLE_VANILLA_RENDER.isPressed()) {
-                FP2Config.debug.skipRenderWorld ^= true;
-                mc.player.sendMessage(new TextComponentString((FP2Config.debug.skipRenderWorld ? "§cDisabled" : "§aEnabled") + " vanilla terrain."));
-            }
-            if (KeyBindings.REBUILD_UVS.isPressed()) {
-                TexUVs.reloadUVs();
-                mc.player.sendMessage(new TextComponentString("§aRebuilt texture UVs."));
-            }
-        }
     }
 
     @SubscribeEvent

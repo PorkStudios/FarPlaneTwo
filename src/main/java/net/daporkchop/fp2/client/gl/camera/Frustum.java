@@ -24,7 +24,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.Vec3d;
 
 import java.nio.FloatBuffer;
 
@@ -37,7 +36,7 @@ import static org.lwjgl.opengl.GL11.*;
  *
  * @author DaPorkchop_
  */
-public class Frustum implements ICamera {
+public class Frustum implements IFrustum, ICamera {
     protected static void normalize(double[] arr, int off) {
         double len = sqrt(arr[off + 0] * arr[off + 0] + arr[off + 1] * arr[off + 1] + arr[off + 2] * arr[off + 2] + arr[off + 3] * arr[off + 3]);
         arr[off + 0] /= len;
@@ -46,7 +45,7 @@ public class Frustum implements ICamera {
         arr[off + 3] /= len;
     }
 
-    private static double dot(double[] arr, int off, double x, double y, double z, double w) {
+    private static double dot(double[] arr, int off, double x, double y, double z) {
         return arr[off + 0] * x + arr[off + 1] * y + arr[off + 2] * z + arr[off + 3];
     }
 
@@ -126,7 +125,8 @@ public class Frustum implements ICamera {
         this.z = z;
     }
 
-    public boolean isPointInFrustum(double x, double y, double z) {
+    @Override
+    public boolean containsPoint(double x, double y, double z) {
         x -= this.x;
         y -= this.y;
         z -= this.z;
@@ -136,7 +136,7 @@ public class Frustum implements ICamera {
         for (int i = 0; i < 6; i++) {
             int off = i * 4;
 
-            if (dot(frustum, off, x, y, z, 1.0d) <= 0.0d) {
+            if (dot(frustum, off, x, y, z) <= 0.0d) {
                 return false;
             }
         }
@@ -144,11 +144,8 @@ public class Frustum implements ICamera {
         return true;
     }
 
-    public boolean isPointInFrustum(@NonNull Vec3d pos) {
-        return this.isPointInFrustum(pos.x, pos.y, pos.z);
-    }
-
-    public boolean isBoundingBoxInFrustum(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+    @Override
+    public boolean intersectsBB(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
         minX -= this.x;
         minY -= this.y;
         minZ -= this.z;
@@ -161,14 +158,14 @@ public class Frustum implements ICamera {
         for (int i = 0; i < 6; i++) {
             int off = i * 4;
 
-            if (dot(frustum, off, minX, minY, minZ, 1.0d) <= 0.0d
-                && dot(frustum, off, maxX, minY, minZ, 1.0d) <= 0.0d
-                && dot(frustum, off, minX, maxY, minZ, 1.0d) <= 0.0d
-                && dot(frustum, off, maxX, maxY, minZ, 1.0d) <= 0.0d
-                && dot(frustum, off, minX, minY, maxZ, 1.0d) <= 0.0d
-                && dot(frustum, off, maxX, minY, maxZ, 1.0d) <= 0.0d
-                && dot(frustum, off, minX, maxY, maxZ, 1.0d) <= 0.0d
-                && dot(frustum, off, maxX, maxY, maxZ, 1.0d) <= 0.0d) {
+            if (dot(frustum, off, minX, minY, minZ) <= 0.0d
+                && dot(frustum, off, maxX, minY, minZ) <= 0.0d
+                && dot(frustum, off, minX, maxY, minZ) <= 0.0d
+                && dot(frustum, off, maxX, maxY, minZ) <= 0.0d
+                && dot(frustum, off, minX, minY, maxZ) <= 0.0d
+                && dot(frustum, off, maxX, minY, maxZ) <= 0.0d
+                && dot(frustum, off, minX, maxY, maxZ) <= 0.0d
+                && dot(frustum, off, maxX, maxY, maxZ) <= 0.0d) {
                 return false;
             }
         }
@@ -178,6 +175,6 @@ public class Frustum implements ICamera {
 
     @Override
     public boolean isBoundingBoxInFrustum(AxisAlignedBB bb) {
-        return this.isBoundingBoxInFrustum(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
+        return this.intersectsBB(bb);
     }
 }

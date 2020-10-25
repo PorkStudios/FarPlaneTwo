@@ -21,12 +21,8 @@
 package net.daporkchop.fp2.client;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.FP2Config;
-import net.minecraft.client.settings.KeyBinding;
-import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-import org.lwjgl.input.Keyboard;
 
 /**
  * @author DaPorkchop_
@@ -34,17 +30,6 @@ import org.lwjgl.input.Keyboard;
 @SideOnly(Side.CLIENT)
 @UtilityClass
 public class KeyBindings {
-    public final KeyBinding RELOAD_SHADERS = new KeyBinding("key.fp2.debug.reloadShaders", Keyboard.KEY_0, "key.categories.fp2.debug");
-    public final KeyBinding DROP_PIECES = new KeyBinding("key.fp2.debug.dropPieces", Keyboard.KEY_9, "key.categories.fp2.debug");
-    public final KeyBinding TOGGLE_VANILLA_RENDER = new KeyBinding("key.fp2.debug.toggleVanillaRender", Keyboard.KEY_7, "key.categories.fp2.debug");
-    public final KeyBinding REBUILD_UVS = new KeyBinding("key.fp2.debug.rebuildUVs", Keyboard.KEY_6, "key.categories.fp2.debug");
-
     public void register() {
-        if (FP2Config.debug.debug)   {
-            ClientRegistry.registerKeyBinding(RELOAD_SHADERS);
-            ClientRegistry.registerKeyBinding(DROP_PIECES);
-            ClientRegistry.registerKeyBinding(TOGGLE_VANILLA_RENDER);
-            ClientRegistry.registerKeyBinding(REBUILD_UVS);
-        }
     }
 }

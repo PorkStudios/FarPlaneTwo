@@ -76,6 +76,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 
+import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -286,7 +287,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
     }
 
     protected void saveNotDone() throws IOException {
-        if (FP2Config.debug.disablePersistence || FP2Config.debug.disableWrite || this.notDone.isEmpty()) {
+        if (FP2_DEBUG && (FP2Config.debug.disablePersistence || FP2Config.debug.disableWrite) || this.notDone.isEmpty()) {
             return;
         }
 
@@ -337,7 +338,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
 
         try {
             File file = new File(this.storage.storageRoot(), "notDone");
-            if (FP2Config.debug.disablePersistence || FP2Config.debug.disableRead || !PFiles.checkFileExists(file)) {
+            if (FP2_DEBUG && (FP2Config.debug.disablePersistence || FP2Config.debug.disableRead) || !PFiles.checkFileExists(file)) {
                 return; //don't bother attempting to load
             }
 

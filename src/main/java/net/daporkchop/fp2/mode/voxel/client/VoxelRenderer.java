@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
@@ -28,12 +29,11 @@ import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.IFarRenderBaker;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.culling.ICamera;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL43.*;
@@ -43,6 +43,7 @@ import static org.lwjgl.opengl.GL43.*;
  */
 public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
     public static final ShaderProgram SOLID_SHADER = ShaderManager.get("voxel/solid");
+    public static final ShaderProgram TRANSPARENT_SHADER = ShaderManager.get("voxel/transparent");
 
     public VoxelRenderer(@NonNull WorldClient world) {
         super(world);
@@ -63,12 +64,12 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
     }
 
     @Override
-    protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum, int count) {
+    protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, int opaqueCount, int transparentCount) {
         try (VertexArrayObject vao = this.cache.vao().bind();
-             DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBuffer().bind()) {
+             DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBufferOpaque().bind()) {
             try (ShaderProgram shader = SOLID_SHADER.use()) {
                 GlStateManager.disableAlpha();
-                glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, count, 0);
+                glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, opaqueCount, 0);
                 GlStateManager.enableAlpha();
             }
         }

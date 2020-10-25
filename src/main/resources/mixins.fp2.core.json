@@ -12,7 +12,7 @@
   ],
   "mixins": [
     "entity.player.MixinEntityPlayerMP",
-    "world.gen.layer.MixinIntCache",
-    "world.MixinWorldServer"
+    "world.MixinWorldServer",
+    "world.gen.layer.MixinIntCache"
   ]
 }

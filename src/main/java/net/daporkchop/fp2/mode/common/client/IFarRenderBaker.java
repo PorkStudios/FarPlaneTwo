@@ -22,8 +22,8 @@ package net.daporkchop.fp2.mode.common.client;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
@@ -96,12 +96,13 @@ public interface IFarRenderBaker<POS extends IFarPos, P extends IFarPiece> {
     /**
      * Takes the content of the given pieces and bakes it into a {@link ByteBuf} for rendering.
      *
-     * @param dstPos   the position of the piece to bake
-     * @param srcs     an array containing the input pieces. Pieces are in the same order as provided by the {@link Stream} returned by
-     *                 {@link #bakeInputs(IFarPos)}, and will be {@code null} if not locally available. The piece at dstPos is guaranteed
-     *                 to be present (if requested by {@link #bakeInputs(IFarPos)})
-     * @param vertices the {@link ByteBuf} to write baked data to
-     * @param indices  the {@link ByteBuf} to write indices to
+     * @param dstPos             the position of the piece to bake
+     * @param srcs               an array containing the input pieces. Pieces are in the same order as provided by the {@link Stream} returned by
+     *                           {@link #bakeInputs(IFarPos)}, and will be {@code null} if not locally available. The piece at dstPos is guaranteed
+     *                           to be present (if requested by {@link #bakeInputs(IFarPos)})
+     * @param vertices           the {@link ByteBuf} to write baked data to
+     * @param opaqueIndices      the {@link ByteBuf} to write indices for opaque geometry to
+     * @param transparentIndices the {@link ByteBuf} to write indices for transparent geometry to
      */
-    void bake(@NonNull POS dstPos, @NonNull P[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf indices);
+    void bake(@NonNull POS dstPos, @NonNull P[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf opaqueIndices, @NonNull ByteBuf transparentIndices);
 }

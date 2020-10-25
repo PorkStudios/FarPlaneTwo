@@ -27,14 +27,16 @@ import net.daporkchop.fp2.client.ShaderFP2StateHelper;
 import net.daporkchop.fp2.client.ShaderGlStateHelper;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.client.gl.OpenGL;
+import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
 import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.math.Sphere;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
+import net.daporkchop.lib.common.math.BinMath;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
@@ -92,16 +94,17 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     /**
      * Actually renders the world.
      *
-     * @param count the number of tiles that were added to the index
+     * @param opaqueCount      the number of tiles with opaque render data that were added to the index
+     * @param transparentCount the number of tiles with transparent render data that were added to the index
      */
-    protected abstract void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum, int count);
+    protected abstract void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, int opaqueCount, int transparentCount);
 
     @Override
-    public void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum) {
+    public void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
         OpenGL.checkGLError("pre fp2 render");
 
-        int count = this.cache.rebuildIndex(this.createVolumesForSelection(partialTicks, world, mc, frustum), frustum);
-        if (count <= 0) {
+        long count = this.cache.rebuildIndex(this.createVolumesForSelection(partialTicks, world, mc, frustum), frustum);
+        if (count == 0L) {
             return; //nothing to render...
         }
 
@@ -111,7 +114,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
         try {
             this.updateAndBindUBOs(partialTicks, world, mc, frustum);
 
-            this.render0(partialTicks, world, mc, frustum, count);
+            this.render0(partialTicks, world, mc, frustum, BinMath.unpackX(count), BinMath.unpackY(count));
         } finally {
             this.resetGlState(partialTicks, world, mc, frustum);
         }
@@ -120,7 +123,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     }
 
     //TODO: use cylinders for heightmap and spheres for voxel
-    protected Volume[] createVolumesForSelection(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum) {
+    protected Volume[] createVolumesForSelection(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
         Volume[] ranges = new Volume[this.maxLevel + 1];
         Entity entity = mc.getRenderViewEntity();
         double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
@@ -132,7 +135,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
         return ranges;
     }
 
-    protected void updateAndBindSSBOs(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum) {
+    protected void updateAndBindSSBOs(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
         try (ShaderStorageBuffer loadedBuffer = this.loadedSSBO.bind()) {
             glBufferData(GL_SHADER_STORAGE_BUFFER, this.loadedBuffer = ClientConstants.renderableChunksMask(mc, this.loadedBuffer), GL_STATIC_DRAW);
             loadedBuffer.bindSSBO(0);
@@ -141,12 +144,12 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
         QUAD_DATA.bindSSBO(2);
     }
 
-    protected void updateAndBindUBOs(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum) {
+    protected void updateAndBindUBOs(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
         ShaderGlStateHelper.updateAndBind(partialTicks, mc);
         ShaderFP2StateHelper.updateAndBind(partialTicks, mc);
     }
 
-    protected void prepareGlState(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum) {
+    protected void prepareGlState(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
         GlStateManager.disableCull();
 
         GlStateManager.matrixMode(GL_PROJECTION);
@@ -170,7 +173,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
         mc.entityRenderer.enableLightmap();
     }
 
-    protected void resetGlState(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull ICamera frustum) {
+    protected void resetGlState(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
         mc.entityRenderer.disableLightmap();
 
         mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();

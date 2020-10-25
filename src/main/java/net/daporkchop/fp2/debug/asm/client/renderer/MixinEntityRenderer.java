@@ -18,29 +18,30 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.client;
+package net.daporkchop.fp2.debug.asm.client.renderer;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.daporkchop.fp2.FP2Config;
+import net.minecraft.client.renderer.EntityRenderer;
+import net.minecraft.client.renderer.RenderGlobal;
+import net.minecraft.entity.Entity;
+import net.minecraft.util.BlockRenderLayer;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Redirect;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public interface IFarRenderer<POS extends IFarPos, P extends IFarPiece> {
-    void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum);
-
-    void receivePiece(@NonNull CompressedPiece<POS, P, ?> piece);
-
-    void unloadPiece(@NonNull POS pos);
-
-    RenderMode mode();
+@Mixin(EntityRenderer.class)
+public abstract class MixinEntityRenderer {
+    @Redirect(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;DILnet/minecraft/entity/Entity;)I"))
+    private int debug_skipRenderBlockLayer(RenderGlobal r, BlockRenderLayer layer, double d, int i, Entity e)   {
+        if (!FP2Config.debug.skipRenderWorld)   {
+            return r.renderBlockLayer(layer, d, i, e);
+        } else {
+            return 0;
+        }
+    }
 }

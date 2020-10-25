@@ -1,0 +1,15 @@
+{
+  "vert": [
+    "common.glsl",
+    "vert/common.vert",
+    "vert/fog.vert",
+    "vert/voxel/solid.vert",
+    "vert/block_3d_lod.vert"
+  ],
+  "frag": [
+    "common.glsl",
+    "frag/common.frag",
+    "frag/fog.frag",
+    "frag/block.frag"
+  ]
+}

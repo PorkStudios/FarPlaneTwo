@@ -223,14 +223,6 @@ public class FP2Config {
      */
     public static class Debug {
         @Config.Comment({
-                "Toggles debug mode, which enables some features useful while developing the mod.",
-                "Default: false"
-        })
-        @Config.LangKey("config.fp2.debug.debug")
-        @Config.RequiresMcRestart
-        public boolean debug = Boolean.parseBoolean(System.getProperty("fp2.debug", "false"));
-
-        @Config.Comment({
                 "If true, disables reading of heightmap tiles from disk.",
                 "Overridden by disablePersistence.",
                 "Default: false"

@@ -44,6 +44,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.function.IntFunction;
 
+import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -76,7 +77,7 @@ public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiec
 
     @Override
     public CompressedPiece<POS, P, B> load(@NonNull POS pos) {
-        if (FP2Config.debug.disableRead || FP2Config.debug.disablePersistence) {
+        if (FP2_DEBUG && (FP2Config.debug.disableRead || FP2Config.debug.disablePersistence)) {
             return null;
         }
 
@@ -113,7 +114,7 @@ public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiec
 
     @Override
     public void store(@NonNull POS pos, @NonNull CompressedPiece<POS, P, B> piece) {
-        if (FP2Config.debug.disableWrite || FP2Config.debug.disablePersistence) {
+        if (FP2_DEBUG && (FP2Config.debug.disableWrite || FP2Config.debug.disablePersistence)) {
             return;
         }
 

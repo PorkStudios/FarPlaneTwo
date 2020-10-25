@@ -130,7 +130,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
     }
 
     @Override
-    public void bake(@NonNull HeightmapPos dstPos, @NonNull HeightmapPiece[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf indices) {
+    public void bake(@NonNull HeightmapPos dstPos, @NonNull HeightmapPiece[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf opaqueIndices, @NonNull ByteBuf transparentIndices) {
         if (srcs[0] == null) {
             return;
         }
@@ -176,7 +176,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
 
         for (int dx = 0; dx < T_VOXELS - 1; dx++) {
             for (int dz = 0; dz < T_VOXELS - 1; dz++) {
-                indices.writeShort(dx * T_VOXELS + dz)
+                opaqueIndices.writeShort(dx * T_VOXELS + dz)
                         .writeShort(dx * T_VOXELS + (dz + 1))
                         .writeShort((dx + 1) * T_VOXELS + (dz + 1))
                         .writeShort(dx * T_VOXELS + dz)
@@ -187,7 +187,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
 
         if (indexZ >= 0) {
             for (int dx = 0; dx < T_VOXELS - 1; dx++) {
-                indices.writeShort(dx * T_VOXELS + (T_VOXELS - 1))
+                opaqueIndices.writeShort(dx * T_VOXELS + (T_VOXELS - 1))
                         .writeShort(indexZ + dx)
                         .writeShort(indexZ + dx + 1)
                         .writeShort(dx * T_VOXELS + (T_VOXELS - 1))
@@ -198,7 +198,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
 
         if (indexX >= 0) {
             for (int dz = 0; dz < T_VOXELS - 1; dz++) {
-                indices.writeShort((T_VOXELS - 1) * T_VOXELS + dz)
+                opaqueIndices.writeShort((T_VOXELS - 1) * T_VOXELS + dz)
                         .writeShort((T_VOXELS - 1) * T_VOXELS + (dz + 1))
                         .writeShort(indexX + dz + 1)
                         .writeShort((T_VOXELS - 1) * T_VOXELS + dz)
@@ -208,7 +208,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         }
 
         if (indexXZ >= 0) {
-            indices.writeShort((T_VOXELS - 1) * T_VOXELS + (T_VOXELS - 1))
+            opaqueIndices.writeShort((T_VOXELS - 1) * T_VOXELS + (T_VOXELS - 1))
                     .writeShort(indexZ + (T_VOXELS - 1))
                     .writeShort(indexXZ)
                     .writeShort((T_VOXELS - 1) * T_VOXELS + (T_VOXELS - 1))

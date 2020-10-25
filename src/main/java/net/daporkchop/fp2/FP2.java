@@ -24,6 +24,9 @@ import net.daporkchop.fp2.client.ClientEvents;
 import net.daporkchop.fp2.client.FP2ResourceReloadListener;
 import net.daporkchop.fp2.client.KeyBindings;
 import net.daporkchop.fp2.client.TexUVs;
+import net.daporkchop.fp2.debug.FP2Debug;
+import net.daporkchop.fp2.mode.heightmap.client.HeightmapRenderer;
+import net.daporkchop.fp2.mode.voxel.client.VoxelRenderer;
 import net.daporkchop.fp2.net.client.CPacketDropAllPieces;
 import net.daporkchop.fp2.net.client.CPacketRenderMode;
 import net.daporkchop.fp2.net.server.SPacketPieceData;
@@ -31,8 +34,6 @@ import net.daporkchop.fp2.net.server.SPacketReady;
 import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
 import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
 import net.daporkchop.fp2.server.ServerEvents;
-import net.daporkchop.fp2.mode.heightmap.client.HeightmapRenderer;
-import net.daporkchop.fp2.mode.voxel.client.VoxelRenderer;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.ldbjni.LevelDB;
@@ -44,7 +45,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
@@ -71,26 +71,24 @@ import static org.lwjgl.opengl.GL43.*;
 public class FP2 {
     public static final String MODID = "fp2";
 
+    private static void unsupported(String msg) {
+        bigWarning(msg + "\nRequired by FarPlaneTwo.");
+        if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
+            JOptionPane.showMessageDialog(null,
+                    msg + "\nRequired by FarPlaneTwo.",
+                    null, JOptionPane.ERROR_MESSAGE);
+        }
+        FMLCommonHandler.instance().exitJava(1, true);
+    }
+
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         LOGGER = event.getModLog();
 
         if (!PlatformInfo.IS_64BIT) { //require 64-bit
-            bigWarning("Your system or JVM is not 64-bit!\nRequired by FarPlaneTwo.");
-            if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-                JOptionPane.showMessageDialog(null,
-                        "Your system or JVM is not 64-bit!\nRequired by FarPlaneTwo.",
-                        null, JOptionPane.ERROR_MESSAGE);
-            }
-            FMLCommonHandler.instance().exitJava(1, true);
+            unsupported("Your system or JVM is not 64-bit!");
         } else if (!PlatformInfo.IS_LITTLE_ENDIAN) { //require little-endian
-            bigWarning("Your system is not little-endian!\nRequired by FarPlaneTwo.");
-            if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-                JOptionPane.showMessageDialog(null,
-                        "Your system is not little-endian!\nRequired by FarPlaneTwo.",
-                        null, JOptionPane.ERROR_MESSAGE);
-            }
-            FMLCommonHandler.instance().exitJava(1, true);
+            unsupported("Your system is not little-endian!");
         }
 
         System.setProperty("porklib.native.printStackTraces", "true");
@@ -98,7 +96,7 @@ public class FP2 {
             Constants.bigWarning("Native ZSTD could not be loaded! This will have SERIOUS performance implications!");
         }
         if (!LevelDB.PROVIDER.isNative()) {
-            Constants.bigWarning("Native leveldb-mcpe could not be loaded! This will have SERIOUS performance implications!");
+            Constants.bigWarning("Native leveldb could not be loaded! This will have SERIOUS performance implications!");
         }
 
         this.registerPackets();
@@ -107,10 +105,7 @@ public class FP2 {
 
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
             if (!GLContext.getCapabilities().OpenGL43) { //require at least OpenGL 4.3
-                JOptionPane.showMessageDialog(null,
-                        "Your system does not support OpenGL 4.3!\nRequired by FarPlaneTwo.",
-                        null, JOptionPane.ERROR_MESSAGE);
-                FMLCommonHandler.instance().exitJava(1, true);
+                unsupported("Your system does not support OpenGL 4.3!");
             }
 
             int size = glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
@@ -120,6 +115,8 @@ public class FP2 {
 
             ((IReloadableResourceManager) Minecraft.getMinecraft().getResourceManager()).registerReloadListener(new FP2ResourceReloadListener());
         }
+
+        FP2Debug.preInit();
     }
 
     @Mod.EventHandler
@@ -127,6 +124,8 @@ public class FP2 {
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
             KeyBindings.register();
         }
+
+        FP2Debug.init();
     }
 
     @Mod.EventHandler

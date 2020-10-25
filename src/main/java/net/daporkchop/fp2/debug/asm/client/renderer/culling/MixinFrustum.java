@@ -18,29 +18,38 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.client;
+package net.daporkchop.fp2.debug.asm.client.renderer.culling;
 
-import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.util.math.AxisAlignedBB;
+import org.spongepowered.asm.mixin.Implements;
+import org.spongepowered.asm.mixin.Interface;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public interface IFarRenderer<POS extends IFarPos, P extends IFarPiece> {
-    void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum);
+@Mixin(Frustum.class)
+@Implements(@Interface(iface = IFrustum.class, prefix = "fp2_debug_frustum$"))
+public abstract class MixinFrustum implements IFrustum {
+    @Shadow
+    public abstract boolean isBoundingBoxInFrustum(AxisAlignedBB p_78546_1_);
 
-    void receivePiece(@NonNull CompressedPiece<POS, P, ?> piece);
+    @Override
+    public boolean containsPoint(double x, double y, double z) {
+        //TODO: not sure if this'll actually work...
+        return this.isBoundingBoxInFrustum(new AxisAlignedBB(x, y, z, x, y, z));
+    }
 
-    void unloadPiece(@NonNull POS pos);
+    @Override
+    public boolean intersectsBB(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+        return this.isBoundingBoxInFrustum(new AxisAlignedBB(minX, minY, minZ, maxX, maxY, maxZ));
+    }
 
-    RenderMode mode();
+    @Override
+    public boolean intersectsBB(AxisAlignedBB bb) {
+        return this.isBoundingBoxInFrustum(bb);
+    }
 }

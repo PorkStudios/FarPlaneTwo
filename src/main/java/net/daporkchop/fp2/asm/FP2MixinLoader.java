@@ -29,6 +29,8 @@ import org.spongepowered.asm.mixin.Mixins;
 import javax.annotation.Nullable;
 import java.util.Map;
 
+import static net.daporkchop.fp2.debug.FP2Debug.*;
+
 /**
  * @author DaPorkchop_
  */
@@ -41,7 +43,11 @@ public class FP2MixinLoader implements IFMLLoadingPlugin {
     public FP2MixinLoader() {
         FMLLog.log.info("\n\n\nFP2 Mixin init\n\n");
         MixinBootstrap.init();
-        Mixins.addConfiguration("mixins.fp2.json");
+
+        Mixins.addConfiguration("mixins.fp2.core.json");
+        if (FP2_DEBUG) { //we're in debug mode, add debug mixins
+            Mixins.addConfiguration("mixins.fp2.debug.json");
+        }
 
         //MixinEnvironment.getDefaultEnvironment().setObfuscationContext("searge");
 

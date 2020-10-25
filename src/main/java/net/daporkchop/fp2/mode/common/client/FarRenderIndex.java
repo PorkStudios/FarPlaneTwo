@@ -21,16 +21,17 @@
 package net.daporkchop.fp2.mode.common.client;
 
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.IntBuffer;
 
 import static net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL40.*;
 
 /**
  * @author DaPorkchop_
@@ -38,19 +39,21 @@ import static org.lwjgl.opengl.GL15.*;
 @RequiredArgsConstructor
 @Getter
 public class FarRenderIndex {
-    protected IntBuffer buffer = Constants.createIntBuffer(256);
-    protected int size = 0;
+    protected IntBuffer bufferOpaque = Constants.createIntBuffer(5);
+    protected int sizeOpaque = 0;
+    protected IntBuffer bufferTransparent = Constants.createIntBuffer(5);
+    protected int sizeTransparent = 0;
 
     protected final int indicesSize;
     protected final int vertexSize;
 
-    public int mark() {
-        return this.size;
+    public long mark() {
+        return BinMath.packXY(this.sizeOpaque, this.sizeTransparent);
     }
 
-    public void restore(int mark) {
-        this.buffer.position(mark * 5);
-        this.size = mark;
+    public void restore(long mark) {
+        this.bufferOpaque.position((this.sizeOpaque = BinMath.unpackX(mark)) * 5);
+        this.bufferTransparent.position((this.sizeTransparent = BinMath.unpackY(mark)) * 5);
     }
 
     public boolean add(AbstractFarRenderTree tree, long node) {
@@ -58,42 +61,83 @@ public class FarRenderIndex {
             return false;
         }
 
-        if (tree.checkFlagsAND(node, FLAG_OPAQUE)) { //TODO: transparent data as well
-            this.ensureWritable(5);
+        if (tree.checkFlagsAND(node, FLAG_OPAQUE)) {
+            this.ensureOpaqueWritable(5);
 
-            long data = node + tree.opaque;
-            this.buffer.put(PUnsafe.getInt(data + RENDERDATA_INDICES + GPUBUFFER_SIZE)) //count
+            long data = node + tree.data;
+            this.bufferOpaque.put(PUnsafe.getInt(data + RENDERDATA_OPAQUE_INDICES + GPUBUFFER_SIZE)) //count
                     .put(1) //instanceCount
-                    .put(PUnsafe.getInt(data + RENDERDATA_INDICES + GPUBUFFER_OFF)) //firstIndex
+                    .put(PUnsafe.getInt(data + RENDERDATA_OPAQUE_INDICES + GPUBUFFER_OFF)) //firstIndex
                     .put(PUnsafe.getInt(data + RENDERDATA_VERTICES + GPUBUFFER_OFF)) //baseVertex
                     .put(0); //baseInstance
 
-            this.size++;
+            this.sizeOpaque++;
+        }
+        if (tree.checkFlagsAND(node, FLAG_TRANSPARENT)) {
+            this.ensureTransparentWritable(5);
+
+            long data = node + tree.data;
+            this.bufferTransparent.put(PUnsafe.getInt(data + RENDERDATA_TRANSPARENT_INDICES + GPUBUFFER_SIZE)) //count
+                    .put(1) //instanceCount
+                    .put(PUnsafe.getInt(data + RENDERDATA_TRANSPARENT_INDICES + GPUBUFFER_OFF)) //firstIndex
+                    .put(PUnsafe.getInt(data + RENDERDATA_VERTICES + GPUBUFFER_OFF)) //baseVertex
+                    .put(0); //baseInstance
+
+            this.sizeTransparent++;
         }
         return true;
     }
 
-    protected void ensureWritable(int count) {
-        while (this.buffer.remaining() < count) { //buffer doesn't have enough space, grow it
-            IntBuffer bigger = Constants.createIntBuffer(this.buffer.capacity() << 1);
-            this.buffer.flip();
-            bigger.put(this.buffer);
-            PUnsafe.pork_releaseBuffer(this.buffer);
-            this.buffer = bigger;
+    protected void ensureOpaqueWritable(int count) {
+        while (this.bufferOpaque.remaining() < count) { //buffer doesn't have enough space, grow it
+            IntBuffer bigger = Constants.createIntBuffer(this.bufferOpaque.capacity() << 1);
+            this.bufferOpaque.flip();
+            bigger.put(this.bufferOpaque);
+            PUnsafe.pork_releaseBuffer(this.bufferOpaque);
+            this.bufferOpaque = bigger;
+        }
+    }
+
+    protected void ensureTransparentWritable(int count) {
+        while (this.bufferTransparent.remaining() < count) { //buffer doesn't have enough space, grow it
+            IntBuffer bigger = Constants.createIntBuffer(this.bufferTransparent.capacity() << 1);
+            this.bufferTransparent.flip();
+            bigger.put(this.bufferTransparent);
+            PUnsafe.pork_releaseBuffer(this.bufferTransparent);
+            this.bufferTransparent = bigger;
         }
     }
 
     public void reset() {
-        this.buffer.clear();
-        this.size = 0;
+        this.bufferOpaque.clear();
+        this.sizeOpaque = 0;
+        this.bufferTransparent.clear();
+        this.sizeTransparent = 0;
     }
 
-    public void upload(int slot) {
-        if (this.size > 0) {
-            this.buffer.flip();
-            glBufferData(slot, this.buffer, GL_STREAM_DRAW);
-        } else {
-            glBufferData(slot, 0L, GL_STREAM_DRAW);
+    public boolean isEmpty() {
+        return this.sizeOpaque == 0 && this.sizeTransparent == 0;
+    }
+
+    public long upload(DrawIndirectBuffer drawCommandBufferOpaque, DrawIndirectBuffer drawCommandBufferTransparent) {
+        if (!this.isEmpty()) {
+            try (DrawIndirectBuffer buffer = drawCommandBufferOpaque.bind()) {
+                if (this.sizeOpaque > 0) {
+                    this.bufferOpaque.flip();
+                    glBufferData(GL_DRAW_INDIRECT_BUFFER, this.bufferOpaque, GL_STREAM_DRAW);
+                } else {
+                    glBufferData(GL_DRAW_INDIRECT_BUFFER, 0L, GL_STREAM_DRAW);
+                }
+            }
+            try (DrawIndirectBuffer buffer = drawCommandBufferTransparent.bind()) {
+                if (this.sizeTransparent > 0) {
+                    this.bufferTransparent.flip();
+                    glBufferData(GL_DRAW_INDIRECT_BUFFER, this.bufferTransparent, GL_STREAM_DRAW);
+                } else {
+                    glBufferData(GL_DRAW_INDIRECT_BUFFER, 0L, GL_STREAM_DRAW);
+                }
+            }
         }
+        return this.mark();
     }
 }

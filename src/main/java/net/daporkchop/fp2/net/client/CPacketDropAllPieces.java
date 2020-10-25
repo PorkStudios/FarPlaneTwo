@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.net.client;
 
 import io.netty.buffer.ByteBuf;
-import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarContext;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
@@ -29,6 +28,8 @@ import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+
+import static net.daporkchop.fp2.debug.FP2Debug.*;
 
 /**
  * @author DaPorkchop_
@@ -42,10 +43,10 @@ public class CPacketDropAllPieces implements IMessage {
     public void toBytes(ByteBuf buf) {
     }
 
-    public static class Handler implements IMessageHandler<CPacketDropAllPieces, IMessage>  {
+    public static class Handler implements IMessageHandler<CPacketDropAllPieces, IMessage> {
         @Override
         public IMessage onMessage(CPacketDropAllPieces message, MessageContext ctx) {
-            if (!FP2Config.debug.debug) {
+            if (!FP2_DEBUG) {
                 ctx.getServerHandler().disconnect(new TextComponentTranslation("fp2.debug.debugModeNotEnabled"));
                 return null;
             }

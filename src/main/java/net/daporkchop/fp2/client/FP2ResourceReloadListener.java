@@ -39,7 +39,7 @@ import static org.lwjgl.opengl.GL43.*;
 /**
  * @author DaPorkchop_
  */
-//TODO: possibly delete this
+//TODO: possibly delete this, or at least make it work correctly
 @SideOnly(Side.CLIENT)
 @SuppressWarnings("deprecation")
 public class FP2ResourceReloadListener implements IResourceManagerReloadListener {

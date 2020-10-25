@@ -163,7 +163,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
     }
 
     @Override
-    public void bake(@NonNull VoxelPos dstPos, @NonNull VoxelPiece[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf indices) {
+    public void bake(@NonNull VoxelPos dstPos, @NonNull VoxelPiece[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf opaqueIndices, @NonNull ByteBuf transparentIndices) {
         if (srcs[0] == null) {
             return;
         }
@@ -285,7 +285,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                                 continue;
                             }
 
-                            int writerIndex = indices.writerIndex();
+                            int writerIndex = opaqueIndices.writerIndex();
                             for (int base = edge * CONNECTION_INDEX_COUNT, i = 0; i < CONNECTION_INDEX_COUNT; i++) {
                                 int j = CONNECTION_INDICES[base + i];
                                 int ddx = dx + ((j >> 2) & 1);
@@ -294,10 +294,10 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
 
                                 int index = map.getOrDefault((ddx * T_VERTS + ddy) * T_VERTS + ddz, -1);
                                 if (index < 0) { //skip if any of the vertices are missing
-                                    indices.writerIndex(writerIndex);
+                                    opaqueIndices.writerIndex(writerIndex);
                                     break;
                                 }
-                                indices.writeShort(index);
+                                opaqueIndices.writeShort(index);
                             }
                         }
                     }

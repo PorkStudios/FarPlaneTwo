@@ -18,29 +18,42 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.client;
+package net.daporkchop.fp2.debug.client;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
+import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.client.KeyBindings;
+import net.daporkchop.fp2.client.TexUVs;
+import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.daporkchop.fp2.net.client.CPacketDropAllPieces;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+
+import static net.daporkchop.fp2.client.ClientConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public interface IFarRenderer<POS extends IFarPos, P extends IFarPiece> {
-    void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum);
-
-    void receivePiece(@NonNull CompressedPiece<POS, P, ?> piece);
-
-    void unloadPiece(@NonNull POS pos);
-
-    RenderMode mode();
+public class DebugClientEvents {
+    @SubscribeEvent
+    public void keyInput(InputEvent.KeyInputEvent event) {
+        if (DebugKeyBindings.RELOAD_SHADERS.isPressed()) {
+            ShaderManager.reload();
+        }
+        if (DebugKeyBindings.DROP_PIECES.isPressed()) {
+            NETWORK_WRAPPER.sendToServer(new CPacketDropAllPieces());
+        }
+        if (DebugKeyBindings.TOGGLE_VANILLA_RENDER.isPressed()) {
+            FP2Config.debug.skipRenderWorld ^= true;
+            mc.player.sendMessage(new TextComponentString((FP2Config.debug.skipRenderWorld ? "§cDisabled" : "§aEnabled") + " vanilla terrain."));
+        }
+        if (DebugKeyBindings.REBUILD_UVS.isPressed()) {
+            TexUVs.reloadUVs();
+            mc.player.sendMessage(new TextComponentString("§aRebuilt texture UVs."));
+        }
+    }
 }

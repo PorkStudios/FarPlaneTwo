@@ -27,9 +27,10 @@ import net.daporkchop.fp2.mode.api.IFarContext;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
-import net.minecraft.client.renderer.RenderGlobal;
+import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.BlockRenderLayer;
+import net.minecraft.util.math.AxisAlignedBB;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -39,6 +40,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author DaPorkchop_
@@ -77,6 +80,45 @@ public abstract class MixinEntityRenderer {
 
             //render
             renderer.render(partialTicks, this.mc.world, this.mc, this.frustum);
+
+            /*ICamera icamera = new net.minecraft.client.renderer.culling.Frustum();
+            AxisAlignedBB bb = new AxisAlignedBB(-5, -5, -5, 5, 5, 5);
+            bb = new AxisAlignedBB(-50, -5, -5, 50, 5, 5);
+
+            //icamera.setPosition(x, y, z);
+            if (icamera.isBoundingBoxInFrustum(bb)) {
+                glColor4f(0, 1, 0, 1);
+            } else {
+                glColor4f(1, 0, 0, 1);
+            }
+
+            GlStateManager.enableBlend();
+            GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+            GlStateManager.glLineWidth(2.0F);
+            GlStateManager.disableTexture2D();
+            GlStateManager.depthMask(false);
+            glBegin(GL_LINES);
+            glVertex3d(bb.minX, bb.minY, bb.minZ);
+            glVertex3d(bb.minX, bb.maxY, bb.minZ);
+            glVertex3d(bb.maxX, bb.minY, bb.minZ);
+            glVertex3d(bb.maxX, bb.maxY, bb.minZ);
+            glVertex3d(bb.minX, bb.minY, bb.maxZ);
+            glVertex3d(bb.minX, bb.maxY, bb.maxZ);
+            glVertex3d(bb.maxX, bb.minY, bb.maxZ);
+            glVertex3d(bb.maxX, bb.maxY, bb.maxZ);
+            glVertex3d(bb.minX, bb.minY, bb.minZ);
+            glVertex3d(bb.maxX, bb.minY, bb.minZ);
+            glVertex3d(bb.minX, bb.maxY, bb.minZ);
+            glVertex3d(bb.maxX, bb.maxY, bb.minZ);
+            glVertex3d(bb.minX, bb.minY, bb.maxZ);
+            glVertex3d(bb.maxX, bb.minY, bb.maxZ);
+            glVertex3d(bb.minX, bb.maxY, bb.maxZ);
+            glVertex3d(bb.maxX, bb.maxY, bb.maxZ);
+            glEnd();
+
+            GlStateManager.depthMask(true);
+            GlStateManager.enableTexture2D();
+            GlStateManager.disableBlend();*/
         }
     }
 
@@ -123,18 +165,5 @@ public abstract class MixinEntityRenderer {
             //TODO: i need a better system for computing this
         }
         this.farPlaneDistance = farPlaneDistance;
-    }
-
-    //debug stuff
-
-    @Redirect(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;DILnet/minecraft/entity/Entity;)I"))
-    private int debug_skipRenderBlockLayer(RenderGlobal r, BlockRenderLayer layer, double d, int i, Entity e)   {
-        if (!FP2Config.debug.skipRenderWorld)   {
-            return r.renderBlockLayer(layer, d, i, e);
-        } else {
-            return 0;
-        }
     }
 }

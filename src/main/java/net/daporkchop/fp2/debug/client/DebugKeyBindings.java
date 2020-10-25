@@ -18,29 +18,30 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.client;
+package net.daporkchop.fp2.debug.client;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
+import lombok.experimental.UtilityClass;
+import net.minecraft.client.settings.KeyBinding;
+import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+import org.lwjgl.input.Keyboard;
 
 /**
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public interface IFarRenderer<POS extends IFarPos, P extends IFarPiece> {
-    void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum);
+@UtilityClass
+public class DebugKeyBindings {
+    public final KeyBinding RELOAD_SHADERS = new KeyBinding("key.fp2.debug.reloadShaders", Keyboard.KEY_0, "key.categories.fp2.debug");
+    public final KeyBinding DROP_PIECES = new KeyBinding("key.fp2.debug.dropPieces", Keyboard.KEY_9, "key.categories.fp2.debug");
+    public final KeyBinding TOGGLE_VANILLA_RENDER = new KeyBinding("key.fp2.debug.toggleVanillaRender", Keyboard.KEY_7, "key.categories.fp2.debug");
+    public final KeyBinding REBUILD_UVS = new KeyBinding("key.fp2.debug.rebuildUVs", Keyboard.KEY_6, "key.categories.fp2.debug");
 
-    void receivePiece(@NonNull CompressedPiece<POS, P, ?> piece);
-
-    void unloadPiece(@NonNull POS pos);
-
-    RenderMode mode();
+    public void register() {
+        ClientRegistry.registerKeyBinding(RELOAD_SHADERS);
+        ClientRegistry.registerKeyBinding(DROP_PIECES);
+        ClientRegistry.registerKeyBinding(TOGGLE_VANILLA_RENDER);
+        ClientRegistry.registerKeyBinding(REBUILD_UVS);
+    }
 }
