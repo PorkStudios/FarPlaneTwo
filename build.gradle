@@ -200,7 +200,7 @@ jar {
 
     manifest {
         attributes(
-                "MixinConfigs": "mixins.fp2.json",
+                "MixinConfigs": "mixins.fp2.core.json",
                 "tweakClass": "org.spongepowered.asm.launch.MixinTweaker",
                 "TweakOrder": 0,
                 "FMLCorePluginContainsFMLMod": "true",
