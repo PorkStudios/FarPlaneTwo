@@ -20,6 +20,8 @@
 
 package net.daporkchop.fp2.util.compat.vanilla.biome.layer;
 
+import static net.daporkchop.fp2.util.compat.vanilla.biome.BiomeHelper.*;
+
 /**
  * @author DaPorkchop_
  */
@@ -30,6 +32,7 @@ public class FastLayerRareBiome extends FastLayer {
 
     @Override
     public int getSingle(int x, int z) {
-        return 0; //TODO
+        int v = this.parent.getSingle(x, z);
+        return v == ID_PLAINS && nextInt(start(this.seed, x, z), 57) == 0 ? ID_MUTATED_PLAINS : v;
     }
 }

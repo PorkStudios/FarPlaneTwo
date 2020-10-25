@@ -33,12 +33,12 @@ public class FastLayerIsland extends FastLayer {
     }
 
     @Override
-    public int getSingle(int x, int z) {
-        return (x | z) == 0 || nextInt(start(this.seed, x, z), 10) == 0 ? 1 : 0;
+    public void init(@NonNull FastLayer[] children) {
+        //no-op
     }
 
     @Override
-    public void init(@NonNull FastLayer[] children) {
-        //no-op
+    public int getSingle(int x, int z) {
+        return (x | z) == 0 || nextInt(start(this.seed, x, z), 10) == 0 ? 1 : 0;
     }
 }

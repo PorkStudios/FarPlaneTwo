@@ -20,16 +20,44 @@
 
 package net.daporkchop.fp2.util.compat.vanilla.biome.layer;
 
+import lombok.NonNull;
+import net.daporkchop.lib.unsafe.PUnsafe;
+
+import static net.daporkchop.fp2.util.compat.vanilla.biome.BiomeHelper.*;
+
 /**
  * @author DaPorkchop_
  */
 public class FastLayerRiverMix extends FastLayer {
+    protected static final long RIVERPARENT_OFFSET = PUnsafe.pork_getOffset(FastLayerRiverMix.class, "riverParent");
+
+    protected final FastLayer riverParent = null;
+
     public FastLayerRiverMix(long seed) {
         super(seed);
     }
 
     @Override
+    public void init(@NonNull FastLayer[] children) {
+        super.init(children);
+        PUnsafe.putObject(this, RIVERPARENT_OFFSET, children[1]);
+    }
+
+    @Override
     public int getSingle(int x, int z) {
-        return 0; //TODO
+        int biome = this.parent.getSingle(x, z);
+        if (biome != ID_OCEAN && biome != ID_DEEP_OCEAN) {
+            int river = this.riverParent.getSingle(x, z);
+            if (river == ID_RIVER) {
+                if (biome == ID_ICE_PLAINS) {
+                    return ID_FROZEN_RIVER;
+                } else if (biome != ID_MUSHROOM_ISLAND && biome != ID_MUSHROOM_ISLAND_SHORE) {
+                    return biome;
+                } else {
+                    return ID_MUSHROOM_ISLAND_SHORE;
+                }
+            }
+        }
+        return biome;
     }
 }

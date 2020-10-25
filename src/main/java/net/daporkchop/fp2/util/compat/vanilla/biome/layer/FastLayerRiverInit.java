@@ -20,6 +20,8 @@
 
 package net.daporkchop.fp2.util.compat.vanilla.biome.layer;
 
+import static net.daporkchop.fp2.util.compat.vanilla.biome.BiomeHelper.*;
+
 /**
  * @author DaPorkchop_
  */
@@ -30,6 +32,6 @@ public class FastLayerRiverInit extends FastLayer {
 
     @Override
     public int getSingle(int x, int z) {
-        return 0; //TODO
+        return this.parent.getSingle(x, z) > 0 ? nextInt(start(this.seed, x, z), 299999) + 2 : 0;
     }
 }

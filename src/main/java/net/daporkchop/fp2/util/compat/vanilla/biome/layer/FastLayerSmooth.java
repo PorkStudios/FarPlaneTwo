@@ -20,6 +20,8 @@
 
 package net.daporkchop.fp2.util.compat.vanilla.biome.layer;
 
+import static net.daporkchop.fp2.util.compat.vanilla.biome.BiomeHelper.*;
+
 /**
  * @author DaPorkchop_
  */
@@ -30,6 +32,19 @@ public class FastLayerSmooth extends FastLayer {
 
     @Override
     public int getSingle(int x, int z) {
-        return 0; //TODO
+        int v0 = this.parent.getSingle(x - 1, z);
+        int v1 = this.parent.getSingle(x, z - 1);
+        int v2 = this.parent.getSingle(x + 1, z);
+        int v3 = this.parent.getSingle(x, z + 1);
+
+        if (v0 == v2 && v1 == v3) {
+            return nextInt(start(this.seed, x, z), 2) == 0 ? v0 : v1;
+        } else if (v0 == v2) {
+            return v0;
+        } else if (v1 == v3) {
+            return v1;
+        } else {
+            return this.parent.getSingle(x, z);
+        }
     }
 }

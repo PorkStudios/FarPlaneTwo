@@ -23,12 +23,22 @@ package biome;
 import net.minecraft.world.gen.layer.GenLayer;
 import net.minecraft.world.gen.layer.IntCache;
 
+import static net.daporkchop.lib.common.util.PValidation.*;
+
 /**
  * @author DaPorkchop_
  */
 public class GenLayerRandomValues extends GenLayer {
-    public GenLayerRandomValues(long seed) {
+    protected final int limit;
+
+    public GenLayerRandomValues(long seed, int limit) {
         super(seed);
+
+        this.limit = positive(limit, "limit");
+    }
+
+    public GenLayerRandomValues(long seed) {
+        this(seed, 256);
     }
 
     @Override
@@ -37,7 +47,7 @@ public class GenLayerRandomValues extends GenLayer {
         for (int dy = 0; dy < areaHeight; ++dy) {
             for (int dx = 0; dx < areaWidth; ++dx) {
                 this.initChunkSeed(areaX + dx, areaY + dy);
-                arr[dy * areaWidth + dx] = this.nextInt(256);
+                arr[dy * areaWidth + dx] = this.nextInt(this.limit);
             }
         }
         return arr;

@@ -20,16 +20,31 @@
 
 package net.daporkchop.fp2.util.compat.vanilla.biome.layer;
 
+import static net.daporkchop.fp2.util.compat.vanilla.biome.BiomeHelper.*;
+
 /**
  * @author DaPorkchop_
  */
 public class FastLayerRiver extends FastLayer {
+    private static int riverFilter(int i) {
+        return i >= 2 ? 2 + (i & 1) : i;
+    }
+
     public FastLayerRiver(long seed) {
         super(seed);
     }
 
     @Override
     public int getSingle(int x, int z) {
-        return 0; //TODO
+        int center = riverFilter(this.parent.getSingle(x, z));
+
+        if (center == riverFilter(this.parent.getSingle(x - 1, z))
+            && center == riverFilter(this.parent.getSingle(x, z - 1))
+            && center == riverFilter(this.parent.getSingle(x + 1, z))
+            && center == riverFilter(this.parent.getSingle(x, z + 1))) {
+            return -1;
+        } else {
+            return ID_RIVER;
+        }
     }
 }

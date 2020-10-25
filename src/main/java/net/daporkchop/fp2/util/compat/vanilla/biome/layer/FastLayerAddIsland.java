@@ -34,10 +34,10 @@ public class FastLayerAddIsland extends FastLayer {
     public int getSingle(int x, int z) {
         int center = this.parent.getSingle(x, z);
 
-        int v0 = this.parent.getSingle(x - 1, z);
-        int v1 = this.parent.getSingle(x, z - 1);
-        int v2 = this.parent.getSingle(x + 1, z);
-        int v3 = this.parent.getSingle(x, z + 1);
+        int v0 = this.parent.getSingle(x - 1, z - 1);
+        int v1 = this.parent.getSingle(x + 1, z - 1);
+        int v2 = this.parent.getSingle(x - 1, z + 1);
+        int v3 = this.parent.getSingle(x + 1, z + 1);
 
         if (center != 0 || (v0 | v1 | v2 | v3) == 0) {
             if (center != 0 && (v0 == 0 || v1 == 0 || v2 == 0 || v3 == 0)) {

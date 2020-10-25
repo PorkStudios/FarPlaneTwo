@@ -22,9 +22,27 @@ package biome;
 
 import net.daporkchop.fp2.util.compat.vanilla.biome.layer.FastLayer;
 import net.minecraft.init.Bootstrap;
+import net.minecraft.world.WorldType;
+import net.minecraft.world.gen.ChunkGeneratorSettings;
 import net.minecraft.world.gen.layer.GenLayer;
+import net.minecraft.world.gen.layer.GenLayerAddIsland;
+import net.minecraft.world.gen.layer.GenLayerAddMushroomIsland;
+import net.minecraft.world.gen.layer.GenLayerAddSnow;
+import net.minecraft.world.gen.layer.GenLayerBiome;
+import net.minecraft.world.gen.layer.GenLayerBiomeEdge;
+import net.minecraft.world.gen.layer.GenLayerDeepOcean;
+import net.minecraft.world.gen.layer.GenLayerEdge;
 import net.minecraft.world.gen.layer.GenLayerFuzzyZoom;
+import net.minecraft.world.gen.layer.GenLayerHills;
 import net.minecraft.world.gen.layer.GenLayerIsland;
+import net.minecraft.world.gen.layer.GenLayerRareBiome;
+import net.minecraft.world.gen.layer.GenLayerRemoveTooMuchOcean;
+import net.minecraft.world.gen.layer.GenLayerRiver;
+import net.minecraft.world.gen.layer.GenLayerRiverInit;
+import net.minecraft.world.gen.layer.GenLayerRiverMix;
+import net.minecraft.world.gen.layer.GenLayerShore;
+import net.minecraft.world.gen.layer.GenLayerSmooth;
+import net.minecraft.world.gen.layer.GenLayerVoronoiZoom;
 import net.minecraft.world.gen.layer.GenLayerZoom;
 import net.minecraft.world.gen.layer.IntCache;
 import org.junit.Test;
@@ -45,7 +63,7 @@ public class TestFastBiomeGen {
 
         GET_CHILDREN.put(GenLayerRandomValues.class, layer -> new GenLayer[0]);
 
-        FAST_MAPPERS.put(GenLayerRandomValues.class, layer -> new FastLayerRandomValues(layer.worldGenSeed));
+        FAST_MAPPERS.put(GenLayerRandomValues.class, layer -> new FastLayerRandomValues(layer.worldGenSeed, ((GenLayerRandomValues) layer).limit));
     }
 
     @Test
@@ -53,9 +71,61 @@ public class TestFastBiomeGen {
         this.testLayers(new GenLayerRandomValues(0L));
     }
 
+    //
+
     @Test
-    public void testZoom() {
-        this.testLayers(new GenLayerZoom(1L, new GenLayerRandomValues(0L)));
+    public void testAddIsland() {
+        this.testLayers(new GenLayerAddIsland(1L, new GenLayerRandomValues(0L, 2)));
+    }
+
+    @Test
+    public void testAddMushroomIsland() {
+        this.testLayers(new GenLayerAddMushroomIsland(1L, new GenLayerRandomValues(0L)));
+    }
+
+    @Test
+    public void testAddSnow() {
+        this.testLayers(new GenLayerAddSnow(1L, new GenLayerRandomValues(0L)));
+    }
+
+    @Test
+    public void testBiome() {
+        //this.testLayers(new GenLayerBiome(1L, new GenLayerRandomValues(0L), null, null));
+    }
+
+    @Test
+    public void testBiomeEdge() {
+        //this.testLayers(new GenLayerBiomeEdge(1L, new GenLayerRandomValues(0L)));
+    }
+
+    @Test
+    public void testDeepOcean() {
+        this.testLayers(new GenLayerDeepOcean(1L, new GenLayerRandomValues(0L, 2)));
+    }
+
+    @Test
+    public void testEdgeCoolWarm() {
+        //this.testLayers(new GenLayerEdge(1L, new GenLayerRandomValues(0L), GenLayerEdge.Mode.COOL_WARM));
+    }
+
+    @Test
+    public void testEdgeHeatIce() {
+        //this.testLayers(new GenLayerEdge(1L, new GenLayerRandomValues(0L), GenLayerEdge.Mode.HEAT_ICE));
+    }
+
+    @Test
+    public void testEdgeSpecial() {
+        //this.testLayers(new GenLayerEdge(1L, new GenLayerRandomValues(0L), GenLayerEdge.Mode.SPECIAL));
+    }
+
+    @Test
+    public void testFuzzyZoom() {
+        this.testLayers(new GenLayerFuzzyZoom(1L, new GenLayerRandomValues(0L)));
+    }
+
+    @Test
+    public void testHills() {
+        //this.testLayers(new GenLayerHills(1L, new GenLayerRandomValues(0L), new GenLayerRandomValues(1L)));
     }
 
     @Test
@@ -64,8 +134,48 @@ public class TestFastBiomeGen {
     }
 
     @Test
-    public void testFuzzyZoom() {
-        this.testLayers(new GenLayerFuzzyZoom(1L, new GenLayerRandomValues(0L)));
+    public void testRareBiome() {
+        this.testLayers(new GenLayerRareBiome(1L, new GenLayerRandomValues(0L)));
+    }
+
+    @Test
+    public void testRemoveTooMuchOcean() {
+        this.testLayers(new GenLayerFuzzyZoom(1L, new GenLayerRandomValues(0L, 2)));
+    }
+
+    @Test
+    public void testRiver() {
+        this.testLayers(new GenLayerRiver(1L, new GenLayerRandomValues(0L)));
+    }
+
+    @Test
+    public void testRiverInit() {
+        this.testLayers(new GenLayerRiverInit(1L, new GenLayerRandomValues(0L)));
+    }
+
+    @Test
+    public void testRiverMix() {
+        //this.testLayers(new GenLayerRiverMix(1L, new GenLayerRandomValues(0L), new GenLayerRandomValues(1L)));
+    }
+
+    @Test
+    public void testShore() {
+        //this.testLayers(new GenLayerShore(1L, new GenLayerRandomValues(0L)));
+    }
+
+    @Test
+    public void testSmooth() {
+        this.testLayers(new GenLayerSmooth(1L, new GenLayerRandomValues(0L)));
+    }
+
+    @Test
+    public void testVoronoiZoom() {
+        //this.testLayers(new GenLayerVoronoiZoom(1L, new GenLayerRandomValues(0L)));
+    }
+
+    @Test
+    public void testZoom() {
+        this.testLayers(new GenLayerZoom(1L, new GenLayerRandomValues(0L)));
     }
 
     private void testLayers(GenLayer vanilla) {

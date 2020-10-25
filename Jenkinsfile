@@ -64,11 +64,21 @@ pipeline {
         }
         stage("Build") {
             steps {
-                sh "./gradlew build"
+                sh "./gradlew build -x test"
             }
             post {
                 success {
                     archiveArtifacts artifacts: "build/libs/*.jar", fingerprint: true
+                }
+            }
+        }
+        stage("Test") {
+            steps {
+                sh "./gradlew test"
+            }
+            post {
+                success {
+                    junit "**/build/test-results/**/*.xml"
                 }
             }
         }

@@ -24,18 +24,27 @@ import lombok.NonNull;
 import net.daporkchop.fp2.util.compat.vanilla.biome.layer.FastLayer;
 
 import static net.daporkchop.fp2.util.compat.vanilla.biome.BiomeHelper.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
 public class FastLayerRandomValues extends FastLayer {
-    public FastLayerRandomValues(long seed) {
+    protected final int limit;
+
+    public FastLayerRandomValues(long seed, int limit) {
         super(seed);
+
+        this.limit = positive(limit, "limit");
+    }
+
+    public FastLayerRandomValues(long seed) {
+        this(seed, 256);
     }
 
     @Override
     public int getSingle(int x, int z) {
-        return nextInt(start(this.seed, x, z), 256);
+        return nextInt(start(this.seed, x, z), this.limit);
     }
 
     @Override
