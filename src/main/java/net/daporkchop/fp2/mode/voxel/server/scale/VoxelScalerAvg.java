@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.mode.voxel.server.scale;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.api.server.scale.IFarScaler;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
@@ -30,7 +29,7 @@ import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
 
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.mode.voxel.server.gen.VoxelGeneratorConstants.*;
+import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -138,12 +137,12 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
                 }
             }
         }
-        data.edges = ((edges & 4) << 9) | ((edges & 2) << 6) | ((edges & 1) << 3);
+        data.edges = edges;
 
         //compute appearance data
         //TODO: i need a better algorithm for selecting which voxel to use
         int j = (floorI(x) << 2) | (floorI(y) << 1) | floorI(z);
-        if ((validFlags & (1 << j)) != 0)   {
+        /*if ((validFlags & (1 << j)) != 0)   {
             data.state = datas[j].state;
             data.biome = datas[j].biome;
             data.light = datas[j].light;
@@ -157,7 +156,7 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
                     break;
                 }
             }
-        }
+        }*/
 
         dst.set(dstX, dstY, dstZ, data);
     }

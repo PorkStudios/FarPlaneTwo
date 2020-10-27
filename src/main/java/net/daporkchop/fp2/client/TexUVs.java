@@ -118,16 +118,6 @@ public class TexUVs {
 
         //grass renders in two layers, which is somewhat expensive to simulate with shaders. we render the sides as dirt, you can't tell the difference
         // from far away anyway
-        putReplacer(Blocks.GRASS, (state, face) -> {
-            if (OF && PUnsafe.getInt(mc.gameSettings, OF_BETTERGRASS_OFFSET) != OF_OFF) {
-                if (face != EnumFacing.DOWN) {
-                    return state;
-                }
-            } else if (true || face == EnumFacing.UP) {
-                return state;
-            }
-            return Blocks.DIRT.getDefaultState();
-        });
         putRenderer(Blocks.GRASS, (state, face, model) -> {
             if (OF && PUnsafe.getInt(mc.gameSettings, OF_BETTERGRASS_OFFSET) != OF_OFF) {
                 if (face != EnumFacing.DOWN) {

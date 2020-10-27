@@ -42,13 +42,14 @@ public class VoxelPiece implements IFarPiece {
     //layout (in ints):
     //0: (dx << 24) | (dy << 16) | (dz << 8) | edges
     //1: (biome << 8) | light
+    //   ^ top 16 bits are free
     //2: state
     //   ^ top 8 bits are free
 
     public static final int ENTRY_COUNT = T_VOXELS * T_VOXELS * T_VOXELS;
     protected static final int INDEX_SIZE = ENTRY_COUNT * 2;
 
-    public static final int ENTRY_DATA_SIZE = 3;
+    public static final int ENTRY_DATA_SIZE = 5;
     public static final int ENTRY_DATA_SIZE_BYTES = ENTRY_DATA_SIZE * 4;
 
     public static final int ENTRY_FULL_SIZE_BYTES = ENTRY_DATA_SIZE * 4 + 2;
@@ -63,12 +64,12 @@ public class VoxelPiece implements IFarPiece {
         int dx = floorI(clamp(data.x, 0., 1.) * 255.0d);
         int dy = floorI(clamp(data.y, 0., 1.) * 255.0d);
         int dz = floorI(clamp(data.z, 0., 1.) * 255.0d);
-        int edges = data.edges; //TODO: do edge mask conversion in generators rather than here
-        edges = ((edges & 0x800) >> 9) | ((edges & 0x80) >> 6) | ((edges & 0x8) >> 3);
 
-        PUnsafe.putInt(base + 0L, (dx << 24) | (dy << 16) | (dz << 8) | edges);
+        PUnsafe.putInt(base + 0L, (dx << 24) | (dy << 16) | (dz << 8) | data.edges);
         PUnsafe.putInt(base + 4L, (data.biome << 8) | data.light);
-        PUnsafe.putInt(base + 8L, data.state);
+        PUnsafe.putInt(base + 8L, data.state0);
+        PUnsafe.putInt(base + 12L, data.state1);
+        PUnsafe.putInt(base + 16L, data.state2);
     }
 
     static void readData(long base, VoxelData data) {
@@ -79,10 +80,12 @@ public class VoxelPiece implements IFarPiece {
         data.x = (i0 >>> 24) / 255.0d;
         data.y = ((i0 >> 16) & 0xFF) / 255.0d;
         data.z = ((i0 >> 8) & 0xFF) / 255.0d;
-        data.edges = i0 & 0xFF;
+        data.edges = i0 & 0x3F;
 
-        data.state = i2;
-        data.biome = i1 >>> 8;
+        data.state0 = i2;
+        data.state1 = PUnsafe.getInt(base + 12L);
+        data.state2 = PUnsafe.getInt(base + 16L);
+        data.biome = (i1 >> 8) & 0xFF;
         data.light = i1 & 0xFF;
     }
 

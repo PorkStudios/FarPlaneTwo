@@ -23,23 +23,24 @@ package net.daporkchop.fp2.mode.voxel.server.gen.exact;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
-import static net.daporkchop.fp2.mode.voxel.server.gen.VoxelGeneratorConstants.*;
+import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
 public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<VoxelPos, VoxelPieceBuilder> {
+
     @Override
     public void init(@NonNull WorldServer world) {
         //no-op
@@ -62,39 +63,48 @@ public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<
                         int x = baseX + dx + ((i >> 2) & 1);
                         int y = baseY + dy + ((i >> 1) & 1);
                         int z = baseZ + dz + (i & 1);
-                        if (world.getBlockState(pos.setPos(x, y, z)).isOpaqueCube()) {
-                            corners |= 1 << i;
-                        }
+                        corners |= type(world.getBlockState(pos.setPos(x, y, z))) << (i << 1);
                     }
 
-                    if (corners == 0 || corners == 0xFF) { //if all corners are either solid or non-solid, this voxel can be safely skipped
+                    if (corners == 0 || corners == 0x5555 || corners == 0xAAAA) { //if all corners are the same type, this voxel can be safely skipped
                         continue;
                     }
 
                     int edgeMask = 0;
 
-                    for (int i = 0; i < 12; i++) {
-                        int c0 = EDGEVMAP[i << 1];
-                        int c1 = EDGEVMAP[(i << 1) | 1];
+                    for (int i = 0; i < EDGEV_COUNT; i++) {
+                        int c0 = EDGEVMAP[i << 1] << 1;
+                        int c1 = EDGEVMAP[(i << 1) | 1] << 1;
 
-                        if (((corners >> c0) & 1) == ((corners >> c1) & 1)) { //both corners along the current edge are identical, this edge can be skipped
+                        if (((corners >> c0) & 3) == ((corners >> c1) & 3)) { //both corners along the current edge are identical, this edge can be skipped
                             continue;
                         }
 
                         edgeMask |= 1 << i;
+
+                        if (((corners >> c0) & 3) < ((corners >> c1) & 3)) { //the face is facing towards negative coordinates
+                            edgeMask |= 1 << EDGEV_COUNT << i;
+                        }
                     }
 
-                    data.x = data.y = data.z = 0.5d;
+                    data.x = data.y = data.z = .5d;
+
                     data.edges = edgeMask;
 
-                    int i = Integer.numberOfTrailingZeros(corners);
+                    int i = EDGEVMAP[(0 << 1) | ((edgeMask >> 3) & 1)];
                     pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
+                    data.state0 = Block.getStateId(world.getBlockState(pos));
+                    i = EDGEVMAP[(1 << 1) | ((edgeMask >> 4) & 1)];
+                    pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
+                    data.state1 = Block.getStateId(world.getBlockState(pos));
+                    i = EDGEVMAP[(2 << 1) | ((edgeMask >> 5) & 1)];
+                    pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
+                    data.state2 = Block.getStateId(world.getBlockState(pos));
 
-                    data.state = Block.getStateId(world.getBlockState(pos));
                     data.biome = Biome.getIdForBiome(world.getBiome(pos));
 
                     for (i = 0; i < 8; i++) {
-                        if ((corners & (1 << i)) == 0)  {
+                        if (((corners >> (i << 1)) & 3) != 2) {
                             pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
                             break;
                         }

@@ -32,7 +32,9 @@ public class VoxelData extends Vector3d {
     public int edges;
 
     //block data (for texturing and shading)
-    public int state;
+    public int state0;
+    public int state1;
+    public int state2;
     public int biome;
     public int light;
 
@@ -46,7 +48,9 @@ public class VoxelData extends Vector3d {
         this.y = 0.0d;
         this.z = 0.0d;
         this.edges = 0;
-        this.state = 0;
+        this.state0 = 0;
+        this.state1 = 0;
+        this.state2 = 0;
         this.biome = 0;
         this.light = 0;
         return this;

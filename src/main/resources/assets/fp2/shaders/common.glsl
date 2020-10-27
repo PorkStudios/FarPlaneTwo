@@ -166,11 +166,11 @@ int normalToFaceIndex(vec3 normal)  {
     //TODO: make this branchless
     vec3 n = abs(normal);
     if (n.y > n.x && n.y > n.z)  {
-        return n.y < 0. ? 0 : 1;
+        return normal.y < 0. ? 0 : 1;
     } else if (n.z > n.x && n.z > n.y) {
-        return n.z < 0. ? 2 : 3;
+        return normal.z < 0. ? 2 : 3;
     } else {
-        return n.x < 0. ? 4 : 5;
+        return normal.x < 0. ? 4 : 5;
     }
 }
 

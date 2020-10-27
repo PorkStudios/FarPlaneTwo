@@ -66,21 +66,25 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
     @Override
     protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, int opaqueCount, int transparentCount) {
         try (VertexArrayObject vao = this.cache.vao().bind();
-             DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBufferOpaque().bind()) {
-            try (ShaderProgram shader = SOLID_SHADER.use()) {
-                GlStateManager.disableAlpha();
-                glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, opaqueCount, 0);
-                GlStateManager.enableAlpha();
+             ShaderProgram shader = SOLID_SHADER.use()) {
+            if (opaqueCount != 0) {
+                try (DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBufferOpaque().bind()) {
+                    GlStateManager.disableAlpha();
+                    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, opaqueCount, 0);
+                    GlStateManager.enableAlpha();
+                }
             }
-            try (ShaderProgram shader = TRANSPARENT_SHADER.use()) {
-                GlStateManager.enableBlend();
-                GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            if (transparentCount != 0) {
+                try (DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBufferTransparent().bind()) {
+                    GlStateManager.enableBlend();
+                    GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-                //TODO: order-independent transparency?
-                // (that'll be a BIG project...)
-                glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, opaqueCount, 0);
+                    //TODO: order-independent transparency?
+                    // (that'll be a BIG project...)
+                    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, transparentCount, 0);
 
-                GlStateManager.disableBlend();
+                    GlStateManager.disableBlend();
+                }
             }
         }
     }

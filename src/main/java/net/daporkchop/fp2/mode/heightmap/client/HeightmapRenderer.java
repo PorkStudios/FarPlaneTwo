@@ -84,7 +84,7 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
                 GlStateManager.enableBlend();
                 GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-                glUniform1d(shader.uniformLocation("seaLevel"), 63.0d);
+                glUniform1d(shader.uniformLocation("seaLevel"), 63.0d - 2.0d / 16.0d);
                 glUniform1i(shader.uniformLocation("water"), TexUVs.STATEID_TO_INDEXID.get(Block.getStateId(Blocks.WATER.getDefaultState())));
 
                 glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, opaqueCount, 0);

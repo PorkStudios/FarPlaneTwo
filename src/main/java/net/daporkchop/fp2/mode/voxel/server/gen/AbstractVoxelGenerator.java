@@ -22,14 +22,13 @@ package net.daporkchop.fp2.mode.voxel.server.gen;
 
 import net.daporkchop.fp2.mode.common.server.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
 import net.daporkchop.fp2.util.math.qef.QefSolver;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.mode.voxel.server.gen.VoxelGeneratorConstants.*;
+import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
@@ -98,7 +97,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                     int edgeCount = 0;
                     int edgeMask = 0;
 
-                    for (int i = 0; i < 12 && edgeCount < MAX_EDGES; i++) {
+                    for (int i = 0; i < 12 && edgeCount < QEF_MAX_EDGES; i++) {
                         int c0 = EDGEVMAP[i << 1];
                         int c1 = EDGEVMAP[(i << 1) | 1];
 

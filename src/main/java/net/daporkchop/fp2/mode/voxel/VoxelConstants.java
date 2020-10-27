@@ -18,9 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.server.gen;
+package net.daporkchop.fp2.mode.voxel;
 
+import io.netty.buffer.ByteBuf;
 import lombok.experimental.UtilityClass;
+import net.minecraft.block.state.IBlockState;
 
 /**
  * Constants and helpers to be used by voxel generators.
@@ -28,33 +30,38 @@ import lombok.experimental.UtilityClass;
  * @author DaPorkchop_
  */
 @UtilityClass
-public class VoxelGeneratorConstants {
+public class VoxelConstants {
     /**
      * The maximum number of edges intersecting the surface that may be considered by the QEF.
      */
-    public static final int MAX_EDGES = 6;
+    public static final int QEF_MAX_EDGES = 6;
+
+    /**
+     * Defines all of the edges of a cube based on their point indices.
+     */
+    public static final int EDGEV_COUNT = 3;
 
     /**
      * Defines all of the edges of a cube based on their point indices.
      */
     public static final int[] EDGEVMAP = {
-            0, 4, 1, 5, 2, 6, 3, 7, // x-axis
-            0, 2, 1, 3, 4, 6, 5, 7, // y-axis
-            0, 1, 2, 3, 4, 5, 6, 7  // z-axis
+            3, 7, // x-axis
+            5, 7, // y-axis
+            6, 7  // z-axis
     };
 
     /**
      * The number of vertex indices emitted on a connected edge.
      */
-    public static final int CONNECTION_INDEX_COUNT = 6;
+    public static final int CONNECTION_INDEX_COUNT = 4;
 
     /**
      * Defines the offsets of all connections for all vertices on the three flagged edges on a voxel.
      */
     public static final int[] CONNECTION_INDICES = {
-            0, 1, 3, 0, 2, 3,
-            0, 1, 5, 0, 4, 5,
-            0, 2, 6, 0, 4, 6
+            0, 1, 2, 3,
+            0, 1, 4, 5,
+            0, 2, 4, 6
     };
 
     /**
@@ -70,4 +77,32 @@ public class VoxelGeneratorConstants {
             2, 3, 4, 5, 6, 7,
             1, 3, 4, 5, 6, 7
     };
+
+    public static final int TYPE_AIR = 0;
+    public static final int TYPE_TRANSPARENT = 1;
+    public static final int TYPE_OPAQUE = 2;
+
+    public static int type(IBlockState state) {
+        if (state.isOpaqueCube()) {
+            return TYPE_OPAQUE;
+        } else if (state.getMaterial().isSolid()) {
+            return TYPE_TRANSPARENT;
+        } else {
+            return TYPE_AIR;
+        }
+    }
+
+    /**
+     * Emits the indices for drawing a quad.
+     *
+     * @param indices        the {@link ByteBuf} to write the indices to
+     * @param oppositeCorner the index of the vertex in the corner opposite the provoking vertex
+     * @param c0             the index of one of the edge vertices
+     * @param c1             the index of the other edge vertex
+     * @param provoking      the index of the provoking vertex
+     */
+    public static void emitQuad(ByteBuf indices, int oppositeCorner, int c0, int c1, int provoking) {
+        indices.writeShort(oppositeCorner).writeShort(c0).writeShort(provoking); //first triangle
+        indices.writeShort(oppositeCorner).writeShort(c1).writeShort(provoking); //second triangle
+    }
 }
