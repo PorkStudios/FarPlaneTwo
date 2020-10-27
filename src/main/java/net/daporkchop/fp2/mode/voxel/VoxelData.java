@@ -22,6 +22,10 @@ package net.daporkchop.fp2.mode.voxel;
 
 import net.daporkchop.fp2.util.math.Vector3d;
 
+import java.util.Arrays;
+
+import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
+
 /**
  * Represents the data stored at a voxel that is not absent.
  *
@@ -32,9 +36,7 @@ public class VoxelData extends Vector3d {
     public int edges;
 
     //block data (for texturing and shading)
-    public int state0;
-    public int state1;
-    public int state2;
+    public final int[] states = new int[EDGEV_COUNT];
     public int biome;
     public int light;
 
@@ -48,9 +50,7 @@ public class VoxelData extends Vector3d {
         this.y = 0.0d;
         this.z = 0.0d;
         this.edges = 0;
-        this.state0 = 0;
-        this.state1 = 0;
-        this.state2 = 0;
+        Arrays.fill(this.states, 0);
         this.biome = 0;
         this.light = 0;
         return this;

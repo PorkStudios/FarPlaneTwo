@@ -70,40 +70,39 @@ public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<
                         continue;
                     }
 
-                    int edgeMask = 0;
+                    int edges = 0;
+                    int negativeFaces = 0;
 
-                    for (int i = 0; i < EDGEV_COUNT; i++) {
-                        int c0 = EDGEVMAP[i << 1] << 1;
-                        int c1 = EDGEVMAP[(i << 1) | 1] << 1;
+                    for (int edge = 0; edge < EDGEV_COUNT; edge++) {
+                        int c0 = EDGEVMAP[edge << 1] << 1;
+                        int c1 = EDGEVMAP[(edge << 1) | 1] << 1;
 
                         if (((corners >> c0) & 3) == ((corners >> c1) & 3)) { //both corners along the current edge are identical, this edge can be skipped
                             continue;
                         }
 
-                        edgeMask |= 1 << i;
+                        edges |= 1 << edge;
 
                         if (((corners >> c0) & 3) < ((corners >> c1) & 3)) { //the face is facing towards negative coordinates
-                            edgeMask |= 1 << EDGEV_COUNT << i;
+                            negativeFaces |= 1 << edge;
                         }
                     }
 
                     data.x = data.y = data.z = .5d;
 
-                    data.edges = edgeMask;
+                    data.edges = edges;
 
-                    int i = EDGEVMAP[(0 << 1) | ((edgeMask >> 3) & 1)];
-                    pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
-                    data.state0 = Block.getStateId(world.getBlockState(pos));
-                    i = EDGEVMAP[(1 << 1) | ((edgeMask >> 4) & 1)];
-                    pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
-                    data.state1 = Block.getStateId(world.getBlockState(pos));
-                    i = EDGEVMAP[(2 << 1) | ((edgeMask >> 5) & 1)];
-                    pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
-                    data.state2 = Block.getStateId(world.getBlockState(pos));
+                    for (int edge = 0; edge < EDGEV_COUNT; edge++) {
+                        if ((edges & (1 << edge)) != 0) {
+                            int i = EDGEVMAP[(edge << 1) | ((negativeFaces >> edge) & 1)];
+                            pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
+                            data.states[edge] = Block.getStateId(world.getBlockState(pos));
+                        }
+                    }
 
                     data.biome = Biome.getIdForBiome(world.getBiome(pos));
 
-                    for (i = 0; i < 8; i++) {
+                    for (int i = 0; i < 8; i++) {
                         if (((corners >> (i << 1)) & 3) != 2) {
                             pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
                             break;

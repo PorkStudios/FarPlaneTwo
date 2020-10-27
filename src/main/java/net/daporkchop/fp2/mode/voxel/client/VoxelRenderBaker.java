@@ -41,6 +41,7 @@ import net.minecraft.init.Biomes;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
 
+import java.util.Arrays;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
@@ -56,15 +57,17 @@ import static org.lwjgl.opengl.GL41.*;
  * @author DaPorkchop_
  */
 public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
-    public static final Ref<SimpleRecycler<IntIntMap>> MAP_RECYCLER = ThreadRef.soft(() -> new SimpleRecycler<IntIntMap>() {
+    public static final Ref<SimpleRecycler<int[]>> MAP_RECYCLER = ThreadRef.soft(() -> new SimpleRecycler<int[]>() {
         @Override
-        protected IntIntMap allocate0() {
-            return new IntIntOpenHashMap();
+        protected int[] allocate0() {
+            int[] arr = new int[T_VERTS * T_VERTS * T_VERTS * 3];
+            this.reset0(arr);
+            return arr;
         }
 
         @Override
-        protected void reset0(@NonNull IntIntMap map) {
-            map.clear();
+        protected void reset0(@NonNull int[] map) {
+            Arrays.fill(map, -1);
         }
     });
 
@@ -77,13 +80,13 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
 
     protected static final int TYPE_LOCAL_SHIFT = 20;
 
-    protected static int vertexMapIndex(int dx, int dy, int dz, int i) {
+    protected static int vertexMapIndex(int dx, int dy, int dz, int i, int edge) {
         int j = CONNECTION_INDICES[i];
         int ddx = dx + ((j >> 2) & 1);
         int ddy = dy + ((j >> 1) & 1);
         int ddz = dz + (j & 1);
 
-        return (ddx * T_VERTS + ddy) * T_VERTS + ddz;
+        return ((ddx * T_VERTS + ddy) * T_VERTS + ddz) * 3 + edge;
     }
 
     @Override
@@ -178,9 +181,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
         final VoxelData data = new VoxelData();
 
-        final IntIntMap map = MAP_RECYCLER.get().allocate();
-        IntList states = new IntArrayList();
-        IntList edges = new IntArrayList();
+        final int[] map = MAP_RECYCLER.get().allocate();
 
         try {
             //step 1: simply write vertices for all source pieces, and assign indices
@@ -275,7 +276,6 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                             continue;
                         }
 
-                        EDGES:
                         for (int edge = 0; edge < EDGEV_COUNT; edge++) {
                             if ((data.edges & (1 << edge)) == 0) {
                                 continue;
@@ -283,19 +283,14 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
 
                             int base = edge * CONNECTION_INDEX_COUNT;
                             int oppositeCorner, c0, c1, provoking;
-                            if ((provoking = map.getOrDefault(vertexMapIndex(dx, dy, dz, base) * 3 + edge, -1)) < 0
-                                || (c1 = map.getOrDefault(vertexMapIndex(dx, dy, dz, base + 1) * 3 + edge, -1)) < 0
-                                || (c0 = map.getOrDefault(vertexMapIndex(dx, dy, dz, base + 2) * 3 + edge, -1)) < 0
-                                || (oppositeCorner = map.getOrDefault(vertexMapIndex(dx, dy, dz, base + 3) * 3 + edge, -1)) < 0) {
+                            if ((provoking = map[vertexMapIndex(dx, dy, dz, base, edge)]) < 0
+                                || (c1 = map[vertexMapIndex(dx, dy, dz, base + 1, edge)]) < 0
+                                || (c0 = map[vertexMapIndex(dx, dy, dz, base + 2, edge)]) < 0
+                                || (oppositeCorner = map[vertexMapIndex(dx, dy, dz, base + 3, edge)]) < 0) {
                                 continue; //skip if any of the vertices are missing
                             }
 
-                            oppositeCorner &= ~(1 << TYPE_LOCAL_SHIFT);
-                            c0 &= ~(1 << TYPE_LOCAL_SHIFT);
-                            c1 &= ~(1 << TYPE_LOCAL_SHIFT);
-                            provoking &= ~(1 << TYPE_LOCAL_SHIFT);
-
-                            emitQuad((provoking & (1 << TYPE_LOCAL_SHIFT)) == 0 ? opaqueIndices : transparentIndices,
+                            emitQuad(type(Block.getStateById(data.states[edge])) == TYPE_OPAQUE ? opaqueIndices : transparentIndices,
                                     oppositeCorner, c0, c1, provoking);
                         }
                     }
@@ -306,7 +301,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         }
     }
 
-    protected int vertex(int baseX, int baseY, int baseZ, int level, int i, VoxelPiece[] srcs, int x, int y, int z, VoxelData data, ByteBuf vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, IntIntMap map, int indexCounter) {
+    protected int vertex(int baseX, int baseY, int baseZ, int level, int i, VoxelPiece[] srcs, int x, int y, int z, VoxelData data, ByteBuf vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, int[] map, int indexCounter) {
         baseX += (x & T_VOXELS) << level;
         baseY += (y & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
@@ -320,9 +315,9 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         pos.setPos(blockX, blockY, blockZ);
         biomeAccess.biome(Biome.getBiome(data.biome, Biomes.PLAINS));
 
-        vertices.writeInt(TexUVs.STATEID_TO_INDEXID.get(data.state0)); //state
+        vertices.writeInt(TexUVs.STATEID_TO_INDEXID.get(data.states[0])); //state
         vertices.writeShort(Constants.packedLightTo8BitVec2(data.light)); //light
-        vertices.writeMedium(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.state0), biomeAccess, pos, 0))); //color
+        vertices.writeMedium(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.states[0]), biomeAccess, pos, 0))); //color
 
         final double offset = 0.5d;
 
@@ -356,34 +351,29 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                     .writeDouble(flooredY + highY * 2 * scale + offset)
                     .writeDouble(flooredZ + highZ * 2 * scale + offset);
         }
-
         vertices.writeShort(1 << level);
 
-        int baseIndex = ((x * T_VERTS + y) * T_VERTS + z) * 3;
-        int i0 = indexCounter++;
-        map.put(baseIndex, i0);
+        int baseMapIndex = ((x * T_VERTS + y) * T_VERTS + z) * 3;
+        EDGES:
+        for (int edge = 0; edge < EDGEV_COUNT; edge++) {
+            int bufIndex;
+            if (edge == 0) {
+                bufIndex = vertices.writerIndex() - VOXEL_VERTEX_SIZE;
+            } else {
+                for (int j = 0; j < edge; j++) {
+                    if (data.states[j] == data.states[edge]) { //states match, don't duplicate vertex data for this edge
+                        map[baseMapIndex + edge] = map[baseMapIndex + j];
+                        continue EDGES;
+                    }
+                }
+                bufIndex = vertices.writerIndex();
+                vertices.writeBytes(vertices, bufIndex - VOXEL_VERTEX_SIZE, VOXEL_VERTEX_SIZE);
+            }
 
-        int i1;
-        if (data.state1 == data.state0) {
-            map.put(baseIndex + 1, i1 = i0);
-        } else {
-            vertices.writeBytes(vertices, vertices.writerIndex() - VOXEL_VERTEX_SIZE, VOXEL_VERTEX_SIZE);
-            vertices.setInt(vertices.writerIndex() - VOXEL_VERTEX_SIZE, TexUVs.STATEID_TO_INDEXID.get(data.state1));
-            vertices.setMedium(vertices.writerIndex() - VOXEL_VERTEX_SIZE + 6, Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.state1), biomeAccess, pos, 0))); //color
-            map.put(baseIndex + 1, i1 = indexCounter++);
+            vertices.setInt(bufIndex, TexUVs.STATEID_TO_INDEXID.get(data.states[edge]));
+            vertices.setMedium(bufIndex + 6, Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.states[edge]), biomeAccess, pos, 0))); //color
+            map[baseMapIndex + edge] = indexCounter++;
         }
-
-        if (data.state2 == data.state0) {
-            map.put(baseIndex + 2, i0);
-        } else if (data.state2 == data.state1) {
-            map.put(baseIndex + 2, i1);
-        } else {
-            vertices.writeBytes(vertices, vertices.writerIndex() - VOXEL_VERTEX_SIZE, VOXEL_VERTEX_SIZE);
-            vertices.setInt(vertices.writerIndex() - VOXEL_VERTEX_SIZE, TexUVs.STATEID_TO_INDEXID.get(data.state2));
-            vertices.setMedium(vertices.writerIndex() - VOXEL_VERTEX_SIZE + 6, Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.state2), biomeAccess, pos, 0))); //color
-            map.put(baseIndex + 2, indexCounter++);
-        }
-
         return indexCounter;
     }
 }

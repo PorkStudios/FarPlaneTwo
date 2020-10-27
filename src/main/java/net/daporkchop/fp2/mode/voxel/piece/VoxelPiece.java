@@ -28,6 +28,7 @@ import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -41,15 +42,17 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class VoxelPiece implements IFarPiece {
     //layout (in ints):
     //0: (dx << 24) | (dy << 16) | (dz << 8) | edges
+    //                                       ^ 5 bits are free
     //1: (biome << 8) | light
-    //   ^ top 16 bits are free
-    //2: state
-    //   ^ top 8 bits are free
+    //  ^ 16 bits are free
+    //2: state0
+    //3: state1
+    //4: state2
 
     public static final int ENTRY_COUNT = T_VOXELS * T_VOXELS * T_VOXELS;
     protected static final int INDEX_SIZE = ENTRY_COUNT * 2;
 
-    public static final int ENTRY_DATA_SIZE = 5;
+    public static final int ENTRY_DATA_SIZE = 2 + EDGEV_COUNT;
     public static final int ENTRY_DATA_SIZE_BYTES = ENTRY_DATA_SIZE * 4;
 
     public static final int ENTRY_FULL_SIZE_BYTES = ENTRY_DATA_SIZE * 4 + 2;
@@ -67,26 +70,22 @@ public class VoxelPiece implements IFarPiece {
 
         PUnsafe.putInt(base + 0L, (dx << 24) | (dy << 16) | (dz << 8) | data.edges);
         PUnsafe.putInt(base + 4L, (data.biome << 8) | data.light);
-        PUnsafe.putInt(base + 8L, data.state0);
-        PUnsafe.putInt(base + 12L, data.state1);
-        PUnsafe.putInt(base + 16L, data.state2);
+        PUnsafe.copyMemory(data.states, PUnsafe.ARRAY_INT_BASE_OFFSET, null, base + 8L, 4L * EDGEV_COUNT);
     }
 
     static void readData(long base, VoxelData data) {
         int i0 = PUnsafe.getInt(base + 0L);
         int i1 = PUnsafe.getInt(base + 4L);
-        int i2 = PUnsafe.getInt(base + 8L);
 
         data.x = (i0 >>> 24) / 255.0d;
         data.y = ((i0 >> 16) & 0xFF) / 255.0d;
         data.z = ((i0 >> 8) & 0xFF) / 255.0d;
-        data.edges = i0 & 0x3F;
+        data.edges = i0 & 0x7;
 
-        data.state0 = i2;
-        data.state1 = PUnsafe.getInt(base + 12L);
-        data.state2 = PUnsafe.getInt(base + 16L);
         data.biome = (i1 >> 8) & 0xFF;
         data.light = i1 & 0xFF;
+
+        PUnsafe.copyMemory(null, base + 8L, data.states, PUnsafe.ARRAY_INT_BASE_OFFSET, 4L * EDGEV_COUNT);
     }
 
     protected final long addr = PUnsafe.allocateMemory(this, PIECE_SIZE);
