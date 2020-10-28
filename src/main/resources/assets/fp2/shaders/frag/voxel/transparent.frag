@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-$today.year DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,24 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.asm.client.shader;
+void main() {
+    vec3 normal = normalVector();
 
-import net.minecraft.client.shader.Framebuffer;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.Constant;
-import org.spongepowered.asm.mixin.injection.ModifyConstant;
+    //initial block texture sample
+    vec4 frag_color = sampleTerrain(normal);
 
-import static org.lwjgl.opengl.GL14.*;
-import static org.lwjgl.opengl.GL30.*;
+    //block/sky light
+    frag_color *= texture(lightmap_texture, fs_in.light);
 
-/**
- * @author DaPorkchop_
- */
-@Mixin(Framebuffer.class)
-public abstract class MixinFramebuffer {
-    @ModifyConstant(method = "Lnet/minecraft/client/shader/Framebuffer;createFramebuffer(II)V",
-            constant = @Constant(intValue = GL_DEPTH_COMPONENT24))
-    private int useF32DepthBuffer(int prev) {
-        return GL_DEPTH_COMPONENT32F;
-    }
+    //shading
+    frag_color.rgb *= diffuseLight(normal);
+
+    //fog
+    frag_color = addFog(frag_color);
+
+    color = frag_color;
 }
