@@ -36,7 +36,7 @@ public class VoxelData extends Vector3d {
     public int edges;
 
     //block data (for texturing and shading)
-    public final int[] states = new int[EDGEV_COUNT];
+    public final int[] states = new int[EDGE_COUNT];
     public int biome;
     public int light;
 

@@ -28,7 +28,6 @@ import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.block.Block;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
@@ -40,7 +39,6 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<VoxelPos, VoxelPieceBuilder> {
-
     @Override
     public void init(@NonNull WorldServer world) {
         //no-op
@@ -54,6 +52,8 @@ public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         VoxelData data = new VoxelData();
+
+        data.x = data.y = data.z = .5d;
 
         for (int dx = 0; dx < T_VOXELS; dx++) {
             for (int dy = 0; dy < T_VOXELS; dy++) {
@@ -73,9 +73,9 @@ public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<
                     int edges = 0;
                     int negativeFaces = 0;
 
-                    for (int edge = 0; edge < EDGEV_COUNT; edge++) {
-                        int c0 = EDGEVMAP[edge << 1] << 1;
-                        int c1 = EDGEVMAP[(edge << 1) | 1] << 1;
+                    for (int edge = 0; edge < EDGE_COUNT; edge++) {
+                        int c0 = EDGE_VERTEX_MAP[edge << 1] << 1;
+                        int c1 = EDGE_VERTEX_MAP[(edge << 1) | 1] << 1;
 
                         if (((corners >> c0) & 3) == ((corners >> c1) & 3)) { //both corners along the current edge are identical, this edge can be skipped
                             continue;
@@ -88,13 +88,11 @@ public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<
                         }
                     }
 
-                    data.x = data.y = data.z = .5d;
-
                     data.edges = edges;
 
-                    for (int edge = 0; edge < EDGEV_COUNT; edge++) {
+                    for (int edge = 0; edge < EDGE_COUNT; edge++) {
                         if ((edges & (1 << edge)) != 0) {
-                            int i = EDGEVMAP[(edge << 1) | ((negativeFaces >> edge) & 1)];
+                            int i = EDGE_VERTEX_MAP[(edge << 1) | ((negativeFaces >> edge) & 1)];
                             pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
                             data.states[edge] = Block.getStateId(world.getBlockState(pos));
                         }
@@ -103,7 +101,7 @@ public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<
                     data.biome = Biome.getIdForBiome(world.getBiome(pos));
 
                     for (int i = 0; i < 8; i++) {
-                        if (((corners >> (i << 1)) & 3) != 2) {
+                        if (((corners >> (i << 1)) & 3) == 0) {
                             pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
                             break;
                         }

@@ -98,8 +98,8 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                     int edgeMask = 0;
 
                     for (int i = 0; i < 12 && edgeCount < QEF_MAX_EDGES; i++) {
-                        int c0 = EDGEVMAP[i << 1];
-                        int c1 = EDGEVMAP[(i << 1) | 1];
+                        int c0 = EDGE_VERTEX_MAP[i << 1];
+                        int c1 = EDGE_VERTEX_MAP[(i << 1) | 1];
 
                         if (((corners >> c0) & 1) == ((corners >> c1) & 1)) { //both corners along the current edge are identical, this edge can be skipped
                             continue;

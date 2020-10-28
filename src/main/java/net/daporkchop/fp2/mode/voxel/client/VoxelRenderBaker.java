@@ -21,8 +21,6 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import io.netty.buffer.ByteBuf;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.mode.common.client.IFarRenderBaker;
@@ -34,8 +32,6 @@ import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
-import net.daporkchop.lib.primitive.map.IntIntMap;
-import net.daporkchop.lib.primitive.map.open.IntIntOpenHashMap;
 import net.minecraft.block.Block;
 import net.minecraft.init.Biomes;
 import net.minecraft.util.math.BlockPos;
@@ -276,7 +272,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                             continue;
                         }
 
-                        for (int edge = 0; edge < EDGEV_COUNT; edge++) {
+                        for (int edge = 0; edge < EDGE_COUNT; edge++) {
                             if ((data.edges & (1 << edge)) == 0) {
                                 continue;
                             }
@@ -355,7 +351,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
 
         int baseMapIndex = ((x * T_VERTS + y) * T_VERTS + z) * 3;
         EDGES:
-        for (int edge = 0; edge < EDGEV_COUNT; edge++) {
+        for (int edge = 0; edge < EDGE_COUNT; edge++) {
             int bufIndex;
             if (edge == 0) {
                 bufIndex = vertices.writerIndex() - VOXEL_VERTEX_SIZE;

@@ -52,7 +52,7 @@ public class VoxelPiece implements IFarPiece {
     public static final int ENTRY_COUNT = T_VOXELS * T_VOXELS * T_VOXELS;
     protected static final int INDEX_SIZE = ENTRY_COUNT * 2;
 
-    public static final int ENTRY_DATA_SIZE = 2 + EDGEV_COUNT;
+    public static final int ENTRY_DATA_SIZE = 2 + EDGE_COUNT;
     public static final int ENTRY_DATA_SIZE_BYTES = ENTRY_DATA_SIZE * 4;
 
     public static final int ENTRY_FULL_SIZE_BYTES = ENTRY_DATA_SIZE * 4 + 2;
@@ -70,7 +70,7 @@ public class VoxelPiece implements IFarPiece {
 
         PUnsafe.putInt(base + 0L, (dx << 24) | (dy << 16) | (dz << 8) | data.edges);
         PUnsafe.putInt(base + 4L, (data.biome << 8) | data.light);
-        PUnsafe.copyMemory(data.states, PUnsafe.ARRAY_INT_BASE_OFFSET, null, base + 8L, 4L * EDGEV_COUNT);
+        PUnsafe.copyMemory(data.states, PUnsafe.ARRAY_INT_BASE_OFFSET, null, base + 8L, 4L * EDGE_COUNT);
     }
 
     static void readData(long base, VoxelData data) {
@@ -85,7 +85,7 @@ public class VoxelPiece implements IFarPiece {
         data.biome = (i1 >> 8) & 0xFF;
         data.light = i1 & 0xFF;
 
-        PUnsafe.copyMemory(null, base + 8L, data.states, PUnsafe.ARRAY_INT_BASE_OFFSET, 4L * EDGEV_COUNT);
+        PUnsafe.copyMemory(null, base + 8L, data.states, PUnsafe.ARRAY_INT_BASE_OFFSET, 4L * EDGE_COUNT);
     }
 
     protected final long addr = PUnsafe.allocateMemory(this, PIECE_SIZE);

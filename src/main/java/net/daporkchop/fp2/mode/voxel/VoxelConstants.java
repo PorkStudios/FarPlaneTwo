@@ -32,22 +32,36 @@ import net.minecraft.block.state.IBlockState;
 @UtilityClass
 public class VoxelConstants {
     /**
-     * The maximum number of edges intersecting the surface that may be considered by the QEF.
+     * The number of voxel edges considered by the voxel renderer.
+     */
+    public static final int EDGE_COUNT = 3;
+
+    /**
+     * Defines all of the edges of a voxel relevant to the voxel renderer based on their point indices.
+     */
+    public static final int[] EDGE_VERTEX_MAP = {
+            3, 7, // x-axis
+            5, 7, // y-axis
+            6, 7  // z-axis
+    };
+
+    /**
+     * The maximum number of edges intersecting the surface that may be considered by a QEF.
      */
     public static final int QEF_MAX_EDGES = 6;
 
     /**
-     * Defines all of the edges of a cube based on their point indices.
+     * The number of voxel edges considered by a QEF.
      */
-    public static final int EDGEV_COUNT = 3;
+    public static final int QEF_EDGE_COUNT = 12;
 
     /**
-     * Defines all of the edges of a cube based on their point indices.
+     * Defines all of the edges of a voxel considered by a QEF based on their point indices.
      */
-    public static final int[] EDGEVMAP = {
-            3, 7, // x-axis
-            5, 7, // y-axis
-            6, 7  // z-axis
+    public static final int[] QEF_EDGE_VERTEX_MAP = {
+            0, 4, 1, 5, 2, 6, 3, 7, // x-axis
+            0, 2, 1, 3, 4, 6, 5, 7, // y-axis
+            0, 1, 2, 3, 4, 5, 6, 7  // z-axis
     };
 
     /**
@@ -85,7 +99,7 @@ public class VoxelConstants {
     public static int type(IBlockState state) {
         if (state.isOpaqueCube()) {
             return TYPE_OPAQUE;
-        } else if (state.getMaterial().isSolid()) {
+        } else if (state.getMaterial().isSolid() || state.getMaterial().isLiquid()) {
             return TYPE_TRANSPARENT;
         } else {
             return TYPE_AIR;
