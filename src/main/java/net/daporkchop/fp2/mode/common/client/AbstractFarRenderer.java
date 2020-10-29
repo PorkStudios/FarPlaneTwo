@@ -152,7 +152,20 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     protected void prepareGlState(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
         GlStateManager.disableCull();
 
-        GlStateManager.depthFunc(GL_LESS);
+        GlStateManager.matrixMode(GL_PROJECTION);
+        GlStateManager.pushMatrix();
+        GlStateManager.loadIdentity();
+        MatrixHelper.reversedZ(mc.entityRenderer.getFOVModifier(partialTicks, true), (float) mc.displayWidth / (float) mc.displayHeight, 0.05f);
+
+        GlStateManager.depthFunc(GL_GREATER);
+
+        glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+
+        GlStateManager.clearDepth(0.0d);
+        GlStateManager.clear(GL_DEPTH_BUFFER_BIT); //TODO: it might be better to use a separate depth buffer (maybe)
+
+        GlStateManager.matrixMode(GL_MODELVIEW);
+        GlStateManager.pushMatrix();
 
         mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
         mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
@@ -165,7 +178,17 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
 
         mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
 
+        glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
         GlStateManager.depthFunc(GL_LEQUAL);
+
+        GlStateManager.clearDepth(1.0d);
+        GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
+
+        GlStateManager.matrixMode(GL_PROJECTION);
+        GlStateManager.popMatrix();
+
+        GlStateManager.matrixMode(GL_MODELVIEW);
+        GlStateManager.popMatrix();
 
         GlStateManager.enableCull();
     }

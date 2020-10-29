@@ -21,6 +21,8 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import io.netty.buffer.ByteBuf;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.mode.common.client.IFarRenderBaker;
@@ -32,6 +34,8 @@ import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
+import net.daporkchop.lib.primitive.map.IntIntMap;
+import net.daporkchop.lib.primitive.map.open.IntIntOpenHashMap;
 import net.minecraft.block.Block;
 import net.minecraft.init.Biomes;
 import net.minecraft.util.math.BlockPos;

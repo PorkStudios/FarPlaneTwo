@@ -48,6 +48,11 @@ public class ShaderFP2StateHelper {
     private final long ADDR_VIEW = DATA + OFFSET_VIEW;
 
     public void updateAndBind(float partialTicks, @NonNull Minecraft mc) {
+        update(partialTicks, mc);
+        bind();
+    }
+
+    public void update(float partialTicks, @NonNull Minecraft mc) {
         { //view
             PUnsafe.putInt(ADDR_VIEW + 0 * INT_SIZE, FP2Config.renderDistance);
             PUnsafe.putInt(ADDR_VIEW + 1 * INT_SIZE, FP2Config.maxLevels);
@@ -56,7 +61,9 @@ public class ShaderFP2StateHelper {
             PUnsafe.putFloat(ADDR_VIEW + 3 * INT_SIZE + 0 * FLOAT_SIZE, (float) FP2Config.client.levelTransitionStart);
             PUnsafe.putFloat(ADDR_VIEW + 3 * INT_SIZE + 1 * FLOAT_SIZE, (float) FP2Config.client.levelTransitionEnd);
         }
+    }
 
+    public void bind() {
         try (UniformBufferObject ubo = UBO.bind()) { //upload
             glBufferData(GL_UNIFORM_BUFFER, DirectBufferReuse.wrapByte(DATA, TOTAL_SIZE), GL_STATIC_DRAW);
         }

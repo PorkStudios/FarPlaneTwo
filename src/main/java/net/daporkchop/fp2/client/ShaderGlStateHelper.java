@@ -32,11 +32,11 @@ import net.minecraft.entity.Entity;
 
 import java.nio.FloatBuffer;
 
-import static net.daporkchop.fp2.util.compat.of.OFHelper.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.util.compat.of.OFHelper.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL31.GL_UNIFORM_BUFFER;
+import static org.lwjgl.opengl.GL31.*;
 
 /**
  * @author DaPorkchop_
@@ -58,6 +58,11 @@ public class ShaderGlStateHelper {
     private final long ADDR_FOG = DATA + OFFSET_FOG;
 
     public void updateAndBind(float partialTicks, @NonNull Minecraft mc) {
+        update(partialTicks, mc);
+        bind();
+    }
+
+    public void update(float partialTicks, @NonNull Minecraft mc) {
         { //camera
             glGetFloat(GL_PROJECTION_MATRIX, DirectBufferReuse.wrapFloat(ADDR_CAMERA, MAT4_ELEMENTS));
             glGetFloat(GL_MODELVIEW_MATRIX, DirectBufferReuse.wrapFloat(ADDR_CAMERA + MAT4_SIZE, MAT4_ELEMENTS));
@@ -74,7 +79,7 @@ public class ShaderGlStateHelper {
         { //fog
             GlStateManager.FogState fogState = GlStateManager.fogState;
             boolean fogEnabled = fogState.fog.currentState
-                    && (!OF || PUnsafe.getInt(mc.gameSettings, OF_FOGTYPE_OFFSET) != OF_OFF);
+                                 && (!OF || PUnsafe.getInt(mc.gameSettings, OF_FOGTYPE_OFFSET) != OF_OFF);
 
             PUnsafe.putFloat(ADDR_FOG + VEC4_SIZE + 0 * FLOAT_SIZE, fogState.density);
             PUnsafe.putFloat(ADDR_FOG + VEC4_SIZE + 1 * FLOAT_SIZE, fogState.start);
@@ -82,14 +87,16 @@ public class ShaderGlStateHelper {
             PUnsafe.putFloat(ADDR_FOG + VEC4_SIZE + 3 * FLOAT_SIZE, 1.0f / (fogState.end - fogState.start));
             PUnsafe.putInt(ADDR_FOG + VEC4_SIZE + 4 * FLOAT_SIZE, fogEnabled ? fogState.mode : 0);
         }
+    }
 
+    public void bind() {
         try (UniformBufferObject ubo = UBO.bind()) { //upload
             glBufferData(GL_UNIFORM_BUFFER, DirectBufferReuse.wrapByte(DATA, TOTAL_SIZE), GL_STATIC_DRAW);
         }
         UBO.bindUBO(0);
     }
 
-    public void updateFogColor(@NonNull FloatBuffer buffer)  {
+    public void updateFogColor(@NonNull FloatBuffer buffer) {
         PUnsafe.copyMemory(PUnsafe.pork_directBufferAddress(buffer) + buffer.position() * FLOAT_SIZE, ADDR_FOG, VEC4_SIZE);
     }
 }

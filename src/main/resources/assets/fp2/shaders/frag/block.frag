@@ -22,6 +22,10 @@
 //#define BLOCK_FRAG_DEBUG_COLOR_NORMALS
 
 void main() {
+    /*if (isChunkSectionRenderable(ivec3(fs_in.pos) >> 4))    {
+        discard;
+    }*/
+
     vec3 normal = normalVector();
 
 #ifndef BLOCK_FRAG_DEBUG_COLOR_NORMALS

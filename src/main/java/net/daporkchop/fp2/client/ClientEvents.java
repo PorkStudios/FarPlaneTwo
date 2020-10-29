@@ -26,7 +26,6 @@ import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiVideoSettings;
 import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
@@ -71,10 +70,5 @@ public class ClientEvents {
         if (gui instanceof GuiVideoSettings) {
             ((IGuiScreen) gui).getButtonList().add(new GuiButtonFP2Options(0xBEEF, gui.width / 2 + 165, gui.height / 6 - 12, gui));
         }
-    }
-
-    @SubscribeEvent
-    public void renderWorldLast(RenderWorldLastEvent event) {
-        ReversedZ.renderWorldPass_TAIL();
     }
 }

@@ -20,21 +20,16 @@
 
 package net.daporkchop.fp2.asm.client.renderer;
 
-import net.daporkchop.fp2.client.ReversedZ;
 import net.daporkchop.fp2.client.ShaderGlStateHelper;
 import net.minecraft.client.renderer.GlStateManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.nio.FloatBuffer;
 
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL45.*;
+import static org.lwjgl.opengl.GL11.GL_FOG_COLOR;
 
 /**
  * @author DaPorkchop_
@@ -47,11 +42,5 @@ public abstract class MixinGlStateManager {
         if (id == GL_FOG_COLOR) {
             ShaderGlStateHelper.updateFogColor(data);
         }
-    }
-
-    @ModifyVariable(method = "Lnet/minecraft/client/renderer/GlStateManager;depthFunc(I)V",
-            at = @At("HEAD"))
-    private static int invertDepthModes(int func) {
-        return ReversedZ.modifyDepthFunc(func);
     }
 }
