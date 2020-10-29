@@ -130,7 +130,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
     }
 
     @Override
-    public void bake(@NonNull HeightmapPos dstPos, @NonNull HeightmapPiece[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf opaqueIndices, @NonNull ByteBuf transparentIndices) {
+    public void bake(@NonNull HeightmapPos dstPos, @NonNull HeightmapPiece[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf opaqueIndices, @NonNull ByteBuf cutoutIndices, @NonNull ByteBuf translucentIndices) {
         if (srcs[0] == null) {
             return;
         }

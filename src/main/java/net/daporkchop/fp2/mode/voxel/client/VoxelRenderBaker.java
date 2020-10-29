@@ -21,8 +21,6 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import io.netty.buffer.ByteBuf;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.mode.common.client.IFarRenderBaker;
@@ -34,10 +32,9 @@ import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
-import net.daporkchop.lib.primitive.map.IntIntMap;
-import net.daporkchop.lib.primitive.map.open.IntIntOpenHashMap;
 import net.minecraft.block.Block;
 import net.minecraft.init.Biomes;
+import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
 
@@ -167,7 +164,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
     }
 
     @Override
-    public void bake(@NonNull VoxelPos dstPos, @NonNull VoxelPiece[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf opaqueIndices, @NonNull ByteBuf transparentIndices) {
+    public void bake(@NonNull VoxelPos dstPos, @NonNull VoxelPiece[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf opaqueIndices, @NonNull ByteBuf cutoutIndices, @NonNull ByteBuf translucentIndices) {
         if (srcs[0] == null) {
             return;
         }
@@ -290,7 +287,8 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                                 continue; //skip if any of the vertices are missing
                             }
 
-                            emitQuad(type(Block.getStateById(data.states[edge])) == TYPE_OPAQUE ? opaqueIndices : transparentIndices,
+                            BlockRenderLayer layer = Block.getStateById(data.states[edge]).getBlock().getRenderLayer();
+                            emitQuad(layer == BlockRenderLayer.SOLID ? opaqueIndices : layer == BlockRenderLayer.TRANSLUCENT ? translucentIndices : cutoutIndices,
                                     oppositeCorner, c0, c1, provoking);
                         }
                     }

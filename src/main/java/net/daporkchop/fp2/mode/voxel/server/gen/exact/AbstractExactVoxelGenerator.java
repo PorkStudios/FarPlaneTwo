@@ -63,7 +63,7 @@ public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<
                         int x = baseX + dx + ((i >> 2) & 1);
                         int y = baseY + dy + ((i >> 1) & 1);
                         int z = baseZ + dz + (i & 1);
-                        corners |= type(world.getBlockState(pos.setPos(x, y, z))) << (i << 1);
+                        corners |= voxelType(world.getBlockState(pos.setPos(x, y, z))) << (i << 1);
                     }
 
                     if (corners == 0 || corners == 0x5555 || corners == 0xAAAA) { //if all corners are the same type, this voxel can be safely skipped

@@ -96,7 +96,7 @@ public class VoxelConstants {
     public static final int TYPE_TRANSPARENT = 1;
     public static final int TYPE_OPAQUE = 2;
 
-    public static int type(IBlockState state) {
+    public static int voxelType(IBlockState state) {
         if (state.isOpaqueCube()) {
             return TYPE_OPAQUE;
         } else if (state.getMaterial().isSolid() || state.getMaterial().isLiquid()) {

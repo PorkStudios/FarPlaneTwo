@@ -72,12 +72,12 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
     }
 
     @Override
-    protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, int opaqueCount, int transparentCount) {
+    protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, int[] counts) {
         try (VertexArrayObject vao = this.cache.vao().bind();
              DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBufferOpaque().bind()) {
             try (ShaderProgram shader = TERRAIN_SHADER.use()) {
                 GlStateManager.disableAlpha();
-                glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, opaqueCount, 0);
+                glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, counts[0], 0);
                 GlStateManager.enableAlpha();
             }
             try (ShaderProgram shader = WATER_SHADER.use()) {
@@ -87,7 +87,7 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
                 glUniform1d(shader.uniformLocation("seaLevel"), 63.0d - 2.0d / 16.0d);
                 glUniform1i(shader.uniformLocation("water"), TexUVs.STATEID_TO_INDEXID.get(Block.getStateId(Blocks.WATER.getDefaultState())));
 
-                glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, opaqueCount, 0);
+                glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, counts[0], 0);
 
                 GlStateManager.disableBlend();
             }

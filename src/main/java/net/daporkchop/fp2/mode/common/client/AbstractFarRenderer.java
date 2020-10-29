@@ -40,11 +40,11 @@ import net.daporkchop.lib.common.math.BinMath;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.entity.Entity;
 
 import java.nio.IntBuffer;
+import java.util.Arrays;
 
 import static net.daporkchop.fp2.client.TexUVs.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -93,18 +93,17 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
 
     /**
      * Actually renders the world.
+     *  @param counts      the number of tiles with opaque render data that were added to the index
      *
-     * @param opaqueCount      the number of tiles with opaque render data that were added to the index
-     * @param transparentCount the number of tiles with transparent render data that were added to the index
      */
-    protected abstract void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, int opaqueCount, int transparentCount);
+    protected abstract void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, int[] counts);
 
     @Override
     public void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
         OpenGL.checkGLError("pre fp2 render");
 
-        long count = this.cache.rebuildIndex(this.createVolumesForSelection(partialTicks, world, mc, frustum), frustum);
-        if (count == 0L) {
+        int[] counts = this.cache.rebuildIndex(this.createVolumesForSelection(partialTicks, world, mc, frustum), frustum);
+        if (Arrays.stream(counts).reduce(0, (a, b) -> a | b) == 0) {
             return; //nothing to render...
         }
 
@@ -114,7 +113,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
         try {
             this.updateAndBindUBOs(partialTicks, world, mc, frustum);
 
-            this.render0(partialTicks, world, mc, frustum, BinMath.unpackX(count), BinMath.unpackY(count));
+            this.render0(partialTicks, world, mc, frustum, counts);
         } finally {
             this.resetGlState(partialTicks, world, mc, frustum);
         }

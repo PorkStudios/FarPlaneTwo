@@ -41,19 +41,22 @@ import static org.lwjgl.opengl.GL40.*;
 public class FarRenderIndex {
     protected IntBuffer bufferOpaque = Constants.createIntBuffer(5);
     protected int sizeOpaque = 0;
-    protected IntBuffer bufferTransparent = Constants.createIntBuffer(5);
-    protected int sizeTransparent = 0;
+    protected IntBuffer bufferCutout = Constants.createIntBuffer(5);
+    protected int sizeCutout = 0;
+    protected IntBuffer bufferTranslucent = Constants.createIntBuffer(5);
+    protected int sizeTranslucent = 0;
 
     protected final int indicesSize;
     protected final int vertexSize;
 
-    public long mark() {
-        return BinMath.packXY(this.sizeOpaque, this.sizeTransparent);
+    public int[] mark() {
+        return new int[] {this.sizeOpaque, this.sizeCutout, this.sizeTranslucent};
     }
 
-    public void restore(long mark) {
-        this.bufferOpaque.position((this.sizeOpaque = BinMath.unpackX(mark)) * 5);
-        this.bufferTransparent.position((this.sizeTransparent = BinMath.unpackY(mark)) * 5);
+    public void restore(int[] mark) {
+        this.bufferOpaque.position((this.sizeOpaque = mark[0]) * 5);
+        this.bufferCutout.position((this.sizeCutout = mark[1]) * 5);
+        this.bufferTranslucent.position((this.sizeTranslucent = mark[2]) * 5);
     }
 
     public boolean add(AbstractFarRenderTree tree, long node) {
@@ -73,17 +76,29 @@ public class FarRenderIndex {
 
             this.sizeOpaque++;
         }
-        if (tree.checkFlagsAND(node, FLAG_TRANSPARENT)) {
-            this.ensureTransparentWritable(5);
+        if (tree.checkFlagsAND(node, FLAG_CUTOUT)) {
+            this.ensureCutoutWritable(5);
 
             long data = node + tree.data;
-            this.bufferTransparent.put(PUnsafe.getInt(data + RENDERDATA_TRANSPARENT_INDICES + GPUBUFFER_SIZE)) //count
+            this.bufferCutout.put(PUnsafe.getInt(data + RENDERDATA_CUTOUT_INDICES + GPUBUFFER_SIZE)) //count
                     .put(1) //instanceCount
-                    .put(PUnsafe.getInt(data + RENDERDATA_TRANSPARENT_INDICES + GPUBUFFER_OFF)) //firstIndex
+                    .put(PUnsafe.getInt(data + RENDERDATA_CUTOUT_INDICES + GPUBUFFER_OFF)) //firstIndex
                     .put(PUnsafe.getInt(data + RENDERDATA_VERTICES + GPUBUFFER_OFF)) //baseVertex
                     .put(0); //baseInstance
 
-            this.sizeTransparent++;
+            this.sizeCutout++;
+        }
+        if (tree.checkFlagsAND(node, FLAG_TRANSLUCENT)) {
+            this.ensureTranslucentWritable(5);
+
+            long data = node + tree.data;
+            this.bufferTranslucent.put(PUnsafe.getInt(data + RENDERDATA_TRANSLUCENT_INDICES + GPUBUFFER_SIZE)) //count
+                    .put(1) //instanceCount
+                    .put(PUnsafe.getInt(data + RENDERDATA_TRANSLUCENT_INDICES + GPUBUFFER_OFF)) //firstIndex
+                    .put(PUnsafe.getInt(data + RENDERDATA_VERTICES + GPUBUFFER_OFF)) //baseVertex
+                    .put(0); //baseInstance
+
+            this.sizeTranslucent++;
         }
         return true;
     }
@@ -98,28 +113,40 @@ public class FarRenderIndex {
         }
     }
 
-    protected void ensureTransparentWritable(int count) {
-        while (this.bufferTransparent.remaining() < count) { //buffer doesn't have enough space, grow it
-            IntBuffer bigger = Constants.createIntBuffer(this.bufferTransparent.capacity() << 1);
-            this.bufferTransparent.flip();
-            bigger.put(this.bufferTransparent);
-            PUnsafe.pork_releaseBuffer(this.bufferTransparent);
-            this.bufferTransparent = bigger;
+    protected void ensureCutoutWritable(int count) {
+        while (this.bufferCutout.remaining() < count) { //buffer doesn't have enough space, grow it
+            IntBuffer bigger = Constants.createIntBuffer(this.bufferCutout.capacity() << 1);
+            this.bufferCutout.flip();
+            bigger.put(this.bufferCutout);
+            PUnsafe.pork_releaseBuffer(this.bufferCutout);
+            this.bufferCutout = bigger;
+        }
+    }
+
+    protected void ensureTranslucentWritable(int count) {
+        while (this.bufferTranslucent.remaining() < count) { //buffer doesn't have enough space, grow it
+            IntBuffer bigger = Constants.createIntBuffer(this.bufferTranslucent.capacity() << 1);
+            this.bufferTranslucent.flip();
+            bigger.put(this.bufferTranslucent);
+            PUnsafe.pork_releaseBuffer(this.bufferTranslucent);
+            this.bufferTranslucent = bigger;
         }
     }
 
     public void reset() {
         this.bufferOpaque.clear();
         this.sizeOpaque = 0;
-        this.bufferTransparent.clear();
-        this.sizeTransparent = 0;
+        this.bufferCutout.clear();
+        this.sizeCutout = 0;
+        this.bufferTranslucent.clear();
+        this.sizeTranslucent = 0;
     }
 
     public boolean isEmpty() {
-        return this.sizeOpaque == 0 && this.sizeTransparent == 0;
+        return this.sizeOpaque == 0 && this.sizeCutout == 0 && this.sizeTranslucent == 0;
     }
 
-    public long upload(DrawIndirectBuffer drawCommandBufferOpaque, DrawIndirectBuffer drawCommandBufferTransparent) {
+    public int[] upload(DrawIndirectBuffer drawCommandBufferOpaque, DrawIndirectBuffer drawCommandBufferCutout,  DrawIndirectBuffer drawCommandBufferTranslucent) {
         if (!this.isEmpty()) {
             try (DrawIndirectBuffer buffer = drawCommandBufferOpaque.bind()) {
                 if (this.sizeOpaque > 0) {
@@ -129,10 +156,18 @@ public class FarRenderIndex {
                     glBufferData(GL_DRAW_INDIRECT_BUFFER, 0L, GL_STREAM_DRAW);
                 }
             }
-            try (DrawIndirectBuffer buffer = drawCommandBufferTransparent.bind()) {
-                if (this.sizeTransparent > 0) {
-                    this.bufferTransparent.flip();
-                    glBufferData(GL_DRAW_INDIRECT_BUFFER, this.bufferTransparent, GL_STREAM_DRAW);
+            try (DrawIndirectBuffer buffer = drawCommandBufferCutout.bind()) {
+                if (this.sizeCutout > 0) {
+                    this.bufferCutout.flip();
+                    glBufferData(GL_DRAW_INDIRECT_BUFFER, this.bufferCutout, GL_STREAM_DRAW);
+                } else {
+                    glBufferData(GL_DRAW_INDIRECT_BUFFER, 0L, GL_STREAM_DRAW);
+                }
+            }
+            try (DrawIndirectBuffer buffer = drawCommandBufferTranslucent.bind()) {
+                if (this.sizeTranslucent > 0) {
+                    this.bufferTranslucent.flip();
+                    glBufferData(GL_DRAW_INDIRECT_BUFFER, this.bufferTranslucent, GL_STREAM_DRAW);
                 } else {
                     glBufferData(GL_DRAW_INDIRECT_BUFFER, 0L, GL_STREAM_DRAW);
                 }

@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.client.RenderPass;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
@@ -64,24 +65,29 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
     }
 
     @Override
-    protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, int opaqueCount, int transparentCount) {
+    protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, int[] counts) {
         try (VertexArrayObject vao = this.cache.vao().bind();
              ShaderProgram shader = SOLID_SHADER.use()) {
-            if (opaqueCount != 0) {
+            if (counts[0] != 0) {
                 try (DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBufferOpaque().bind()) {
                     GlStateManager.disableAlpha();
-                    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, opaqueCount, 0);
+                    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, counts[0], 0);
                     GlStateManager.enableAlpha();
                 }
             }
-            if (transparentCount != 0) {
-                try (DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBufferTransparent().bind()) {
+            if (counts[1] != 0) {
+                try (DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBufferCutout().bind()) {
+                    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, counts[1], 0);
+                }
+            }
+            if (counts[2] != 0) {
+                try (DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBufferTranslucent().bind()) {
                     GlStateManager.enableBlend();
                     GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
                     //TODO: order-independent transparency?
                     // (that'll be a BIG project...)
-                    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, transparentCount, 0);
+                    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, counts[2], 0);
 
                     GlStateManager.disableBlend();
                 }

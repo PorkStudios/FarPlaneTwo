@@ -155,7 +155,7 @@ public enum RenderMode {
             return new HeightmapPiece[size];
         }
     },
-    VOXEL("3D", 2) {
+    VOXEL("3D", 3) {
         @Override
         protected void registerDefaultGenerators() {
             //rough

@@ -102,7 +102,8 @@ public interface IFarRenderBaker<POS extends IFarPos, P extends IFarPiece> {
      *                           to be present (if requested by {@link #bakeInputs(IFarPos)})
      * @param vertices           the {@link ByteBuf} to write baked data to
      * @param opaqueIndices      the {@link ByteBuf} to write indices for opaque geometry to
-     * @param transparentIndices the {@link ByteBuf} to write indices for transparent geometry to
+     * @param cutoutIndices      the {@link ByteBuf} to write indices for cutout geometry to
+     * @param translucentIndices the {@link ByteBuf} to write indices for translucent geometry to
      */
-    void bake(@NonNull POS dstPos, @NonNull P[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf opaqueIndices, @NonNull ByteBuf transparentIndices);
+    void bake(@NonNull POS dstPos, @NonNull P[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf opaqueIndices, @NonNull ByteBuf cutoutIndices, @NonNull ByteBuf translucentIndices);
 }

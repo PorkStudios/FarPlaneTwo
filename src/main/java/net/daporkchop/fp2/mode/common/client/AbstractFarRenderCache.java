@@ -23,7 +23,6 @@ package net.daporkchop.fp2.mode.common.client;
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.camera.Frustum;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
 import net.daporkchop.fp2.client.gl.object.ElementArrayObject;
@@ -40,7 +39,6 @@ import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.util.GenericMatcher;
-import net.minecraft.client.renderer.culling.ICamera;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
@@ -55,7 +53,6 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL40.*;
 
 /**
  * @author DaPorkchop_
@@ -71,7 +68,8 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     protected final IntFunction<P[]> pieceArray;
 
     protected final DrawIndirectBuffer drawCommandBufferOpaque = new DrawIndirectBuffer();
-    protected final DrawIndirectBuffer drawCommandBufferTransparent = new DrawIndirectBuffer();
+    protected final DrawIndirectBuffer drawCommandBufferCutout = new DrawIndirectBuffer();
+    protected final DrawIndirectBuffer drawCommandBufferTranslucent = new DrawIndirectBuffer();
 
     protected final FarRenderIndex index;
     protected final VertexArrayObject vao = new VertexArrayObject();
@@ -198,7 +196,8 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                         //TODO: allocate these buffers from a shared pool to prevent OOMEs if the render workers are faster than the client thread
                         ByteBuf vertices = Constants.allocateByteBufNativeOrder(this.baker.estimatedVerticesBufferCapacity());
                         ByteBuf opaqueIndices = Constants.allocateByteBufNativeOrder(this.baker.estimatedIndicesBufferCapacity());
-                        ByteBuf transparentIndices = Constants.allocateByteBufNativeOrder(this.baker.estimatedIndicesBufferCapacity());
+                        ByteBuf cutoutIndices = Constants.allocateByteBufNativeOrder(this.baker.estimatedIndicesBufferCapacity());
+                        ByteBuf translucentIndices = Constants.allocateByteBufNativeOrder(this.baker.estimatedIndicesBufferCapacity());
                         try {
                             P[] inputPieces = this.pieceArray.apply(compressedInputPieces.length);
                             try {
@@ -208,13 +207,14 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                                     }
                                 }
 
-                                this.baker.bake(pos, inputPieces, vertices, opaqueIndices, transparentIndices);
+                                this.baker.bake(pos, inputPieces, vertices, opaqueIndices, cutoutIndices, translucentIndices);
 
                                 //upload to GPU on client thread
                                 vertices.retain();
                                 opaqueIndices.retain();
-                                transparentIndices.retain();
-                                ClientThreadExecutor.INSTANCE.execute(() -> this.addPiece(piece, vertices, opaqueIndices, transparentIndices));
+                                cutoutIndices.retain();
+                                translucentIndices.retain();
+                                ClientThreadExecutor.INSTANCE.execute(() -> this.addPiece(piece, vertices, opaqueIndices, cutoutIndices, translucentIndices));
                             } finally { //release pieces again
                                 SimpleRecycler<P> recycler = uncheckedCast(this.renderer.mode().pieceRecycler());
                                 for (int i = 0; i < inputPieces.length; i++) {
@@ -226,13 +226,14 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                         } finally {
                             vertices.release();
                             opaqueIndices.release();
-                            transparentIndices.release();
+                            cutoutIndices.release();
+                            translucentIndices.release();
                         }
                     });
                 });
     }
 
-    public void addPiece(@NonNull CompressedPiece<POS, P, ?> piece, @NonNull ByteBuf vertices, @NonNull ByteBuf opaqueIndices, @NonNull ByteBuf transparentIndices) {
+    public void addPiece(@NonNull CompressedPiece<POS, P, ?> piece, @NonNull ByteBuf vertices, @NonNull ByteBuf opaqueIndices, @NonNull ByteBuf cutoutIndices, @NonNull ByteBuf translucentIndices) {
         try {
             POS pos = piece.pos();
             if (this.pieces.get(pos) != piece) {
@@ -241,12 +242,13 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
             try (VertexBufferObject verticesBuffer = this.vertices.bind();
                  ElementArrayObject indicesBuffer = this.indices.bind()) {
-                this.tree.putRenderData(pos, vertices, opaqueIndices, transparentIndices);
+                this.tree.putRenderData(pos, vertices, opaqueIndices, cutoutIndices, translucentIndices);
             }
         } finally {
             vertices.release();
             opaqueIndices.release();
-            transparentIndices.release();
+            cutoutIndices.release();
+            translucentIndices.release();
         }
     }
 
@@ -263,9 +265,9 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
         this.tree.removeNode(pos);
     }
 
-    public long rebuildIndex(@NonNull Volume[] ranges, @NonNull IFrustum frustum) {
+    public int[] rebuildIndex(@NonNull Volume[] ranges, @NonNull IFrustum frustum) {
         this.index.reset();
         this.tree.select(ranges, frustum, this.index);
-        return this.index.upload(this.drawCommandBufferOpaque, this.drawCommandBufferTransparent);
+        return this.index.upload(this.drawCommandBufferOpaque, this.drawCommandBufferCutout, this.drawCommandBufferTranslucent);
     }
 }
