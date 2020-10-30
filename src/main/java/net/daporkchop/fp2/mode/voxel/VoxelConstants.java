@@ -137,6 +137,6 @@ public class VoxelConstants {
      */
     public static void emitQuad(ByteBuf indices, int oppositeCorner, int c0, int c1, int provoking) {
         indices.writeShort(oppositeCorner).writeShort(c0).writeShort(provoking); //first triangle
-        indices.writeShort(oppositeCorner).writeShort(c1).writeShort(provoking); //second triangle
+        indices.writeShort(c1).writeShort(oppositeCorner).writeShort(provoking); //second triangle
     }
 }

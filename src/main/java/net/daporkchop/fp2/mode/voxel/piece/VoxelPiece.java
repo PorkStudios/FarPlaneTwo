@@ -80,7 +80,7 @@ public class VoxelPiece implements IFarPiece {
         data.x = (i0 >>> 24) / 255.0d;
         data.y = ((i0 >> 16) & 0xFF) / 255.0d;
         data.z = ((i0 >> 8) & 0xFF) / 255.0d;
-        data.edges = i0 & 0x7;
+        data.edges = i0 & 0x3F;
 
         data.biome = (i1 >> 8) & 0xFF;
         data.light = i1 & 0xFF;

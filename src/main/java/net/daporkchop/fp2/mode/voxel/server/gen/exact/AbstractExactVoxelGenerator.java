@@ -88,7 +88,8 @@ public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<
                         }
                     }
 
-                    data.edges = edges;
+                    data.edges = edges | negativeFaces << EDGE_COUNT
+                                         ^ 1 << 1 << EDGE_COUNT; //for some reason y is backwards...
 
                     for (int edge = 0; edge < EDGE_COUNT; edge++) {
                         if ((edges & (1 << edge)) != 0) {
@@ -100,13 +101,30 @@ public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<
 
                     data.biome = Biome.getIdForBiome(world.getBiome(pos));
 
-                    for (int i = 0; i < 8; i++) {
-                        if (((corners >> (i << 1)) & 3) == 0) {
-                            pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
-                            break;
+                    if (edges == 0) {
+                        //this voxel is only present as a dummy placeholder for other voxels to connect to, and is presumably air
+                        data.light = 0;
+                    } else {
+                        //compute average light levels for all non-opaque blocks
+                        int skyLight = 0;
+                        int blockLight = 0;
+                        int samples = 0;
+                        for (int edge = 0; edge < EDGE_COUNT; edge++) {
+                            if ((edges & (1 << edge)) != 0) {
+                                int i = EDGE_VERTEX_MAP[(edge << 1) | (~(negativeFaces >> edge) & 1)];
+                                pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
+                                int light = world.getCombinedLight(pos, 0);
+                                skyLight += light >> 20;
+                                blockLight += (light >> 4) & 0xF;
+                                samples++;
+                            }
                         }
+                        if (samples > 1) {
+                            skyLight /= samples;
+                            blockLight /= samples;
+                        }
+                        data.light = Constants.packCombinedLight(skyLight << 20 | blockLight << 4);
                     }
-                    data.light = Constants.packCombinedLight(world.getCombinedLight(pos, 0));
 
                     builder.set(dx, dy, dz, data);
                 }

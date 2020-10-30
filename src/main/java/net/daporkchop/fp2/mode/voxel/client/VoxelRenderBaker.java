@@ -292,6 +292,12 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                                 continue; //skip if any of the vertices are missing
                             }
 
+                            if ((data.edges & (1 << EDGE_COUNT << edge)) == 0) {
+                                int i = c0;
+                                c0 = c1;
+                                c1 = i;
+                            }
+
                             emitQuad(indices[renderType(Block.getStateById(data.states[edge]))], oppositeCorner, c0, c1, provoking);
                         }
                     }

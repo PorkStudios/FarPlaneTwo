@@ -153,8 +153,6 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     }
 
     protected void prepareGlState(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
-        GlStateManager.disableCull();
-
         GlStateManager.matrixMode(GL_PROJECTION);
         GlStateManager.pushMatrix();
         GlStateManager.loadIdentity();
@@ -192,7 +190,5 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
 
         GlStateManager.matrixMode(GL_MODELVIEW);
         GlStateManager.popMatrix();
-
-        GlStateManager.enableCull();
     }
 }
