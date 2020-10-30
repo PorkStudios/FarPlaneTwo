@@ -49,6 +49,7 @@ import java.util.function.IntFunction;
 import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
@@ -67,9 +68,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     protected final IntFunction<POS[]> posArray;
     protected final IntFunction<P[]> pieceArray;
 
-    protected final DrawIndirectBuffer drawCommandBufferOpaque = new DrawIndirectBuffer();
-    protected final DrawIndirectBuffer drawCommandBufferCutout = new DrawIndirectBuffer();
-    protected final DrawIndirectBuffer drawCommandBufferTranslucent = new DrawIndirectBuffer();
+    protected final DrawIndirectBuffer[] drawCommandBuffers;
 
     protected final FarRenderIndex index;
     protected final VertexArrayObject vao = new VertexArrayObject();
@@ -82,6 +81,8 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     protected final Allocator indicesAllocator;
     protected final int indexType;
     protected final int indexSize;
+
+    protected final int passes;
 
     protected final IFarRenderBaker<POS, P> baker;
 
@@ -107,6 +108,8 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
             default:
                 throw new IllegalArgumentException(PStrings.fastFormat("Invalid index type: %d", this.indexType));
         }
+
+        this.passes = positive(this.baker.passes(), "passes");
 
         this.tree = this.createTree();
 
@@ -138,7 +141,12 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
             this.rebuildVAO();
         });
 
-        this.index = new FarRenderIndex(this.indexSize, this.vertexSize);
+        this.index = new FarRenderIndex(this);
+
+        this.drawCommandBuffers = new DrawIndirectBuffer[this.passes];
+        for (int i = 0; i < this.passes; i++) {
+            this.drawCommandBuffers[i] = new DrawIndirectBuffer();
+        }
     }
 
     protected void rebuildVAO() {
@@ -195,9 +203,11 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
                         //TODO: allocate these buffers from a shared pool to prevent OOMEs if the render workers are faster than the client thread
                         ByteBuf vertices = Constants.allocateByteBufNativeOrder(this.baker.estimatedVerticesBufferCapacity());
-                        ByteBuf opaqueIndices = Constants.allocateByteBufNativeOrder(this.baker.estimatedIndicesBufferCapacity());
-                        ByteBuf cutoutIndices = Constants.allocateByteBufNativeOrder(this.baker.estimatedIndicesBufferCapacity());
-                        ByteBuf translucentIndices = Constants.allocateByteBufNativeOrder(this.baker.estimatedIndicesBufferCapacity());
+                        ByteBuf[] indices = new ByteBuf[this.passes];
+                        int estimatedIndicesBufferCapacity = this.baker.estimatedIndicesBufferCapacity();
+                        for (int i = 0; i < this.passes; i++) {
+                            indices[i] = Constants.allocateByteBufNativeOrder(estimatedIndicesBufferCapacity);
+                        }
                         try {
                             P[] inputPieces = this.pieceArray.apply(compressedInputPieces.length);
                             try {
@@ -207,14 +217,14 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                                     }
                                 }
 
-                                this.baker.bake(pos, inputPieces, vertices, opaqueIndices, cutoutIndices, translucentIndices);
+                                this.baker.bake(pos, inputPieces, vertices, indices);
 
                                 //upload to GPU on client thread
                                 vertices.retain();
-                                opaqueIndices.retain();
-                                cutoutIndices.retain();
-                                translucentIndices.retain();
-                                ClientThreadExecutor.INSTANCE.execute(() -> this.addPiece(piece, vertices, opaqueIndices, cutoutIndices, translucentIndices));
+                                for (ByteBuf buf : indices) {
+                                    buf.retain();
+                                }
+                                ClientThreadExecutor.INSTANCE.execute(() -> this.addPiece(piece, vertices, indices));
                             } finally { //release pieces again
                                 SimpleRecycler<P> recycler = uncheckedCast(this.renderer.mode().pieceRecycler());
                                 for (int i = 0; i < inputPieces.length; i++) {
@@ -225,15 +235,15 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                             }
                         } finally {
                             vertices.release();
-                            opaqueIndices.release();
-                            cutoutIndices.release();
-                            translucentIndices.release();
+                            for (ByteBuf buf : indices) {
+                                buf.release();
+                            }
                         }
                     });
                 });
     }
 
-    public void addPiece(@NonNull CompressedPiece<POS, P, ?> piece, @NonNull ByteBuf vertices, @NonNull ByteBuf opaqueIndices, @NonNull ByteBuf cutoutIndices, @NonNull ByteBuf translucentIndices) {
+    public void addPiece(@NonNull CompressedPiece<POS, P, ?> piece, @NonNull ByteBuf vertices, @NonNull ByteBuf[] indices) {
         try {
             POS pos = piece.pos();
             if (this.pieces.get(pos) != piece) {
@@ -242,13 +252,13 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
             try (VertexBufferObject verticesBuffer = this.vertices.bind();
                  ElementArrayObject indicesBuffer = this.indices.bind()) {
-                this.tree.putRenderData(pos, vertices, opaqueIndices, cutoutIndices, translucentIndices);
+                this.tree.putRenderData(pos, vertices, indices);
             }
         } finally {
             vertices.release();
-            opaqueIndices.release();
-            cutoutIndices.release();
-            translucentIndices.release();
+            for (ByteBuf buf : indices) {
+                buf.release();
+            }
         }
     }
 
@@ -268,6 +278,6 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     public int[] rebuildIndex(@NonNull Volume[] ranges, @NonNull IFrustum frustum) {
         this.index.reset();
         this.tree.select(ranges, frustum, this.index);
-        return this.index.upload(this.drawCommandBufferOpaque, this.drawCommandBufferCutout, this.drawCommandBufferTranslucent);
+        return this.index.upload(this.drawCommandBuffers);
     }
 }

@@ -36,7 +36,6 @@ import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.math.Sphere;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
-import net.daporkchop.lib.common.math.BinMath;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
@@ -47,6 +46,7 @@ import java.nio.IntBuffer;
 import java.util.Arrays;
 
 import static net.daporkchop.fp2.client.TexUVs.*;
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
@@ -93,32 +93,36 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
 
     /**
      * Actually renders the world.
-     *  @param counts      the number of tiles with opaque render data that were added to the index
      *
+     * @param counts the size of the render index for each pass
      */
-    protected abstract void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, int[] counts);
+    protected abstract void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, @NonNull int[] counts);
 
     @Override
     public void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
-        OpenGL.checkGLError("pre fp2 render");
-
+        checkGLError("pre fp2 build index");
         int[] counts = this.cache.rebuildIndex(this.createVolumesForSelection(partialTicks, world, mc, frustum), frustum);
-        if (Arrays.stream(counts).reduce(0, (a, b) -> a | b) == 0) {
+        checkGLError("post fp2 build index");
+        if (or(counts) == 0) {
             return; //nothing to render...
         }
 
+        checkGLError("pre fp2 setup");
         this.updateAndBindSSBOs(partialTicks, world, mc, frustum);
 
         this.prepareGlState(partialTicks, world, mc, frustum);
         try {
             this.updateAndBindUBOs(partialTicks, world, mc, frustum);
+            checkGLError("post fp2 setup");
 
+            checkGLError("pre fp2 render");
             this.render0(partialTicks, world, mc, frustum, counts);
+            checkGLError("post fp2 render");
         } finally {
+            checkGLError("pre fp2 reset");
             this.resetGlState(partialTicks, world, mc, frustum);
+            checkGLError("post fp2 reset");
         }
-
-        OpenGL.checkGLError("post fp2 render");
     }
 
     //TODO: use cylinders for heightmap and spheres for voxel

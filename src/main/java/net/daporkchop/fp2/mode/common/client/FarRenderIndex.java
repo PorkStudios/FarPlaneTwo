@@ -21,158 +21,116 @@
 package net.daporkchop.fp2.mode.common.client;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.IntBuffer;
 
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL40.*;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Getter
 public class FarRenderIndex {
-    protected IntBuffer bufferOpaque = Constants.createIntBuffer(5);
-    protected int sizeOpaque = 0;
-    protected IntBuffer bufferCutout = Constants.createIntBuffer(5);
-    protected int sizeCutout = 0;
-    protected IntBuffer bufferTranslucent = Constants.createIntBuffer(5);
-    protected int sizeTranslucent = 0;
+    protected final IntBuffer[] buffers;
+    protected final int[] sizes;
 
-    protected final int indicesSize;
     protected final int vertexSize;
+    protected final int indexSize;
+    protected final int passes;
+
+    public FarRenderIndex(AbstractFarRenderCache cache) {
+        this.indexSize = cache.indexSize();
+        this.vertexSize = cache.vertexSize();
+        this.passes = cache.passes();
+
+        this.buffers = new IntBuffer[this.passes];
+        for (int i = 0; i < this.passes; i++) {
+            this.buffers[i] = Constants.createIntBuffer(5);
+        }
+        this.sizes = new int[this.passes];
+    }
 
     public int[] mark() {
-        return new int[] {this.sizeOpaque, this.sizeCutout, this.sizeTranslucent};
+        return this.sizes.clone();
     }
 
     public void restore(int[] mark) {
-        this.bufferOpaque.position((this.sizeOpaque = mark[0]) * 5);
-        this.bufferCutout.position((this.sizeCutout = mark[1]) * 5);
-        this.bufferTranslucent.position((this.sizeTranslucent = mark[2]) * 5);
+        for (int i = 0; i < this.passes; i++) {
+            this.buffers[i].position((this.sizes[i] = mark[i]) * 5);
+        }
     }
 
     public boolean add(AbstractFarRenderTree tree, long node) {
         if (!tree.checkFlagsAND(node, FLAG_RENDERED)) {
             return false;
+        } else if (!tree.checkFlagsAND(node, FLAG_DATA)) {
+            //the node is rendered and has no data, which means it's all air and therefore can be considered to have already
+            // been "effectively" added to the render index
+            return true;
         }
 
-        if (tree.checkFlagsAND(node, FLAG_OPAQUE)) {
-            this.ensureOpaqueWritable(5);
+        long data = node + tree.data;
+        int baseVertex = PUnsafe.getInt(data + RENDERDATA_VOFFSET);
 
-            long data = node + tree.data;
-            this.bufferOpaque.put(PUnsafe.getInt(data + RENDERDATA_OPAQUE_INDICES + GPUBUFFER_SIZE)) //count
-                    .put(1) //instanceCount
-                    .put(PUnsafe.getInt(data + RENDERDATA_OPAQUE_INDICES + GPUBUFFER_OFF)) //firstIndex
-                    .put(PUnsafe.getInt(data + RENDERDATA_VERTICES + GPUBUFFER_OFF)) //baseVertex
-                    .put(0); //baseInstance
+        int firstIndex = PUnsafe.getInt(data + RENDERDATA_IOFFSET);
+        for (int i = 0; i < this.passes; i++) {
+            int indexCount = PUnsafe.getInt(data + RENDERDATA_ICOUNT + i * 4L);
+            if (indexCount != 0) {
+                this.ensureWritable(i, 5);
+                this.buffers[i].put(indexCount) //count
+                        .put(1) //instanceCount
+                        .put(firstIndex) //firstIndex
+                        .put(baseVertex) //baseVertex
+                        .put(0); //baseInstance
+                this.sizes[i]++;
 
-            this.sizeOpaque++;
-        }
-        if (tree.checkFlagsAND(node, FLAG_CUTOUT)) {
-            this.ensureCutoutWritable(5);
-
-            long data = node + tree.data;
-            this.bufferCutout.put(PUnsafe.getInt(data + RENDERDATA_CUTOUT_INDICES + GPUBUFFER_SIZE)) //count
-                    .put(1) //instanceCount
-                    .put(PUnsafe.getInt(data + RENDERDATA_CUTOUT_INDICES + GPUBUFFER_OFF)) //firstIndex
-                    .put(PUnsafe.getInt(data + RENDERDATA_VERTICES + GPUBUFFER_OFF)) //baseVertex
-                    .put(0); //baseInstance
-
-            this.sizeCutout++;
-        }
-        if (tree.checkFlagsAND(node, FLAG_TRANSLUCENT)) {
-            this.ensureTranslucentWritable(5);
-
-            long data = node + tree.data;
-            this.bufferTranslucent.put(PUnsafe.getInt(data + RENDERDATA_TRANSLUCENT_INDICES + GPUBUFFER_SIZE)) //count
-                    .put(1) //instanceCount
-                    .put(PUnsafe.getInt(data + RENDERDATA_TRANSLUCENT_INDICES + GPUBUFFER_OFF)) //firstIndex
-                    .put(PUnsafe.getInt(data + RENDERDATA_VERTICES + GPUBUFFER_OFF)) //baseVertex
-                    .put(0); //baseInstance
-
-            this.sizeTranslucent++;
+                firstIndex += indexCount;
+            }
         }
         return true;
     }
 
-    protected void ensureOpaqueWritable(int count) {
-        while (this.bufferOpaque.remaining() < count) { //buffer doesn't have enough space, grow it
-            IntBuffer bigger = Constants.createIntBuffer(this.bufferOpaque.capacity() << 1);
-            this.bufferOpaque.flip();
-            bigger.put(this.bufferOpaque);
-            PUnsafe.pork_releaseBuffer(this.bufferOpaque);
-            this.bufferOpaque = bigger;
-        }
-    }
-
-    protected void ensureCutoutWritable(int count) {
-        while (this.bufferCutout.remaining() < count) { //buffer doesn't have enough space, grow it
-            IntBuffer bigger = Constants.createIntBuffer(this.bufferCutout.capacity() << 1);
-            this.bufferCutout.flip();
-            bigger.put(this.bufferCutout);
-            PUnsafe.pork_releaseBuffer(this.bufferCutout);
-            this.bufferCutout = bigger;
-        }
-    }
-
-    protected void ensureTranslucentWritable(int count) {
-        while (this.bufferTranslucent.remaining() < count) { //buffer doesn't have enough space, grow it
-            IntBuffer bigger = Constants.createIntBuffer(this.bufferTranslucent.capacity() << 1);
-            this.bufferTranslucent.flip();
-            bigger.put(this.bufferTranslucent);
-            PUnsafe.pork_releaseBuffer(this.bufferTranslucent);
-            this.bufferTranslucent = bigger;
+    protected void ensureWritable(int pass, int count) {
+        while (this.buffers[pass].remaining() < count) { //buffer doesn't have enough space, grow it
+            IntBuffer bigger = Constants.createIntBuffer(this.buffers[pass].capacity() << 1);
+            this.buffers[pass].flip();
+            bigger.put(this.buffers[pass]);
+            PUnsafe.pork_releaseBuffer(this.buffers[pass]);
+            this.buffers[pass] = bigger;
         }
     }
 
     public void reset() {
-        this.bufferOpaque.clear();
-        this.sizeOpaque = 0;
-        this.bufferCutout.clear();
-        this.sizeCutout = 0;
-        this.bufferTranslucent.clear();
-        this.sizeTranslucent = 0;
+        for (int i = 0; i < this.passes; i++) {
+            this.buffers[i].clear();
+            this.sizes[i] = 0;
+        }
     }
 
     public boolean isEmpty() {
-        return this.sizeOpaque == 0 && this.sizeCutout == 0 && this.sizeTranslucent == 0;
+        return or(this.sizes) == 0;
     }
 
-    public int[] upload(DrawIndirectBuffer drawCommandBufferOpaque, DrawIndirectBuffer drawCommandBufferCutout,  DrawIndirectBuffer drawCommandBufferTranslucent) {
-        if (!this.isEmpty()) {
-            try (DrawIndirectBuffer buffer = drawCommandBufferOpaque.bind()) {
-                if (this.sizeOpaque > 0) {
-                    this.bufferOpaque.flip();
-                    glBufferData(GL_DRAW_INDIRECT_BUFFER, this.bufferOpaque, GL_STREAM_DRAW);
-                } else {
-                    glBufferData(GL_DRAW_INDIRECT_BUFFER, 0L, GL_STREAM_DRAW);
-                }
-            }
-            try (DrawIndirectBuffer buffer = drawCommandBufferCutout.bind()) {
-                if (this.sizeCutout > 0) {
-                    this.bufferCutout.flip();
-                    glBufferData(GL_DRAW_INDIRECT_BUFFER, this.bufferCutout, GL_STREAM_DRAW);
-                } else {
-                    glBufferData(GL_DRAW_INDIRECT_BUFFER, 0L, GL_STREAM_DRAW);
-                }
-            }
-            try (DrawIndirectBuffer buffer = drawCommandBufferTranslucent.bind()) {
-                if (this.sizeTranslucent > 0) {
-                    this.bufferTranslucent.flip();
-                    glBufferData(GL_DRAW_INDIRECT_BUFFER, this.bufferTranslucent, GL_STREAM_DRAW);
+    public int[] upload(@NonNull DrawIndirectBuffer[] drawCommandBuffers) {
+        checkGLError("pre upload index");
+        for (int i = 0; i < this.passes; i++) {
+            try (DrawIndirectBuffer buffer = drawCommandBuffers[i].bind()) {
+                if (this.sizes[i] > 0) {
+                    glBufferData(GL_DRAW_INDIRECT_BUFFER, (IntBuffer) this.buffers[i].flip(), GL_STREAM_DRAW);
                 } else {
                     glBufferData(GL_DRAW_INDIRECT_BUFFER, 0L, GL_STREAM_DRAW);
                 }
             }
         }
+        checkGLError("post upload index");
         return this.mark();
     }
 }

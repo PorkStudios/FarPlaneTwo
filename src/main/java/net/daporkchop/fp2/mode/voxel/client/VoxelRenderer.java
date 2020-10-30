@@ -34,7 +34,6 @@ import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.client.renderer.GlStateManager;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL43.*;
@@ -65,31 +64,16 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
     }
 
     @Override
-    protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, int[] counts) {
+    protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, @NonNull int[] counts) {
         try (VertexArrayObject vao = this.cache.vao().bind();
              ShaderProgram shader = SOLID_SHADER.use()) {
-            if (counts[0] != 0) {
-                try (DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBufferOpaque().bind()) {
-                    GlStateManager.disableAlpha();
-                    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, counts[0], 0);
-                    GlStateManager.enableAlpha();
-                }
-            }
-            if (counts[1] != 0) {
-                try (DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBufferCutout().bind()) {
-                    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, counts[1], 0);
-                }
-            }
-            if (counts[2] != 0) {
-                try (DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBufferTranslucent().bind()) {
-                    GlStateManager.enableBlend();
-                    GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-                    //TODO: order-independent transparency?
-                    // (that'll be a BIG project...)
-                    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, counts[2], 0);
-
-                    GlStateManager.disableBlend();
+            for (int i = 0; i < RenderPass.COUNT; i++) {
+                if (counts[i] != 0) {
+                    try (DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBuffers()[i].bind()) {
+                        RenderPass.VALUES[i].init(mc);
+                        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, counts[i], 0);
+                        RenderPass.VALUES[i].reset(mc);
+                    }
                 }
             }
         }

@@ -24,9 +24,9 @@ import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.mode.common.client.IFarRenderBaker;
+import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
 import net.minecraft.block.Block;
@@ -61,6 +61,11 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
     @Override
     public int indexType() {
         return GL_UNSIGNED_SHORT;
+    }
+
+    @Override
+    public int passes() {
+        return 1; //everything is rendered in a single pass
     }
 
     @Override
@@ -130,7 +135,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
     }
 
     @Override
-    public void bake(@NonNull HeightmapPos dstPos, @NonNull HeightmapPiece[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf opaqueIndices, @NonNull ByteBuf cutoutIndices, @NonNull ByteBuf translucentIndices) {
+    public void bake(@NonNull HeightmapPos dstPos, @NonNull HeightmapPiece[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf[] indices) {
         if (srcs[0] == null) {
             return;
         }
@@ -176,7 +181,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
 
         for (int dx = 0; dx < T_VOXELS - 1; dx++) {
             for (int dz = 0; dz < T_VOXELS - 1; dz++) {
-                opaqueIndices.writeShort(dx * T_VOXELS + dz)
+                indices[0].writeShort(dx * T_VOXELS + dz)
                         .writeShort(dx * T_VOXELS + (dz + 1))
                         .writeShort((dx + 1) * T_VOXELS + (dz + 1))
                         .writeShort(dx * T_VOXELS + dz)
@@ -187,7 +192,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
 
         if (indexZ >= 0) {
             for (int dx = 0; dx < T_VOXELS - 1; dx++) {
-                opaqueIndices.writeShort(dx * T_VOXELS + (T_VOXELS - 1))
+                indices[0].writeShort(dx * T_VOXELS + (T_VOXELS - 1))
                         .writeShort(indexZ + dx)
                         .writeShort(indexZ + dx + 1)
                         .writeShort(dx * T_VOXELS + (T_VOXELS - 1))
@@ -198,7 +203,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
 
         if (indexX >= 0) {
             for (int dz = 0; dz < T_VOXELS - 1; dz++) {
-                opaqueIndices.writeShort((T_VOXELS - 1) * T_VOXELS + dz)
+                indices[0].writeShort((T_VOXELS - 1) * T_VOXELS + dz)
                         .writeShort((T_VOXELS - 1) * T_VOXELS + (dz + 1))
                         .writeShort(indexX + dz + 1)
                         .writeShort((T_VOXELS - 1) * T_VOXELS + dz)
@@ -208,7 +213,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         }
 
         if (indexXZ >= 0) {
-            opaqueIndices.writeShort((T_VOXELS - 1) * T_VOXELS + (T_VOXELS - 1))
+            indices[0].writeShort((T_VOXELS - 1) * T_VOXELS + (T_VOXELS - 1))
                     .writeShort(indexZ + (T_VOXELS - 1))
                     .writeShort(indexXZ)
                     .writeShort((T_VOXELS - 1) * T_VOXELS + (T_VOXELS - 1))

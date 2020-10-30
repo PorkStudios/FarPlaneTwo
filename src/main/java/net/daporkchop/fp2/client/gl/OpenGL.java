@@ -23,6 +23,7 @@ package net.daporkchop.fp2.client.gl;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.util.Constants;
 
+import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.util.glu.GLU.*;
 
@@ -59,11 +60,13 @@ public class OpenGL {
     public final int MAT4_ELEMENTS = 4 * 4;
     public final int MAT4_SIZE = MAT4_ELEMENTS * FLOAT_SIZE;
 
-    public void checkGLError(String message) {
-        for (int error; (error = glGetError()) != GL_NO_ERROR; ) {
-            Constants.LOGGER.error("########## GL ERROR ##########");
-            Constants.LOGGER.error("@ {}", message);
-            Constants.LOGGER.error("{}: {}", error, gluErrorString(error));
+    public static void checkGLError(String message) {
+        if (FP2_DEBUG) {
+            for (int error; (error = glGetError()) != GL_NO_ERROR; ) {
+                Constants.LOGGER.error("########## GL ERROR ##########");
+                Constants.LOGGER.error("@ {}", message);
+                Constants.LOGGER.error("{}: {}", error, gluErrorString(error));
+            }
         }
     }
 }

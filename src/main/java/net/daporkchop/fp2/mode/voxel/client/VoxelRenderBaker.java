@@ -92,6 +92,11 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
     }
 
     @Override
+    public int passes() {
+        return RENDER_TYPES;
+    }
+
+    @Override
     public int vertexAttributes() {
         return 6;
     }
@@ -164,7 +169,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
     }
 
     @Override
-    public void bake(@NonNull VoxelPos dstPos, @NonNull VoxelPiece[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf opaqueIndices, @NonNull ByteBuf cutoutIndices, @NonNull ByteBuf translucentIndices) {
+    public void bake(@NonNull VoxelPos dstPos, @NonNull VoxelPiece[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf[] indices) {
         if (srcs[0] == null) {
             return;
         }
@@ -287,9 +292,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                                 continue; //skip if any of the vertices are missing
                             }
 
-                            BlockRenderLayer layer = Block.getStateById(data.states[edge]).getBlock().getRenderLayer();
-                            emitQuad(layer == BlockRenderLayer.SOLID ? opaqueIndices : layer == BlockRenderLayer.TRANSLUCENT ? translucentIndices : cutoutIndices,
-                                    oppositeCorner, c0, c1, provoking);
+                            emitQuad(indices[renderType(Block.getStateById(data.states[edge]))], oppositeCorner, c0, c1, provoking);
                         }
                     }
                 }

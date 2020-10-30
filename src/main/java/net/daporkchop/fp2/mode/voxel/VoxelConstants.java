@@ -24,6 +24,8 @@ import io.netty.buffer.ByteBuf;
 import lombok.experimental.UtilityClass;
 import net.minecraft.block.state.IBlockState;
 
+import java.util.Objects;
+
 /**
  * Constants and helpers to be used by voxel generators.
  *
@@ -96,6 +98,11 @@ public class VoxelConstants {
     public static final int TYPE_TRANSPARENT = 1;
     public static final int TYPE_OPAQUE = 2;
 
+    public static final int RENDER_TYPE_OPAQUE = 0;
+    public static final int RENDER_TYPE_CUTOUT = 1;
+    public static final int RENDER_TYPE_TRANSLUCENT = 2;
+    public static final int RENDER_TYPES = 3;
+
     public static int voxelType(IBlockState state) {
         if (state.isOpaqueCube()) {
             return TYPE_OPAQUE;
@@ -104,6 +111,19 @@ public class VoxelConstants {
         } else {
             return TYPE_AIR;
         }
+    }
+
+    public static int renderType(IBlockState state) {
+        switch (state.getBlock().getRenderLayer()) {
+            case SOLID:
+                return RENDER_TYPE_OPAQUE;
+            case TRANSLUCENT:
+                return RENDER_TYPE_TRANSLUCENT;
+            case CUTOUT:
+            case CUTOUT_MIPPED:
+                return RENDER_TYPE_CUTOUT;
+        }
+        throw new IllegalArgumentException(Objects.toString(state));
     }
 
     /**

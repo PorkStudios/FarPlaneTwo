@@ -346,4 +346,12 @@ public class Constants {
         long l = readVarLong(src);
         return (l >> 1L) ^ -(l & 1L);
     }
+
+    public static int or(@NonNull int[] arr) {
+        int val = 0;
+        for (int i : arr) {
+            val |= i;
+        }
+        return val;
+    }
 }
