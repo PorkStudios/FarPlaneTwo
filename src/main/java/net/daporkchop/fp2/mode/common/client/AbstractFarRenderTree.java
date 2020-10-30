@@ -36,6 +36,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.function.LongConsumer;
 
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -430,8 +431,10 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
     public void uploadVertices(long node) {
         if (this.checkFlagsOR(node, FLAG_DATA)) {
             long data = node + this.data;
+            checkGLError("pre upload vertices");
             glBufferSubData(GL_ARRAY_BUFFER, (long) PUnsafe.getInt(data + RENDERDATA_VOFFSET) * this.vertexSize,
                     DirectBufferReuse.wrapByte(PUnsafe.getLong(data + RENDERDATA_ADDR), PUnsafe.getInt(data + RENDERDATA_VCOUNT) * this.vertexSize));
+            checkGLError("post upload vertices");
         }
     }
 
@@ -443,10 +446,12 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
                 iCount += PUnsafe.getInt(data + RENDERDATA_ICOUNT + i * 4L);
             }
 
+            checkGLError("pre upload indices");
             glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (long) PUnsafe.getInt(data + RENDERDATA_IOFFSET) * this.indexSize, DirectBufferReuse.wrapByte(
                     PUnsafe.getLong(data + RENDERDATA_ADDR) + PUnsafe.getInt(data + RENDERDATA_VCOUNT) * this.vertexSize,
                     iCount * this.indexSize
             ));
+            checkGLError("post upload indices");
         }
     }
 

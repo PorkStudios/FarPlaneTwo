@@ -47,6 +47,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntFunction;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -116,29 +117,27 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
         this.verticesAllocator = new VariableSizedAllocator(this.vertexSize, (oldSize, newSize) -> {
             LOGGER.info("Growing vertices buffer from {} to {} bytes", oldSize, newSize);
 
-            try (VertexBufferObject vertices = this.vertices.bind()) {
-                //grow SSBO
-                glBufferData(GL_ARRAY_BUFFER, newSize, GL_STATIC_DRAW);
+            //grow SSBO
+            checkGLError("pre resize vertices");
+            glBufferData(GL_ARRAY_BUFFER, newSize, GL_DYNAMIC_DRAW);
 
-                //re-upload data
-                this.tree.forEach(this.tree::uploadVertices, FLAG_RENDERED);
-            }
-
-            this.rebuildVAO();
+            //re-upload data
+            checkGLError("pre re-upload vertices");
+            this.tree.forEach(this.tree::uploadVertices, FLAG_RENDERED);
+            checkGLError("post re-upload vertices");
         });
 
         this.indicesAllocator = new VariableSizedAllocator(this.indexSize, (oldSize, newSize) -> {
             LOGGER.info("Growing indices buffer from {} to {} bytes", oldSize, newSize);
 
-            try (ElementArrayObject indices = this.indices.bind()) {
-                //grow SSBO
-                glBufferData(GL_ELEMENT_ARRAY_BUFFER, newSize, GL_STATIC_DRAW);
+            //grow SSBO
+            checkGLError("pre resize indices");
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, newSize, GL_DYNAMIC_DRAW);
 
-                //re-upload data
-                this.tree.forEach(this.tree::uploadIndices, FLAG_RENDERED);
-            }
-
-            this.rebuildVAO();
+            //re-upload data
+            checkGLError("pre re-upload indices");
+            this.tree.forEach(this.tree::uploadIndices, FLAG_RENDERED);
+            checkGLError("post re-upload indices");
         });
 
         this.index = new FarRenderIndex(this);
@@ -147,9 +146,12 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
         for (int i = 0; i < this.passes; i++) {
             this.drawCommandBuffers[i] = new DrawIndirectBuffer();
         }
+
+        this.rebuildVAO();
     }
 
     protected void rebuildVAO() {
+        checkGLError("pre rebuild VAO");
         int attribs = this.baker.vertexAttributes();
         try (VertexArrayObject vao = this.vao.bind()) {
             for (int i = 0; i <= attribs; i++) {
@@ -172,6 +174,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
             this.indices.close();
         }
+        checkGLError("post rebuild VAO");
     }
 
     protected abstract AbstractFarRenderTree<POS, P> createTree();
