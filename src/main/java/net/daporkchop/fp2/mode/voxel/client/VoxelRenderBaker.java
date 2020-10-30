@@ -33,7 +33,9 @@ import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
 import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Biomes;
+import net.minecraft.init.Blocks;
 import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
@@ -292,13 +294,21 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                                 continue; //skip if any of the vertices are missing
                             }
 
-                            if ((data.edges & (1 << EDGE_COUNT << edge)) == 0) {
+                            IBlockState state = Block.getStateById(data.states[edge]);
+                            ByteBuf buf = indices[renderType(state)];
+
+                            boolean water = state.getBlock() == Blocks.WATER;
+                            if (water) {
+                                emitQuad(buf, oppositeCorner, c0, c1, provoking);
+                            }
+
+                            if (water || (data.edges & (1 << EDGE_COUNT << edge)) == 0) {
                                 int i = c0;
                                 c0 = c1;
                                 c1 = i;
                             }
 
-                            emitQuad(indices[renderType(Block.getStateById(data.states[edge]))], oppositeCorner, c0, c1, provoking);
+                            emitQuad(buf, oppositeCorner, c0, c1, provoking);
                         }
                     }
                 }

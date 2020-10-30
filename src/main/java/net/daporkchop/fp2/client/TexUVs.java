@@ -126,6 +126,14 @@ public class TexUVs {
             }
             return DEFAULT_RENDERER.render(state, face, model);
         });
+
+        StateFaceQuadRenderer waterRenderer = (state, face, model) -> {
+            String spriteName = face.getHorizontalIndex() < 0 ?  "minecraft:blocks/water_still" : "minecraft:blocks/water_flow";
+            TextureAtlasSprite sprite = mc.getTextureMapBlocks().getAtlasSprite(spriteName);
+            return Collections.singletonList(new PackedBakedQuad(sprite.getInterpolatedU(0.0d), sprite.getInterpolatedV(0.0d), sprite.getInterpolatedU(16.0d), sprite.getInterpolatedV(16.0d), 0.0f));
+        };
+        putRenderer(Blocks.WATER, waterRenderer);
+        putRenderer(Blocks.FLOWING_WATER, waterRenderer);
     }
 
     public static void reloadUVs() {

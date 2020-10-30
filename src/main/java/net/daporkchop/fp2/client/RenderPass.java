@@ -46,26 +46,30 @@ public enum RenderPass {
     CUTOUT {
         @Override
         public void init(@NonNull Minecraft mc) {
+            GlStateManager.disableCull();
         }
 
         @Override
         public void reset(@NonNull Minecraft mc) {
+            GlStateManager.enableCull();
         }
     },
     TRANSLUCENT {
         @Override
         public void init(@NonNull Minecraft mc) {
-            GlStateManager.disableCull();
+            GlStateManager.depthMask(false);
 
             GlStateManager.enableBlend();
-            GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            GlStateManager.tryBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+
+            GlStateManager.alphaFunc(GL_GREATER, 0.1f);
         }
 
         @Override
         public void reset(@NonNull Minecraft mc) {
             GlStateManager.disableBlend();
 
-            GlStateManager.enableCull();
+            GlStateManager.depthMask(true);
         }
     };
 
