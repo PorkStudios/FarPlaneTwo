@@ -202,10 +202,18 @@ public class Constants {
     }
 
     /**
-     * @param capacity the capacity of the buffer
+     * @param capacity the maximum capacity of the buffer
      * @return a {@link ByteBuf}
      */
     public static ByteBuf allocateByteBuf(int capacity) {
+        return ByteBufAllocator.DEFAULT.directBuffer(min(capacity, 256), capacity);
+    }
+
+    /**
+     * @param capacity the capacity of the buffer
+     * @return a {@link ByteBuf}
+     */
+    public static ByteBuf allocateByteBufExactly(int capacity) {
         return ByteBufAllocator.DEFAULT.directBuffer(capacity, capacity);
     }
 

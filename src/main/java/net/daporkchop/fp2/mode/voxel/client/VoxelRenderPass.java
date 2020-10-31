@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.client;
+package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
 import net.minecraft.client.Minecraft;
@@ -26,62 +26,83 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.util.BlockRenderLayer;
 
+import static net.daporkchop.fp2.mode.voxel.client.VoxelRenderer.*;
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_
  * @see BlockRenderLayer
  */
-public enum RenderPass {
+public enum VoxelRenderPass {
     OPAQUE {
         @Override
-        public void init(@NonNull Minecraft mc) {
+        public void render(@NonNull Minecraft mc, int count) {
             GlStateManager.disableAlpha();
-        }
 
-        @Override
-        public void reset(@NonNull Minecraft mc) {
+            super.render(mc, count);
+
             GlStateManager.enableAlpha();
         }
     },
     CUTOUT {
         @Override
-        public void init(@NonNull Minecraft mc) {
+        public void render(@NonNull Minecraft mc, int count) {
             mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
-
             GlStateManager.disableCull();
-        }
 
-        @Override
-        public void reset(@NonNull Minecraft mc) {
+            super.render(mc, count);
+
             GlStateManager.enableCull();
-
             mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
         }
     },
     TRANSLUCENT {
         @Override
-        public void init(@NonNull Minecraft mc) {
-            //GlStateManager.depthMask(false);
+        public void render(@NonNull Minecraft mc, int count) {
+            glEnable(GL_STENCIL_TEST);
 
-            GlStateManager.enableBlend();
-            GlStateManager.tryBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+            TRANSPARENT_STENCIL_SHADER.use();
+            {
+                GlStateManager.colorMask(false, false, false, false);
 
-            GlStateManager.alphaFunc(GL_GREATER, 0.1f);
-        }
+                GlStateManager.clear(GL_STENCIL_BUFFER_BIT);
+                glStencilMask(0xFF);
+                glStencilFunc(GL_ALWAYS, 1, 0xFF); //always allow all fragments
+                glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
-        @Override
-        public void reset(@NonNull Minecraft mc) {
-            GlStateManager.disableBlend();
+                GlStateManager.depthMask(false);
 
-            //GlStateManager.depthMask(true);
+                super.render(mc, count);
+
+                GlStateManager.depthMask(true);
+
+                GlStateManager.colorMask(true, true, true, true);
+            }
+
+            SOLID_SHADER.use();
+            {
+                GlStateManager.enableBlend();
+                GlStateManager.tryBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+                GlStateManager.alphaFunc(GL_GREATER, 0.1f);
+
+                glStencilMask(0);
+                glStencilFunc(GL_EQUAL, 1, 0xFF);
+                glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+                super.render(mc, count);
+
+                GlStateManager.disableBlend();
+            }
+
+            glDisable(GL_STENCIL_TEST);
         }
     };
 
-    public static final RenderPass[] VALUES = values();
+    public static final VoxelRenderPass[] VALUES = values();
     public static final int COUNT = VALUES.length;
 
-    public abstract void init(@NonNull Minecraft mc);
-
-    public abstract void reset(@NonNull Minecraft mc);
+    public void render(@NonNull Minecraft mc, int count) {
+        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, count, 0);
+    }
 }

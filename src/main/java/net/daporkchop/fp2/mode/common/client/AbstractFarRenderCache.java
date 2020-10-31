@@ -21,6 +21,9 @@
 package net.daporkchop.fp2.mode.common.client;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.EmptyByteBuf;
+import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
@@ -224,8 +227,14 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
                                 //upload to GPU on client thread
                                 vertices.retain();
-                                for (ByteBuf buf : indices) {
-                                    buf.retain();
+                                for (int i = 0; i < indices.length; i++) {
+                                    ByteBuf buf = indices[i];
+                                    if (!buf.isReadable()) {
+                                        buf.release();
+                                        indices[i] = Unpooled.EMPTY_BUFFER;
+                                    } else {
+                                        buf.retain();
+                                    }
                                 }
                                 ClientThreadExecutor.INSTANCE.execute(() -> this.addPiece(piece, vertices, indices));
                             } finally { //release pieces again

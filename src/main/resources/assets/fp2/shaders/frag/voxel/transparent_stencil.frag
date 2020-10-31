@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-$today.year DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,31 +18,6 @@
  *
  */
 
-package net.daporkchop.fp2.asm.client.shader;
-
-import net.minecraft.client.shader.Framebuffer;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.Constant;
-import org.spongepowered.asm.mixin.injection.ModifyConstant;
-
-import static org.lwjgl.opengl.EXTPackedDepthStencil.*;
-import static org.lwjgl.opengl.GL14.*;
-import static org.lwjgl.opengl.GL30.*;
-
-/**
- * @author DaPorkchop_
- */
-@Mixin(Framebuffer.class)
-public abstract class MixinFramebuffer {
-    @ModifyConstant(method = "Lnet/minecraft/client/shader/Framebuffer;createFramebuffer(II)V",
-            constant = @Constant(intValue = GL_DEPTH_COMPONENT24))
-    private int useF32DepthBuffer(int prev) {
-        return GL_DEPTH_COMPONENT32F;
-    }
-
-    @ModifyConstant(method = "Lnet/minecraft/client/shader/Framebuffer;createFramebuffer(II)V",
-            constant = @Constant(intValue = GL_DEPTH24_STENCIL8_EXT))
-    private int stencil_useF32DepthBuffer(int prev) {
-        return GL_DEPTH32F_STENCIL8;
-    }
+void main() {
+    color = vec4(1.);
 }

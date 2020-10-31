@@ -98,6 +98,7 @@ public class LazyPriorityExecutor<K extends LazyKey<K>> {
                     this.runLazy(LazyPriorityExecutor.this.queue.take());
                 } catch (InterruptedException e) {
                     //gracefully exit on interrupt
+                    return;
                 } catch (Exception e) {
                     LOGGER.error(Thread.currentThread().getName(), e);
                 }

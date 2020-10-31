@@ -346,7 +346,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         int basePieceY = (baseY >> (level + T_SHIFT)) - ((i >> 1) & 1);
         int basePieceZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
         VoxelPiece highPiece = srcs[8 | (i & (((basePieceX & 1) << 2) | ((basePieceY & 1) << 1) | (basePieceZ & 1)))];
-        if (level == 1 || highPiece == null) { //pos_high
+        if (highPiece == null) { //pos_high
             vertices.writeDouble(blockX + data.x * scale + offset)
                     .writeDouble(blockY + data.y * scale + offset)
                     .writeDouble(blockZ + data.z * scale + offset);
@@ -358,7 +358,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
             double highX = 0.0d;
             double highY = 0.0d;
             double highZ = 0.0d;
-            if (highPiece.get((flooredX >> (level + 1)) & T_MASK, (flooredY >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK, data)) {
+            if (highPiece.getOnlyPos((flooredX >> (level + 1)) & T_MASK, (flooredY >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK, data)) {
                 highX = data.x;
                 highY = data.y;
                 highZ = data.z;

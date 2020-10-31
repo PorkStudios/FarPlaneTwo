@@ -196,6 +196,10 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
      */
     protected abstract boolean isNodeInFrustum(int level, long node, @NonNull IFrustum frustum);
 
+    protected boolean isVanillaRenderable(long node) {
+        return false;
+    }
+
     /**
      * Checks whether or not the given node has all of the given flags set.
      *
@@ -486,6 +490,10 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
             //the view range for this level doesn't intersect this tile's bounding box,
             // so we can be certain that neither this tile nor any of its children would be contained
             return false;
+        }
+
+        if (level == 0 && this.isVanillaRenderable(node)) {
+            return true;
         }
 
         CHILDREN:

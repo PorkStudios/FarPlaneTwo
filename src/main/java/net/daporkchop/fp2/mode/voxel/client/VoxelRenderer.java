@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.RenderPass;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
@@ -43,6 +42,7 @@ import static org.lwjgl.opengl.GL43.*;
  */
 public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
     public static final ShaderProgram SOLID_SHADER = ShaderManager.get("voxel/solid");
+    public static final ShaderProgram TRANSPARENT_STENCIL_SHADER = ShaderManager.get("voxel/transparent_stencil");
     public static final ShaderProgram TRANSPARENT_SHADER = ShaderManager.get("voxel/transparent");
 
     public VoxelRenderer(@NonNull WorldClient world) {
@@ -67,12 +67,10 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
     protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, @NonNull int[] counts) {
         try (VertexArrayObject vao = this.cache.vao().bind();
              ShaderProgram shader = SOLID_SHADER.use()) {
-            for (int i = 0; i < RenderPass.COUNT; i++) {
+            for (int i = 0; i < VoxelRenderPass.COUNT; i++) {
                 if (counts[i] != 0) {
                     try (DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBuffers()[i].bind()) {
-                        RenderPass.VALUES[i].init(mc);
-                        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, counts[i], 0);
-                        RenderPass.VALUES[i].reset(mc);
+                        VoxelRenderPass.VALUES[i].render(mc, counts[i]);
                     }
                 }
             }

@@ -25,8 +25,6 @@ import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.ShaderFP2StateHelper;
 import net.daporkchop.fp2.client.ShaderGlStateHelper;
-import net.daporkchop.fp2.client.gl.MatrixHelper;
-import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
 import net.daporkchop.fp2.mode.api.CompressedPiece;
@@ -43,16 +41,13 @@ import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.entity.Entity;
 
 import java.nio.IntBuffer;
-import java.util.Arrays;
 
 import static net.daporkchop.fp2.client.TexUVs.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL43.*;
-import static org.lwjgl.opengl.GL45.*;
 
 /**
  * @author DaPorkchop_
@@ -100,6 +95,8 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
 
     @Override
     public void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
+        ClientConstants.update();
+
         checkGLError("pre fp2 build index");
         int[] counts = this.cache.rebuildIndex(this.createVolumesForSelection(partialTicks, world, mc, frustum), frustum);
         checkGLError("post fp2 build index");

@@ -21,13 +21,17 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
+import net.daporkchop.fp2.util.math.Cube;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.util.math.Vec3i;
 
+import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -75,5 +79,13 @@ public class VoxelRenderTree extends AbstractFarRenderTree<VoxelPos, VoxelPiece>
         int z = PUnsafe.getInt(node + this.pos + 2 * 4L);
         int shift = level + T_SHIFT;
         return frustum.intersectsBB(x << shift, y << shift, z << shift, (x + 1) << shift, (y + 1) << shift, (z + 1) << shift);
+    }
+
+    @Override
+    protected boolean isVanillaRenderable(long node) {
+        int x = PUnsafe.getInt(node + this.pos + 0 * 4L);
+        int y = PUnsafe.getInt(node + this.pos + 1 * 4L);
+        int z = PUnsafe.getInt(node + this.pos + 2 * 4L);
+        return ClientConstants.isChunkRenderable(x, y, z);
     }
 }

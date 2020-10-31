@@ -20,6 +20,8 @@
 
 package net.daporkchop.fp2.client;
 
+import io.github.opencubicchunks.cubicchunks.core.CubicChunksConfig;
+import io.github.opencubicchunks.cubicchunks.core.client.CubeProviderClient;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
@@ -29,14 +31,19 @@ import net.daporkchop.fp2.util.threading.keyed.PriorityKeyedTaskScheduler;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ChunkProviderClient;
 import net.minecraft.client.renderer.chunk.CompiledChunk;
 import net.minecraft.client.renderer.chunk.RenderChunk;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3i;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.nio.IntBuffer;
+import java.util.Set;
 
+import static java.lang.Math.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -48,6 +55,9 @@ public class ClientConstants {
     public static final Minecraft mc = Minecraft.getMinecraft();
 
     public static KeyedTaskScheduler<IFarPos> RENDER_WORKERS;
+
+    public static Set<Vec3i> RENDERABLE_CHUNKS;
+    public static AxisAlignedBB CURRENT_RENDER_BB;
 
     public synchronized static void init() {
         checkState(RENDER_WORKERS == null, "render workers already running?!?");
@@ -62,6 +72,35 @@ public class ClientConstants {
 
         RENDER_WORKERS.shutdown();
         RENDER_WORKERS = null;
+    }
+
+    public void update() {
+        double offset = -8.0d;
+        double x = mc.player.posX + offset;
+        double y = mc.player.posY + offset;
+        double z = mc.player.posZ + offset;
+        double sizeHorizontal = (mc.gameSettings.renderDistanceChunks - 2) << 4;
+        double sizeVertical = CC ? max((CubicChunksConfig.verticalCubeLoadDistance - 2) << 4, sizeHorizontal) : sizeHorizontal;
+        CURRENT_RENDER_BB = new AxisAlignedBB(
+                x - sizeHorizontal, y - sizeVertical, z - sizeHorizontal,
+                x + sizeHorizontal, y + sizeVertical, z + sizeHorizontal);
+    }
+
+    public boolean isChunkRenderable(int x, int y, int z) {
+        if (true) {
+            return false;
+        }
+
+        if (!CURRENT_RENDER_BB.intersects(x << 4, y << 4, z << 4, (x + 1) << 4, (y + 1) << 4, (z + 1) << 4)) {
+            return false;
+        }
+
+        ChunkProviderClient provider = mc.world.getChunkProvider();
+        if (CC && provider instanceof CubeProviderClient) {
+            return ((CubeProviderClient) provider).getLoadedCube(x, y, z) != null;
+        } else {
+            return provider.isChunkGeneratedAt(x, z);
+        }
     }
 
     public static IntBuffer renderableChunksMask(Minecraft mc, IntBuffer buffer) {

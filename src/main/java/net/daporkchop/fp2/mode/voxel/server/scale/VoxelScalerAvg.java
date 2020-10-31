@@ -75,6 +75,10 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
             for (int subY = 0; subY < 2; subY++) {
                 for (int subZ = 0; subZ < 2; subZ++) {
                     VoxelPiece src = srcs[(subX * 2 + subY) * 2 + subZ];
+                    if (src == null) {
+                        continue;
+                    }
+
                     int baseX = subX * (T_VOXELS >> 1);
                     int baseY = subY * (T_VOXELS >> 1);
                     int baseZ = subZ * (T_VOXELS >> 1);
@@ -142,21 +146,21 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
         //compute appearance data
         //TODO: i need a better algorithm for selecting which voxel to use
         int j = (floorI(x) << 2) | (floorI(y) << 1) | floorI(z);
-        /*if ((validFlags & (1 << j)) != 0)   {
-            data.state = datas[j].state;
+        if ((validFlags & (1 << j)) != 0) {
+            System.arraycopy(datas[j].states, 0, data.states, 0, EDGE_COUNT);
             data.biome = datas[j].biome;
             data.light = datas[j].light;
         } else {
             //fall back to using anything
             for (int i = 0; i < 8; i++) {
                 if ((validFlags & (1 << i)) != 0) {
-                    data.state = datas[i].state;
+                    System.arraycopy(datas[i].states, 0, data.states, 0, EDGE_COUNT);
                     data.biome = datas[i].biome;
                     data.light = datas[i].light;
                     break;
                 }
             }
-        }*/
+        }
 
         dst.set(dstX, dstY, dstZ, data);
     }

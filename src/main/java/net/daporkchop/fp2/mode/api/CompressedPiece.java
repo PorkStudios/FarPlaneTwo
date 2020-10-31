@@ -194,7 +194,7 @@ public class CompressedPiece<POS extends IFarPos, P extends IFarPiece, B extends
             }
 
             ByteBuf compressed = Unpooled.wrappedBuffer(data);
-            ByteBuf uncompressed = Constants.allocateByteBuf(Zstd.PROVIDER.frameContentSize(compressed));
+            ByteBuf uncompressed = Constants.allocateByteBufExactly(Zstd.PROVIDER.frameContentSize(compressed));
             try {
                 checkState(ZSTD_INF.get().decompress(compressed, uncompressed));
                 return uncheckedCast(this.pos.mode().readPiece(uncompressed));
@@ -218,7 +218,7 @@ public class CompressedPiece<POS extends IFarPos, P extends IFarPiece, B extends
                 if (builder.write(uncompressed))    { //write piece
                     break COMPRESS; //skip compression if builder is empty
                 }
-                compressed = Constants.allocateByteBuf(Zstd.PROVIDER.compressBound(uncompressed.readableBytes())); //allocate dst buffer
+                compressed = Constants.allocateByteBufExactly(Zstd.PROVIDER.compressBound(uncompressed.readableBytes())); //allocate dst buffer
                 checkState(ZSTD_DEF.get().compress(uncompressed, compressed)); //compress piece
             } finally {
                 uncompressed.release(); //discard uncompressed data

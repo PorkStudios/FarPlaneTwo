@@ -24,6 +24,7 @@ import net.daporkchop.fp2.client.ClientEvents;
 import net.daporkchop.fp2.client.FP2ResourceReloadListener;
 import net.daporkchop.fp2.client.KeyBindings;
 import net.daporkchop.fp2.client.TexUVs;
+import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.debug.FP2Debug;
 import net.daporkchop.fp2.mode.heightmap.client.HeightmapRenderer;
 import net.daporkchop.fp2.mode.voxel.client.VoxelRenderer;
@@ -57,7 +58,9 @@ import org.lwjgl.opengl.GLContext;
 import javax.swing.JOptionPane;
 
 import static net.daporkchop.fp2.FP2.*;
+import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL43.*;
 
@@ -110,6 +113,10 @@ public class FP2 {
 
             int size = glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
             LOGGER.info(PStrings.fastFormat("Max SSBO size: %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
+
+            if (!mc.getFramebuffer().isStencilEnabled()) {
+                checkState(mc.getFramebuffer().enableStencil(), "unable to enable stencil buffer!");
+            }
 
             MinecraftForge.EVENT_BUS.register(new ClientEvents());
 
