@@ -107,8 +107,10 @@ public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece, B ext
             piece.writeLock().unlock();
 
             SimpleRecycler<P> pieceRecycler = uncheckedCast(this.pos.mode().pieceRecycler());
-            for (int i = 0, len = srcs.length; i < len && srcs[i] != null; i++) {
-                pieceRecycler.release(srcs[i]);
+            for (int i = 0, len = srcs.length; i < len; i++) {
+                if (srcs[i] != null) {
+                    pieceRecycler.release(srcs[i]);
+                }
                 params.get(i).readLock().unlock();
             }
         }

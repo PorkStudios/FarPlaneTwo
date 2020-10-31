@@ -116,6 +116,7 @@ public class FP2 {
 
             if (!mc.getFramebuffer().isStencilEnabled()) {
                 checkState(mc.getFramebuffer().enableStencil(), "unable to enable stencil buffer!");
+                LOGGER.info("Successfully enabled stencil buffer!");
             }
 
             MinecraftForge.EVENT_BUS.register(new ClientEvents());
