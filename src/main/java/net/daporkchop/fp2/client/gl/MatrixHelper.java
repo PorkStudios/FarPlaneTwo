@@ -22,6 +22,7 @@ package net.daporkchop.fp2.client.gl;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.client.ReversedZ;
 import net.daporkchop.fp2.util.DirectBufferReuse;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -45,22 +46,6 @@ public class MatrixHelper {
         return matrixIndex(x, y) << 2L;
     }
 
-    public void infiniteZFar(float fovy, float aspect, float zNear) {
-        //from http://dev.theomader.com/depth-precision/
-        float radians = (float) Math.toRadians(fovy);
-        float f = 1.0f / (float) Math.tan(radians * 0.5f);
-
-        PUnsafe.setMemory(MATRIX, MAT4_SIZE, (byte) 0);
-
-        PUnsafe.putFloat(MATRIX + matrixOffset(0, 0), f / aspect);
-        PUnsafe.putFloat(MATRIX + matrixOffset(1, 1), f);
-        PUnsafe.putFloat(MATRIX + matrixOffset(2, 2), -1.0f);
-        PUnsafe.putFloat(MATRIX + matrixOffset(3, 2), -zNear);
-        PUnsafe.putFloat(MATRIX + matrixOffset(2, 3), -1.0f);
-
-        glMultMatrix(DirectBufferReuse.wrapFloat(MATRIX, MAT4_ELEMENTS));
-    }
-
     public void reversedZ(float fovy, float aspect, float zNear) {
         //from http://dev.theomader.com/depth-precision/
         float radians = (float) Math.toRadians(fovy);
@@ -68,10 +53,18 @@ public class MatrixHelper {
 
         PUnsafe.setMemory(MATRIX, MAT4_SIZE, (byte) 0);
 
-        PUnsafe.putFloat(MATRIX + matrixOffset(0, 0), f / aspect);
-        PUnsafe.putFloat(MATRIX + matrixOffset(1, 1), f);
-        PUnsafe.putFloat(MATRIX + matrixOffset(3, 2), zNear);
-        PUnsafe.putFloat(MATRIX + matrixOffset(2, 3), -1.0f);
+        if (ReversedZ.REVERSED) { //we are currently rendering the world, so we need to reverse the depth buffer
+            PUnsafe.putFloat(MATRIX + matrixOffset(0, 0), f / aspect);
+            PUnsafe.putFloat(MATRIX + matrixOffset(1, 1), f);
+            PUnsafe.putFloat(MATRIX + matrixOffset(3, 2), zNear);
+            PUnsafe.putFloat(MATRIX + matrixOffset(2, 3), -1.0f);
+        } else { //otherwise, use normal perspective projection - but with infinite zFar
+            PUnsafe.putFloat(MATRIX + matrixOffset(0, 0), f / aspect);
+            PUnsafe.putFloat(MATRIX + matrixOffset(1, 1), f);
+            PUnsafe.putFloat(MATRIX + matrixOffset(2, 2), -1.0f);
+            PUnsafe.putFloat(MATRIX + matrixOffset(3, 2), -zNear);
+            PUnsafe.putFloat(MATRIX + matrixOffset(2, 3), -1.0f);
+        }
 
         glMultMatrix(DirectBufferReuse.wrapFloat(MATRIX, MAT4_ELEMENTS));
     }

@@ -23,6 +23,7 @@ package net.daporkchop.fp2.client;
 import lombok.NonNull;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.util.BlockRenderLayer;
 
 import static org.lwjgl.opengl.GL11.*;
@@ -35,23 +36,27 @@ public enum RenderPass {
     OPAQUE {
         @Override
         public void init(@NonNull Minecraft mc) {
-            GlStateManager.disableAlpha();
         }
 
         @Override
         public void reset(@NonNull Minecraft mc) {
-            GlStateManager.enableAlpha();
         }
     },
     CUTOUT {
         @Override
         public void init(@NonNull Minecraft mc) {
+            mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
+
+            GlStateManager.enableAlpha();
             GlStateManager.disableCull();
         }
 
         @Override
         public void reset(@NonNull Minecraft mc) {
             GlStateManager.enableCull();
+            GlStateManager.disableAlpha();
+
+            mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
         }
     },
     TRANSLUCENT {

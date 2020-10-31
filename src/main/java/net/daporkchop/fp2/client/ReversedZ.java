@@ -18,19 +18,10 @@
  *
  */
 
-package net.daporkchop.fp2.asm.client.renderer;
+package net.daporkchop.fp2.client;
 
-import net.daporkchop.fp2.client.ReversedZ;
-import net.daporkchop.fp2.client.ShaderGlStateHelper;
+import lombok.experimental.UtilityClass;
 import net.minecraft.client.renderer.GlStateManager;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import java.nio.FloatBuffer;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
@@ -39,19 +30,44 @@ import static org.lwjgl.opengl.GL45.*;
 /**
  * @author DaPorkchop_
  */
-@Mixin(GlStateManager.class)
-public abstract class MixinGlStateManager {
-    @Inject(method = "Lnet/minecraft/client/renderer/GlStateManager;glFog(ILjava/nio/FloatBuffer;)V",
-            at = @At("HEAD"))
-    private static void glFog_head(int id, FloatBuffer data, CallbackInfo ci) {
-        if (id == GL_FOG_COLOR) {
-            ShaderGlStateHelper.updateFogColor(data);
-        }
+@UtilityClass
+public class ReversedZ {
+    public boolean REVERSED = false;
+
+    public void renderWorldPass_HEAD() {
+        REVERSED = true;
+
+        GlStateManager.depthFunc(GL_LEQUAL);
+
+        glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+
+        GlStateManager.clearDepth(0.0d);
+        //GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
     }
 
-    @ModifyVariable(method = "Lnet/minecraft/client/renderer/GlStateManager;depthFunc(I)V",
-            at = @At("HEAD"))
-    private static int invertDepthModes(int func) {
-        return ReversedZ.modifyDepthFunc(func);
+    public void renderWorldPass_TAIL() {
+        REVERSED = false;
+
+        glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
+        GlStateManager.depthFunc(GL_LEQUAL);
+
+        GlStateManager.clearDepth(1.0d);
+        //GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
+    }
+
+    public int modifyDepthFunc(int func) {
+        if (REVERSED) {
+            switch (func) {
+                case GL_LESS:
+                    return GL_GREATER;
+                case GL_LEQUAL:
+                    return GL_GEQUAL;
+                case GL_GREATER:
+                    return GL_LESS;
+                case GL_GEQUAL:
+                    return GL_LEQUAL;
+            }
+        }
+        return func;
     }
 }
