@@ -32,7 +32,6 @@ import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.function.LongConsumer;
 
@@ -482,7 +481,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
             }
 
             return true; //this value really doesn't matter, it's guaranteed to be discarded
-        } else if (level < DEPTH //don't do range checking for top level, as it will cause a bunch of pieces to be loaded but never rendered
+        } else if (!this.checkFlagsAND(node, FLAG_TOP) //don't do range checking for top level, as it will cause a bunch of pieces to be loaded but never rendered
                    && !this.intersects(level, node, ranges[level])) {
             //the view range for this level doesn't intersect this tile's bounding box,
             // so we can be certain that neither this tile nor any of its children would be contained
@@ -509,15 +508,18 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
                     }
                 }
 
-                int[] mark = index.mark();
+                int mark = index.mark();
                 for (int i = 0, childCount = this.childCount(); i < childCount; i++) {
                     long child = PUnsafe.getLong(node + this.children + i * 8L);
                     if (!this.select0(level - 1, child, ranges, frustum, index)) {
                         //if any one of the children cannot be added, abort and add this tile over the whole area instead
-                        index.restore(mark);
+                        index.restoreMark(mark);
                         break CHILDREN;
                     }
                 }
+                //all of the children were able to be added, don't bother considering this node
+                //make sure the index mark is released before wrapping up
+                index.releaseMark(mark);
                 return true;
             } else {
                 //this tile has no data, add as many children as possible and return true if any of them could be added

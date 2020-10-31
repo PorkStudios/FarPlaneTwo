@@ -62,8 +62,8 @@ public abstract class MixinEntityRenderer {
 
     @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;DILnet/minecraft/entity/Entity;)I",
-                    ordinal = 0,
+                    target = "Lnet/minecraft/client/renderer/texture/ITextureObject;restoreLastBlurMipmap()V",
+                    ordinal = 1,
                     shift = At.Shift.AFTER),
             require = 1)
     private void renderWorldPass_doFarPlaneRender(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {

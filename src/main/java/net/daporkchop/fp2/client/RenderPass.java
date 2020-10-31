@@ -36,10 +36,12 @@ public enum RenderPass {
     OPAQUE {
         @Override
         public void init(@NonNull Minecraft mc) {
+            GlStateManager.disableAlpha();
         }
 
         @Override
         public void reset(@NonNull Minecraft mc) {
+            GlStateManager.enableAlpha();
         }
     },
     CUTOUT {
@@ -47,14 +49,12 @@ public enum RenderPass {
         public void init(@NonNull Minecraft mc) {
             mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
 
-            GlStateManager.enableAlpha();
             GlStateManager.disableCull();
         }
 
         @Override
         public void reset(@NonNull Minecraft mc) {
             GlStateManager.enableCull();
-            GlStateManager.disableAlpha();
 
             mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
         }
@@ -62,7 +62,7 @@ public enum RenderPass {
     TRANSLUCENT {
         @Override
         public void init(@NonNull Minecraft mc) {
-            GlStateManager.depthMask(false);
+            //GlStateManager.depthMask(false);
 
             GlStateManager.enableBlend();
             GlStateManager.tryBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
@@ -74,7 +74,7 @@ public enum RenderPass {
         public void reset(@NonNull Minecraft mc) {
             GlStateManager.disableBlend();
 
-            GlStateManager.depthMask(true);
+            //GlStateManager.depthMask(true);
         }
     };
 

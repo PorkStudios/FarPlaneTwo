@@ -42,6 +42,11 @@ public class FarRenderIndex {
     protected final IntBuffer[] buffers;
     protected final int[] sizes;
 
+    //serve marks out of a fixed array rather than allocating a new one each time
+    //the maximum number of marks is equal to the maximum octree depth, which is fine because there can't be more than that many marks anyway
+    protected final int[] marks;
+    protected int markIndex;
+
     protected final int vertexSize;
     protected final int indexSize;
     protected final int passes;
@@ -56,16 +61,45 @@ public class FarRenderIndex {
             this.buffers[i] = Constants.createIntBuffer(5);
         }
         this.sizes = new int[this.passes];
+
+        this.marks = new int[this.passes * DEPTH];
     }
 
-    public int[] mark() {
-        return this.sizes.clone();
+    /**
+     * Marks the current index state.
+     *
+     * @return the mark
+     */
+    public int mark() {
+        int mark = this.markIndex;
+        System.arraycopy(this.sizes, 0, this.marks, mark, this.passes);
+        this.markIndex = mark + this.passes;
+        return mark;
     }
 
-    public void restore(int[] mark) {
+    /**
+     * Restores the index state from the given mark.
+     * <p>
+     * This method will implicitly release the mark.
+     *
+     * @param mark the mark to reset the index state to
+     */
+    public void restoreMark(int mark) {
+        System.arraycopy(this.marks, this.markIndex = mark, this.sizes, 0, this.passes);
         for (int i = 0; i < this.passes; i++) {
-            this.buffers[i].position((this.sizes[i] = mark[i]) * 5);
+            this.buffers[i].position(this.sizes[i] * 5);
         }
+    }
+
+    /**
+     * Releases the given mark.
+     * <p>
+     * Must be called once a mark goes out of scope!
+     *
+     * @param mark the mark to release
+     */
+    public void releaseMark(int mark) {
+        this.markIndex = mark;
     }
 
     public boolean add(AbstractFarRenderTree tree, long node) {
@@ -131,6 +165,6 @@ public class FarRenderIndex {
             }
         }
         checkGLError("post upload index");
-        return this.mark();
+        return this.sizes;
     }
 }
