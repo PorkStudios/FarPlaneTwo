@@ -50,7 +50,8 @@ struct GlCamera {
     mat4 projection;
     mat4 modelview;
 
-    dvec3 position;
+    ivec3 position_floor;
+    vec3 position_fract;
 };
 
 struct GlFog {
@@ -89,22 +90,9 @@ layout(std140, binding = 1) uniform FP2_STATE {
 //
 //
 
-layout(std430, binding = 0) buffer RENDERABLE_CHUNKS {
-    ivec4 base;//using 4d vectors because apparently GLSL is too stupid to handle 3d ones
-    ivec4 size;
-    int data[];
-} renderable_chunks;
+//Texture UVs
 
-bool isChunkSectionRenderable(ivec3 chunk)  {
-    chunk -= renderable_chunks.base.xyz;
-    if (any(lessThan(chunk, ivec3(0))) || any(greaterThanEqual(chunk, renderable_chunks.size.xyz)))    {
-        return false;
-    }
-    int index = (chunk.x * renderable_chunks.size.y + chunk.y) * renderable_chunks.size.z + chunk.z;
-    return (renderable_chunks.data[index >> 5] & (1 << (index & 0x1F))) != 0;
-}
-
-layout(std430, binding = 1) buffer QUAD_LISTS {
+layout(std430, binding = 0) buffer QUAD_LISTS {
     ivec2 quad_lists[];
 };
 
@@ -116,8 +104,14 @@ struct BakedQuad {
     float tintFactor;
 };
 
-layout(std430, binding = 2) buffer QUAD_DATA {
+layout(std430, binding = 1) buffer QUAD_DATA {
     BakedQuad quad_data[];
+};
+
+//Tile positions
+
+layout(std140, binding = 2) buffer FP2_TILE_POSITIONS {
+    ivec4 tile_positions[]; //xyz: tile XYZ position, w: level
 };
 
 //

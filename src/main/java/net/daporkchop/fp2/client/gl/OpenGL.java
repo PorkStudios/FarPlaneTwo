@@ -22,6 +22,9 @@ package net.daporkchop.fp2.client.gl;
 
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.util.Constants;
+import org.lwjgl.LWJGLUtil;
+
+import java.util.StringTokenizer;
 
 import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -67,6 +70,22 @@ public class OpenGL {
                 Constants.LOGGER.error("@ {}", message);
                 Constants.LOGGER.error("{}: {}", error, gluErrorString(error));
             }
+        }
+    }
+
+    public static boolean isOpenGL46() {
+        //ContextCapabilities only knows versions up to 4.5...
+        //copypasta'd from GLContext.getSupportedExtensions()
+        String version = glGetString(GL_VERSION);
+
+        StringTokenizer version_tokenizer = new StringTokenizer(version, ". ");
+        int majorVersion  = Integer.parseInt(version_tokenizer.nextToken());
+        int minorVersion = Integer.parseInt(version_tokenizer.nextToken());
+
+        if (majorVersion == 4) {
+            return minorVersion >= 6;
+        } else {
+            return majorVersion > 4;
         }
     }
 }

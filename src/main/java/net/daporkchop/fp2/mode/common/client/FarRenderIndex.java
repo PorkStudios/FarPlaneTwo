@@ -20,25 +20,26 @@
 
 package net.daporkchop.fp2.mode.common.client;
 
-import lombok.Getter;
-import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.IntBuffer;
+import java.util.Arrays;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL40.*;
+import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
 public class FarRenderIndex {
+    public static final int POSITION_SIZE = 4;
+    public static final int COMMAND_SIZE = 5;
+
     protected final IntBuffer[] buffers;
     protected final int[] sizes;
 
@@ -56,9 +57,10 @@ public class FarRenderIndex {
         this.vertexSize = cache.vertexSize();
         this.passes = cache.passes();
 
-        this.buffers = new IntBuffer[this.passes];
+        this.buffers = new IntBuffer[this.passes << 1];
         for (int i = 0; i < this.passes; i++) {
-            this.buffers[i] = Constants.createIntBuffer(5);
+            this.buffers[i << 1] = Constants.createIntBuffer(POSITION_SIZE);
+            this.buffers[(i << 1) + 1] = Constants.createIntBuffer(COMMAND_SIZE);
         }
         this.sizes = new int[this.passes];
 
@@ -87,7 +89,8 @@ public class FarRenderIndex {
     public void restoreMark(int mark) {
         System.arraycopy(this.marks, this.markIndex = mark, this.sizes, 0, this.passes);
         for (int i = 0; i < this.passes; i++) {
-            this.buffers[i].position(this.sizes[i] * 5);
+            this.buffers[i << 1].position(this.sizes[i] * POSITION_SIZE);
+            this.buffers[(i << 1) + 1].position(this.sizes[i] * COMMAND_SIZE);
         }
     }
 
@@ -102,7 +105,7 @@ public class FarRenderIndex {
         this.markIndex = mark;
     }
 
-    public boolean add(AbstractFarRenderTree tree, long node) {
+    public boolean add(int level, long node, AbstractFarRenderTree tree) {
         if (!tree.checkFlagsAND(node, FLAG_RENDERED)) {
             return false;
         } else if (!tree.checkFlagsAND(node, FLAG_DATA)) {
@@ -118,8 +121,10 @@ public class FarRenderIndex {
         for (int i = 0; i < this.passes; i++) {
             int indexCount = PUnsafe.getInt(data + RENDERDATA_ICOUNT + i * 4L);
             if (indexCount != 0) {
-                this.ensureWritable(i, 5);
-                this.buffers[i].put(indexCount) //count
+                this.ensureWritable(i);
+
+                tree.putNodePosForIndex(level, node, this.buffers[i << 1]);
+                this.buffers[(i << 1) + 1].put(indexCount) //count
                         .put(1) //instanceCount
                         .put(firstIndex) //firstIndex
                         .put(baseVertex) //baseVertex
@@ -132,39 +137,40 @@ public class FarRenderIndex {
         return true;
     }
 
-    protected void ensureWritable(int pass, int count) {
-        while (this.buffers[pass].remaining() < count) { //buffer doesn't have enough space, grow it
-            IntBuffer bigger = Constants.createIntBuffer(this.buffers[pass].capacity() << 1);
-            this.buffers[pass].flip();
-            bigger.put(this.buffers[pass]);
-            PUnsafe.pork_releaseBuffer(this.buffers[pass]);
-            this.buffers[pass] = bigger;
+    protected void ensureWritable(int pass) {
+        int index = pass << 1;
+        if (!this.buffers[index].hasRemaining()) { //buffer doesn't have enough space, grow it
+            this.buffers[index] = this.growBuffer(this.buffers[index]);
+            this.buffers[index + 1] = this.growBuffer(this.buffers[index + 1]);
         }
     }
 
+    protected IntBuffer growBuffer(IntBuffer old) {
+        IntBuffer bigger = Constants.createIntBuffer(old.capacity() << 1);
+        bigger.put((IntBuffer) old.flip());
+        PUnsafe.pork_releaseBuffer(old);
+        return bigger;
+    }
+
     public void reset() {
-        for (int i = 0; i < this.passes; i++) {
-            this.buffers[i].clear();
-            this.sizes[i] = 0;
+        for (IntBuffer buffer : this.buffers) {
+            buffer.clear();
         }
+        Arrays.fill(this.sizes, 0);
     }
 
     public boolean isEmpty() {
         return or(this.sizes) == 0;
     }
 
-    public int[] upload(@NonNull DrawIndirectBuffer[] drawCommandBuffers) {
+    public int upload(int pass) {
         checkGLError("pre upload index");
-        for (int i = 0; i < this.passes; i++) {
-            try (DrawIndirectBuffer buffer = drawCommandBuffers[i].bind()) {
-                if (this.sizes[i] > 0) {
-                    glBufferData(GL_DRAW_INDIRECT_BUFFER, (IntBuffer) this.buffers[i].flip(), GL_STREAM_DRAW);
-                } else {
-                    glBufferData(GL_DRAW_INDIRECT_BUFFER, 0L, GL_STREAM_DRAW);
-                }
-            }
+        int size = this.sizes[pass];
+        if (size > 0) {
+            glBufferData(GL_SHADER_STORAGE_BUFFER, (IntBuffer) this.buffers[pass << 1].flip(), GL_STREAM_DRAW);
+            glBufferData(GL_DRAW_INDIRECT_BUFFER, (IntBuffer) this.buffers[(pass << 1) + 1].flip(), GL_STREAM_DRAW);
         }
         checkGLError("post upload index");
-        return this.sizes;
+        return size;
     }
 }

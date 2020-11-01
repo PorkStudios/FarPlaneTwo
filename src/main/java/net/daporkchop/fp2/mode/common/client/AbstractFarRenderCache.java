@@ -72,8 +72,6 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     protected final IntFunction<POS[]> posArray;
     protected final IntFunction<P[]> pieceArray;
 
-    protected final DrawIndirectBuffer[] drawCommandBuffers;
-
     protected final FarRenderIndex index;
     protected final VertexArrayObject vao = new VertexArrayObject();
 
@@ -144,11 +142,6 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
         });
 
         this.index = new FarRenderIndex(this);
-
-        this.drawCommandBuffers = new DrawIndirectBuffer[this.passes];
-        for (int i = 0; i < this.passes; i++) {
-            this.drawCommandBuffers[i] = new DrawIndirectBuffer();
-        }
 
         this.rebuildVAO();
     }
@@ -287,9 +280,9 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
         this.tree.removeNode(pos);
     }
 
-    public int[] rebuildIndex(@NonNull Volume[] ranges, @NonNull IFrustum frustum) {
+    public FarRenderIndex rebuildIndex(@NonNull Volume[] ranges, @NonNull IFrustum frustum) {
         this.index.reset();
         this.tree.select(ranges, frustum, this.index);
-        return this.index.upload(this.drawCommandBuffers);
+        return this.index;
     }
 }

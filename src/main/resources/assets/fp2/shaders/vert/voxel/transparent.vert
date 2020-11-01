@@ -18,34 +18,17 @@
  *
  */
 
-//TODO: currently, this is just a copypasta of vert/heightmap/water.vert
-
 //
 //
 // VERTEX ATTRIBUTES
 //
 //
 
+layout(location = 0) in int in_state;
+layout(location = 1) in vec2 in_light;
 layout(location = 2) in vec3 in_color;
 
-layout(location = 3) in dvec3 in_pos_low;
+layout(location = 3) in vec3 in_pos_low;
+layout(location = 4) in vec3 in_pos_high;
 
-void main() {
-    //convert position to vec3 afterwards to minimize precision loss
-    dvec3 pos = dvec3(in_pos_low.x, 63. - 2. / 16., in_pos_low.z);
-    vec3 relativePos = vec3(pos - glState.camera.position);
-
-    //vertex position is detail mixed
-    gl_Position = cameraTransform(relativePos);
-
-    vs_out.pos = relativePos;
-    vs_out.base_pos = relativePos;
-
-    //set fog depth
-    fog_out.depth = length(relativePos);
-
-    //copy trivial attributes
-    vs_out.light = vec2(1., 0.);
-    vs_out.state = 22;
-    vs_out.color = in_color;
-}
+#define DEPTH_FACTOR (1.)

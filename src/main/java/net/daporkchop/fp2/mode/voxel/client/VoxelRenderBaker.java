@@ -36,7 +36,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Biomes;
 import net.minecraft.init.Blocks;
-import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
 
@@ -47,10 +46,10 @@ import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.math.PMath.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL41.*;
 
 /**
  * @author DaPorkchop_
@@ -73,11 +72,9 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
     public static final int VOXEL_VERTEX_SIZE = INT_SIZE //state
                                                 + SHORT_SIZE //light
                                                 + MEDIUM_SIZE //color
-                                                + DVEC3_SIZE_TIGHT //pos_low
-                                                + DVEC3_SIZE_TIGHT //pos_high
-                                                + SHORT_SIZE; //level_scale
-
-    protected static final int TYPE_LOCAL_SHIFT = 20;
+                                                + MEDIUM_SIZE //pos_low
+                                                + MEDIUM_SIZE //pos_high
+                                                + 1; //pad to 16 bytes
 
     protected static int vertexMapIndex(int dx, int dy, int dz, int i, int edge) {
         int j = CONNECTION_INDICES[i];
@@ -100,7 +97,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
 
     @Override
     public int vertexAttributes() {
-        return 6;
+        return 5;
     }
 
     @Override
@@ -108,10 +105,9 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         long offset = 0L;
         glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, VOXEL_VERTEX_SIZE, offset); //state
         glVertexAttribPointer(1, 2, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, offset += INT_SIZE); //light
-        glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, offset += SHORT_SIZE); //color
-        glVertexAttribLPointer(3, 3, VOXEL_VERTEX_SIZE, offset += MEDIUM_SIZE); //pos_low
-        glVertexAttribLPointer(4, 3, VOXEL_VERTEX_SIZE, offset += DVEC3_SIZE_TIGHT); //pos_high
-        glVertexAttribPointer(5, 1, GL_UNSIGNED_SHORT, false, VOXEL_VERTEX_SIZE, offset += DVEC3_SIZE_TIGHT); //level_scale
+        glVertexAttribPointer(2, 3, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, offset += SHORT_SIZE); //color
+        glVertexAttribPointer(3, 3, GL_UNSIGNED_BYTE, false, VOXEL_VERTEX_SIZE, offset += MEDIUM_SIZE); //pos_low
+        glVertexAttribPointer(4, 3, GL_UNSIGNED_BYTE, false, VOXEL_VERTEX_SIZE, offset += MEDIUM_SIZE); //pos_high
     }
 
     @Override
@@ -318,6 +314,12 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         }
     }
 
+    protected void writePos(double x, double y, double z, ByteBuf dst) {
+        dst.writeByte(clamp(floorI(x * 8.0d), 0, 255))
+                .writeByte(clamp(floorI(y * 8.0d), 0, 255))
+                .writeByte(clamp(floorI(z * 8.0d), 0, 255));
+    }
+
     protected int vertex(int baseX, int baseY, int baseZ, int level, int i, VoxelPiece[] srcs, int x, int y, int z, VoxelData data, ByteBuf vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, int[] map, int indexCounter) {
         baseX += (x & T_VOXELS) << level;
         baseY += (y & T_VOXELS) << level;
@@ -338,18 +340,18 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
 
         final double offset = 0.5d;
 
-        vertices.writeDouble(blockX + data.x * scale + offset)
+        this.writePos(x + data.x + offset, y + data.y + offset , z + data.z + offset, vertices); //pos_low
+
+        /*vertices.writeDouble(blockX + data.x * scale + offset)
                 .writeDouble(blockY + data.y * scale + offset)
-                .writeDouble(blockZ + data.z * scale + offset); //pos_low
+                .writeDouble(blockZ + data.z * scale + offset); //pos_low*/
 
         int basePieceX = (baseX >> (level + T_SHIFT)) - ((i >> 2) & 1);
         int basePieceY = (baseY >> (level + T_SHIFT)) - ((i >> 1) & 1);
         int basePieceZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
         VoxelPiece highPiece = srcs[8 | (i & (((basePieceX & 1) << 2) | ((basePieceY & 1) << 1) | (basePieceZ & 1)))];
-        if (highPiece == null) { //pos_high
-            vertices.writeDouble(blockX + data.x * scale + offset)
-                    .writeDouble(blockY + data.y * scale + offset)
-                    .writeDouble(blockZ + data.z * scale + offset);
+        if (true || highPiece == null) { //pos_high
+            this.writePos((x + data.x + offset) / 16.0d, (y + data.y + offset) / 16.0d, (z + data.z + offset) / 16.0d, vertices); //pos_low
         } else {
             final int flooredX = blockX & -(1 << (level + 1));
             final int flooredY = blockY & -(1 << (level + 1));
@@ -368,7 +370,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                     .writeDouble(flooredY + highY * 2 * scale + offset)
                     .writeDouble(flooredZ + highZ * 2 * scale + offset);
         }
-        vertices.writeShort(1 << level);
+        vertices.writeByte(0); //pad to 16 bytes
 
         int baseMapIndex = ((x * T_VERTS + y) * T_VERTS + z) * 3;
         EDGES:

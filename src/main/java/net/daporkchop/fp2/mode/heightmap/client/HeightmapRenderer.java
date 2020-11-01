@@ -23,12 +23,11 @@ package net.daporkchop.fp2.mode.heightmap.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
+import net.daporkchop.fp2.mode.common.client.FarRenderIndex;
 import net.daporkchop.fp2.mode.common.client.IFarRenderBaker;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
@@ -40,7 +39,6 @@ import net.minecraft.init.Blocks;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL40.*;
@@ -51,15 +49,11 @@ import static org.lwjgl.opengl.GL43.*;
  */
 @SideOnly(Side.CLIENT)
 public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, HeightmapPiece> {
-    public static final ShaderProgram TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
-    public static final ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
+    /*public static final ShaderProgram TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
+    public static final ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");*/
 
     public HeightmapRenderer(@NonNull WorldClient world) {
         super(world);
-    }
-
-    @Override
-    protected void createRenderData() {
     }
 
     @Override
@@ -73,12 +67,12 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
     }
 
     @Override
-    protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, @NonNull int[] counts) {
-        try (VertexArrayObject vao = this.cache.vao().bind();
-             DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBuffers()[0].bind()) {
-            try (ShaderProgram shader = TERRAIN_SHADER.use()) {
+    protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, @NonNull FarRenderIndex index) {
+        int size = index.upload(0);
+        if (size > 0) {
+            /*try (ShaderProgram shader = TERRAIN_SHADER.use()) {
                 GlStateManager.disableAlpha();
-                glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, counts[0], 0);
+                glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, size, 0);
                 GlStateManager.enableAlpha();
             }
             try (ShaderProgram shader = WATER_SHADER.use()) {
@@ -88,10 +82,10 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
                 glUniform1d(shader.uniformLocation("seaLevel"), 63.0d - 2.0d / 16.0d);
                 glUniform1i(shader.uniformLocation("water"), TexUVs.STATEID_TO_INDEXID.get(Block.getStateId(Blocks.WATER.getDefaultState())));
 
-                glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, counts[0], 0);
+                glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, size, 0);
 
                 GlStateManager.disableBlend();
-            }
+            }*/
         }
     }
 

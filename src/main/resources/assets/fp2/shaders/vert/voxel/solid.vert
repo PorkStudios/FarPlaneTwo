@@ -28,6 +28,7 @@ layout(location = 0) in int in_state;
 layout(location = 1) in vec2 in_light;
 layout(location = 2) in vec3 in_color;
 
-layout(location = 3) in dvec3 in_pos_low;
-layout(location = 4) in dvec3 in_pos_high;
-layout(location = 5) in float in_level_scale;
+layout(location = 3) in vec3 in_pos_low;
+layout(location = 4) in vec3 in_pos_high;
+
+#define DEPTH_FACTOR (.5)

@@ -35,13 +35,15 @@ import static org.lwjgl.opengl.GL30.*;
 @Mixin(Framebuffer.class)
 public abstract class MixinFramebuffer {
     @ModifyConstant(method = "Lnet/minecraft/client/shader/Framebuffer;createFramebuffer(II)V",
-            constant = @Constant(intValue = GL_DEPTH_COMPONENT24))
+            constant = @Constant(intValue = GL_DEPTH_COMPONENT24),
+            allow = 1)
     private int useF32DepthBuffer(int prev) {
         return GL_DEPTH_COMPONENT32F;
     }
 
     @ModifyConstant(method = "Lnet/minecraft/client/shader/Framebuffer;createFramebuffer(II)V",
-            constant = @Constant(intValue = GL_DEPTH24_STENCIL8_EXT))
+            constant = @Constant(intValue = GL_DEPTH24_STENCIL8_EXT),
+            allow = 1)
     private int stencil_useF32DepthBuffer(int prev) {
         return GL_DEPTH32F_STENCIL8;
     }

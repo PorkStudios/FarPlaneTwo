@@ -28,6 +28,8 @@ import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.nio.IntBuffer;
+
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -71,5 +73,17 @@ public class HeightmapRenderTree extends AbstractFarRenderTree<HeightmapPos, Hei
         int z = PUnsafe.getInt(node + this.pos + 1 * 4L);
         int shift = level + T_SHIFT;
         return frustum.intersectsBB(x << shift, Integer.MIN_VALUE, z << shift, (x + 1) << shift, Integer.MAX_VALUE, (z + 1) << shift);
+    }
+
+    @Override
+    protected boolean isVanillaRenderable(long node) {
+        return false; //TODO
+    }
+
+    @Override
+    protected void putNodePosForIndex(int level, long node, @NonNull IntBuffer dst) {
+        int x = PUnsafe.getInt(node + this.pos + 0 * 4L);
+        int z = PUnsafe.getInt(node + this.pos + 1 * 4L);
+        dst.put(x).put(0).put(z).put(level);
     }
 }

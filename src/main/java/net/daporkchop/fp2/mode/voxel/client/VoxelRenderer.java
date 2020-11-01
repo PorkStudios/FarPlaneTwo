@@ -22,20 +22,16 @@ package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
+import net.daporkchop.fp2.mode.common.client.FarRenderIndex;
 import net.daporkchop.fp2.mode.common.client.IFarRenderBaker;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
-
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_
@@ -50,10 +46,6 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
     }
 
     @Override
-    protected void createRenderData() {
-    }
-
-    @Override
     protected VoxelRenderCache createCache() {
         return new VoxelRenderCache(this);
     }
@@ -64,14 +56,12 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
     }
 
     @Override
-    protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, @NonNull int[] counts) {
-        try (VertexArrayObject vao = this.cache.vao().bind();
-             ShaderProgram shader = SOLID_SHADER.use()) {
+    protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, @NonNull FarRenderIndex index) {
+        try (ShaderProgram shader = SOLID_SHADER.use()) {
             for (int i = 0; i < VoxelRenderPass.COUNT; i++) {
-                if (counts[i] != 0) {
-                    try (DrawIndirectBuffer drawCommandBuffer = this.cache.drawCommandBuffers()[i].bind()) {
-                        VoxelRenderPass.VALUES[i].render(mc, counts[i]);
-                    }
+                int size = index.upload(i);
+                if (size > 0) {
+                    VoxelRenderPass.VALUES[i].render(mc, size);
                 }
             }
         }

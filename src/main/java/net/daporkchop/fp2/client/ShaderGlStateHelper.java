@@ -34,6 +34,8 @@ import java.nio.FloatBuffer;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.compat.of.OFHelper.*;
+import static net.daporkchop.lib.common.math.PMath.*;
+import static net.minecraft.util.math.MathHelper.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL31.*;
@@ -46,7 +48,7 @@ public class ShaderGlStateHelper {
     private final UniformBufferObject UBO = new UniformBufferObject();
 
     private final int OFFSET_CAMERA = 0;
-    private final int SIZE_CAMERA = 2 * MAT4_SIZE + DVEC3_SIZE;
+    private final int SIZE_CAMERA = 2 * MAT4_SIZE + IVEC3_SIZE + VEC3_SIZE;
 
     private final int OFFSET_FOG = PMath.roundUp(OFFSET_CAMERA + SIZE_CAMERA, VEC4_SIZE);
     private final int SIZE_FOG = VEC4_SIZE + INT_SIZE + 4 * FLOAT_SIZE;
@@ -68,12 +70,15 @@ public class ShaderGlStateHelper {
             glGetFloat(GL_MODELVIEW_MATRIX, DirectBufferReuse.wrapFloat(ADDR_CAMERA + MAT4_SIZE, MAT4_ELEMENTS));
 
             Entity entity = mc.getRenderViewEntity();
-            PUnsafe.putDouble(ADDR_CAMERA + 2 * MAT4_SIZE + 0 * DOUBLE_SIZE,
-                    entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks);
-            PUnsafe.putDouble(ADDR_CAMERA + 2 * MAT4_SIZE + 1 * DOUBLE_SIZE,
-                    entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks);
-            PUnsafe.putDouble(ADDR_CAMERA + 2 * MAT4_SIZE + 2 * DOUBLE_SIZE,
-                    entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks);
+            double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
+            double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks;
+            double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
+            PUnsafe.putInt(ADDR_CAMERA + 2 * MAT4_SIZE + 0 * INT_SIZE, floorI(x));
+            PUnsafe.putInt(ADDR_CAMERA + 2 * MAT4_SIZE + 1 * INT_SIZE, floorI(y));
+            PUnsafe.putInt(ADDR_CAMERA + 2 * MAT4_SIZE + 2 * INT_SIZE, floorI(z));
+            PUnsafe.putFloat(ADDR_CAMERA + 2 * MAT4_SIZE + IVEC3_SIZE + 0 * FLOAT_SIZE, (float) frac(x));
+            PUnsafe.putFloat(ADDR_CAMERA + 2 * MAT4_SIZE + IVEC3_SIZE + 1 * FLOAT_SIZE, (float) frac(y));
+            PUnsafe.putFloat(ADDR_CAMERA + 2 * MAT4_SIZE + IVEC3_SIZE + 2 * FLOAT_SIZE, (float) frac(z));
         }
 
         { //fog

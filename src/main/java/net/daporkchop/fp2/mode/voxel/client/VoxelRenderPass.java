@@ -80,7 +80,7 @@ public enum VoxelRenderPass {
                 GlStateManager.colorMask(true, true, true, true);
             }
 
-            SOLID_SHADER.use();
+            TRANSPARENT_SHADER.use();
             {
                 GlStateManager.enableBlend();
                 GlStateManager.tryBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);

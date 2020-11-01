@@ -64,9 +64,9 @@ public class VoxelPiece implements IFarPiece {
     }
 
     static void writeData(long base, VoxelData data) {
-        int dx = floorI(clamp(data.x, 0., 1.) * 255.0d);
-        int dy = floorI(clamp(data.y, 0., 1.) * 255.0d);
-        int dz = floorI(clamp(data.z, 0., 1.) * 255.0d);
+        int dx = floorI(clamp(data.x, 0., 1.) * 128.0d);
+        int dy = floorI(clamp(data.y, 0., 1.) * 128.0d);
+        int dz = floorI(clamp(data.z, 0., 1.) * 128.0d);
 
         PUnsafe.putInt(base + 0L, (dx << 24) | (dy << 16) | (dz << 8) | data.edges);
         PUnsafe.putInt(base + 4L, (data.biome << 8) | data.light);
@@ -77,9 +77,9 @@ public class VoxelPiece implements IFarPiece {
         int i0 = PUnsafe.getInt(base + 0L);
         int i1 = PUnsafe.getInt(base + 4L);
 
-        data.x = (i0 >>> 24) / 255.0d;
-        data.y = ((i0 >> 16) & 0xFF) / 255.0d;
-        data.z = ((i0 >> 8) & 0xFF) / 255.0d;
+        data.x = (i0 >>> 24) / 128.0d;
+        data.y = ((i0 >> 16) & 0xFF) / 128.0d;
+        data.z = ((i0 >> 8) & 0xFF) / 128.0d;
         data.edges = i0 & 0x3F;
 
         data.biome = (i1 >> 8) & 0xFF;
@@ -91,9 +91,9 @@ public class VoxelPiece implements IFarPiece {
     static void readOnlyPos(long base, VoxelData data) {
         int i0 = PUnsafe.getInt(base + 0L);
 
-        data.x = (i0 >>> 24) / 255.0d;
-        data.y = ((i0 >> 16) & 0xFF) / 255.0d;
-        data.z = ((i0 >> 8) & 0xFF) / 255.0d;
+        data.x = (i0 >>> 24) / 128.0d;
+        data.y = ((i0 >> 16) & 0xFF) / 128.0d;
+        data.z = ((i0 >> 8) & 0xFF) / 128.0d;
     }
 
     protected final long addr = PUnsafe.allocateMemory(this, PIECE_SIZE);

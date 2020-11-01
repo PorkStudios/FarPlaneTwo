@@ -26,12 +26,11 @@ import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.daporkchop.fp2.util.math.Cube;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
-import net.minecraft.util.math.Vec3i;
 
-import static net.daporkchop.fp2.client.ClientConstants.*;
+import java.nio.IntBuffer;
+
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -87,5 +86,13 @@ public class VoxelRenderTree extends AbstractFarRenderTree<VoxelPos, VoxelPiece>
         int y = PUnsafe.getInt(node + this.pos + 1 * 4L);
         int z = PUnsafe.getInt(node + this.pos + 2 * 4L);
         return ClientConstants.isChunkRenderable(x, y, z);
+    }
+
+    @Override
+    protected void putNodePosForIndex(int level, long node, @NonNull IntBuffer dst) {
+        int x = PUnsafe.getInt(node + this.pos + 0 * 4L);
+        int y = PUnsafe.getInt(node + this.pos + 1 * 4L);
+        int z = PUnsafe.getInt(node + this.pos + 2 * 4L);
+        dst.put(x).put(y).put(z).put(level);
     }
 }

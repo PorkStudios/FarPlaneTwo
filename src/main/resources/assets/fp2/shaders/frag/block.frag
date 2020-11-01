@@ -41,18 +41,4 @@ void main() {
     frag_color = addFog(frag_color);
 
     color = frag_color;
-
-    /*if (isChunkSectionRenderable(ivec3(fs_in.pos) >> 4)
-    && isChunkSectionRenderable(ivec3(fs_in.pos) + ivec3(2, 0, 0) >> 4)
-    && isChunkSectionRenderable(ivec3(fs_in.pos) + ivec3(-2, 0, 0) >> 4)
-    && isChunkSectionRenderable(ivec3(fs_in.pos) + ivec3(0, 2, 0) >> 4)
-    && isChunkSectionRenderable(ivec3(fs_in.pos) + ivec3(0, -2, 0) >> 4)
-    && isChunkSectionRenderable(ivec3(fs_in.pos) + ivec3(0, 0, 2) >> 4)
-    && isChunkSectionRenderable(ivec3(fs_in.pos) + ivec3(0, 0, -2) >> 4)) {
-        discard;
-    }*/
-    /*if (isChunkSectionRenderable(ivec3(fs_in.pos) >> 4) //TODO: emulate this on the CPU rather than bloating the already expensive fragment shader
-            && isChunkSectionRenderable(ivec3(fs_in.pos) + ivec3(1, 0, -1) >> 4)) {
-        discard;
-    }*/
 }

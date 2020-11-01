@@ -26,7 +26,9 @@ import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.ShaderFP2StateHelper;
 import net.daporkchop.fp2.client.ShaderGlStateHelper;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
+import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
+import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.mode.api.CompressedPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
@@ -37,17 +39,12 @@ import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.entity.Entity;
-
-import java.nio.IntBuffer;
 
 import static net.daporkchop.fp2.client.TexUVs.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_
@@ -57,17 +54,12 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
 
     protected final int maxLevel = FP2Config.maxLevels - 1;
 
-    protected final ShaderStorageBuffer loadedSSBO = new ShaderStorageBuffer();
-
-    protected IntBuffer loadedBuffer;
+    protected final ShaderStorageBuffer tilePositionsBuffer = new ShaderStorageBuffer();
+    protected final DrawIndirectBuffer drawCommandBuffer = new DrawIndirectBuffer();
 
     public AbstractFarRenderer(@NonNull WorldClient world) {
-        this.createRenderData();
-
         this.cache = this.createCache();
     }
-
-    protected abstract void createRenderData();
 
     protected abstract AbstractFarRenderCache<POS, P> createCache();
 
@@ -89,18 +81,18 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     /**
      * Actually renders the world.
      *
-     * @param counts the size of the render index for each pass
+     * @param index the render index
      */
-    protected abstract void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, @NonNull int[] counts);
+    protected abstract void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, @NonNull FarRenderIndex index);
 
     @Override
     public void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
         ClientConstants.update();
 
         checkGLError("pre fp2 build index");
-        int[] counts = this.cache.rebuildIndex(this.createVolumesForSelection(partialTicks, world, mc, frustum), frustum);
+        FarRenderIndex index = this.cache.rebuildIndex(this.createVolumesForSelection(partialTicks, world, mc, frustum), frustum);
         checkGLError("post fp2 build index");
-        if (or(counts) == 0) {
+        if (index.isEmpty()) {
             return; //nothing to render...
         }
 
@@ -108,12 +100,14 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
         this.updateAndBindSSBOs(partialTicks, world, mc, frustum);
 
         this.prepareGlState(partialTicks, world, mc, frustum);
-        try {
+        try (VertexArrayObject vao = this.cache.vao().bind();
+             ShaderStorageBuffer tilePositionsBuffer = this.tilePositionsBuffer.bind();
+             DrawIndirectBuffer drawCommandBuffer = this.drawCommandBuffer.bind()) {
             this.updateAndBindUBOs(partialTicks, world, mc, frustum);
             checkGLError("post fp2 setup");
 
             checkGLError("pre fp2 render");
-            this.render0(partialTicks, world, mc, frustum, counts);
+            this.render0(partialTicks, world, mc, frustum, index);
             checkGLError("post fp2 render");
         } finally {
             checkGLError("pre fp2 reset");
@@ -123,7 +117,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     }
 
     //TODO: use cylinders for heightmap and spheres for voxel
-    protected Volume[] createVolumesForSelection(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
+    protected Volume[] createVolumesForSelection(float partialTicks, WorldClient world, Minecraft mc, IFrustum frustum) {
         Volume[] ranges = new Volume[this.maxLevel + 1];
         Entity entity = mc.getRenderViewEntity();
         double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
@@ -135,27 +129,24 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
         return ranges;
     }
 
-    protected void updateAndBindSSBOs(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
-        try (ShaderStorageBuffer loadedBuffer = this.loadedSSBO.bind()) {
-            glBufferData(GL_SHADER_STORAGE_BUFFER, this.loadedBuffer = ClientConstants.renderableChunksMask(mc, this.loadedBuffer), GL_STATIC_DRAW);
-            loadedBuffer.bindSSBO(0);
-        }
-        QUAD_LISTS.bindSSBO(1);
-        QUAD_DATA.bindSSBO(2);
+    protected void updateAndBindSSBOs(float partialTicks, WorldClient world, Minecraft mc, IFrustum frustum) {
+        QUAD_LISTS.bindSSBO(0);
+        QUAD_DATA.bindSSBO(1);
+        this.tilePositionsBuffer.bindSSBO(2);
     }
 
-    protected void updateAndBindUBOs(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
+    protected void updateAndBindUBOs(float partialTicks, WorldClient world, Minecraft mc, IFrustum frustum) {
         ShaderGlStateHelper.updateAndBind(partialTicks, mc);
         ShaderFP2StateHelper.updateAndBind(partialTicks, mc);
     }
 
-    protected void prepareGlState(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
+    protected void prepareGlState(float partialTicks, WorldClient world, Minecraft mc, IFrustum frustum) {
         GlStateManager.depthFunc(GL_LESS);
 
         mc.entityRenderer.enableLightmap();
     }
 
-    protected void resetGlState(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
+    protected void resetGlState(float partialTicks, WorldClient world, Minecraft mc, IFrustum frustum) {
         mc.entityRenderer.disableLightmap();
 
         GlStateManager.depthFunc(GL_LEQUAL);

@@ -32,6 +32,7 @@ import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 
+import java.nio.IntBuffer;
 import java.util.Arrays;
 import java.util.function.LongConsumer;
 
@@ -196,9 +197,24 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
      */
     protected abstract boolean isNodeInFrustum(int level, long node, @NonNull IFrustum frustum);
 
-    protected boolean isVanillaRenderable(long node) {
-        return false;
-    }
+    /**
+     * Checks whether or not the vanilla terrain at the given node's position is renderable.
+     * <p>
+     * Guaranteed to only be called for nodes on level 0.
+     *
+     * @param node the node
+     * @return whether or not the vanilla terrain at the given node's position is renderable
+     */
+    protected abstract boolean isVanillaRenderable(long node);
+
+    /**
+     * Appends this node's XYZ coordinates, in tile positions, as well as the node's level, to the given {@link IntBuffer}.
+     *
+     * @param level the node's level
+     * @param node  the node
+     * @param dst   the {@link IntBuffer} to write the coordinates to
+     */
+    protected abstract void putNodePosForIndex(int level, long node, @NonNull IntBuffer dst);
 
     /**
      * Checks whether or not the given node has all of the given flags set.
@@ -270,9 +286,9 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
     /**
      * Sets the render data for the piece at the given position.
      *
-     * @param pos                the position of the piece to set the render data for
-     * @param vertices           a {@link ByteBuf} containing the vertex data
-     * @param indices      an array of {@link ByteBuf}s, each containing the geometry index data for a single render pass
+     * @param pos      the position of the piece to set the render data for
+     * @param vertices a {@link ByteBuf} containing the vertex data
+     * @param indices  an array of {@link ByteBuf}s, each containing the geometry index data for a single render pass
      */
     public void putRenderData(@NonNull POS pos, @NonNull ByteBuf vertices, @NonNull ByteBuf[] indices) {
         this.putRenderData0(DEPTH, this.root, pos, vertices, indices);
@@ -475,7 +491,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
             //the frustum doesn't contain this tile's bounding box, so we can be certain that neither
             // this tile nor any of its children would be visible
             return true; //return true to prevent parent node from skipping all high-res pieces if some of them were outside of the frustum
-        } else if (this.checkFlagsAND(node, FLAG_PLACEHOLDER)) { //this is a placeholder node
+        } else if (level != 0 || this.checkFlagsAND(node, FLAG_PLACEHOLDER)) { //this is a placeholder node
             //simply recurse all valid children
             for (int i = 0, childCount = this.childCount(); i < childCount; i++) {
                 long child = PUnsafe.getLong(node + this.children + i * 8L);
@@ -543,7 +559,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
         }
 
         //add self to render output
-        return index.add(this, node);
+        return index.add(level, node, this);
     }
 
     @Override
