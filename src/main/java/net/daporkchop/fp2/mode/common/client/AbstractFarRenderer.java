@@ -152,8 +152,6 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     protected void prepareGlState(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
         GlStateManager.depthFunc(GL_LESS);
 
-        mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
-
         mc.entityRenderer.enableLightmap();
     }
 

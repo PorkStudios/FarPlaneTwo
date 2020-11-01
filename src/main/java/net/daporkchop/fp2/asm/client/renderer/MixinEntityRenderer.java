@@ -35,9 +35,14 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL12.*;
 
 /**
  * @author DaPorkchop_
@@ -62,10 +67,10 @@ public abstract class MixinEntityRenderer {
 
     @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/texture/ITextureObject;restoreLastBlurMipmap()V",
+                    target = "Lnet/minecraft/client/renderer/GlStateManager;shadeModel(I)V",
                     ordinal = 1,
-                    shift = At.Shift.AFTER),
-            require = 1)
+                    shift = At.Shift.BEFORE),
+            allow = 1)
     private void renderWorldPass_doFarPlaneRender(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
         IFarRenderer renderer = ((IFarContext) this.mc.world).renderer();
         if (renderer != null) {
@@ -128,5 +133,14 @@ public abstract class MixinEntityRenderer {
             //TODO: i need a better system for computing this
         }
         this.farPlaneDistance = farPlaneDistance;
+    }
+
+    //optifine changes this value for us, but we need to manually change it if optifine isn't around
+
+    @ModifyConstant(method = "Lnet/minecraft/client/renderer/EntityRenderer;enableLightmap()V",
+            constant = @Constant(intValue = GL_CLAMP),
+            allow = 2)
+    private int nooptifine_lightmapEdgeClampMode(int value) {
+        return GL_CLAMP_TO_EDGE;
     }
 }
