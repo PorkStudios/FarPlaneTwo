@@ -54,9 +54,10 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
                                                     + MEDIUM_SIZE //color
                                                     + SHORT_SIZE //light_water
                                                     + MEDIUM_SIZE //color_water
-                                                    + DVEC3_SIZE_TIGHT //pos_low
-                                                    + DVEC3_SIZE_TIGHT //pos_high
-                                                    + SHORT_SIZE; //level_scale
+                                                    + SHORT_SIZE //pos_low
+                                                    + INT_SIZE //height_low
+                                                    + SHORT_SIZE //pos_high
+                                                    + INT_SIZE; //height_high
 
     @Override
     public int indexType() {
@@ -70,7 +71,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
 
     @Override
     public int vertexAttributes() {
-        return 8;
+        return 9;
     }
 
     @Override
@@ -81,9 +82,10 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //color
         glVertexAttribPointer(3, 2, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += MEDIUM_SIZE); //light_water
         glVertexAttribPointer(4, 4, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //color_water
-        glVertexAttribLPointer(5, 3, HEIGHTMAP_VERTEX_SIZE, offset += MEDIUM_SIZE); //pos_low
-        glVertexAttribLPointer(6, 3, HEIGHTMAP_VERTEX_SIZE, offset += DVEC3_SIZE_TIGHT); //pos_high
-        glVertexAttribPointer(7, 1, GL_UNSIGNED_SHORT, false, HEIGHTMAP_VERTEX_SIZE, offset += DVEC3_SIZE_TIGHT); //level_scale
+        glVertexAttribPointer(5, 2, GL_UNSIGNED_BYTE, false, HEIGHTMAP_VERTEX_SIZE, offset += MEDIUM_SIZE); //pos_low
+        glVertexAttribIPointer(6, 1, GL_UNSIGNED_INT, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //height_low
+        glVertexAttribPointer(7, 2, GL_UNSIGNED_BYTE, false, HEIGHTMAP_VERTEX_SIZE, offset += INT_SIZE); //pos_high
+        glVertexAttribIPointer(8, 1, GL_UNSIGNED_INT, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //height_high
     }
 
     @Override
@@ -242,6 +244,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         out.writeMedium(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Blocks.WATER.getDefaultState(), biomeAccess, pos, 0))); //color_water
 
         //position
+        //TODO: redo writing
         out.writeDouble(blockX).writeDouble(data.height).writeDouble(blockZ); //pos_low
 
         int basePieceX = (baseX >> (level + T_SHIFT)) - (i >> 1);

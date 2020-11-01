@@ -18,38 +18,30 @@
  *
  */
 
-void main(){
+void main() {
     //convert position to vec3 afterwards to minimize precision loss
     ivec4 tile_position = tile_positions[gl_DrawID];
-    ivec3 relativePos_floor = (tile_position.xyz << (tile_position.w + T_SHIFT)) - glState.camera.position_floor;
-    vec3 relativePos = vec3(relativePos_floor);
-    //vec3 relativePos = vec3((tile_position.xyz << (tile_position.w + T_SHIFT))) - vec3(glState.camera.position_floor);
-    //relativePos -= vec3(1. / 16.);
-    relativePos += in_pos_low * (1. / 8.);//float(((0 << T_SHIFT) + 1) << tile_position.w);
-    relativePos -= glState.camera.position_fract;
-
-    //vec3 relativePos = vec3(in_pos_low - glState.camera.position);
+    ivec3 relativePos_floor_base = (tile_position.xyz << tile_position.w << T_SHIFT) - glState.camera.position_floor;
+    vec3 relativePos = vec3(relativePos_floor + getLowOffsetPre(tile_position.w)) + getLowOffsetPost(tile_position.w) - glState.camera.position_fract;
 
     float depth = length(relativePos);
 
     //set fog depth here, simply because it's going to change by at most a few blocks (negligable) and this prevents us from having to compute the depth twice
     fog_out.depth = depth;
 
+#ifdef USE_LOD
     //mix low and high vertex positions based on depth
     /*float start = float(fp2_state.view.levelCutoffDistance) * in_level_scale * fp2_state.view.transitionStart;
     float end = float(fp2_state.view.levelCutoffDistance) * in_level_scale * fp2_state.view.transitionEnd;
     dvec3 mixedPos = mix(in_pos_low, in_pos_high, 1. - clamp((end - depth) * (1. / (end - start)), 0., 1.));
     relativePos = vec3(mixedPos - glState.camera.position);*/
+#endif
 
     //vertex position is detail mixed
-    gl_Position = cameraTransform(relativePos) * vec4(1., 1., DEPTH_FACTOR, 1.);
+    gl_Position = cameraTransform(relativePos) - vec4(0., 0., 0.0001, 0.);
 
     //pass relative position to fragment shader (used to compute face normal)
-    //TODO: this is actually also used for the texture UV, which is why it is currently not using the relative position
-    /*vs_out.pos = vec3(mixedPos);
-    vs_out.base_pos = vec3(mixedPos);*/
-    vs_out.pos = vec3(relativePos);
-    vs_out.base_pos = vec3(relativePos);
+    vs_out.pos = vs_out.base_pos = vec3(relativePos);
 
     //copy trivial attributes
     vs_out.light = in_light;

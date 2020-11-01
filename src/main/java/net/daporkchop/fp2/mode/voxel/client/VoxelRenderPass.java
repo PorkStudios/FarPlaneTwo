@@ -62,7 +62,7 @@ public enum VoxelRenderPass {
         public void render(@NonNull Minecraft mc, int count) {
             glEnable(GL_STENCIL_TEST);
 
-            TRANSPARENT_STENCIL_SHADER.use();
+            TRANSLUCENT_STENCIL_SHADER.use();
             {
                 GlStateManager.colorMask(false, false, false, false);
 
@@ -80,7 +80,7 @@ public enum VoxelRenderPass {
                 GlStateManager.colorMask(true, true, true, true);
             }
 
-            TRANSPARENT_SHADER.use();
+            SOLID_SHADER.use();
             {
                 GlStateManager.enableBlend();
                 GlStateManager.tryBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);

@@ -107,10 +107,14 @@ public class TexUVs {
 
     public static void initDefault() {
         //fluids use their own system for rendering
-        putRenderer(Blocks.WATER, (state, face, model) ->
-                Collections.singletonList(new PackedBakedQuad(mc.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/water_still"), 0)));
-        putRenderer(Blocks.FLOWING_WATER, (state, face, model) ->
-                Collections.singletonList(new PackedBakedQuad(mc.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/water_flow"), 0)));
+        StateFaceQuadRenderer waterRenderer = (state, face, model) -> {
+            String spriteName = face.getHorizontalIndex() < 0 ? "minecraft:blocks/water_still" : "minecraft:blocks/water_flow";
+            double spriteFactor = face.getHorizontalIndex() < 0 ? 16.0d : 8.0d;
+            TextureAtlasSprite sprite = mc.getTextureMapBlocks().getAtlasSprite(spriteName);
+            return Collections.singletonList(new PackedBakedQuad(sprite.getInterpolatedU(0.0d), sprite.getInterpolatedV(0.0d), sprite.getInterpolatedU(spriteFactor), sprite.getInterpolatedV(spriteFactor), 0.0f));
+        };
+        putRenderer(Blocks.WATER, waterRenderer);
+        putRenderer(Blocks.FLOWING_WATER, waterRenderer);
         putRenderer(Blocks.LAVA, (state, face, model) ->
                 Collections.singletonList(new PackedBakedQuad(mc.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/lava_still"), -1)));
         putRenderer(Blocks.FLOWING_LAVA, (state, face, model) ->
@@ -126,14 +130,6 @@ public class TexUVs {
             }
             return DEFAULT_RENDERER.render(state, face, model);
         });
-
-        StateFaceQuadRenderer waterRenderer = (state, face, model) -> {
-            String spriteName = face.getHorizontalIndex() < 0 ?  "minecraft:blocks/water_still" : "minecraft:blocks/water_flow";
-            TextureAtlasSprite sprite = mc.getTextureMapBlocks().getAtlasSprite(spriteName);
-            return Collections.singletonList(new PackedBakedQuad(sprite.getInterpolatedU(0.0d), sprite.getInterpolatedV(0.0d), sprite.getInterpolatedU(16.0d), sprite.getInterpolatedV(16.0d), 0.0f));
-        };
-        putRenderer(Blocks.WATER, waterRenderer);
-        putRenderer(Blocks.FLOWING_WATER, waterRenderer);
     }
 
     public static void reloadUVs() {

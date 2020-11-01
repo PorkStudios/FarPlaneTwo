@@ -49,8 +49,9 @@ import static org.lwjgl.opengl.GL43.*;
  */
 @SideOnly(Side.CLIENT)
 public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, HeightmapPiece> {
-    /*public static final ShaderProgram TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
-    public static final ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");*/
+    public static final ShaderProgram TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
+    public static final ShaderProgram WATER_STENCIL_SHADER = ShaderManager.get("heightmap/water_stencil");
+    public static final ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
 
     public HeightmapRenderer(@NonNull WorldClient world) {
         super(world);
@@ -70,22 +71,56 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
     protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, @NonNull FarRenderIndex index) {
         int size = index.upload(0);
         if (size > 0) {
-            /*try (ShaderProgram shader = TERRAIN_SHADER.use()) {
+            //solid terrain
+            try (ShaderProgram shader = TERRAIN_SHADER.use()) {
                 GlStateManager.disableAlpha();
                 glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, size, 0);
                 GlStateManager.enableAlpha();
             }
-            try (ShaderProgram shader = WATER_SHADER.use()) {
-                GlStateManager.enableBlend();
-                GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            //water
+            //TODO: this is almost identical to the stuff in VoxelRenderPass.TRANSLUCENT, maybe abstract out this code a bit...
+            {
+                glEnable(GL_STENCIL_TEST);
 
-                glUniform1d(shader.uniformLocation("seaLevel"), 63.0d - 2.0d / 16.0d);
-                glUniform1i(shader.uniformLocation("water"), TexUVs.STATEID_TO_INDEXID.get(Block.getStateId(Blocks.WATER.getDefaultState())));
+                WATER_STENCIL_SHADER.use();
+                glUniform1d(WATER_STENCIL_SHADER.uniformLocation("seaLevel"), 63);
+                {
+                    GlStateManager.colorMask(false, false, false, false);
 
-                glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, size, 0);
+                    GlStateManager.clear(GL_STENCIL_BUFFER_BIT);
+                    glStencilMask(0xFF);
+                    glStencilFunc(GL_ALWAYS, 1, 0xFF); //always allow all fragments
+                    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
-                GlStateManager.disableBlend();
-            }*/
+                    GlStateManager.depthMask(false);
+
+                    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, size, 0);
+
+                    GlStateManager.depthMask(true);
+
+                    GlStateManager.colorMask(true, true, true, true);
+                }
+
+                WATER_SHADER.use();
+                glUniform1i(WATER_STENCIL_SHADER.uniformLocation("seaLevel"), 63);
+                glUniform1i(WATER_STENCIL_SHADER.uniformLocation("in_state"), TexUVs.STATEID_TO_INDEXID.get(Block.getStateId(Blocks.WATER.getDefaultState())));
+                {
+                    GlStateManager.enableBlend();
+                    GlStateManager.tryBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+                    GlStateManager.alphaFunc(GL_GREATER, 0.1f);
+
+                    glStencilMask(0);
+                    glStencilFunc(GL_EQUAL, 1, 0xFF);
+                    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+                    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, size, 0);
+
+                    GlStateManager.disableBlend();
+                }
+                WATER_SHADER.close();
+
+                glDisable(GL_STENCIL_TEST);
+            }
         }
     }
 

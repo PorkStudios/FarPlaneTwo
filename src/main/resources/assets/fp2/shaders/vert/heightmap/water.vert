@@ -24,8 +24,8 @@
 //
 //
 
-uniform double seaLevel;
-uniform int water;
+uniform int seaLevel;
+uniform int in_state;
 
 //
 //
@@ -33,27 +33,15 @@ uniform int water;
 //
 //
 
-layout(location = 3) in vec2 in_light_water;
-layout(location = 4) in vec3 in_color_water;
+layout(location = 3) in vec2 in_light;
+layout(location = 4) in vec3 in_color;
 
-layout(location = 5) in dvec3 in_pos_low;
+layout(location = 5) in ivec2 in_pos_low;
 
-void main() {
-    //convert position to vec3 afterwards to minimize precision loss
-    dvec3 pos = dvec3(in_pos_low.x, seaLevel, in_pos_low.z);
-    vec3 relativePos = vec3(pos - glState.camera.position);
+ivec3 getLowOffsetPre(int level) {
+    return ivec3(in_pos_low.x << level, seaLevel, in_pos_low.y << level);
+}
 
-    //vertex position is detail mixed
-    gl_Position = cameraTransform(relativePos);
-
-    vs_out.pos = relativePos;
-    vs_out.base_pos = relativePos;
-
-    //set fog depth
-    fog_out.depth = length(relativePos);
-
-    //copy trivial attributes
-    vs_out.light = in_light_water;
-    vs_out.state = water;
-    vs_out.color = in_color_water;
+vec3 getLowOffsetPost() {
+    return vec3(0., -1. / 8., 0.);
 }

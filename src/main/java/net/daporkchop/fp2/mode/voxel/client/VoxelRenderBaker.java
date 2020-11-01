@@ -325,6 +325,8 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         baseY += (y & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
 
+        int baseMapIndex = ((x * T_VERTS + y) * T_VERTS + z) * 3;
+
         final double scale = 1 << level;
 
         final int blockX = baseX + ((x & ~(x & T_VOXELS)) << level);
@@ -340,18 +342,14 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
 
         final double offset = 0.5d;
 
-        this.writePos(x + data.x + offset, y + data.y + offset , z + data.z + offset, vertices); //pos_low
-
-        /*vertices.writeDouble(blockX + data.x * scale + offset)
-                .writeDouble(blockY + data.y * scale + offset)
-                .writeDouble(blockZ + data.z * scale + offset); //pos_low*/
+        this.writePos(x + data.x + offset, y + data.y + offset, z + data.z + offset, vertices); //pos_low
 
         int basePieceX = (baseX >> (level + T_SHIFT)) - ((i >> 2) & 1);
         int basePieceY = (baseY >> (level + T_SHIFT)) - ((i >> 1) & 1);
         int basePieceZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
         VoxelPiece highPiece = srcs[8 | (i & (((basePieceX & 1) << 2) | ((basePieceY & 1) << 1) | (basePieceZ & 1)))];
-        if (true || highPiece == null) { //pos_high
-            this.writePos((x + data.x + offset) / 16.0d, (y + data.y + offset) / 16.0d, (z + data.z + offset) / 16.0d, vertices); //pos_low
+        if (highPiece == null) { //pos_high
+            this.writePos(x + data.x + offset, y + data.y + offset, z + data.z + offset, vertices);
         } else {
             final int flooredX = blockX & -(1 << (level + 1));
             final int flooredY = blockY & -(1 << (level + 1));
@@ -366,13 +364,10 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                 highZ = data.z;
             }
 
-            vertices.writeDouble(flooredX + highX * 2 * scale + offset)
-                    .writeDouble(flooredY + highY * 2 * scale + offset)
-                    .writeDouble(flooredZ + highZ * 2 * scale + offset);
+            this.writePos(x + highX * 2.0d * scale + offset, y + highY * 2.0d * scale + offset, z + highZ * 2.0d * scale + offset, vertices);
         }
         vertices.writeByte(0); //pad to 16 bytes
 
-        int baseMapIndex = ((x * T_VERTS + y) * T_VERTS + z) * 3;
         EDGES:
         for (int edge = 0; edge < EDGE_COUNT; edge++) {
             int bufIndex;

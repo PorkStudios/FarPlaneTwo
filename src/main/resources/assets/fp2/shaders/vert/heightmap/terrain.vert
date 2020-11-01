@@ -28,6 +28,25 @@ layout(location = 0) in int in_state;
 layout(location = 1) in vec2 in_light;
 layout(location = 2) in vec3 in_color;
 
-layout(location = 5) in dvec3 in_pos_low;
-layout(location = 6) in dvec3 in_pos_high;
-layout(location = 7) in float in_level_scale;
+layout(location = 5) in ivec2 in_pos_low;
+layout(location = 6) in int in_height_low;
+layout(location = 7) in ivec2 in_pos_high;
+layout(location = 8) in int in_height_high;
+
+ivec3 getLowOffsetPre(int level) {
+    return ivec3(in_pos_low.x << level, in_height_low, in_pos_low.y << level);
+}
+
+vec3 getLowOffsetPost() {
+    return vec3(0.);
+}
+
+#define USE_LOD
+
+ivec3 getHighOffsetPre(int level) {
+    return ivec3(in_pos_high.x << level, in_height_high, in_pos_high.y << level);
+}
+
+vec3 getHighOffsetPost() {
+    return vec3(0.);
+}
