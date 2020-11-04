@@ -79,11 +79,11 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
             }
             //water
             //TODO: this is almost identical to the stuff in VoxelRenderPass.TRANSLUCENT, maybe abstract out this code a bit...
-            {
+            if (true){
                 glEnable(GL_STENCIL_TEST);
 
                 WATER_STENCIL_SHADER.use();
-                glUniform1d(WATER_STENCIL_SHADER.uniformLocation("seaLevel"), 63);
+                glUniform1i(WATER_STENCIL_SHADER.uniformLocation("seaLevel"), 63);
                 {
                     GlStateManager.colorMask(false, false, false, false);
 
@@ -102,8 +102,8 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
                 }
 
                 WATER_SHADER.use();
-                glUniform1i(WATER_STENCIL_SHADER.uniformLocation("seaLevel"), 63);
-                glUniform1i(WATER_STENCIL_SHADER.uniformLocation("in_state"), TexUVs.STATEID_TO_INDEXID.get(Block.getStateId(Blocks.WATER.getDefaultState())));
+                glUniform1i(WATER_SHADER.uniformLocation("seaLevel"), 63);
+                glUniform1i(WATER_SHADER.uniformLocation("in_state"), TexUVs.STATEID_TO_INDEXID.get(Block.getStateId(Blocks.WATER.getDefaultState())));
                 {
                     GlStateManager.enableBlend();
                     GlStateManager.tryBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);

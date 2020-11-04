@@ -34,8 +34,8 @@ layout(location = 4) in vec3 in_pos_high;
 void main() {
     //convert position to vec3 afterwards to minimize precision loss
     ivec4 tile_position = tile_positions[gl_DrawID];
-    ivec3 relativePos_floor = (tile_position.xyz << tile_position.w << T_SHIFT) - glState.camera.position_floor;
-    vec3 relativePos = vec3(relativePos_floor) + in_pos_low * float(1 << tile_position.w) / 8. - glState.camera.position_fract;
+    ivec3 relative_tile_position = (tile_position.xyz << tile_position.w << T_SHIFT) - glState.camera.position_floor;
+    vec3 relativePos = vec3(relative_tile_position) + in_pos_low * float(1 << tile_position.w) / 8. - glState.camera.position_fract;
 
     float depth = length(relativePos);
 
@@ -43,10 +43,12 @@ void main() {
     fog_out.depth = depth;
 
     //mix low and high vertex positions based on depth
-    /*float start = float(fp2_state.view.levelCutoffDistance) * in_level_scale * fp2_state.view.transitionStart;
-    float end = float(fp2_state.view.levelCutoffDistance) * in_level_scale * fp2_state.view.transitionEnd;
-    dvec3 mixedPos = mix(in_pos_low, in_pos_high, 1. - clamp((end - depth) * (1. / (end - start)), 0., 1.));
-    relativePos = vec3(mixedPos - glState.camera.position);*/
+    float cutoff_scale = float(fp2_state.view.levelCutoffDistance << tile_position.w);
+    float start = cutoff_scale * fp2_state.view.transitionStart;
+    float end = cutoff_scale * fp2_state.view.transitionEnd;
+
+    vec3 relativePos_high = vec3(relative_tile_position) + in_pos_high * float(1 << tile_position.w) / 8. - glState.camera.position_fract;
+    relativePos = mix(relativePos_high, relativePos, clamp((end - depth) * (1. / (end - start)), 0., 1.));
 
     //vertex position is detail mixed
     gl_Position = cameraTransform(relativePos) - vec4(0., 0., 0.0001, 0.);

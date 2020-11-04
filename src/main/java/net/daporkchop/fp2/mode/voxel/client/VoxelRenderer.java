@@ -38,7 +38,7 @@ import net.minecraft.client.multiplayer.WorldClient;
  */
 public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
     public static final ShaderProgram SOLID_SHADER = ShaderManager.get("voxel/solid");
-    public static final ShaderProgram TRANSLUCENT_STENCIL_SHADER = ShaderManager.get("voxel/translucent_stencil");
+    public static final ShaderProgram STENCIL_SHADER = ShaderManager.get("voxel/stencil");
 
     public VoxelRenderer(@NonNull WorldClient world) {
         super(world);

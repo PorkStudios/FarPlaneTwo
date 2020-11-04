@@ -491,7 +491,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
             //the frustum doesn't contain this tile's bounding box, so we can be certain that neither
             // this tile nor any of its children would be visible
             return true; //return true to prevent parent node from skipping all high-res pieces if some of them were outside of the frustum
-        } else if (level != 0 || this.checkFlagsAND(node, FLAG_PLACEHOLDER)) { //this is a placeholder node
+        } else if (this.checkFlagsAND(node, FLAG_PLACEHOLDER)) { //this is a placeholder node
             //simply recurse all valid children
             for (int i = 0, childCount = this.childCount(); i < childCount; i++) {
                 long child = PUnsafe.getLong(node + this.children + i * 8L);

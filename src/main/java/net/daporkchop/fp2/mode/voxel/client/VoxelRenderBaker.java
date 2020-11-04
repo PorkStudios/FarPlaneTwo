@@ -364,7 +364,10 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                 highZ = data.z;
             }
 
-            this.writePos(x + highX * 2.0d * scale + offset, y + highY * 2.0d * scale + offset, z + highZ * 2.0d * scale + offset, vertices);
+            //TODO: figure out what went wrong here
+            this.writePos((x & ~1) + (highX + offset) * 2.0d,
+                    (y & ~1) + (highY + offset) * 2.0d,
+                    (z & ~1) + (highZ + offset) * 2.0d, vertices);
         }
         vertices.writeByte(0); //pad to 16 bytes
 

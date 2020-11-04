@@ -82,9 +82,9 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //color
         glVertexAttribPointer(3, 2, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += MEDIUM_SIZE); //light_water
         glVertexAttribPointer(4, 4, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //color_water
-        glVertexAttribPointer(5, 2, GL_UNSIGNED_BYTE, false, HEIGHTMAP_VERTEX_SIZE, offset += MEDIUM_SIZE); //pos_low
+        glVertexAttribIPointer(5, 2, GL_UNSIGNED_BYTE, HEIGHTMAP_VERTEX_SIZE, offset += MEDIUM_SIZE); //pos_low
         glVertexAttribIPointer(6, 1, GL_UNSIGNED_INT, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //height_low
-        glVertexAttribPointer(7, 2, GL_UNSIGNED_BYTE, false, HEIGHTMAP_VERTEX_SIZE, offset += INT_SIZE); //pos_high
+        glVertexAttribIPointer(7, 2, GL_UNSIGNED_BYTE, HEIGHTMAP_VERTEX_SIZE, offset += INT_SIZE); //pos_high
         glVertexAttribIPointer(8, 1, GL_UNSIGNED_INT, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //height_high
     }
 
@@ -161,7 +161,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         if (srcs[1] != null) {
             indexZ = index;
             for (int dx = 0; dx < T_VOXELS; dx++) {
-                this.writeVertex(baseX, baseZ + (T_VOXELS << level), level, 1, srcs, dx, 0, vertices, pos, biomeAccess, data);
+                this.writeVertex(baseX, baseZ, level, 1, srcs, dx, T_VOXELS, vertices, pos, biomeAccess, data);
             }
             index += T_VOXELS;
         }
@@ -170,7 +170,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         if (srcs[2] != null) {
             indexX = index;
             for (int dz = 0; dz < T_VOXELS; dz++) {
-                this.writeVertex(baseX + (T_VOXELS << level), baseZ, level, 2, srcs, 0, dz, vertices, pos, biomeAccess, data);
+                this.writeVertex(baseX, baseZ, level, 2, srcs, T_VOXELS, dz, vertices, pos, biomeAccess, data);
             }
             index += T_VOXELS;
         }
@@ -178,7 +178,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         int indexXZ = -1;
         if (srcs[1] != null && srcs[2] != null && srcs[3] != null) {
             indexXZ = index++;
-            this.writeVertex(baseX + (T_VOXELS << level), baseZ + (T_VOXELS << level), level, 3, srcs, 0, 0, vertices, pos, biomeAccess, data);
+            this.writeVertex(baseX, baseZ, level, 3, srcs, T_VOXELS, T_VOXELS, vertices, pos, biomeAccess, data);
         }
 
         for (int dx = 0; dx < T_VOXELS - 1; dx++) {
@@ -186,8 +186,8 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
                 indices[0].writeShort(dx * T_VOXELS + dz)
                         .writeShort(dx * T_VOXELS + (dz + 1))
                         .writeShort((dx + 1) * T_VOXELS + (dz + 1))
-                        .writeShort(dx * T_VOXELS + dz)
                         .writeShort((dx + 1) * T_VOXELS + dz)
+                        .writeShort(dx * T_VOXELS + dz)
                         .writeShort((dx + 1) * T_VOXELS + (dz + 1));
             }
         }
@@ -197,8 +197,8 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
                 indices[0].writeShort(dx * T_VOXELS + (T_VOXELS - 1))
                         .writeShort(indexZ + dx)
                         .writeShort(indexZ + dx + 1)
-                        .writeShort(dx * T_VOXELS + (T_VOXELS - 1))
                         .writeShort((dx + 1) * T_VOXELS + (T_VOXELS - 1))
+                        .writeShort(dx * T_VOXELS + (T_VOXELS - 1))
                         .writeShort(indexZ + dx + 1);
             }
         }
@@ -208,8 +208,8 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
                 indices[0].writeShort((T_VOXELS - 1) * T_VOXELS + dz)
                         .writeShort((T_VOXELS - 1) * T_VOXELS + (dz + 1))
                         .writeShort(indexX + dz + 1)
-                        .writeShort((T_VOXELS - 1) * T_VOXELS + dz)
                         .writeShort(indexX + dz)
+                        .writeShort((T_VOXELS - 1) * T_VOXELS + dz)
                         .writeShort(indexX + dz + 1);
             }
         }
@@ -218,17 +218,20 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
             indices[0].writeShort((T_VOXELS - 1) * T_VOXELS + (T_VOXELS - 1))
                     .writeShort(indexZ + (T_VOXELS - 1))
                     .writeShort(indexXZ)
-                    .writeShort((T_VOXELS - 1) * T_VOXELS + (T_VOXELS - 1))
                     .writeShort(indexX + (T_VOXELS - 1))
+                    .writeShort((T_VOXELS - 1) * T_VOXELS + (T_VOXELS - 1))
                     .writeShort(indexXZ);
         }
     }
 
     private void writeVertex(int baseX, int baseZ, int level, int i, HeightmapPiece[] srcs, int x, int z, ByteBuf out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, HeightmapData data) {
-        srcs[i].get(x, z, data);
+        baseX += (x & T_VOXELS) << level;
+        baseZ += (z & T_VOXELS) << level;
 
-        final int blockX = baseX + (x << level);
-        final int blockZ = baseZ + (z << level);
+        srcs[i].get(x & T_MASK, z & T_MASK, data);
+
+        final int blockX = baseX + ((x & T_MASK) << level);
+        final int blockZ = baseZ + ((z & T_MASK) << level);
 
         pos.setPos(blockX, data.height, blockZ);
         biomeAccess.biome(Biome.getBiome(data.biome, Biomes.PLAINS));
@@ -245,53 +248,20 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
 
         //position
         //TODO: redo writing
-        out.writeDouble(blockX).writeDouble(data.height).writeDouble(blockZ); //pos_low
+        out.writeByte(x).writeByte(z).writeInt(data.height); //pos_low
 
         int basePieceX = (baseX >> (level + T_SHIFT)) - (i >> 1);
         int basePieceZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
         HeightmapPiece highPiece = srcs[4 | (i & (((basePieceX & 1) << 1) | (basePieceZ & 1)))];
         if (highPiece == null) { //pos_high
-            out.writeDouble(blockX).writeDouble(data.height).writeDouble(blockZ);
+            out.writeByte(x).writeByte(z).writeInt(data.height);
         } else {
             final int flooredX = blockX & -(1 << (level + 1));
             final int flooredZ = blockZ & -(1 << (level + 1));
 
-            double highHeight = highPiece.height((flooredX >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK);
+            int highHeight = highPiece.height((flooredX >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK);
 
-            //lerp between the higher vertex positions
-            if (((x | z) & 1) != 0) {
-                highHeight = (highHeight + this.sampleHeight(baseX, baseZ, level, i, srcs, x + (x & 1), z + (z & 1), highHeight)) * 0.5d;
-            }
-
-            out.writeDouble(blockX).writeDouble(highHeight).writeDouble(blockZ);
-        }
-
-        out.writeShort(1 << level); //level_scale
-    }
-
-    private double sampleHeight(int baseX, int baseZ, int level, int i, HeightmapPiece[] srcs, int x, int z, double fallback) {
-        baseX += (x & 0x10) << level;
-        baseZ += (z & 0x10) << level;
-
-        i |= ((x & 0x10) >> 3) | ((z & 0x10) >> 4);
-
-        if (x == 16) {
-            x = 0;
-        }
-        if (z == 16) {
-            z = 0;
-        }
-
-        int basePieceX = (baseX >> (level + T_SHIFT)) - (i >> 1);
-        int basePieceZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
-        HeightmapPiece highPiece = srcs[4 | (i & (((basePieceX & 1) << 1) | (basePieceZ & 1)))];
-        if (highPiece == null) {
-            return fallback;
-        } else {
-            final int flooredX = (baseX + (x << level)) & -(1 << (level + 1));
-            final int flooredZ = (baseZ + (z << level)) & -(1 << (level + 1));
-
-            return highPiece.height((flooredX >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK);
+            out.writeByte(x & ~1).writeByte(z & ~1).writeInt(highHeight);
         }
     }
 }
