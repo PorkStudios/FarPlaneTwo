@@ -137,7 +137,7 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
             for (int base = CONNECTION_SUB_NEIGHBOR_COUNT * edge, i = 0; i < CONNECTION_SUB_NEIGHBOR_COUNT; i++) {
                 int j = CONNECTION_SUB_NEIGHBORS[base + i];
                 if ((validFlags & (1 << j)) != 0) {
-                    edges |= datas[j].edges & (1 << edge);
+                    edges |= datas[j].edges & (EDGE_DIR_MASK << (edge << 1));
                 }
             }
         }

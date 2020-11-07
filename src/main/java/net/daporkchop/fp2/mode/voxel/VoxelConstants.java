@@ -57,6 +57,13 @@ public class VoxelConstants {
             6, 7  // z-axis
     };
 
+    public static final int EDGE_DIR_NONE = 0;
+    public static final int EDGE_DIR_POSITIVE = 1;
+    public static final int EDGE_DIR_NEGATIVE = 2;
+    public static final int EDGE_DIR_BOTH = 3;
+
+    public static final int EDGE_DIR_MASK = 3;
+
     /**
      * The maximum number of edges intersecting the surface that may be considered by a QEF.
      */

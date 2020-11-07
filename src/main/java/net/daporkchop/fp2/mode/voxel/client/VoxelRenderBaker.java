@@ -276,16 +276,20 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                             continue;
                         }
 
+                        int edges = data.edges;
+                        if ((((edges >> 2) ^ (edges >> 3)) & 1) != 0) { //for some reason y is backwards... let's invert it
+                            edges ^= EDGE_DIR_MASK << 2;
+                        }
                         for (int edge = 0; edge < EDGE_COUNT; edge++) {
-                            if ((data.edges & (1 << edge)) == 0) {
+                            if ((edges & (EDGE_DIR_MASK << (edge << 1))) == EDGE_DIR_NONE) {
                                 continue;
                             }
 
                             int base = edge * CONNECTION_INDEX_COUNT;
                             int oppositeCorner, c0, c1, provoking;
                             if ((provoking = map[vertexMapIndex(dx, dy, dz, base, edge)]) < 0
-                                || (c1 = map[vertexMapIndex(dx, dy, dz, base + 1, edge)]) < 0
-                                || (c0 = map[vertexMapIndex(dx, dy, dz, base + 2, edge)]) < 0
+                                || (c0 = map[vertexMapIndex(dx, dy, dz, base + 1, edge)]) < 0
+                                || (c1 = map[vertexMapIndex(dx, dy, dz, base + 2, edge)]) < 0
                                 || (oppositeCorner = map[vertexMapIndex(dx, dy, dz, base + 3, edge)]) < 0) {
                                 continue; //skip if any of the vertices are missing
                             }
@@ -295,10 +299,15 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
 
                             boolean water = state.getBlock() == Blocks.WATER;
                             if (water) {
-                                emitQuad(buf, oppositeCorner, c0, c1, provoking);
+                                edges |= EDGE_DIR_BOTH << (edge << 1);
                             }
 
-                            if (water || (data.edges & (1 << EDGE_COUNT << edge)) == 0) {
+                            if ((edges & (EDGE_DIR_NEGATIVE << (edge << 1))) != 0) { //the face has the negative bit set
+                                if ((edges & (EDGE_DIR_POSITIVE << (edge << 1))) != 0) { //the positive bit is set as well, output the face once before flipping
+                                    emitQuad(buf, oppositeCorner, c0, c1, provoking);
+                                }
+
+                                //flip the face around
                                 int i = c0;
                                 c0 = c1;
                                 c1 = i;

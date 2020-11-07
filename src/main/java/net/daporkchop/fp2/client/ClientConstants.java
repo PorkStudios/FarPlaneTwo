@@ -78,7 +78,7 @@ public class ClientConstants {
     }
 
     public boolean isChunkRenderable(int x, int y, int z) {
-        if (true) {
+        if (false) {
             return false;
         }
 

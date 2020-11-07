@@ -71,7 +71,6 @@ public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<
                     }
 
                     int edges = 0;
-                    int negativeFaces = 0;
 
                     for (int edge = 0; edge < EDGE_COUNT; edge++) {
                         int c0 = EDGE_VERTEX_MAP[edge << 1] << 1;
@@ -81,19 +80,19 @@ public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<
                             continue;
                         }
 
-                        edges |= 1 << edge;
-
                         if (((corners >> c0) & 3) < ((corners >> c1) & 3)) { //the face is facing towards negative coordinates
-                            negativeFaces |= 1 << edge;
+                            edges |= EDGE_DIR_NEGATIVE << (edge << 1);
+                        } else {
+                            edges |= EDGE_DIR_POSITIVE << (edge << 1);
                         }
                     }
 
-                    data.edges = edges | negativeFaces << EDGE_COUNT
-                                         ^ 1 << 1 << EDGE_COUNT; //for some reason y is backwards...
+                    data.edges = edges;
 
                     for (int edge = 0; edge < EDGE_COUNT; edge++) {
-                        if ((edges & (1 << edge)) != 0) {
-                            int i = EDGE_VERTEX_MAP[(edge << 1) | ((negativeFaces >> edge) & 1)];
+                        if ((edges & (EDGE_DIR_MASK << (edge << 1))) != EDGE_DIR_NONE) {
+                            //((edges >> (edge << 1) >> 1) & 1) is 1 if the face is negative, 0 otherwise
+                            int i = EDGE_VERTEX_MAP[(edge << 1) | ((edges >> (edge << 1) >> 1) & 1)];
                             pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
                             data.states[edge] = Block.getStateId(world.getBlockState(pos));
                         }
@@ -110,8 +109,8 @@ public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<
                         int blockLight = 0;
                         int samples = 0;
                         for (int edge = 0; edge < EDGE_COUNT; edge++) {
-                            if ((edges & (1 << edge)) != 0) {
-                                int i = EDGE_VERTEX_MAP[(edge << 1) | (~(negativeFaces >> edge) & 1)];
+                            if ((edges & (EDGE_DIR_MASK << (edge << 1))) != EDGE_DIR_NONE) {
+                                int i = EDGE_VERTEX_MAP[(edge << 1) | (~(edges >> (edge << 1) >> 1) & 1)];
                                 pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
                                 int light = world.getCombinedLight(pos, 0);
                                 skyLight += light >> 20;
