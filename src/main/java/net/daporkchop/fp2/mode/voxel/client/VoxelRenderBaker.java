@@ -314,20 +314,12 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         }
     }
 
-    protected static void writePos(ByteBuf dst, double x, double y, double z) {
-        dst.writeByte(clamp(floorI(x * 8.0d), 0, 255))
-                .writeByte(clamp(floorI(y * 8.0d), 0, 255))
-                .writeByte(clamp(floorI(z * 8.0d), 0, 255));
-    }
-
     protected int vertex(int baseX, int baseY, int baseZ, int level, int i, VoxelPiece[] srcs, int x, int y, int z, VoxelData data, ByteBuf vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, int[] map, int indexCounter) {
         baseX += (x & T_VOXELS) << level;
         baseY += (y & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
 
         int baseMapIndex = ((x * T_VERTS + y) * T_VERTS + z) * 3;
-
-        final double scale = 1 << level;
 
         final int blockX = baseX + ((x & ~(x & T_VOXELS)) << level);
         final int blockY = baseY + ((y & ~(y & T_VOXELS)) << level);
@@ -340,37 +332,37 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         vertices.writeShort(Constants.packedLightTo8BitVec2(data.light)); //light
         vertices.writeMedium(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.states[0]), biomeAccess, pos, 0))); //color
 
-        final double offset = level == 0 ? 0.5d : 0.0d;
+        final int offset = level == 0 ? POS_ONE >> 1 : 0;
 
-        writePos(vertices, x + data.x + offset, y + data.y + offset, z + data.z + offset); //pos_low
+        vertices.writeByte((x << POS_FRACT_SHIFT) + data.x + offset)
+                .writeByte((y << POS_FRACT_SHIFT) + data.y + offset)
+                .writeByte((z << POS_FRACT_SHIFT) + data.z + offset); //pos_low
 
         int basePieceX = (baseX >> (level + T_SHIFT)) - ((i >> 2) & 1);
         int basePieceY = (baseY >> (level + T_SHIFT)) - ((i >> 1) & 1);
         int basePieceZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
         VoxelPiece highPiece = srcs[8 | (i & (((basePieceX & 1) << 2) | ((basePieceY & 1) << 1) | (basePieceZ & 1)))];
         if (highPiece == null) { //pos_high
-            writePos(vertices, x + data.x + offset, y + data.y + offset, z + data.z + offset);
+            vertices.writeByte((x << POS_FRACT_SHIFT) + data.x + offset)
+                    .writeByte((y << POS_FRACT_SHIFT) + data.y + offset)
+                    .writeByte((z << POS_FRACT_SHIFT) + data.z + offset);
         } else {
             final int flooredX = blockX & -(1 << (level + 1));
             final int flooredY = blockY & -(1 << (level + 1));
             final int flooredZ = blockZ & -(1 << (level + 1));
 
-            double highX = 0.0d;
-            double highY = 0.0d;
-            double highZ = 0.0d;
+            int highX = 0;
+            int highY = 0;
+            int highZ = 0;
             if (highPiece.getOnlyPos((flooredX >> (level + 1)) & T_MASK, (flooredY >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK, data)) {
-                highX = data.x;
-                highY = data.y;
-                highZ = data.z;
+                highX = data.x << 1;
+                highY = data.y << 1;
+                highZ = data.z << 1;
             }
 
-            double highScale = 2.0d;
-            double highOffset = 0.0d;
-            double floorScale = 4.0d;
-            writePos(vertices,
-                    Math.floor(((x & ~1) + highX * highScale + highOffset) * floorScale) / floorScale,
-                    Math.floor(((y & ~1) + highY * highScale + highOffset) * floorScale) / floorScale,
-                    Math.floor(((z & ~1) + highZ * highScale + highOffset) * floorScale) / floorScale);
+            vertices.writeByte(((x & ~1) << POS_FRACT_SHIFT) + highX)
+                    .writeByte(((y & ~1) << POS_FRACT_SHIFT) + highY)
+                    .writeByte(((z & ~1) << POS_FRACT_SHIFT) + highZ);
         }
         vertices.writeByte(0); //pad to 16 bytes
 

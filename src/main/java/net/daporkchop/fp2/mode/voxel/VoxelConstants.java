@@ -34,6 +34,16 @@ import java.util.Objects;
 @UtilityClass
 public class VoxelConstants {
     /**
+     * The size of the fractional part of a voxel position, in bits.
+     */
+    public static final int POS_FRACT_SHIFT = 3;
+
+    /**
+     * The number 1 in voxel position scale.
+     */
+    public static final int POS_ONE = 1 << POS_FRACT_SHIFT;
+
+    /**
      * The number of voxel edges considered by the voxel renderer.
      */
     public static final int EDGE_COUNT = 3;

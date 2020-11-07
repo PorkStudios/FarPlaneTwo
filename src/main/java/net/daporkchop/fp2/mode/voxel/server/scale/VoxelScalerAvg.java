@@ -115,22 +115,22 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
 
         VoxelData data = datas[8].reset();
 
-        double x = 0.0d;
-        double y = 0.0d;
-        double z = 0.0d;
+        int x = 0;
+        int y = 0;
+        int z = 0;
         for (int i = 0; i < 8; i++) { //compute average voxel position
             if ((validFlags & (1 << i)) != 0) {
-                x += datas[i].x + ((i >> 2) & 1);
-                y += datas[i].y + ((i >> 1) & 1);
-                z += datas[i].z + (i & 1);
+                x += datas[i].x + ((i << (POS_FRACT_SHIFT - 2)) & POS_ONE);
+                y += datas[i].y + ((i << (POS_FRACT_SHIFT - 1)) & POS_ONE);
+                z += datas[i].z + ((i << (POS_FRACT_SHIFT - 0)) & POS_ONE);
             }
         }
         x /= validCount;
         y /= validCount;
         z /= validCount;
-        data.x = x * 0.5d;
-        data.y = y * 0.5d;
-        data.z = z * 0.5d;
+        data.x = x >> 1;
+        data.y = y >> 1;
+        data.z = z >> 1;
 
         int edges = 0;
         for (int edge = 0; edge < 3; edge++) { //compute connection edges

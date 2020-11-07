@@ -42,7 +42,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class VoxelPiece implements IFarPiece {
     //layout (in ints):
     //0: (dx << 24) | (dy << 16) | (dz << 8) | edges
-    //                                       ^ 5 bits are free
+    //                                       ^ 2 bits are free
     //1: (biome << 8) | light
     //  ^ 16 bits are free
     //2: state0
@@ -64,11 +64,7 @@ public class VoxelPiece implements IFarPiece {
     }
 
     static void writeData(long base, VoxelData data) {
-        int dx = floorI(clamp(data.x, 0., 1.) * 128.0d);
-        int dy = floorI(clamp(data.y, 0., 1.) * 128.0d);
-        int dz = floorI(clamp(data.z, 0., 1.) * 128.0d);
-
-        PUnsafe.putInt(base + 0L, (dx << 24) | (dy << 16) | (dz << 8) | data.edges);
+        PUnsafe.putInt(base + 0L, (data.x << 24) | (data.y << 16) | (data.z << 8) | data.edges);
         PUnsafe.putInt(base + 4L, (data.biome << 8) | data.light);
         PUnsafe.copyMemory(data.states, PUnsafe.ARRAY_INT_BASE_OFFSET, null, base + 8L, 4L * EDGE_COUNT);
     }
@@ -77,9 +73,9 @@ public class VoxelPiece implements IFarPiece {
         int i0 = PUnsafe.getInt(base + 0L);
         int i1 = PUnsafe.getInt(base + 4L);
 
-        data.x = (i0 >>> 24) / 128.0d;
-        data.y = ((i0 >> 16) & 0xFF) / 128.0d;
-        data.z = ((i0 >> 8) & 0xFF) / 128.0d;
+        data.x = i0 >>> 24;
+        data.y = (i0 >> 16) & 0xFF;
+        data.z = (i0 >> 8) & 0xFF;
         data.edges = i0 & 0x3F;
 
         data.biome = (i1 >> 8) & 0xFF;
@@ -91,9 +87,9 @@ public class VoxelPiece implements IFarPiece {
     static void readOnlyPos(long base, VoxelData data) {
         int i0 = PUnsafe.getInt(base + 0L);
 
-        data.x = (i0 >>> 24) / 128.0d;
-        data.y = ((i0 >> 16) & 0xFF) / 128.0d;
-        data.z = ((i0 >> 8) & 0xFF) / 128.0d;
+        data.x = i0 >>> 24;
+        data.y = (i0 >> 16) & 0xFF;
+        data.z = (i0 >> 8) & 0xFF;
     }
 
     protected final long addr = PUnsafe.allocateMemory(this, PIECE_SIZE);

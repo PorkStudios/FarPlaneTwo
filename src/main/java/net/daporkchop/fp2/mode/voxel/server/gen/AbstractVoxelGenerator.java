@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.voxel.server.gen;
 import net.daporkchop.fp2.mode.common.server.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
+import net.daporkchop.fp2.util.math.Vector3d;
 import net.daporkchop.fp2.util.math.qef.QefSolver;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
@@ -71,6 +72,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
     protected void buildMesh(int baseX, int baseY, int baseZ, int level, VoxelPieceBuilder builder, double[] densityMap, P param) {
         QefSolver qef = new QefSolver();
         VoxelData data = new VoxelData();
+        Vector3d vec = new Vector3d();
 
         double dn = 0.001d * (1 << level);
 
@@ -97,9 +99,9 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                     int edgeCount = 0;
                     int edgeMask = 0;
 
-                    for (int i = 0; i < 12 && edgeCount < QEF_MAX_EDGES; i++) {
-                        int c0 = EDGE_VERTEX_MAP[i << 1];
-                        int c1 = EDGE_VERTEX_MAP[(i << 1) | 1];
+                    for (int i = 0; i < QEF_EDGE_COUNT && edgeCount < QEF_MAX_EDGES; i++) {
+                        int c0 = QEF_EDGE_VERTEX_MAP[i << 1];
+                        int c1 = QEF_EDGE_VERTEX_MAP[(i << 1) | 1];
 
                         if (((corners >> c0) & 1) == ((corners >> c1) & 1)) { //both corners along the current edge are identical, this edge can be skipped
                             continue;
@@ -130,20 +132,23 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                     }
 
                     //solve QEF and set the piece data
-                    qef.solve(data.reset(), 0.1, 1, 0.5);
+                    qef.solve(vec, 0.1, 1, 0.5);
 
-                    if (data.x < 0.0d || data.x > 1.0d
-                        || data.y < 0.0d || data.y > 1.0d
-                        || data.z < 0.0d || data.z > 1.0d) { //ensure that all points are within voxel bounds
-                        data.set(qef.massPoint().x, qef.massPoint().y, qef.massPoint().z);
+                    if (vec.x < 0.0d || vec.x > 1.0d
+                        || vec.y < 0.0d || vec.y > 1.0d
+                        || vec.z < 0.0d || vec.z > 1.0d) { //ensure that all points are within voxel bounds
+                        vec.set(qef.massPoint().x, qef.massPoint().y, qef.massPoint().z);
                     }
+
+                    //TODO: set VoxelData position
+
                     qef.reset();
 
                     data.edges = edgeMask;
 
-                    double nx = sampleDensity(dx + data.x + dn, dy + data.y, dz + data.z, densityMap) - sampleDensity(dx + data.x - dn, dy + data.y, dz + data.z, densityMap);
-                    double ny = sampleDensity(dx + data.x, dy + data.y + dn, dz + data.z, densityMap) - sampleDensity(dx + data.x, dy + data.y - dn, dz + data.z, densityMap);
-                    double nz = sampleDensity(dx + data.x, dy + data.y, dz + data.z + dn, densityMap) - sampleDensity(dx + data.x, dy + data.y, dz + data.z - dn, densityMap);
+                    double nx = sampleDensity(dx + vec.x + dn, dy + vec.y, dz + vec.z, densityMap) - sampleDensity(dx + vec.x - dn, dy + vec.y, dz + vec.z, densityMap);
+                    double ny = sampleDensity(dx + vec.x, dy + vec.y + dn, dz + vec.z, densityMap) - sampleDensity(dx + vec.x, dy + vec.y - dn, dz + vec.z, densityMap);
+                    double nz = sampleDensity(dx + vec.x, dy + vec.y, dz + vec.z + dn, densityMap) - sampleDensity(dx + vec.x, dy + vec.y, dz + vec.z - dn, densityMap);
                     double nLen = sqrt(nx * nx + ny * ny + nz * nz);
                     nx /= nLen;
                     ny /= nLen;
