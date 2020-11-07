@@ -26,6 +26,8 @@ import net.minecraft.block.state.IBlockState;
 
 import java.util.Objects;
 
+import static net.daporkchop.fp2.util.Constants.*;
+
 /**
  * Constants and helpers to be used by voxel generators.
  *
@@ -109,6 +111,17 @@ public class VoxelConstants {
             1, 2, 3, 5, 6, 7,
             2, 3, 4, 5, 6, 7,
             1, 3, 4, 5, 6, 7
+    };
+
+    public static final int[] CONNECTION_INTERSECTION_VOLUMES = {
+            T_VOXELS, T_VOXELS, T_VOXELS,
+            T_VOXELS, T_VOXELS, 1,
+            T_VOXELS, 1, T_VOXELS,
+            T_VOXELS, 1, 1,
+            1, T_VOXELS, T_VOXELS,
+            1, T_VOXELS, 1,
+            1, 1, T_VOXELS,
+            1, 1, 1
     };
 
     public static final int TYPE_AIR = 0;

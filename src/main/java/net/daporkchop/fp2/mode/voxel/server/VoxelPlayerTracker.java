@@ -54,7 +54,8 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos> {
         VoxelPos[] positions = new VoxelPos[pow(d * 2 + 1, 3) * levels];
         int i = 0;
 
-        for (int lvl = 0; lvl < levels; lvl++) {
+        //TODO: reset this to 0
+        for (int lvl = 1; lvl < levels; lvl++) {
             int xMin = ((baseX >> lvl) - d);
             int xMax = ((baseX >> lvl) + d);
             int yMin = ((baseY >> lvl) - d);

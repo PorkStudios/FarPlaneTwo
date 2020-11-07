@@ -46,7 +46,6 @@ import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.math.PMath.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
@@ -149,7 +148,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                 new VoxelPos(x, y + 1, z, level), new VoxelPos(x, y + 1, z + 1, level),
                 new VoxelPos(x + 1, y, z, level), new VoxelPos(x + 1, y, z + 1, level),
                 new VoxelPos(x + 1, y + 1, z, level), new VoxelPos(x + 1, y + 1, z + 1, level),
-                //below level
+                //above level
                 new VoxelPos(x >> 1, y >> 1, z >> 1, level + 1), new VoxelPos(x >> 1, y >> 1, (z >> 1) + 1, level + 1),
                 new VoxelPos(x >> 1, (y >> 1) + 1, z >> 1, level + 1), new VoxelPos(x >> 1, (y >> 1) + 1, (z >> 1) + 1, level + 1),
                 new VoxelPos((x >> 1) + 1, y >> 1, z >> 1, level + 1), new VoxelPos((x >> 1) + 1, y >> 1, (z >> 1) + 1, level + 1),
@@ -186,86 +185,26 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         try {
             //step 1: simply write vertices for all source pieces, and assign indices
             int indexCounter = 0;
-            for (int dx = 0; dx < T_VOXELS; dx++) { //center
-                for (int dy = 0; dy < T_VOXELS; dy++) {
-                    for (int dz = 0; dz < T_VOXELS; dz++) {
-                        if (!srcs[0].get(dx, dy, dz, data)) {
-                            continue;
+            for (int i = 0; i < 8; i++) {
+                VoxelPiece src = srcs[i];
+                if (src == null) {
+                    continue;
+                }
+
+                int maxDx = CONNECTION_INTERSECTION_VOLUMES[i * 3 + 0];
+                int maxDy = CONNECTION_INTERSECTION_VOLUMES[i * 3 + 1];
+                int maxDz = CONNECTION_INTERSECTION_VOLUMES[i * 3 + 2];
+                for (int dx = 0; dx < maxDx; dx++) {
+                    for (int dy = 0; dy < maxDy; dy++) {
+                        for (int dz = 0; dz < maxDz; dz++) {
+                            if (!src.get(dx, dy, dz, data)) {
+                                continue;
+                            }
+
+                            indexCounter = this.vertex(baseX, baseY, baseZ, level, i, srcs, dx + (((i >> 2) & 1) << T_SHIFT), dy + (((i >> 1) & 1) << T_SHIFT), dz + ((i & 1) << T_SHIFT), data, vertices, pos, biomeAccess, map, indexCounter);
                         }
-
-                        indexCounter = this.vertex(baseX, baseY, baseZ, level, 0, srcs, dx, dy, dz, data, vertices, pos, biomeAccess, map, indexCounter);
                     }
                 }
-            }
-
-            if (srcs[1] != null) { //+z
-                for (int dx = 0; dx < T_VOXELS; dx++) { //center
-                    for (int dy = 0; dy < T_VOXELS; dy++) {
-                        if (!srcs[1].get(dx, dy, 0, data)) {
-                            continue;
-                        }
-
-                        indexCounter = this.vertex(baseX, baseY, baseZ, level, 1, srcs, dx, dy, T_VOXELS, data, vertices, pos, biomeAccess, map, indexCounter);
-                    }
-                }
-            }
-
-            if (srcs[2] != null) { //+y
-                for (int dx = 0; dx < T_VOXELS; dx++) {
-                    for (int dz = 0; dz < T_VOXELS; dz++) {
-                        if (!srcs[2].get(dx, 0, dz, data)) {
-                            continue;
-                        }
-
-                        indexCounter = this.vertex(baseX, baseY, baseZ, level, 2, srcs, dx, T_VOXELS, dz, data, vertices, pos, biomeAccess, map, indexCounter);
-                    }
-                }
-            }
-
-            if (srcs[3] != null) { //+y,+z
-                for (int dx = 0; dx < T_VOXELS; dx++) {
-                    if (!srcs[3].get(dx, 0, 0, data)) {
-                        continue;
-                    }
-
-                    indexCounter = this.vertex(baseX, baseY, baseZ, level, 3, srcs, dx, T_VOXELS, T_VOXELS, data, vertices, pos, biomeAccess, map, indexCounter);
-                }
-            }
-
-            if (srcs[4] != null) { //+x
-                for (int dy = 0; dy < T_VOXELS; dy++) {
-                    for (int dz = 0; dz < T_VOXELS; dz++) {
-                        if (!srcs[4].get(0, dy, dz, data)) {
-                            continue;
-                        }
-
-                        indexCounter = this.vertex(baseX, baseY, baseZ, level, 4, srcs, T_VOXELS, dy, dz, data, vertices, pos, biomeAccess, map, indexCounter);
-                    }
-                }
-            }
-
-            if (srcs[5] != null) { //+x,+z
-                for (int dy = 0; dy < T_VOXELS; dy++) {
-                    if (!srcs[5].get(0, dy, 0, data)) {
-                        continue;
-                    }
-
-                    indexCounter = this.vertex(baseX, baseY, baseZ, level, 5, srcs, T_VOXELS, dy, T_VOXELS, data, vertices, pos, biomeAccess, map, indexCounter);
-                }
-            }
-
-            if (srcs[6] != null) { //+x,+y
-                for (int dz = 0; dz < T_VOXELS; dz++) {
-                    if (!srcs[6].get(0, 0, dz, data)) {
-                        continue;
-                    }
-
-                    indexCounter = this.vertex(baseX, baseY, baseZ, level, 6, srcs, T_VOXELS, T_VOXELS, dz, data, vertices, pos, biomeAccess, map, indexCounter);
-                }
-            }
-
-            if (srcs[7] != null && srcs[7].get(0, 0, 0, data)) { //+x,+y,+z
-                indexCounter = this.vertex(baseX, baseY, baseZ, level, 7, srcs, T_VOXELS, T_VOXELS, T_VOXELS, data, vertices, pos, biomeAccess, map, indexCounter);
             }
 
             //step 2: write indices to actually connect the vertices and build the mesh
