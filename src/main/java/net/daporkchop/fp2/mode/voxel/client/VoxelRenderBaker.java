@@ -314,7 +314,7 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         }
     }
 
-    protected void writePos(double x, double y, double z, ByteBuf dst) {
+    protected static void writePos(ByteBuf dst, double x, double y, double z) {
         dst.writeByte(clamp(floorI(x * 8.0d), 0, 255))
                 .writeByte(clamp(floorI(y * 8.0d), 0, 255))
                 .writeByte(clamp(floorI(z * 8.0d), 0, 255));
@@ -340,16 +340,16 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         vertices.writeShort(Constants.packedLightTo8BitVec2(data.light)); //light
         vertices.writeMedium(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.states[0]), biomeAccess, pos, 0))); //color
 
-        final double offset = 0.5d;
+        final double offset = level == 0 ? 0.5d : 0.0d;
 
-        this.writePos(x + data.x + offset, y + data.y + offset, z + data.z + offset, vertices); //pos_low
+        writePos(vertices, x + data.x + offset, y + data.y + offset, z + data.z + offset); //pos_low
 
         int basePieceX = (baseX >> (level + T_SHIFT)) - ((i >> 2) & 1);
         int basePieceY = (baseY >> (level + T_SHIFT)) - ((i >> 1) & 1);
         int basePieceZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
         VoxelPiece highPiece = srcs[8 | (i & (((basePieceX & 1) << 2) | ((basePieceY & 1) << 1) | (basePieceZ & 1)))];
         if (highPiece == null) { //pos_high
-            this.writePos(x + data.x + offset, y + data.y + offset, z + data.z + offset, vertices);
+            writePos(vertices, x + data.x + offset, y + data.y + offset, z + data.z + offset);
         } else {
             final int flooredX = blockX & -(1 << (level + 1));
             final int flooredY = blockY & -(1 << (level + 1));
@@ -364,10 +364,13 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                 highZ = data.z;
             }
 
-            //TODO: figure out what went wrong here
-            this.writePos((x & ~1) + (highX + offset) * 2.0d,
-                    (y & ~1) + (highY + offset) * 2.0d,
-                    (z & ~1) + (highZ + offset) * 2.0d, vertices);
+            double highScale = 2.0d;
+            double highOffset = 0.0d;
+            double floorScale = 4.0d;
+            writePos(vertices,
+                    Math.floor(((x & ~1) + highX * highScale + highOffset) * floorScale) / floorScale,
+                    Math.floor(((y & ~1) + highY * highScale + highOffset) * floorScale) / floorScale,
+                    Math.floor(((z & ~1) + highZ * highScale + highOffset) * floorScale) / floorScale);
         }
         vertices.writeByte(0); //pad to 16 bytes
 
