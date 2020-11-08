@@ -28,7 +28,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
+import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarContext;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
@@ -41,10 +41,10 @@ import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.scale.IFarDataScaler;
 import net.daporkchop.fp2.mode.api.server.scale.IFarPieceScaler;
-import net.daporkchop.fp2.mode.common.server.task.ExactUpdatePieceTask;
-import net.daporkchop.fp2.mode.common.server.task.GetPieceTask;
-import net.daporkchop.fp2.mode.common.server.task.LoadPieceAction;
-import net.daporkchop.fp2.mode.common.server.task.SavePieceAction;
+import net.daporkchop.fp2.mode.common.server.task.piece.ExactUpdatePieceTask;
+import net.daporkchop.fp2.mode.common.server.task.piece.GetPieceTask;
+import net.daporkchop.fp2.mode.common.server.action.LoadPieceAction;
+import net.daporkchop.fp2.mode.common.server.action.SavePieceAction;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
@@ -101,7 +101,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
     protected final IFarStorage<POS, P> pieceStorage;
 
     //cache for loaded tiles
-    protected final Cache<POS, CompressedPiece<POS, P>> cache = CacheBuilder.newBuilder()
+    protected final Cache<POS, Compressed<POS, P>> cache = CacheBuilder.newBuilder()
             .concurrencyLevel(FP2Config.generationThreads)
             .softValues()
             .build();
@@ -119,7 +119,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
     protected final boolean lowResolution;
     protected final boolean inaccurate;
     protected final boolean refine;
-    protected final boolean refineProgressive;
 
     public AbstractFarWorld(@NonNull WorldServer world, @NonNull RenderMode mode) {
         this.world = world;
@@ -153,7 +152,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
         this.lowResolution = FP2Config.performance.lowResolutionEnable && this.generatorRough.supportsLowResolution();
         this.inaccurate = this.lowResolution && this.generatorRough.isLowResolutionInaccurate();
         this.refine = this.inaccurate && FP2Config.performance.lowResolutionRefine;
-        this.refineProgressive = this.refine && FP2Config.performance.lowResolutionRefineProgressive;
 
         this.pieceStorage = this.mode().uncheckedCreateStorage(world);
 
@@ -182,9 +180,9 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
     }
 
     @Override
-    public CompressedPiece<POS, P> getPieceLazy(@NonNull POS pos) {
-        CompressedPiece<POS, P> piece = this.cache.getIfPresent(pos);
-        if (piece == null || piece.timestamp() == CompressedPiece.PIECE_BLANK) {
+    public Compressed<POS, P> getPieceLazy(@NonNull POS pos) {
+        Compressed<POS, P> piece = this.cache.getIfPresent(pos);
+        if (piece == null || piece.timestamp() == Compressed.VALUE_BLANK) {
             if (this.notDone(pos, true)) {
                 //piece is not in cache and was newly marked as queued
                 TaskKey key = new TaskKey(TaskStage.GET, pos.level());
@@ -195,7 +193,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
         return piece;
     }
 
-    public CompressedPiece<POS, P> getRawPieceBlocking(@NonNull POS pos) {
+    public Compressed<POS, P> getRawPieceBlocking(@NonNull POS pos) {
         try {
             return this.cache.get(pos, new LoadPieceAction<>(this, pos));
         } catch (ExecutionException e) {
@@ -205,7 +203,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
     }
 
     @SuppressWarnings("unchecked")
-    public void pieceChanged(@NonNull CompressedPiece<POS, P> piece) {
+    public void pieceChanged(@NonNull Compressed<POS, P> piece) {
         if (piece.isBlank()) {
             return;
         }

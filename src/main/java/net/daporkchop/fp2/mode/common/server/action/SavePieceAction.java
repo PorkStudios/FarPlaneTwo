@@ -18,55 +18,33 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.server;
+package net.daporkchop.fp2.mode.common.server.action;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.mode.api.Compressed;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Handles reading and writing of far terrain data.
- *
  * @author DaPorkchop_
  */
-public interface IFarStorage<POS extends IFarPos, P extends IFarPiece> extends Closeable {
-    /**
-     * @return the root directory for piece storage
-     */
-    File storageRoot();
+@RequiredArgsConstructor
+public class SavePieceAction<POS extends IFarPos> implements Runnable {
+    @NonNull
+    protected final AbstractFarWorld<POS, ?, ?> world;
+    @NonNull
+    protected final Compressed<POS, ?> piece;
 
-    /**
-     * Loads the piece at the given position.
-     *
-     * @param pos the position of the piece to load
-     * @return the loaded piece, or {@code null} if it doesn't exist
-     */
-    Compressed<POS, P> load(@NonNull POS pos);
-
-    /**
-     * Stores the given piece at the given position, atomically replacing any existing piece.
-     *
-     * @param pos   the position to save the data at
-     * @param piece the piece to save
-     */
-    void store(@NonNull POS pos, @NonNull Compressed<POS, P> piece);
-
-    /**
-     * @return the {@link RenderMode} that this storage is used for
-     */
-    RenderMode mode();
-
-    /**
-     * Closes this storage.
-     * <p>
-     * If write operations are queued, this method will block until they are completed.
-     */
     @Override
-    void close() throws IOException;
+    public void run() {
+        this.piece.readLock().lock();
+        try {
+            this.world.pieceStorage().store(this.piece.pos(), uncheckedCast(this.piece));
+        } finally {
+            this.piece.readLock().unlock();
+        }
+    }
 }

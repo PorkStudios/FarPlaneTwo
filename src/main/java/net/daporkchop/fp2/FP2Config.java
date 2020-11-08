@@ -161,14 +161,6 @@ public class FP2Config {
         public boolean lowResolutionRefine = true;
 
         @Config.Comment({
-                "If low resolution refine is enabled, makes the refining process more gradual by increasing the resolution one step at a time until",
-                "maximum resolution is reached, rather than doing the entire process in a single step.",
-                "This will generally not improve visual quality much, and can result in significantly higher CPU usage."
-        })
-        @Config.LangKey("config.fp2.performance.lowResolutionRefineProgressive")
-        public boolean lowResolutionRefineProgressive = false;
-
-        @Config.Comment({
                 "If low resolution refine is enabled, allows incomplete pieces to be saved.",
                 "This can provide a performance boost if the server is restarted while pieces are still being generated and low resolution refine is",
                 "enabled, but will likely significantly reduce overall generation performance."

@@ -18,33 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.server.task;
+package net.daporkchop.fp2.mode.common.server.task.data;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
-
-import static net.daporkchop.lib.common.util.PorkUtil.*;
+import net.daporkchop.fp2.mode.common.server.TaskKey;
+import net.daporkchop.fp2.mode.common.server.TaskStage;
+import net.daporkchop.fp2.mode.common.server.task.AbstractFarTask;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public class SavePieceAction<POS extends IFarPos> implements Runnable {
-    @NonNull
-    protected final AbstractFarWorld<POS, ?, ?> world;
-    @NonNull
-    protected final CompressedPiece<POS, ?, ?> piece;
-
-    @Override
-    public void run() {
-        this.piece.readLock().lock();
-        try {
-            this.world.pieceStorage().store(this.piece.pos(), uncheckedCast(this.piece));
-        } finally {
-            this.piece.readLock().unlock();
-        }
+public abstract class AbstractDataTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData, A>
+        extends AbstractFarTask<POS, P, D, D, A> {
+    public AbstractDataTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
+        super(world, key, pos, requestedBy);
     }
 }

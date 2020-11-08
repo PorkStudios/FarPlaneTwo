@@ -18,61 +18,52 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.server.task;
+package net.daporkchop.fp2.mode.common.server.task.piece;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.FP2Config;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
+import net.daporkchop.fp2.mode.api.Compressed;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
-import net.daporkchop.fp2.util.threading.executor.LazyTask;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Generates a piece using the rough generator.
- *
  * @author DaPorkchop_
  */
-public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData> extends AbstractPieceTask<POS, P, D, Void> {
-    protected final boolean inaccurate;
+public abstract class AbstractScaleTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData>
+        extends AbstractPieceTask<POS, P, D, Compressed<POS, P>> {
+    public AbstractScaleTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
+        super(world, key, pos, requestedBy);
 
-    public RoughGeneratePieceTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos) {
-        super(world, key, pos, TaskStage.GET);
+        checkArg(pos.level() != 0, "cannot do scaling at level %d!", pos.level());
+    }
 
-        boolean lowRes = pos.level() != 0;
-        if (lowRes) {
-            checkArg(FP2Config.performance.lowResolutionEnable, "low resolution rendering is disabled!");
-            checkArg(world.generatorRough().supportsLowResolution(),
-                    "rough generator (%s) cannot generate low-resolution piece at level %d!", world.generatorRough(), pos.level());
+    @Override
+    public Compressed<POS, P> run(@NonNull List<Compressed<POS, P>> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
+        long newTimestamp = this.computeNewTimestamp();
+        if (this.isDone()) {
+            return this.getNow();
         }
-        this.inaccurate = lowRes && world.inaccurate();
-    }
 
-    @Override
-    public Stream<? extends LazyTask<TaskKey, ?, Void>> before(@NonNull TaskKey key) throws Exception {
-        return Stream.empty();
-    }
-
-    @Override
-    public CompressedPiece<POS, P> run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
-        CompressedPiece<POS, P> piece = this.world.getRawPieceBlocking(this.pos);
-        long newTimestamp = this.inaccurate && this.world.refine()
-                ? CompressedPiece.pieceRough(this.pos.level()) //if the piece is inaccurate, it will need to be re-generated later based on scaled data
-                : CompressedPiece.PIECE_ROUGH_COMPLETE;
+        Compressed<POS, P> piece = this.world.getRawPieceBlocking(this.pos);
         if (piece.timestamp() >= newTimestamp) {
             return piece;
+        }
+
+        //inflate pieces into array
+        P[] srcs = uncheckedCast(this.world.mode().pieceArray(params.size()));
+        for (int i = 0, len = srcs.length; i < len; i++) {
+            params.get(i).readLock().lock();
+            srcs[i] = params.get(i).inflate();
         }
 
         piece.writeLock().lock();
@@ -86,7 +77,7 @@ public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece, D 
             try {
                 builder.reset(); //ensure builder is reset
 
-                this.world.generatorRough().generate(this.pos, builder);
+                this.world.scaler().scale(srcs, builder);
                 piece.set(newTimestamp, builder);
             } finally {
                 builderRecycler.release(builder);
@@ -95,6 +86,14 @@ public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece, D 
             piece.readLock().lock(); //downgrade lock
         } finally {
             piece.writeLock().unlock();
+
+            SimpleRecycler<P> pieceRecycler = uncheckedCast(this.pos.mode().pieceRecycler());
+            for (int i = 0, len = srcs.length; i < len; i++) {
+                if (srcs[i] != null) {
+                    pieceRecycler.release(srcs[i]);
+                }
+                params.get(i).readLock().unlock();
+            }
         }
 
         try {
@@ -103,12 +102,12 @@ public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece, D 
             piece.readLock().unlock();
         }
 
-        if (this.inaccurate && this.world.refine()) {
-            //piece is low-resolution and inaccurate, we should now enqueue it to generate scaled data from the layer below
-            executor.submit(new RoughScalePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_SCALE).lowerTie(), this.pos, TaskStage.ROUGH_GENERATE,
-                    this.world.refineProgressive() ? this.pos.level() - 1 : 0).thenCopyStatusTo(this));
-            return null; //return null so that this won't be complete until the piece is finished
-        }
+        return this.finish(piece, executor);
+    }
+
+    protected abstract long computeNewTimestamp();
+
+    protected Compressed<POS, P> finish(@NonNull Compressed<POS, P> piece, @NonNull LazyPriorityExecutor<TaskKey> executor) {
         return piece;
     }
 }

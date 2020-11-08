@@ -18,44 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.server.task;
+package net.daporkchop.fp2.mode.common.server.action;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
-import net.daporkchop.fp2.mode.common.server.TaskKey;
-import net.daporkchop.fp2.mode.common.server.TaskStage;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.util.threading.executor.LazyTask;
 
-import java.util.stream.Stream;
-
-import static net.daporkchop.fp2.util.Constants.*;
+import java.util.concurrent.Callable;
 
 /**
+ * Not really a task, but used by {@link AbstractFarWorld} to load a piece from disk and create it if absent.
+ *
  * @author DaPorkchop_
  */
-public class ExactScalePieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData> extends AbstractScaleTask<POS, P, D> {
-    public ExactScalePieceTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
-        super(world, key, pos, requestedBy);
-    }
+@RequiredArgsConstructor
+public class LoadPieceAction<POS extends IFarPos, P extends IFarPiece> implements Callable<Compressed<POS, P>> {
+    @NonNull
+    protected final AbstractFarWorld<POS, P, ? extends IFarPieceData> world;
+    @NonNull
+    protected final POS pos;
 
     @Override
-    public Stream<? extends LazyTask<TaskKey, ?, CompressedPiece<POS, P>>> before(@NonNull TaskKey key) throws Exception {
-        return this.world.pieceScaler().inputs(this.pos)
-                .map(pos -> new GetPieceTask<>(this.world, key.withStageLevel(TaskStage.GET, pos.level()), pos, TaskStage.EXACT_SCALE));
-    }
-
-    @Override
-    protected long computeNewTimestamp() {
-        long newTimestamp = this.world.exactActive().remove(this.pos);
-        if (newTimestamp < 0L) { //probably impossible, but this means that another task scheduled for the same piece already ran before this one
-            LOGGER.warn("Duplicate generation task scheduled for piece at {}!", this.pos);
-            this.setSuccess(null); //explicitly complete the future
+    public Compressed<POS, P> call() throws Exception {
+        Compressed<POS, P> piece = this.world.pieceStorage().load(this.pos);
+        if (piece == null) {
+            //piece doesn't exist on disk, let's make a new one!
+            return new Compressed<>(this.pos);
         }
-        return newTimestamp;
+        return piece;
     }
 }

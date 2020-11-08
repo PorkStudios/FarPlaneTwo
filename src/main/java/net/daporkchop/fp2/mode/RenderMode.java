@@ -248,15 +248,15 @@ public enum RenderMode {
 
     protected abstract void registerDefaultGenerators();
 
-    public SimpleRecycler<IFarPiece> pieceRecycler() {
-        return this.pieceRecycler.get();
+    public <P extends IFarPiece> SimpleRecycler<P> pieceRecycler() {
+        return uncheckedCast(this.pieceRecycler.get());
     }
 
     protected abstract SimpleRecycler<IFarPiece> pieceRecycler0();
 
-    public SimpleRecycler<IFarPieceData> pieceDataRecycler() {
+    public <D extends IFarPieceData> SimpleRecycler<D> pieceDataRecycler() {
         if (this.usesPieceData) {
-            return this.pieceDataRecycler.get();
+            return uncheckedCast(this.pieceDataRecycler.get());
         } else {
             throw new UnsupportedOperationException(this.name());
         }
@@ -361,20 +361,6 @@ public enum RenderMode {
      */
     @SideOnly(Side.CLIENT)
     public abstract IFarRenderer createRenderer(@NonNull WorldClient world);
-
-    /**
-     * Reads a {@link IFarPiece} from its binary format.
-     * <p>
-     * The format is compatible with {@link IFarPieceBuilder#write(ByteBuf)}.
-     *
-     * @param src the {@link ByteBuf} containing the encoded data
-     * @return the decoded {@link IFarPiece}
-     */
-    public IFarPiece readPiece(@NonNull ByteBuf src) {
-        IFarPiece piece = this.pieceRecycler().allocate();
-        piece.read(src);
-        return piece;
-    }
 
     /**
      * Reads a {@link IFarPos} from its binary format.

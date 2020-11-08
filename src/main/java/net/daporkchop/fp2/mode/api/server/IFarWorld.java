@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.api.server;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
+import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
@@ -53,7 +53,7 @@ public interface IFarWorld<POS extends IFarPos, P extends IFarPiece, D extends I
      * @param pos the position of the piece to get
      * @return the piece, or {@code null} if it isn't loaded yet
      */
-    CompressedPiece<POS, P> getPieceLazy(@NonNull POS pos);
+    Compressed<POS, P> getPieceLazy(@NonNull POS pos);
 
     /**
      * Fired whenever a block state changes.

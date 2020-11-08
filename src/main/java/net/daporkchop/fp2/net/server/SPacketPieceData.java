@@ -24,7 +24,7 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
+import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarContext;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -38,11 +38,11 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 @Setter
 public class SPacketPieceData implements IMessage {
     @NonNull
-    protected CompressedPiece piece;
+    protected Compressed piece;
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.piece = new CompressedPiece(buf);
+        this.piece = new Compressed(buf);
     }
 
     @Override

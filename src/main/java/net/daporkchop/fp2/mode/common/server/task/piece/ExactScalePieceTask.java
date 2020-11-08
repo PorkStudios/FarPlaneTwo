@@ -18,53 +18,44 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.server.task;
+package net.daporkchop.fp2.mode.common.server.task.piece;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
+import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
 
-import java.util.List;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.util.Constants.*;
+
 /**
- * Handles exact updating for a piece.
- * <p>
- * Delegates the actual work to {@link ExactGeneratePieceTask} and {@link ExactScalePieceTask}.
- *
  * @author DaPorkchop_
  */
-public class ExactUpdatePieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData> extends AbstractPieceTask<POS, P, D, CompressedPiece<POS, P>> {
-    public ExactUpdatePieceTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
+public class ExactScalePieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData>
+        extends AbstractScaleTask<POS, P, D> {
+    public ExactScalePieceTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
         super(world, key, pos, requestedBy);
     }
 
     @Override
-    public Stream<? extends LazyTask<TaskKey, ?, CompressedPiece<POS, P>>> before(@NonNull TaskKey key) throws Exception {
-        //fully generate the piece before attempting an exact update
-        return Stream.of(new GetPieceTask<>(this.world, key.withStage(TaskStage.GET), this.pos, TaskStage.EXACT));
+    public Stream<? extends LazyTask<TaskKey, ?, Compressed<POS, P>>> before(@NonNull TaskKey key) throws Exception {
+        return this.world.pieceScaler().inputs(this.pos)
+                .map(pos -> new GetPieceTask<>(this.world, key.withStageLevel(TaskStage.GET, pos.level()), pos, TaskStage.EXACT_SCALE));
     }
 
     @Override
-    public CompressedPiece<POS, P> run(@NonNull List<CompressedPiece<POS, P>> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
-        if (this.pos.level() == 0) {
-            //generate piece with exact generator
-            this.world.blockAccess().prefetchAsync(
-                    this.world.generatorExact().neededColumns(this.pos),
-                    world -> this.world.generatorExact().neededCubes(world, this.pos))
-                    .thenAccept(world -> executor.submit(new ExactGeneratePieceTask<>(this.world, this.key.withStage(TaskStage.EXACT_GENERATE), this.pos, world)));
-        } else {
-            //scale piece
-            executor.submit(new ExactScalePieceTask<>(this.world, this.key.withStage(TaskStage.EXACT_SCALE), this.pos, TaskStage.EXACT));
+    protected long computeNewTimestamp() {
+        long newTimestamp = this.world.exactActive().remove(this.pos);
+        if (newTimestamp < 0L) { //probably impossible, but this means that another task scheduled for the same piece already ran before this one
+            LOGGER.warn("Duplicate generation task scheduled for piece at {}!", this.pos);
+            this.setSuccess(null); //explicitly complete the future
         }
-        return params.get(0);
+        return newTimestamp;
     }
 }

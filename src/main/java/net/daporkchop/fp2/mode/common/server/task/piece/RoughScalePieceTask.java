@@ -18,11 +18,10 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.server.task;
+package net.daporkchop.fp2.mode.common.server.task.piece;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
+import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
@@ -43,7 +42,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData> extends AbstractScaleTask<POS, P, D> {
+public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData>
+        extends AbstractScaleTask<POS, P, D> {
     protected final int targetDetail;
 
     public RoughScalePieceTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy, int targetDetail) {
@@ -56,7 +56,7 @@ public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece, D ext
     }
 
     @Override
-    public Stream<? extends LazyTask<TaskKey, ?, CompressedPiece<POS, P>>> before(@NonNull TaskKey key) throws Exception {
+    public Stream<? extends LazyTask<TaskKey, ?, Compressed<POS, P>>> before(@NonNull TaskKey key) throws Exception {
         Stream<POS> inputs = this.world.pieceScaler().inputs(this.pos);
         if (this.targetDetail == this.pos.level() - 1) {
             //this piece is one level above the target level, so the pieces should be read directly rather than scaling them
@@ -69,11 +69,11 @@ public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece, D ext
 
     @Override
     protected long computeNewTimestamp() {
-        return CompressedPiece.pieceRough(this.targetDetail);
+        return Compressed.valueRough(this.targetDetail);
     }
 
     @Override
-    protected CompressedPiece<POS, P> finish(@NonNull CompressedPiece<POS, P> piece, @NonNull LazyPriorityExecutor<TaskKey> executor) {
+    protected Compressed<POS, P> finish(@NonNull Compressed<POS, P> piece, @NonNull LazyPriorityExecutor<TaskKey> executor) {
         if (this.targetDetail != 0 && this.world.refine()) {
             //continually re-scale the tile until the target detail reaches 0
             executor.submit(new RoughScalePieceTask<>(this.world, this.key.lowerTie(), this.pos, TaskStage.ROUGH_SCALE,

@@ -18,55 +18,38 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.server;
+package net.daporkchop.fp2.mode.common.server.task.data;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.Compressed;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
+import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
+import net.daporkchop.fp2.mode.common.server.TaskKey;
+import net.daporkchop.fp2.mode.common.server.TaskStage;
+import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
+import net.daporkchop.fp2.util.threading.executor.LazyTask;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
+import java.util.List;
+import java.util.stream.Stream;
 
 /**
- * Handles reading and writing of far terrain data.
- *
  * @author DaPorkchop_
  */
-public interface IFarStorage<POS extends IFarPos, P extends IFarPiece> extends Closeable {
-    /**
-     * @return the root directory for piece storage
-     */
-    File storageRoot();
+public class GetDataTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData>
+        extends AbstractDataTask<POS, P, D, Void> {
+    public GetDataTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
+        super(world, key, pos, requestedBy);
+    }
 
-    /**
-     * Loads the piece at the given position.
-     *
-     * @param pos the position of the piece to load
-     * @return the loaded piece, or {@code null} if it doesn't exist
-     */
-    Compressed<POS, P> load(@NonNull POS pos);
-
-    /**
-     * Stores the given piece at the given position, atomically replacing any existing piece.
-     *
-     * @param pos   the position to save the data at
-     * @param piece the piece to save
-     */
-    void store(@NonNull POS pos, @NonNull Compressed<POS, P> piece);
-
-    /**
-     * @return the {@link RenderMode} that this storage is used for
-     */
-    RenderMode mode();
-
-    /**
-     * Closes this storage.
-     * <p>
-     * If write operations are queued, this method will block until they are completed.
-     */
     @Override
-    void close() throws IOException;
+    public Stream<? extends LazyTask<TaskKey, ?, Void>> before(@NonNull TaskKey key) throws Exception {
+        return Stream.empty();
+    }
+
+    @Override
+    public Compressed<POS, D> run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
+        return null; //TODO: implement this
+    }
 }

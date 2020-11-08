@@ -24,14 +24,14 @@ import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
+import net.daporkchop.fp2.mode.api.Compressed;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.util.IReusablePersistent;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
 import net.daporkchop.lib.concurrent.future.DefaultPFuture;
 
@@ -39,13 +39,14 @@ import net.daporkchop.lib.concurrent.future.DefaultPFuture;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractPieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData, T> extends DefaultPFuture<CompressedPiece<POS, P>> implements LazyTask<TaskKey, T, CompressedPiece<POS, P>> {
+public abstract class AbstractFarTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData, V extends IReusablePersistent, A>
+        extends DefaultPFuture<Compressed<POS, V>> implements LazyTask<TaskKey, A, Compressed<POS, V>> {
     protected final AbstractFarWorld<POS, P, D> world;
     protected final TaskKey key;
     protected final POS pos;
     protected final TaskStage requestedBy;
 
-    public AbstractPieceTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
+    public AbstractFarTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
         super(ImmediateEventExecutor.INSTANCE);
 
         this.world = world;
@@ -55,13 +56,13 @@ public abstract class AbstractPieceTask<POS extends IFarPos, P extends IFarPiece
     }
 
     @Override
-    public AbstractPieceTask<POS, P, D, T> setSuccess(@NonNull CompressedPiece<POS, P> result) {
+    public AbstractFarTask<POS, P, D, V, A> setSuccess(@NonNull Compressed<POS, V> result) {
         super.setSuccess(result);
         return this;
     }
 
     @Override
-    public AbstractPieceTask<POS, P, D, T> setFailure(Throwable cause) {
+    public AbstractFarTask<POS, P, D, V, A> setFailure(Throwable cause) {
         super.setFailure(cause);
         return this;
     }
@@ -71,8 +72,8 @@ public abstract class AbstractPieceTask<POS extends IFarPos, P extends IFarPiece
         super.cancel(false);
     }
 
-    public AbstractPieceTask<POS, P, D, T> thenCopyStatusTo(@NonNull AbstractPieceTask<POS, P, D, ?> dst) {
-        this.addListener((GenericFutureListener<AbstractPieceTask<POS, P, D, T>>) f -> {
+    public AbstractFarTask<POS, P, D, V, A> thenCopyStatusTo(@NonNull AbstractFarTask<POS, P, D, V, ?> dst) {
+        this.addListener((GenericFutureListener<AbstractFarTask<POS, P, D, V, A>>) f -> {
             if (f.isSuccess()) {
                 dst.setSuccess(f.getNow());
             } else if (f.isCancelled()) {

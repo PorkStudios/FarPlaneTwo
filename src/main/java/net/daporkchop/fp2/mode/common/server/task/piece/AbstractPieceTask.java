@@ -18,38 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.server.task;
+package net.daporkchop.fp2.mode.common.server.task.piece;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.api.IFarPos;
-
-import java.util.concurrent.Callable;
+import net.daporkchop.fp2.mode.common.server.TaskKey;
+import net.daporkchop.fp2.mode.common.server.TaskStage;
+import net.daporkchop.fp2.mode.common.server.task.AbstractFarTask;
 
 /**
- * Not really a task, but used by {@link AbstractFarWorld} to load a piece from disk and create it if absent.
- *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public class LoadPieceAction<POS extends IFarPos, P extends IFarPiece> implements Callable<CompressedPiece<POS, P>> {
-    @NonNull
-    protected final AbstractFarWorld<POS, P, ? extends IFarPieceData> world;
-    @NonNull
-    protected final POS pos;
-
-    @Override
-    public CompressedPiece<POS, P> call() throws Exception {
-        CompressedPiece<POS, P> piece = this.world.pieceStorage().load(this.pos);
-        if (piece == null) {
-            //piece doesn't exist on disk, let's make a new one!
-            return new CompressedPiece<>(this.pos);
-        }
-        return piece;
+public abstract class AbstractPieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData, A>
+        extends AbstractFarTask<POS, P, D, P, A> {
+    public AbstractPieceTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
+        super(world, key, pos, requestedBy);
     }
 }
