@@ -30,7 +30,6 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -90,6 +89,16 @@ public class VoxelPiece implements IFarPiece {
         data.x = i0 >>> 24;
         data.y = (i0 >> 16) & 0xFF;
         data.z = (i0 >> 8) & 0xFF;
+    }
+
+    static int readOnlyPosAndReturnEdges(long base, int[] dst, int dstOff) {
+        int i0 = PUnsafe.getInt(base + 0L);
+
+        dst[dstOff + 0] = i0 >>> 24;
+        dst[dstOff + 1] = (i0 >> 16) & 0xFF;
+        dst[dstOff + 2] = (i0 >> 8) & 0xFF;
+
+        return i0 & 0x3F;
     }
 
     protected final long addr = PUnsafe.allocateMemory(this, PIECE_SIZE);
@@ -160,5 +169,14 @@ public class VoxelPiece implements IFarPiece {
 
         readOnlyPos(this.addr + INDEX_SIZE + index * ENTRY_FULL_SIZE_BYTES + 2L, data);
         return true;
+    }
+
+    public int getOnlyPosAndReturnEdges(int x, int y, int z, int[] dst, int dstOff)   {
+        int index = PUnsafe.getShort(this.addr + index(x, y, z) * 2L);
+        if (index < 0)  { //index is unset, don't read data
+            return -1;
+        }
+
+        return readOnlyPosAndReturnEdges(this.addr + INDEX_SIZE + index * ENTRY_FULL_SIZE_BYTES + 2L, dst, dstOff);
     }
 }

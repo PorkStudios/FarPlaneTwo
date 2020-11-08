@@ -31,7 +31,6 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.stream.Stream;
 
-import static java.lang.Math.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
@@ -48,10 +47,46 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
         dst[dstOff + 2] = (a[aOff + 0] * b[bOff + 1] - a[aOff + 1] * b[bOff + 0]) >> POS_FRACT_SHIFT;
     }
 
+    protected static void cross3(int[] a, int aOff, int[] b, int bOff, int[] c, int cOff, int[] dst, int dstOff) {
+        int ax = a[aOff + 0] - b[bOff + 0];
+        int ay = a[aOff + 1] - b[bOff + 1];
+        int az = a[aOff + 2] - b[bOff + 2];
+        int bx = a[aOff + 0] - c[cOff + 0];
+        int by = a[aOff + 1] - c[cOff + 1];
+        int bz = a[aOff + 2] - c[cOff + 2];
+        dst[dstOff + 0] = (ay * bz - az * by) >> POS_FRACT_SHIFT;
+        dst[dstOff + 1] = (az * bx - ax * bz) >> POS_FRACT_SHIFT;
+        dst[dstOff + 2] = (ax * by - ay * bx) >> POS_FRACT_SHIFT;
+    }
+
     protected static void crossAdd(int[] a, int aOff, int[] b, int bOff, int[] dst, int dstOff) {
         dst[dstOff + 0] += (a[aOff + 1] * b[bOff + 2] - a[aOff + 2] * b[bOff + 1]) >> POS_FRACT_SHIFT;
         dst[dstOff + 1] += (a[aOff + 2] * b[bOff + 0] - a[aOff + 0] * b[bOff + 2]) >> POS_FRACT_SHIFT;
         dst[dstOff + 2] += (a[aOff + 0] * b[bOff + 1] - a[aOff + 1] * b[bOff + 0]) >> POS_FRACT_SHIFT;
+    }
+
+    protected static void cross3Add(int[] a, int aOff, int[] b, int bOff, int[] c, int cOff, int[] dst, int dstOff) {
+        int ax = a[aOff + 0] - b[bOff + 0];
+        int ay = a[aOff + 1] - b[bOff + 1];
+        int az = a[aOff + 2] - b[bOff + 2];
+        int bx = a[aOff + 0] - c[cOff + 0];
+        int by = a[aOff + 1] - c[cOff + 1];
+        int bz = a[aOff + 2] - c[cOff + 2];
+        dst[dstOff + 0] += (ay * bz - az * by) >> 0;
+        dst[dstOff + 1] += (az * bx - ax * bz) >> 0;
+        dst[dstOff + 2] += (ax * by - ay * bx) >> 0;
+    }
+
+    protected static void cross3Sub(int[] a, int aOff, int[] b, int bOff, int[] c, int cOff, int[] dst, int dstOff) {
+        int ax = a[aOff + 0] - b[bOff + 0];
+        int ay = a[aOff + 1] - b[bOff + 1];
+        int az = a[aOff + 2] - b[bOff + 2];
+        int bx = a[aOff + 0] - c[cOff + 0];
+        int by = a[aOff + 1] - c[cOff + 1];
+        int bz = a[aOff + 2] - c[cOff + 2];
+        dst[dstOff + 0] -= (ay * bz - az * by) >> POS_FRACT_SHIFT;
+        dst[dstOff + 1] -= (az * bx - ax * bz) >> POS_FRACT_SHIFT;
+        dst[dstOff + 2] -= (ax * by - ay * bx) >> POS_FRACT_SHIFT;
     }
 
     @Override
@@ -68,11 +103,12 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
         int z = dstPos.z() << 1;
         int level = dstPos.level() - 1;
 
-        VoxelPos[] positions = new VoxelPos[3 * 3 * 3];
+        final int size = 3;
+        VoxelPos[] positions = new VoxelPos[size * size * size];
         int i = 0;
-        for (int dx = 0; dx < 3; dx++) {
-            for (int dy = 0; dy < 3; dy++) {
-                for (int dz = 0; dz < 3; dz++) {
+        for (int dx = 0; dx < size; dx++) {
+            for (int dy = 0; dy < size; dy++) {
+                for (int dz = 0; dz < size; dz++) {
                     positions[i++] = new VoxelPos(x + dx, y + dy, z + dz, level);
                 }
             }
@@ -82,13 +118,14 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
 
     @Override
     public void scale(@NonNull VoxelPiece[] srcs, @NonNull VoxelPieceBuilder dst) {
-        VoxelData[] datas = new VoxelData[9];
-        for (int i = 0; i < 9; i++) {
+        VoxelData[] datas = new VoxelData[27];
+        for (int i = 0; i < datas.length; i++) {
             datas[i] = new VoxelData();
         }
 
         BitSet voxels = new BitSet(T_VERTS * T_VERTS * T_VERTS);
         int[] positions = new int[T_VERTS * T_VERTS * T_VERTS * 3];
+        int[] normals = new int[T_VOXELS * T_VOXELS * T_VOXELS * 3];
         for (int subX = 0; subX < 2; subX++) {
             for (int subY = 0; subY < 2; subY++) {
                 for (int subZ = 0; subZ < 2; subZ++) {
@@ -107,6 +144,7 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
                                 int i = ((baseX + (x >> 1)) * T_VERTS + (baseY + (y >> 1))) * T_VERTS + (baseZ + (z >> 1));
                                 if (this.computePosition(src, x, y, z, positions, i * 3, datas[8])) {
                                     voxels.set(i);
+                                    this.computeAverageNormal(srcs, (subX << T_SHIFT) + x, (subY << T_SHIFT) + y, (subZ << T_SHIFT) + z, normals, (((baseX + (x >> 1)) * T_VOXELS + (baseY + (y >> 1))) * T_VOXELS + (baseZ + (z >> 1))) * 3);
                                 }
                             }
                         }
@@ -147,7 +185,7 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
             }
         }
 
-        int[][] normals = new int[3][T_VOXELS * T_VOXELS * T_VOXELS * 3];
+        /*int[][] normals = new int[3][T_VOXELS * T_VOXELS * T_VOXELS * 3];
         for (int x = 0; x < T_VOXELS; x++) {
             for (int y = 0; y < T_VOXELS; y++) {
                 for (int z = 0; z < T_VOXELS; z++) {
@@ -157,7 +195,7 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
                     }
                 }
             }
-        }
+        }*/
 
         datas[8].light = 0xFF;
         Arrays.fill(datas[8].states, 1);
@@ -166,18 +204,18 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
                 for (int z = 0; z < T_VOXELS; z++) {
                     int i = (x * T_VERTS + y) * T_VERTS + z;
                     if (voxels.get(i)) {
+                        //this.computeAverageNormal(srcs, x,y, z, normals, 0);
+
                         int edges = 0;
                         for (int edge = 0; edge < EDGE_COUNT; edge++) {
                             if (existentEdges.get(((x * T_VOXELS + y) * T_VOXELS + z) * EDGE_COUNT + edge)) {
-                                int maxAbsValue = 0;
-                                for (int j = 0; j < 3; j++) {
-                                    int normalAxisValue = normals[edge][((x * T_VOXELS + y) * T_VOXELS + z) * 3 + j];
-                                    if (abs(normalAxisValue) > abs(maxAbsValue)) {
-                                        maxAbsValue = normalAxisValue;
-                                    }
+                                int normalAxisValue = normals[((x * T_VOXELS + y) * T_VOXELS + z) * EDGE_COUNT + edge];
+                                //int normalAxisValue = normals[edge];
+                                //edges |= (normalAxisValue != 0 ? EDGE_DIR_BOTH : 0) << (edge << 1);
+                                if (normalAxisValue != 0) {
+                                    edges |= (normalAxisValue < 0 ? EDGE_DIR_NEGATIVE : EDGE_DIR_POSITIVE) << (edge << 1);
                                 }
-                                edges |= (maxAbsValue < 0 ? EDGE_DIR_NEGATIVE : EDGE_DIR_POSITIVE) << (edge << 1);
-                                //edges |= EDGE_DIR_BOTH << (edge << 1);
+                                edges |= EDGE_DIR_BOTH << (edge << 1);
                             }
                         }
                         datas[8].edges = edges;
@@ -190,33 +228,6 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
                 }
             }
         }
-
-        /*for (int subX = 0; subX < 2; subX++) {
-            for (int subY = 0; subY < 2; subY++) {
-                for (int subZ = 0; subZ < 2; subZ++) {
-                    VoxelPiece src = srcs[(subX * 2 + subY) * 2 + subZ];
-                    if (src == null) {
-                        continue;
-                    }
-
-                    int baseX = subX * (T_VOXELS >> 1);
-                    int baseY = subY * (T_VOXELS >> 1);
-                    int baseZ = subZ * (T_VOXELS >> 1);
-
-                    for (int x = 0; x < T_VOXELS; x += 2) {
-                        for (int y = 0; y < T_VOXELS; y += 2) {
-                            for (int z = 0; z < T_VOXELS; z += 2) {
-                                int dstX = baseX + (x >> 1);
-                                int dstY = baseY + (y >> 1);
-                                int dstZ = baseZ + (z >> 1);
-
-                                //this.scaleSample(src, x, y, z, dst, dstX, dstY, dstZ, datas);
-                            }
-                        }
-                    }
-                }
-            }
-        }*/
     }
 
     protected boolean computePosition(VoxelPiece src, int srcX, int srcY, int srcZ, int[] dst, int dstOff, VoxelData data) {
@@ -238,6 +249,52 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
             }
         }
         return true;
+    }
+
+    protected void computeAverageNormal(VoxelPiece[] srcs, int x, int y, int z, int[] dst, int dstOff) {
+        int[] p = new int[CONNECTION_INDEX_COUNT * 3];
+
+        for (int i = 0; i < 8; i++) {
+            int X = x + ((i >> 2) & 1);
+            int Y = y + ((i >> 1) & 1);
+            int Z = z + (i & 1);
+            EDGE:
+            for (int edge = 0; edge < EDGE_COUNT; edge++) {
+                int edges = this.getPos(srcs, X, Y, Z, CONNECTION_INDICES[edge * CONNECTION_INDEX_COUNT], p, 0);
+                if (edges >= 0) {
+                    for (int j = 0; j < CONNECTION_INDEX_COUNT; j++) {
+                        if (this.getPos(srcs, X, Y, Z, CONNECTION_INDICES[edge * CONNECTION_INDEX_COUNT + j], p, j * 3) < 0) {
+                            continue EDGE;
+                        }
+                    }
+                    switch (edges & (EDGE_DIR_MASK << (edge << 1))) {
+                        case EDGE_DIR_POSITIVE:
+                            cross3Add(p, 0, p, 1 * 3, p, 2 * 3, dst, dstOff);
+                            cross3Add(p, 3 * 3, p, 2 * 3, p, 1 * 3, dst, dstOff);
+                            break;
+                        case EDGE_DIR_NEGATIVE:
+                            cross3Sub(p, 0, p, 1 * 3, p, 2 * 3, dst, dstOff);
+                            cross3Sub(p, 3 * 3, p, 2 * 3, p, 1 * 3, dst, dstOff);
+                            break;
+                    }
+                }
+            }
+        }
+    }
+
+    protected int getPos(VoxelPiece[] srcs, int x, int y, int z, int connectionIndex, int[] dst, int dstOff) {
+        int edges = this.getPos(srcs, x + ((connectionIndex >> 2) & 1), y + ((connectionIndex >> 1) & 1), z + (connectionIndex & 1), dst, dstOff);
+        if (edges >= 0) {
+            for (int i = 0; i < 3; i++) {
+                dst[dstOff + i] += ((connectionIndex >> (2 - i)) & 1) << T_SHIFT;
+            }
+        }
+        return edges;
+    }
+
+    protected int getPos(VoxelPiece[] srcs, int x, int y, int z, int[] dst, int dstOff) {
+        VoxelPiece src = srcs[((x >> T_SHIFT) * 3 + (y >> T_SHIFT)) * 3 + (z >> T_SHIFT)];
+        return src != null ? src.getOnlyPosAndReturnEdges(x & T_MASK, y & T_MASK, z & T_MASK, dst, dstOff) : -1;
     }
 
     protected int findExistentEdges(VoxelPiece src, int srcX, int srcY, int srcZ, VoxelData[] datas) {
