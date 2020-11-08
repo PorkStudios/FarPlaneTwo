@@ -24,6 +24,7 @@ import io.netty.buffer.ByteBuf;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.val;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
@@ -51,6 +52,7 @@ import net.daporkchop.fp2.mode.heightmap.server.scale.HeightmapPieceScalerMax;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.client.VoxelRenderer;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceData;
 import net.daporkchop.fp2.mode.voxel.server.VoxelPlayerTracker;
 import net.daporkchop.fp2.mode.voxel.server.VoxelStorage;
 import net.daporkchop.fp2.mode.voxel.server.VoxelWorld;
@@ -85,11 +87,13 @@ public enum RenderMode {
         @Override
         protected void registerDefaultGenerators() {
             //rough
-            this.generatorsRough().add(-100, world -> Constants.isCwgWorld(world) ? new CWGHeightmapGenerator() : null);
+            val generatorsRough = this.<HeightmapPos, HeightmapPiece, IFarPieceData>generatorsRough();
+            generatorsRough.add(-100, world -> Constants.isCwgWorld(world) ? new CWGHeightmapGenerator() : null);
 
             //exact
-            this.generatorsExact().add(-100, world -> Constants.isCubicWorld(world) ? new CCHeightmapGenerator() : null);
-            this.generatorsExact().add(100, world -> new VanillaHeightmapGenerator());
+            val generatorsExact = this.<HeightmapPos, HeightmapPiece, IFarPieceData>generatorsExact();
+            generatorsExact.add(-100, world -> Constants.isCubicWorld(world) ? new CCHeightmapGenerator() : null);
+            generatorsExact.add(100, world -> new VanillaHeightmapGenerator());
         }
 
         @Override
@@ -147,11 +151,13 @@ public enum RenderMode {
         @Override
         protected void registerDefaultGenerators() {
             //rough
-            //this.generatorsRough().add(0, world -> new PerlinNoiseVoxelGenerator());
+            val generatorsRough = this.<HeightmapPos, HeightmapPiece, IFarPieceData>generatorsRough();
+            //generatorsRough.add(0, world -> new PerlinNoiseVoxelGenerator());
 
             //exact
-            this.generatorsExact().add(-100, world -> Constants.isCubicWorld(world) ? new CCVoxelGenerator() : null);
-            this.generatorsExact().add(100, world -> new VanillaVoxelGenerator());
+            val generatorsExact = this.<VoxelPos, VoxelPiece, VoxelPieceData>generatorsExact();
+            generatorsExact.add(-100, world -> Constants.isCubicWorld(world) ? new CCVoxelGenerator() : null);
+            generatorsExact.add(100, world -> new VanillaVoxelGenerator());
         }
 
         @Override
@@ -161,7 +167,7 @@ public enum RenderMode {
 
         @Override
         protected SimpleRecycler<IFarPieceData> pieceDataRecycler0() {
-            throw new UnsupportedOperationException(); //TODO
+            return new SimpleRecycler.OfReusablePersistent<>(VoxelPieceData::new);
         }
 
         @Override
@@ -327,7 +333,7 @@ public enum RenderMode {
     /**
      * {@link #createStorage(WorldServer)}, but with an unchecked generic cast
      */
-    public <POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> IFarStorage<POS, P, B> uncheckedCreateStorage(@NonNull WorldServer world) {
+    public <POS extends IFarPos, P extends IFarPiece> IFarStorage<POS, P> uncheckedCreateStorage(@NonNull WorldServer world) {
         return uncheckedCast(this.createStorage(world));
     }
 
@@ -364,7 +370,7 @@ public enum RenderMode {
      * @param src the {@link ByteBuf} containing the encoded data
      * @return the decoded {@link IFarPiece}
      */
-    public IFarPiece readPiece(@NonNull ByteBuf src)    {
+    public IFarPiece readPiece(@NonNull ByteBuf src) {
         IFarPiece piece = this.pieceRecycler().allocate();
         piece.read(src);
         return piece;

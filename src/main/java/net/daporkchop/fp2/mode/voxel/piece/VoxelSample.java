@@ -18,27 +18,42 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.server.scale;
+package net.daporkchop.fp2.mode.voxel.piece;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import java.util.Arrays;
 
-import java.util.stream.Stream;
+import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 
 /**
- * Merges the content of multiple high-detail pieces into a single lower-detail piece.
+ * Represents a single data sample contained in a voxel piece.
  *
  * @author DaPorkchop_
  */
-public interface IFarPieceScaler<POS extends IFarPos, P extends IFarPiece> extends IFarScaler<POS> {
+public class VoxelSample {
+    //vertex position and mesh intersection data
+    public int x;
+    public int y;
+    public int z;
+    public int edges;
+
+    //block data (for texturing and shading)
+    public final int[] states = new int[EDGE_COUNT];
+    public int biome;
+    public int light;
+
     /**
-     * Merges the content of the given high-detail pieces into the given low-detail piece.
+     * Resets this instance.
      *
-     * @param srcs an array containing the high-detail pieces. Pieces are in the same order as provided by the {@link Stream} returned by
-     *             {@link #inputs(IFarPos)}. Any of the pieces may be {@code null}, in which case they should be treated by the implementation
-     *             as if they were merely empty.
-     * @param dst  the low-detail piece to merge the content into
+     * @return this instance
      */
-    void scale(@NonNull P[] srcs, @NonNull P dst);
+    public VoxelSample reset() {
+        this.x = 0;
+        this.y = 0;
+        this.z = 0;
+        this.edges = 0;
+        Arrays.fill(this.states, 0);
+        this.biome = 0;
+        this.light = 0;
+        return this;
+    }
 }

@@ -21,10 +21,13 @@
 package net.daporkchop.fp2.mode.voxel.server.gen.exact;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.mode.voxel.VoxelData;
+import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceData;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelSample;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.block.Block;
@@ -38,22 +41,42 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<VoxelPos, VoxelPieceBuilder> {
+public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator implements IFarGeneratorExact<VoxelPos, VoxelPiece, VoxelPieceData> {
     @Override
     public void init(@NonNull WorldServer world) {
         //no-op
     }
 
     @Override
-    public long generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelPieceBuilder builder) {
+    public void generatePieceData(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelPieceData data) {
         final int baseX = posIn.blockX();
         final int baseY = posIn.blockY();
         final int baseZ = posIn.blockZ();
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        VoxelData data = new VoxelData();
 
-        data.x = data.y = data.z = POS_ONE >> 1;
+        for (int dx = 0; dx < T_VOXELS; dx++) {
+            for (int dy = 0; dy < T_VOXELS; dy++) {
+                for (int dz = 0; dz < T_VOXELS; dz++) {
+                    pos.setPos(baseX + dx, baseY + dy, baseZ + dz);
+                    //TODO: actually do something here
+                }
+            }
+        }
+    }
+
+    @Override
+    public long generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelPiece piece, @NonNull VoxelPieceData data, @NonNull IFarAssembler<VoxelPieceData, VoxelPiece> assembler) {
+        this.generatePieceData(world, posIn, data);
+
+        final int baseX = posIn.blockX();
+        final int baseY = posIn.blockY();
+        final int baseZ = posIn.blockZ();
+
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        VoxelSample sample = new VoxelSample();
+
+        sample.x = sample.y = sample.z = POS_ONE >> 1;
 
         for (int dx = 0; dx < T_VOXELS; dx++) {
             for (int dy = 0; dy < T_VOXELS; dy++) {
@@ -87,22 +110,22 @@ public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<
                         }
                     }
 
-                    data.edges = edges;
+                    sample.edges = edges;
 
                     for (int edge = 0; edge < EDGE_COUNT; edge++) {
                         if ((edges & (EDGE_DIR_MASK << (edge << 1))) != EDGE_DIR_NONE) {
                             //((edges >> (edge << 1) >> 1) & 1) is 1 if the face is negative, 0 otherwise
                             int i = EDGE_VERTEX_MAP[(edge << 1) | ((edges >> (edge << 1) >> 1) & 1)];
                             pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
-                            data.states[edge] = Block.getStateId(world.getBlockState(pos));
+                            sample.states[edge] = Block.getStateId(world.getBlockState(pos));
                         }
                     }
 
-                    data.biome = Biome.getIdForBiome(world.getBiome(pos));
+                    sample.biome = Biome.getIdForBiome(world.getBiome(pos));
 
                     if (edges == 0) {
                         //this voxel is only present as a dummy placeholder for other voxels to connect to, and is presumably air
-                        data.light = 0;
+                        sample.light = 0;
                     } else {
                         //compute average light levels for all non-opaque blocks
                         int skyLight = 0;
@@ -122,12 +145,15 @@ public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<
                             skyLight /= samples;
                             blockLight /= samples;
                         }
-                        data.light = Constants.packCombinedLight(skyLight << 20 | blockLight << 4);
+                        sample.light = Constants.packCombinedLight(skyLight << 20 | blockLight << 4);
                     }
 
-                    builder.set(dx, dy, dz, data);
+                    piece.set(dx, dy, dz, sample);
                 }
             }
         }
+
+        //TODO: compute neighbor connections
+        return 0L;
     }
 }

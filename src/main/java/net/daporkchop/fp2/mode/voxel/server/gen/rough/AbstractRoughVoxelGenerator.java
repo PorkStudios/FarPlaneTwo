@@ -18,10 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.server.gen;
+package net.daporkchop.fp2.mode.voxel.server.gen.rough;
 
+import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
-import net.daporkchop.fp2.mode.voxel.VoxelData;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceData;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelSample;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
 import net.daporkchop.fp2.util.math.Vector3d;
@@ -37,7 +40,7 @@ import static net.daporkchop.lib.common.math.PMath.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator<VoxelPos> {
+public abstract class AbstractRoughVoxelGenerator<P> extends AbstractFarGenerator implements IFarGeneratorRough<VoxelPos, VoxelPiece, VoxelPieceData> {
     public static final int DMAP_MIN = -1;
     public static final int DMAP_SIZE = T_VOXELS + 2 - DMAP_MIN;
 
@@ -72,7 +75,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator<Vox
 
     protected void buildMesh(int baseX, int baseY, int baseZ, int level, VoxelPieceBuilder builder, double[] densityMap, P param) {
         QefSolver qef = new QefSolver();
-        VoxelData data = new VoxelData();
+        VoxelSample data = new VoxelSample();
         Vector3d vec = new Vector3d();
 
         double dn = 0.001d * (1 << level);
@@ -141,7 +144,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator<Vox
                         vec.set(qef.massPoint().x, qef.massPoint().y, qef.massPoint().z);
                     }
 
-                    //TODO: set VoxelData position
+                    //TODO: set VoxelSample position
 
                     qef.reset();
 
@@ -169,11 +172,11 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator<Vox
      * @param blockX the voxel's X coordinate
      * @param blockY the voxel's Y coordinate
      * @param blockZ the voxel's Z coordinate
-     * @param data   the {@link VoxelData} to store data into
+     * @param data   the {@link VoxelSample} to store data into
      * @param param  an additional user parameter
      * @param nx
      * @param ny
      * @param nz
      */
-    protected abstract void populateVoxelBlockData(int blockX, int blockY, int blockZ, VoxelData data, P param, double nx, double ny, double nz);
+    protected abstract void populateVoxelBlockData(int blockX, int blockY, int blockZ, VoxelSample data, P param, double nx, double ny, double nz);
 }

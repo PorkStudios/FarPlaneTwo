@@ -42,7 +42,7 @@ public class SavePieceAction<POS extends IFarPos> implements Runnable {
     public void run() {
         this.piece.readLock().lock();
         try {
-            this.world.storage().store(this.piece.pos(), uncheckedCast(this.piece));
+            this.world.pieceStorage().store(this.piece.pos(), uncheckedCast(this.piece));
         } finally {
             this.piece.readLock().unlock();
         }

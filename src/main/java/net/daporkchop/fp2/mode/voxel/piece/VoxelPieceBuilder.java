@@ -25,7 +25,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
-import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 /**
@@ -43,18 +42,18 @@ public class VoxelPieceBuilder implements IFarPieceBuilder {
 
     protected int nextSlot = -1; //next data slot to use
 
-    public VoxelPieceBuilder set(int x, int y, int z, VoxelData data)   {
+    public VoxelPieceBuilder set(int x, int y, int z, VoxelSample data)   {
         long indexAddr = this.addr + VoxelPiece.index(x, y, z) * 2L;
         int index = PUnsafe.getShort(indexAddr);
         if (index < 0)  { //index is unset, allocate new one
             PUnsafe.putShort(indexAddr, (short) (index = this.nextSlot++));
         }
 
-        VoxelPiece.writeData(this.addr + VoxelPiece.INDEX_SIZE + index * VoxelPiece.ENTRY_DATA_SIZE_BYTES, data);
+        VoxelPiece.writeSample(this.addr + VoxelPiece.INDEX_SIZE + index * VoxelPiece.ENTRY_DATA_SIZE_BYTES, data);
         return this;
     }
 
-    public boolean get(int x, int y, int z, VoxelData data)   {
+    public boolean get(int x, int y, int z, VoxelSample data)   {
         long indexAddr = this.addr + VoxelPiece.index(x, y, z) * 2L;
         int index = PUnsafe.getShort(indexAddr);
         if (index < 0)  { //index is unset, don't read data
@@ -62,7 +61,7 @@ public class VoxelPieceBuilder implements IFarPieceBuilder {
             return false;
         }
 
-        VoxelPiece.readData(this.addr + VoxelPiece.INDEX_SIZE + index * VoxelPiece.ENTRY_DATA_SIZE_BYTES, data);
+        VoxelPiece.readSample(this.addr + VoxelPiece.INDEX_SIZE + index * VoxelPiece.ENTRY_DATA_SIZE_BYTES, data);
         return true;
     }
 

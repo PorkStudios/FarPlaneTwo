@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.common.server.task;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.CompressedPiece;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
@@ -43,10 +44,10 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-public class ExactGeneratePieceTask<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends AbstractPieceTask<POS, P, B, Void> {
+public class ExactGeneratePieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData> extends AbstractPieceTask<POS, P, D, Void> {
     protected final IBlockHeightAccess access;
 
-    public ExactGeneratePieceTask(@NonNull AbstractFarWorld<POS, P, B> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull IBlockHeightAccess access) {
+    public ExactGeneratePieceTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull IBlockHeightAccess access) {
         super(world, key, pos, TaskStage.EXACT);
 
         checkArg(pos.level() == 0, "cannot do exact generation at level %d!", pos.level());
@@ -60,7 +61,7 @@ public class ExactGeneratePieceTask<POS extends IFarPos, P extends IFarPiece, B 
     }
 
     @Override
-    public CompressedPiece<POS, P, B> run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
+    public CompressedPiece<POS, P> run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
         long newTimestamp = this.world.exactActive().remove(this.pos);
         if (newTimestamp < 0L) { //probably impossible, but this means that another task scheduled for the same piece already ran before this one
             LOGGER.warn("Duplicate generation task scheduled for piece at {}!", this.pos);
@@ -68,7 +69,7 @@ public class ExactGeneratePieceTask<POS extends IFarPos, P extends IFarPiece, B 
             return null;
         }
 
-        CompressedPiece<POS, P, B> piece = this.world.getRawPieceBlocking(this.pos);
+        CompressedPiece<POS, P> piece = this.world.getRawPieceBlocking(this.pos);
         if (piece.timestamp() >= newTimestamp) {
             return piece;
         }
@@ -79,8 +80,8 @@ public class ExactGeneratePieceTask<POS extends IFarPos, P extends IFarPiece, B 
                 return piece;
             }
 
-            SimpleRecycler<B> builderRecycler = uncheckedCast(this.pos.mode().builderRecycler());
-            B builder = builderRecycler.allocate();
+            SimpleRecycler<D> builderRecycler = uncheckedCast(this.pos.mode().builderRecycler());
+            D builder = builderRecycler.allocate();
             try {
                 builder.reset(); //ensure builder is reset
 

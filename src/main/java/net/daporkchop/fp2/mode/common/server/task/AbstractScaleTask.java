@@ -25,6 +25,7 @@ import net.daporkchop.fp2.mode.api.CompressedPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
@@ -39,21 +40,21 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractScaleTask<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends AbstractPieceTask<POS, P, B, CompressedPiece<POS, P, B>> {
-    public AbstractScaleTask(@NonNull AbstractFarWorld<POS, P, B> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
+public abstract class AbstractScaleTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData> extends AbstractPieceTask<POS, P, D, CompressedPiece<POS, P>> {
+    public AbstractScaleTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
         super(world, key, pos, requestedBy);
 
         checkArg(pos.level() != 0, "cannot do scaling at level %d!", pos.level());
     }
 
     @Override
-    public CompressedPiece<POS, P, B> run(@NonNull List<CompressedPiece<POS, P, B>> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
+    public CompressedPiece<POS, P> run(@NonNull List<CompressedPiece<POS, P>> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
         long newTimestamp = this.computeNewTimestamp();
         if (this.isDone()) {
             return this.getNow();
         }
 
-        CompressedPiece<POS, P, B> piece = this.world.getRawPieceBlocking(this.pos);
+        CompressedPiece<POS, P> piece = this.world.getRawPieceBlocking(this.pos);
         if (piece.timestamp() >= newTimestamp) {
             return piece;
         }
@@ -71,8 +72,8 @@ public abstract class AbstractScaleTask<POS extends IFarPos, P extends IFarPiece
                 return piece;
             }
 
-            SimpleRecycler<B> builderRecycler = uncheckedCast(this.pos.mode().builderRecycler());
-            B builder = builderRecycler.allocate();
+            SimpleRecycler<D> builderRecycler = uncheckedCast(this.pos.mode().builderRecycler());
+            D builder = builderRecycler.allocate();
             try {
                 builder.reset(); //ensure builder is reset
 
@@ -106,7 +107,7 @@ public abstract class AbstractScaleTask<POS extends IFarPos, P extends IFarPiece
 
     protected abstract long computeNewTimestamp();
 
-    protected CompressedPiece<POS, P, B> finish(@NonNull CompressedPiece<POS, P, B> piece, @NonNull LazyPriorityExecutor<TaskKey> executor) {
+    protected CompressedPiece<POS, P> finish(@NonNull CompressedPiece<POS, P> piece, @NonNull LazyPriorityExecutor<TaskKey> executor) {
         return piece;
     }
 }

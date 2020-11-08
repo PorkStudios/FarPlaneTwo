@@ -43,7 +43,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public class CompressedPiece<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends ReentrantReadWriteLock {
+public class CompressedPiece<POS extends IFarPos, P extends IFarPiece> extends ReentrantReadWriteLock {
     /**
      * Timestamp indicating that the piece does not contain any data.
      */

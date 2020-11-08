@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.common.server.task;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.CompressedPiece;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
@@ -40,8 +41,8 @@ import java.util.stream.Stream;
  *
  * @author DaPorkchop_
  */
-public class GetPieceTask<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends AbstractPieceTask<POS, P, B, Void> {
-    public GetPieceTask(@NonNull AbstractFarWorld<POS, P, B> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
+public class GetPieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData> extends AbstractPieceTask<POS, P, D, Void> {
+    public GetPieceTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
         super(world, key, pos, requestedBy);
 
         world.notDone(pos, requestedBy == TaskStage.GET);
@@ -53,8 +54,8 @@ public class GetPieceTask<POS extends IFarPos, P extends IFarPiece, B extends IF
     }
 
     @Override
-    public CompressedPiece<POS, P, B> run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) {
-        CompressedPiece<POS, P, B> piece = this.world.getRawPieceBlocking(this.pos);
+    public CompressedPiece<POS, P> run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) {
+        CompressedPiece<POS, P> piece = this.world.getRawPieceBlocking(this.pos);
 
         piece.readLock().lock();
         try {

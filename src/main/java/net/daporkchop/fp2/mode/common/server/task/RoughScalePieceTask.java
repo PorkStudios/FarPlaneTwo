@@ -23,20 +23,18 @@ package net.daporkchop.fp2.mode.common.server.task;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.CompressedPiece;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
 
-import java.util.List;
 import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Handles generation of a piece at a lower detail level.
@@ -45,10 +43,10 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  *
  * @author DaPorkchop_
  */
-public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends AbstractScaleTask<POS, P, B> {
+public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData> extends AbstractScaleTask<POS, P, D> {
     protected final int targetDetail;
 
-    public RoughScalePieceTask(@NonNull AbstractFarWorld<POS, P, B> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy, int targetDetail) {
+    public RoughScalePieceTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy, int targetDetail) {
         super(world, key, pos, requestedBy);
 
         checkArg(requestedBy != TaskStage.GET || targetDetail == 0, "only GET may target non-zero detail levels!");
@@ -58,8 +56,8 @@ public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece, B ext
     }
 
     @Override
-    public Stream<? extends LazyTask<TaskKey, ?, CompressedPiece<POS, P, B>>> before(@NonNull TaskKey key) throws Exception {
-        Stream<POS> inputs = this.world.scaler().inputs(this.pos);
+    public Stream<? extends LazyTask<TaskKey, ?, CompressedPiece<POS, P>>> before(@NonNull TaskKey key) throws Exception {
+        Stream<POS> inputs = this.world.pieceScaler().inputs(this.pos);
         if (this.targetDetail == this.pos.level() - 1) {
             //this piece is one level above the target level, so the pieces should be read directly rather than scaling them
             return inputs.map(pos -> new GetPieceTask<>(this.world, key.withStageLevel(TaskStage.GET, pos.level()), pos, TaskStage.ROUGH_SCALE));
@@ -75,7 +73,7 @@ public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece, B ext
     }
 
     @Override
-    protected CompressedPiece<POS, P, B> finish(@NonNull CompressedPiece<POS, P, B> piece, @NonNull LazyPriorityExecutor<TaskKey> executor) {
+    protected CompressedPiece<POS, P> finish(@NonNull CompressedPiece<POS, P> piece, @NonNull LazyPriorityExecutor<TaskKey> executor) {
         if (this.targetDetail != 0 && this.world.refine()) {
             //continually re-scale the tile until the target detail reaches 0
             executor.submit(new RoughScalePieceTask<>(this.world, this.key.lowerTie(), this.pos, TaskStage.ROUGH_SCALE,

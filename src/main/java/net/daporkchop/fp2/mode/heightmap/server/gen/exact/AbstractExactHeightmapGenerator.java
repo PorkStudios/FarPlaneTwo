@@ -18,27 +18,31 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.server.scale;
+package net.daporkchop.fp2.mode.heightmap.server.gen.exact;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-
-import java.util.stream.Stream;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
+import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
+import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
+import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
+import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
+import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 
 /**
- * Merges the content of multiple high-detail pieces into a single lower-detail piece.
- *
  * @author DaPorkchop_
  */
-public interface IFarPieceScaler<POS extends IFarPos, P extends IFarPiece> extends IFarScaler<POS> {
-    /**
-     * Merges the content of the given high-detail pieces into the given low-detail piece.
-     *
-     * @param srcs an array containing the high-detail pieces. Pieces are in the same order as provided by the {@link Stream} returned by
-     *             {@link #inputs(IFarPos)}. Any of the pieces may be {@code null}, in which case they should be treated by the implementation
-     *             as if they were merely empty.
-     * @param dst  the low-detail piece to merge the content into
-     */
-    void scale(@NonNull P[] srcs, @NonNull P dst);
+public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorExact<HeightmapPos, HeightmapPiece, IFarPieceData> {
+    @Override
+    public final void generatePieceData(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos pos, IFarPieceData data) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public final long generate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos pos, @NonNull HeightmapPiece piece, IFarPieceData data, IFarAssembler<IFarPieceData, HeightmapPiece> assembler) {
+        this.generateHeightmap(world, pos, piece);
+        return 0L;
+    }
+
+    protected abstract void generateHeightmap(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos pos, @NonNull HeightmapPiece piece);
 }

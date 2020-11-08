@@ -45,50 +45,50 @@ public class HeightmapPiece implements IFarPiece {
     //2: (waterBiome << 16) | (waterLight << 8) | biome
     //   ^ top 8 bits are free
 
-    public static final int ENTRY_SIZE = 3;
-    public static final int ENTRY_COUNT = T_VOXELS * T_VOXELS;
+    public static final int SAMPLE_SIZE = 3;
+    public static final int SAMPLE_COUNT = T_VOXELS * T_VOXELS;
 
-    public static final int TOTAL_SIZE = ENTRY_COUNT * ENTRY_SIZE;
+    public static final int TOTAL_SIZE = SAMPLE_COUNT * SAMPLE_SIZE;
     public static final int TOTAL_SIZE_BYTES = TOTAL_SIZE * 4;
 
     static int index(int x, int z) {
         checkArg(x >= 0 && x < T_VOXELS && z >= 0 && z < T_VOXELS, "coordinates out of bounds (x=%d, z=%d)", x, z);
-        return (x * T_VOXELS + z) * ENTRY_SIZE;
+        return (x * T_VOXELS + z) * SAMPLE_SIZE;
     }
 
-    static void writeData(long base, HeightmapSample data)    {
-        PUnsafe.putInt(base + 0L, data.height);
-        PUnsafe.putInt(base + 4L, (data.light << 24) | data.state);
-        PUnsafe.putInt(base + 8L, (data.waterBiome << 16) | (data.waterLight << 8) | data.biome);
+    static void writeSample(long base, HeightmapSample sample)    {
+        PUnsafe.putInt(base + 0L, sample.height);
+        PUnsafe.putInt(base + 4L, (sample.light << 24) | sample.state);
+        PUnsafe.putInt(base + 8L, (sample.waterBiome << 16) | (sample.waterLight << 8) | sample.biome);
     }
 
-    static void readData(long base, HeightmapSample data)    {
+    static void readSample(long base, HeightmapSample sample)    {
         int i0 = PUnsafe.getInt(base + 0L);
         int i1 = PUnsafe.getInt(base + 4L);
         int i2 = PUnsafe.getInt(base + 8L);
 
-        data.height = i0;
-        data.state = i1 & 0x00FFFFFF;
-        data.light = i1 >>> 24;
-        data.biome = i2 & 0xFF;
+        sample.height = i0;
+        sample.state = i1 & 0x00FFFFFF;
+        sample.light = i1 >>> 24;
+        sample.biome = i2 & 0xFF;
 
-        data.waterLight = (i2 >>> 8) & 0xFF;
-        data.waterBiome = (i2 >>> 16) & 0xFF;
+        sample.waterLight = (i2 >>> 8) & 0xFF;
+        sample.waterBiome = (i2 >>> 16) & 0xFF;
     }
 
     protected final long addr = PUnsafe.allocateMemory(this, TOTAL_SIZE_BYTES);
 
-    public HeightmapPiece set(int x, int z, HeightmapSample data)  {
-        writeData(this.addr + index(x, z) * 4L, data);
-        return this;
-    }
-
-    public void get(int x, int z, HeightmapSample data) {
-        readData(this.addr + index(x, z) * 4L, data);
+    public void get(int x, int z, HeightmapSample sample) {
+        readSample(this.addr + index(x, z) * 4L, sample);
     }
 
     public int height(int x, int z) {
         return PUnsafe.getInt(this.addr + index(x, z) * 4L);
+    }
+
+    public HeightmapPiece set(int x, int z, HeightmapSample sample)  {
+        writeSample(this.addr + index(x, z) * 4L, sample);
+        return this;
     }
 
     @Override

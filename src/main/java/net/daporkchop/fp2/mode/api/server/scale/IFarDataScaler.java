@@ -36,7 +36,8 @@ public interface IFarDataScaler<POS extends IFarPos, D extends IFarPieceData> ex
      * Merges the content of the given high-detail data pieces into the given low-detail data piece.
      *
      * @param srcs an array containing the high-detail pieces. Pieces are in the same order as provided by the {@link Stream} returned by
-     *             {@link #inputs(IFarPos)}.
+     *             {@link #inputs(IFarPos)}. Any of the pieces may be {@code null}, in which case they should be treated by the implementation
+     *             as if they were merely empty.
      * @param dst  the low-detail data piece to merge the content into
      */
     void scale(@NonNull D[] srcs, @NonNull D dst);

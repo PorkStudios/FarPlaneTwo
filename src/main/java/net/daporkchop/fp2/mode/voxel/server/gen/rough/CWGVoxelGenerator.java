@@ -21,17 +21,19 @@
 package net.daporkchop.fp2.mode.voxel.server.gen.rough;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.voxel.VoxelData;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceData;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelSample;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
-import net.daporkchop.fp2.mode.voxel.server.gen.AbstractVoxelGenerator;
 import net.minecraft.world.WorldServer;
 
 /**
  * @author DaPorkchop_
  */
-public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements IFarGeneratorRough<VoxelPos, VoxelPieceBuilder> {
+public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<Void> {
     //protected Ref<CWGContext> ctx;
 
     @Override
@@ -41,18 +43,17 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
     }
 
     @Override
-    public long generate(@NonNull VoxelPos pos, @NonNull VoxelPieceBuilder piece) {
-        int level = pos.level();
-        int baseX = pos.blockX();
-        int baseY = pos.blockY();
-        int baseZ = pos.blockZ();
-
-        //CWGContext ctx = this.ctx.get();
-        //ctx.init(baseX >> 4, baseY >> 4, baseZ >> 4, level);
+    public void generatePieceData(@NonNull VoxelPos pos, @NonNull VoxelPieceData data) {
+        throw new UnsupportedOperationException(); //TODO
     }
 
     @Override
-    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, VoxelData data, Void param, double nx, double ny, double nz) {
+    public long generate(@NonNull VoxelPos pos, @NonNull VoxelPiece piece, @NonNull VoxelPieceData data, @NonNull IFarAssembler<VoxelPieceData, VoxelPiece> assembler) {
+        throw new UnsupportedOperationException(); //TODO
+    }
+
+    @Override
+    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, VoxelSample data, Void param, double nx, double ny, double nz) {
     }
 
     @Override

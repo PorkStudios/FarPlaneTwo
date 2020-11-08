@@ -40,7 +40,7 @@ public interface IFarGeneratorRough<POS extends IFarPos, P extends IFarPiece, D 
     /**
      * Generates the piece data for the piece at the given position.
      * <p>
-     * This method may be safely implemented as a no-op for render modes that do not utilize the piece data system.
+     * This method should throw {@link UnsupportedOperationException} for render modes that do not utilize the piece data system.
      *
      * @param pos  the position of the piece to generate
      * @param data the piece data to generate

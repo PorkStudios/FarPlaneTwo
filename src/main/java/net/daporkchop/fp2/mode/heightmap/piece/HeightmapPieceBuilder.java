@@ -39,12 +39,12 @@ public class HeightmapPieceBuilder implements IFarPieceBuilder {
     protected long extra;
 
     public HeightmapPieceBuilder set(int x, int z, HeightmapSample data)  {
-        HeightmapPiece.writeData(this.addr + HeightmapPiece.index(x, z) * 4L, data);
+        HeightmapPiece.writeSample(this.addr + HeightmapPiece.index(x, z) * 4L, data);
         return this;
     }
 
     public HeightmapSample get(int x, int z, HeightmapSample data)  {
-        HeightmapPiece.readData(this.addr + HeightmapPiece.index(x, z) * 4L, data);
+        HeightmapPiece.readSample(this.addr + HeightmapPiece.index(x, z) * 4L, data);
         return data;
     }
 
