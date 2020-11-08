@@ -43,11 +43,9 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-public class ExactScalePieceTask<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends AbstractPieceTask<POS, P, B, CompressedPiece<POS, P, B>> {
+public class ExactScalePieceTask<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends AbstractScaleTask<POS, P, B> {
     public ExactScalePieceTask(@NonNull AbstractFarWorld<POS, P, B> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
         super(world, key, pos, requestedBy);
-
-        checkArg(pos.level() != 0, "cannot do scaling at level %d!", pos.level());
     }
 
     @Override
@@ -57,74 +55,12 @@ public class ExactScalePieceTask<POS extends IFarPos, P extends IFarPiece, B ext
     }
 
     @Override
-    public CompressedPiece<POS, P, B> run(@NonNull List<CompressedPiece<POS, P, B>> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
+    protected long computeNewTimestamp() {
         long newTimestamp = this.world.exactActive().remove(this.pos);
         if (newTimestamp < 0L) { //probably impossible, but this means that another task scheduled for the same piece already ran before this one
             LOGGER.warn("Duplicate generation task scheduled for piece at {}!", this.pos);
             this.setSuccess(null); //explicitly complete the future
-            return null;
         }
-
-        CompressedPiece<POS, P, B> piece = this.world.getRawPieceBlocking(this.pos);
-        if (piece.timestamp() >= newTimestamp) {
-            return piece;
-        }
-
-        //inflate pieces into array
-        P[] srcs = uncheckedCast(this.world.mode().pieceArray(params.size()));
-        for (int i = 0, len = srcs.length; i < len; i++) {
-            params.get(i).readLock().lock();
-            srcs[i] = params.get(i).inflate();
-        }
-
-        try {
-            //TODO: re-enable this
-            /*if (false && srcs.length > 0) { //get actual timestamp by computing the maximum input timestamp
-                long effectiveNewTimestamp = Arrays.stream(srcs).mapToLong(IFarPiece::timestamp).max().orElse(newTimestamp);
-                checkState(effectiveNewTimestamp >= newTimestamp, "effectiveNewTimestamp (%d) is somehow less than newTimestamp (%d)", effectiveNewTimestamp, newTimestamp);
-                newTimestamp = effectiveNewTimestamp;
-                if (piece.timestamp() >= newTimestamp) {
-                    return piece;
-                }
-            }*/
-
-            piece.writeLock().lock();
-            try {
-                if (piece.timestamp() >= newTimestamp) {
-                    return piece;
-                }
-
-                SimpleRecycler<B> builderRecycler = uncheckedCast(this.pos.mode().builderRecycler());
-                B builder = builderRecycler.allocate();
-                try {
-                    builder.reset(); //ensure builder is reset
-
-                    this.world.scaler().scale(srcs, builder);
-                    piece.set(newTimestamp, builder);
-                } finally {
-                    builderRecycler.release(builder);
-                }
-
-                piece.readLock().lock(); //downgrade lock
-            } finally {
-                piece.writeLock().unlock();
-            }
-        } finally {
-            SimpleRecycler<P> pieceRecycler = uncheckedCast(this.pos.mode().pieceRecycler());
-            for (int i = 0, len = srcs.length; i < len; i++) {
-                if (srcs[i] != null) {
-                    pieceRecycler.release(srcs[i]);
-                }
-                params.get(i).readLock().unlock();
-            }
-        }
-
-        try {
-            this.world.pieceChanged(piece);
-        } finally {
-            piece.readLock().unlock();
-        }
-
-        return piece;
+        return newTimestamp;
     }
 }

@@ -25,7 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.mode.common.client.IFarRenderBaker;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapSample;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
@@ -43,7 +43,6 @@ import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL41.*;
 
 /**
  * @author DaPorkchop_
@@ -148,7 +147,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
 
         final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
-        final HeightmapData data = new HeightmapData();
+        final HeightmapSample data = new HeightmapSample();
 
         for (int dx = 0; dx < T_VOXELS; dx++) {
             for (int dz = 0; dz < T_VOXELS; dz++) {
@@ -224,7 +223,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         }
     }
 
-    private void writeVertex(int baseX, int baseZ, int level, int i, HeightmapPiece[] srcs, int x, int z, ByteBuf out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, HeightmapData data) {
+    private void writeVertex(int baseX, int baseZ, int level, int i, HeightmapPiece[] srcs, int x, int z, ByteBuf out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, HeightmapSample data) {
         baseX += (x & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
 

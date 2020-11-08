@@ -45,7 +45,7 @@ public abstract class AbstractExactVoxelGenerator implements IFarGeneratorExact<
     }
 
     @Override
-    public void generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelPieceBuilder builder) {
+    public long generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelPieceBuilder builder) {
         final int baseX = posIn.blockX();
         final int baseY = posIn.blockY();
         final int baseZ = posIn.blockZ();

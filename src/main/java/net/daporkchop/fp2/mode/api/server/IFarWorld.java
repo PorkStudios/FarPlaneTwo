@@ -28,7 +28,7 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.api.server.scale.IFarScaler;
+import net.daporkchop.fp2.mode.api.server.scale.IFarPieceScaler;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.minecraft.world.WorldServer;
 
@@ -73,9 +73,9 @@ public interface IFarWorld<POS extends IFarPos, P extends IFarPiece, B extends I
     IFarGeneratorExact<POS, B> generatorExact();
 
     /**
-     * @return the {@link IFarScaler} used for downscaling the far terrain pieces
+     * @return the {@link IFarPieceScaler} used for downscaling the far terrain pieces
      */
-    IFarScaler<POS, P, B> scaler();
+    IFarPieceScaler<POS, P, B> scaler();
 
     /**
      * @return the {@link IFarStorage} used for persistence of far terrain pieces

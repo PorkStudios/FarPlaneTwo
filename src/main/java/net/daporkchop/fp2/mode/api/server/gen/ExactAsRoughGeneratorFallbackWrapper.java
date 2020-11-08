@@ -47,7 +47,7 @@ public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, B extends
     }
 
     @Override
-    public void generate(@NonNull POS pos, @NonNull B builder) {
+    public long generate(@NonNull POS pos, @NonNull B builder) {
         try {
             IBlockHeightAccess prefetched = this.blockAccess.prefetchAsync(this.exactGenerator.neededColumns(pos),
                     world -> this.exactGenerator.neededCubes(world, pos))

@@ -26,6 +26,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -55,13 +56,13 @@ public class HeightmapPiece implements IFarPiece {
         return (x * T_VOXELS + z) * ENTRY_SIZE;
     }
 
-    static void writeData(long base, HeightmapData data)    {
+    static void writeData(long base, HeightmapSample data)    {
         PUnsafe.putInt(base + 0L, data.height);
         PUnsafe.putInt(base + 4L, (data.light << 24) | data.state);
         PUnsafe.putInt(base + 8L, (data.waterBiome << 16) | (data.waterLight << 8) | data.biome);
     }
 
-    static void readData(long base, HeightmapData data)    {
+    static void readData(long base, HeightmapSample data)    {
         int i0 = PUnsafe.getInt(base + 0L);
         int i1 = PUnsafe.getInt(base + 4L);
         int i2 = PUnsafe.getInt(base + 8L);
@@ -77,7 +78,12 @@ public class HeightmapPiece implements IFarPiece {
 
     protected final long addr = PUnsafe.allocateMemory(this, TOTAL_SIZE_BYTES);
 
-    public void get(int x, int z, HeightmapData data) {
+    public HeightmapPiece set(int x, int z, HeightmapSample data)  {
+        writeData(this.addr + index(x, z) * 4L, data);
+        return this;
+    }
+
+    public void get(int x, int z, HeightmapSample data) {
         readData(this.addr + index(x, z) * 4L, data);
     }
 
@@ -91,7 +97,35 @@ public class HeightmapPiece implements IFarPiece {
     }
 
     @Override
+    public void reset() {
+        PUnsafe.setMemory(this.addr, HeightmapPiece.TOTAL_SIZE_BYTES, (byte) 0); //just clear it
+    }
+
+    @Override
     public void read(@NonNull ByteBuf src) {
-        src.readBytes(Unpooled.wrappedBuffer(this.addr, TOTAL_SIZE_BYTES, false).writerIndex(0)); //simply copy data
+        if (PlatformInfo.IS_LITTLE_ENDIAN) {
+            //copy everything in one go
+            src.readBytes(Unpooled.wrappedBuffer(this.addr, TOTAL_SIZE_BYTES, false).writerIndex(0));
+        } else {
+            //read individual ints (reversing the byte order each time)
+            for (int i = 0; i < TOTAL_SIZE; i++) {
+                PUnsafe.putInt(this.addr + i * 4L, src.readIntLE());
+            }
+        }
+    }
+
+    @Override
+    public boolean write(@NonNull ByteBuf dst) {
+        if (PlatformInfo.IS_LITTLE_ENDIAN) {
+            //copy everything in one go
+            dst.writeBytes(Unpooled.wrappedBuffer(this.addr, TOTAL_SIZE_BYTES, false));
+        } else {
+            //write individual ints (reversing the byte order each time)
+            dst.ensureWritable(TOTAL_SIZE_BYTES);
+            for (int i = 0; i < TOTAL_SIZE; i++) {
+                dst.writeIntLE(PUnsafe.getInt(this.addr + i * 4L));
+            }
+        }
+        return false; //the heightmap renderer has no concept of an "empty" piece
     }
 }

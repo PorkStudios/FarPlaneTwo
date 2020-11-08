@@ -45,13 +45,12 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  *
  * @author DaPorkchop_
  */
-public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends AbstractPieceTask<POS, P, B, CompressedPiece<POS, P, B>> {
+public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends AbstractScaleTask<POS, P, B> {
     protected final int targetDetail;
 
     public RoughScalePieceTask(@NonNull AbstractFarWorld<POS, P, B> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy, int targetDetail) {
         super(world, key, pos, requestedBy);
 
-        checkArg(pos.level() != 0, "cannot do scaling at level %d!", pos.level());
         checkArg(requestedBy != TaskStage.GET || targetDetail == 0, "only GET may target non-zero detail levels!");
 
         this.targetDetail = targetDetail;
@@ -71,56 +70,12 @@ public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece, B ext
     }
 
     @Override
-    public CompressedPiece<POS, P, B> run(@NonNull List<CompressedPiece<POS, P, B>> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
-        CompressedPiece<POS, P, B> piece = this.world.getRawPieceBlocking(this.pos);
-        long newTimestamp = CompressedPiece.pieceRough(this.targetDetail);
-        if (piece.timestamp() >= newTimestamp) {
-            return piece;
-        }
+    protected long computeNewTimestamp() {
+        return CompressedPiece.pieceRough(this.targetDetail);
+    }
 
-        //inflate pieces into array
-        P[] srcs = uncheckedCast(this.world.mode().pieceArray(params.size()));
-        for (int i = 0, len = srcs.length; i < len; i++) {
-            params.get(i).readLock().lock();
-            srcs[i] = params.get(i).inflate();
-        }
-
-        piece.writeLock().lock();
-        try {
-            if (piece.timestamp() >= newTimestamp) {
-                return piece;
-            }
-
-            SimpleRecycler<B> builderRecycler = uncheckedCast(this.pos.mode().builderRecycler());
-            B builder = builderRecycler.allocate();
-            try {
-                builder.reset(); //ensure builder is reset
-
-                this.world.scaler().scale(srcs, builder);
-                piece.set(newTimestamp, builder);
-            } finally {
-                builderRecycler.release(builder);
-            }
-
-            piece.readLock().lock(); //downgrade lock
-        } finally {
-            piece.writeLock().unlock();
-
-            SimpleRecycler<P> pieceRecycler = uncheckedCast(this.pos.mode().pieceRecycler());
-            for (int i = 0, len = srcs.length; i < len; i++) {
-                if (srcs[i] != null) {
-                    pieceRecycler.release(srcs[i]);
-                }
-                params.get(i).readLock().unlock();
-            }
-        }
-
-        try {
-            this.world.pieceChanged(piece);
-        } finally {
-            piece.readLock().unlock();
-        }
-
+    @Override
+    protected CompressedPiece<POS, P, B> finish(@NonNull CompressedPiece<POS, P, B> piece, @NonNull LazyPriorityExecutor<TaskKey> executor) {
         if (this.targetDetail != 0 && this.world.refine()) {
             //continually re-scale the tile until the target detail reaches 0
             executor.submit(new RoughScalePieceTask<>(this.world, this.key.lowerTie(), this.pos, TaskStage.ROUGH_SCALE,

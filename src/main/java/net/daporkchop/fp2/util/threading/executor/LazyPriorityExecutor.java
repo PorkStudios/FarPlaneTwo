@@ -41,6 +41,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
+//TODO: eliminate recursion into lower-priority tasks from the queue while still prioritizing higher-priority ones
 public class LazyPriorityExecutor<K extends LazyKey<K>> {
     @SuppressWarnings("unchecked")
     protected static final Comparator<LazyTask> COMPARATOR = (a, b) -> a.key() != null ? a.key().compareTo(b.key()) : -1;

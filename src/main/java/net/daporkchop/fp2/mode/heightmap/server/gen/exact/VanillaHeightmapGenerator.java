@@ -22,9 +22,9 @@ package net.daporkchop.fp2.mode.heightmap.server.gen.exact;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.mode.common.server.AbstractFarGenerator;
+import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapSample;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPieceBuilder;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.block.Block;
@@ -41,7 +41,7 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public class VanillaHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorExact<HeightmapPos, HeightmapPieceBuilder> {
+public class VanillaHeightmapGenerator extends AbstractFarGenerator<HeightmapPos> implements IFarGeneratorExact<HeightmapPos, HeightmapPieceBuilder> {
     @Override
     public Stream<ChunkPos> neededColumns(@NonNull HeightmapPos pos) {
         return Stream.of(pos.flooredChunkPos());
@@ -53,11 +53,11 @@ public class VanillaHeightmapGenerator extends AbstractFarGenerator implements I
     }
 
     @Override
-    public void generate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos posIn, @NonNull HeightmapPieceBuilder builder) {
+    public long generate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos posIn, @NonNull HeightmapPieceBuilder builder) {
         int pieceX = posIn.x();
         int pieceZ = posIn.z();
 
-        HeightmapData data = new HeightmapData();
+        HeightmapSample data = new HeightmapSample();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         for (int x = 0; x < T_VOXELS; x++) {

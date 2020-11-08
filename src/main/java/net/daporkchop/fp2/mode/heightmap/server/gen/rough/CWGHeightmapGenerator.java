@@ -22,9 +22,9 @@ package net.daporkchop.fp2.mode.heightmap.server.gen.rough;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.common.server.AbstractFarGenerator;
+import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapSample;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPieceBuilder;
 import net.daporkchop.fp2.util.compat.cwg.CWGContext;
@@ -39,12 +39,11 @@ import net.minecraft.world.biome.Biome;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.fp2.util.compat.cwg.CWGContext.*;
 
 /**
  * @author DaPorkchop_
  */
-public class CWGHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorRough<HeightmapPos, HeightmapPieceBuilder> {
+public class CWGHeightmapGenerator extends AbstractFarGenerator<HeightmapPos> implements IFarGeneratorRough<HeightmapPos, HeightmapPieceBuilder> {
     protected Ref<CWGContext> ctx;
 
     @Override
@@ -54,12 +53,12 @@ public class CWGHeightmapGenerator extends AbstractFarGenerator implements IFarG
     }
 
     @Override
-    public void generate(@NonNull HeightmapPos pos, @NonNull HeightmapPieceBuilder piece) {
+    public long generate(@NonNull HeightmapPos pos, @NonNull HeightmapPieceBuilder piece) {
         int level = pos.level();
         int baseX = pos.blockX();
         int baseZ = pos.blockZ();
 
-        HeightmapData data = new HeightmapData();
+        HeightmapSample data = new HeightmapSample();
 
         CWGContext ctx = this.ctx.get();
         ctx.init(baseX >> 4, 0, baseZ >> 4, level);

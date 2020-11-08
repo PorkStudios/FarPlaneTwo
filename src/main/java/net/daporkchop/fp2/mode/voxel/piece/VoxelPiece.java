@@ -91,16 +91,6 @@ public class VoxelPiece implements IFarPiece {
         data.z = (i0 >> 8) & 0xFF;
     }
 
-    static int readOnlyPosAndReturnEdges(long base, int[] dst, int dstOff) {
-        int i0 = PUnsafe.getInt(base + 0L);
-
-        dst[dstOff + 0] = i0 >>> 24;
-        dst[dstOff + 1] = (i0 >> 16) & 0xFF;
-        dst[dstOff + 2] = (i0 >> 8) & 0xFF;
-
-        return i0 & 0x3F;
-    }
-
     protected final long addr = PUnsafe.allocateMemory(this, PIECE_SIZE);
 
     protected int count = -1; //the number of voxels in the piece that are set
@@ -169,14 +159,5 @@ public class VoxelPiece implements IFarPiece {
 
         readOnlyPos(this.addr + INDEX_SIZE + index * ENTRY_FULL_SIZE_BYTES + 2L, data);
         return true;
-    }
-
-    public int getOnlyPosAndReturnEdges(int x, int y, int z, int[] dst, int dstOff)   {
-        int index = PUnsafe.getShort(this.addr + index(x, y, z) * 2L);
-        if (index < 0)  { //index is unset, don't read data
-            return -1;
-        }
-
-        return readOnlyPosAndReturnEdges(this.addr + INDEX_SIZE + index * ENTRY_FULL_SIZE_BYTES + 2L, dst, dstOff);
     }
 }

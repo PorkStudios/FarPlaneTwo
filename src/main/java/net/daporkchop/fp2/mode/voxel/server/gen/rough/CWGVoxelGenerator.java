@@ -41,7 +41,7 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
     }
 
     @Override
-    public void generate(@NonNull VoxelPos pos, @NonNull VoxelPieceBuilder piece) {
+    public long generate(@NonNull VoxelPos pos, @NonNull VoxelPieceBuilder piece) {
         int level = pos.level();
         int baseX = pos.blockX();
         int baseY = pos.blockY();

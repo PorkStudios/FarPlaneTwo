@@ -42,7 +42,7 @@ import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.ExactAsRoughGeneratorFallbackWrapper;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.api.server.scale.IFarScaler;
+import net.daporkchop.fp2.mode.api.server.scale.IFarPieceScaler;
 import net.daporkchop.fp2.util.threading.keyed.DefaultKeyedTaskScheduler;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
@@ -93,7 +93,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
 
     protected final IFarGeneratorRough<POS, B> generatorRough;
     protected final IFarGeneratorExact<POS, B> generatorExact;
-    protected final IFarScaler<POS, P, B> scaler;
+    protected final IFarPieceScaler<POS, P, B> scaler;
     protected final IFarStorage<POS, P, B> storage;
 
     //cache for loaded tiles
@@ -121,12 +121,12 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
         this.world = world;
         this.mode = mode;
 
-        IFarGeneratorRough<POS, B> generatorRough = this.mode().<POS, B>uncheckedGeneratorsRough().stream()
+        IFarGeneratorRough<POS, B> generatorRough = this.mode().<POS, B>generatorsRough().stream()
                 .map(f -> f.apply(world))
                 .filter(Objects::nonNull)
                 .findFirst().orElse(null);
 
-        IFarGeneratorExact<POS, B> generatorExact = this.mode().<POS, B>uncheckedGeneratorsExact().stream()
+        IFarGeneratorExact<POS, B> generatorExact = this.mode().<POS, B>generatorsExact().stream()
                 .map(f -> f.apply(world))
                 .filter(Objects::nonNull)
                 .findFirst().orElseThrow(() -> new IllegalStateException(PStrings.fastFormat(
@@ -151,7 +151,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
         this.refine = this.inaccurate && FP2Config.performance.lowResolutionRefine;
         this.refineProgressive = this.refine && FP2Config.performance.lowResolutionRefineProgressive;
 
-        this.scaler = this.mode().uncheckedCreateScaler(world);
+        this.scaler = this.mode().createPieceScaler();
         this.storage = this.mode().uncheckedCreateStorage(world);
 
         this.executor = new LazyPriorityExecutor<>(

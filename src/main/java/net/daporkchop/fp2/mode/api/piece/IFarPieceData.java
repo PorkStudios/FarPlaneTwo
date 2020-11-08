@@ -18,34 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.piece;
+package net.daporkchop.fp2.mode.api.piece;
+
+import net.daporkchop.fp2.util.IReusablePersistent;
 
 /**
- * Represents the data stored in a single heightmap entry.
- *
  * @author DaPorkchop_
  */
-public class HeightmapData {
-    public int height;
-    public int state;
-    public int light;
-    public int biome;
-
-    public int waterLight;
-    public int waterBiome;
-
-    /**
-     * Resets this instance.
-     *
-     * @return this instance
-     */
-    public HeightmapData reset() {
-        this.height = 0;
-        this.state = 0;
-        this.light = 0;
-        this.biome = 0;
-        this.waterLight = 0;
-        this.waterBiome = 0;
-        return this;
-    }
+public interface IFarPieceData extends IReusablePersistent {
 }

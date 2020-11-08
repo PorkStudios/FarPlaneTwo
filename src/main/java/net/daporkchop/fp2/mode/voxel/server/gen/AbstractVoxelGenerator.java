@@ -20,8 +20,9 @@
 
 package net.daporkchop.fp2.mode.voxel.server.gen;
 
-import net.daporkchop.fp2.mode.common.server.AbstractFarGenerator;
+import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
+import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
 import net.daporkchop.fp2.util.math.Vector3d;
 import net.daporkchop.fp2.util.math.qef.QefSolver;
@@ -36,7 +37,7 @@ import static net.daporkchop.lib.common.math.PMath.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
+public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator<VoxelPos> {
     public static final int DMAP_MIN = -1;
     public static final int DMAP_SIZE = T_VOXELS + 2 - DMAP_MIN;
 

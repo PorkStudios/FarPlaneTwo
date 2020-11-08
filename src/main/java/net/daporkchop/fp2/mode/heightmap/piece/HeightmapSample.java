@@ -18,34 +18,34 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.piece;
-
-import io.netty.buffer.ByteBuf;
-import lombok.NonNull;
+package net.daporkchop.fp2.mode.heightmap.piece;
 
 /**
- * Builder for piece contents.
+ * Represents a single data sample contained in a heightmap piece.
  *
  * @author DaPorkchop_
- * @deprecated no longer needed
  */
-@Deprecated
-public interface IFarPieceBuilder {
-    /**
-     * Resets this builder instance so that it can be re-used for building another piece.
-     */
-    void reset();
+public class HeightmapSample {
+    public int height;
+    public int state;
+    public int light;
+    public int biome;
+
+    public int waterLight;
+    public int waterBiome;
 
     /**
-     * @return this piece's extra data
-     */
-    long extra();
-
-    /**
-     * Writes the piece data for this piece to the given {@link ByteBuf}.
+     * Resets this instance.
      *
-     * @param dst the {@link ByteBuf} to write to
-     * @return whether or not this builder is empty
+     * @return this instance
      */
-    boolean write(@NonNull ByteBuf dst);
+    public HeightmapSample reset() {
+        this.height = 0;
+        this.state = 0;
+        this.light = 0;
+        this.biome = 0;
+        this.waterLight = 0;
+        this.waterBiome = 0;
+        return this;
+    }
 }

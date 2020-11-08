@@ -18,34 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.piece;
+package net.daporkchop.fp2.mode.api.server.gen;
 
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 
 /**
- * Builder for piece contents.
+ * Constructs a piece's contents using input {@link IFarPieceData}.
  *
  * @author DaPorkchop_
- * @deprecated no longer needed
  */
-@Deprecated
-public interface IFarPieceBuilder {
+public interface IFarAssembler<D extends IFarPieceData, P extends IFarPiece> {
     /**
-     * Resets this builder instance so that it can be re-used for building another piece.
-     */
-    void reset();
-
-    /**
-     * @return this piece's extra data
-     */
-    long extra();
-
-    /**
-     * Writes the piece data for this piece to the given {@link ByteBuf}.
+     * Uses the given piece data to assemble a piece.
      *
-     * @param dst the {@link ByteBuf} to write to
-     * @return whether or not this builder is empty
+     * @param data  the raw piece data to use
+     * @param piece the {@link IFarPiece} to be assembled
+     * @return the extra data to be saved with the assembled piece
      */
-    boolean write(@NonNull ByteBuf dst);
+    long assemble(@NonNull D data, @NonNull P piece);
 }

@@ -18,27 +18,26 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.server;
+package net.daporkchop.fp2.mode.api.server.scale;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGenerator;
-import net.daporkchop.lib.unsafe.PUnsafe;
-import net.minecraft.world.WorldServer;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
+
+import java.util.stream.Stream;
 
 /**
+ * Merges the content of multiple high-detail data pieces into a single lower-detail data piece.
+ *
  * @author DaPorkchop_
  */
-public abstract class AbstractFarGenerator implements IFarGenerator {
-    protected static final long SEALEVEL_OFFSET = PUnsafe.pork_getOffset(AbstractFarGenerator.class, "seaLevel");
-
-    protected final int seaLevel; //this is final to allow JIT to hoist slow getfield opcodes out of the main loop when referenced in a loop
-
-    public AbstractFarGenerator() {
-        this.seaLevel = Integer.MIN_VALUE;
-    }
-
-    @Override
-    public void init(@NonNull WorldServer world) {
-        PUnsafe.putInt(this, SEALEVEL_OFFSET, world.getSeaLevel());
-    }
+public interface IFarDataScaler<POS extends IFarPos, D extends IFarPieceData> extends IFarScaler<POS> {
+    /**
+     * Merges the content of the given high-detail data pieces into the given low-detail data piece.
+     *
+     * @param srcs an array containing the high-detail pieces. Pieces are in the same order as provided by the {@link Stream} returned by
+     *             {@link #inputs(IFarPos)}.
+     * @param dst  the low-detail data piece to merge the content into
+     */
+    void scale(@NonNull D[] srcs, @NonNull D dst);
 }

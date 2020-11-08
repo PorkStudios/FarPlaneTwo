@@ -20,23 +20,19 @@
 
 package net.daporkchop.fp2.mode.api.piece;
 
-import io.netty.buffer.ByteBuf;
-import lombok.NonNull;
 import net.daporkchop.fp2.mode.RenderMode;
+import net.daporkchop.fp2.util.IReusablePersistent;
 
 /**
+ * The core component of all FarPlaneTwo render modes, a piece stores all the data required to render a terrain tile.
+ *
  * @author DaPorkchop_
  */
-public interface IFarPiece {
+public interface IFarPiece extends IReusablePersistent {
     /**
      * @return the {@link RenderMode} that this piece is used for
+     * @deprecated i don't think this is actually needed for anything
      */
+    @Deprecated
     RenderMode mode();
-
-    /**
-     * Populates this piece with piece data stored in the given {@link ByteBuf}.
-     *
-     * @param src the {@link ByteBuf} to read from
-     */
-    void read(@NonNull ByteBuf src);
 }
