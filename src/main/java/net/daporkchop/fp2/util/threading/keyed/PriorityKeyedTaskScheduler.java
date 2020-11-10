@@ -25,6 +25,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.util.EqualsTieBreakComparator;
 import net.daporkchop.fp2.util.threading.ConcurrentUnboundedPriorityBlockingQueue;
 import net.daporkchop.lib.common.util.PorkUtil;
 
@@ -63,7 +64,7 @@ public class PriorityKeyedTaskScheduler<K> implements KeyedTaskScheduler<K> {
     protected volatile boolean running = true;
 
     public PriorityKeyedTaskScheduler(int threads, @NonNull ThreadFactory threadFactory) {
-        this.queue = new ConcurrentUnboundedPriorityBlockingQueue<>();
+        this.queue = new ConcurrentUnboundedPriorityBlockingQueue<>(new EqualsTieBreakComparator<>(null, false, true));
 
         this.threads = new Thread[positive(threads, "threads")];
 

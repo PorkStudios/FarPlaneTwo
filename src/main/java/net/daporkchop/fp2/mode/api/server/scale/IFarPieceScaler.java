@@ -34,11 +34,11 @@ import java.util.stream.Stream;
 public interface IFarPieceScaler<POS extends IFarPos, P extends IFarPiece> extends IFarScaler<POS> {
     /**
      * Merges the content of the given high-detail pieces into the given low-detail piece.
-     *
-     * @param srcs an array containing the high-detail pieces. Pieces are in the same order as provided by the {@link Stream} returned by
+     *  @param srcs an array containing the high-detail pieces. Pieces are in the same order as provided by the {@link Stream} returned by
      *             {@link #inputs(IFarPos)}. Any of the pieces may be {@code null}, in which case they should be treated by the implementation
      *             as if they were merely empty.
      * @param dst  the low-detail piece to merge the content into
+     * @return the extra data to be saved with the piece
      */
-    void scale(@NonNull P[] srcs, @NonNull P dst);
+    long scale(@NonNull P[] srcs, @NonNull P dst);
 }

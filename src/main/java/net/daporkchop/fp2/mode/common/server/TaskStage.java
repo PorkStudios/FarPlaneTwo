@@ -29,12 +29,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Getter
 public enum TaskStage {
-    GET(true),
+    LOAD(true),
     ROUGH_GENERATE(false),
     ROUGH_SCALE(false),
     EXACT_GENERATE(false),
     EXACT_SCALE(false),
-    EXACT(false);
+    EXACT(false),
+    REFINE(false);
 
+    @Deprecated
     private final boolean first;
 }

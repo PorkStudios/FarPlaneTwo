@@ -170,7 +170,7 @@ public class Compressed<POS extends IFarPos, V extends IReusablePersistent> exte
     /**
      * @return whether or not this value is done (i.e. has been fully generated and may be saved)
      */
-    public boolean isDone() {
+    public boolean isGenerated() {
         return this.timestamp() >= Compressed.VALUE_ROUGH_COMPLETE;
     }
 

@@ -39,17 +39,31 @@ import java.util.stream.Stream;
  */
 public class GetDataTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData>
         extends AbstractDataTask<POS, P, D, Void> {
+    protected Compressed<POS, D> data;
+
     public GetDataTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
         super(world, key, pos, requestedBy);
     }
 
     @Override
     public Stream<? extends LazyTask<TaskKey, ?, Void>> before(@NonNull TaskKey key) throws Exception {
+        this.data = this.world.getRawDataBlocking(this.pos);
+
+        this.data.readLock().lock();
+        try {
+            if (!this.data.isGenerated()) {
+                if (this.pos.level() == 0 || this.world.inaccurate()) {
+
+                }
+            }
+        } finally {
+            this.data.readLock().unlock();
+        }
         return Stream.empty();
     }
 
     @Override
     public Compressed<POS, D> run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
-        return null; //TODO: implement this
+        return this.data;
     }
 }

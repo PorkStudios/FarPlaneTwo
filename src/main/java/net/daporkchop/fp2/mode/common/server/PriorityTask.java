@@ -18,21 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.server;
+package net.daporkchop.fp2.mode.common.server;
 
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.common.server.AbstractFarStorage;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
-import net.minecraft.world.WorldServer;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.mode.api.IFarPos;
+
+import java.util.function.Predicate;
 
 /**
  * @author DaPorkchop_
  */
-public class VoxelStorage extends AbstractFarStorage<VoxelPos, VoxelPiece, VoxelPieceBuilder> {
-    public VoxelStorage(@NonNull WorldServer world) {
-        super(world, RenderMode.VOXEL);
+@RequiredArgsConstructor
+@Getter
+public class PriorityTask<POS extends IFarPos> implements Comparable<PriorityTask<POS>>, Predicate<PriorityTask<POS>> {
+    @NonNull
+    protected final TaskStage stage;
+    @NonNull
+    protected final POS pos;
+
+    @Override
+    public int compareTo(PriorityTask<POS> task) {
+        int d = Integer.compare(this.stage.ordinal(), task.stage.ordinal());
+        if (d == 0) {
+            d = this.pos.compareTo(task.pos);
+        }
+        return d;
+    }
+
+    @Override
+    public boolean test(PriorityTask<POS> task) {
+        return task.stage.ordinal() < this.stage.ordinal() || task.pos.level() < this.pos.level();
     }
 }

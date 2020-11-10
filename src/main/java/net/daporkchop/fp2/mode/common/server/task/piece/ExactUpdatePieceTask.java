@@ -50,7 +50,7 @@ public class ExactUpdatePieceTask<POS extends IFarPos, P extends IFarPiece, D ex
     @Override
     public Stream<? extends LazyTask<TaskKey, ?, Compressed<POS, P>>> before(@NonNull TaskKey key) throws Exception {
         //fully generate the piece before attempting an exact update
-        return Stream.of(new GetPieceTask<>(this.world, key.withStage(TaskStage.GET), this.pos, TaskStage.EXACT));
+        return Stream.of(new GetPieceTask<>(this.world, key.withStage(TaskStage.LOAD), this.pos, TaskStage.EXACT));
     }
 
     @Override

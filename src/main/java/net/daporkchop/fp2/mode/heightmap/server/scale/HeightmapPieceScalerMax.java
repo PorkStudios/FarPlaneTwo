@@ -61,7 +61,7 @@ public class HeightmapPieceScalerMax implements IFarPieceScaler<HeightmapPos, He
     }
 
     @Override
-    public void scale(@NonNull HeightmapPiece[] srcs, @NonNull HeightmapPiece dst) {
+    public long scale(@NonNull HeightmapPiece[] srcs, @NonNull HeightmapPiece dst) {
         HeightmapSample data = new HeightmapSample();
 
         for (int subX = 0; subX < 2; subX++) {
@@ -81,6 +81,7 @@ public class HeightmapPieceScalerMax implements IFarPieceScaler<HeightmapPos, He
                 }
             }
         }
+        return 0L;
     }
 
     protected void scaleSample(HeightmapPiece src, int srcX, int srcZ, HeightmapSample data) {

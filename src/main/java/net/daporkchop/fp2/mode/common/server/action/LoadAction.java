@@ -18,21 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.server;
+package net.daporkchop.fp2.mode.common.server.action;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.common.server.AbstractFarStorage;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPieceBuilder;
-import net.minecraft.world.WorldServer;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.mode.api.Compressed;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.server.IFarStorage;
+import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
+import net.daporkchop.fp2.util.IReusablePersistent;
+
+import java.util.concurrent.Callable;
 
 /**
+ * Not really a task, but used by {@link AbstractFarWorld} to load a piece from disk and create it if absent.
+ *
  * @author DaPorkchop_
  */
-public class HeightmapStorage extends AbstractFarStorage<HeightmapPos, HeightmapPiece, HeightmapPieceBuilder> {
-    public HeightmapStorage(@NonNull WorldServer world) {
-        super(world, RenderMode.HEIGHTMAP);
+@RequiredArgsConstructor
+public class LoadAction<POS extends IFarPos, V extends IReusablePersistent> implements Callable<Compressed<POS, V>> {
+    @NonNull
+    protected final IFarStorage<POS, V> storage;
+    @NonNull
+    protected final POS pos;
+
+    @Override
+    public Compressed<POS, V> call() throws Exception {
+        Compressed<POS, V> piece = this.storage.load(this.pos);
+        if (piece == null) {
+            //piece doesn't exist on disk, let's make a new one!
+            return new Compressed<>(this.pos);
+        }
+        return piece;
     }
 }

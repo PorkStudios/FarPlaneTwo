@@ -149,7 +149,8 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
         if (this.world instanceof AbstractFarWorld) {
             if (((AbstractFarWorld) this.world).notDone.isEmpty()) {
                 LOGGER.info("Invalidating piece cache");
-                ((AbstractFarWorld) this.world).cache.invalidateAll();
+                ((AbstractFarWorld) this.world).pieceCache.invalidateAll();
+                ((AbstractFarWorld) this.world).dataCache.invalidateAll();
             } else {
                 LOGGER.info("Not invalidating piece cache because some pieces are still queued");
             }

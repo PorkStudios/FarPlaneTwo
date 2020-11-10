@@ -18,17 +18,17 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.server.task.piece;
+package net.daporkchop.fp2.mode.common.server.task.data;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.mode.api.Compressed;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
@@ -40,16 +40,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Generates a piece using the rough generator.
- *
  * @author DaPorkchop_
  */
-public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData>
-        extends AbstractPieceTask<POS, P, D, Void> {
+public class RoughGenerateDataTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData>
+        extends AbstractDataTask<POS, P, D, Void> {
     protected final boolean inaccurate;
 
-    public RoughGeneratePieceTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos) {
-        super(world, key, pos, TaskStage.LOAD);
+    public RoughGenerateDataTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
+        super(world, key, pos, requestedBy);
 
         boolean lowRes = pos.level() != 0;
         if (lowRes) {
@@ -66,19 +64,19 @@ public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece, D 
     }
 
     @Override
-    public Compressed<POS, P> run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
-        Compressed<POS, P> piece = this.world.getRawPieceBlocking(this.pos);
+    public Compressed<POS, D> run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) throws Exception {
+        Compressed<POS, D> compressedData = this.world.getRawDataBlocking(this.pos);
         long newTimestamp = this.inaccurate && this.world.refine()
                 ? Compressed.valueRough(this.pos.level()) //if the piece is inaccurate, it will need to be re-generated later based on scaled data
                 : Compressed.VALUE_ROUGH_COMPLETE;
-        if (piece.timestamp() >= newTimestamp) {
-            return piece;
+        if (compressedData.timestamp() >= newTimestamp) {
+            return compressedData;
         }
 
-        piece.writeLock().lock();
+        compressedData.writeLock().lock();
         try {
-            if (piece.timestamp() >= newTimestamp) {
-                return piece;
+            if (compressedData.timestamp() >= newTimestamp) {
+                return compressedData;
             }
 
             SimpleRecycler<D> builderRecycler = uncheckedCast(this.pos.mode().builderRecycler());
@@ -91,24 +89,9 @@ public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece, D 
             } finally {
                 builderRecycler.release(builder);
             }
-
-            piece.readLock().lock(); //downgrade lock
         } finally {
-            piece.writeLock().unlock();
+            compressedData.writeLock().unlock();
         }
-
-        try {
-            this.world.pieceChanged(piece);
-        } finally {
-            piece.readLock().unlock();
-        }
-
-        if (this.inaccurate && this.world.refine()) {
-            //piece is low-resolution and inaccurate, we should now enqueue it to generate scaled data from the layer below
-            executor.submit(new RoughScalePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_SCALE).lowerTie(), this.pos, TaskStage.ROUGH_GENERATE,
-                    this.world.refineProgressive() ? this.pos.level() - 1 : 0).thenCopyStatusTo(this));
-            return null; //return null so that this won't be complete until the piece is finished
-        }
-        return piece;
+        return compressedData;
     }
 }

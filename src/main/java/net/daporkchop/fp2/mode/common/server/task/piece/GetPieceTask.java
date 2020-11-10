@@ -45,7 +45,7 @@ public class GetPieceTask<POS extends IFarPos, P extends IFarPiece, D extends IF
     public GetPieceTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
         super(world, key, pos, requestedBy);
 
-        world.notDone(pos, requestedBy == TaskStage.GET);
+        world.notDone(pos, requestedBy == TaskStage.LOAD);
     }
 
     @Override
@@ -59,19 +59,19 @@ public class GetPieceTask<POS extends IFarPos, P extends IFarPiece, D extends IF
 
         piece.readLock().lock();
         try {
-            if (piece.isDone()) {
+            if (piece.isGenerated()) {
                 //this adds the piece to the cache, unmarks it as not done and notifies the player tracker
                 this.world.pieceChanged(piece);
             } else { //the piece has not been fully generated yet
                 if (this.pos.level() == 0 //only allow rough generation if the piece was requested for loading by a player's presence
-                    || (this.requestedBy == TaskStage.GET && this.world.lowResolution())) {
+                    || (this.requestedBy == TaskStage.LOAD && this.world.lowResolution())) {
                     //the piece can be generated using the rough generator
                     executor.submit(new RoughGeneratePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_GENERATE), this.pos)
                             .thenCopyStatusTo(this));
                 } else {
                     //the piece is at a lower detail than 0, and low-resolution generation is not an option
                     //this will generate the piece and all pieces below it down to level 0 until the piece can be "generated" from scaled data
-                    executor.submit(new RoughScalePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_SCALE), this.pos, TaskStage.GET, 0)
+                    executor.submit(new RoughScalePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_SCALE), this.pos, TaskStage.LOAD, 0)
                             .thenCopyStatusTo(this));
                 }
                 if (piece.isBlank()) {

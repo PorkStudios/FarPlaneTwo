@@ -46,7 +46,7 @@ public class ExactScalePieceTask<POS extends IFarPos, P extends IFarPiece, D ext
     @Override
     public Stream<? extends LazyTask<TaskKey, ?, Compressed<POS, P>>> before(@NonNull TaskKey key) throws Exception {
         return this.world.pieceScaler().inputs(this.pos)
-                .map(pos -> new GetPieceTask<>(this.world, key.withStageLevel(TaskStage.GET, pos.level()), pos, TaskStage.EXACT_SCALE));
+                .map(pos -> new GetPieceTask<>(this.world, key.withStageLevel(TaskStage.LOAD, pos.level()), pos, TaskStage.EXACT_SCALE));
     }
 
     @Override

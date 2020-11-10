@@ -28,10 +28,8 @@ import lombok.val;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
-import net.daporkchop.fp2.mode.api.server.IFarStorage;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
@@ -43,7 +41,6 @@ import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.client.HeightmapRenderer;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.server.HeightmapPlayerTracker;
-import net.daporkchop.fp2.mode.heightmap.server.HeightmapStorage;
 import net.daporkchop.fp2.mode.heightmap.server.HeightmapWorld;
 import net.daporkchop.fp2.mode.heightmap.server.gen.exact.CCHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.exact.VanillaHeightmapGenerator;
@@ -54,7 +51,6 @@ import net.daporkchop.fp2.mode.voxel.client.VoxelRenderer;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceData;
 import net.daporkchop.fp2.mode.voxel.server.VoxelPlayerTracker;
-import net.daporkchop.fp2.mode.voxel.server.VoxelStorage;
 import net.daporkchop.fp2.mode.voxel.server.VoxelWorld;
 import net.daporkchop.fp2.mode.voxel.server.gen.exact.CCVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
@@ -117,11 +113,6 @@ public enum RenderMode {
         }
 
         @Override
-        public IFarStorage createStorage(@NonNull WorldServer world) {
-            return new HeightmapStorage(world);
-        }
-
-        @Override
         public IFarWorld createWorld(@NonNull WorldServer world) {
             return new HeightmapWorld(world);
         }
@@ -145,6 +136,11 @@ public enum RenderMode {
         @Override
         public IFarPiece[] pieceArray(int size) {
             return new HeightmapPiece[size];
+        }
+
+        @Override
+        public IFarPieceData[] pieceDataArray(int size) {
+            throw new UnsupportedOperationException();
         }
     },
     VOXEL("3D", 4, true) {
@@ -181,11 +177,6 @@ public enum RenderMode {
         }
 
         @Override
-        public IFarStorage createStorage(@NonNull WorldServer world) {
-            return new VoxelStorage(world);
-        }
-
-        @Override
         public IFarWorld createWorld(@NonNull WorldServer world) {
             return new VoxelWorld(world);
         }
@@ -209,6 +200,11 @@ public enum RenderMode {
         @Override
         public IFarPiece[] pieceArray(int size) {
             return new VoxelPiece[size];
+        }
+
+        @Override
+        public IFarPieceData[] pieceDataArray(int size) {
+            return new VoxelPieceData[size];
         }
     };
 
@@ -323,21 +319,6 @@ public enum RenderMode {
     }
 
     /**
-     * Creates a new {@link IFarStorage} for the given {@link WorldServer}.
-     *
-     * @param world the {@link WorldServer} to create an {@link IFarStorage} for
-     * @return a new {@link IFarStorage} for the given {@link WorldServer}
-     */
-    public abstract IFarStorage createStorage(@NonNull WorldServer world);
-
-    /**
-     * {@link #createStorage(WorldServer)}, but with an unchecked generic cast
-     */
-    public <POS extends IFarPos, P extends IFarPiece> IFarStorage<POS, P> uncheckedCreateStorage(@NonNull WorldServer world) {
-        return uncheckedCast(this.createStorage(world));
-    }
-
-    /**
      * Creates a new {@link IFarWorld} for the given {@link WorldServer}.
      *
      * @param world the {@link WorldServer} to create an {@link IFarWorld} for
@@ -373,4 +354,6 @@ public enum RenderMode {
     public abstract IFarPos readPos(@NonNull ByteBuf src);
 
     public abstract IFarPiece[] pieceArray(int size);
+
+    public abstract IFarPieceData[] pieceDataArray(int size);
 }

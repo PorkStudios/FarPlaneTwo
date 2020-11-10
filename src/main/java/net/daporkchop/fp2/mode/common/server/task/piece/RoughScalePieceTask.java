@@ -49,7 +49,7 @@ public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece, D ext
     public RoughScalePieceTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy, int targetDetail) {
         super(world, key, pos, requestedBy);
 
-        checkArg(requestedBy != TaskStage.GET || targetDetail == 0, "only GET may target non-zero detail levels!");
+        checkArg(requestedBy != TaskStage.LOAD || targetDetail == 0, "only GET may target non-zero detail levels!");
 
         this.targetDetail = targetDetail;
         checkArg(targetDetail < pos.level(), "targetDetail (%d) must be less than the piece's detail level (%d)", targetDetail, pos.level());
@@ -60,7 +60,7 @@ public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece, D ext
         Stream<POS> inputs = this.world.pieceScaler().inputs(this.pos);
         if (this.targetDetail == this.pos.level() - 1) {
             //this piece is one level above the target level, so the pieces should be read directly rather than scaling them
-            return inputs.map(pos -> new GetPieceTask<>(this.world, key.withStageLevel(TaskStage.GET, pos.level()), pos, TaskStage.ROUGH_SCALE));
+            return inputs.map(pos -> new GetPieceTask<>(this.world, key.withStageLevel(TaskStage.LOAD, pos.level()), pos, TaskStage.ROUGH_SCALE));
         } else {
             //this piece is more than one level above the target level, queue the pieces below for scaling as well
             return inputs.map(pos -> new RoughScalePieceTask<>(this.world, key.withStageLevel(TaskStage.ROUGH_SCALE, pos.level()), pos, TaskStage.ROUGH_SCALE, this.targetDetail));

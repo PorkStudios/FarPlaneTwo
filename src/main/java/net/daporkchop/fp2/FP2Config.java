@@ -158,7 +158,7 @@ public class FP2Config {
                 "tiles once available."
         })
         @Config.LangKey("config.fp2.performance.lowResolutionRefine")
-        public boolean lowResolutionRefine = true;
+        public boolean lowResolutionRefine = false;
 
         @Config.Comment({
                 "If low resolution refine is enabled, allows incomplete pieces to be saved.",
