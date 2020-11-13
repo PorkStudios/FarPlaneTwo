@@ -29,6 +29,7 @@ import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
@@ -85,7 +86,12 @@ public class RoughGeneratePieceTask<POS extends IFarPos, P extends IFarPiece, B 
             try {
                 builder.reset(); //ensure builder is reset
 
-                this.world.generatorRough().generate(this.pos, builder);
+                try {
+                    this.world.generatorRough().generate(this.pos, builder);
+                } catch (RuntimeException e) {
+                    Constants.LOGGER.error("while generating piece at " + this.pos, e);
+                    builder.reset();
+                }
                 piece.set(newTimestamp, builder);
             } finally {
                 builderRecycler.release(builder);

@@ -27,6 +27,10 @@ import net.daporkchop.fp2.util.math.Vector3d;
 import net.daporkchop.fp2.util.math.qef.QefSolver;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
+import net.minecraft.block.Block;
+import net.minecraft.init.Blocks;
+
+import java.util.Arrays;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
@@ -38,9 +42,19 @@ import static net.daporkchop.lib.common.math.PMath.*;
  */
 public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
     public static final int DMAP_MIN = -1;
-    public static final int DMAP_SIZE = T_VOXELS + 2 - DMAP_MIN;
+    public static final int DMAP_MAX = T_VOXELS + 2;
+    public static final int DMAP_SIZE = DMAP_MAX - DMAP_MIN;
+    public static final int DMAP_SIZE_3 = DMAP_SIZE * DMAP_SIZE * DMAP_SIZE;
 
-    protected static final Ref<double[]> DMAP_CACHE = ThreadRef.soft(() -> new double[DMAP_SIZE * DMAP_SIZE * DMAP_SIZE]);
+    protected static final int[] DI_ADD = {
+            densityIndex(DMAP_MIN + 0, DMAP_MIN + 0, DMAP_MIN + 0), densityIndex(DMAP_MIN + 0, DMAP_MIN + 0, DMAP_MIN + 1),
+            densityIndex(DMAP_MIN + 0, DMAP_MIN + 1, DMAP_MIN + 0), densityIndex(DMAP_MIN + 0, DMAP_MIN + 1, DMAP_MIN + 1),
+            densityIndex(DMAP_MIN + 1, DMAP_MIN + 0, DMAP_MIN + 0), densityIndex(DMAP_MIN + 1, DMAP_MIN + 0, DMAP_MIN + 1),
+            densityIndex(DMAP_MIN + 1, DMAP_MIN + 1, DMAP_MIN + 0), densityIndex(DMAP_MIN + 1, DMAP_MIN + 1, DMAP_MIN + 1)
+    };
+
+    protected static final Ref<double[][]> DMAP_CACHE = ThreadRef.soft(() -> new double[2][DMAP_SIZE_3]);
+    protected static final Ref<int[]> TMAP_CACHE = ThreadRef.soft(() -> new int[DMAP_SIZE_3]);
 
     protected static int densityIndex(int x, int y, int z) {
         return ((x - DMAP_MIN) * DMAP_SIZE + y - DMAP_MIN) * DMAP_SIZE + z - DMAP_MIN;
@@ -69,67 +83,95 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                 lerp(lerp(Xyz, XyZ, z), lerp(XYz, XYZ, z), y), x);
     }
 
-    protected void buildMesh(int baseX, int baseY, int baseZ, int level, VoxelPieceBuilder builder, double[] densityMap, P param) {
+    protected void buildMesh(int baseX, int baseY, int baseZ, int level, VoxelPieceBuilder builder, double[][] densityMap, P param) {
         QefSolver qef = new QefSolver();
         VoxelData data = new VoxelData();
         Vector3d vec = new Vector3d();
 
         double dn = 0.001d * (1 << level);
 
+        int[] tMap = TMAP_CACHE.get();
+        for (int di = 0, x = DMAP_MIN; x < DMAP_MAX; x++) {
+            for (int y = DMAP_MIN; y < DMAP_MAX; y++) {
+                for (int z = DMAP_MIN; z < DMAP_MAX; z++, di++) {
+                    int type = 0;
+                    if (densityMap[0][di] < 0.0d) {
+                        type |= TYPE_TRANSPARENT;
+                    }
+                    if (densityMap[1][di] < 0.0d) {
+                        type |= TYPE_OPAQUE;
+                    }
+                    tMap[di] = type;
+                }
+            }
+        }
+
         for (int dx = 0; dx < T_VOXELS; dx++) {
             for (int dy = 0; dy < T_VOXELS; dy++) {
                 for (int dz = 0; dz < T_VOXELS; dz++) {
+                    int diBase = densityIndex(dx, dy, dz);
+
                     //check for intersection data for each corner
                     int corners = 0;
                     for (int i = 0; i < 8; i++) {
-                        double offsetSubX = dx + ((i >> 2) & 1);
-                        double offsetSubY = dy + ((i >> 1) & 1);
-                        double offsetSubZ = dz + (i & 1);
-                        double density = sampleDensity(offsetSubX, offsetSubY, offsetSubZ, densityMap);
-                        if (density < 0.0d) {
-                            corners |= 1 << i;
-                        }
+                        int di = diBase + DI_ADD[i];
+                        corners |= tMap[di] << (i << 1);
                     }
 
-                    if (corners == 0 || corners == 0xFF) { //if all corners are either solid or non-solid, this voxel can be safely skipped
+                    if (corners == 0 || corners == 0x5555 || corners == 0xAAAA || corners == 0xFFFF) { //if all corners are the same type, this voxel can be safely skipped
                         continue;
                     }
 
                     //populate the QEF with data
                     int edgeCount = 0;
-                    int edgeMask = 0;
+                    int edges = 0;
+                    for (int edge = 0; edge < QEF_EDGE_COUNT; edge++) {
+                        int c0 = QEF_EDGE_VERTEX_MAP[edge << 1];
+                        int c1 = QEF_EDGE_VERTEX_MAP[(edge << 1) | 1];
 
-                    for (int i = 0; i < QEF_EDGE_COUNT && edgeCount < QEF_MAX_EDGES; i++) {
-                        int c0 = QEF_EDGE_VERTEX_MAP[i << 1];
-                        int c1 = QEF_EDGE_VERTEX_MAP[(i << 1) | 1];
-
-                        if (((corners >> c0) & 1) == ((corners >> c1) & 1)) { //both corners along the current edge are identical, this edge can be skipped
+                        int layer0 = (corners >> (c0 << 1)) & 3;
+                        int layer1 = (corners >> (c1 << 1)) & 3;
+                        if (layer0 == layer1 //both corners along the current edge are identical, this edge can be skipped
+                            || max(layer0, layer1) == 3 && min(layer0, layer1) == 2) { //don't consider edges that transition from solid+liquid to solid, because then we'll be generating tons of internal mesh for no reason
                             continue;
                         }
+                        int layer = min(max(layer0, layer1) - 1, 1);
 
-                        double offsetSubX0 = dx + ((c0 >> 2) & 1);
-                        double offsetSubY0 = dy + ((c0 >> 1) & 1);
-                        double offsetSubZ0 = dz + (c0 & 1);
-                        double offsetSubX1 = dx + ((c1 >> 2) & 1);
-                        double offsetSubY1 = dy + ((c1 >> 1) & 1);
-                        double offsetSubZ1 = dz + (c1 & 1);
+                        double density0 = densityMap[layer][diBase + DI_ADD[c0]];
+                        double density1 = densityMap[layer][diBase + DI_ADD[c1]];
 
-                        double density0 = sampleDensity(offsetSubX0, offsetSubY0, offsetSubZ0, densityMap);
-                        double density1 = sampleDensity(offsetSubX1, offsetSubY1, offsetSubZ1, densityMap);
-
-                        double t = minimize(density0, density1);
+                        double t = clamp(minimize(density0, density1), 0.0d, 1.0d);
                         double px = lerp((c0 >> 2) & 1, (c1 >> 2) & 1, t);
                         double py = lerp((c0 >> 1) & 1, (c1 >> 1) & 1, t);
                         double pz = lerp(c0 & 1, c1 & 1, t);
 
-                        double nx = sampleDensity(dx + px + dn, dy + py, dz + pz, densityMap) - sampleDensity(dx + px - dn, dy + py, dz + pz, densityMap);
-                        double ny = sampleDensity(dx + px, dy + py + dn, dz + pz, densityMap) - sampleDensity(dx + px, dy + py - dn, dz + pz, densityMap);
-                        double nz = sampleDensity(dx + px, dy + py, dz + pz + dn, densityMap) - sampleDensity(dx + px, dy + py, dz + pz - dn, densityMap);
+                        double nx = sampleDensity(dx + px + dn, dy + py, dz + pz, densityMap[layer]) - sampleDensity(dx + px - dn, dy + py, dz + pz, densityMap[layer]);
+                        double ny = sampleDensity(dx + px, dy + py + dn, dz + pz, densityMap[layer]) - sampleDensity(dx + px, dy + py - dn, dz + pz, densityMap[layer]);
+                        double nz = sampleDensity(dx + px, dy + py, dz + pz + dn, densityMap[layer]) - sampleDensity(dx + px, dy + py, dz + pz - dn, densityMap[layer]);
 
                         qef.add(px, py, pz, nx, ny, nz);
                         edgeCount++;
-                        edgeMask |= 1 << i;
+
+                        if ((edge & 3) == 3) { //this is a renderable edge, so we need to set the state and face direction
+                            int faceEdge = edge >> 2;
+                            if (layer0 < layer1) { //the face is facing towards negative coordinates
+                                edges |= EDGE_DIR_NEGATIVE << (faceEdge << 1);
+                            } else {
+                                edges |= EDGE_DIR_POSITIVE << (faceEdge << 1);
+                            }
+                            if (layer == 0) {
+                                data.states[faceEdge] = Block.getStateId(Blocks.WATER.getDefaultState());
+                            } else {
+                                data.states[faceEdge] = 1;
+                            }
+                        }
                     }
+
+                    if (edgeCount == 0) {
+                        continue;
+                    }
+
+                    data.edges = edges;
 
                     //solve QEF and set the piece data
                     qef.solve(vec, 0.1, 1, 0.5);
@@ -139,16 +181,18 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                         || vec.z < 0.0d || vec.z > 1.0d) { //ensure that all points are within voxel bounds
                         vec.set(qef.massPoint().x, qef.massPoint().y, qef.massPoint().z);
                     }
-
-                    //TODO: set VoxelData position
-
                     qef.reset();
 
-                    data.edges = edgeMask;
+                    data.x = clamp(floorI(vec.x * POS_ONE), 0, POS_ONE);
+                    data.y = clamp(floorI(vec.y * POS_ONE), 0, POS_ONE);
+                    data.z = clamp(floorI(vec.z * POS_ONE), 0, POS_ONE);
 
-                    double nx = sampleDensity(dx + vec.x + dn, dy + vec.y, dz + vec.z, densityMap) - sampleDensity(dx + vec.x - dn, dy + vec.y, dz + vec.z, densityMap);
-                    double ny = sampleDensity(dx + vec.x, dy + vec.y + dn, dz + vec.z, densityMap) - sampleDensity(dx + vec.x, dy + vec.y - dn, dz + vec.z, densityMap);
-                    double nz = sampleDensity(dx + vec.x, dy + vec.y, dz + vec.z + dn, densityMap) - sampleDensity(dx + vec.x, dy + vec.y, dz + vec.z - dn, densityMap);
+                    data.biome = 0;
+                    data.light = 0xFF;
+
+                    double nx = sampleDensity(dx + vec.x + dn, dy + vec.y, dz + vec.z, densityMap[0]) - sampleDensity(dx + vec.x - dn, dy + vec.y, dz + vec.z, densityMap[0]);
+                    double ny = sampleDensity(dx + vec.x, dy + vec.y + dn, dz + vec.z, densityMap[0]) - sampleDensity(dx + vec.x, dy + vec.y - dn, dz + vec.z, densityMap[0]);
+                    double nz = sampleDensity(dx + vec.x, dy + vec.y, dz + vec.z + dn, densityMap[0]) - sampleDensity(dx + vec.x, dy + vec.y, dz + vec.z - dn, densityMap[0]);
                     double nLen = sqrt(nx * nx + ny * ny + nz * nz);
                     nx /= nLen;
                     ny /= nLen;

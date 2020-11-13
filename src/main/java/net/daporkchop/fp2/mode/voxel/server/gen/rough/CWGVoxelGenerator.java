@@ -26,18 +26,26 @@ import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
 import net.daporkchop.fp2.mode.voxel.server.gen.AbstractVoxelGenerator;
+import net.daporkchop.lib.noise.NoiseSource;
+import net.daporkchop.lib.noise.engine.PerlinNoiseEngine;
+import net.daporkchop.lib.random.impl.FastPRandom;
 import net.minecraft.world.WorldServer;
+
+import java.util.Arrays;
 
 /**
  * @author DaPorkchop_
  */
 public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements IFarGeneratorRough<VoxelPos, VoxelPieceBuilder> {
     //protected Ref<CWGContext> ctx;
+    protected NoiseSource noise;
 
     @Override
     public void init(@NonNull WorldServer world) {
         super.init(world);
         //this.ctx = ThreadRef.soft(() -> new CWGContext(world, 1, 2));
+
+        this.noise = new PerlinNoiseEngine(new FastPRandom(world.getSeed())).scaled(1.0d / 16.0d);
     }
 
     @Override
@@ -49,6 +57,18 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
 
         //CWGContext ctx = this.ctx.get();
         //ctx.init(baseX >> 4, baseY >> 4, baseZ >> 4, level);
+        double[][] densityMap = DMAP_CACHE.get();
+
+        for (int x = DMAP_MIN; x < DMAP_MAX; x++) {
+            for (int y = DMAP_MIN; y < DMAP_MAX; y++) {
+                for (int z = DMAP_MIN; z < DMAP_MAX; z++) {
+                    densityMap[0][densityIndex(x, y, z)] = baseY + y <= this.seaLevel ? -1.0d : 1.0d;
+                }
+            }
+        }
+        this.noise.get(densityMap[1], baseX + DMAP_MIN, baseY + DMAP_MIN, baseZ + DMAP_MIN, 1.0d, 1.0d, 1.0d, DMAP_SIZE, DMAP_SIZE, DMAP_SIZE);
+
+        this.buildMesh(baseX, baseY, baseZ, level, piece, densityMap, null);
     }
 
     @Override

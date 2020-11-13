@@ -54,6 +54,7 @@ import net.daporkchop.fp2.mode.voxel.server.VoxelStorage;
 import net.daporkchop.fp2.mode.voxel.server.VoxelWorld;
 import net.daporkchop.fp2.mode.voxel.server.gen.exact.CCVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
+import net.daporkchop.fp2.mode.voxel.server.gen.rough.CWGVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerAvg;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.PriorityCollection;
@@ -159,7 +160,7 @@ public enum RenderMode {
         @Override
         protected void registerDefaultGenerators() {
             //rough
-            //this.generatorsRough().add(0, world -> new PerlinNoiseVoxelGenerator());
+            this.generatorsRough().add(0, world -> Constants.isCwgWorld(world) ? new CWGVoxelGenerator() : null);
 
             //exact
             this.generatorsExact().add(-100, world -> Constants.isCubicWorld(world) ? new CCVoxelGenerator() : null);
