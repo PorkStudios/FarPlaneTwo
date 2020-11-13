@@ -18,21 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.server;
+package net.daporkchop.fp2.mode.api.server.scale;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.common.server.AbstractFarStorage;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
-import net.minecraft.world.WorldServer;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
+
+import java.util.stream.Stream;
 
 /**
+ * Merges the content of multiple high-detail data pieces into a single lower-detail data piece.
+ *
  * @author DaPorkchop_
  */
-public class VoxelStorage extends AbstractFarStorage<VoxelPos, VoxelPiece, VoxelPieceBuilder> {
-    public VoxelStorage(@NonNull WorldServer world) {
-        super(world, RenderMode.VOXEL);
-    }
+public interface IFarDataScaler<POS extends IFarPos, D extends IFarPieceData> extends IFarScaler<POS> {
+    /**
+     * Merges the content of the given high-detail data pieces into the given low-detail data piece.
+     *
+     * @param srcs an array containing the high-detail pieces. Pieces are in the same order as provided by the {@link Stream} returned by
+     *             {@link #inputs(IFarPos)}. Any of the pieces may be {@code null}, in which case they should be treated by the implementation
+     *             as if they were merely empty.
+     * @param dst  the low-detail data piece to merge the content into
+     */
+    void scale(@NonNull D[] srcs, @NonNull D dst);
 }

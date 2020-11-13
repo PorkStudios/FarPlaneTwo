@@ -18,34 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.piece;
+package net.daporkchop.fp2.mode.common.server.task.piece;
 
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
+import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
+import net.daporkchop.fp2.mode.common.server.TaskKey;
+import net.daporkchop.fp2.mode.common.server.TaskStage;
+import net.daporkchop.fp2.mode.common.server.task.AbstractFarTask;
 
 /**
- * Builder for piece contents.
- *
  * @author DaPorkchop_
- * @deprecated no longer needed
  */
-@Deprecated
-public interface IFarPieceBuilder {
-    /**
-     * Resets this builder instance so that it can be re-used for building another piece.
-     */
-    void reset();
-
-    /**
-     * @return this piece's extra data
-     */
-    long extra();
-
-    /**
-     * Writes the piece data for this piece to the given {@link ByteBuf}.
-     *
-     * @param dst the {@link ByteBuf} to write to
-     * @return whether or not this builder is empty
-     */
-    boolean write(@NonNull ByteBuf dst);
+public abstract class AbstractPieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData, A>
+        extends AbstractFarTask<POS, P, D, P, A> {
+    public AbstractPieceTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
+        super(world, key, pos, requestedBy);
+    }
 }

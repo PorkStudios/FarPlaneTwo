@@ -18,34 +18,31 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.piece;
+package net.daporkchop.fp2.mode.heightmap.server.gen.exact;
 
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
+import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
+import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
+import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
+import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
+import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 
 /**
- * Builder for piece contents.
- *
  * @author DaPorkchop_
- * @deprecated no longer needed
  */
-@Deprecated
-public interface IFarPieceBuilder {
-    /**
-     * Resets this builder instance so that it can be re-used for building another piece.
-     */
-    void reset();
+public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorExact<HeightmapPos, HeightmapPiece, IFarPieceData> {
+    @Override
+    public final void generatePieceData(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos pos, IFarPieceData data) {
+        throw new UnsupportedOperationException();
+    }
 
-    /**
-     * @return this piece's extra data
-     */
-    long extra();
+    @Override
+    public final long generate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos pos, @NonNull HeightmapPiece piece, IFarPieceData data, IFarAssembler<IFarPieceData, HeightmapPiece> assembler) {
+        this.generateHeightmap(world, pos, piece);
+        return 0L;
+    }
 
-    /**
-     * Writes the piece data for this piece to the given {@link ByteBuf}.
-     *
-     * @param dst the {@link ByteBuf} to write to
-     * @return whether or not this builder is empty
-     */
-    boolean write(@NonNull ByteBuf dst);
+    protected abstract void generateHeightmap(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos pos, @NonNull HeightmapPiece piece);
 }

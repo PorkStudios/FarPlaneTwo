@@ -21,11 +21,12 @@
 package net.daporkchop.fp2.mode.voxel.server.gen.rough;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.voxel.VoxelData;
+import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
-import net.daporkchop.fp2.mode.voxel.server.gen.AbstractVoxelGenerator;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceData;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelSample;
 import net.daporkchop.lib.noise.NoiseSource;
 import net.daporkchop.lib.noise.engine.PerlinNoiseEngine;
 import net.daporkchop.lib.random.impl.FastPRandom;
@@ -40,7 +41,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 //TODO: this is currently only generating the mesh using perlin noise
-public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements IFarGeneratorRough<VoxelPos, VoxelPieceBuilder> {
+public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<Void> {
     //protected Ref<CWGContext> ctx;
     protected NoiseSource noise;
 
@@ -53,7 +54,11 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
     }
 
     @Override
-    public void generate(@NonNull VoxelPos pos, @NonNull VoxelPieceBuilder piece) {
+    public void generatePieceData(@NonNull VoxelPos pos, @NonNull VoxelPieceData data) {
+    }
+
+    @Override
+    public long generate(@NonNull VoxelPos pos, @NonNull VoxelPiece piece, @NonNull VoxelPieceData data, @NonNull IFarAssembler<VoxelPieceData, VoxelPiece> assembler) {
         int level = pos.level();
         int baseX = pos.blockX();
         int baseY = pos.blockY();
@@ -73,6 +78,7 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
         this.noise.get(densityMap[1], baseX + DMAP_MIN, baseY + DMAP_MIN, baseZ + DMAP_MIN, 1.0d, 1.0d, 1.0d, DMAP_SIZE, DMAP_SIZE, DMAP_SIZE);
 
         this.buildMesh(baseX, baseY, baseZ, level, piece, densityMap, null);
+        return 0;
     }
 
     @Override
@@ -81,10 +87,10 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
     }
 
     @Override
-    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, double nx, double ny, double nz, VoxelData data, Void param) {
+    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, double nx, double ny, double nz, VoxelSample sample, Void param) {
         blockY++;
-        data.light = packCombinedLight((blockY < this.seaLevel ? max(15 - (this.seaLevel - blockY) * 3, 0) : 15) << 20);
-        data.biome = 0;
+        sample.light = packCombinedLight((blockY < this.seaLevel ? max(15 - (this.seaLevel - blockY) * 3, 0) : 15) << 20);
+        sample.biome = 0;
     }
 
     @Override

@@ -18,34 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.piece;
+package net.daporkchop.fp2.mode.common.server.gen;
 
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.server.gen.IFarGenerator;
+import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.world.WorldServer;
 
 /**
- * Builder for piece contents.
- *
  * @author DaPorkchop_
- * @deprecated no longer needed
  */
-@Deprecated
-public interface IFarPieceBuilder {
-    /**
-     * Resets this builder instance so that it can be re-used for building another piece.
-     */
-    void reset();
+public abstract class AbstractFarGenerator implements IFarGenerator {
+    protected static final long SEALEVEL_OFFSET = PUnsafe.pork_getOffset(AbstractFarGenerator.class, "seaLevel");
 
-    /**
-     * @return this piece's extra data
-     */
-    long extra();
+    protected final int seaLevel; //this is final to allow JIT to hoist slow getfield opcodes out of the main loop when referenced in a loop
 
-    /**
-     * Writes the piece data for this piece to the given {@link ByteBuf}.
-     *
-     * @param dst the {@link ByteBuf} to write to
-     * @return whether or not this builder is empty
-     */
-    boolean write(@NonNull ByteBuf dst);
+    public AbstractFarGenerator() {
+        this.seaLevel = Integer.MIN_VALUE;
+    }
+
+    @Override
+    public void init(@NonNull WorldServer world) {
+        PUnsafe.putInt(this, SEALEVEL_OFFSET, world.getSeaLevel());
+    }
 }

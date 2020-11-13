@@ -22,9 +22,10 @@ package net.daporkchop.fp2.mode.heightmap.server.gen.exact;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.mode.common.server.AbstractFarGenerator;
+import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapSample;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPieceBuilder;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.block.Block;
@@ -41,7 +42,7 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public class VanillaHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorExact<HeightmapPos, HeightmapPieceBuilder> {
+public class VanillaHeightmapGenerator extends AbstractExactHeightmapGenerator {
     @Override
     public Stream<ChunkPos> neededColumns(@NonNull HeightmapPos pos) {
         return Stream.of(pos.flooredChunkPos());
@@ -53,11 +54,11 @@ public class VanillaHeightmapGenerator extends AbstractFarGenerator implements I
     }
 
     @Override
-    public void generate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos posIn, @NonNull HeightmapPieceBuilder builder) {
+    protected void generateHeightmap(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos posIn, @NonNull HeightmapPiece piece) {
         int pieceX = posIn.x();
         int pieceZ = posIn.z();
 
-        HeightmapData data = new HeightmapData();
+        HeightmapSample sample = new HeightmapSample();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         for (int x = 0; x < T_VOXELS; x++) {
@@ -71,15 +72,15 @@ public class VanillaHeightmapGenerator extends AbstractFarGenerator implements I
                     state = world.getBlockState(pos);
                 }
 
-                pos.setY(data.height = ++height);
-                data.state = Block.getStateId(state);
-                data.light = packCombinedLight(world.getCombinedLight(pos, 0));
-                data.biome = Biome.getIdForBiome(world.getBiome(pos));
+                pos.setY(sample.height = ++height);
+                sample.state = Block.getStateId(state);
+                sample.light = packCombinedLight(world.getCombinedLight(pos, 0));
+                sample.biome = Biome.getIdForBiome(world.getBiome(pos));
                 pos.setY(this.seaLevel + 1);
-                data.waterLight = packCombinedLight(world.getCombinedLight(pos, 0));
-                data.waterBiome = Biome.getIdForBiome(world.getBiome(pos));
+                sample.waterLight = packCombinedLight(world.getCombinedLight(pos, 0));
+                sample.waterBiome = Biome.getIdForBiome(world.getBiome(pos));
 
-                builder.set(x, z, data);
+                piece.set(x, z, sample);
             }
         }
     }

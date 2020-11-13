@@ -27,8 +27,9 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.util.IReusablePersistent;
+import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.lib.compression.zstd.Zstd;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -43,24 +44,24 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public class CompressedPiece<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends ReentrantReadWriteLock {
+public class Compressed<POS extends IFarPos, V extends IReusablePersistent> extends ReentrantReadWriteLock {
     /**
      * Timestamp indicating that the piece does not contain any data.
      */
-    public static final long PIECE_BLANK = Long.MIN_VALUE;
+    public static final long VALUE_BLANK = Long.MIN_VALUE;
 
     /**
      * Timestamp indicating that the piece's rough generation has been completed.
      */
-    public static final long PIECE_ROUGH_COMPLETE = -1L;
+    public static final long VALUE_ROUGH_COMPLETE = -1L;
 
     /**
-     * Gets a timestamp indicating that the piece contains rough data generated at the given level.
+     * Gets a timestamp indicating that the value contains rough data generated at the given level.
      *
      * @param level the lowest level that has been generated roughly
      * @return a timestamp indicating that the piece contains rough data generated at the given level
      */
-    public static long pieceRough(int level) {
+    public static long valueRough(int level) {
         return -level - 1L;
     }
 
@@ -68,43 +69,43 @@ public class CompressedPiece<POS extends IFarPos, P extends IFarPiece, B extends
     protected long extra;
     protected byte[] data;
 
-    protected long timestamp = PIECE_BLANK;
+    protected long timestamp = VALUE_BLANK;
 
     /**
-     * Creates a new compressed piece with no data at the given position.
+     * Creates a new compressed value with no data at the given piece position.
      *
-     * @param pos the position of the piece
+     * @param pos the position of the value
      */
-    public CompressedPiece(@NonNull POS pos) {
+    public Compressed(@NonNull POS pos) {
         this.pos = pos;
     }
 
     /**
-     * Reads a piece prefixed with the render mode and the piece position from the given {@link ByteBuf}.
+     * Reads a value prefixed with the render mode and the piece position from the given {@link ByteBuf}.
      *
      * @param src the {@link ByteBuf} to read from
      */
-    public CompressedPiece(@NonNull ByteBuf src) {
+    public Compressed(@NonNull ByteBuf src) {
         this(src, RenderMode.fromOrdinal(src.readUnsignedByte()));
     }
 
     /**
-     * Reads a piece prefixed with the piece position from the given {@link ByteBuf}.
+     * Reads a value prefixed with the piece position from the given {@link ByteBuf}.
      *
      * @param src  the {@link ByteBuf} to read from
-     * @param mode the {@link RenderMode} that the piece belongs to
+     * @param mode the {@link RenderMode} that the value belongs to
      */
-    public CompressedPiece(@NonNull ByteBuf src, @NonNull RenderMode mode) {
+    public Compressed(@NonNull ByteBuf src, @NonNull RenderMode mode) {
         this(uncheckedCast(mode.readPos(src)), src);
     }
 
     /**
-     * Reads a piece with no prefix from the given {@link ByteBuf}.
+     * Reads a value with no prefix from the given {@link ByteBuf}.
      *
      * @param pos the piece position
      * @param src the {@link ByteBuf} to read from
      */
-    public CompressedPiece(@NonNull POS pos, @NonNull ByteBuf src) {
+    public Compressed(@NonNull POS pos, @NonNull ByteBuf src) {
         this(pos);
 
         this.extra = readVarLong(src);
@@ -117,7 +118,7 @@ public class CompressedPiece<POS extends IFarPos, P extends IFarPiece, B extends
     }
 
     /**
-     * Writes this piece to the given {@link ByteBuf}, prefixed with the render mode and piece position.
+     * Writes this value to the given {@link ByteBuf}, prefixed with the render mode and piece position.
      *
      * @param dst the {@link ByteBuf} to write to
      */
@@ -127,7 +128,7 @@ public class CompressedPiece<POS extends IFarPos, P extends IFarPiece, B extends
     }
 
     /**
-     * Writes this piece to the given {@link ByteBuf}, prefixed with the piece position.
+     * Writes this value to the given {@link ByteBuf}, prefixed with the piece position.
      *
      * @param dst the {@link ByteBuf} to write to
      */
@@ -137,7 +138,7 @@ public class CompressedPiece<POS extends IFarPos, P extends IFarPiece, B extends
     }
 
     /**
-     * Writes this piece to the given {@link ByteBuf} with no prefix.
+     * Writes this value to the given {@link ByteBuf} with no prefix.
      *
      * @param dst the {@link ByteBuf} to write to
      */
@@ -160,33 +161,33 @@ public class CompressedPiece<POS extends IFarPos, P extends IFarPiece, B extends
     }
 
     /**
-     * @return whether or not this piece is blank (i.e. has not been generated)
+     * @return whether or not this value is blank (i.e. has not been generated)
      */
     public boolean isBlank() {
-        return this.timestamp() == CompressedPiece.PIECE_BLANK;
+        return this.timestamp() == Compressed.VALUE_BLANK;
     }
 
     /**
-     * @return whether or not this piece is done (i.e. has been fully generated and may be saved)
+     * @return whether or not this value is done (i.e. has been fully generated and may be saved)
      */
-    public boolean isDone() {
-        return this.timestamp() >= CompressedPiece.PIECE_ROUGH_COMPLETE;
+    public boolean isGenerated() {
+        return this.timestamp() >= Compressed.VALUE_ROUGH_COMPLETE;
     }
 
     /**
-     * @return whether or not this piece is empty, or has been generated but still has no contents
+     * @return whether or not this value is empty, or has been generated but still has no contents
      */
-    public boolean todo_renameTo_isEmpty() {
+    public boolean isEmpty() {
         return this.data == null;
     }
 
     /**
-     * @return the inflated, parsed piece
+     * @return the inflated, parsed value
      */
-    public P inflate() {
+    public V inflate(@NonNull SimpleRecycler<V> recycler) {
         this.readLock().lock();
         try {
-            checkState(!this.isBlank(), "piece hasn't been generated!");
+            checkState(!this.isBlank(), "value hasn't been generated!");
 
             byte[] data = this.data;
             if (data == null) {
@@ -197,7 +198,9 @@ public class CompressedPiece<POS extends IFarPos, P extends IFarPiece, B extends
             ByteBuf uncompressed = Constants.allocateByteBufExactly(Zstd.PROVIDER.frameContentSize(compressed));
             try {
                 checkState(ZSTD_INF.get().decompress(compressed, uncompressed));
-                return uncheckedCast(this.pos.mode().readPiece(uncompressed));
+                V value = recycler.allocate();
+                value.read(uncompressed);
+                return value;
             } finally {
                 uncompressed.release();
                 //no reason to release the wrapped buffer lmao
@@ -207,19 +210,19 @@ public class CompressedPiece<POS extends IFarPos, P extends IFarPiece, B extends
         }
     }
 
-    public void set(long timestamp, @NonNull B builder) throws IllegalArgumentException {
-        //before doing anything we compress the piece data into an array
+    public boolean set(long timestamp, @NonNull V value, long extra) throws IllegalArgumentException {
+        //before doing anything we compress the value data into an array
         byte[] data = null;
         ByteBuf compressed = null;
         COMPRESS:
         try {
             ByteBuf uncompressed = ByteBufAllocator.DEFAULT.buffer();
             try {
-                if (builder.write(uncompressed))    { //write piece
-                    break COMPRESS; //skip compression if builder is empty
+                if (value.write(uncompressed)) { //write value
+                    break COMPRESS; //skip compression if value is empty
                 }
                 compressed = Constants.allocateByteBufExactly(Zstd.PROVIDER.compressBound(uncompressed.readableBytes())); //allocate dst buffer
-                checkState(ZSTD_DEF.get().compress(uncompressed, compressed)); //compress piece
+                checkState(ZSTD_DEF.get().compress(uncompressed, compressed)); //compress value
             } finally {
                 uncompressed.release(); //discard uncompressed data
             }
@@ -233,11 +236,14 @@ public class CompressedPiece<POS extends IFarPos, P extends IFarPiece, B extends
 
         this.writeLock().lock();
         try {
-            long current = this.timestamp;
-            checkArg(timestamp > current, "new timestamp (%d) must be greater than current timestamp (%d)!", timestamp, current);
-            this.timestamp = timestamp;
-            this.extra = builder.extra();
-            this.data = data;
+            if (timestamp > this.timestamp) {
+                this.timestamp = timestamp;
+                this.extra = extra;
+                this.data = data;
+                return true;
+            } else {
+                return false;
+            }
         } finally {
             this.writeLock().unlock();
         }

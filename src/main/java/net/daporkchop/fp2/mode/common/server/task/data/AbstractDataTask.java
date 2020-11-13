@@ -18,27 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.server;
+package net.daporkchop.fp2.mode.common.server.task.data;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGenerator;
-import net.daporkchop.lib.unsafe.PUnsafe;
-import net.minecraft.world.WorldServer;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
+import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
+import net.daporkchop.fp2.mode.common.server.TaskKey;
+import net.daporkchop.fp2.mode.common.server.TaskStage;
+import net.daporkchop.fp2.mode.common.server.task.AbstractFarTask;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractFarGenerator implements IFarGenerator {
-    protected static final long SEALEVEL_OFFSET = PUnsafe.pork_getOffset(AbstractFarGenerator.class, "seaLevel");
-
-    protected final int seaLevel; //this is final to allow JIT to hoist slow getfield opcodes out of the main loop when referenced in a loop
-
-    public AbstractFarGenerator() {
-        this.seaLevel = Integer.MIN_VALUE;
-    }
-
-    @Override
-    public void init(@NonNull WorldServer world) {
-        PUnsafe.putInt(this, SEALEVEL_OFFSET, world.getSeaLevel());
+public abstract class AbstractDataTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData, A>
+        extends AbstractFarTask<POS, P, D, D, A> {
+    public AbstractDataTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
+        super(world, key, pos, requestedBy);
     }
 }

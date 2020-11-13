@@ -40,9 +40,9 @@ public class CCVoxelGenerator extends AbstractExactVoxelGenerator {
     @Override
     public Stream<Vec3i> neededCubes(@NonNull IBlockHeightAccess world, @NonNull VoxelPos pos) {
         Vec3i[] arr = new Vec3i[8];
-        for (int i = 0, dx = 0; dx <= 1; dx++) {
-            for (int dy = 0; dy <= 1; dy++) {
-                for (int dz = 0; dz <= 1; dz++) {
+        for (int i = 0, dx = 0; dx < 2; dx++) {
+            for (int dy = 0; dy < 2; dy++) {
+                for (int dz = 0; dz < 2; dz++) {
                     arr[i++] = new Vec3i(pos.x() + dx, pos.y() + dy, pos.z() + dz);
                 }
             }

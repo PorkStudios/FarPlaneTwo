@@ -28,25 +28,29 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
-import net.daporkchop.fp2.mode.common.server.task.ExactUpdatePieceTask;
-import net.daporkchop.fp2.mode.common.server.task.GetPieceTask;
-import net.daporkchop.fp2.mode.common.server.task.LoadPieceAction;
-import net.daporkchop.fp2.mode.common.server.task.SavePieceAction;
+import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarContext;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
 import net.daporkchop.fp2.mode.api.server.IFarStorage;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.ExactAsRoughGeneratorFallbackWrapper;
+import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.api.server.scale.IFarScaler;
-import net.daporkchop.fp2.util.threading.keyed.DefaultKeyedTaskScheduler;
+import net.daporkchop.fp2.mode.api.server.scale.IFarDataScaler;
+import net.daporkchop.fp2.mode.api.server.scale.IFarPieceScaler;
+import net.daporkchop.fp2.mode.common.server.task.piece.ExactUpdatePieceTask;
+import net.daporkchop.fp2.mode.common.server.task.piece.GetPieceTask;
+import net.daporkchop.fp2.mode.common.server.action.LoadAction;
+import net.daporkchop.fp2.mode.common.server.action.SavePieceAction;
+import net.daporkchop.fp2.mode.common.server.worker.DataFarServerWorker;
+import net.daporkchop.fp2.mode.common.server.worker.NormalFarServerWorker;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
-import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
+import net.daporkchop.fp2.util.threading.executor.PriorityRecursiveExecutor;
+import net.daporkchop.fp2.util.threading.keyed.DefaultKeyedTaskScheduler;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 import net.daporkchop.lib.common.function.io.IOConsumer;
@@ -75,6 +79,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 
 import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -85,19 +90,28 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> implements IFarWorld<POS, P, B> {
+public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData> implements IFarWorld<POS, P, D> {
     protected static final BiFunction<Boolean, Boolean, Boolean> BOOLEAN_OR = (a, b) -> a | b;
 
     protected final WorldServer world;
     protected final RenderMode mode;
+    protected final File root;
 
-    protected final IFarGeneratorRough<POS, B> generatorRough;
-    protected final IFarGeneratorExact<POS, B> generatorExact;
-    protected final IFarScaler<POS, P, B> scaler;
-    protected final IFarStorage<POS, P, B> storage;
+    protected final IFarGeneratorRough<POS, P, D> generatorRough;
+    protected final IFarGeneratorExact<POS, P, D> generatorExact;
+    protected final IFarPieceScaler<POS, P> pieceScaler;
+    protected final IFarDataScaler<POS, D> dataScaler;
+    protected final IFarAssembler<D, P> pieceAssembler;
+
+    protected final IFarStorage<POS, P> pieceStorage;
+    protected final IFarStorage<POS, D> dataStorage;
 
     //cache for loaded tiles
-    protected final Cache<POS, CompressedPiece<POS, P, B>> cache = CacheBuilder.newBuilder()
+    protected final Cache<POS, Compressed<POS, P>> pieceCache = CacheBuilder.newBuilder()
+            .concurrencyLevel(FP2Config.generationThreads)
+            .softValues()
+            .build();
+    protected final Cache<POS, Compressed<POS, D>> dataCache = CacheBuilder.newBuilder()
             .concurrencyLevel(FP2Config.generationThreads)
             .softValues()
             .build();
@@ -109,24 +123,23 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
     protected final ObjLongMap<POS> exactActive = new ObjLongConcurrentHashMap<>(-1L);
     protected final Queue<LazyTask<TaskKey, ?, ?>> pendingExactTasks = new ArrayDeque<>();
 
-    protected final LazyPriorityExecutor<TaskKey> executor; //TODO: make these global rather than per-dimension
+    protected final PriorityRecursiveExecutor<PriorityTask<POS>> executor; //TODO: make these global rather than per-dimension
     protected final DefaultKeyedTaskScheduler<POS> ioExecutor;
 
     protected final boolean lowResolution;
     protected final boolean inaccurate;
     protected final boolean refine;
-    protected final boolean refineProgressive;
 
     public AbstractFarWorld(@NonNull WorldServer world, @NonNull RenderMode mode) {
         this.world = world;
         this.mode = mode;
 
-        IFarGeneratorRough<POS, B> generatorRough = this.mode().<POS, B>uncheckedGeneratorsRough().stream()
+        IFarGeneratorRough<POS, P, D> generatorRough = this.mode().<POS, P, D>generatorsRough().stream()
                 .map(f -> f.apply(world))
                 .filter(Objects::nonNull)
                 .findFirst().orElse(null);
 
-        IFarGeneratorExact<POS, B> generatorExact = this.mode().<POS, B>uncheckedGeneratorsExact().stream()
+        IFarGeneratorExact<POS, P, D> generatorExact = this.mode().<POS, P, D>generatorsExact().stream()
                 .map(f -> f.apply(world))
                 .filter(Objects::nonNull)
                 .findFirst().orElseThrow(() -> new IllegalStateException(PStrings.fastFormat(
@@ -149,42 +162,69 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
         this.lowResolution = FP2Config.performance.lowResolutionEnable && this.generatorRough.supportsLowResolution();
         this.inaccurate = this.lowResolution && this.generatorRough.isLowResolutionInaccurate();
         this.refine = this.inaccurate && FP2Config.performance.lowResolutionRefine;
-        this.refineProgressive = this.refine && FP2Config.performance.lowResolutionRefineProgressive;
 
-        this.scaler = this.mode().uncheckedCreateScaler(world);
-        this.storage = this.mode().uncheckedCreateStorage(world);
+        Consumer<PriorityTask<POS>> worker;
+        if (this.mode().usesPieceData()) {
+            this.pieceScaler = null;
+            this.dataScaler = this.mode().createDataScaler();
+            this.pieceAssembler = this.mode().createAssembler();
+            this.dataStorage = new FarStorage<>(world, this.mode(), "data");
+            worker = new DataFarServerWorker<>(this);
+        } else {
+            this.pieceScaler = this.mode().createPieceScaler();
+            this.dataScaler = null;
+            this.pieceAssembler = null;
+            this.dataStorage = null;
+            worker = new NormalFarServerWorker<>(this);
+        }
+        this.pieceStorage = new FarStorage<>(world, this.mode(), "piece");
 
-        this.executor = new LazyPriorityExecutor<>(
+        this.executor = new PriorityRecursiveExecutor<>(
                 FP2Config.generationThreads,
                 PThreadFactories.builder().daemon().minPriority()
-                        .collapsingId().name(PStrings.fastFormat("FP2 DIM%d Generation Thread #%%d", world.provider.getDimension())).build());
+                        .collapsingId().name(PStrings.fastFormat("FP2 DIM%d Generation Thread #%%d", world.provider.getDimension())).build(),
+                worker);
         this.ioExecutor = new DefaultKeyedTaskScheduler<>(
                 FP2Config.ioThreads,
                 PThreadFactories.builder().daemon().minPriority()
                         .collapsingId().name(PStrings.fastFormat("FP2 DIM%d IO Thread #%%d", world.provider.getDimension())).build());
 
+        this.root = new File(world.getChunkSaveLocation(), "fp2/" + this.mode().name().toLowerCase());
         this.loadNotDone();
 
         MinecraftForge.EVENT_BUS.register(this);
     }
 
+    public boolean usesPieceData() {
+        return this.dataStorage != null;
+    }
+
     @Override
-    public CompressedPiece<POS, P, B> getPieceLazy(@NonNull POS pos) {
-        CompressedPiece<POS, P, B> piece = this.cache.getIfPresent(pos);
-        if (piece == null || piece.timestamp() == CompressedPiece.PIECE_BLANK) {
+    public Compressed<POS, P> getPieceLazy(@NonNull POS pos) {
+        Compressed<POS, P> piece = this.pieceCache.getIfPresent(pos);
+        if (piece == null || piece.timestamp() == Compressed.VALUE_BLANK) {
             if (this.notDone(pos, true)) {
                 //piece is not in cache and was newly marked as queued
-                TaskKey key = new TaskKey(TaskStage.GET, pos.level());
-                this.executor.submit(new GetPieceTask<>(this, key, pos, TaskStage.GET));
+                TaskKey key = new TaskKey(TaskStage.LOAD, pos.level());
+                this.executor.submit(new GetPieceTask<>(this, key, pos, TaskStage.LOAD));
             }
             return null;
         }
         return piece;
     }
 
-    public CompressedPiece<POS, P, B> getRawPieceBlocking(@NonNull POS pos) {
+    public Compressed<POS, P> getRawPieceBlocking(@NonNull POS pos) {
         try {
-            return this.cache.get(pos, new LoadPieceAction<>(this, pos));
+            return this.pieceCache.get(pos, new LoadAction<>(this.pieceStorage, pos));
+        } catch (ExecutionException e) {
+            PUnsafe.throwException(e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Compressed<POS, D> getRawDataBlocking(@NonNull POS pos) {
+        try {
+            return this.dataCache.get(pos, new LoadAction<>(this.dataStorage, pos));
         } catch (ExecutionException e) {
             PUnsafe.throwException(e);
             throw new RuntimeException(e);
@@ -192,20 +232,20 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
     }
 
     @SuppressWarnings("unchecked")
-    public void pieceChanged(@NonNull CompressedPiece<POS, P, B> piece) {
+    public void pieceChanged(@NonNull Compressed<POS, P> piece) {
         if (piece.isBlank()) {
             return;
         }
 
-        this.cache.put(piece.pos(), piece);
+        this.pieceCache.put(piece.pos(), piece);
         ((IFarContext) this.world).tracker().pieceChanged(piece);
 
-        if (piece.isDone()) {
+        if (piece.isGenerated()) {
             //unmark piece as being incomplete
             this.notDone.remove(piece.pos());
         }
 
-        if (FP2Config.performance.savePartial || piece.isDone()) {
+        if (FP2Config.performance.savePartial || piece.isGenerated()) {
             //save the piece
             this.ioExecutor.submit(piece.pos(), new SavePieceAction<>(this, piece));
         }
@@ -216,6 +256,14 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
 
             this.scaler.outputs(piece.pos()).forEach(outputPos -> this.schedulePieceForUpdate(outputPos, currTimestamp));
         }
+    }
+
+    public void dataChanged(@NonNull Compressed<POS, D> data) {
+        if (data.isBlank()) {
+            return;
+        }
+
+        this.dataCache.put(data.pos(), data);
     }
 
     protected void schedulePieceForUpdate(@NonNull POS pos, long newTimestamp) {
@@ -281,7 +329,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
         LOGGER.trace("Shutting down IO workers in DIM{}", this.world.provider.getDimension());
         this.ioExecutor.shutdown();
         LOGGER.trace("Shutting down storage in DIM{}", this.world.provider.getDimension());
-        this.storage.close();
+        this.pieceStorage.close();
         this.saveNotDone();
     }
 
@@ -292,9 +340,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
 
         LOGGER.trace("Saving incomplete pieces in DIM{}", this.world.provider.getDimension());
 
-        File root = this.storage.storageRoot();
-        File tmpFile = PFiles.ensureFileExists(new File(root, "notDone.tmp"));
-        File file = new File(root, "notDone");
+        File tmpFile = PFiles.ensureFileExists(new File(this.root, "notDone.tmp"));
+        File file = new File(this.root, "notDone");
 
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
         try (DataOut out = ZSTD_DEF.get().compressionStream(DataOut.wrapNonBuffered(tmpFile))) {
@@ -332,11 +379,11 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
     }
 
     protected void loadNotDone() {
-        Collection<GetPieceTask<POS, P, B>> loadTasks = new ArrayList<>();
-        Collection<ExactUpdatePieceTask<POS, P, B>> exactGenerateTasks = new ArrayList<>();
+        Collection<GetPieceTask<POS, P, D>> loadTasks = new ArrayList<>();
+        Collection<ExactUpdatePieceTask<POS, P, D>> exactGenerateTasks = new ArrayList<>();
 
         try {
-            File file = new File(this.storage.storageRoot(), "notDone");
+            File file = new File(this.root, "notDone");
             if (FP2_DEBUG && (FP2Config.debug.disablePersistence || FP2Config.debug.disableRead) || !PFiles.checkFileExists(file)) {
                 return; //don't bother attempting to load
             }
@@ -349,7 +396,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
 
                     POS pos = uncheckedCast(this.mode.readPos(buf));
                     if (this.notDone(pos, true) && pos.level() < FP2Config.maxLevels) {
-                        loadTasks.add(new GetPieceTask<>(this, new TaskKey(TaskStage.GET, pos.level()), pos, TaskStage.GET));
+                        loadTasks.add(new GetPieceTask<>(this, new TaskKey(TaskStage.LOAD, pos.level()), pos, TaskStage.LOAD));
                     }
                 }
 
@@ -359,7 +406,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
                     long newTimestamp = in.readVarLong();
 
                     POS pos = uncheckedCast(this.mode.readPos(buf));
-                    if (this.exactActive.put(pos, newTimestamp) < 0L && pos.level() < FP2Config.maxLevels)  {
+                    if (this.exactActive.put(pos, newTimestamp) < 0L && pos.level() < FP2Config.maxLevels) {
                         exactGenerateTasks.add(new ExactUpdatePieceTask<>(this, new TaskKey(TaskStage.EXACT, pos.level()), pos, TaskStage.EXACT));
                     }
                 }

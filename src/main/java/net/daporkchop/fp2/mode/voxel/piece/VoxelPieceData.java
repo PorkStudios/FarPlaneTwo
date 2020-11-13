@@ -18,21 +18,26 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.server;
+package net.daporkchop.fp2.mode.voxel.piece;
 
+import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.common.server.AbstractFarStorage;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPieceBuilder;
-import net.minecraft.world.WorldServer;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
 
 /**
  * @author DaPorkchop_
  */
-public class HeightmapStorage extends AbstractFarStorage<HeightmapPos, HeightmapPiece, HeightmapPieceBuilder> {
-    public HeightmapStorage(@NonNull WorldServer world) {
-        super(world, RenderMode.HEIGHTMAP);
+public class VoxelPieceData implements IFarPieceData {
+    @Override
+    public void reset() {
+    }
+
+    @Override
+    public void read(@NonNull ByteBuf src) {
+    }
+
+    @Override
+    public boolean write(@NonNull ByteBuf dst) {
+        return false;
     }
 }

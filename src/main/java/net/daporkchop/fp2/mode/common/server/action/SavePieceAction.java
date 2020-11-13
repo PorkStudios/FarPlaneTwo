@@ -18,53 +18,33 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.server.gen;
+package net.daporkchop.fp2.mode.common.server.action;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
-import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
-import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
-import net.minecraft.world.WorldServer;
+import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Implementation of {@link IFarGeneratorRough} which wraps a {@link IFarGeneratorExact}. This allows worlds with no available rough generator to
- * fall back to an exact generator.
- *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, B extends IFarPieceBuilder> implements IFarGeneratorRough<POS, B> {
+public class SavePieceAction<POS extends IFarPos> implements Runnable {
     @NonNull
-    protected final AsyncBlockAccess blockAccess;
+    protected final AbstractFarWorld<POS, ?, ?> world;
     @NonNull
-    protected final IFarGeneratorExact<POS, B> exactGenerator;
+    protected final Compressed<POS, ?> piece;
 
     @Override
-    public void init(@NonNull WorldServer world) {
-        //no-op
-    }
-
-    @Override
-    public long generate(@NonNull POS pos, @NonNull B builder) {
+    public void run() {
+        this.piece.readLock().lock();
         try {
-            IBlockHeightAccess prefetched = this.blockAccess.prefetchAsync(this.exactGenerator.neededColumns(pos),
-                    world -> this.exactGenerator.neededCubes(world, pos))
-                    .sync().getNow();
-            this.exactGenerator.generate(prefetched, pos, builder);
-        } catch (InterruptedException e)    {
-            Thread.currentThread().interrupt();
+            this.world.pieceStorage().store(this.piece.pos(), uncheckedCast(this.piece));
+        } finally {
+            this.piece.readLock().unlock();
         }
-    }
-
-    @Override
-    public boolean supportsLowResolution() {
-        return false;
-    }
-
-    @Override
-    public boolean isLowResolutionInaccurate() {
-        return false;
     }
 }

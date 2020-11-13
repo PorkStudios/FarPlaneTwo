@@ -18,53 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.server.gen;
+package net.daporkchop.fp2.mode.common.server;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
-import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
-import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
-import net.minecraft.world.WorldServer;
+
+import java.util.function.Predicate;
 
 /**
- * Implementation of {@link IFarGeneratorRough} which wraps a {@link IFarGeneratorExact}. This allows worlds with no available rough generator to
- * fall back to an exact generator.
- *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, B extends IFarPieceBuilder> implements IFarGeneratorRough<POS, B> {
+@Getter
+public class PriorityTask<POS extends IFarPos> implements Comparable<PriorityTask<POS>>, Predicate<PriorityTask<POS>> {
     @NonNull
-    protected final AsyncBlockAccess blockAccess;
+    protected final TaskStage stage;
     @NonNull
-    protected final IFarGeneratorExact<POS, B> exactGenerator;
+    protected final POS pos;
 
     @Override
-    public void init(@NonNull WorldServer world) {
-        //no-op
-    }
-
-    @Override
-    public long generate(@NonNull POS pos, @NonNull B builder) {
-        try {
-            IBlockHeightAccess prefetched = this.blockAccess.prefetchAsync(this.exactGenerator.neededColumns(pos),
-                    world -> this.exactGenerator.neededCubes(world, pos))
-                    .sync().getNow();
-            this.exactGenerator.generate(prefetched, pos, builder);
-        } catch (InterruptedException e)    {
-            Thread.currentThread().interrupt();
+    public int compareTo(PriorityTask<POS> task) {
+        int d = Integer.compare(this.stage.ordinal(), task.stage.ordinal());
+        if (d == 0) {
+            d = this.pos.compareTo(task.pos);
         }
+        return d;
     }
 
     @Override
-    public boolean supportsLowResolution() {
-        return false;
-    }
-
-    @Override
-    public boolean isLowResolutionInaccurate() {
-        return false;
+    public boolean test(PriorityTask<POS> task) {
+        return task.stage.ordinal() < this.stage.ordinal() || task.pos.level() < this.pos.level();
     }
 }

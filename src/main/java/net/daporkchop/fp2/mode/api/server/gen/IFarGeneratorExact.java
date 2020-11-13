@@ -22,7 +22,8 @@ package net.daporkchop.fp2.mode.api.server.gen;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
@@ -37,7 +38,7 @@ import java.util.stream.Stream;
  *
  * @author DaPorkchop_
  */
-public interface IFarGeneratorExact<POS extends IFarPos, B extends IFarPieceBuilder> extends IFarGenerator {
+public interface IFarGeneratorExact<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData> extends IFarGenerator {
     @Override
     void init(@NonNull WorldServer world);
 
@@ -61,11 +62,26 @@ public interface IFarGeneratorExact<POS extends IFarPos, B extends IFarPieceBuil
     Stream<Vec3i> neededCubes(@NonNull IBlockHeightAccess world, @NonNull POS pos);
 
     /**
+     * Generates the piece data for the piece at the given position.
+     * <p>
+     * This method should throw {@link UnsupportedOperationException} for render modes that do not utilize the piece data system.
+     *
+     * @param world the {@link IBlockHeightAccess} providing access to block/height data in the world
+     * @param pos   the position of the piece to generate
+     * @param data  the piece data to generate
+     */
+    void generatePieceData(@NonNull IBlockHeightAccess world, @NonNull POS pos, @NonNull D data);
+
+    /**
      * Generates a rough estimate of the terrain in the given piece.
      *
-     * @param world   the {@link IBlockHeightAccess} providing access to block/height data in the world
-     * @param pos     the position of the piece to generate
-     * @param builder the piece to generate
+     * @param world the {@link IBlockHeightAccess} providing access to block/height data in the world
+     * @param pos   the position of the piece to generate
+     * @param piece the piece to generate
+     * @param data  the piece data to generate. May be ignored by render modes that do not utilize the piece data system
+     * @param assembler an {@link IFarAssembler} which may be used to assemble the piece based on the piece data. May be ignored by render modes that
+     *                  do not utilize the piece data system
+     * @return the extra data to be saved with the piece
      */
-    void generate(@NonNull IBlockHeightAccess world, @NonNull POS pos, @NonNull B builder);
+    long generate(@NonNull IBlockHeightAccess world, @NonNull POS pos, @NonNull P piece, @NonNull D data, @NonNull IFarAssembler<D, P> assembler);
 }

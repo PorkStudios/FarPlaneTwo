@@ -22,13 +22,15 @@ package net.daporkchop.fp2.mode.api.server;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
+import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.api.server.scale.IFarScaler;
+import net.daporkchop.fp2.mode.api.server.scale.IFarDataScaler;
+import net.daporkchop.fp2.mode.api.server.scale.IFarPieceScaler;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.minecraft.world.WorldServer;
 
@@ -38,7 +40,7 @@ import java.io.IOException;
 /**
  * @author DaPorkchop_
  */
-public interface IFarWorld<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends Closeable {
+public interface IFarWorld<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData> extends Closeable {
     WorldServer world();
 
     AsyncBlockAccess blockAccess();
@@ -51,7 +53,7 @@ public interface IFarWorld<POS extends IFarPos, P extends IFarPiece, B extends I
      * @param pos the position of the piece to get
      * @return the piece, or {@code null} if it isn't loaded yet
      */
-    CompressedPiece<POS, P, B> getPieceLazy(@NonNull POS pos);
+    Compressed<POS, P> getPieceLazy(@NonNull POS pos);
 
     /**
      * Fired whenever a block state changes.
@@ -65,22 +67,32 @@ public interface IFarWorld<POS extends IFarPos, P extends IFarPiece, B extends I
     /**
      * @return the (possibly {@code null}) {@link IFarGeneratorRough} used for rough generation of far terrain
      */
-    IFarGeneratorRough<POS, B> generatorRough();
+    IFarGeneratorRough<POS, P, D> generatorRough();
 
     /**
      * @return the {@link IFarGeneratorExact} used for block-accurate generation of far terrain
      */
-    IFarGeneratorExact<POS, B> generatorExact();
+    IFarGeneratorExact<POS, P, D> generatorExact();
 
     /**
-     * @return the {@link IFarScaler} used for downscaling the far terrain pieces
+     * @return the {@link IFarPieceScaler} used for downscaling the far terrain pieces
      */
-    IFarScaler<POS, P, B> scaler();
+    IFarPieceScaler<POS, P> pieceScaler();
+
+    /**
+     * @return the {@link IFarDataScaler} used for downscaling the far terrain pieces
+     */
+    IFarDataScaler<POS, D> dataScaler();
+
+    /**
+     * @return the {@link IFarAssembler} used for assembling the far terrain pieces from data
+     */
+    IFarAssembler<D, P> pieceAssembler();
 
     /**
      * @return the {@link IFarStorage} used for persistence of far terrain pieces
      */
-    IFarStorage<POS, P, B> storage();
+    IFarStorage<POS, P> pieceStorage();
 
     /**
      * @return the {@link RenderMode} that this world is used for

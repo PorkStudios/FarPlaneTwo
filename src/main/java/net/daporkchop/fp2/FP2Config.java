@@ -158,15 +158,7 @@ public class FP2Config {
                 "tiles once available."
         })
         @Config.LangKey("config.fp2.performance.lowResolutionRefine")
-        public boolean lowResolutionRefine = true;
-
-        @Config.Comment({
-                "If low resolution refine is enabled, makes the refining process more gradual by increasing the resolution one step at a time until",
-                "maximum resolution is reached, rather than doing the entire process in a single step.",
-                "This will generally not improve visual quality much, and can result in significantly higher CPU usage."
-        })
-        @Config.LangKey("config.fp2.performance.lowResolutionRefineProgressive")
-        public boolean lowResolutionRefineProgressive = false;
+        public boolean lowResolutionRefine = false;
 
         @Config.Comment({
                 "If low resolution refine is enabled, allows incomplete pieces to be saved.",

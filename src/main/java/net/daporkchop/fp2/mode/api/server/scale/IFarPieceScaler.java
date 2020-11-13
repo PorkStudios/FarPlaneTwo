@@ -18,34 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.piece;
+package net.daporkchop.fp2.mode.api.server.scale;
 
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+
+import java.util.stream.Stream;
 
 /**
- * Builder for piece contents.
+ * Merges the content of multiple high-detail pieces into a single lower-detail piece.
  *
  * @author DaPorkchop_
- * @deprecated no longer needed
  */
-@Deprecated
-public interface IFarPieceBuilder {
+public interface IFarPieceScaler<POS extends IFarPos, P extends IFarPiece> extends IFarScaler<POS> {
     /**
-     * Resets this builder instance so that it can be re-used for building another piece.
+     * Merges the content of the given high-detail pieces into the given low-detail piece.
+     *  @param srcs an array containing the high-detail pieces. Pieces are in the same order as provided by the {@link Stream} returned by
+     *             {@link #inputs(IFarPos)}. Any of the pieces may be {@code null}, in which case they should be treated by the implementation
+     *             as if they were merely empty.
+     * @param dst  the low-detail piece to merge the content into
+     * @return the extra data to be saved with the piece
      */
-    void reset();
-
-    /**
-     * @return this piece's extra data
-     */
-    long extra();
-
-    /**
-     * Writes the piece data for this piece to the given {@link ByteBuf}.
-     *
-     * @param dst the {@link ByteBuf} to write to
-     * @return whether or not this builder is empty
-     */
-    boolean write(@NonNull ByteBuf dst);
+    long scale(@NonNull P[] srcs, @NonNull P dst);
 }

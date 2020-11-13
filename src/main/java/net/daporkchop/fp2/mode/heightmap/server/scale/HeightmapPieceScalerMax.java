@@ -21,11 +21,10 @@
 package net.daporkchop.fp2.mode.heightmap.server.scale;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.server.scale.IFarScaler;
+import net.daporkchop.fp2.mode.api.server.scale.IFarPieceScaler;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapSample;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPieceBuilder;
 
 import java.util.stream.Stream;
 
@@ -34,11 +33,13 @@ import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Scales heightmaps based on the highest sample.
+ * Scales heightmap pieces by copying the sample with the greatest height deviation in each 2x2 square of high-detail samples.
+ * <p>
+ * This probably isn't the absolute best solution, but it's pretty fast and does a good job of preserving detail in bumpy regions.
  *
  * @author DaPorkchop_
  */
-public class HeightmapScalerMax implements IFarScaler<HeightmapPos, HeightmapPiece, HeightmapPieceBuilder> {
+public class HeightmapPieceScalerMax implements IFarPieceScaler<HeightmapPos, HeightmapPiece> {
     @Override
     public Stream<HeightmapPos> outputs(@NonNull HeightmapPos srcPos) {
         return Stream.of(srcPos.up());
@@ -60,8 +61,8 @@ public class HeightmapScalerMax implements IFarScaler<HeightmapPos, HeightmapPie
     }
 
     @Override
-    public void scale(@NonNull HeightmapPiece[] srcs, @NonNull HeightmapPieceBuilder dst) {
-        HeightmapData data = new HeightmapData();
+    public long scale(@NonNull HeightmapPiece[] srcs, @NonNull HeightmapPiece dst) {
+        HeightmapSample data = new HeightmapSample();
 
         for (int subX = 0; subX < 2; subX++) {
             for (int subZ = 0; subZ < 2; subZ++) {
@@ -74,14 +75,16 @@ public class HeightmapScalerMax implements IFarScaler<HeightmapPos, HeightmapPie
                         int dstX = baseX + (x >> 1);
                         int dstZ = baseZ + (z >> 1);
 
-                        this.scaleSample(src, x, z, dst, dstX, dstZ, data);
+                        this.scaleSample(src, x, z, data);
+                        dst.set(dstX, dstZ, data);
                     }
                 }
             }
         }
+        return 0L;
     }
 
-    protected void scaleSample(HeightmapPiece src, int srcX, int srcZ, HeightmapPieceBuilder dst, int dstX, int dstZ, HeightmapData data) {
+    protected void scaleSample(HeightmapPiece src, int srcX, int srcZ, HeightmapSample data) {
         int height0 = src.height(srcX, srcZ);
         int height1 = src.height(srcX, srcZ + 1);
         int height2 = src.height(srcX + 1, srcZ);
@@ -102,7 +105,5 @@ public class HeightmapScalerMax implements IFarScaler<HeightmapPos, HeightmapPie
         } else {
             src.get(srcX + 1, srcZ + 1, data);
         }
-
-        dst.set(dstX, dstZ, data);
     }
 }

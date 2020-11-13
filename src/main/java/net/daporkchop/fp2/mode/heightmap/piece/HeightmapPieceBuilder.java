@@ -26,7 +26,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
-import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 /**
@@ -39,13 +38,13 @@ public class HeightmapPieceBuilder implements IFarPieceBuilder {
     @Setter
     protected long extra;
 
-    public HeightmapPieceBuilder set(int x, int z, HeightmapData data)  {
-        HeightmapPiece.writeData(this.addr + HeightmapPiece.index(x, z) * 4L, data);
+    public HeightmapPieceBuilder set(int x, int z, HeightmapSample data)  {
+        HeightmapPiece.writeSample(this.addr + HeightmapPiece.index(x, z) * 4L, data);
         return this;
     }
 
-    public HeightmapData get(int x, int z, HeightmapData data)  {
-        HeightmapPiece.readData(this.addr + HeightmapPiece.index(x, z) * 4L, data);
+    public HeightmapSample get(int x, int z, HeightmapSample data)  {
+        HeightmapPiece.readSample(this.addr + HeightmapPiece.index(x, z) * 4L, data);
         return data;
     }
 

@@ -22,15 +22,17 @@ package net.daporkchop.fp2.mode.common.server;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.util.Recycler;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
+import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.fp2.mode.api.server.IFarStorage;
+import net.daporkchop.fp2.util.IReusablePersistent;
 import net.daporkchop.ldbjni.LevelDB;
 import net.daporkchop.ldbjni.direct.DirectDB;
 import net.daporkchop.lib.common.misc.file.PFiles;
@@ -50,18 +52,18 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> implements IFarStorage<POS, P, B> {
+public class FarStorage<POS extends IFarPos, V extends IReusablePersistent> implements IFarStorage<POS, V> {
     protected final IntObjMap<DirectDB> dbs = new IntObjConcurrentHashMap<>();
-    @Getter
     protected final File storageRoot;
     @Getter
     protected final RenderMode mode;
 
     protected final IntFunction<DirectDB> dbOpenFunction;
 
-    public AbstractFarStorage(@NonNull WorldServer world, @NonNull RenderMode mode) {
-        this.storageRoot = new File(world.getChunkSaveLocation(), "fp2/" + mode.name().toLowerCase());
+    public FarStorage(@NonNull WorldServer world, @NonNull RenderMode mode, @NonNull String type) {
         this.mode = mode;
+
+        this.storageRoot = new File(world.getChunkSaveLocation(), "fp2/" + mode.name().toLowerCase() + '/' + type);
         PFiles.ensureDirectoryExists(this.storageRoot);
 
         this.dbOpenFunction = i -> {
@@ -76,7 +78,7 @@ public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiec
     }
 
     @Override
-    public CompressedPiece<POS, P, B> load(@NonNull POS pos) {
+    public Compressed<POS, V> load(@NonNull POS pos) {
         if (FP2_DEBUG && (FP2Config.debug.disableRead || FP2Config.debug.disablePersistence)) {
             return null;
         }
@@ -98,7 +100,7 @@ public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiec
             boolean release = true;
             try {
                 if (readVarInt(packed) == this.mode().storageVersion()) {
-                    return new CompressedPiece<>(pos, packed);
+                    return new Compressed<>(pos, packed);
                 }
                 return null;
             } finally {
@@ -113,7 +115,7 @@ public abstract class AbstractFarStorage<POS extends IFarPos, P extends IFarPiec
     }
 
     @Override
-    public void store(@NonNull POS pos, @NonNull CompressedPiece<POS, P, B> piece) {
+    public void store(@NonNull POS pos, @NonNull Compressed<POS, V> piece) {
         if (FP2_DEBUG && (FP2Config.debug.disableWrite || FP2Config.debug.disablePersistence)) {
             return;
         }

@@ -18,44 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel;
+package net.daporkchop.fp2.mode.common.server.action;
 
-import net.daporkchop.fp2.util.math.Vector3d;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.mode.api.Compressed;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.server.IFarStorage;
+import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
+import net.daporkchop.fp2.util.IReusablePersistent;
 
-import java.util.Arrays;
-
-import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
+import java.util.concurrent.Callable;
 
 /**
- * Represents the data stored at a voxel that is not absent.
+ * Not really a task, but used by {@link AbstractFarWorld} to load a piece from disk and create it if absent.
  *
  * @author DaPorkchop_
  */
-public class VoxelData {
-    //vertex position and mesh intersection data
-    public int x;
-    public int y;
-    public int z;
-    public int edges;
+@RequiredArgsConstructor
+public class LoadAction<POS extends IFarPos, V extends IReusablePersistent> implements Callable<Compressed<POS, V>> {
+    @NonNull
+    protected final IFarStorage<POS, V> storage;
+    @NonNull
+    protected final POS pos;
 
-    //block data (for texturing and shading)
-    public final int[] states = new int[EDGE_COUNT];
-    public int biome;
-    public int light;
-
-    /**
-     * Resets this instance.
-     *
-     * @return this instance
-     */
-    public VoxelData reset() {
-        this.x = 0;
-        this.y = 0;
-        this.z = 0;
-        this.edges = 0;
-        Arrays.fill(this.states, 0);
-        this.biome = 0;
-        this.light = 0;
-        return this;
+    @Override
+    public Compressed<POS, V> call() throws Exception {
+        Compressed<POS, V> piece = this.storage.load(this.pos);
+        if (piece == null) {
+            //piece doesn't exist on disk, let's make a new one!
+            return new Compressed<>(this.pos);
+        }
+        return piece;
     }
 }
