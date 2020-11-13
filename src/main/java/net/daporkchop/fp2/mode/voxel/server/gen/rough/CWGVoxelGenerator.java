@@ -29,13 +29,17 @@ import net.daporkchop.fp2.mode.voxel.server.gen.AbstractVoxelGenerator;
 import net.daporkchop.lib.noise.NoiseSource;
 import net.daporkchop.lib.noise.engine.PerlinNoiseEngine;
 import net.daporkchop.lib.random.impl.FastPRandom;
+import net.minecraft.block.Block;
+import net.minecraft.init.Blocks;
 import net.minecraft.world.WorldServer;
 
-import java.util.Arrays;
+import static java.lang.Math.*;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
+//TODO: this is currently only generating the mesh using perlin noise
 public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements IFarGeneratorRough<VoxelPos, VoxelPieceBuilder> {
     //protected Ref<CWGContext> ctx;
     protected NoiseSource noise;
@@ -62,7 +66,7 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
         for (int x = DMAP_MIN; x < DMAP_MAX; x++) {
             for (int y = DMAP_MIN; y < DMAP_MAX; y++) {
                 for (int z = DMAP_MIN; z < DMAP_MAX; z++) {
-                    densityMap[0][densityIndex(x, y, z)] = baseY + y <= this.seaLevel ? -1.0d : 1.0d;
+                    densityMap[0][densityIndex(x, y, z)] = baseY + y < this.seaLevel ? -1.0d : 1.0d;
                 }
             }
         }
@@ -72,7 +76,15 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
     }
 
     @Override
-    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, VoxelData data, Void param, double nx, double ny, double nz) {
+    protected int getFaceState(int blockX, int blockY, int blockZ, double nx, double ny, double nz, int edge, int layer, Void param) {
+        return layer == 0 ? Block.getStateId(Blocks.WATER.getDefaultState()) : 1;
+    }
+
+    @Override
+    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, double nx, double ny, double nz, VoxelData data, Void param) {
+        blockY++;
+        data.light = packCombinedLight((blockY < this.seaLevel ? max(15 - (this.seaLevel - blockY) * 3, 0) : 15) << 20);
+        data.biome = 0;
     }
 
     @Override

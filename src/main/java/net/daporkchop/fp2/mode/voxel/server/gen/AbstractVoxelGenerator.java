@@ -27,10 +27,6 @@ import net.daporkchop.fp2.util.math.Vector3d;
 import net.daporkchop.fp2.util.math.qef.QefSolver;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
-import net.minecraft.block.Block;
-import net.minecraft.init.Blocks;
-
-import java.util.Arrays;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
@@ -122,7 +118,12 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                         continue;
                     }
 
+                    double totalNx = 0.0d;
+                    double totalNy = 0.0d;
+                    double totalNz = 0.0d;
+
                     //populate the QEF with data
+                    qef.reset();
                     int edgeCount = 0;
                     int edges = 0;
                     for (int edge = 0; edge < QEF_EDGE_COUNT; edge++) {
@@ -132,7 +133,8 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                         int layer0 = (corners >> (c0 << 1)) & 3;
                         int layer1 = (corners >> (c1 << 1)) & 3;
                         if (layer0 == layer1 //both corners along the current edge are identical, this edge can be skipped
-                            || max(layer0, layer1) == 3 && min(layer0, layer1) == 2) { //don't consider edges that transition from solid+liquid to solid, because then we'll be generating tons of internal mesh for no reason
+                            || max(layer0, layer1) == 3 && min(layer0, layer1) == 2) { //don't consider edges that transition from solid+liquid to solid, because then we'll be
+                            // generating tons of internal mesh for no reason
                             continue;
                         }
                         int layer = min(max(layer0, layer1) - 1, 1);
@@ -148,6 +150,9 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                         double nx = sampleDensity(dx + px + dn, dy + py, dz + pz, densityMap[layer]) - sampleDensity(dx + px - dn, dy + py, dz + pz, densityMap[layer]);
                         double ny = sampleDensity(dx + px, dy + py + dn, dz + pz, densityMap[layer]) - sampleDensity(dx + px, dy + py - dn, dz + pz, densityMap[layer]);
                         double nz = sampleDensity(dx + px, dy + py, dz + pz + dn, densityMap[layer]) - sampleDensity(dx + px, dy + py, dz + pz - dn, densityMap[layer]);
+                        totalNx += nx;
+                        totalNy += ny;
+                        totalNz += nz;
 
                         qef.add(px, py, pz, nx, ny, nz);
                         edgeCount++;
@@ -159,14 +164,12 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                             } else {
                                 edges |= EDGE_DIR_POSITIVE << (faceEdge << 1);
                             }
-                            if (layer == 0) {
-                                data.states[faceEdge] = Block.getStateId(Blocks.WATER.getDefaultState());
-                            } else {
-                                data.states[faceEdge] = 1;
-                            }
+                            data.states[faceEdge] = this.getFaceState(baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level), nx, ny, nz, faceEdge, layer, param);
                         }
                     }
 
+                    //yet another sanity check: a few voxels will make it through the check before the QEF initialization loop (specifically opaque+transparent -> opaque transitions),
+                    // so provide the option to break out here without setting the voxel if we can
                     if (edgeCount == 0) {
                         continue;
                     }
@@ -175,30 +178,23 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
 
                     //solve QEF and set the piece data
                     qef.solve(vec, 0.1, 1, 0.5);
-
                     if (vec.x < 0.0d || vec.x > 1.0d
                         || vec.y < 0.0d || vec.y > 1.0d
                         || vec.z < 0.0d || vec.z > 1.0d) { //ensure that all points are within voxel bounds
+                        //if not, fall back to the mass point (basically the average position of all edge intersections), which is basically guaranteed to be within the voxel bounds
                         vec.set(qef.massPoint().x, qef.massPoint().y, qef.massPoint().z);
                     }
-                    qef.reset();
 
                     data.x = clamp(floorI(vec.x * POS_ONE), 0, POS_ONE);
                     data.y = clamp(floorI(vec.y * POS_ONE), 0, POS_ONE);
                     data.z = clamp(floorI(vec.z * POS_ONE), 0, POS_ONE);
 
-                    data.biome = 0;
-                    data.light = 0xFF;
+                    double nLen = sqrt(totalNx * totalNx + totalNy * totalNy + totalNz * totalNz);
+                    totalNx /= nLen;
+                    totalNy /= nLen;
+                    totalNz /= nLen;
 
-                    double nx = sampleDensity(dx + vec.x + dn, dy + vec.y, dz + vec.z, densityMap[0]) - sampleDensity(dx + vec.x - dn, dy + vec.y, dz + vec.z, densityMap[0]);
-                    double ny = sampleDensity(dx + vec.x, dy + vec.y + dn, dz + vec.z, densityMap[0]) - sampleDensity(dx + vec.x, dy + vec.y - dn, dz + vec.z, densityMap[0]);
-                    double nz = sampleDensity(dx + vec.x, dy + vec.y, dz + vec.z + dn, densityMap[0]) - sampleDensity(dx + vec.x, dy + vec.y, dz + vec.z - dn, densityMap[0]);
-                    double nLen = sqrt(nx * nx + ny * ny + nz * nz);
-                    nx /= nLen;
-                    ny /= nLen;
-                    nz /= nLen;
-
-                    this.populateVoxelBlockData(baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level), data, param, nx, ny, nz);
+                    this.populateVoxelBlockData(baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level), totalNx, totalNy, totalNz, data, param);
 
                     builder.set(dx, dy, dz, data);
                 }
@@ -206,17 +202,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
         }
     }
 
-    /**
-     * Sets the block-specific voxel data for a voxel.
-     *
-     * @param blockX the voxel's X coordinate
-     * @param blockY the voxel's Y coordinate
-     * @param blockZ the voxel's Z coordinate
-     * @param data   the {@link VoxelData} to store data into
-     * @param param  an additional user parameter
-     * @param nx
-     * @param ny
-     * @param nz
-     */
-    protected abstract void populateVoxelBlockData(int blockX, int blockY, int blockZ, VoxelData data, P param, double nx, double ny, double nz);
+    protected abstract int getFaceState(int blockX, int blockY, int blockZ, double nx, double ny, double nz, int edge, int layer, P param);
+
+    protected abstract void populateVoxelBlockData(int blockX, int blockY, int blockZ, double nx, double ny, double nz, VoxelData data, P param);
 }
