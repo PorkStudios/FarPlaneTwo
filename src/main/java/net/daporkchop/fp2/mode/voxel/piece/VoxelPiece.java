@@ -91,12 +91,12 @@ public class VoxelPiece implements IFarPiece {
         data.z = (i0 >> 8) & 0xFF;
     }
 
-    static int readOnlyPosAndReturnEdges(long base, int[] dst, int dstOff) {
+    static int readOnlyPosAndReturnEdges(long base, double[] dst, int dstOff) {
         int i0 = PUnsafe.getInt(base + 0L);
 
-        dst[dstOff + 0] = i0 >>> 24;
-        dst[dstOff + 1] = (i0 >> 16) & 0xFF;
-        dst[dstOff + 2] = (i0 >> 8) & 0xFF;
+        dst[dstOff + 0] = (i0 >>> 24) / (double) POS_ONE;
+        dst[dstOff + 1] = ((i0 >> 16) & 0xFF) / (double) POS_ONE;
+        dst[dstOff + 2] = ((i0 >> 8) & 0xFF) / (double) POS_ONE;
 
         return i0 & 0x3F;
     }
@@ -171,7 +171,7 @@ public class VoxelPiece implements IFarPiece {
         return true;
     }
 
-    public int getOnlyPosAndReturnEdges(int x, int y, int z, int[] dst, int dstOff)   {
+    public int getOnlyPosAndReturnEdges(int x, int y, int z, double[] dst, int dstOff)   {
         int index = PUnsafe.getShort(this.addr + index(x, y, z) * 2L);
         if (index < 0)  { //index is unset, don't read data
             return -1;

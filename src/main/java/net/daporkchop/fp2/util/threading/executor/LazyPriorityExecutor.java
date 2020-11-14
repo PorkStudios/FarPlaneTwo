@@ -22,6 +22,7 @@ package net.daporkchop.fp2.util.threading.executor;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.util.threading.ConcurrentUnboundedPriorityBlockingQueue;
+import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -82,10 +83,11 @@ public class LazyPriorityExecutor<K extends LazyKey<K>> {
         for (Thread t : this.threads) {
             do {
                 try {
-                    t.join();
+                    t.join(50L);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
+                ServerThreadExecutor.INSTANCE.workOffQueue();
             } while (t.isAlive());
         }
     }

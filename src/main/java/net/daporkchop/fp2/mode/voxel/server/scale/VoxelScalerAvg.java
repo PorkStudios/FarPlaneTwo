@@ -26,6 +26,7 @@ import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
+import net.minecraft.block.Block;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -41,52 +42,74 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 //TODO: figure out whether or not this is actually correct
 public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPieceBuilder> {
-    protected static void cross(int[] a, int aOff, int[] b, int bOff, int[] dst, int dstOff) {
-        dst[dstOff + 0] = (a[aOff + 1] * b[bOff + 2] - a[aOff + 2] * b[bOff + 1]) >> POS_FRACT_SHIFT;
-        dst[dstOff + 1] = (a[aOff + 2] * b[bOff + 0] - a[aOff + 0] * b[bOff + 2]) >> POS_FRACT_SHIFT;
-        dst[dstOff + 2] = (a[aOff + 0] * b[bOff + 1] - a[aOff + 1] * b[bOff + 0]) >> POS_FRACT_SHIFT;
+    protected static void cross(double[] a, int aOff, double[] b, int bOff, double[] dst, int dstOff) {
+        dst[dstOff + 0] = (a[aOff + 1] * b[bOff + 2] - a[aOff + 2] * b[bOff + 1]);
+        dst[dstOff + 1] = (a[aOff + 2] * b[bOff + 0] - a[aOff + 0] * b[bOff + 2]);
+        dst[dstOff + 2] = (a[aOff + 0] * b[bOff + 1] - a[aOff + 1] * b[bOff + 0]);
     }
 
-    protected static void cross3(int[] a, int aOff, int[] b, int bOff, int[] c, int cOff, int[] dst, int dstOff) {
-        int ax = a[aOff + 0] - b[bOff + 0];
-        int ay = a[aOff + 1] - b[bOff + 1];
-        int az = a[aOff + 2] - b[bOff + 2];
-        int bx = a[aOff + 0] - c[cOff + 0];
-        int by = a[aOff + 1] - c[cOff + 1];
-        int bz = a[aOff + 2] - c[cOff + 2];
-        dst[dstOff + 0] = (ay * bz - az * by) >> POS_FRACT_SHIFT;
-        dst[dstOff + 1] = (az * bx - ax * bz) >> POS_FRACT_SHIFT;
-        dst[dstOff + 2] = (ax * by - ay * bx) >> POS_FRACT_SHIFT;
+    protected static void cross3(double[] a, int aOff, double[] b, int bOff, double[] c, int cOff, double[] dst, int dstOff) {
+        double ax = a[aOff + 0] - b[bOff + 0];
+        double ay = a[aOff + 1] - b[bOff + 1];
+        double az = a[aOff + 2] - b[bOff + 2];
+        double bx = a[aOff + 0] - c[cOff + 0];
+        double by = a[aOff + 1] - c[cOff + 1];
+        double bz = a[aOff + 2] - c[cOff + 2];
+        dst[dstOff + 0] = (ay * bz - az * by);
+        dst[dstOff + 1] = (az * bx - ax * bz);
+        dst[dstOff + 2] = (ax * by - ay * bx);
     }
 
-    protected static void crossAdd(int[] a, int aOff, int[] b, int bOff, int[] dst, int dstOff) {
-        dst[dstOff + 0] += (a[aOff + 1] * b[bOff + 2] - a[aOff + 2] * b[bOff + 1]) >> POS_FRACT_SHIFT;
-        dst[dstOff + 1] += (a[aOff + 2] * b[bOff + 0] - a[aOff + 0] * b[bOff + 2]) >> POS_FRACT_SHIFT;
-        dst[dstOff + 2] += (a[aOff + 0] * b[bOff + 1] - a[aOff + 1] * b[bOff + 0]) >> POS_FRACT_SHIFT;
+    protected static void crossAdd(double[] a, int aOff, double[] b, int bOff, double[] dst, int dstOff) {
+        dst[dstOff + 0] += (a[aOff + 1] * b[bOff + 2] - a[aOff + 2] * b[bOff + 1]);
+        dst[dstOff + 1] += (a[aOff + 2] * b[bOff + 0] - a[aOff + 0] * b[bOff + 2]);
+        dst[dstOff + 2] += (a[aOff + 0] * b[bOff + 1] - a[aOff + 1] * b[bOff + 0]);
     }
 
-    protected static void cross3Add(int[] a, int aOff, int[] b, int bOff, int[] c, int cOff, int[] dst, int dstOff) {
-        int ax = a[aOff + 0] - b[bOff + 0];
-        int ay = a[aOff + 1] - b[bOff + 1];
-        int az = a[aOff + 2] - b[bOff + 2];
-        int bx = a[aOff + 0] - c[cOff + 0];
-        int by = a[aOff + 1] - c[cOff + 1];
-        int bz = a[aOff + 2] - c[cOff + 2];
-        dst[dstOff + 0] += (ay * bz - az * by) >> 0;
-        dst[dstOff + 1] += (az * bx - ax * bz) >> 0;
-        dst[dstOff + 2] += (ax * by - ay * bx) >> 0;
+    protected static void cross3Add(double[] a, int aOff, double[] b, int bOff, double[] c, int cOff, double[] dst, int dstOff) {
+        double ax = a[aOff + 0] - b[bOff + 0];
+        double ay = a[aOff + 1] - b[bOff + 1];
+        double az = a[aOff + 2] - b[bOff + 2];
+        double bx = a[aOff + 0] - c[cOff + 0];
+        double by = a[aOff + 1] - c[cOff + 1];
+        double bz = a[aOff + 2] - c[cOff + 2];
+        dst[dstOff + 0] += (ay * bz - az * by);
+        dst[dstOff + 1] += (az * bx - ax * bz);
+        dst[dstOff + 2] += (ax * by - ay * bx);
     }
 
-    protected static void cross3Sub(int[] a, int aOff, int[] b, int bOff, int[] c, int cOff, int[] dst, int dstOff) {
-        int ax = a[aOff + 0] - b[bOff + 0];
-        int ay = a[aOff + 1] - b[bOff + 1];
-        int az = a[aOff + 2] - b[bOff + 2];
-        int bx = a[aOff + 0] - c[cOff + 0];
-        int by = a[aOff + 1] - c[cOff + 1];
-        int bz = a[aOff + 2] - c[cOff + 2];
-        dst[dstOff + 0] -= (ay * bz - az * by) >> POS_FRACT_SHIFT;
-        dst[dstOff + 1] -= (az * bx - ax * bz) >> POS_FRACT_SHIFT;
-        dst[dstOff + 2] -= (ax * by - ay * bx) >> POS_FRACT_SHIFT;
+    protected static void cross3Sub(double[] a, int aOff, double[] b, int bOff, double[] c, int cOff, double[] dst, int dstOff) {
+        double ax = a[aOff + 0] - b[bOff + 0];
+        double ay = a[aOff + 1] - b[bOff + 1];
+        double az = a[aOff + 2] - b[bOff + 2];
+        double bx = a[aOff + 0] - c[cOff + 0];
+        double by = a[aOff + 1] - c[cOff + 1];
+        double bz = a[aOff + 2] - c[cOff + 2];
+        dst[dstOff + 0] -= (ay * bz - az * by);
+        dst[dstOff + 1] -= (az * bx - ax * bz);
+        dst[dstOff + 2] -= (ax * by - ay * bx);
+    }
+
+    protected static int findMostCommon(int[] arr, int off, int len) {
+        int maxCount = -1;
+        int maxIndex = -1;
+        for (int i = 0; i < len; i++) {
+            int count = 0;
+            int val = arr[off + i];
+            if (val == 0) {
+                continue;
+            }
+            for (int j = 0; j < len; j++) {
+                if (arr[off + j] == val) {
+                    count++;
+                }
+            }
+            if (count > maxCount) {
+                maxCount = count;
+                maxIndex = i;
+            }
+        }
+        return maxIndex < 0 ? 0 : arr[off + maxIndex];
     }
 
     @Override
@@ -124,8 +147,8 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
         }
 
         BitSet voxels = new BitSet(T_VERTS * T_VERTS * T_VERTS);
-        int[] positions = new int[T_VERTS * T_VERTS * T_VERTS * 3];
-        int[] normals = new int[T_VOXELS * T_VOXELS * T_VOXELS * 3];
+        double[] positions = new double[T_VERTS * T_VERTS * T_VERTS * 3];
+        //double[] normals = new double[T_VOXELS * T_VOXELS * T_VOXELS * 3];
         for (int subX = 0; subX < 2; subX++) {
             for (int subY = 0; subY < 2; subY++) {
                 for (int subZ = 0; subZ < 2; subZ++) {
@@ -144,7 +167,7 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
                                 int i = ((baseX + (x >> 1)) * T_VERTS + (baseY + (y >> 1))) * T_VERTS + (baseZ + (z >> 1));
                                 if (this.computePosition(src, x, y, z, positions, i * 3, datas[8])) {
                                     voxels.set(i);
-                                    this.computeAverageNormal(srcs, (subX << T_SHIFT) + x, (subY << T_SHIFT) + y, (subZ << T_SHIFT) + z, normals, (((baseX + (x >> 1)) * T_VOXELS + (baseY + (y >> 1))) * T_VOXELS + (baseZ + (z >> 1))) * 3);
+                                    //this.computeAverageNormal(srcs, (subX << T_SHIFT) + x, (subY << T_SHIFT) + y, (subZ << T_SHIFT) + z, normals, (((baseX + (x >> 1)) * T_VOXELS + (baseY + (y >> 1))) * T_VOXELS + (baseZ + (z >> 1))) * 3);
                                 }
                             }
                         }
@@ -197,32 +220,78 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
             }
         }*/
 
-        datas[8].light = 0xFF;
-        Arrays.fill(datas[8].states, 1);
+        int[] states = new int[8 * 3];
+        int[] stateCounts = new int[3];
+
         for (int x = 0; x < T_VOXELS; x++) {
             for (int y = 0; y < T_VOXELS; y++) {
                 for (int z = 0; z < T_VOXELS; z++) {
                     int i = (x * T_VERTS + y) * T_VERTS + z;
                     if (voxels.get(i)) {
+                        Arrays.fill(datas[8].states, 0);
                         //this.computeAverageNormal(srcs, x,y, z, normals, 0);
+
+                        int skyLight = 0;
+                        int blockLight = 0;
+                        int count = 0;
+
+                        Arrays.fill(stateCounts, 0);
+                        for (int dx = 0; dx < 2; dx++) {
+                            for (int dy = 0; dy < 2; dy++) {
+                                for (int dz = 0; dz < 2; dz++) {
+                                    VoxelPiece piece = srcs[((x >> (T_SHIFT - 1)) * 3 + (y >> (T_SHIFT - 1))) * 3 + (z >> (T_SHIFT - 1))];
+                                    if (piece.get(((x & 7) << 1) + dx, ((y & 7) << 1) + dy, ((z & 7) << 1) + dz, datas[0])) {
+                                        skyLight += datas[0].light >> 4;
+                                        blockLight += datas[0].light & 0xF;
+                                        for (int edge = 0; edge < 3; edge++) {
+                                            if (datas[0].states[edge] != 0) {
+                                                states[edge * 8 + stateCounts[edge]++] = datas[0].states[edge];
+                                            }
+                                        }
+                                        count++;
+                                    }
+                                }
+                            }
+                        }
+                        if (count > 1) {
+                            skyLight /= count;
+                            blockLight /= count;
+                        }
+
+                        datas[8].light = (skyLight << 4) | blockLight;
 
                         int edges = 0;
                         for (int edge = 0; edge < EDGE_COUNT; edge++) {
                             if (existentEdges.get(((x * T_VOXELS + y) * T_VOXELS + z) * EDGE_COUNT + edge)) {
-                                int normalAxisValue = normals[((x * T_VOXELS + y) * T_VOXELS + z) * EDGE_COUNT + edge];
-                                //int normalAxisValue = normals[edge];
-                                //edges |= (normalAxisValue != 0 ? EDGE_DIR_BOTH : 0) << (edge << 1);
-                                if (normalAxisValue != 0) {
+                                /*double normalAxisValue = normals[((x * T_VOXELS + y) * T_VOXELS + z) * EDGE_COUNT + (2 - edge)];
+                                if (normalAxisValue != 0.0d) {
                                     edges |= (normalAxisValue < 0 ? EDGE_DIR_NEGATIVE : EDGE_DIR_POSITIVE) << (edge << 1);
-                                }
+                                }*/
+
+                                //TODO: actually set the face direction correctly...
+                                //this causes twice the number of faces to be generated
                                 edges |= EDGE_DIR_BOTH << (edge << 1);
+
+                                int firstState = findMostCommon(states, edge * 8, stateCounts[edge]);
+                                int state = firstState;
+                                while (voxelType(Block.getStateById(state)) != TYPE_OPAQUE){
+                                    for (int k = 0; k < stateCounts[edge]; k++) {
+                                        if (states[edge * 8 + k] == state) {
+                                            states[edge * 8 + k] = 0;
+                                        }
+                                    }
+                                    if ((state = findMostCommon(states, edge * 8, stateCounts[edge])) == 0) {
+                                        break;
+                                    }
+                                }
+                                datas[8].states[edge] = state == 0 ? firstState : state;
                             }
                         }
                         datas[8].edges = edges;
 
-                        datas[8].x = positions[i * 3 + 0];
-                        datas[8].y = positions[i * 3 + 1];
-                        datas[8].z = positions[i * 3 + 2];
+                        datas[8].x = floorI(positions[i * 3 + 0] * POS_ONE);
+                        datas[8].y = floorI(positions[i * 3 + 1] * POS_ONE);
+                        datas[8].z = floorI(positions[i * 3 + 2] * POS_ONE);
                         dst.set(x, y, z, datas[8]);
                     }
                 }
@@ -230,13 +299,13 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
         }
     }
 
-    protected boolean computePosition(VoxelPiece src, int srcX, int srcY, int srcZ, int[] dst, int dstOff, VoxelData data) {
+    protected boolean computePosition(VoxelPiece src, int srcX, int srcY, int srcZ, double[] dst, int dstOff, VoxelData data) {
         int validCount = 0;
         for (int i = 0; i < 8; i++) { //fetch data from all 8 contributing voxels
             if (src.getOnlyPos(srcX + ((i >> 2) & 1), srcY + ((i >> 1) & 1), srcZ + (i & 1), data)) {
-                dst[dstOff + 0] += data.x + ((i << (POS_FRACT_SHIFT - 2)) & POS_ONE);
-                dst[dstOff + 1] += data.y + ((i << (POS_FRACT_SHIFT - 1)) & POS_ONE);
-                dst[dstOff + 2] += data.z + ((i << (POS_FRACT_SHIFT - 0)) & POS_ONE);
+                dst[dstOff + 0] += (data.x + ((i << (POS_FRACT_SHIFT - 2)) & POS_ONE)) / (double) POS_ONE;
+                dst[dstOff + 1] += (data.y + ((i << (POS_FRACT_SHIFT - 1)) & POS_ONE)) / (double) POS_ONE;
+                dst[dstOff + 2] += (data.z + ((i << (POS_FRACT_SHIFT - 0)) & POS_ONE)) / (double) POS_ONE;
                 validCount++;
             }
         }
@@ -251,17 +320,17 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
         return true;
     }
 
-    protected void computeAverageNormal(VoxelPiece[] srcs, int x, int y, int z, int[] dst, int dstOff) {
-        int[] p = new int[CONNECTION_INDEX_COUNT * 3];
+    protected void computeAverageNormal(VoxelPiece[] srcs, int x, int y, int z, double[] dst, int dstOff) {
+        double[] p = new double[CONNECTION_INDEX_COUNT * 3];
 
         for (int i = 0; i < 8; i++) {
             int X = x + ((i >> 2) & 1);
             int Y = y + ((i >> 1) & 1);
             int Z = z + (i & 1);
-            EDGE:
-            for (int edge = 0; edge < EDGE_COUNT; edge++) {
-                int edges = this.getPos(srcs, X, Y, Z, CONNECTION_INDICES[edge * CONNECTION_INDEX_COUNT], p, 0);
-                if (edges >= 0) {
+            int edges = this.getPos(srcs, X, Y, Z, 0, p, 0);
+            if (edges >= 0) {
+                EDGE:
+                for (int edge = 0; edge < EDGE_COUNT; edge++) {
                     for (int j = 0; j < CONNECTION_INDEX_COUNT; j++) {
                         if (this.getPos(srcs, X, Y, Z, CONNECTION_INDICES[edge * CONNECTION_INDEX_COUNT + j], p, j * 3) < 0) {
                             continue EDGE;
@@ -282,7 +351,7 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
         }
     }
 
-    protected int getPos(VoxelPiece[] srcs, int x, int y, int z, int connectionIndex, int[] dst, int dstOff) {
+    protected int getPos(VoxelPiece[] srcs, int x, int y, int z, int connectionIndex, double[] dst, int dstOff) {
         int edges = this.getPos(srcs, x + ((connectionIndex >> 2) & 1), y + ((connectionIndex >> 1) & 1), z + (connectionIndex & 1), dst, dstOff);
         if (edges >= 0) {
             for (int i = 0; i < 3; i++) {
@@ -292,7 +361,7 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
         return edges;
     }
 
-    protected int getPos(VoxelPiece[] srcs, int x, int y, int z, int[] dst, int dstOff) {
+    protected int getPos(VoxelPiece[] srcs, int x, int y, int z, double[] dst, int dstOff) {
         VoxelPiece src = srcs[((x >> T_SHIFT) * 3 + (y >> T_SHIFT)) * 3 + (z >> T_SHIFT)];
         return src != null ? src.getOnlyPosAndReturnEdges(x & T_MASK, y & T_MASK, z & T_MASK, dst, dstOff) : -1;
     }
@@ -322,92 +391,5 @@ public class VoxelScalerAvg implements IFarScaler<VoxelPos, VoxelPiece, VoxelPie
             }
         }
         return edgeMask;
-    }
-
-    protected void computeNormal(int edge, int x, int y, int z, int[] positions, int[] dst, int dstOff) {
-        int[] base = this.getPosition(x, y, z, CONNECTION_INDICES[edge * CONNECTION_INDEX_COUNT + 0], positions);
-        int[] a = this.getPosition(x, y, z, CONNECTION_INDICES[edge * CONNECTION_INDEX_COUNT + 1], positions);
-        int[] b = this.getPosition(x, y, z, CONNECTION_INDICES[edge * CONNECTION_INDEX_COUNT + 2], positions);
-        for (int i = 0; i < 3; i++) {
-            a[i] -= base[i];
-            b[i] -= base[i];
-        }
-        cross(a, 0, b, 0, dst, dstOff);
-    }
-
-    protected int[] getPosition(int x, int y, int z, int connectionIndexIndex, int[] positions) {
-        int connectionIndex = CONNECTION_INDICES[connectionIndexIndex];
-        int i = (((x + ((connectionIndex >> 2) & 1)) * T_VERTS + (y + ((connectionIndex >> 1) & 1))) * T_VERTS + (z + (connectionIndex & 1))) * 3;
-        return new int[]{
-                (((connectionIndex >> 2) & 1) << POS_FRACT_SHIFT) + positions[i + 0],
-                (((connectionIndex >> 1) & 1) << POS_FRACT_SHIFT) + positions[i + 0],
-                ((connectionIndex & 1) << POS_FRACT_SHIFT) + positions[i + 0]
-        };
-    }
-
-    protected void scaleSample(VoxelPiece src, int srcX, int srcY, int srcZ, VoxelPieceBuilder dst, int dstX, int dstY, int dstZ, VoxelData[] datas) {
-        int validFlags = 0;
-        int validCount = 0;
-        for (int i = 0; i < 8; i++) { //fetch data from all 8 contributing voxels
-            if (src.get(srcX + ((i >> 2) & 1), srcY + ((i >> 1) & 1), srcZ + (i & 1), datas[i])) {
-                validFlags |= 1 << i;
-                validCount++;
-            }
-        }
-
-        if (validCount == 0) { //none of the voxels contain any data at all
-            return;
-        }
-
-        VoxelData data = datas[8].reset();
-
-        int x = 0;
-        int y = 0;
-        int z = 0;
-        for (int i = 0; i < 8; i++) { //compute average voxel position
-            if ((validFlags & (1 << i)) != 0) {
-                x += datas[i].x + ((i << (POS_FRACT_SHIFT - 2)) & POS_ONE);
-                y += datas[i].y + ((i << (POS_FRACT_SHIFT - 1)) & POS_ONE);
-                z += datas[i].z + ((i << (POS_FRACT_SHIFT - 0)) & POS_ONE);
-            }
-        }
-        x /= validCount;
-        y /= validCount;
-        z /= validCount;
-        data.x = x >> 1;
-        data.y = y >> 1;
-        data.z = z >> 1;
-
-        int edges = 0;
-        for (int edge = 0; edge < 3; edge++) { //compute connection edges
-            for (int base = CONNECTION_SUB_NEIGHBOR_COUNT * edge, i = 0; i < CONNECTION_SUB_NEIGHBOR_COUNT; i++) {
-                int j = CONNECTION_SUB_NEIGHBORS[base + i];
-                if ((validFlags & (1 << j)) != 0) {
-                    edges |= datas[j].edges & (EDGE_DIR_MASK << (edge << 1));
-                }
-            }
-        }
-        data.edges = edges;
-
-        //compute appearance data
-        //TODO: i need a better algorithm for selecting which voxel to use
-        int j = (floorI(x) << 2) | (floorI(y) << 1) | floorI(z);
-        if ((validFlags & (1 << j)) != 0) {
-            System.arraycopy(datas[j].states, 0, data.states, 0, EDGE_COUNT);
-            data.biome = datas[j].biome;
-            data.light = datas[j].light;
-        } else {
-            //fall back to using anything
-            for (int i = 0; i < 8; i++) {
-                if ((validFlags & (1 << i)) != 0) {
-                    System.arraycopy(datas[i].states, 0, data.states, 0, EDGE_COUNT);
-                    data.biome = datas[i].biome;
-                    data.light = datas[i].light;
-                    break;
-                }
-            }
-        }
-
-        dst.set(dstX, dstY, dstZ, data);
     }
 }

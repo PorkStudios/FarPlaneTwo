@@ -160,7 +160,7 @@ public enum RenderMode {
         @Override
         protected void registerDefaultGenerators() {
             //rough
-            this.generatorsRough().add(0, world -> Constants.isCwgWorld(world) ? new CWGVoxelGenerator() : null);
+            this.generatorsRough().add(0, world -> false && Constants.isCwgWorld(world) ? new CWGVoxelGenerator() : null);
 
             //exact
             this.generatorsExact().add(-100, world -> Constants.isCubicWorld(world) ? new CCVoxelGenerator() : null);

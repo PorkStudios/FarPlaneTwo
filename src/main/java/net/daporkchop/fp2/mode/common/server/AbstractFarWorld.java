@@ -163,7 +163,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
                 PThreadFactories.builder().daemon().minPriority()
                         .collapsingId().name(PStrings.fastFormat("FP2 DIM%d IO Thread #%%d", world.provider.getDimension())).build());
 
-        this.loadNotDone();
+        //this.loadNotDone();
 
         MinecraftForge.EVENT_BUS.register(this);
     }
