@@ -164,7 +164,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                             } else {
                                 edges |= EDGE_DIR_POSITIVE << (faceEdge << 1);
                             }
-                            sample.states[faceEdge] = this.getFaceState(baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level), nx, ny, nz, faceEdge, layer, param);
+                            sample.states[faceEdge] = this.getFaceState(baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level), level, nx, ny, nz, faceEdge, layer, param);
                         }
                     }
 
@@ -194,7 +194,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                     totalNy /= nLen;
                     totalNz /= nLen;
 
-                    this.populateVoxelBlockData(baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level), totalNx, totalNy, totalNz, sample, param);
+                    this.populateVoxelBlockData(baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level), level, totalNx, totalNy, totalNz, sample, param);
 
                     builder.set(dx, dy, dz, sample);
                 }
@@ -202,7 +202,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
         }
     }
 
-    protected abstract int getFaceState(int blockX, int blockY, int blockZ, double nx, double ny, double nz, int edge, int layer, P param);
+    protected abstract int getFaceState(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, int edge, int layer, P param);
 
-    protected abstract void populateVoxelBlockData(int blockX, int blockY, int blockZ, double nx, double ny, double nz, VoxelSample sample, P param);
+    protected abstract void populateVoxelBlockData(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, VoxelSample sample, P param);
 }

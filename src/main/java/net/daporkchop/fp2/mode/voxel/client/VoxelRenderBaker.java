@@ -299,9 +299,9 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
             final int flooredY = blockY & -(1 << (level + 1));
             final int flooredZ = blockZ & -(1 << (level + 1));
 
-            int highX = 0;
-            int highY = 0;
-            int highZ = 0;
+            int highX = POS_ONE;
+            int highY = POS_ONE;
+            int highZ = POS_ONE;
             if (highPiece.getOnlyPos((flooredX >> (level + 1)) & T_MASK, (flooredY >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK, data)) {
                 highX = data.x << 1;
                 highY = data.y << 1;

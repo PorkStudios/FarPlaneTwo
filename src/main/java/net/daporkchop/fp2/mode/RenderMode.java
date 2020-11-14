@@ -50,6 +50,8 @@ import net.daporkchop.fp2.mode.voxel.piece.VoxelData;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.server.VoxelPlayerTracker;
 import net.daporkchop.fp2.mode.voxel.server.VoxelWorld;
+import net.daporkchop.fp2.mode.voxel.server.gen.VoxelAssembler;
+import net.daporkchop.fp2.mode.voxel.server.gen.VoxelScaler;
 import net.daporkchop.fp2.mode.voxel.server.gen.exact.CCVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
 import net.daporkchop.fp2.util.Constants;
@@ -166,12 +168,12 @@ public enum RenderMode {
 
         @Override
         public IFarScaler createScaler0() {
-            throw new UnsupportedOperationException(); //TODO
+            return new VoxelScaler();
         }
 
         @Override
         protected IFarAssembler createAssembler0() {
-            throw new UnsupportedOperationException(); //TODO
+            return new VoxelAssembler();
         }
 
         @Override

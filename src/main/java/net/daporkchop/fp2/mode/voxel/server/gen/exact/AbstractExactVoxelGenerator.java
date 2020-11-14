@@ -24,13 +24,16 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
+import net.daporkchop.fp2.mode.voxel.VoxelConstants;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelDataSample;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelData;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelSample;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
@@ -49,12 +52,33 @@ public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator i
         final int baseZ = posIn.blockZ();
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        VoxelDataSample sample = new VoxelDataSample();
 
         for (int dx = 0; dx < T_VOXELS; dx++) {
             for (int dy = 0; dy < T_VOXELS; dy++) {
                 for (int dz = 0; dz < T_VOXELS; dz++) {
                     pos.setPos(baseX + dx, baseY + dy, baseZ + dz);
-                    //TODO: actually do something here
+
+                    IBlockState state = world.getBlockState(pos);
+                    switch (voxelType(state)) {
+                        case TYPE_AIR:
+                            sample.density0 = 0xF;
+                            sample.density1 = 0xF;
+                            break;
+                        case TYPE_TRANSPARENT:
+                            sample.density0 = 0xF;
+                            sample.density1 = 1;
+                            break;
+                        case TYPE_OPAQUE:
+                            sample.density0 = 0xF;
+                            sample.density1 = 1;
+                            break;
+                    }
+                    sample.state = Block.getStateId(state);
+                    sample.light = Constants.packCombinedLight(world.getCombinedLight(pos, 0));
+                    sample.biome = Biome.getIdForBiome(world.getBiome(pos));
+
+                    data.set(dx, dy, dz, sample);
                 }
             }
         }
@@ -62,7 +86,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator i
 
     @Override
     public boolean directSupported() {
-        return true;
+        return false;
     }
 
     @Override

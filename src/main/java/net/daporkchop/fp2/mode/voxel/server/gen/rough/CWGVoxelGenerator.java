@@ -21,9 +21,6 @@
 package net.daporkchop.fp2.mode.voxel.server.gen.rough;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarData;
-import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
@@ -80,12 +77,12 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
     }
 
     @Override
-    protected int getFaceState(int blockX, int blockY, int blockZ, double nx, double ny, double nz, int edge, int layer, Void param) {
+    protected int getFaceState(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, int edge, int layer, Void param) {
         return layer == 0 ? Block.getStateId(Blocks.WATER.getDefaultState()) : 1;
     }
 
     @Override
-    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, double nx, double ny, double nz, VoxelSample sample, Void param) {
+    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, VoxelSample sample, Void param) {
         blockY++;
         sample.light = packCombinedLight((blockY < this.seaLevel ? max(15 - (this.seaLevel - blockY) * 3, 0) : 15) << 20);
         sample.biome = 0;
