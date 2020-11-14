@@ -23,8 +23,8 @@ package net.daporkchop.fp2.mode.api.server.gen;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.piece.IFarData;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.minecraft.world.WorldServer;
@@ -36,7 +36,7 @@ import net.minecraft.world.WorldServer;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, P extends IFarPiece, D extends IFarData> implements IFarGeneratorRough<POS, D> {
+public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, P extends IFarPiece, D extends IFarData> implements IFarGeneratorRough<POS, P, D> {
     @NonNull
     protected final AsyncBlockAccess blockAccess;
     @NonNull
@@ -48,19 +48,38 @@ public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, P extends
     }
 
     @Override
-    public void generate(@NonNull POS pos, @NonNull D data) {
-        try {
-            IBlockHeightAccess prefetched = this.blockAccess.prefetchAsync(this.exactGenerator.neededColumns(pos),
-                    world -> this.exactGenerator.neededCubes(world, pos))
-                    .sync().getNow();
-            this.exactGenerator.generatePieceData(prefetched, pos, data);
-        } catch (InterruptedException e)    {
-            Thread.currentThread().interrupt();
-        }
+    public boolean supportsLowResolution() {
+        return false;
+    }
+
+    protected IBlockHeightAccess prefetch(@NonNull POS pos) {
+        return this.blockAccess.prefetchAsync(this.exactGenerator.neededColumns(pos),
+                world -> this.exactGenerator.neededCubes(world, pos))
+                .syncUninterruptibly().getNow();
     }
 
     @Override
-    public boolean supportsLowResolution() {
-        return false;
+    public void generate(@NonNull POS pos, @NonNull D data) {
+        this.exactGenerator.generate(this.prefetch(pos), pos, data);
+    }
+
+    @Override
+    public boolean supportsDirect() {
+        return this.exactGenerator.directSupported();
+    }
+
+    @Override
+    public long generateDirect(@NonNull POS pos, @NonNull P piece) {
+        return this.exactGenerator.generateDirect(this.prefetch(pos), pos, piece);
+    }
+
+    @Override
+    public boolean supportsSimultaneous() {
+        return this.exactGenerator.simultaneousSupported();
+    }
+
+    @Override
+    public long generateSimultaneous(@NonNull POS pos, @NonNull D data, @NonNull P piece) {
+        return this.exactGenerator.generateSimultaneous(this.prefetch(pos), pos, data, piece);
     }
 }

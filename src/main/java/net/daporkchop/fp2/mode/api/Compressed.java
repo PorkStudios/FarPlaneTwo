@@ -152,7 +152,9 @@ public class Compressed<POS extends IFarPos, V extends IReusablePersistent> exte
 
     /**
      * @return whether or not this value is blank (i.e. has not been generated)
+     * @deprecated use the inverted result of {@link #isGenerated()}
      */
+    @Deprecated
     public boolean isBlank() {
         return this.timestamp() == Compressed.VALUE_BLANK;
     }
@@ -161,7 +163,7 @@ public class Compressed<POS extends IFarPos, V extends IReusablePersistent> exte
      * @return whether or not this value is done (i.e. has been fully generated and may be saved)
      */
     public boolean isGenerated() {
-        return this.timestamp() >= Compressed.VALUE_ROUGH_COMPLETE;
+        return this.timestamp() != VALUE_BLANK;
     }
 
     /**
@@ -177,7 +179,7 @@ public class Compressed<POS extends IFarPos, V extends IReusablePersistent> exte
     public V inflate(@NonNull SimpleRecycler<V> recycler) {
         this.readLock().lock();
         try {
-            checkState(!this.isBlank(), "value hasn't been generated!");
+            checkState(this.isGenerated(), "value hasn't been generated!");
 
             byte[] data = this.data;
             if (data == null) {

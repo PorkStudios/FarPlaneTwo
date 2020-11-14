@@ -43,12 +43,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  */
 public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator implements IFarGeneratorExact<VoxelPos, VoxelPiece, VoxelData> {
     @Override
-    public void init(@NonNull WorldServer world) {
-        //no-op
-    }
-
-    @Override
-    public void generatePieceData(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelData data) {
+    public void generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelData data) {
         final int baseX = posIn.blockX();
         final int baseY = posIn.blockY();
         final int baseZ = posIn.blockZ();
@@ -66,9 +61,12 @@ public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator i
     }
 
     @Override
-    public long generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelPiece piece, @NonNull VoxelData data, @NonNull IFarAssembler<VoxelData, VoxelPiece> assembler) {
-        this.generatePieceData(world, posIn, data);
+    public boolean directSupported() {
+        return true;
+    }
 
+    @Override
+    public long generateDirect(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelPiece piece) {
         final int baseX = posIn.blockX();
         final int baseY = posIn.blockY();
         final int baseZ = posIn.blockZ();

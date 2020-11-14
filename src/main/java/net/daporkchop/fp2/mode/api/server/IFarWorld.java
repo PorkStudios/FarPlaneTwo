@@ -66,7 +66,7 @@ public interface IFarWorld<POS extends IFarPos, P extends IFarPiece, D extends I
     /**
      * @return the (possibly {@code null}) {@link IFarGeneratorRough} used for rough generation of far terrain
      */
-    IFarGeneratorRough<POS, D> generatorRough();
+    IFarGeneratorRough<POS, P, D> generatorRough();
 
     /**
      * @return the {@link IFarGeneratorExact} used for block-accurate generation of far terrain

@@ -34,7 +34,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-abstract class AbstractHeightmapPiece implements IReusablePersistent {
+public abstract class AbstractHeightmapPiece implements IReusablePersistent {
     //layout (in ints):
     //0: height
     //1: (light << 24) | state

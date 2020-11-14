@@ -44,15 +44,13 @@ import net.daporkchop.fp2.mode.common.server.action.LoadAction;
 import net.daporkchop.fp2.mode.common.server.action.SavePieceAction;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
-import net.daporkchop.fp2.util.threading.executor.PriorityRecursiveExecutor;
+import net.daporkchop.fp2.util.threading.PriorityRecursiveExecutor;
 import net.daporkchop.fp2.util.threading.keyed.DefaultKeyedTaskScheduler;
-import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 import net.daporkchop.lib.common.function.io.IOConsumer;
 import net.daporkchop.lib.common.misc.file.PFiles;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
-import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.primitive.map.ObjLongMap;
 import net.daporkchop.lib.primitive.map.concurrent.ObjLongConcurrentHashMap;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -66,8 +64,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
@@ -78,7 +74,6 @@ import java.util.function.BiFunction;
 import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -91,7 +86,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
     protected final RenderMode mode;
     protected final File root;
 
-    protected final IFarGeneratorRough<POS, D> generatorRough;
+    protected final IFarGeneratorRough<POS, P, D> generatorRough;
     protected final IFarGeneratorExact<POS, P, D> generatorExact;
     protected final IFarScaler<POS, D> scaler;
     protected final IFarAssembler<D, P> assembler;
@@ -125,7 +120,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
         this.world = world;
         this.mode = mode;
 
-        IFarGeneratorRough<POS, D> generatorRough = this.mode().<POS, D>generatorsRough().stream()
+        IFarGeneratorRough<POS, P, D> generatorRough = this.mode().<POS, P, D>generatorsRough().stream()
                 .map(f -> f.apply(world))
                 .filter(Objects::nonNull)
                 .findFirst().orElse(null);
@@ -154,8 +149,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
 
         this.scaler = this.mode().createScaler();
         this.assembler = this.mode().createAssembler();
-        this.pieceStorage = new FarStorage<>(world, this.mode(), "piece");
-        this.dataStorage = new FarStorage<>(world, this.mode(), "data");
+        this.pieceStorage = new FarStorage<>(world, this.mode(), "piece", this.mode().pieceVersion());
+        this.dataStorage = new FarStorage<>(world, this.mode(), "data", this.mode().dataVersion());
 
         this.executor = new PriorityRecursiveExecutor<>(
                 FP2Config.generationThreads,
@@ -171,10 +166,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
         this.loadNotDone();
 
         MinecraftForge.EVENT_BUS.register(this);
-    }
-
-    public boolean usesPieceData() {
-        return this.dataStorage != null;
     }
 
     @Override
@@ -210,7 +201,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
 
     @SuppressWarnings("unchecked")
     public void pieceChanged(@NonNull Compressed<POS, P> piece) {
-        if (piece.isBlank()) {
+        if (!piece.isGenerated()) {
             return;
         }
 
@@ -236,11 +227,19 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
     }
 
     public void dataChanged(@NonNull Compressed<POS, D> data) {
-        if (data.isBlank()) {
+        if (!data.isGenerated()) {
             return;
         }
 
         this.dataCache.put(data.pos(), data);
+    }
+
+    public boolean willUseDataAt(@NonNull POS pos) {
+        return pos.level() < FP2Config.maxLevels - 1;
+    }
+
+    public boolean canGenerateRough(@NonNull POS pos) {
+        return pos.level() == 0 || this.lowResolution;
     }
 
     protected void schedulePieceForUpdate(@NonNull POS pos, long newTimestamp) {

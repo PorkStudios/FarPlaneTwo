@@ -21,10 +21,10 @@
 package net.daporkchop.fp2.mode.heightmap.server.gen.exact;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.piece.AbstractHeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapSample;
@@ -40,8 +40,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorExact<HeightmapPos, HeightmapPiece, HeightmapData> {
-    @Override
-    public void generatePieceData(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos posIn, @NonNull HeightmapData data) {
+    protected void doGenerate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos posIn, @NonNull AbstractHeightmapPiece dst) {
         int pieceX = posIn.x();
         int pieceZ = posIn.z();
 
@@ -67,13 +66,35 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
                 sample.waterLight = packCombinedLight(world.getCombinedLight(pos, 0));
                 sample.waterBiome = Biome.getIdForBiome(world.getBiome(pos));
 
-                data.set(x, z, sample);
+                dst.set(x, z, sample);
             }
         }
     }
 
     @Override
-    public long generate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos posIn, @NonNull HeightmapPiece piece, @NonNull HeightmapData data, @NonNull IFarAssembler<HeightmapData, HeightmapPiece> assembler) {
+    public void generate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos pos, @NonNull HeightmapData data) {
+        this.doGenerate(world, pos, data);
+    }
+
+    @Override
+    public boolean directSupported() {
+        return true;
+    }
+
+    @Override
+    public long generateDirect(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos pos, @NonNull HeightmapPiece piece) {
+        this.doGenerate(world, pos, piece);
+        return 0L;
+    }
+
+    @Override
+    public boolean simultaneousSupported() {
+        return true;
+    }
+
+    @Override
+    public long generateSimultaneous(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos pos, @NonNull HeightmapData data, @NonNull HeightmapPiece piece) {
+        this.doGenerate(world, pos, data);
         data.copyTo(piece);
         return 0L;
     }

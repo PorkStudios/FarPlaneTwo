@@ -56,9 +56,11 @@ public class FarStorage<POS extends IFarPos, V extends IReusablePersistent> impl
     protected final RenderMode mode;
 
     protected final IntFunction<DirectDB> dbOpenFunction;
+    protected final int version;
 
-    public FarStorage(@NonNull WorldServer world, @NonNull RenderMode mode, @NonNull String type) {
+    public FarStorage(@NonNull WorldServer world, @NonNull RenderMode mode, @NonNull String type, int version) {
         this.mode = mode;
+        this.version = version;
 
         this.storageRoot = new File(world.getChunkSaveLocation(), "fp2/" + mode.name().toLowerCase() + '/' + type);
         PFiles.ensureDirectoryExists(this.storageRoot);
@@ -96,7 +98,7 @@ public class FarStorage<POS extends IFarPos, V extends IReusablePersistent> impl
             //unpack
             boolean release = true;
             try {
-                if (readVarInt(packed) == this.mode().storageVersion()) {
+                if (readVarInt(packed) == this.version) {
                     return new Compressed<>(pos, packed);
                 }
                 return null;
@@ -120,7 +122,7 @@ public class FarStorage<POS extends IFarPos, V extends IReusablePersistent> impl
         ByteBuf packed = ByteBufAllocator.DEFAULT.buffer();
         try {
             //write piece
-            writeVarInt(packed, this.mode().storageVersion()); //prefix with version
+            writeVarInt(packed, this.version); //prefix with version
             piece.write(packed);
 
             //write to db

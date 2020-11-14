@@ -18,39 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.server;
+package net.daporkchop.fp2.mode.heightmap.server.gen.rough;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
-import net.daporkchop.fp2.mode.api.IFarPos;
-
-import java.util.function.Predicate;
+import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
+import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-@ToString
-public class PriorityTask<POS extends IFarPos> implements Comparable<PriorityTask<POS>>, Predicate<PriorityTask<POS>> {
-    @NonNull
-    protected final TaskStage stage;
-    @NonNull
-    protected final POS pos;
-
-    @Override
-    public int compareTo(PriorityTask<POS> task) {
-        int d = Integer.compare(this.stage.ordinal(), task.stage.ordinal());
-        if (d == 0) {
-            d = this.pos.compareTo(task.pos);
-        }
-        return d;
-    }
-
-    @Override
-    public boolean test(PriorityTask<POS> task) {
-        return task.stage.ordinal() < this.stage.ordinal() || task.pos.level() < this.pos.level();
-    }
+public abstract class AbstractRoughHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorRough<HeightmapPos, HeightmapPiece, HeightmapData> {
 }

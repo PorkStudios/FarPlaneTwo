@@ -30,6 +30,7 @@ import net.daporkchop.fp2.util.SimpleRecycler;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -49,6 +50,8 @@ public class FarServerWorker<POS extends IFarPos, P extends IFarPiece, D extends
             case LOAD:
                 this.loadPiece(task, task.pos());
                 break;
+            default:
+                throw new IllegalArgumentException(Objects.toString(task));
         }
     }
 
@@ -72,6 +75,17 @@ public class FarServerWorker<POS extends IFarPos, P extends IFarPiece, D extends
     //
 
     public Compressed<POS, P> roughGetPiece(PriorityTask<POS> root, POS pos) {
+        if (this.world.canGenerateRough(pos)) {
+            //the piece can be generated using the rough generator
+            return this.roughGeneratePiece(root, pos);
+        } else {
+            //the piece is at a lower detail than 0, and low-resolution generation is not an option
+            //this will generate the piece and all pieces below it down to level 0 until the piece can be "generated" from scaled data
+            return this.roughAssemblePiece(root, pos);
+        }
+    }
+
+    public Compressed<POS, P> roughGeneratePiece(PriorityTask<POS> root, POS pos) {
         this.world.executor().checkForHigherPriorityWork(root);
 
         long newTimestamp = Compressed.VALUE_ROUGH_COMPLETE;
@@ -80,31 +94,45 @@ public class FarServerWorker<POS extends IFarPos, P extends IFarPiece, D extends
             return compressedPiece;
         }
 
-        //this may generate or scale the data
-        Compressed<POS, D> compressedData = this.roughGetData(root, pos);
-
         SimpleRecycler<D> dataRecycler = this.world.mode().dataRecycler();
-        //this will cause extra compression and decompression if roughGetData() caused the data to be newly generated...
-        D data = compressedData.inflate(dataRecycler);
         SimpleRecycler<P> pieceRecycler = this.world.mode().pieceRecycler();
+        D data = null;
         P piece = pieceRecycler.allocate();
         try {
-            //assemble piece
-            long extra = this.world.assembler().assemble(data, piece);
+            Compressed<POS, D> compressedData = null;
+            long extra;
+            if (this.world.willUseDataAt(pos) && this.world.generatorRough().supportsSimultaneous()) {
+                //simultaneous is always the best option: if we can already generate the data in advance
+                compressedData = this.world.getRawDataBlocking(pos);
+                data = dataRecycler.allocate();
+                extra = this.world.generatorRough().generateSimultaneous(pos, data, piece);
+            } else if (this.world.generatorRough().supportsDirect()) {
+                //generate the piece directly, since we can
+                extra = this.world.generatorRough().generateDirect(pos, piece);
+            } else {
+                //if all else fails, simply generate the rough piece data and then assemble it
+                data = this.roughGetData(root, pos).inflate(dataRecycler);
+                extra = this.world.assembler().assemble(data, piece);
+            }
 
-            if (compressedPiece.set(newTimestamp, piece, extra)) { //notify world of piece change
+            if (compressedData != null && compressedData.set(newTimestamp, data, 0L)) {
+                this.world.dataChanged(compressedData);
+            }
+            if (compressedPiece.set(newTimestamp, piece, extra)) {
                 this.world.pieceChanged(compressedPiece);
             }
         } finally {
             pieceRecycler.release(piece);
-            dataRecycler.release(data);
+            if (data != null) {
+                dataRecycler.release(data);
+            }
         }
 
         return compressedPiece;
     }
 
     public Compressed<POS, D> roughGetData(PriorityTask<POS> root, POS pos) {
-        if (pos.level() == 0 || this.world.lowResolution()) {
+        if (this.world.canGenerateRough(pos)) {
             //the piece can be generated using the rough generator
             return this.roughGenerateData(root, pos);
         } else {
@@ -181,5 +209,37 @@ public class FarServerWorker<POS extends IFarPos, P extends IFarPiece, D extends
         }
 
         return compressedData;
+    }
+
+    public Compressed<POS, P> roughAssemblePiece(PriorityTask<POS> root, POS pos) {
+        this.world.executor.checkForHigherPriorityWork(root);
+
+        long newTimestamp = Compressed.VALUE_ROUGH_COMPLETE;
+        Compressed<POS, P> compressedPiece = this.world.getRawPieceBlocking(pos);
+        if (compressedPiece.timestamp() >= newTimestamp) { //break out early if piece is already done or newer
+            return compressedPiece;
+        }
+
+        //this may generate or scale the data
+        Compressed<POS, D> compressedData = this.roughGetData(root, pos);
+
+        SimpleRecycler<D> dataRecycler = this.world.mode().dataRecycler();
+        //this will cause extra compression and decompression if roughGetData() caused the data to be newly generated...
+        D data = compressedData.inflate(dataRecycler);
+        SimpleRecycler<P> pieceRecycler = this.world.mode().pieceRecycler();
+        P piece = pieceRecycler.allocate();
+        try {
+            //assemble piece
+            long extra = this.world.assembler().assemble(data, piece);
+
+            if (compressedPiece.set(newTimestamp, piece, extra)) { //notify world of piece change
+                this.world.pieceChanged(compressedPiece);
+            }
+        } finally {
+            pieceRecycler.release(piece);
+            dataRecycler.release(data);
+        }
+
+        return compressedPiece;
     }
 }

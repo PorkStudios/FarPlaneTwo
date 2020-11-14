@@ -24,7 +24,6 @@ import io.netty.buffer.ByteBuf;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.val;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.piece.IFarData;
@@ -42,9 +41,9 @@ import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.server.HeightmapPlayerTracker;
 import net.daporkchop.fp2.mode.heightmap.server.HeightmapWorld;
 import net.daporkchop.fp2.mode.heightmap.server.gen.HeightmapAssembler;
+import net.daporkchop.fp2.mode.heightmap.server.gen.HeightmapPieceScalerMax;
 import net.daporkchop.fp2.mode.heightmap.server.gen.exact.CCHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.exact.VanillaHeightmapGenerator;
-import net.daporkchop.fp2.mode.heightmap.server.gen.HeightmapPieceScalerMax;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.client.VoxelRenderer;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelData;
@@ -78,11 +77,11 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Getter
 public enum RenderMode {
-    HEIGHTMAP("2D", 7) {
+    HEIGHTMAP("2D", 7, 0) {
         @Override
         protected void registerDefaultGenerators() {
             //rough
-            PriorityCollection<Function<WorldServer, IFarGeneratorRough<HeightmapPos, HeightmapData>>> generatorsRough = this.generatorsRough();
+            PriorityCollection<Function<WorldServer, IFarGeneratorRough<HeightmapPos, HeightmapPiece, HeightmapData>>> generatorsRough = this.generatorsRough();
             //generatorsRough.add(-100, world -> Constants.isCwgWorld(world) ? new CWGHeightmapGenerator() : null);
 
             //exact
@@ -142,11 +141,11 @@ public enum RenderMode {
             return new HeightmapData[size];
         }
     },
-    VOXEL("3D", 4) {
+    VOXEL("3D", 4, 0) {
         @Override
         protected void registerDefaultGenerators() {
             //rough
-            PriorityCollection<Function<WorldServer, IFarGeneratorRough<VoxelPos, VoxelData>>> generatorsRough = this.generatorsRough();
+            PriorityCollection<Function<WorldServer, IFarGeneratorRough<VoxelPos, VoxelPiece, VoxelData>>> generatorsRough = this.generatorsRough();
             //generatorsRough.add(0, world -> Constants.isCwgWorld(world) ? new CWGVoxelGenerator() : null);
 
             //exact
@@ -229,11 +228,13 @@ public enum RenderMode {
     @Getter(AccessLevel.NONE)
     private final Ref<SimpleRecycler<IFarData>> pieceDataRecycler = ThreadRef.late(this::dataRecycler0);
 
-    private final int storageVersion;
+    private final int pieceVersion;
+    private final int dataVersion;
 
-    RenderMode(@NonNull String name, int storageVersion) {
+    RenderMode(@NonNull String name, int pieceVersion, int dataVersion) {
         PUnsafeStrings.setEnumName(this, name.intern());
-        this.storageVersion = storageVersion;
+        this.pieceVersion = pieceVersion;
+        this.dataVersion = dataVersion;
 
         this.registerDefaultGenerators();
     }
@@ -255,7 +256,7 @@ public enum RenderMode {
     /**
      * {@link #generatorsRough}, but with an unchecked generic cast
      */
-    public <POS extends IFarPos, D extends IFarData> PriorityCollection<Function<WorldServer, IFarGeneratorRough<POS, D>>> generatorsRough() {
+    public <POS extends IFarPos, P extends IFarPiece, D extends IFarData> PriorityCollection<Function<WorldServer, IFarGeneratorRough<POS, P, D>>> generatorsRough() {
         return uncheckedCast(this.generatorsRough);
     }
 

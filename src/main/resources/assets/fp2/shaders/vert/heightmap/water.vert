@@ -43,5 +43,5 @@ ivec3 getLowOffsetPre(int level) {
 }
 
 vec3 getLowOffsetPost() {
-    return vec3(0.);
+    return vec3(0., -0.125, 0.);
 }

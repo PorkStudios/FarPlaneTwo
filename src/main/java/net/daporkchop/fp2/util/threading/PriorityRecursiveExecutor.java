@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.executor;
+package net.daporkchop.fp2.util.threading;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.util.threading.ConcurrentUnboundedPriorityBlockingQueue;

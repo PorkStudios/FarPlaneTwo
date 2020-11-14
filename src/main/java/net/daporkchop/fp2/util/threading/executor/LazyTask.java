@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 /**
  * @author DaPorkchop_
  */
+@Deprecated
 public interface LazyTask<K extends LazyKey<K>, T, R> extends PFuture<R> {
     K key();
 

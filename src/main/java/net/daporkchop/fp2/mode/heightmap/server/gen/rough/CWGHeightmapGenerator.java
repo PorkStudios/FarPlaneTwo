@@ -22,13 +22,9 @@ package net.daporkchop.fp2.mode.heightmap.server.gen.rough;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.piece.IFarData;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapSample;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapSample;
 import net.daporkchop.fp2.util.compat.cwg.CWGContext;
 import net.daporkchop.fp2.util.compat.cwg.CWGHelper;
 import net.daporkchop.lib.common.ref.Ref;
@@ -45,7 +41,7 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public class CWGHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorRough<HeightmapPos, HeightmapData> {
+public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     protected Ref<CWGContext> ctx;
 
     @Override
