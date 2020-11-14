@@ -116,7 +116,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
     }
 
     @Override
-    public void pieceChanged(@NonNull Compressed<POS, ?, ?> piece) {
+    public void pieceChanged(@NonNull Compressed<POS, ?> piece) {
         if (!ServerThreadExecutor.INSTANCE.isServerThread()) {
             ServerThreadExecutor.INSTANCE.execute(() -> this.pieceChanged(piece));
             return;
@@ -183,7 +183,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
         protected final POS pos;
         protected final Set<EntityPlayerMP> players = new ReferenceOpenHashSet<>();
 
-        protected Compressed<POS, ?, ?> piece;
+        protected Compressed<POS, ?> piece;
 
         public Entry(@NonNull POS pos) {
             this.pos = pos;
@@ -211,7 +211,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
             NETWORK_WRAPPER.sendTo(new SPacketUnloadPiece().pos(this.pos), player);
         }
 
-        public void pieceChanged(@NonNull Compressed<POS, ?, ?> piece) {
+        public void pieceChanged(@NonNull Compressed<POS, ?> piece) {
             this.piece = piece;
 
             //send packet to all players

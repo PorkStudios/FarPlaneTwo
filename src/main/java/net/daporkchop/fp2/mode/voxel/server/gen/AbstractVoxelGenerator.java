@@ -18,15 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.server.gen.rough;
+package net.daporkchop.fp2.mode.voxel.server.gen;
 
-import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceData;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelSample;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
 import net.daporkchop.fp2.util.math.Vector3d;
 import net.daporkchop.fp2.util.math.qef.QefSolver;
 import net.daporkchop.lib.common.ref.Ref;
@@ -40,7 +36,7 @@ import static net.daporkchop.lib.common.math.PMath.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractRoughVoxelGenerator<P> extends AbstractFarGenerator implements IFarGeneratorRough<VoxelPos, VoxelPiece, VoxelPieceData> {
+public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
     public static final int DMAP_MIN = -1;
     public static final int DMAP_MAX = T_VOXELS + 2;
     public static final int DMAP_SIZE = DMAP_MAX - DMAP_MIN;
@@ -83,7 +79,7 @@ public abstract class AbstractRoughVoxelGenerator<P> extends AbstractFarGenerato
                 lerp(lerp(Xyz, XyZ, z), lerp(XYz, XYZ, z), y), x);
     }
 
-    protected void buildMesh(int baseX, int baseY, int baseZ, int level, VoxelPieceBuilder builder, double[][] densityMap, P param) {
+    protected void buildMesh(int baseX, int baseY, int baseZ, int level, VoxelPiece builder, double[][] densityMap, P param) {
         QefSolver qef = new QefSolver();
         VoxelSample sample = new VoxelSample();
         Vector3d vec = new Vector3d();

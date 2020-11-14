@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.api.server.gen;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
+import net.daporkchop.fp2.mode.api.piece.IFarData;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.util.math.ChunkPos;
@@ -38,7 +38,7 @@ import java.util.stream.Stream;
  *
  * @author DaPorkchop_
  */
-public interface IFarGeneratorExact<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData> extends IFarGenerator {
+public interface IFarGeneratorExact<POS extends IFarPos, P extends IFarPiece, D extends IFarData> extends IFarGenerator {
     @Override
     void init(@NonNull WorldServer world);
 
@@ -63,8 +63,6 @@ public interface IFarGeneratorExact<POS extends IFarPos, P extends IFarPiece, D 
 
     /**
      * Generates the piece data for the piece at the given position.
-     * <p>
-     * This method should throw {@link UnsupportedOperationException} for render modes that do not utilize the piece data system.
      *
      * @param world the {@link IBlockHeightAccess} providing access to block/height data in the world
      * @param pos   the position of the piece to generate
@@ -78,9 +76,8 @@ public interface IFarGeneratorExact<POS extends IFarPos, P extends IFarPiece, D 
      * @param world the {@link IBlockHeightAccess} providing access to block/height data in the world
      * @param pos   the position of the piece to generate
      * @param piece the piece to generate
-     * @param data  the piece data to generate. May be ignored by render modes that do not utilize the piece data system
-     * @param assembler an {@link IFarAssembler} which may be used to assemble the piece based on the piece data. May be ignored by render modes that
-     *                  do not utilize the piece data system
+     * @param data  the piece data to generate
+     * @param assembler an {@link IFarAssembler} which may be used to assemble the piece based on the piece data
      * @return the extra data to be saved with the piece
      */
     long generate(@NonNull IBlockHeightAccess world, @NonNull POS pos, @NonNull P piece, @NonNull D data, @NonNull IFarAssembler<D, P> assembler);

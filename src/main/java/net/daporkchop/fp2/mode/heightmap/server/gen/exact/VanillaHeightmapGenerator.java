@@ -24,9 +24,9 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapSample;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPieceBuilder;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -51,37 +51,5 @@ public class VanillaHeightmapGenerator extends AbstractExactHeightmapGenerator {
     @Override
     public Stream<Vec3i> neededCubes(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos pos) {
         return Stream.empty(); //assume that all relevant data is loaded with the chunk
-    }
-
-    @Override
-    protected void generateHeightmap(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos posIn, @NonNull HeightmapPiece piece) {
-        int pieceX = posIn.x();
-        int pieceZ = posIn.z();
-
-        HeightmapSample sample = new HeightmapSample();
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-
-        for (int x = 0; x < T_VOXELS; x++) {
-            for (int z = 0; z < T_VOXELS; z++) {
-                int height = world.getTopBlockY(pieceX * T_VOXELS + x, pieceZ * T_VOXELS + z);
-                pos.setPos(pieceX * T_VOXELS + x, height, pieceZ * T_VOXELS + z);
-
-                IBlockState state = world.getBlockState(pos);
-                while (state.getMaterial().isLiquid()) {
-                    pos.setY(--height);
-                    state = world.getBlockState(pos);
-                }
-
-                pos.setY(sample.height = ++height);
-                sample.state = Block.getStateId(state);
-                sample.light = packCombinedLight(world.getCombinedLight(pos, 0));
-                sample.biome = Biome.getIdForBiome(world.getBiome(pos));
-                pos.setY(this.seaLevel + 1);
-                sample.waterLight = packCombinedLight(world.getCombinedLight(pos, 0));
-                sample.waterBiome = Biome.getIdForBiome(world.getBiome(pos));
-
-                piece.set(x, z, sample);
-            }
-        }
     }
 }

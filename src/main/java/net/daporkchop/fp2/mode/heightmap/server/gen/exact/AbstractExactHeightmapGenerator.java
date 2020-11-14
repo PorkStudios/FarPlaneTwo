@@ -21,28 +21,60 @@
 package net.daporkchop.fp2.mode.heightmap.server.gen.exact;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
 import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapSample;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
+import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.biome.Biome;
+
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorExact<HeightmapPos, HeightmapPiece, IFarPieceData> {
+public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorExact<HeightmapPos, HeightmapPiece, HeightmapData> {
     @Override
-    public final void generatePieceData(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos pos, IFarPieceData data) {
-        throw new UnsupportedOperationException();
+    public void generatePieceData(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos posIn, @NonNull HeightmapData data) {
+        int pieceX = posIn.x();
+        int pieceZ = posIn.z();
+
+        HeightmapSample sample = new HeightmapSample();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
+        for (int x = 0; x < T_VOXELS; x++) {
+            for (int z = 0; z < T_VOXELS; z++) {
+                int height = world.getTopBlockY(pieceX * T_VOXELS + x, pieceZ * T_VOXELS + z);
+                pos.setPos(pieceX * T_VOXELS + x, height, pieceZ * T_VOXELS + z);
+
+                IBlockState state = world.getBlockState(pos);
+                while (state.getMaterial().isLiquid()) {
+                    pos.setY(--height);
+                    state = world.getBlockState(pos);
+                }
+
+                pos.setY(sample.height = ++height);
+                sample.state = Block.getStateId(state);
+                sample.light = packCombinedLight(world.getCombinedLight(pos, 0));
+                sample.biome = Biome.getIdForBiome(world.getBiome(pos));
+                pos.setY(this.seaLevel + 1);
+                sample.waterLight = packCombinedLight(world.getCombinedLight(pos, 0));
+                sample.waterBiome = Biome.getIdForBiome(world.getBiome(pos));
+
+                data.set(x, z, sample);
+            }
+        }
     }
 
     @Override
-    public final long generate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos pos, @NonNull HeightmapPiece piece, IFarPieceData data, IFarAssembler<IFarPieceData, HeightmapPiece> assembler) {
-        this.generateHeightmap(world, pos, piece);
+    public long generate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos posIn, @NonNull HeightmapPiece piece, @NonNull HeightmapData data, @NonNull IFarAssembler<HeightmapData, HeightmapPiece> assembler) {
+        data.copyTo(piece);
         return 0L;
     }
-
-    protected abstract void generateHeightmap(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos pos, @NonNull HeightmapPiece piece);
 }

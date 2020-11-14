@@ -27,35 +27,32 @@ import lombok.NonNull;
 import lombok.val;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.mode.api.piece.IFarData;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.api.server.scale.IFarDataScaler;
-import net.daporkchop.fp2.mode.api.server.scale.IFarPieceScaler;
-import net.daporkchop.fp2.mode.api.server.scale.IFarScaler;
+import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.client.HeightmapRenderer;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.server.HeightmapPlayerTracker;
 import net.daporkchop.fp2.mode.heightmap.server.HeightmapWorld;
+import net.daporkchop.fp2.mode.heightmap.server.gen.HeightmapAssembler;
 import net.daporkchop.fp2.mode.heightmap.server.gen.exact.CCHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.exact.VanillaHeightmapGenerator;
-import net.daporkchop.fp2.mode.heightmap.server.gen.rough.CWGHeightmapGenerator;
-import net.daporkchop.fp2.mode.heightmap.server.scale.HeightmapPieceScalerMax;
+import net.daporkchop.fp2.mode.heightmap.server.gen.HeightmapPieceScalerMax;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.client.VoxelRenderer;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelData;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceData;
 import net.daporkchop.fp2.mode.voxel.server.VoxelPlayerTracker;
 import net.daporkchop.fp2.mode.voxel.server.VoxelWorld;
 import net.daporkchop.fp2.mode.voxel.server.gen.exact.CCVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
-import net.daporkchop.fp2.mode.voxel.server.gen.rough.CWGVoxelGenerator;
-import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerAvg;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.PriorityCollection;
 import net.daporkchop.fp2.util.SimpleRecycler;
@@ -81,15 +78,15 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Getter
 public enum RenderMode {
-    HEIGHTMAP("2D", 7, false) {
+    HEIGHTMAP("2D", 7) {
         @Override
         protected void registerDefaultGenerators() {
             //rough
-            val generatorsRough = this.<HeightmapPos, HeightmapPiece, IFarPieceData>generatorsRough();
-            generatorsRough.add(-100, world -> Constants.isCwgWorld(world) ? new CWGHeightmapGenerator() : null);
+            PriorityCollection<Function<WorldServer, IFarGeneratorRough<HeightmapPos, HeightmapData>>> generatorsRough = this.generatorsRough();
+            //generatorsRough.add(-100, world -> Constants.isCwgWorld(world) ? new CWGHeightmapGenerator() : null);
 
             //exact
-            val generatorsExact = this.<HeightmapPos, HeightmapPiece, IFarPieceData>generatorsExact();
+            PriorityCollection<Function<WorldServer, IFarGeneratorExact<HeightmapPos, HeightmapPiece, HeightmapData>>> generatorsExact = this.generatorsExact();
             generatorsExact.add(-100, world -> Constants.isCubicWorld(world) ? new CCHeightmapGenerator() : null);
             generatorsExact.add(100, world -> new VanillaHeightmapGenerator());
         }
@@ -100,18 +97,18 @@ public enum RenderMode {
         }
 
         @Override
-        protected SimpleRecycler<IFarPieceData> pieceDataRecycler0() {
-            throw new UnsupportedOperationException();
+        protected SimpleRecycler<IFarData> dataRecycler0() {
+            return new SimpleRecycler.OfReusablePersistent<>(HeightmapData::new);
         }
 
         @Override
-        public IFarPieceScaler createScaler0() {
+        public IFarScaler createScaler0() {
             return new HeightmapPieceScalerMax();
         }
 
         @Override
         protected IFarAssembler createAssembler0() {
-            throw new UnsupportedOperationException();
+            return new HeightmapAssembler();
         }
 
         @Override
@@ -141,19 +138,19 @@ public enum RenderMode {
         }
 
         @Override
-        public IFarPieceData[] pieceDataArray(int size) {
-            throw new UnsupportedOperationException();
+        public IFarData[] pieceDataArray(int size) {
+            return new HeightmapData[size];
         }
     },
-    VOXEL("3D", 4, true) {
+    VOXEL("3D", 4) {
         @Override
         protected void registerDefaultGenerators() {
             //rough
-            val generatorsRough = this.<HeightmapPos, HeightmapPiece, IFarPieceData>generatorsRough();
-            generatorsRough.add(0, world -> Constants.isCwgWorld(world) ? new CWGVoxelGenerator() : null);
+            PriorityCollection<Function<WorldServer, IFarGeneratorRough<VoxelPos, VoxelData>>> generatorsRough = this.generatorsRough();
+            //generatorsRough.add(0, world -> Constants.isCwgWorld(world) ? new CWGVoxelGenerator() : null);
 
             //exact
-            val generatorsExact = this.<VoxelPos, VoxelPiece, VoxelPieceData>generatorsExact();
+            PriorityCollection<Function<WorldServer, IFarGeneratorExact<VoxelPos, VoxelPiece, VoxelData>>> generatorsExact = this.generatorsExact();
             generatorsExact.add(-100, world -> Constants.isCubicWorld(world) ? new CCVoxelGenerator() : null);
             generatorsExact.add(100, world -> new VanillaVoxelGenerator());
         }
@@ -164,12 +161,12 @@ public enum RenderMode {
         }
 
         @Override
-        protected SimpleRecycler<IFarPieceData> pieceDataRecycler0() {
-            return new SimpleRecycler.OfReusablePersistent<>(VoxelPieceData::new);
+        protected SimpleRecycler<IFarData> dataRecycler0() {
+            return new SimpleRecycler.OfReusablePersistent<>(VoxelData::new);
         }
 
         @Override
-        public IFarPieceScaler createScaler0() {
+        public IFarScaler createScaler0() {
             throw new UnsupportedOperationException(); //TODO
         }
 
@@ -205,8 +202,8 @@ public enum RenderMode {
         }
 
         @Override
-        public IFarPieceData[] pieceDataArray(int size) {
-            return new VoxelPieceData[size];
+        public IFarData[] pieceDataArray(int size) {
+            return new VoxelData[size];
         }
     };
 
@@ -230,78 +227,55 @@ public enum RenderMode {
     @Getter(AccessLevel.NONE)
     private final Ref<SimpleRecycler<IFarPiece>> pieceRecycler = ThreadRef.late(this::pieceRecycler0);
     @Getter(AccessLevel.NONE)
-    private final Ref<SimpleRecycler<IFarPieceData>> pieceDataRecycler = ThreadRef.late(this::pieceDataRecycler0);
+    private final Ref<SimpleRecycler<IFarData>> pieceDataRecycler = ThreadRef.late(this::dataRecycler0);
 
     private final int storageVersion;
 
-    private final boolean usesPieceData;
-
-    RenderMode(@NonNull String name, int storageVersion, boolean usesPieceData) {
+    RenderMode(@NonNull String name, int storageVersion) {
         PUnsafeStrings.setEnumName(this, name.intern());
         this.storageVersion = storageVersion;
-        this.usesPieceData = usesPieceData;
 
         this.registerDefaultGenerators();
     }
 
     protected abstract void registerDefaultGenerators();
 
+    protected abstract SimpleRecycler<IFarPiece> pieceRecycler0();
+
     public <P extends IFarPiece> SimpleRecycler<P> pieceRecycler() {
         return uncheckedCast(this.pieceRecycler.get());
     }
 
-    protected abstract SimpleRecycler<IFarPiece> pieceRecycler0();
+    protected abstract SimpleRecycler<IFarData> dataRecycler0();
 
-    public <D extends IFarPieceData> SimpleRecycler<D> pieceDataRecycler() {
-        if (this.usesPieceData) {
-            return uncheckedCast(this.pieceDataRecycler.get());
-        } else {
-            throw new UnsupportedOperationException(this.name());
-        }
+    public <D extends IFarData> SimpleRecycler<D> dataRecycler() {
+        return uncheckedCast(this.pieceDataRecycler.get());
     }
-
-    protected abstract SimpleRecycler<IFarPieceData> pieceDataRecycler0();
 
     /**
      * {@link #generatorsRough}, but with an unchecked generic cast
      */
-    public <POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData> PriorityCollection<Function<WorldServer, IFarGeneratorRough<POS, P, D>>> generatorsRough() {
+    public <POS extends IFarPos, D extends IFarData> PriorityCollection<Function<WorldServer, IFarGeneratorRough<POS, D>>> generatorsRough() {
         return uncheckedCast(this.generatorsRough);
     }
 
     /**
      * {@link #generatorsExact}, but with an unchecked generic cast
      */
-    public <POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData> PriorityCollection<Function<WorldServer, IFarGeneratorExact<POS, P, D>>> generatorsExact() {
+    public <POS extends IFarPos, P extends IFarPiece, D extends IFarData> PriorityCollection<Function<WorldServer, IFarGeneratorExact<POS, P, D>>> generatorsExact() {
         return uncheckedCast(this.generatorsExact);
     }
 
     /**
-     * @see #createPieceScaler()
-     * @see #createDataScaler()
+     * @see #createScaler()
      */
     protected abstract IFarScaler createScaler0();
 
     /**
-     * @return a new {@link IFarPieceScaler}
+     * @return a new {@link IFarScaler}
      */
-    public <POS extends IFarPos, P extends IFarPiece> IFarPieceScaler<POS, P> createPieceScaler() {
-        if (this.usesPieceData) {
-            throw new UnsupportedOperationException(this.name());
-        } else {
-            return uncheckedCast(this.createScaler0());
-        }
-    }
-
-    /**
-     * @return a new {@link IFarDataScaler}
-     */
-    public <POS extends IFarPos, D extends IFarPieceData> IFarDataScaler<POS, D> createDataScaler() {
-        if (this.usesPieceData) {
-            return uncheckedCast(this.createScaler0());
-        } else {
-            throw new UnsupportedOperationException(this.name());
-        }
+    public <POS extends IFarPos, D extends IFarData> IFarScaler<POS, D> createScaler() {
+        return uncheckedCast(this.createScaler0());
     }
 
     /**
@@ -312,12 +286,8 @@ public enum RenderMode {
     /**
      * @return a new {@link IFarAssembler}
      */
-    public <P extends IFarPiece, D extends IFarPieceData> IFarAssembler<D, P> createAssembler() {
-        if (this.usesPieceData) {
-            return uncheckedCast(this.createAssembler0());
-        } else {
-            throw new UnsupportedOperationException(this.name());
-        }
+    public <P extends IFarPiece, D extends IFarData> IFarAssembler<D, P> createAssembler() {
+        return uncheckedCast(this.createAssembler0());
     }
 
     /**
@@ -357,5 +327,5 @@ public enum RenderMode {
 
     public abstract IFarPiece[] pieceArray(int size);
 
-    public abstract IFarPieceData[] pieceDataArray(int size);
+    public abstract IFarData[] pieceDataArray(int size);
 }

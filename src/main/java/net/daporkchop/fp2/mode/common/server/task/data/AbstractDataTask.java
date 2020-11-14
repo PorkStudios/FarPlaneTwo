@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.common.server.task.data;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
+import net.daporkchop.fp2.mode.api.piece.IFarData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
@@ -32,7 +32,7 @@ import net.daporkchop.fp2.mode.common.server.task.AbstractFarTask;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractDataTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData, A>
+public abstract class AbstractDataTask<POS extends IFarPos, P extends IFarPiece, D extends IFarData, A>
         extends AbstractFarTask<POS, P, D, D, A> {
     public AbstractDataTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
         super(world, key, pos, requestedBy);

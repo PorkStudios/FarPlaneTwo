@@ -22,12 +22,12 @@ package net.daporkchop.fp2.mode.voxel.piece;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
+import net.daporkchop.fp2.mode.api.piece.IFarData;
 
 /**
  * @author DaPorkchop_
  */
-public class VoxelPieceData implements IFarPieceData {
+public class VoxelData implements IFarData {
     @Override
     public void reset() {
     }

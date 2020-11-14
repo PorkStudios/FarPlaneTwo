@@ -24,7 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
+import net.daporkchop.fp2.mode.api.piece.IFarData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 /**
  * @author DaPorkchop_
  */
-public class AssemblePieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData>
+public class AssemblePieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarData>
         extends AbstractPieceTask<POS, P, D, Compressed<POS, D>> {
     public AssemblePieceTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
         super(world, key, pos, requestedBy);
@@ -63,12 +63,12 @@ public class AssemblePieceTask<POS extends IFarPos, P extends IFarPiece, D exten
                 return compressedPiece;
             }
 
-            SimpleRecycler<D> dataRecycler = this.pos.mode().pieceDataRecycler();
+            SimpleRecycler<D> dataRecycler = this.pos.mode().dataRecycler();
             SimpleRecycler<P> pieceRecycler = this.pos.mode().pieceRecycler();
             D data = compressedData.inflate(dataRecycler);
             P piece = pieceRecycler.allocate();
             try {
-                long extra = this.world.pieceAssembler().assemble(data, piece);
+                long extra = this.world.assembler().assemble(data, piece);
                 changed = compressedPiece.set(newTimestamp, piece, extra);
             } finally {
                 pieceRecycler.release(piece);

@@ -22,11 +22,12 @@ package net.daporkchop.fp2.mode.voxel.server.gen.rough;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
+import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceData;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelData;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelSample;
+import net.daporkchop.fp2.mode.voxel.server.gen.AbstractVoxelGenerator;
 import net.daporkchop.lib.noise.NoiseSource;
 import net.daporkchop.lib.noise.engine.PerlinNoiseEngine;
 import net.daporkchop.lib.random.impl.FastPRandom;
@@ -41,7 +42,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 //TODO: this is currently only generating the mesh using perlin noise
-public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<Void> {
+public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements IFarGeneratorRough<VoxelPos, VoxelData> {
     //protected Ref<CWGContext> ctx;
     protected NoiseSource noise;
 
@@ -54,11 +55,7 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<Void> {
     }
 
     @Override
-    public void generatePieceData(@NonNull VoxelPos pos, @NonNull VoxelPieceData data) {
-    }
-
-    @Override
-    public long generate(@NonNull VoxelPos pos, @NonNull VoxelPiece piece, @NonNull VoxelPieceData data, @NonNull IFarAssembler<VoxelPieceData, VoxelPiece> assembler) {
+    public void generate(@NonNull VoxelPos pos, @NonNull VoxelData data) {
         int level = pos.level();
         int baseX = pos.blockX();
         int baseY = pos.blockY();
@@ -66,7 +63,7 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<Void> {
 
         //CWGContext ctx = this.ctx.get();
         //ctx.init(baseX >> 4, baseY >> 4, baseZ >> 4, level);
-        double[][] densityMap = DMAP_CACHE.get();
+        /*double[][] densityMap = DMAP_CACHE.get();
 
         for (int x = DMAP_MIN; x < DMAP_MAX; x++) {
             for (int y = DMAP_MIN; y < DMAP_MAX; y++) {
@@ -77,8 +74,7 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<Void> {
         }
         this.noise.get(densityMap[1], baseX + DMAP_MIN, baseY + DMAP_MIN, baseZ + DMAP_MIN, 1.0d, 1.0d, 1.0d, DMAP_SIZE, DMAP_SIZE, DMAP_SIZE);
 
-        this.buildMesh(baseX, baseY, baseZ, level, piece, densityMap, null);
-        return 0;
+        this.buildMesh(baseX, baseY, baseZ, level, piece, densityMap, null);*/
     }
 
     @Override
@@ -95,11 +91,6 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<Void> {
 
     @Override
     public boolean supportsLowResolution() {
-        return true;
-    }
-
-    @Override
-    public boolean isLowResolutionInaccurate() {
         return true;
     }
 }

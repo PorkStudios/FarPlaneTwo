@@ -35,7 +35,7 @@ public interface IFarPlayerTracker<POS extends IFarPos> {
 
     void playerMove(@NonNull EntityPlayerMP player);
 
-    void pieceChanged(@NonNull Compressed<POS, ?, ?> piece);
+    void pieceChanged(@NonNull Compressed<POS, ?> piece);
 
     void debug_dropAllPieces();
 }

@@ -25,5 +25,5 @@ import net.daporkchop.fp2.util.IReusablePersistent;
 /**
  * @author DaPorkchop_
  */
-public interface IFarPieceData extends IReusablePersistent {
+public interface IFarData extends IReusablePersistent {
 }

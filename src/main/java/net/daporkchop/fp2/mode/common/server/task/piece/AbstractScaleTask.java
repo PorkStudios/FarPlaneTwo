@@ -24,7 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
+import net.daporkchop.fp2.mode.api.piece.IFarData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
@@ -39,7 +39,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractScaleTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData>
+public abstract class AbstractScaleTask<POS extends IFarPos, P extends IFarPiece, D extends IFarData>
         extends AbstractPieceTask<POS, P, D, Compressed<POS, P>> {
     public AbstractScaleTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
         super(world, key, pos, requestedBy);

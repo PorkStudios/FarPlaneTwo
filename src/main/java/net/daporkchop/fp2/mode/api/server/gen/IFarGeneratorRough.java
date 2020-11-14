@@ -22,8 +22,7 @@ package net.daporkchop.fp2.mode.api.server.gen;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarData;
 import net.minecraft.world.WorldServer;
 
 /**
@@ -33,39 +32,20 @@ import net.minecraft.world.WorldServer;
  *
  * @author DaPorkchop_
  */
-public interface IFarGeneratorRough<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData> extends IFarGenerator {
+public interface IFarGeneratorRough<POS extends IFarPos, D extends IFarData> extends IFarGenerator {
     @Override
     void init(@NonNull WorldServer world);
 
     /**
-     * Generates the piece data for the piece at the given position.
-     * <p>
-     * This method should throw {@link UnsupportedOperationException} for render modes that do not utilize the piece data system.
+     * Generates a rough estimate of the terrain in the given piece.
      *
      * @param pos  the position of the piece to generate
      * @param data the piece data to generate
      */
-    void generatePieceData(@NonNull POS pos, @NonNull D data);
-
-    /**
-     * Generates a rough estimate of the terrain in the given piece.
-     *
-     * @param pos       the position of the piece to generate
-     * @param piece     the piece to generate
-     * @param data      the piece data to generate. May be ignored by render modes that do not utilize the piece data system
-     * @param assembler an {@link IFarAssembler} which may be used to assemble the piece based on the piece data. May be ignored by render modes that
-     *                  do not utilize the piece data system
-     * @return the extra data to be saved with the piece
-     */
-    long generate(@NonNull POS pos, @NonNull P piece, @NonNull D data, @NonNull IFarAssembler<D, P> assembler);
+    void generate(@NonNull POS pos, @NonNull D data);
 
     /**
      * @return whether or not this generator can generate pieces at low resolution
      */
     boolean supportsLowResolution();
-
-    /**
-     * @return whether or not low-resolution pieces are inaccurate
-     */
-    boolean isLowResolutionInaccurate();
 }

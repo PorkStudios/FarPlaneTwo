@@ -38,7 +38,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 public interface IFarRenderer<POS extends IFarPos, P extends IFarPiece> {
     void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum);
 
-    void receivePiece(@NonNull Compressed<POS, P, ?> piece);
+    void receivePiece(@NonNull Compressed<POS, P> piece);
 
     void unloadPiece(@NonNull POS pos);
 

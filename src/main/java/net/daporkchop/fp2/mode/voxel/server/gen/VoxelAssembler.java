@@ -18,30 +18,29 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.server.gen.rough;
+package net.daporkchop.fp2.mode.voxel.server.gen;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
 import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelData;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelSample;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractRoughHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorRough<HeightmapPos, HeightmapPiece, IFarPieceData> {
+public class VoxelAssembler extends AbstractVoxelGenerator<VoxelData> implements IFarAssembler<VoxelData, VoxelPiece> {
     @Override
-    public final void generatePieceData(@NonNull HeightmapPos pos, IFarPieceData data) {
-        throw new UnsupportedOperationException();
+    public long assemble(@NonNull VoxelData data, @NonNull VoxelPiece piece) {
+        return 0;
     }
 
     @Override
-    public final long generate(@NonNull HeightmapPos pos, @NonNull HeightmapPiece piece, IFarPieceData data, IFarAssembler<IFarPieceData, HeightmapPiece> assembler) {
-        this.generate(pos, piece);
-        return 0L;
+    protected int getFaceState(int blockX, int blockY, int blockZ, double nx, double ny, double nz, int edge, int layer, VoxelData param) {
+        return 0;
     }
 
-    protected abstract void generate(@NonNull HeightmapPos pos, @NonNull HeightmapPiece piece);
+    @Override
+    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, double nx, double ny, double nz, VoxelSample sample, VoxelData param) {
+    }
 }

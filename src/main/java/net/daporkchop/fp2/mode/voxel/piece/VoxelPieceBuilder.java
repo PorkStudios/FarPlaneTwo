@@ -24,14 +24,14 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 /**
  * @author DaPorkchop_
  */
-public class VoxelPieceBuilder implements IFarPieceBuilder {
-    protected static final int DATA_SIZE = VoxelPiece.ENTRY_COUNT * VoxelPiece.ENTRY_DATA_SIZE_BYTES;
+@Deprecated
+public class VoxelPieceBuilder {
+    /*protected static final int DATA_SIZE = VoxelPiece.ENTRY_COUNT * VoxelPiece.ENTRY_DATA_SIZE_BYTES;
     protected static final int BUILDER_SIZE = VoxelPiece.INDEX_SIZE + DATA_SIZE;
 
     protected final long addr = PUnsafe.allocateMemory(this, BUILDER_SIZE);
@@ -99,5 +99,5 @@ public class VoxelPieceBuilder implements IFarPieceBuilder {
 
         dst.setIntLE(sizeIndex, count);
         return false;
-    }
+    }*/
 }

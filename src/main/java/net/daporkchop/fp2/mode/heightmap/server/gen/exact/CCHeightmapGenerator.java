@@ -21,22 +21,10 @@
 package net.daporkchop.fp2.mode.heightmap.server.gen.exact;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
-import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
-import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapSample;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPieceBuilder;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
-import net.minecraft.block.Block;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.biome.Biome;
 
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -62,37 +50,5 @@ public class CCHeightmapGenerator extends AbstractExactHeightmapGenerator {
                 })
                 .distinct() //we don't want a bunch of identical cube Y coordinates
                 .mapToObj(cubeY -> new Vec3i(pos.flooredChunkX(), cubeY, pos.flooredChunkZ()));
-    }
-
-    @Override
-    protected void generateHeightmap(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos posIn, @NonNull HeightmapPiece piece) {
-        int pieceX = posIn.x();
-        int pieceZ = posIn.z();
-
-        HeightmapSample sample = new HeightmapSample();
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-
-        for (int x = 0; x < T_VOXELS; x++) {
-            for (int z = 0; z < T_VOXELS; z++) {
-                int height = world.getTopBlockY(pieceX * T_VOXELS + x, pieceZ * T_VOXELS + z);
-                pos.setPos(pieceX * T_VOXELS + x, height, pieceZ * T_VOXELS + z);
-                IBlockState state = world.getBlockState(pos);
-
-                while (height <= 63 && state.getMaterial() == Material.WATER) {
-                    pos.setY(--height);
-                    state = world.getBlockState(pos);
-                }
-
-                pos.setY(sample.height = ++height);
-                sample.state = Block.getStateId(state);
-                sample.light = packCombinedLight(world.getCombinedLight(pos, 0));
-                sample.biome = Biome.getIdForBiome(world.getBiome(pos));
-                pos.setY(this.seaLevel);
-                sample.waterLight = packCombinedLight(world.getCombinedLight(pos, 0));
-                sample.waterBiome = Biome.getIdForBiome(world.getBiome(pos));
-
-                piece.set(x, z, sample);
-            }
-        }
     }
 }

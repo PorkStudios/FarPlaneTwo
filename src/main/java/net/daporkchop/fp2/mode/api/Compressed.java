@@ -55,16 +55,6 @@ public class Compressed<POS extends IFarPos, V extends IReusablePersistent> exte
      */
     public static final long VALUE_ROUGH_COMPLETE = -1L;
 
-    /**
-     * Gets a timestamp indicating that the value contains rough data generated at the given level.
-     *
-     * @param level the lowest level that has been generated roughly
-     * @return a timestamp indicating that the piece contains rough data generated at the given level
-     */
-    public static long valueRough(int level) {
-        return -level - 1L;
-    }
-
     protected final POS pos;
     protected long extra;
     protected byte[] data;
@@ -211,7 +201,11 @@ public class Compressed<POS extends IFarPos, V extends IReusablePersistent> exte
     }
 
     public boolean set(long timestamp, @NonNull V value, long extra) throws IllegalArgumentException {
-        //before doing anything we compress the value data into an array
+        if (this.timestamp >= timestamp) { //break out early in the event of a timestamp mismatch, to avoid wasting CPU time on unneeded compression
+            return false;
+        }
+
+        //compress the value data into a byte[]
         byte[] data = null;
         ByteBuf compressed = null;
         COMPRESS:

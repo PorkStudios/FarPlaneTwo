@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.common.server.task.piece;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.Compressed;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
+import net.daporkchop.fp2.mode.api.piece.IFarData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
@@ -42,7 +42,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData>
+public class RoughScalePieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarData>
         extends AbstractScaleTask<POS, P, D> {
     protected final int targetDetail;
 

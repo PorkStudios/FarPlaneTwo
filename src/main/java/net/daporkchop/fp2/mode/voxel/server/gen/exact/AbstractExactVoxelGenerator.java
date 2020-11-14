@@ -26,7 +26,7 @@ import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceData;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelData;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelSample;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
@@ -41,14 +41,14 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator implements IFarGeneratorExact<VoxelPos, VoxelPiece, VoxelPieceData> {
+public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator implements IFarGeneratorExact<VoxelPos, VoxelPiece, VoxelData> {
     @Override
     public void init(@NonNull WorldServer world) {
         //no-op
     }
 
     @Override
-    public void generatePieceData(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelPieceData data) {
+    public void generatePieceData(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelData data) {
         final int baseX = posIn.blockX();
         final int baseY = posIn.blockY();
         final int baseZ = posIn.blockZ();
@@ -66,7 +66,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator i
     }
 
     @Override
-    public long generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelPiece piece, @NonNull VoxelPieceData data, @NonNull IFarAssembler<VoxelPieceData, VoxelPiece> assembler) {
+    public long generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelPiece piece, @NonNull VoxelData data, @NonNull IFarAssembler<VoxelData, VoxelPiece> assembler) {
         this.generatePieceData(world, posIn, data);
 
         final int baseX = posIn.blockX();

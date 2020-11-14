@@ -154,13 +154,6 @@ public class FP2Config {
         public boolean lowResolutionEnable = true;
 
         @Config.Comment({
-                "If low resolution is enabled, allows tiles to be initially generated at low resolution and subsequently be replaced by higher resolution",
-                "tiles once available."
-        })
-        @Config.LangKey("config.fp2.performance.lowResolutionRefine")
-        public boolean lowResolutionRefine = false;
-
-        @Config.Comment({
                 "If low resolution refine is enabled, allows incomplete pieces to be saved.",
                 "This can provide a performance boost if the server is restarted while pieces are still being generated and low resolution refine is",
                 "enabled, but will likely significantly reduce overall generation performance."

@@ -64,7 +64,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     protected abstract AbstractFarRenderCache<POS, P> createCache();
 
     @Override
-    public void receivePiece(@NonNull Compressed<POS, P, ?> piece) {
+    public void receivePiece(@NonNull Compressed<POS, P> piece) {
         ClientThreadExecutor.INSTANCE.execute(() -> this.cache.receivePiece(piece));
     }
 

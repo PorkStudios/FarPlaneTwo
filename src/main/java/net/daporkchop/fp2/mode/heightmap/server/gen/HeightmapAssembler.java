@@ -18,34 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.piece;
+package net.daporkchop.fp2.mode.heightmap.server.gen;
 
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 
 /**
- * Builder for piece contents.
- *
  * @author DaPorkchop_
- * @deprecated no longer needed
  */
-@Deprecated
-public interface IFarPieceBuilder {
-    /**
-     * Resets this builder instance so that it can be re-used for building another piece.
-     */
-    void reset();
-
-    /**
-     * @return this piece's extra data
-     */
-    long extra();
-
-    /**
-     * Writes the piece data for this piece to the given {@link ByteBuf}.
-     *
-     * @param dst the {@link ByteBuf} to write to
-     * @return whether or not this builder is empty
-     */
-    boolean write(@NonNull ByteBuf dst);
+public class HeightmapAssembler implements IFarAssembler<HeightmapData, HeightmapPiece> {
+    @Override
+    public long assemble(@NonNull HeightmapData data, @NonNull HeightmapPiece piece) {
+        data.copyTo(piece);
+        return 0L;
+    }
 }

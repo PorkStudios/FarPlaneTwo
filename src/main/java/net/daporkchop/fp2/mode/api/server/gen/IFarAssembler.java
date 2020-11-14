@@ -21,15 +21,15 @@
 package net.daporkchop.fp2.mode.api.server.gen;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
+import net.daporkchop.fp2.mode.api.piece.IFarData;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 
 /**
- * Constructs a piece's contents using input {@link IFarPieceData}.
+ * Constructs a piece's contents using input {@link IFarData}.
  *
  * @author DaPorkchop_
  */
-public interface IFarAssembler<D extends IFarPieceData, P extends IFarPiece> {
+public interface IFarAssembler<D extends IFarData, P extends IFarPiece> {
     /**
      * Uses the given piece data to assemble a piece.
      *

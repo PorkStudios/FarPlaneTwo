@@ -18,13 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.server.scale;
+package net.daporkchop.fp2.mode.heightmap.server.gen;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.server.scale.IFarPieceScaler;
+import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapSample;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 
 import java.util.stream.Stream;
 
@@ -39,7 +39,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public class HeightmapPieceScalerMax implements IFarPieceScaler<HeightmapPos, HeightmapPiece> {
+public class HeightmapPieceScalerMax implements IFarScaler<HeightmapPos, HeightmapData> {
     @Override
     public Stream<HeightmapPos> outputs(@NonNull HeightmapPos srcPos) {
         return Stream.of(srcPos.up());
@@ -61,12 +61,12 @@ public class HeightmapPieceScalerMax implements IFarPieceScaler<HeightmapPos, He
     }
 
     @Override
-    public long scale(@NonNull HeightmapPiece[] srcs, @NonNull HeightmapPiece dst) {
+    public void scale(@NonNull HeightmapData[] srcs, @NonNull HeightmapData dst) {
         HeightmapSample data = new HeightmapSample();
 
         for (int subX = 0; subX < 2; subX++) {
             for (int subZ = 0; subZ < 2; subZ++) {
-                HeightmapPiece src = srcs[subX * 2 + subZ];
+                HeightmapData src = srcs[subX * 2 + subZ];
                 int baseX = subX * (T_VOXELS >> 1);
                 int baseZ = subZ * (T_VOXELS >> 1);
 
@@ -81,10 +81,9 @@ public class HeightmapPieceScalerMax implements IFarPieceScaler<HeightmapPos, He
                 }
             }
         }
-        return 0L;
     }
 
-    protected void scaleSample(HeightmapPiece src, int srcX, int srcZ, HeightmapSample data) {
+    protected void scaleSample(HeightmapData src, int srcX, int srcZ, HeightmapSample data) {
         int height0 = src.height(srcX, srcZ);
         int height1 = src.height(srcX, srcZ + 1);
         int height2 = src.height(srcX + 1, srcZ);

@@ -24,7 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceData;
+import net.daporkchop.fp2.mode.api.piece.IFarData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 /**
  * @author DaPorkchop_
  */
-public class GetDataTask<POS extends IFarPos, P extends IFarPiece, D extends IFarPieceData>
+public class GetDataTask<POS extends IFarPos, P extends IFarPiece, D extends IFarData>
         extends AbstractDataTask<POS, P, D, Void> {
     protected Compressed<POS, D> data;
 

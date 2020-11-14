@@ -23,7 +23,8 @@ package net.daporkchop.fp2.mode.api.server.gen;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.piece.IFarData;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.minecraft.world.WorldServer;
@@ -35,11 +36,11 @@ import net.minecraft.world.WorldServer;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, B extends IFarPieceBuilder> implements IFarGeneratorRough<POS, B> {
+public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, P extends IFarPiece, D extends IFarData> implements IFarGeneratorRough<POS, D> {
     @NonNull
     protected final AsyncBlockAccess blockAccess;
     @NonNull
-    protected final IFarGeneratorExact<POS, B> exactGenerator;
+    protected final IFarGeneratorExact<POS, P, D> exactGenerator;
 
     @Override
     public void init(@NonNull WorldServer world) {
@@ -47,12 +48,12 @@ public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, B extends
     }
 
     @Override
-    public long generate(@NonNull POS pos, @NonNull B builder) {
+    public void generate(@NonNull POS pos, @NonNull D data) {
         try {
             IBlockHeightAccess prefetched = this.blockAccess.prefetchAsync(this.exactGenerator.neededColumns(pos),
                     world -> this.exactGenerator.neededCubes(world, pos))
                     .sync().getNow();
-            this.exactGenerator.generate(prefetched, pos, builder);
+            this.exactGenerator.generatePieceData(prefetched, pos, data);
         } catch (InterruptedException e)    {
             Thread.currentThread().interrupt();
         }
@@ -60,11 +61,6 @@ public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, B extends
 
     @Override
     public boolean supportsLowResolution() {
-        return false;
-    }
-
-    @Override
-    public boolean isLowResolutionInaccurate() {
         return false;
     }
 }
