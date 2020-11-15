@@ -23,6 +23,8 @@ package net.daporkchop.fp2.mode.voxel;
 import io.netty.buffer.ByteBuf;
 import lombok.experimental.UtilityClass;
 import net.minecraft.block.state.IBlockState;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.Objects;
 
@@ -123,9 +125,13 @@ public class VoxelConstants {
     public static final int TYPE_TRANSPARENT = 1;
     public static final int TYPE_OPAQUE = 2;
 
+    @SideOnly(Side.CLIENT)
     public static final int RENDER_TYPE_OPAQUE = 0;
+    @SideOnly(Side.CLIENT)
     public static final int RENDER_TYPE_CUTOUT = 1;
+    @SideOnly(Side.CLIENT)
     public static final int RENDER_TYPE_TRANSLUCENT = 2;
+    @SideOnly(Side.CLIENT)
     public static final int RENDER_TYPES = 3;
 
     public static int voxelType(IBlockState state) {
@@ -138,6 +144,7 @@ public class VoxelConstants {
         }
     }
 
+    @SideOnly(Side.CLIENT)
     public static int renderType(IBlockState state) {
         switch (state.getBlock().getRenderLayer()) {
             case SOLID:
@@ -160,6 +167,7 @@ public class VoxelConstants {
      * @param c1             the index of the other edge vertex
      * @param provoking      the index of the provoking vertex
      */
+    @SideOnly(Side.CLIENT)
     public static void emitQuad(ByteBuf indices, int oppositeCorner, int c0, int c1, int provoking) {
         indices.writeShort(oppositeCorner).writeShort(c0).writeShort(provoking); //first triangle
         indices.writeShort(c1).writeShort(oppositeCorner).writeShort(provoking); //second triangle

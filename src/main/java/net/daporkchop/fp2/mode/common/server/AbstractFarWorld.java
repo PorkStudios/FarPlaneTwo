@@ -236,7 +236,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
         if (event.phase == TickEvent.Phase.END && !this.pendingExactTasks.isEmpty()) {
             //fire pending tasks
             synchronized (this.pendingExactTasks) {
-                //this.executor.submit(this.pendingExactTasks);
+                this.executor.submit(this.pendingExactTasks);
                 this.pendingExactTasks.clear();
             }
         }
