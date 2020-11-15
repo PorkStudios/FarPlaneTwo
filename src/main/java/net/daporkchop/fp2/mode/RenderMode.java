@@ -56,6 +56,7 @@ import net.daporkchop.fp2.mode.voxel.server.gen.exact.CCVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.gen.rough.CWGVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerAvg;
+import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerIntersection;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.PriorityCollection;
 import net.daporkchop.fp2.util.SimpleRecycler;
@@ -197,7 +198,7 @@ public enum RenderMode {
 
         @Override
         public IFarScaler createScaler(@NonNull WorldServer world) {
-            return new VoxelScalerAvg();
+            return new VoxelScalerIntersection();
         }
 
         @Override
