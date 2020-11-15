@@ -155,20 +155,15 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelPiece,
                     if (dstVoxels.get(dstIndex(x, y, z))) {
                         int edges = 0;
                         for (int edge = 0; edge < 3; edge++) {
-                            int c = CONNECTION_INDICES[edge * CONNECTION_INDEX_COUNT + CONNECTION_INDEX_COUNT - 1];
-                            int cdx = (c >> 2) & 1;
-                            int cdy = (c >> 1) & 1;
-                            int cdz = c & 1;
+                            for (int i = 0; i < CONNECTION_SUB_NEIGHBOR_COUNT; i++) {
+                                int c = CONNECTION_SUB_NEIGHBORS[edge * CONNECTION_SUB_NEIGHBOR_COUNT + i];
+                                int cdx = (c >> 2) & 1;
+                                int cdy = (c >> 1) & 1;
+                                int cdz = c & 1;
 
-                            int o = c ^ 7;
-                            int odx = (o >> 2) & 1;
-                            int ody = (o >> 1) & 1;
-                            int odz = o & 1;
-
-                            int low0 = srcEdges[srcIndex((x << 1) - cdx, (y << 1) - cdy, (z << 1) - cdz)];
-                            int low1 = srcEdges[srcIndex((x << 1) - cdx + odx, (y << 1) - cdy + ody, (z << 1) - cdz + odz)];
-
-                            edges |= (((low0 | low1) >> (edge << 1)) & EDGE_DIR_MASK) << (edge << 1);
+                                int low0 = srcEdges[srcIndex((x << 1) + cdx, (y << 1) + cdy, (z << 1) + cdz)];
+                                edges |= ((low0 >> (edge << 1)) & EDGE_DIR_MASK) << (edge << 1);
+                            }
                         }
 
                         for (int edge = 0; edge < 3; edge++) { //TODO: remove this
@@ -183,7 +178,30 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelPiece,
             }
         }
 
-        for (int x = DST_MIN; x < DST_MAX - 1; x++) {
+        //int[] dstEdges2 = new int[DST_SIZE * DST_SIZE * DST_SIZE];
+        dstVoxels.clear();
+        for (int x = 0; x < T_VOXELS; x++) { //attempt to ensure that each voxel has a sufficient number of connected edges in every direction
+            for (int y = 0; y < T_VOXELS; y++) {
+                for (int z = 0; z < T_VOXELS; z++) {
+                    int edgeCount = 0;
+                    for (int edge = 0; edge < QEF_EDGE_COUNT; edge++) {
+                        int c1 = QEF_EDGE_VERTEX_MAP[(edge << 1) + 1];
+
+                        int otherEdges = dstEdges[dstIndex(x - 1 + ((c1 >> 2) & 1), y - 1 + ((c1 >> 1) & 1), z - 1 + (c1 & 1))];
+                        if (((otherEdges >> ((2 - (edge >> 2)) << 1)) & EDGE_DIR_MASK) != EDGE_DIR_NONE) {
+                            edgeCount++;
+                        }
+                    }
+                    if (edgeCount >= 2) {
+                        dstVoxels.set(dstIndex(x, y, z));
+                        //dstEdges2[dstIndex(x, y, z)] = dstEdges[dstIndex(x, y, z)];
+                    }
+                }
+            }
+        }
+        //dstEdges = dstEdges2;
+
+        for (int x = DST_MIN; x < DST_MAX - 1; x++) { //ensure all possible destination voxels are set
             for (int y = DST_MIN; y < DST_MAX - 1; y++) {
                 for (int z = DST_MIN; z < DST_MAX - 1; z++) {
                     int edges = dstEdges[dstIndex(x, y, z)];
@@ -191,7 +209,7 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelPiece,
                         if (((edges >> (edge << 1)) & EDGE_DIR_MASK) != EDGE_DIR_NONE) {
                             for (int i = 0; i < CONNECTION_INDEX_COUNT; i++) {
                                 int c = CONNECTION_INDICES[edge * CONNECTION_INDEX_COUNT + i];
-                                dstVoxels.set(dstIndex(x + ((c >> 2) & 1), y + ((c >> 1) & 1), z + (c & 1)));
+                                //dstVoxels.set(dstIndex(x + ((c >> 2) & 1), y + ((c >> 1) & 1), z + (c & 1)));
                             }
                         }
                     }
