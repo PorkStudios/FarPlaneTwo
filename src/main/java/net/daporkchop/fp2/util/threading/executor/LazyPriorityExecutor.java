@@ -82,6 +82,7 @@ public class LazyPriorityExecutor<K extends LazyKey<K>> {
         //wait for all workers to shut down
         for (Thread t : this.threads) {
             do {
+                t.interrupt();
                 try {
                     t.join(50L);
                 } catch (InterruptedException e) {

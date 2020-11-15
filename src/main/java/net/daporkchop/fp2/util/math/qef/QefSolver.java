@@ -353,6 +353,10 @@ public class QefSolver {
         return result;
     }
 
+    public int numPoints() {
+        return this.data.numPoints;
+    }
+
     private static final class Ctx {
         public final Matrix3d pinv = new Matrix3d();
         public final Matrix3d V = new Matrix3d();

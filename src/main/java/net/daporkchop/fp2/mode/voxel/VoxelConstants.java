@@ -67,11 +67,6 @@ public class VoxelConstants {
     public static final int EDGE_DIR_MASK = 3;
 
     /**
-     * The maximum number of edges intersecting the surface that may be considered by a QEF.
-     */
-    public static final int QEF_MAX_EDGES = 6;
-
-    /**
      * The number of voxel edges considered by a QEF.
      */
     public static final int QEF_EDGE_COUNT = 12;
@@ -80,9 +75,9 @@ public class VoxelConstants {
      * Defines all of the edges of a voxel considered by a QEF based on their point indices.
      */
     public static final int[] QEF_EDGE_VERTEX_MAP = {
-            0, 4, 1, 5, 2, 6, 3, 7, // x-axis
-            0, 2, 1, 3, 4, 6, 5, 7, // y-axis
-            0, 1, 2, 3, 4, 5, 6, 7  // z-axis
+            0b000, 0b100, 0b001, 0b101, 0b001, 0b110, 0b011, 0b111, // x-axis
+            0b000, 0b010, 0b001, 0b011, 0b100, 0b110, 0b101, 0b111, // y-axis
+            0b000, 0b001, 0b010, 0b011, 0b100, 0b101, 0b110, 0b111  // z-axis
     };
 
     /**
