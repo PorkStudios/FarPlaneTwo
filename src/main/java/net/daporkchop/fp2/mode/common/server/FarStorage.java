@@ -52,18 +52,13 @@ import static net.daporkchop.fp2.util.Constants.*;
 public class FarStorage<POS extends IFarPos, V extends IReusablePersistent> implements IFarStorage<POS, V> {
     protected final IntObjMap<DirectDB> dbs = new IntObjConcurrentHashMap<>();
     protected final File storageRoot;
-    @Getter
-    protected final RenderMode mode;
 
     protected final IntFunction<DirectDB> dbOpenFunction;
     protected final int version;
 
-    public FarStorage(@NonNull WorldServer world, @NonNull RenderMode mode, @NonNull String type, int version) {
-        this.mode = mode;
+    public FarStorage(@NonNull File storageRoot, int version) {
         this.version = version;
-
-        this.storageRoot = new File(world.getChunkSaveLocation(), "fp2/" + mode.name().toLowerCase() + '/' + type);
-        PFiles.ensureDirectoryExists(this.storageRoot);
+        this.storageRoot = PFiles.ensureDirectoryExists(storageRoot);
 
         this.dbOpenFunction = i -> {
             try {

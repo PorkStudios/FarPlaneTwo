@@ -24,9 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarData;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
@@ -39,7 +37,7 @@ import java.io.IOException;
 /**
  * @author DaPorkchop_
  */
-public interface IFarWorld<POS extends IFarPos, P extends IFarPiece, D extends IFarData> extends Closeable {
+public interface IFarWorld<POS extends IFarPos, P extends IFarPiece> extends Closeable {
     WorldServer world();
 
     AsyncBlockAccess blockAccess();
@@ -66,27 +64,22 @@ public interface IFarWorld<POS extends IFarPos, P extends IFarPiece, D extends I
     /**
      * @return the (possibly {@code null}) {@link IFarGeneratorRough} used for rough generation of far terrain
      */
-    IFarGeneratorRough<POS, P, D> generatorRough();
+    IFarGeneratorRough<POS, P> generatorRough();
 
     /**
      * @return the {@link IFarGeneratorExact} used for block-accurate generation of far terrain
      */
-    IFarGeneratorExact<POS, P, D> generatorExact();
+    IFarGeneratorExact<POS, P> generatorExact();
 
     /**
      * @return the {@link IFarScaler} used for downscaling the far terrain pieces
      */
-    IFarScaler<POS, D> scaler();
-
-    /**
-     * @return the {@link IFarAssembler} used for assembling the far terrain pieces from data
-     */
-    IFarAssembler<D, P> assembler();
+    IFarScaler<POS, P> scaler();
 
     /**
      * @return the {@link IFarStorage} used for persistence of far terrain pieces
      */
-    IFarStorage<POS, P> pieceStorage();
+    IFarStorage<POS, P> storage();
 
     /**
      * @return the {@link RenderMode} that this world is used for

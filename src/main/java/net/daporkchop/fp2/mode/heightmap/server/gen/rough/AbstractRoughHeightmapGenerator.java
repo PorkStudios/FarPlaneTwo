@@ -23,11 +23,10 @@ package net.daporkchop.fp2.mode.heightmap.server.gen.rough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractRoughHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorRough<HeightmapPos, HeightmapPiece, HeightmapData> {
+public abstract class AbstractRoughHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorRough<HeightmapPos, HeightmapPiece> {
 }

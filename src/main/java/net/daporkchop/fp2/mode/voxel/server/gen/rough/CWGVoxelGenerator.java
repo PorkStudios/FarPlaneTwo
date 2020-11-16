@@ -25,7 +25,6 @@ import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelData;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelSample;
 import net.daporkchop.fp2.mode.voxel.server.gen.AbstractVoxelGenerator;
 import net.daporkchop.lib.noise.NoiseSource;
 import net.daporkchop.lib.noise.engine.PerlinNoiseEngine;
@@ -41,7 +40,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 //TODO: this is currently only generating the mesh using perlin noise
-public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements IFarGeneratorRough<VoxelPos, VoxelPiece, VoxelData> {
+public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements IFarGeneratorRough<VoxelPos, VoxelPiece> {
     //protected Ref<CWGContext> ctx;
     protected NoiseSource noise;
 
@@ -54,7 +53,7 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
     }
 
     @Override
-    public void generate(@NonNull VoxelPos pos, @NonNull VoxelData data) {
+    public long generate(@NonNull VoxelPos pos, @NonNull VoxelPiece piece) {
         int level = pos.level();
         int baseX = pos.blockX();
         int baseY = pos.blockY();
@@ -73,7 +72,8 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
         }
         this.noise.get(densityMap[1], baseX + DMAP_MIN, baseY + DMAP_MIN, baseZ + DMAP_MIN, 1.0d, 1.0d, 1.0d, DMAP_SIZE, DMAP_SIZE, DMAP_SIZE);
 
-        this.buildMesh(baseX, baseY, baseZ, level, piece, densityMap, null);*/
+        return this.buildMesh(baseX, baseY, baseZ, level, piece, densityMap, null);*/
+        return 0L;
     }
 
     @Override
@@ -82,10 +82,10 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
     }
 
     @Override
-    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, VoxelSample sample, Void param) {
+    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, VoxelData data, Void param) {
         blockY++;
-        sample.light = packCombinedLight((blockY < this.seaLevel ? max(15 - (this.seaLevel - blockY) * 3, 0) : 15) << 20);
-        sample.biome = 0;
+        data.light = packCombinedLight((blockY < this.seaLevel ? max(15 - (this.seaLevel - blockY) * 3, 0) : 15) << 20);
+        data.biome = 0;
     }
 
     @Override

@@ -24,7 +24,7 @@ import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockRe
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapSample;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 import net.daporkchop.fp2.util.compat.cwg.CWGContext;
 import net.daporkchop.fp2.util.compat.cwg.CWGHelper;
 import net.daporkchop.lib.common.ref.Ref;
@@ -51,12 +51,17 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     }
 
     @Override
-    public void generate(@NonNull HeightmapPos pos, @NonNull HeightmapData data) {
-        int level = pos.level();
-        int baseX = pos.blockX();
-        int baseZ = pos.blockZ();
+    public boolean supportsLowResolution() {
+        return true;
+    }
 
-        HeightmapSample sample = new HeightmapSample();
+    @Override
+    public long generate(@NonNull HeightmapPos posIn, @NonNull HeightmapPiece piece) {
+        int level = posIn.level();
+        int baseX = posIn.blockX();
+        int baseZ = posIn.blockZ();
+
+        HeightmapData data = new HeightmapData();
 
         CWGContext ctx = this.ctx.get();
         ctx.init(baseX >> 4, 0, baseZ >> 4, level);
@@ -84,20 +89,17 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
                     state = replacer.getReplacedBlock(state, blockX, height, blockZ, dx, dy, dz, density);
                 }
 
-                sample.height = height;
-                sample.state = Block.getStateId(state);
-                sample.light = packCombinedLight((height < this.seaLevel ? max(15 - (this.seaLevel - height) * 3, 0) : 15) << 20);
-                sample.biome = Biome.getIdForBiome(biome);
-                sample.waterLight = packCombinedLight(15 << 20);
-                sample.waterBiome = Biome.getIdForBiome(biome);
+                data.height = height;
+                data.state = Block.getStateId(state);
+                data.light = packCombinedLight((height < this.seaLevel ? max(15 - (this.seaLevel - height) * 3, 0) : 15) << 20);
+                data.biome = Biome.getIdForBiome(biome);
+                data.waterLight = packCombinedLight(15 << 20);
+                data.waterBiome = Biome.getIdForBiome(biome);
 
-                data.set(x, z, sample);
+                piece.set(x, z, data);
             }
         }
-    }
 
-    @Override
-    public boolean supportsLowResolution() {
-        return true;
+        return 0L;
     }
 }

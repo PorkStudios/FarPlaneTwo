@@ -27,7 +27,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
@@ -39,7 +38,7 @@ import net.daporkchop.lib.concurrent.future.DefaultPFuture;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarTask<POS extends IFarPos, P extends IFarPiece, D extends IFarData, V extends IReusablePersistent, A>
+public abstract class AbstractFarTask<POS extends IFarPos, P extends IFarPiece, D extends IReusablePersistent, V extends IReusablePersistent, A>
         extends DefaultPFuture<Compressed<POS, V>> implements LazyTask<TaskKey, A, Compressed<POS, V>> {
     protected final AbstractFarWorld<POS, P, D> world;
     protected final TaskKey key;

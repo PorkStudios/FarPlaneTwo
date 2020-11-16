@@ -23,16 +23,16 @@ package net.daporkchop.fp2.mode.common.server.task.piece;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
 import net.daporkchop.fp2.mode.common.server.task.AbstractFarTask;
+import net.daporkchop.fp2.util.IReusablePersistent;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractPieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarData, A>
+public abstract class AbstractPieceTask<POS extends IFarPos, P extends IFarPiece, D extends IReusablePersistent, A>
         extends AbstractFarTask<POS, P, D, P, A> {
     public AbstractPieceTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
         super(world, key, pos, requestedBy);

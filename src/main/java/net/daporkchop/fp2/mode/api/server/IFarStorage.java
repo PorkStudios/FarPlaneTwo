@@ -52,11 +52,6 @@ public interface IFarStorage<POS extends IFarPos, V extends IReusablePersistent>
     void store(@NonNull POS pos, @NonNull Compressed<POS, V> piece);
 
     /**
-     * @return the {@link RenderMode} that this storage is used for
-     */
-    RenderMode mode();
-
-    /**
      * Closes this storage.
      * <p>
      * If write operations are queued, this method will block until they are completed.

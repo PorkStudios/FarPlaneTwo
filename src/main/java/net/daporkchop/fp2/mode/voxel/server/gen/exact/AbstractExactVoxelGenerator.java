@@ -21,21 +21,15 @@
 package net.daporkchop.fp2.mode.voxel.server.gen.exact;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
-import net.daporkchop.fp2.mode.voxel.VoxelConstants;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelDataSample;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelData;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelSample;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.block.Block;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
@@ -44,61 +38,17 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator implements IFarGeneratorExact<VoxelPos, VoxelPiece, VoxelData> {
+public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator implements IFarGeneratorExact<VoxelPos, VoxelPiece> {
     @Override
-    public void generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelData data) {
+    public long generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelPiece piece) {
         final int baseX = posIn.blockX();
         final int baseY = posIn.blockY();
         final int baseZ = posIn.blockZ();
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        VoxelDataSample sample = new VoxelDataSample();
+        VoxelData data = new VoxelData();
 
-        for (int dx = 0; dx < T_VOXELS; dx++) {
-            for (int dy = 0; dy < T_VOXELS; dy++) {
-                for (int dz = 0; dz < T_VOXELS; dz++) {
-                    pos.setPos(baseX + dx, baseY + dy, baseZ + dz);
-
-                    IBlockState state = world.getBlockState(pos);
-                    switch (voxelType(state)) {
-                        case TYPE_AIR:
-                            sample.density0 = 0xF;
-                            sample.density1 = 0xF;
-                            break;
-                        case TYPE_TRANSPARENT:
-                            sample.density0 = 0xF;
-                            sample.density1 = 1;
-                            break;
-                        case TYPE_OPAQUE:
-                            sample.density0 = 0xF;
-                            sample.density1 = 1;
-                            break;
-                    }
-                    sample.state = Block.getStateId(state);
-                    sample.light = Constants.packCombinedLight(world.getCombinedLight(pos, 0));
-                    sample.biome = Biome.getIdForBiome(world.getBiome(pos));
-
-                    data.set(dx, dy, dz, sample);
-                }
-            }
-        }
-    }
-
-    @Override
-    public boolean directSupported() {
-        return false;
-    }
-
-    @Override
-    public long generateDirect(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelPiece piece) {
-        final int baseX = posIn.blockX();
-        final int baseY = posIn.blockY();
-        final int baseZ = posIn.blockZ();
-
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        VoxelSample sample = new VoxelSample();
-
-        sample.x = sample.y = sample.z = POS_ONE >> 1;
+        data.x = data.y = data.z = POS_ONE >> 1;
 
         for (int dx = 0; dx < T_VOXELS; dx++) {
             for (int dy = 0; dy < T_VOXELS; dy++) {
@@ -132,22 +82,22 @@ public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator i
                         }
                     }
 
-                    sample.edges = edges;
+                    data.edges = edges;
 
                     for (int edge = 0; edge < EDGE_COUNT; edge++) {
                         if ((edges & (EDGE_DIR_MASK << (edge << 1))) != EDGE_DIR_NONE) {
                             //((edges >> (edge << 1) >> 1) & 1) is 1 if the face is negative, 0 otherwise
                             int i = EDGE_VERTEX_MAP[(edge << 1) | ((edges >> (edge << 1) >> 1) & 1)];
                             pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
-                            sample.states[edge] = Block.getStateId(world.getBlockState(pos));
+                            data.states[edge] = Block.getStateId(world.getBlockState(pos));
                         }
                     }
 
-                    sample.biome = Biome.getIdForBiome(world.getBiome(pos));
+                    data.biome = Biome.getIdForBiome(world.getBiome(pos));
 
                     if (edges == 0) {
                         //this voxel is only present as a dummy placeholder for other voxels to connect to, and is presumably air
-                        sample.light = 0;
+                        data.light = 0;
                     } else {
                         //compute average light levels for all non-opaque blocks
                         int skyLight = 0;
@@ -167,10 +117,10 @@ public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator i
                             skyLight /= samples;
                             blockLight /= samples;
                         }
-                        sample.light = Constants.packCombinedLight(skyLight << 20 | blockLight << 4);
+                        data.light = Constants.packCombinedLight(skyLight << 20 | blockLight << 4);
                     }
 
-                    piece.set(dx, dy, dz, sample);
+                    piece.set(dx, dy, dz, data);
                 }
             }
         }

@@ -22,12 +22,12 @@ package net.daporkchop.fp2.mode.common.server.task.piece;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.Compressed;
-import net.daporkchop.fp2.mode.api.piece.IFarData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.util.IReusablePersistent;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
 
@@ -41,7 +41,7 @@ import java.util.stream.Stream;
  *
  * @author DaPorkchop_
  */
-public class ExactUpdatePieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarData>
+public class ExactUpdatePieceTask<POS extends IFarPos, P extends IFarPiece, D extends IReusablePersistent>
         extends AbstractPieceTask<POS, P, D, Compressed<POS, P>> {
     public ExactUpdatePieceTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
         super(world, key, pos, requestedBy);

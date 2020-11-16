@@ -61,28 +61,28 @@ public class VoxelPiece implements IFarPiece {
         return (x * T_VOXELS + y) * T_VOXELS + z;
     }
 
-    static void writeSample(long base, VoxelSample sample) {
-        PUnsafe.putInt(base + 0L, (sample.x << 24) | (sample.y << 16) | (sample.z << 8) | sample.edges);
-        PUnsafe.putInt(base + 4L, (sample.biome << 8) | sample.light);
-        PUnsafe.copyMemory(sample.states, PUnsafe.ARRAY_INT_BASE_OFFSET, null, base + 8L, 4L * EDGE_COUNT);
+    static void writeData(long base, VoxelData data) {
+        PUnsafe.putInt(base + 0L, (data.x << 24) | (data.y << 16) | (data.z << 8) | data.edges);
+        PUnsafe.putInt(base + 4L, (data.biome << 8) | data.light);
+        PUnsafe.copyMemory(data.states, PUnsafe.ARRAY_INT_BASE_OFFSET, null, base + 8L, 4L * EDGE_COUNT);
     }
 
-    static void readSample(long base, VoxelSample sample) {
+    static void readData(long base, VoxelData data) {
         int i0 = PUnsafe.getInt(base + 0L);
         int i1 = PUnsafe.getInt(base + 4L);
 
-        sample.x = i0 >>> 24;
-        sample.y = (i0 >> 16) & 0xFF;
-        sample.z = (i0 >> 8) & 0xFF;
-        sample.edges = i0 & 0x3F;
+        data.x = i0 >>> 24;
+        data.y = (i0 >> 16) & 0xFF;
+        data.z = (i0 >> 8) & 0xFF;
+        data.edges = i0 & 0x3F;
 
-        sample.biome = (i1 >> 8) & 0xFF;
-        sample.light = i1 & 0xFF;
+        data.biome = (i1 >> 8) & 0xFF;
+        data.light = i1 & 0xFF;
 
-        PUnsafe.copyMemory(null, base + 8L, sample.states, PUnsafe.ARRAY_INT_BASE_OFFSET, 4L * EDGE_COUNT);
+        PUnsafe.copyMemory(null, base + 8L, data.states, PUnsafe.ARRAY_INT_BASE_OFFSET, 4L * EDGE_COUNT);
     }
 
-    static void readOnlyPos(long base, VoxelSample data) {
+    static void readOnlyPos(long base, VoxelData data) {
         int i0 = PUnsafe.getInt(base + 0L);
 
         data.x = i0 >>> 24;
@@ -119,43 +119,43 @@ public class VoxelPiece implements IFarPiece {
      * Gets the voxel at the given index.
      *
      * @param index  the index of the voxel to get
-     * @param sample the {@link VoxelSample} instance to store the data into
+     * @param data the {@link VoxelData} instance to store the data into
      * @return the relative offset of the voxel (combined XYZ coords)
      */
-    public int get(int index, VoxelSample sample) {
+    public int get(int index, VoxelData data) {
         long base = this.addr + INDEX_SIZE + checkIndex(this.count, index) * ENTRY_FULL_SIZE_BYTES;
-        readSample(base + 2L, sample);
+        readData(base + 2L, data);
         return PUnsafe.getChar(base);
     }
 
-    public boolean get(int x, int y, int z, VoxelSample sample) {
+    public boolean get(int x, int y, int z, VoxelData data) {
         int index = PUnsafe.getShort(this.addr + index(x, y, z) * 2L);
         if (index < 0) { //index is unset, don't read sample
             return false;
         }
 
-        readSample(this.addr + INDEX_SIZE + index * ENTRY_FULL_SIZE_BYTES + 2L, sample);
+        readData(this.addr + INDEX_SIZE + index * ENTRY_FULL_SIZE_BYTES + 2L, data);
         return true;
     }
 
-    public boolean getOnlyPos(int x, int y, int z, VoxelSample sample) {
+    public boolean getOnlyPos(int x, int y, int z, VoxelData data) {
         int index = PUnsafe.getShort(this.addr + index(x, y, z) * 2L);
         if (index < 0) { //index is unset, don't read sample
             return false;
         }
 
-        readOnlyPos(this.addr + INDEX_SIZE + index * ENTRY_FULL_SIZE_BYTES + 2L, sample);
+        readOnlyPos(this.addr + INDEX_SIZE + index * ENTRY_FULL_SIZE_BYTES + 2L, data);
         return true;
     }
 
-    public VoxelPiece set(int x, int y, int z, VoxelSample sample) {
+    public VoxelPiece set(int x, int y, int z, VoxelData data) {
         long indexAddr = this.addr + VoxelPiece.index(x, y, z) * 2L;
         int index = PUnsafe.getShort(indexAddr);
         if (index < 0) { //index is unset, allocate new one
             PUnsafe.putShort(indexAddr, (short) (index = this.count++));
         }
 
-        VoxelPiece.writeSample(this.addr + VoxelPiece.INDEX_SIZE + index * VoxelPiece.ENTRY_DATA_SIZE_BYTES, sample);
+        VoxelPiece.writeData(this.addr + VoxelPiece.INDEX_SIZE + index * VoxelPiece.ENTRY_DATA_SIZE_BYTES, data);
         return this;
     }
 

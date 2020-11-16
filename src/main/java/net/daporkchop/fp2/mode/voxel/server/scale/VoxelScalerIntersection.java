@@ -22,11 +22,10 @@ package net.daporkchop.fp2.mode.voxel.server.scale;
 
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.server.scale.IFarScaler;
-import net.daporkchop.fp2.mode.voxel.VoxelData;
+import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelData;
 import net.daporkchop.fp2.util.math.Vector3d;
 import net.daporkchop.fp2.util.math.qef.QefSolver;
 import net.minecraft.block.Block;
@@ -38,7 +37,6 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static java.lang.Math.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
@@ -48,7 +46,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelPiece, VoxelPieceBuilder> {
+public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelPiece> {
     public static final int SRC_MIN = -4;
     public static final int SRC_MAX = (T_VOXELS << 1) + 4;
     //public static final int SRC_MIN = 0;
@@ -114,8 +112,8 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelPiece,
     }
 
     @Override
-    public void scale(@NonNull VoxelPiece[] srcPieces, @NonNull VoxelPieceBuilder dst) {
-        VoxelData sample = new VoxelData();
+    public long scale(@NonNull VoxelPiece[] srcPieces, @NonNull VoxelPiece dst) {
+        VoxelData data = new VoxelData();
         QefSolver qef = new QefSolver();
 
         BitSet srcVoxels = new BitSet(SRC_SIZE * SRC_SIZE * SRC_SIZE);
@@ -128,19 +126,19 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelPiece,
             for (int y = SRC_MIN; y < SRC_MAX; y++) {
                 for (int z = SRC_MIN; z < SRC_MAX; z++) {
                     VoxelPiece srcPiece = srcPieces[srcPieceIndex(x, y, z)];
-                    if (srcPiece != null && srcPiece.get(x & T_MASK, y & T_MASK, z & T_MASK, sample)) {
+                    if (srcPiece != null && srcPiece.get(x & T_MASK, y & T_MASK, z & T_MASK, data)) {
                         srcVoxels.set(srcIndex(x, y, z));
 
                         int edges = 0;
                         for (int edge = 0; edge < 3; edge++) {
-                            if (((sample.edges >> (edge << 1)) & EDGE_DIR_MASK) != EDGE_DIR_NONE
-                                && (true || voxelType(Block.getStateById(sample.states[edge])) == TYPE_OPAQUE)) {
-                                edges |= (sample.edges & (EDGE_DIR_MASK << (edge << 1)));
-                                srcStates[srcIndex(x, y, z, edge)] = sample.states[edge];
+                            if (((data.edges >> (edge << 1)) & EDGE_DIR_MASK) != EDGE_DIR_NONE
+                                && (true || voxelType(Block.getStateById(data.states[edge])) == TYPE_OPAQUE)) {
+                                edges |= (data.edges & (EDGE_DIR_MASK << (edge << 1)));
+                                srcStates[srcIndex(x, y, z, edge)] = data.states[edge];
                             }
                         }
                         srcEdges[srcIndex(x, y, z)] = edges;
-                        srcBiomesLights[srcIndex(x, y, z)] = sample.biome << 8 | sample.light;
+                        srcBiomesLights[srcIndex(x, y, z)] = data.biome << 8 | data.light;
                     }
                 }
             }
@@ -247,27 +245,27 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelPiece,
                         if (qef.numPoints() > 0) {
                             Vector3d vec = new Vector3d();
                             qef.solve(vec, 0.1, 1, 0.5);
-                            sample.x = clamp(floorI((vec.x - (x << 1)) * POS_ONE), 0, POS_ONE);
-                            sample.y = clamp(floorI((vec.y - (y << 1)) * POS_ONE), 0, POS_ONE);
-                            sample.z = clamp(floorI((vec.z - (z << 1)) * POS_ONE), 0, POS_ONE);
+                            data.x = clamp(floorI((vec.x - (x << 1)) * POS_ONE), 0, POS_ONE);
+                            data.y = clamp(floorI((vec.y - (y << 1)) * POS_ONE), 0, POS_ONE);
+                            data.z = clamp(floorI((vec.z - (z << 1)) * POS_ONE), 0, POS_ONE);
                         } else {
-                            sample.x = sample.y = sample.z = POS_ONE >> 1;
+                            data.x = data.y = data.z = POS_ONE >> 1;
                         }
-                        
-                        Arrays.fill(sample.states, 0);
-                        int edges = sample.edges = dstEdges[dstIndex(x, y, z)];
+
+                        Arrays.fill(data.states, 0);
+                        int edges = data.edges = dstEdges[dstIndex(x, y, z)];
                         for (int edge = 0; edge < 3; edge++) {
                             if (((edges >> (edge << 1)) & EDGE_DIR_MASK) != EDGE_DIR_NONE) {
-                                sample.states[edge] = 1;
+                                data.states[edge] = 1;
 
                                 VOXEL_SEARCH:
                                 for (int dx = 0; dx < 2; dx++) {
                                     for (int dy = 0; dy < 2; dy++) {
                                         for (int dz = 0; dz < 2; dz++) {
-                                            if ((sample.states[edge] = srcStates[srcIndex((x << 1) + dx, (y << 1) + dy, (z << 1) + dz, edge)]) != 0) {
+                                            if ((data.states[edge] = srcStates[srcIndex((x << 1) + dx, (y << 1) + dy, (z << 1) + dz, edge)]) != 0) {
                                                 int si = srcIndex((x << 1) + dx, (y << 1) + dy, (z << 1) + dz);
-                                                sample.biome = srcBiomesLights[si] >> 8;
-                                                sample.light = srcBiomesLights[si] & 0xFF;
+                                                data.biome = srcBiomesLights[si] >> 8;
+                                                data.light = srcBiomesLights[si] & 0xFF;
                                                 break VOXEL_SEARCH;
                                             }
                                         }
@@ -275,11 +273,13 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelPiece,
                                 }
                             }
                         }
-                        dst.set(x, y, z, sample);
+                        dst.set(x, y, z, data);
                     }
                 }
             }
         }
+
+        return 0L;
     }
 
     @AllArgsConstructor

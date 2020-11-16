@@ -22,12 +22,12 @@ package net.daporkchop.fp2.mode.common.server.task.piece;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.Compressed;
-import net.daporkchop.fp2.mode.api.piece.IFarData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.util.IReusablePersistent;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.util.threading.executor.LazyPriorityExecutor;
@@ -43,7 +43,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-public class ExactGeneratePieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarData>
+public class ExactGeneratePieceTask<POS extends IFarPos, P extends IFarPiece, D extends IReusablePersistent>
         extends AbstractPieceTask<POS, P, D, Void> {
     protected final IBlockHeightAccess access;
 

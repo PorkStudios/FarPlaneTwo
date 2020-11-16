@@ -24,7 +24,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarData;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.SimpleRecycler;
 
@@ -40,9 +39,9 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class FarServerWorker<POS extends IFarPos, P extends IFarPiece, D extends IFarData> implements Consumer<PriorityTask<POS>> {
+public class FarServerWorker<POS extends IFarPos, P extends IFarPiece> implements Consumer<PriorityTask<POS>> {
     @NonNull
-    protected final AbstractFarWorld<POS, P, D> world;
+    protected final AbstractFarWorld<POS, P> world;
 
     @Override
     public void accept(PriorityTask<POS> task) {

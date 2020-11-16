@@ -23,8 +23,8 @@ package net.daporkchop.fp2.mode.api.server.gen;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarData;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.util.IReusablePersistent;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.minecraft.world.WorldServer;
@@ -36,7 +36,7 @@ import net.minecraft.world.WorldServer;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, P extends IFarPiece, D extends IFarData> implements IFarGeneratorRough<POS, P, D> {
+public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, P extends IFarPiece, D extends IReusablePersistent> implements IFarGeneratorRough<POS, P, D> {
     @NonNull
     protected final AsyncBlockAccess blockAccess;
     @NonNull

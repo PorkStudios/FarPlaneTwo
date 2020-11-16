@@ -31,12 +31,10 @@ import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarContext;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarData;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.server.IFarStorage;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.ExactAsRoughGeneratorFallbackWrapper;
-import net.daporkchop.fp2.mode.api.server.gen.IFarAssembler;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
@@ -79,27 +77,21 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece, D extends IFarData> implements IFarWorld<POS, P, D> {
+public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece> implements IFarWorld<POS, P> {
     protected static final BiFunction<Boolean, Boolean, Boolean> BOOLEAN_OR = (a, b) -> a | b;
 
     protected final WorldServer world;
     protected final RenderMode mode;
     protected final File root;
 
-    protected final IFarGeneratorRough<POS, P, D> generatorRough;
-    protected final IFarGeneratorExact<POS, P, D> generatorExact;
-    protected final IFarScaler<POS, D> scaler;
-    protected final IFarAssembler<D, P> assembler;
+    protected final IFarGeneratorRough<POS, P> generatorRough;
+    protected final IFarGeneratorExact<POS, P> generatorExact;
+    protected final IFarScaler<POS, P> scaler;
 
-    protected final IFarStorage<POS, P> pieceStorage;
-    protected final IFarStorage<POS, D> dataStorage;
+    protected final IFarStorage<POS, P> storage;
 
     //cache for loaded tiles
     protected final Cache<POS, Compressed<POS, P>> pieceCache = CacheBuilder.newBuilder()
-            .concurrencyLevel(FP2Config.generationThreads)
-            .softValues()
-            .build();
-    protected final Cache<POS, Compressed<POS, D>> dataCache = CacheBuilder.newBuilder()
             .concurrencyLevel(FP2Config.generationThreads)
             .weakValues()
             .build();
@@ -120,12 +112,12 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
         this.world = world;
         this.mode = mode;
 
-        IFarGeneratorRough<POS, P, D> generatorRough = this.mode().<POS, P, D>generatorsRough().stream()
+        IFarGeneratorRough<POS, P> generatorRough = this.mode().<POS, P>generatorsRough().stream()
                 .map(f -> f.apply(world))
                 .filter(Objects::nonNull)
                 .findFirst().orElse(null);
 
-        IFarGeneratorExact<POS, P, D> generatorExact = this.mode().<POS, P, D>generatorsExact().stream()
+        IFarGeneratorExact<POS, P> generatorExact = this.mode().<POS, P>generatorsExact().stream()
                 .map(f -> f.apply(world))
                 .filter(Objects::nonNull)
                 .findFirst().orElseThrow(() -> new IllegalStateException(PStrings.fastFormat(
@@ -148,9 +140,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
         this.lowResolution = FP2Config.performance.lowResolutionEnable && this.generatorRough.supportsLowResolution();
 
         this.scaler = this.mode().createScaler();
-        this.assembler = this.mode().createAssembler();
-        this.pieceStorage = new FarStorage<>(world, this.mode(), "piece", this.mode().pieceVersion());
-        this.dataStorage = new FarStorage<>(world, this.mode(), "data", this.mode().dataVersion());
+        this.root = new File(world.getChunkSaveLocation(), "fp2/" + this.mode().name().toLowerCase());
+        this.storage = new FarStorage<>(this.root, this.mode().pieceVersion());
 
         this.executor = new PriorityRecursiveExecutor<>(
                 FP2Config.generationThreads,
@@ -162,7 +153,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
                 PThreadFactories.builder().daemon().minPriority()
                         .collapsingId().name(PStrings.fastFormat("FP2 DIM%d IO Thread #%%d", world.provider.getDimension())).build());
 
-        this.root = new File(world.getChunkSaveLocation(), "fp2/" + this.mode().name().toLowerCase());
         //this.loadNotDone();
 
         MinecraftForge.EVENT_BUS.register(this);
@@ -183,16 +173,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
 
     public Compressed<POS, P> getRawPieceBlocking(@NonNull POS pos) {
         try {
-            return this.pieceCache.get(pos, new LoadAction<>(this.pieceStorage, pos));
-        } catch (ExecutionException e) {
-            PUnsafe.throwException(e);
-            throw new RuntimeException(e);
-        }
-    }
-
-    public Compressed<POS, D> getRawDataBlocking(@NonNull POS pos) {
-        try {
-            return this.dataCache.get(pos, new LoadAction<>(this.dataStorage, pos));
+            return this.pieceCache.get(pos, new LoadAction<>(this.storage, pos));
         } catch (ExecutionException e) {
             PUnsafe.throwException(e);
             throw new RuntimeException(e);
@@ -224,18 +205,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
 
             this.scaler.outputs(piece.pos()).forEach(outputPos -> this.schedulePieceForUpdate(outputPos, currTimestamp));
         }
-    }
-
-    public void dataChanged(@NonNull Compressed<POS, D> data) {
-        if (!data.isGenerated()) {
-            return;
-        }
-
-        this.dataCache.put(data.pos(), data);
-    }
-
-    public boolean willUseDataAt(@NonNull POS pos) {
-        return pos.level() < FP2Config.maxLevels - 1;
     }
 
     public boolean canGenerateRough(@NonNull POS pos) {
@@ -305,7 +274,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece,
         LOGGER.trace("Shutting down IO workers in DIM{}", this.world.provider.getDimension());
         this.ioExecutor.shutdown();
         LOGGER.trace("Shutting down storage in DIM{}", this.world.provider.getDimension());
-        this.pieceStorage.close();
+        this.storage.close();
         this.saveNotDone();
     }
 
