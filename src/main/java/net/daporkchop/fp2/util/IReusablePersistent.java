@@ -20,60 +20,42 @@
 
 package net.daporkchop.fp2.util;
 
+import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Objects;
-import java.util.function.Supplier;
 
 /**
- * A super trivial, unsafe recycler for re-usable objects.
+ * A type whose state may be persisted to a binary format, and restored later.
  * <p>
- * Not thread-safe.
+ * The state may also be reset, in order to allow instances to be re-used without reallocation.
  *
  * @author DaPorkchop_
  */
-public abstract class SimpleRecycler<V> {
-    protected final Deque<V> stack = new ArrayDeque<>();
-
-    public V allocate() {
-        return this.stack.isEmpty()
-                ? Objects.requireNonNull(this.allocate0(), "allocate0 returned null!")
-                : this.stack.pop();
-    }
-
-    protected abstract V allocate0();
-
-    public void release(@NonNull V value) {
-        this.reset0(value);
-        this.stack.push(value);
-    }
-
-    protected abstract void reset0(@NonNull V value);
+public interface IReusablePersistent {
+    /**
+     * Resets this instance's contents.
+     * <p>
+     * After being reset, the instance's state will be the same as if it were newly constructed.
+     */
+    void reset();
 
     /**
-     * Implementation of {@link SimpleRecycler} which is able to handle {@link IReusablePersistent} values.
+     * Restores this instance's state from the data in the given {@link ByteBuf}.
      * <p>
-     * Values are created using a {@link Supplier} provided at construction time.
+     * The instance is implicitly reset before the state is restored.
      *
-     * @param <V> the value type
-     * @author DaPorkchop_
+     * @param src the {@link ByteBuf} to read from
      */
-    @RequiredArgsConstructor
-    public static class OfReusablePersistent<V extends IReusablePersistent> extends SimpleRecycler<V> {
-        @NonNull
-        protected final Supplier<V> factory;
+    void read(@NonNull ByteBuf src);
 
-        @Override
-        protected V allocate0() {
-            return this.factory.get();
-        }
-
-        @Override
-        protected void reset0(@NonNull V value) {
-            value.reset();
-        }
-    }
+    /**
+     * Writes this instance's state to the given {@link ByteBuf}.
+     * <p>
+     * This method returns a {@code boolean} indicating whether or not this instance was empty. Implementations may choose to treat 0 written bytes
+     * differently from being empty, so if {@code true} is returned, the state may be restored later simply by resetting the piece - {@link #read(ByteBuf)}
+     * must not be called.
+     *
+     * @param dst the {@link ByteBuf} to write to
+     * @return whether or not this instance is empty
+     */
+    boolean write(@NonNull ByteBuf dst);
 }

@@ -22,7 +22,8 @@ package net.daporkchop.fp2.mode.api.server.gen;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
+import net.daporkchop.fp2.mode.api.piece.IFarData;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
@@ -37,7 +38,7 @@ import java.util.stream.Stream;
  *
  * @author DaPorkchop_
  */
-public interface IFarGeneratorExact<POS extends IFarPos, B extends IFarPieceBuilder> extends IFarGenerator {
+public interface IFarGeneratorExact<POS extends IFarPos, P extends IFarPiece, D extends IFarData> extends IFarGenerator {
     @Override
     void init(@NonNull WorldServer world);
 
@@ -61,11 +62,50 @@ public interface IFarGeneratorExact<POS extends IFarPos, B extends IFarPieceBuil
     Stream<Vec3i> neededCubes(@NonNull IBlockHeightAccess world, @NonNull POS pos);
 
     /**
+     * Generates the terrain in the given piece.
+     *
+     * @param world the {@link IBlockHeightAccess} providing access to block/height data in the world
+     * @param pos   the position of the piece to generate
+     * @param data  the data to generate
+     */
+    void generate(@NonNull IBlockHeightAccess world, @NonNull POS pos, @NonNull D data);
+
+    /**
+     * @return whether or not {@link #generateDirect(IBlockHeightAccess, IFarPos, IFarPiece)} is supported
+     */
+    default boolean directSupported() {
+        return false;
+    }
+
+    /**
      * Generates a rough estimate of the terrain in the given piece.
      *
-     * @param world   the {@link IBlockHeightAccess} providing access to block/height data in the world
-     * @param pos     the position of the piece to generate
-     * @param builder the piece to generate
+     * @param world the {@link IBlockHeightAccess} providing access to block/height data in the world
+     * @param pos   the position of the piece to generate
+     * @param piece the piece to generate
+     * @return the extra data to be saved with the piece
      */
-    void generate(@NonNull IBlockHeightAccess world, @NonNull POS pos, @NonNull B builder);
+    default long generateDirect(@NonNull IBlockHeightAccess world, @NonNull POS pos, @NonNull P piece) {
+        throw new UnsupportedOperationException(this.getClass().getCanonicalName());
+    }
+
+    /**
+     * @return whether or not {@link #generateSimultaneous(IBlockHeightAccess, IFarPos, IFarData, IFarPiece)} is supported
+     */
+    default boolean simultaneousSupported() {
+        return false;
+    }
+
+    /**
+     * Generates a rough estimate of the terrain in the given piece.
+     *
+     * @param world the {@link IBlockHeightAccess} providing access to block/height data in the world
+     * @param pos   the position of the piece to generate
+     * @param data  the data to generate
+     * @param piece the piece to generate
+     * @return the extra data to be saved with the piece
+     */
+    default long generateSimultaneous(@NonNull IBlockHeightAccess world, @NonNull POS pos, @NonNull D data, @NonNull P piece) {
+        throw new UnsupportedOperationException(this.getClass().getCanonicalName());
+    }
 }

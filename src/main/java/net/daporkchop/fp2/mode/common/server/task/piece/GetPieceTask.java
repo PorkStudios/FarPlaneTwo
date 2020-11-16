@@ -18,11 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.server.task;
+package net.daporkchop.fp2.mode.common.server.task.piece;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
+import net.daporkchop.fp2.mode.api.Compressed;
+import net.daporkchop.fp2.mode.api.piece.IFarData;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.common.server.TaskKey;
 import net.daporkchop.fp2.mode.common.server.TaskStage;
@@ -40,11 +40,12 @@ import java.util.stream.Stream;
  *
  * @author DaPorkchop_
  */
-public class GetPieceTask<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> extends AbstractPieceTask<POS, P, B, Void> {
-    public GetPieceTask(@NonNull AbstractFarWorld<POS, P, B> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
+public class GetPieceTask<POS extends IFarPos, P extends IFarPiece, D extends IFarData>
+        extends AbstractPieceTask<POS, P, D, Void> {
+    public GetPieceTask(@NonNull AbstractFarWorld<POS, P, D> world, @NonNull TaskKey key, @NonNull POS pos, @NonNull TaskStage requestedBy) {
         super(world, key, pos, requestedBy);
 
-        world.notDone(pos, requestedBy == TaskStage.GET);
+        world.notDone(pos, requestedBy == TaskStage.LOAD);
     }
 
     @Override
@@ -53,24 +54,24 @@ public class GetPieceTask<POS extends IFarPos, P extends IFarPiece, B extends IF
     }
 
     @Override
-    public CompressedPiece<POS, P, B> run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) {
-        CompressedPiece<POS, P, B> piece = this.world.getRawPieceBlocking(this.pos);
+    public Compressed<POS, P> run(@NonNull List<Void> params, @NonNull LazyPriorityExecutor<TaskKey> executor) {
+        Compressed<POS, P> piece = this.world.getRawPieceBlocking(this.pos);
 
         piece.readLock().lock();
         try {
-            if (piece.isDone()) {
+            if (piece.isGenerated()) {
                 //this adds the piece to the cache, unmarks it as not done and notifies the player tracker
                 this.world.pieceChanged(piece);
             } else { //the piece has not been fully generated yet
                 if (this.pos.level() == 0 //only allow rough generation if the piece was requested for loading by a player's presence
-                    || (this.requestedBy == TaskStage.GET && this.world.lowResolution())) {
+                    || (this.requestedBy == TaskStage.LOAD && this.world.lowResolution())) {
                     //the piece can be generated using the rough generator
                     executor.submit(new RoughGeneratePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_GENERATE), this.pos)
                             .thenCopyStatusTo(this));
                 } else {
                     //the piece is at a lower detail than 0, and low-resolution generation is not an option
                     //this will generate the piece and all pieces below it down to level 0 until the piece can be "generated" from scaled data
-                    executor.submit(new RoughScalePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_SCALE), this.pos, TaskStage.GET, 0)
+                    executor.submit(new RoughScalePieceTask<>(this.world, this.key.withStage(TaskStage.ROUGH_SCALE), this.pos, TaskStage.LOAD, 0)
                             .thenCopyStatusTo(this));
                 }
                 if (piece.isBlank()) {

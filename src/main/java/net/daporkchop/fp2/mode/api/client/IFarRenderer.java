@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.api.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
+import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.minecraft.client.Minecraft;
@@ -38,7 +38,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 public interface IFarRenderer<POS extends IFarPos, P extends IFarPiece> {
     void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum);
 
-    void receivePiece(@NonNull CompressedPiece<POS, P, ?> piece);
+    void receivePiece(@NonNull Compressed<POS, P> piece);
 
     void unloadPiece(@NonNull POS pos);
 

@@ -23,9 +23,9 @@ package net.daporkchop.fp2.mode.heightmap.server;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPieceBuilder;
 import net.minecraft.world.WorldServer;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -33,7 +33,7 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public class HeightmapWorld extends AbstractFarWorld<HeightmapPos, HeightmapPiece, HeightmapPieceBuilder> {
+public class HeightmapWorld extends AbstractFarWorld<HeightmapPos, HeightmapPiece, HeightmapData> {
     public HeightmapWorld(@NonNull WorldServer world) {
         super(world, RenderMode.HEIGHTMAP);
     }

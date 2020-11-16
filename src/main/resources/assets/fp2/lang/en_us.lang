@@ -33,8 +33,6 @@ config.fp2.client.levelTransitionEnd=Detail transition end
 
 config.fp2.performance=Performance options
 config.fp2.performance.lowResolutionEnable=Allow low resolution
-config.fp2.performance.lowResolutionRefine=Allow refine
-config.fp2.performance.lowResolutionRefineProgressive=Allow progressive refine
 config.fp2.performance.savePartial=Allow partial save
 
 config.fp2.debug=Debug options

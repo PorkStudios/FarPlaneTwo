@@ -21,17 +21,14 @@
 package net.daporkchop.fp2.mode.common.client;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.EmptyByteBuf;
 import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
 import net.daporkchop.fp2.client.gl.object.ElementArrayObject;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
+import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.Constants;
@@ -67,7 +64,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     protected final AbstractFarRenderer<POS, P> renderer;
 
     protected final AbstractFarRenderTree<POS, P> tree;
-    protected final Map<POS, CompressedPiece<POS, P, ?>> pieces = new ConcurrentHashMap<>();
+    protected final Map<POS, Compressed<POS, P>> pieces = new ConcurrentHashMap<>();
 
     protected final IntFunction<POS[]> posArray;
     protected final IntFunction<P[]> pieceArray;
@@ -175,7 +172,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
     protected abstract AbstractFarRenderTree<POS, P> createTree();
 
-    public void receivePiece(@NonNull CompressedPiece<POS, P, ?> pieceIn) {
+    public void receivePiece(@NonNull Compressed<POS, P> pieceIn) {
         final int maxLevel = this.renderer.maxLevel;
 
         this.pieces.put(pieceIn.pos(), pieceIn);
@@ -186,11 +183,11 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                         return;
                     }
 
-                    CompressedPiece<POS, P, ?>[] compressedInputPieces = uncheckedCast(this.baker.bakeInputs(pos)
+                    Compressed<POS, P>[] compressedInputPieces = uncheckedCast(this.baker.bakeInputs(pos)
                             .map(this.pieces::get)
-                            .toArray(CompressedPiece[]::new));
+                            .toArray(Compressed[]::new));
 
-                    CompressedPiece<POS, P, ?> piece = Arrays.stream(compressedInputPieces).filter(p -> p != null && pos.equals(p.pos())).findAny().orElse(null);
+                    Compressed<POS, P> piece = Arrays.stream(compressedInputPieces).filter(p -> p != null && pos.equals(p.pos())).findAny().orElse(null);
                     if (piece == null) {
                         return;
                     }
@@ -208,11 +205,12 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                             indices[i] = Constants.allocateByteBufNativeOrder(estimatedIndicesBufferCapacity);
                         }
                         try {
+                            SimpleRecycler<P> recycler = this.renderer.mode().pieceRecycler();
                             P[] inputPieces = this.pieceArray.apply(compressedInputPieces.length);
                             try {
                                 for (int i = 0; i < inputPieces.length; i++) { //inflate pieces
                                     if (compressedInputPieces[i] != null) {
-                                        inputPieces[i] = compressedInputPieces[i].inflate();
+                                        inputPieces[i] = compressedInputPieces[i].inflate(recycler);
                                     }
                                 }
 
@@ -231,7 +229,6 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                                 }
                                 ClientThreadExecutor.INSTANCE.execute(() -> this.addPiece(piece, vertices, indices));
                             } finally { //release pieces again
-                                SimpleRecycler<P> recycler = uncheckedCast(this.renderer.mode().pieceRecycler());
                                 for (int i = 0; i < inputPieces.length; i++) {
                                     if (inputPieces[i] != null) {
                                         recycler.release(inputPieces[i]);
@@ -248,7 +245,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                 });
     }
 
-    public void addPiece(@NonNull CompressedPiece<POS, P, ?> piece, @NonNull ByteBuf vertices, @NonNull ByteBuf[] indices) {
+    public void addPiece(@NonNull Compressed<POS, P> piece, @NonNull ByteBuf vertices, @NonNull ByteBuf[] indices) {
         try {
             POS pos = piece.pos();
             if (this.pieces.get(pos) != piece) {

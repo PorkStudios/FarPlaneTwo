@@ -18,21 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.server;
+package net.daporkchop.fp2.mode.heightmap.server.gen.rough;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.common.server.AbstractFarStorage;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
-import net.minecraft.world.WorldServer;
+import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
+import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 
 /**
  * @author DaPorkchop_
  */
-public class VoxelStorage extends AbstractFarStorage<VoxelPos, VoxelPiece, VoxelPieceBuilder> {
-    public VoxelStorage(@NonNull WorldServer world) {
-        super(world, RenderMode.VOXEL);
-    }
+public abstract class AbstractRoughHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorRough<HeightmapPos, HeightmapPiece, HeightmapData> {
 }

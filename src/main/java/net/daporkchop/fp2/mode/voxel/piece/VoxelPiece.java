@@ -25,7 +25,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
@@ -62,28 +61,28 @@ public class VoxelPiece implements IFarPiece {
         return (x * T_VOXELS + y) * T_VOXELS + z;
     }
 
-    static void writeData(long base, VoxelData data) {
-        PUnsafe.putInt(base + 0L, (data.x << 24) | (data.y << 16) | (data.z << 8) | data.edges);
-        PUnsafe.putInt(base + 4L, (data.biome << 8) | data.light);
-        PUnsafe.copyMemory(data.states, PUnsafe.ARRAY_INT_BASE_OFFSET, null, base + 8L, 4L * EDGE_COUNT);
+    static void writeSample(long base, VoxelSample sample) {
+        PUnsafe.putInt(base + 0L, (sample.x << 24) | (sample.y << 16) | (sample.z << 8) | sample.edges);
+        PUnsafe.putInt(base + 4L, (sample.biome << 8) | sample.light);
+        PUnsafe.copyMemory(sample.states, PUnsafe.ARRAY_INT_BASE_OFFSET, null, base + 8L, 4L * EDGE_COUNT);
     }
 
-    static void readData(long base, VoxelData data) {
+    static void readSample(long base, VoxelSample sample) {
         int i0 = PUnsafe.getInt(base + 0L);
         int i1 = PUnsafe.getInt(base + 4L);
 
-        data.x = i0 >>> 24;
-        data.y = (i0 >> 16) & 0xFF;
-        data.z = (i0 >> 8) & 0xFF;
-        data.edges = i0 & 0x3F;
+        sample.x = i0 >>> 24;
+        sample.y = (i0 >> 16) & 0xFF;
+        sample.z = (i0 >> 8) & 0xFF;
+        sample.edges = i0 & 0x3F;
 
-        data.biome = (i1 >> 8) & 0xFF;
-        data.light = i1 & 0xFF;
+        sample.biome = (i1 >> 8) & 0xFF;
+        sample.light = i1 & 0xFF;
 
-        PUnsafe.copyMemory(null, base + 8L, data.states, PUnsafe.ARRAY_INT_BASE_OFFSET, 4L * EDGE_COUNT);
+        PUnsafe.copyMemory(null, base + 8L, sample.states, PUnsafe.ARRAY_INT_BASE_OFFSET, 4L * EDGE_COUNT);
     }
 
-    static void readOnlyPos(long base, VoxelData data) {
+    static void readOnlyPos(long base, VoxelSample data) {
         int i0 = PUnsafe.getInt(base + 0L);
 
         data.x = i0 >>> 24;
@@ -105,16 +104,78 @@ public class VoxelPiece implements IFarPiece {
 
     protected int count = -1; //the number of voxels in the piece that are set
 
+    public VoxelPiece() {
+        this.reset();
+    }
+
+    /**
+     * @return the number of set voxels in this piece
+     */
+    public int size() {
+        return this.count;
+    }
+
+    /**
+     * Gets the voxel at the given index.
+     *
+     * @param index  the index of the voxel to get
+     * @param sample the {@link VoxelSample} instance to store the data into
+     * @return the relative offset of the voxel (combined XYZ coords)
+     */
+    public int get(int index, VoxelSample sample) {
+        long base = this.addr + INDEX_SIZE + checkIndex(this.count, index) * ENTRY_FULL_SIZE_BYTES;
+        readSample(base + 2L, sample);
+        return PUnsafe.getChar(base);
+    }
+
+    public boolean get(int x, int y, int z, VoxelSample sample) {
+        int index = PUnsafe.getShort(this.addr + index(x, y, z) * 2L);
+        if (index < 0) { //index is unset, don't read sample
+            return false;
+        }
+
+        readSample(this.addr + INDEX_SIZE + index * ENTRY_FULL_SIZE_BYTES + 2L, sample);
+        return true;
+    }
+
+    public boolean getOnlyPos(int x, int y, int z, VoxelSample sample) {
+        int index = PUnsafe.getShort(this.addr + index(x, y, z) * 2L);
+        if (index < 0) { //index is unset, don't read sample
+            return false;
+        }
+
+        readOnlyPos(this.addr + INDEX_SIZE + index * ENTRY_FULL_SIZE_BYTES + 2L, sample);
+        return true;
+    }
+
+    public VoxelPiece set(int x, int y, int z, VoxelSample sample) {
+        long indexAddr = this.addr + VoxelPiece.index(x, y, z) * 2L;
+        int index = PUnsafe.getShort(indexAddr);
+        if (index < 0) { //index is unset, allocate new one
+            PUnsafe.putShort(indexAddr, (short) (index = this.count++));
+        }
+
+        VoxelPiece.writeSample(this.addr + VoxelPiece.INDEX_SIZE + index * VoxelPiece.ENTRY_DATA_SIZE_BYTES, sample);
+        return this;
+    }
+
     @Override
     public RenderMode mode() {
         return RenderMode.VOXEL;
     }
 
     @Override
-    public void read(@NonNull ByteBuf src) {
-        if (this.count != 0) { //index needs to be cleared
-            PUnsafe.setMemory(this.addr, INDEX_SIZE, (byte) 0xFF); //fill index with -1
+    public void reset() {
+        if (this.count != 0) {
+            this.count = 0;
+            PUnsafe.setMemory(this.addr, VoxelPiece.INDEX_SIZE, (byte) 0xFF); //fill index with -1
+            //data doesn't need to be cleared, it's effectively wiped along with the index
         }
+    }
+
+    @Override
+    public void read(@NonNull ByteBuf src) {
+        this.reset();
 
         int count = this.count = src.readIntLE();
 
@@ -131,44 +192,30 @@ public class VoxelPiece implements IFarPiece {
         }
     }
 
-    /**
-     * @return the number of set voxels in this piece
-     */
-    public int size() {
-        return this.count;
-    }
-
-    /**
-     * Gets the voxel at the given index.
-     *
-     * @param index the index of the voxel to get
-     * @param data  the {@link VoxelData} instance to store the data into
-     * @return the relative offset of the voxel (combined XYZ coords)
-     */
-    public int get(int index, VoxelData data) {
-        long base = this.addr + INDEX_SIZE + checkIndex(this.count, index) * ENTRY_FULL_SIZE_BYTES;
-        readData(base + 2L, data);
-        return PUnsafe.getChar(base);
-    }
-
-    public boolean get(int x, int y, int z, VoxelData data)   {
-        int index = PUnsafe.getShort(this.addr + index(x, y, z) * 2L);
-        if (index < 0)  { //index is unset, don't read data
-            return false;
+    @Override
+    public boolean write(@NonNull ByteBuf dst) {
+        if (this.count == 0) { //piece is empty, nothing needs to be encoded
+            return true;
         }
 
-        readData(this.addr + INDEX_SIZE + index * ENTRY_FULL_SIZE_BYTES + 2L, data);
-        return true;
-    }
+        int sizeIndex = dst.writerIndex();
+        dst.writeIntLE(-1);
 
-    public boolean getOnlyPos(int x, int y, int z, VoxelData data)   {
-        int index = PUnsafe.getShort(this.addr + index(x, y, z) * 2L);
-        if (index < 0)  { //index is unset, don't read data
-            return false;
+        int count = 0;
+        for (int i = 0; i < VoxelPiece.ENTRY_COUNT; i++)  { //iterate through the index and search for set voxels
+            int index = PUnsafe.getShort(this.addr + i * 2L);
+            if (index >= 0) { //voxel is set
+                dst.writeShortLE(i); //write position
+                long base = this.addr + VoxelPiece.INDEX_SIZE + index * VoxelPiece.ENTRY_DATA_SIZE_BYTES;
+                for (int j = 0; j < VoxelPiece.ENTRY_DATA_SIZE; j++) { //write voxel data
+                    dst.writeIntLE(PUnsafe.getInt(base + j * 4L));
+                }
+                count++;
+            }
         }
 
-        readOnlyPos(this.addr + INDEX_SIZE + index * ENTRY_FULL_SIZE_BYTES + 2L, data);
-        return true;
+        dst.setIntLE(sizeIndex, count);
+        return false;
     }
 
     public int getOnlyPosAndReturnEdges(int x, int y, int z, double[] dst, int dstOff)   {

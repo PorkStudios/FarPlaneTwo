@@ -29,7 +29,7 @@ import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
+import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
@@ -64,7 +64,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     protected abstract AbstractFarRenderCache<POS, P> createCache();
 
     @Override
-    public void receivePiece(@NonNull CompressedPiece<POS, P, ?> piece) {
+    public void receivePiece(@NonNull Compressed<POS, P> piece) {
         ClientThreadExecutor.INSTANCE.execute(() -> this.cache.receivePiece(piece));
     }
 

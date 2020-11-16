@@ -20,9 +20,9 @@
 
 package net.daporkchop.fp2.mode.voxel.server.gen;
 
-import net.daporkchop.fp2.mode.common.server.AbstractFarGenerator;
-import net.daporkchop.fp2.mode.voxel.VoxelData;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
+import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelSample;
 import net.daporkchop.fp2.util.math.Vector3d;
 import net.daporkchop.fp2.util.math.qef.QefSolver;
 import net.daporkchop.lib.common.ref.Ref;
@@ -79,9 +79,9 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                 lerp(lerp(Xyz, XyZ, z), lerp(XYz, XYZ, z), y), x);
     }
 
-    protected void buildMesh(int baseX, int baseY, int baseZ, int level, VoxelPieceBuilder builder, double[][] densityMap, P param) {
+    protected void buildMesh(int baseX, int baseY, int baseZ, int level, VoxelPiece builder, double[][] densityMap, P param) {
         QefSolver qef = new QefSolver();
-        VoxelData data = new VoxelData();
+        VoxelSample sample = new VoxelSample();
         Vector3d vec = new Vector3d();
 
         double dn = 0.001d * (1 << level);
@@ -164,7 +164,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                             } else {
                                 edges |= EDGE_DIR_POSITIVE << (faceEdge << 1);
                             }
-                            data.states[faceEdge] = this.getFaceState(baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level), nx, ny, nz, faceEdge, layer, param);
+                            sample.states[faceEdge] = this.getFaceState(baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level), level, nx, ny, nz, faceEdge, layer, param);
                         }
                     }
 
@@ -174,7 +174,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                         continue;
                     }
 
-                    data.edges = edges;
+                    sample.edges = edges;
 
                     //solve QEF and set the piece data
                     qef.solve(vec, 0.1, 1, 0.5);
@@ -185,24 +185,24 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                         vec.set(qef.massPoint().x, qef.massPoint().y, qef.massPoint().z);
                     }
 
-                    data.x = clamp(floorI(vec.x * POS_ONE), 0, POS_ONE);
-                    data.y = clamp(floorI(vec.y * POS_ONE), 0, POS_ONE);
-                    data.z = clamp(floorI(vec.z * POS_ONE), 0, POS_ONE);
+                    sample.x = clamp(floorI(vec.x * POS_ONE), 0, POS_ONE);
+                    sample.y = clamp(floorI(vec.y * POS_ONE), 0, POS_ONE);
+                    sample.z = clamp(floorI(vec.z * POS_ONE), 0, POS_ONE);
 
                     double nLen = sqrt(totalNx * totalNx + totalNy * totalNy + totalNz * totalNz);
                     totalNx /= nLen;
                     totalNy /= nLen;
                     totalNz /= nLen;
 
-                    this.populateVoxelBlockData(baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level), totalNx, totalNy, totalNz, data, param);
+                    this.populateVoxelBlockData(baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level), level, totalNx, totalNy, totalNz, sample, param);
 
-                    builder.set(dx, dy, dz, data);
+                    builder.set(dx, dy, dz, sample);
                 }
             }
         }
     }
 
-    protected abstract int getFaceState(int blockX, int blockY, int blockZ, double nx, double ny, double nz, int edge, int layer, P param);
+    protected abstract int getFaceState(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, int edge, int layer, P param);
 
-    protected abstract void populateVoxelBlockData(int blockX, int blockY, int blockZ, double nx, double ny, double nz, VoxelData data, P param);
+    protected abstract void populateVoxelBlockData(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, VoxelSample sample, P param);
 }

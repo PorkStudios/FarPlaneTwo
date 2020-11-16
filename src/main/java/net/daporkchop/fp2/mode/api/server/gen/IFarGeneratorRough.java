@@ -22,7 +22,8 @@ package net.daporkchop.fp2.mode.api.server.gen;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
+import net.daporkchop.fp2.mode.api.piece.IFarData;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.minecraft.world.WorldServer;
 
 /**
@@ -32,17 +33,9 @@ import net.minecraft.world.WorldServer;
  *
  * @author DaPorkchop_
  */
-public interface IFarGeneratorRough<POS extends IFarPos, B extends IFarPieceBuilder> extends IFarGenerator {
+public interface IFarGeneratorRough<POS extends IFarPos, P extends IFarPiece, D extends IFarData> extends IFarGenerator {
     @Override
     void init(@NonNull WorldServer world);
-
-    /**
-     * Generates a rough estimate of the terrain in the given piece.
-     *
-     * @param pos   the position of the piece to generate
-     * @param piece the piece to generate
-     */
-    void generate(@NonNull POS pos, @NonNull B piece);
 
     /**
      * @return whether or not this generator can generate pieces at low resolution
@@ -50,7 +43,47 @@ public interface IFarGeneratorRough<POS extends IFarPos, B extends IFarPieceBuil
     boolean supportsLowResolution();
 
     /**
-     * @return whether or not low-resolution pieces are inaccurate
+     * Generates a rough estimate of the terrain in the given piece.
+     *
+     * @param pos  the position of the piece to generate
+     * @param data the data to generate
      */
-    boolean isLowResolutionInaccurate();
+    void generate(@NonNull POS pos, @NonNull D data);
+
+    /**
+     * @return whether or not {@link #generateDirect(IFarPos, IFarPiece)} is supported
+     */
+    default boolean supportsDirect() {
+        return false;
+    }
+
+    /**
+     * Generates a rough estimate of the terrain in the given piece.
+     *
+     * @param pos   the position of the piece to generate
+     * @param piece the piece to generate
+     * @return the extra data to be saved with the piece
+     */
+    default long generateDirect(@NonNull POS pos, @NonNull P piece) {
+        throw new UnsupportedOperationException(this.getClass().getCanonicalName());
+    }
+
+    /**
+     * @return whether or not {@link #generateSimultaneous(IFarPos, IFarData, IFarPiece)} is supported
+     */
+    default boolean supportsSimultaneous() {
+        return false;
+    }
+
+    /**
+     * Generates a rough estimate of the terrain in the given piece.
+     *
+     * @param pos   the position of the piece to generate
+     * @param data  the data to generate
+     * @param piece the piece to generate
+     * @return the extra data to be saved with the piece
+     */
+    default long generateSimultaneous(@NonNull POS pos, @NonNull D data, @NonNull P piece) {
+        throw new UnsupportedOperationException(this.getClass().getCanonicalName());
+    }
 }

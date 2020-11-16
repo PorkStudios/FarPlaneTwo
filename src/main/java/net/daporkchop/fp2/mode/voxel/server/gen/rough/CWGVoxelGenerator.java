@@ -22,9 +22,10 @@ package net.daporkchop.fp2.mode.voxel.server.gen.rough;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPieceBuilder;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelData;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelSample;
 import net.daporkchop.fp2.mode.voxel.server.gen.AbstractVoxelGenerator;
 import net.daporkchop.lib.noise.NoiseSource;
 import net.daporkchop.lib.noise.engine.PerlinNoiseEngine;
@@ -40,7 +41,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 //TODO: this is currently only generating the mesh using perlin noise
-public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements IFarGeneratorRough<VoxelPos, VoxelPieceBuilder> {
+public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements IFarGeneratorRough<VoxelPos, VoxelPiece, VoxelData> {
     //protected Ref<CWGContext> ctx;
     protected NoiseSource noise;
 
@@ -53,7 +54,7 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
     }
 
     @Override
-    public void generate(@NonNull VoxelPos pos, @NonNull VoxelPieceBuilder piece) {
+    public void generate(@NonNull VoxelPos pos, @NonNull VoxelData data) {
         int level = pos.level();
         int baseX = pos.blockX();
         int baseY = pos.blockY();
@@ -61,7 +62,7 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
 
         //CWGContext ctx = this.ctx.get();
         //ctx.init(baseX >> 4, baseY >> 4, baseZ >> 4, level);
-        double[][] densityMap = DMAP_CACHE.get();
+        /*double[][] densityMap = DMAP_CACHE.get();
 
         for (int x = DMAP_MIN; x < DMAP_MAX; x++) {
             for (int y = DMAP_MIN; y < DMAP_MAX; y++) {
@@ -72,28 +73,23 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
         }
         this.noise.get(densityMap[1], baseX + DMAP_MIN, baseY + DMAP_MIN, baseZ + DMAP_MIN, 1.0d, 1.0d, 1.0d, DMAP_SIZE, DMAP_SIZE, DMAP_SIZE);
 
-        this.buildMesh(baseX, baseY, baseZ, level, piece, densityMap, null);
+        this.buildMesh(baseX, baseY, baseZ, level, piece, densityMap, null);*/
     }
 
     @Override
-    protected int getFaceState(int blockX, int blockY, int blockZ, double nx, double ny, double nz, int edge, int layer, Void param) {
+    protected int getFaceState(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, int edge, int layer, Void param) {
         return layer == 0 ? Block.getStateId(Blocks.WATER.getDefaultState()) : 1;
     }
 
     @Override
-    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, double nx, double ny, double nz, VoxelData data, Void param) {
+    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, VoxelSample sample, Void param) {
         blockY++;
-        data.light = packCombinedLight((blockY < this.seaLevel ? max(15 - (this.seaLevel - blockY) * 3, 0) : 15) << 20);
-        data.biome = 0;
+        sample.light = packCombinedLight((blockY < this.seaLevel ? max(15 - (this.seaLevel - blockY) * 3, 0) : 15) << 20);
+        sample.biome = 0;
     }
 
     @Override
     public boolean supportsLowResolution() {
-        return true;
-    }
-
-    @Override
-    public boolean isLowResolutionInaccurate() {
         return true;
     }
 }

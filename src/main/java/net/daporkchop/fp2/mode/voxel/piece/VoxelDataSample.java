@@ -18,12 +18,32 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.piece;
-
-import net.daporkchop.fp2.mode.api.piece.IFarData;
+package net.daporkchop.fp2.mode.voxel.piece;
 
 /**
+ * Represents a single data sample contained in a voxel piece.
+ *
  * @author DaPorkchop_
  */
-public class HeightmapData extends AbstractHeightmapPiece implements IFarData {
+public class VoxelDataSample {
+    //density information
+    public int density0;
+    public int density1;
+
+    //block data (for texturing and shading)
+    public int state;
+    public int biome;
+    public int light;
+
+    /**
+     * Resets this instance.
+     *
+     * @return this instance
+     */
+    public VoxelDataSample reset() {
+        this.state = 0;
+        this.biome = 0;
+        this.light = 0;
+        return this;
+    }
 }

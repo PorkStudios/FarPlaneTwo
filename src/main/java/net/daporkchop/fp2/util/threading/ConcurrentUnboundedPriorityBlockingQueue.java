@@ -33,6 +33,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import static java.util.Objects.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -47,15 +48,11 @@ public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E
     protected final NavigableSet<E> set;
 
     public ConcurrentUnboundedPriorityBlockingQueue() {
-        this(null);
+        this.set = new ConcurrentSkipListSet<>();
     }
 
-    public ConcurrentUnboundedPriorityBlockingQueue(Comparator<E> comparator) {
-        this(comparator, false, true);
-    }
-
-    public ConcurrentUnboundedPriorityBlockingQueue(Comparator<E> comparator, boolean tieUseHashCode, boolean tieUp) {
-        this.set = new ConcurrentSkipListSet<>(new EqualsTieBreakComparator<>(comparator, tieUseHashCode, tieUp));
+    public ConcurrentUnboundedPriorityBlockingQueue(@NonNull Comparator<E> comparator) {
+        this.set = new ConcurrentSkipListSet<>(comparator);
     }
 
     @Override
@@ -80,20 +77,11 @@ public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E
 
     @Override
     public boolean add(E e) {
-        this.set.add(e);
-        this.lock.release();
-        return true;
-    }
-
-    @Override
-    public boolean addAll(@NonNull Collection<? extends E> c) {
-        checkArg(this != c);
-        if (c.isEmpty()) {
-            return false;
-        } else {
-            this.set.addAll(c);
-            this.lock.release(c.size());
+        if (this.set.add(e)) {
+            this.lock.release();
             return true;
+        } else {
+            return false;
         }
     }
 
@@ -153,5 +141,22 @@ public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E
     public boolean offer(E e, long timeout, TimeUnit unit) {
         this.add(e);
         return true;
+    }
+
+    //custom methods
+
+    public E popIfMatches(@NonNull Predicate<E> condition) {
+        if (this.lock.tryAcquire()) {
+            E value;
+            do {
+                value = this.set.first();
+                if (!condition.test(value)) {
+                    this.lock.release();
+                    return null;
+                }
+            } while (!this.set.remove(value));
+            return value;
+        }
+        return null;
     }
 }

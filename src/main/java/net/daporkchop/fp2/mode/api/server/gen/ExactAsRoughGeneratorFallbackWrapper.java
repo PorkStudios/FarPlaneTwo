@@ -23,7 +23,8 @@ package net.daporkchop.fp2.mode.api.server.gen;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
+import net.daporkchop.fp2.mode.api.piece.IFarData;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.minecraft.world.WorldServer;
@@ -35,11 +36,11 @@ import net.minecraft.world.WorldServer;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, B extends IFarPieceBuilder> implements IFarGeneratorRough<POS, B> {
+public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, P extends IFarPiece, D extends IFarData> implements IFarGeneratorRough<POS, P, D> {
     @NonNull
     protected final AsyncBlockAccess blockAccess;
     @NonNull
-    protected final IFarGeneratorExact<POS, B> exactGenerator;
+    protected final IFarGeneratorExact<POS, P, D> exactGenerator;
 
     @Override
     public void init(@NonNull WorldServer world) {
@@ -47,24 +48,38 @@ public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, B extends
     }
 
     @Override
-    public void generate(@NonNull POS pos, @NonNull B builder) {
-        try {
-            IBlockHeightAccess prefetched = this.blockAccess.prefetchAsync(this.exactGenerator.neededColumns(pos),
-                    world -> this.exactGenerator.neededCubes(world, pos))
-                    .sync().getNow();
-            this.exactGenerator.generate(prefetched, pos, builder);
-        } catch (InterruptedException e)    {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    @Override
     public boolean supportsLowResolution() {
         return false;
     }
 
+    protected IBlockHeightAccess prefetch(@NonNull POS pos) {
+        return this.blockAccess.prefetchAsync(this.exactGenerator.neededColumns(pos),
+                world -> this.exactGenerator.neededCubes(world, pos))
+                .syncUninterruptibly().getNow();
+    }
+
     @Override
-    public boolean isLowResolutionInaccurate() {
-        return false;
+    public void generate(@NonNull POS pos, @NonNull D data) {
+        this.exactGenerator.generate(this.prefetch(pos), pos, data);
+    }
+
+    @Override
+    public boolean supportsDirect() {
+        return this.exactGenerator.directSupported();
+    }
+
+    @Override
+    public long generateDirect(@NonNull POS pos, @NonNull P piece) {
+        return this.exactGenerator.generateDirect(this.prefetch(pos), pos, piece);
+    }
+
+    @Override
+    public boolean supportsSimultaneous() {
+        return this.exactGenerator.simultaneousSupported();
+    }
+
+    @Override
+    public long generateSimultaneous(@NonNull POS pos, @NonNull D data, @NonNull P piece) {
+        return this.exactGenerator.generateSimultaneous(this.prefetch(pos), pos, data, piece);
     }
 }

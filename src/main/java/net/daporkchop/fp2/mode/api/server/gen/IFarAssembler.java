@@ -18,12 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.piece;
+package net.daporkchop.fp2.mode.api.server.gen;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.piece.IFarData;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 
 /**
+ * Constructs a piece's contents using input {@link IFarData}.
+ *
  * @author DaPorkchop_
  */
-public class HeightmapData extends AbstractHeightmapPiece implements IFarData {
+public interface IFarAssembler<D extends IFarData, P extends IFarPiece> {
+    /**
+     * Uses the given piece data to assemble a piece.
+     *
+     * @param data  the raw piece data to use
+     * @param piece the {@link IFarPiece} to be assembled
+     * @return the extra data to be saved with the assembled piece
+     */
+    long assemble(@NonNull D data, @NonNull P piece);
 }

@@ -18,39 +18,42 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.server.task;
+package net.daporkchop.fp2.mode.voxel.piece;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.mode.api.CompressedPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
-import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.api.IFarPos;
+import java.util.Arrays;
 
-import java.util.concurrent.Callable;
-
-import static net.daporkchop.lib.common.util.PorkUtil.*;
+import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 
 /**
- * Not really a task, but used by {@link AbstractFarWorld} to load a piece from disk and create it if absent.
+ * Represents a single data sample contained in a voxel piece.
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public class LoadPieceAction<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> implements Callable<CompressedPiece<POS, P, B>> {
-    @NonNull
-    protected final AbstractFarWorld<POS, P, B> world;
-    @NonNull
-    protected final POS pos;
+public class VoxelSample {
+    //vertex position and mesh intersection data
+    public int x;
+    public int y;
+    public int z;
+    public int edges;
 
-    @Override
-    public CompressedPiece<POS, P, B> call() throws Exception {
-        CompressedPiece<POS, P, B> piece = this.world.storage().load(this.pos);
-        if (piece == null) {
-            //piece doesn't exist on disk, let's make a new one!
-            return new CompressedPiece<>(this.pos);
-        }
-        return piece;
+    //block data (for texturing and shading)
+    public final int[] states = new int[EDGE_COUNT];
+    public int biome;
+    public int light;
+
+    /**
+     * Resets this instance.
+     *
+     * @return this instance
+     */
+    public VoxelSample reset() {
+        this.x = 0;
+        this.y = 0;
+        this.z = 0;
+        this.edges = 0;
+        Arrays.fill(this.states, 0);
+        this.biome = 0;
+        this.light = 0;
+        return this;
     }
 }

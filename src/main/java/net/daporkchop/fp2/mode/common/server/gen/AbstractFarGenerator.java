@@ -18,12 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.piece;
+package net.daporkchop.fp2.mode.common.server.gen;
 
-import net.daporkchop.fp2.mode.api.piece.IFarData;
+import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.server.gen.IFarGenerator;
+import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.world.WorldServer;
 
 /**
  * @author DaPorkchop_
  */
-public class HeightmapData extends AbstractHeightmapPiece implements IFarData {
+public abstract class AbstractFarGenerator implements IFarGenerator {
+    protected static final long SEALEVEL_OFFSET = PUnsafe.pork_getOffset(AbstractFarGenerator.class, "seaLevel");
+
+    protected final int seaLevel; //this is final to allow JIT to hoist slow getfield opcodes out of the main loop when referenced in a loop
+
+    public AbstractFarGenerator() {
+        this.seaLevel = Integer.MIN_VALUE;
+    }
+
+    @Override
+    public void init(@NonNull WorldServer world) {
+        PUnsafe.putInt(this, SEALEVEL_OFFSET, world.getSeaLevel());
+    }
 }

@@ -18,44 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel;
+package net.daporkchop.fp2.mode.api.piece;
 
-import net.daporkchop.fp2.util.math.Vector3d;
-
-import java.util.Arrays;
-
-import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
+import net.daporkchop.fp2.util.IReusablePersistent;
 
 /**
- * Represents the data stored at a voxel that is not absent.
- *
  * @author DaPorkchop_
  */
-public class VoxelData {
-    //vertex position and mesh intersection data
-    public int x;
-    public int y;
-    public int z;
-    public int edges;
-
-    //block data (for texturing and shading)
-    public final int[] states = new int[EDGE_COUNT];
-    public int biome;
-    public int light;
-
-    /**
-     * Resets this instance.
-     *
-     * @return this instance
-     */
-    public VoxelData reset() {
-        this.x = 0;
-        this.y = 0;
-        this.z = 0;
-        this.edges = 0;
-        Arrays.fill(this.states, 0);
-        this.biome = 0;
-        this.light = 0;
-        return this;
-    }
+public interface IFarData extends IReusablePersistent {
 }

@@ -18,21 +18,18 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.server.scale;
+package net.daporkchop.fp2.mode.api.server.gen;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.api.piece.IFarPieceBuilder;
+import net.daporkchop.fp2.mode.api.piece.IFarData;
 
 import java.util.stream.Stream;
 
 /**
- * Merges the content of multiple high-detail pieces into a single lower-detail piece.
- *
  * @author DaPorkchop_
  */
-public interface IFarScaler<POS extends IFarPos, P extends IFarPiece, B extends IFarPieceBuilder> {
+public interface IFarScaler<POS extends IFarPos, D extends IFarData> {
     /**
      * Gets the positions of all the low-detail pieces whose contents are affected by the content of the given high-detail piece.
      * <p>
@@ -54,11 +51,12 @@ public interface IFarScaler<POS extends IFarPos, P extends IFarPiece, B extends 
     Stream<POS> inputs(@NonNull POS dstPos);
 
     /**
-     * Merges the content of the given high-detail pieces into the given low-detail piece.
+     * Merges the content of the given high-detail data pieces into the given low-detail data piece.
      *
      * @param srcs an array containing the high-detail pieces. Pieces are in the same order as provided by the {@link Stream} returned by
-     *             {@link #inputs(IFarPos)}.
-     * @param dst  the low-detail piece to merge the content into
+     *             {@link #inputs(IFarPos)}. Any of the pieces may be {@code null}, in which case they should be treated by the implementation
+     *             as if they were merely empty.
+     * @param dst  the low-detail data piece to merge the content into
      */
-    void scale(@NonNull P[] srcs, @NonNull B dst);
+    void scale(@NonNull D[] srcs, @NonNull D dst);
 }

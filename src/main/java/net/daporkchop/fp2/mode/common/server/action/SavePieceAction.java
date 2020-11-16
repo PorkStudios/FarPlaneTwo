@@ -18,12 +18,33 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.piece;
+package net.daporkchop.fp2.mode.common.server.action;
 
-import net.daporkchop.fp2.mode.api.piece.IFarData;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.mode.api.Compressed;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-public class HeightmapData extends AbstractHeightmapPiece implements IFarData {
+@RequiredArgsConstructor
+public class SavePieceAction<POS extends IFarPos> implements Runnable {
+    @NonNull
+    protected final AbstractFarWorld<POS, ?, ?> world;
+    @NonNull
+    protected final Compressed<POS, ?> piece;
+
+    @Override
+    public void run() {
+        this.piece.readLock().lock();
+        try {
+            this.world.pieceStorage().store(this.piece.pos(), uncheckedCast(this.piece));
+        } finally {
+            this.piece.readLock().unlock();
+        }
+    }
 }

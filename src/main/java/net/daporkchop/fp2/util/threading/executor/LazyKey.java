@@ -23,6 +23,7 @@ package net.daporkchop.fp2.util.threading.executor;
 /**
  * @author DaPorkchop_
  */
+@Deprecated
 public interface LazyKey<K extends LazyKey<K>> extends Comparable<K> {
     /**
      * @return a key with a higher priority in the event of a tie, but otherwise identical to this key
