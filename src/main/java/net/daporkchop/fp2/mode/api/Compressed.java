@@ -31,6 +31,7 @@ import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IReusablePersistent;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.lib.compression.zstd.Zstd;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -53,7 +54,7 @@ public class Compressed<POS extends IFarPos, V extends IReusablePersistent> exte
     /**
      * Timestamp indicating that the piece's rough generation has been completed.
      */
-    public static final long VALUE_ROUGH_COMPLETE = -1L;
+    public static final long TIMESTAMP_GENERATED = -1L;
 
     protected final POS pos;
     protected long extra;

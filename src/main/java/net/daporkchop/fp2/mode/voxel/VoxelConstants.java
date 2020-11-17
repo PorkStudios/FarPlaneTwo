@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.voxel;
 import io.netty.buffer.ByteBuf;
 import lombok.experimental.UtilityClass;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.init.Blocks;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -146,6 +147,10 @@ public class VoxelConstants {
 
     @SideOnly(Side.CLIENT)
     public static int renderType(IBlockState state) {
+        //TODO: i need to do something about this: grass is rendered as CUTOUT_MIPPED, which makes it always render both faces
+        /*if (state.getBlock() == Blocks.GRASS) {
+            return RENDER_TYPE_OPAQUE;
+        }*/
         switch (state.getBlock().getRenderLayer()) {
             case SOLID:
                 return RENDER_TYPE_OPAQUE;

@@ -35,6 +35,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -78,7 +79,7 @@ public class ClientConstants {
     }
 
     public boolean isChunkRenderable(int x, int y, int z) {
-        if (false) {
+        if (false && FP2_DEBUG) {
             return false;
         }
 

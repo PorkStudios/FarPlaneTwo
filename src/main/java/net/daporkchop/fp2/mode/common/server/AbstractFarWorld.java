@@ -182,30 +182,19 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
     }
 
     public void pieceAvailable(@NonNull Compressed<POS, P> piece) {
-        if (!piece.isGenerated()) {
-            return;
-        }
-
         //unmark piece as being incomplete
         this.notDone.remove(piece.pos());
 
         this.notifyPlayerTracker(piece);
     }
 
-    public void pieceChanged(@NonNull Compressed<POS, P> piece) {
-        if (!piece.isGenerated()) {
-            return;
-        }
+    public void pieceChanged(@NonNull Compressed<POS, P> piece, boolean allowScale) {
+        this.pieceAvailable(piece);
 
-        this.notifyPlayerTracker(piece);
+        //save the piece
+        this.savePiece(piece);
 
-        if (FP2Config.performance.savePartial || piece.isGenerated()) {
-            //save the piece
-            this.savePiece(piece);
-        }
-
-        if (piece.timestamp() >= 0L && piece.pos().level() < FP2Config.maxLevels - 1) {
-            //the piece has been generated with the exact generator, schedule all output pieces for scaling
+        if (allowScale && piece.pos().level() < FP2Config.maxLevels - 1) {
             long currTimestamp = piece.timestamp();
 
             this.scaler.outputs(piece.pos()).forEach(outputPos -> this.schedulePieceForUpdate(outputPos, currTimestamp));

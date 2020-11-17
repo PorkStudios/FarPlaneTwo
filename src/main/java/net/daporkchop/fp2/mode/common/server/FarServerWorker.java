@@ -94,21 +94,22 @@ public class FarServerWorker<POS extends IFarPos, P extends IFarPiece> implement
         checkArg(this.world.canGenerateRough(pos), "cannot do rough generation at %s!", pos);
         this.world.executor().checkForHigherPriorityWork(root);
 
-        long newTimestamp = Compressed.VALUE_ROUGH_COMPLETE;
         Compressed<POS, P> compressedPiece = this.world.getPieceCachedOrLoad(pos);
-        if (compressedPiece.timestamp() >= newTimestamp) { //break out early if piece is already done or newer
+        if (compressedPiece.isGenerated()) { //break out early if piece is already done or newer
             return compressedPiece;
         }
 
         SimpleRecycler<P> pieceRecycler = this.world.mode().pieceRecycler();
         P piece = pieceRecycler.allocate();
+        compressedPiece.writeLock().lock();
         try {
             //generate piece
             long extra = this.world.generatorRough().generate(pos, piece);
-            if (compressedPiece.set(newTimestamp, piece, extra)) { //only notify world if the piece was changed
-                this.world.pieceChanged(compressedPiece);
+            if (compressedPiece.set(Compressed.TIMESTAMP_GENERATED, piece, extra)) { //only notify world if the piece was changed
+                this.world.pieceChanged(compressedPiece, false);
             }
         } finally {
+            compressedPiece.writeLock().unlock();
             pieceRecycler.release(piece);
         }
 
@@ -118,9 +119,8 @@ public class FarServerWorker<POS extends IFarPos, P extends IFarPiece> implement
     public Compressed<POS, P> roughScalePiece(PriorityTask<POS> root, POS pos) {
         this.world.executor().checkForHigherPriorityWork(root);
 
-        long newTimestamp = Compressed.VALUE_ROUGH_COMPLETE;
         Compressed<POS, P> compressedPiece = this.world.getPieceCachedOrLoad(pos);
-        if (compressedPiece.timestamp() >= newTimestamp) { //break out early if piece is already done or newer
+        if (compressedPiece.isGenerated()) { //break out early if piece is already done or newer
             return compressedPiece;
         }
 
@@ -136,21 +136,27 @@ public class FarServerWorker<POS extends IFarPos, P extends IFarPiece> implement
         SimpleRecycler<P> pieceRecycler = this.world.mode().pieceRecycler();
         P[] srcs = uncheckedCast(this.world.mode().pieceArray(compressedSrcs.size()));
         for (int i = 0; i < compressedSrcs.size(); i++) {
-            srcs[i] = compressedSrcs.get(i).inflate(pieceRecycler);
+            Compressed<POS, P> compressedSrc = compressedSrcs.get(i);
+            compressedSrc.readLock().lock();
+            srcs[i] = compressedSrc.inflate(pieceRecycler);
         }
-        P dst = pieceRecycler.allocate();
 
+        P dst = pieceRecycler.allocate();
+        compressedPiece.writeLock().lock();
         try {
             //actually do scaling
             long extra = this.world.scaler().scale(srcs, dst);
-            if (compressedPiece.set(newTimestamp, dst, extra)) {
-                this.world.pieceChanged(compressedPiece);
+            if (compressedPiece.set(Compressed.TIMESTAMP_GENERATED, dst, extra)) {
+                this.world.pieceChanged(compressedPiece, false);
             }
         } finally {
+            compressedPiece.writeLock().unlock();
             pieceRecycler.release(dst);
-            for (P src : srcs) {
-                if (src != null) {
-                    pieceRecycler.release(src);
+
+            for (int i = 0; i < compressedSrcs.size(); i++) {
+                compressedSrcs.get(i).readLock().unlock();
+                if (srcs[i] != null) {
+                    pieceRecycler.release(srcs[i]);
                 }
             }
         }
