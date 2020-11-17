@@ -83,6 +83,7 @@ public class FP2Config {
     @Config.RangeInt(min = 1)
     @Config.LangKey("config.fp2.ioThreads")
     @Config.RequiresWorldRestart
+    @Deprecated
     public static int ioThreads = max(PorkUtil.CPU_COUNT >> 2, 1);
 
     @Config.Comment({

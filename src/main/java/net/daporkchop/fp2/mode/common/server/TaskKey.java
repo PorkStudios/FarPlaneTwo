@@ -31,10 +31,11 @@ import net.daporkchop.fp2.util.threading.executor.LazyKey;
  */
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
+@Deprecated
 public final class TaskKey implements LazyKey<TaskKey> {
     @NonNull
     protected final TaskStage stage;
-    protected final int level; //TODO: sort tasks by position to ensure consistent generation order
+    protected final int level;
     protected final int tieBreak;
 
     public TaskKey(@NonNull TaskStage stage, int level) {

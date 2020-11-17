@@ -38,12 +38,9 @@ import net.daporkchop.fp2.mode.api.server.gen.ExactAsRoughGeneratorFallbackWrapp
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
-import net.daporkchop.fp2.mode.common.server.action.LoadAction;
-import net.daporkchop.fp2.mode.common.server.action.SavePieceAction;
+import net.daporkchop.fp2.util.threading.PriorityRecursiveExecutor;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.executor.LazyTask;
-import net.daporkchop.fp2.util.threading.PriorityRecursiveExecutor;
-import net.daporkchop.fp2.util.threading.keyed.DefaultKeyedTaskScheduler;
 import net.daporkchop.lib.binary.stream.DataOut;
 import net.daporkchop.lib.common.function.io.IOConsumer;
 import net.daporkchop.lib.common.misc.file.PFiles;
@@ -104,7 +101,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
     protected final Queue<LazyTask<TaskKey, ?, ?>> pendingExactTasks = new ArrayDeque<>();
 
     protected final PriorityRecursiveExecutor<PriorityTask<POS>> executor; //TODO: make these global rather than per-dimension
-    protected final DefaultKeyedTaskScheduler<POS> ioExecutor;
 
     protected final boolean lowResolution;
 
@@ -148,10 +144,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
                 PThreadFactories.builder().daemon().minPriority()
                         .collapsingId().name(PStrings.fastFormat("FP2 DIM%d Generation Thread #%%d", world.provider.getDimension())).build(),
                 new FarServerWorker<>(this));
-        this.ioExecutor = new DefaultKeyedTaskScheduler<>(
-                FP2Config.ioThreads,
-                PThreadFactories.builder().daemon().minPriority()
-                        .collapsingId().name(PStrings.fastFormat("FP2 DIM%d IO Thread #%%d", world.provider.getDimension())).build());
 
         //this.loadNotDone();
 
@@ -171,32 +163,45 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
         return piece;
     }
 
-    public Compressed<POS, P> getRawPieceBlocking(@NonNull POS pos) {
+    public Compressed<POS, P> getPieceCachedOrLoad(@NonNull POS pos) {
         try {
-            return this.pieceCache.get(pos, new LoadAction<>(this.storage, pos));
+            return this.pieceCache.get(pos, () -> {
+                Compressed<POS, P> compressedPiece = this.storage.load(pos);
+                //create new value if absent
+                return compressedPiece == null ? new Compressed<>(pos) : compressedPiece;
+            });
         } catch (ExecutionException e) {
             PUnsafe.throwException(e);
             throw new RuntimeException(e);
         }
     }
 
-    @SuppressWarnings("unchecked")
+    public void savePiece(@NonNull Compressed<POS, P> piece) {
+        //this is non-blocking (unless the leveldb write buffer fills up)
+        this.storage.store(piece.pos(), piece);
+    }
+
+    public void pieceAvailable(@NonNull Compressed<POS, P> piece) {
+        if (!piece.isGenerated()) {
+            return;
+        }
+
+        //unmark piece as being incomplete
+        this.notDone.remove(piece.pos());
+
+        this.notifyPlayerTracker(piece);
+    }
+
     public void pieceChanged(@NonNull Compressed<POS, P> piece) {
         if (!piece.isGenerated()) {
             return;
         }
 
-        this.pieceCache.put(piece.pos(), piece);
-        ((IFarContext) this.world).tracker().pieceChanged(piece);
-
-        if (piece.isGenerated()) {
-            //unmark piece as being incomplete
-            this.notDone.remove(piece.pos());
-        }
+        this.notifyPlayerTracker(piece);
 
         if (FP2Config.performance.savePartial || piece.isGenerated()) {
             //save the piece
-            this.ioExecutor.submit(piece.pos(), new SavePieceAction<>(this, piece));
+            this.savePiece(piece);
         }
 
         if (piece.timestamp() >= 0L && piece.pos().level() < FP2Config.maxLevels - 1) {
@@ -205,6 +210,11 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
 
             this.scaler.outputs(piece.pos()).forEach(outputPos -> this.schedulePieceForUpdate(outputPos, currTimestamp));
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public void notifyPlayerTracker(@NonNull Compressed<POS, P> piece) {
+        ((IFarContext) this.world).tracker().pieceChanged(piece);
     }
 
     public boolean canGenerateRough(@NonNull POS pos) {
@@ -271,8 +281,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
 
         LOGGER.trace("Shutting down generation workers in DIM{}", this.world.provider.getDimension());
         this.executor.shutdown();
-        LOGGER.trace("Shutting down IO workers in DIM{}", this.world.provider.getDimension());
-        this.ioExecutor.shutdown();
         LOGGER.trace("Shutting down storage in DIM{}", this.world.provider.getDimension());
         this.storage.close();
         this.saveNotDone();

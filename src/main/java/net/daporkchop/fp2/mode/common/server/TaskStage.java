@@ -21,22 +21,18 @@
 package net.daporkchop.fp2.mode.common.server;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Getter
 public enum TaskStage {
-    LOAD(true),
-    ROUGH_GENERATE(false),
-    ROUGH_SCALE(false),
-    EXACT_GENERATE(false),
-    EXACT_SCALE(false),
-    EXACT(false),
-    REFINE(false);
+    LOAD,
+    ROUGH,
+    @Deprecated
+    //TODO: decide whether or not to re-implement quality refine mode
+    REFINE;
 
     @Deprecated
-    private final boolean first;
+    private final boolean first = false;
 }

@@ -33,7 +33,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 /**
  * @author DaPorkchop_
  */
-public interface IFarContext<POS extends IFarPos, P extends IFarPiece, D extends IReusablePersistent, W extends IFarWorld<POS, P, D>, T extends IFarPlayerTracker<POS>, R extends IFarRenderer<POS, P>> {
+public interface IFarContext<POS extends IFarPos, P extends IFarPiece, W extends IFarWorld<POS, P>, T extends IFarPlayerTracker<POS>, R extends IFarRenderer<POS, P>> {
     /**
      * Initializes this context.
      *

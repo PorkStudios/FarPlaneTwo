@@ -109,16 +109,16 @@ public class FarStorage<POS extends IFarPos, V extends IReusablePersistent> impl
     }
 
     @Override
-    public void store(@NonNull POS pos, @NonNull Compressed<POS, V> piece) {
+    public void store(@NonNull POS pos, @NonNull Compressed<POS, V> value) {
         if (FP2_DEBUG && (FP2Config.debug.disableWrite || FP2Config.debug.disablePersistence)) {
             return;
         }
 
         ByteBuf packed = ByteBufAllocator.DEFAULT.buffer();
         try {
-            //write piece
+            //write value
             writeVarInt(packed, this.version); //prefix with version
-            piece.write(packed);
+            value.write(packed);
 
             //write to db
             ByteBuf key = ByteBufAllocator.DEFAULT.buffer();

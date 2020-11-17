@@ -36,20 +36,20 @@ import java.io.IOException;
  */
 public interface IFarStorage<POS extends IFarPos, V extends IReusablePersistent> extends Closeable {
     /**
-     * Loads the piece at the given position.
+     * Loads the value at the given position.
      *
-     * @param pos the position of the piece to load
-     * @return the loaded piece, or {@code null} if it doesn't exist
+     * @param pos the position of the value to load
+     * @return the loaded value, or {@code null} if it doesn't exist
      */
     Compressed<POS, V> load(@NonNull POS pos);
 
     /**
-     * Stores the given piece at the given position, atomically replacing any existing piece.
+     * Stores the given value at the given position, atomically replacing any existing value.
      *
      * @param pos   the position to save the data at
-     * @param piece the piece to save
+     * @param value the value to save
      */
-    void store(@NonNull POS pos, @NonNull Compressed<POS, V> piece);
+    void store(@NonNull POS pos, @NonNull Compressed<POS, V> value);
 
     /**
      * Closes this storage.

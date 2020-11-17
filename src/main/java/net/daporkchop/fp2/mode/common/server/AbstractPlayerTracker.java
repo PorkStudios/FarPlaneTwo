@@ -52,7 +52,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @RequiredArgsConstructor
 public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFarPlayerTracker<POS> {
     @NonNull
-    protected final IFarWorld<POS, ?, ?> world;
+    protected final IFarWorld<POS, ?> world;
 
     protected final Map<POS, Entry> entries = new ObjObjOpenHashMap<>();
     protected final Map<EntityPlayerMP, Set<POS>> trackingPositions = new ObjObjOpenHashMap.Identity<>();
@@ -117,12 +117,12 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
 
     @Override
     public void pieceChanged(@NonNull Compressed<POS, ?> piece) {
-        if (!ServerThreadExecutor.INSTANCE.isServerThread()) {
-            ServerThreadExecutor.INSTANCE.execute(() -> this.pieceChanged(piece));
-            return;
-        }
+        if (piece.isGenerated()) {
+            if (!ServerThreadExecutor.INSTANCE.isServerThread()) {
+                ServerThreadExecutor.INSTANCE.execute(() -> this.pieceChanged(piece));
+                return;
+            }
 
-        if (!piece.isBlank()) {
             Entry entry = this.entries.get(piece.pos());
             if (entry != null) {
                 entry.pieceChanged(piece);
@@ -150,7 +150,6 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
             if (((AbstractFarWorld) this.world).notDone.isEmpty()) {
                 LOGGER.info("Invalidating piece cache");
                 ((AbstractFarWorld) this.world).pieceCache.invalidateAll();
-                ((AbstractFarWorld) this.world).dataCache.invalidateAll();
             } else {
                 LOGGER.info("Not invalidating piece cache because some pieces are still queued");
             }

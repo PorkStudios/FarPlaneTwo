@@ -87,8 +87,9 @@ public class PriorityRecursiveExecutor<T extends Comparable<T> & Predicate<T>> i
         //wait for all workers to shut down
         for (Thread t : this.threads) {
             do {
+                t.interrupt();
                 try {
-                    t.join();
+                    t.join(50L);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
