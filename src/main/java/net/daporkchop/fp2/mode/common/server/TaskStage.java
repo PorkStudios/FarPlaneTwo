@@ -20,19 +20,11 @@
 
 package net.daporkchop.fp2.mode.common.server;
 
-import lombok.Getter;
-
 /**
  * @author DaPorkchop_
  */
-@Getter
 public enum TaskStage {
     LOAD,
     ROUGH,
-    @Deprecated
-    //TODO: decide whether or not to re-implement quality refine mode
-    REFINE;
-
-    @Deprecated
-    private final boolean first = false;
+    UPDATE;
 }

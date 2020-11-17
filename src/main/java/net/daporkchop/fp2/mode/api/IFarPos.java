@@ -38,13 +38,6 @@ public interface IFarPos extends Comparable<IFarPos> {
     int level();
 
     /**
-     * @return whether or not this position is at level 0
-     */
-    default boolean isLevel0() {
-        return this.level() == 0;
-    }
-
-    /**
      * Gets the {@link IFarPos} containing this position at the given lower level of detail.
      *
      * @param targetLevel the level of detail to go up to

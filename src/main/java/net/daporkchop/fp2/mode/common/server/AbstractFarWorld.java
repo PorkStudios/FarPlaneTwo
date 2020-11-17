@@ -22,8 +22,6 @@ package net.daporkchop.fp2.mode.common.server;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
@@ -40,10 +38,6 @@ import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.util.threading.PriorityRecursiveExecutor;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
-import net.daporkchop.fp2.util.threading.executor.LazyTask;
-import net.daporkchop.lib.binary.stream.DataOut;
-import net.daporkchop.lib.common.function.io.IOConsumer;
-import net.daporkchop.lib.common.misc.file.PFiles;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.primitive.map.ObjLongMap;
@@ -56,9 +50,9 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
@@ -66,17 +60,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 
-import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
 public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece> implements IFarWorld<POS, P> {
-    protected static final BiFunction<Boolean, Boolean, Boolean> BOOLEAN_OR = (a, b) -> a | b;
-
     protected final WorldServer world;
     protected final RenderMode mode;
     protected final File root;
@@ -98,7 +88,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
 
     //contains positions of all tiles that are going to be updated with the exact generator
     protected final ObjLongMap<POS> exactActive = new ObjLongConcurrentHashMap<>(-1L);
-    protected final Queue<LazyTask<TaskKey, ?, ?>> pendingExactTasks = new ArrayDeque<>();
+    protected final Collection<PriorityTask<POS>> pendingExactTasks = new ArrayList<>();
 
     protected final PriorityRecursiveExecutor<PriorityTask<POS>> executor; //TODO: make these global rather than per-dimension
 
@@ -145,7 +135,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
                         .collapsingId().name(PStrings.fastFormat("FP2 DIM%d Generation Thread #%%d", world.provider.getDimension())).build(),
                 new FarServerWorker<>(this));
 
-        //this.loadNotDone();
+        this.loadNotDone();
 
         MinecraftForge.EVENT_BUS.register(this);
     }
@@ -154,7 +144,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
     public Compressed<POS, P> getPieceLazy(@NonNull POS pos) {
         Compressed<POS, P> piece = this.pieceCache.getIfPresent(pos);
         if (piece == null || piece.timestamp() == Compressed.VALUE_BLANK) {
-            if (this.notDone(pos, true)) {
+            if (this.notDone.putIfAbsent(pos, Boolean.TRUE) != Boolean.TRUE) {
                 //piece is not in cache and was newly marked as queued
                 this.executor.submit(new PriorityTask<>(TaskStage.LOAD, pos));
             }
@@ -218,7 +208,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
         if (this.exactActive.put(pos, newTimestamp) < 0L) {
             //position wasn't previously queued for update
             synchronized (this.pendingExactTasks) {
-                //this.pendingExactTasks.add(new ExactUpdatePieceTask<>(this, new TaskKey(TaskStage.EXACT, pos.level()), pos, TaskStage.EXACT));
+                this.pendingExactTasks.add(new PriorityTask<>(TaskStage.UPDATE, pos));
             }
         }
     }
@@ -228,18 +218,9 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
         if (event.phase == TickEvent.Phase.END && !this.pendingExactTasks.isEmpty()) {
             //fire pending tasks
             synchronized (this.pendingExactTasks) {
-                //this.executor.submit(this.pendingExactTasks);
+                this.executor.submit(this.pendingExactTasks);
                 this.pendingExactTasks.clear();
             }
-        }
-    }
-
-    public boolean notDone(@NonNull POS pos, boolean persist) {
-        if (persist) {
-            return this.notDone.put(pos, Boolean.TRUE) != Boolean.TRUE;
-        } else {
-            this.notDone.merge(pos, Boolean.FALSE, BOOLEAN_OR);
-            return false; //whatever
         }
     }
 
@@ -276,7 +257,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
     }
 
     protected void saveNotDone() throws IOException {
-        if (FP2_DEBUG && (FP2Config.debug.disablePersistence || FP2Config.debug.disableWrite) || this.notDone.isEmpty()) {
+        /*if (FP2_DEBUG && (FP2Config.debug.disablePersistence || FP2Config.debug.disableWrite) || this.notDone.isEmpty()) {
             return;
         }
 
@@ -317,7 +298,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
             buf.release();
         }
 
-        Files.move(tmpFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        Files.move(tmpFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);*/
     }
 
     protected void loadNotDone() {

@@ -26,6 +26,8 @@ import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.SimpleRecycler;
+import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +35,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -52,6 +55,9 @@ public class FarServerWorker<POS extends IFarPos, P extends IFarPiece> implement
                 break;
             case ROUGH:
                 this.world.pieceAvailable(this.roughGetPiece(task, task.pos()));
+                break;
+            case UPDATE:
+                this.updatePiece(task, task.pos());
                 break;
             default:
                 throw new IllegalArgumentException(Objects.toString(task));
@@ -103,6 +109,10 @@ public class FarServerWorker<POS extends IFarPos, P extends IFarPiece> implement
         P piece = pieceRecycler.allocate();
         compressedPiece.writeLock().lock();
         try {
+            if (compressedPiece.isGenerated()) {
+                return compressedPiece;
+            }
+
             //generate piece
             long extra = this.world.generatorRough().generate(pos, piece);
             if (compressedPiece.set(Compressed.TIMESTAMP_GENERATED, piece, extra)) { //only notify world if the piece was changed
@@ -124,11 +134,82 @@ public class FarServerWorker<POS extends IFarPos, P extends IFarPiece> implement
             return compressedPiece;
         }
 
+        return this.scalePiece0(root, pos, compressedPiece, Compressed.TIMESTAMP_GENERATED, false);
+    }
+
+    //
+    //
+    // update tasks
+    //
+    //
+
+    public void updatePiece(PriorityTask<POS> root, POS pos) {
+        long newTimestamp = this.world.exactActive.remove(pos);
+        if (newTimestamp < 0L) {
+            LOGGER.warn("Duplicate update task scheduled for piece at {}!", pos);
+            return;
+        }
+
+        Compressed<POS, P> compressedPiece = this.world.getPieceCachedOrLoad(pos);
+        if (compressedPiece.timestamp() >= newTimestamp) {
+            return;
+        }
+
+        if (pos.level() == 0) {
+            this.updatePieceExact(root, pos, compressedPiece, newTimestamp);
+        } else {
+            this.updatePieceScale(root, pos, compressedPiece, newTimestamp);
+        }
+    }
+
+    public void updatePieceExact(PriorityTask<POS> root, POS pos, Compressed<POS, P> compressedPiece, long newTimestamp) {
+        SimpleRecycler<P> pieceRecycler = this.world.mode().pieceRecycler();
+        P piece = pieceRecycler.allocate();
+        compressedPiece.writeLock().lock();
+        try {
+            if (compressedPiece.timestamp() >= newTimestamp) {
+                return;
+            }
+
+            //prefetch terrain
+            IBlockHeightAccess access = null;
+            try {
+                access = this.world.blockAccess().prefetchAsync(this.world.generatorExact().neededColumns(pos),
+                        world -> this.world.generatorExact().neededCubes(world, pos))
+                        .sync().getNow();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                PUnsafe.throwException(e);
+            }
+
+            //generate piece
+            long extra = this.world.generatorExact().generate(access, pos, piece);
+            if (compressedPiece.set(newTimestamp, piece, extra)) { //only notify world if the piece was changed
+                this.world.pieceChanged(compressedPiece, true);
+            }
+        } finally {
+            compressedPiece.writeLock().unlock();
+            pieceRecycler.release(piece);
+        }
+    }
+
+    public void updatePieceScale(PriorityTask<POS> root, POS pos, Compressed<POS, P> compressedPiece, long newTimestamp) {
+        this.scalePiece0(root, pos, compressedPiece, newTimestamp, true);
+    }
+
+    //
+    //
+    // helpers
+    //
+    //
+
+    public Compressed<POS, P> scalePiece0(PriorityTask<POS> root, POS pos, Compressed<POS, P> compressedPiece, long newTimestamp, boolean allowScale) {
+        this.world.executor().checkForHigherPriorityWork(root);
+
         //generate scale inputs
         List<POS> srcPositions = this.world.scaler().inputs(pos).collect(Collectors.toList());
         List<Compressed<POS, P>> compressedSrcs = new ArrayList<>(srcPositions.size());
         for (POS srcPosition : srcPositions) {
-            //don't request the piece itself to be assembled, we only need piece data for scaling
             compressedSrcs.add(this.roughGetPiece(root, srcPosition));
         }
 
@@ -144,10 +225,14 @@ public class FarServerWorker<POS extends IFarPos, P extends IFarPiece> implement
         P dst = pieceRecycler.allocate();
         compressedPiece.writeLock().lock();
         try {
+            if (compressedPiece.timestamp() >= newTimestamp) {
+                return compressedPiece;
+            }
+
             //actually do scaling
             long extra = this.world.scaler().scale(srcs, dst);
-            if (compressedPiece.set(Compressed.TIMESTAMP_GENERATED, dst, extra)) {
-                this.world.pieceChanged(compressedPiece, false);
+            if (compressedPiece.set(newTimestamp, dst, extra)) {
+                this.world.pieceChanged(compressedPiece, allowScale);
             }
         } finally {
             compressedPiece.writeLock().unlock();

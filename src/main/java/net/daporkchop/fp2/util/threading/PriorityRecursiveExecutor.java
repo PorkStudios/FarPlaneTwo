@@ -24,6 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.util.threading.ConcurrentUnboundedPriorityBlockingQueue;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.util.Collection;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -54,6 +55,10 @@ public class PriorityRecursiveExecutor<T extends Comparable<T> & Predicate<T>> i
 
     public void submit(@NonNull T task) {
         this.queue.add(task);
+    }
+
+    public void submit(@NonNull Collection<T> tasks) {
+        this.queue.addAll(tasks);
     }
 
     public void checkForHigherPriorityWork(@NonNull T root) {
@@ -87,12 +92,12 @@ public class PriorityRecursiveExecutor<T extends Comparable<T> & Predicate<T>> i
         //wait for all workers to shut down
         for (Thread t : this.threads) {
             do {
-                t.interrupt();
                 try {
                     t.join(50L);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
+                ServerThreadExecutor.INSTANCE.workOffQueue();
             } while (t.isAlive());
         }
     }
