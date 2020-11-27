@@ -94,12 +94,16 @@ public class CWGBuilderFast extends CustomGeneratorSettings implements IBuilder 
     protected final double highScale;
     protected final double randomHeight2dScale;
 
+    protected final CWGContext cwgContext;
     protected final BiomeSource biomes;
 
-    public CWGBuilderFast(@NonNull World world, @NonNull CustomGeneratorSettings conf, @NonNull BiomeSource biomes) {
+    public CWGBuilderFast(@NonNull CWGContext cwgContext, @NonNull World world, @NonNull BiomeSource biomes) {
+        this.cwgContext = cwgContext;
+        this.biomes = biomes;
+
         try {
             for (Field field : CustomGeneratorSettings.class.getDeclaredFields()) {
-                field.set(this, field.get(conf));
+                field.set(this, field.get(cwgContext));
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -115,14 +119,12 @@ public class CWGBuilderFast extends CustomGeneratorSettings implements IBuilder 
         this.lowScale = scale(this.lowNoiseOctaves);
         this.highScale = scale(this.highNoiseOctaves);
         this.randomHeight2dScale = scale(this.depthNoiseOctaves);
-
-        this.biomes = biomes;
     }
 
     @Override
     public double get(int x, int y, int z) {
-        double height = this.biomes.getHeight(x, y, z) * this.heightFactor + this.heightOffset;
-        double variation = this.biomes.getVolatility(x, y, z) * (height > y ? this.specialHeightVariationFactorBelowAverageY : 1.0d) * this.heightVariationFactor + this.heightVariationOffset;
+        double height = this.cwgContext.getBaseHeight(x, z) * this.heightFactor + this.heightOffset;
+        double variation = this.cwgContext.getHeightVariation(x, z) * (height > y ? this.specialHeightVariationFactorBelowAverageY : 1.0d) * this.heightVariationFactor + this.heightVariationOffset;
         double d = PMath.lerp(this.low(x, y, z), this.high(x, y, z), this.selector(x, y, z)) + this.randomHeight2d(x, y, z);
         d = d * variation + height;
         return d - Math.signum(variation) * y;

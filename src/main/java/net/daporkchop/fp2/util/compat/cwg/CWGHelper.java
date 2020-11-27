@@ -50,7 +50,7 @@ public class CWGHelper {
 
     public static IBiomeBlockReplacer[][] blockReplacerMapToArray(@NonNull Map<Biome, List<IBiomeBlockReplacer>> replacerMap) {
         int maxBiomeId = replacerMap.keySet().stream().mapToInt(Biome::getIdForBiome).max().orElse(0);
-        IBiomeBlockReplacer[][] biomeReplacers = new IBiomeBlockReplacer[maxBiomeId][];
+        IBiomeBlockReplacer[][] biomeReplacers = new IBiomeBlockReplacer[maxBiomeId + 1][];
         replacerMap.forEach((biome, list) -> biomeReplacers[Biome.getIdForBiome(biome)] = list.toArray(new IBiomeBlockReplacer[0]));
         return biomeReplacers;
     }

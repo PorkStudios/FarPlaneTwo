@@ -64,11 +64,11 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
         HeightmapData data = new HeightmapData();
 
         CWGContext ctx = this.ctx.get();
-        ctx.init(baseX >> 4, 0, baseZ >> 4, level);
+        ctx.init(baseX >> 4, baseZ >> 4, level);
 
-        int gbCacheStart = ctx.gbCacheStart();
-        int gbCacheSize = ctx.gbCacheSize();
-        Biome[] gbCache = ctx.gbCache();
+        int gbCacheStart = ctx.gbCacheStart;
+        int gbCacheSize = ctx.gbCacheSize;
+        Biome[] gbCache = ctx.gbCache;
 
         for (int x = 0; x < T_VOXELS; x++) {
             for (int z = 0; z < T_VOXELS; z++) {
