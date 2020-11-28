@@ -34,7 +34,6 @@ import net.minecraft.world.biome.BiomeProvider;
 
 import java.lang.reflect.Field;
 
-import static java.lang.Math.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -54,19 +53,15 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
 
     public final int padding;
     public final int smoothRadius;
+    private final int smoothDiameter;
+
     public final int cacheSize;
+    public final int cacheOff;
+    public final Biome[] biomes;
 
-    public final int gbCacheStart;
-    public final int gbCacheSize;
-    public final Biome[] gbCache; //contains the cached biomes at generation scale
-
-    public final Biome[] biomeCache; //contains the actual biomes for a chunk
-
-    protected final float[] rawHeightVariation;
-    protected final float[] processedHeightVariation;
-
+    private final float[] heights;
+    private final float[] variations;
     private final float[] nearBiomeWeightArray;
-    private final int[] nearBiomeIndexOffsets;
 
     private final IBuilder delegateBuilder;
 
@@ -78,7 +73,7 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
     private int xOffset;
     private int zOffset;
 
-    public CWGContext(@NonNull World world, int padding, int smoothRadius) {
+    public CWGContext(@NonNull World world, int size, int padding, int smoothRadius) {
         this.padding = notNegative(padding, "padding");
         this.smoothRadius = notNegative(smoothRadius, "smoothRadius");
 
@@ -96,23 +91,17 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
         this.biomeBlockReplacers = CWGHelper.blockReplacerMapToArray(CWGHelper.getReplacerMap(biomeSource));
         this.biomeProvider = CWGHelper.getBiomeGen(biomeSource);
 
-        this.gbCacheStart = max(((padding - 1) >> 2) + 1, smoothRadius);
-        this.gbCacheSize = GT_SIZE + this.gbCacheStart * 2 + 1;
-        this.gbCache = new Biome[this.gbCacheSize * this.gbCacheSize];
+        this.cacheOff = this.padding;
+        this.cacheSize = size + this.padding * 2;
+        this.biomes = new Biome[this.cacheSize * this.cacheSize];
 
-        this.cacheSize = T_VOXELS + padding * 2;
+        this.heights = new float[this.cacheSize * this.cacheSize];
+        this.variations = new float[this.cacheSize * this.cacheSize];
 
-        this.biomeCache = new Biome[T_VOXELS * T_VOXELS];
-
-        this.rawHeightVariation = new float[(this.gbCacheSize * this.gbCacheSize) << 1];
-        this.processedHeightVariation = new float[this.cacheSize * this.cacheSize];
-
-        int smoothDiameter = smoothRadius * 2 + 1;
-        this.nearBiomeWeightArray = new float[smoothDiameter * smoothDiameter];
-        this.nearBiomeIndexOffsets = new int[smoothDiameter * smoothDiameter];
-        for (int i = 0, x = -smoothRadius; x <= smoothRadius; x++) {
-            for (int z = -smoothRadius; z <= smoothRadius; z++) {
-                this.nearBiomeIndexOffsets[i] = x * this.gbCacheSize + z;
+        this.smoothDiameter = smoothRadius * 2 + 1;
+        this.nearBiomeWeightArray = new float[this.smoothDiameter * this.smoothDiameter];
+        for (int i = 0, x = -this.smoothRadius; x <= this.smoothRadius; x++) {
+            for (int z = -this.smoothRadius; z <= this.smoothRadius; z++) {
                 this.nearBiomeWeightArray[i++] = (float) (10.0d / Math.sqrt(x * x + z * z + 0.2d));
             }
         }
@@ -145,78 +134,75 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
         this.xOffset = (cubeX << (T_SHIFT + level)) - this.padding;
         this.zOffset = (cubeZ << (T_SHIFT + level)) - this.padding;
 
-        int baseGenTileX = (cubeX << (T_SHIFT - GT_SHIFT)) - this.gbCacheStart;
-        int baseGenTileZ = (cubeZ << (T_SHIFT - GT_SHIFT)) - this.gbCacheStart;
-
-        if (level == 0) { //base level, simply use vanilla system
-            checkState(this.biomeProvider.getBiomesForGeneration(this.gbCache, baseGenTileX, baseGenTileZ, this.gbCacheSize, this.gbCacheSize) == this.gbCache);
-            checkState(this.biomeProvider.getBiomes(this.biomeCache, (cubeX << T_SHIFT) - this.padding, (cubeZ << T_SHIFT) - this.padding, this.cacheSize, this.cacheSize, false) == this.biomeCache);
+        if (false && level == 0) { //base level, simply use vanilla system
+            checkState(this.biomeProvider.getBiomes(this.biomes, (cubeX << T_SHIFT) - this.padding, (cubeZ << T_SHIFT) - this.padding, this.cacheSize, this.cacheSize, false) == this.biomes);
         } else { //not the base level, scale it all up
             //TODO: optimized method for generating biomes at low resolution?
             //TODO: this does not handle smoothing correctly, the smoothing radius should be unaffected by the detail level
-            Biome[] tmpArr = new Biome[1];
-            for (int i = 0, x = 0; x < this.gbCacheSize; x++) {
-                for (int z = 0; z < this.gbCacheSize; z++) {
-                    this.biomeProvider.getBiomesForGeneration(tmpArr, baseGenTileX + (x << level), baseGenTileZ + (z << level), 1, 1);
-                    this.gbCache[i++] = tmpArr[0];
-                }
-            }
-
             BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-            for (int i = 0, x = 0; x < T_VOXELS; x++) {
-                for (int z = 0; z < T_VOXELS; z++) {
-                    pos.setPos(((cubeX << T_SHIFT) + x) << level, 0, ((cubeZ << T_SHIFT) + z) << level);
-                    this.biomeCache[i++] = this.biomeProvider.getBiome(pos, Biomes.PLAINS);
-                }
-            }
-        }
+            for (int i = 0, x = 0; x < this.cacheSize; x++) {
+                for (int z = 0; z < this.cacheSize; z++) {
+                    pos.setPos(((cubeX << 4) - this.padding + x) << level, 0, ((cubeZ << 4) - this.padding + z) << level);
+                    Biome centerBiome = this.biomes[i] = this.biomeProvider.getBiome(pos, Biomes.PLAINS);
 
-        //compute biome height/variation
-        //store raw values into array
-        for (int i = 0, len = this.gbCache.length; i < len; i++) {
-            this.rawHeightVariation[i << 1] = this.gbCache[i].getBaseHeight();
-            this.rawHeightVariation[(i << 1) + 1] = this.gbCache[i].getHeightVariation();
-        }
-        for (int i = 0, x = this.gbCacheStart; x < this.gbCacheSize - this.gbCacheStart; x++) {
-            for (int z = this.gbCacheStart; z < this.gbCacheSize - this.gbCacheStart; z++) {
-                int centerIndex = x * this.gbCacheSize + z;
-                float centerBaseHeight = this.rawHeightVariation[centerIndex << 1];
+                    float smoothVariation = 0.0f;
+                    float smoothHeight = 0.0f;
 
-                float smoothVolatility = 0.0f;
-                float smoothHeight = 0.0f;
-                float totalWeight = 0.0f;
+                    if (this.smoothRadius > 0) {
+                        float centerBiomeHeight = centerBiome.getBaseHeight();
+                        float biomeWeightSum = 0.0f;
 
-                for (int offsetIndex = 0, len = this.nearBiomeIndexOffsets.length; offsetIndex < len; offsetIndex++) {
-                    int index = centerIndex + this.nearBiomeIndexOffsets[offsetIndex];
-                    float biomeHeight = this.rawHeightVariation[index << 1];
-                    float biomeVariation = this.rawHeightVariation[(index << 1) + 1];
+                        int xx = ((cubeX << 4) - this.padding + x) & ~3;
+                        int zz = ((cubeZ << 4) - this.padding + z) & ~3;
+                        for (int j = 0, dx = -this.smoothRadius; dx <= this.smoothRadius; dx++) {
+                            for (int dz = -this.smoothRadius; dz <= this.smoothRadius; dz++) {
+                                pos.setPos(xx + (dx << GT_SHIFT), 0, zz + (dz << GT_SHIFT));
+                                Biome biome = this.biomeProvider.getBiome(pos, Biomes.PLAINS);
 
-                    float biomeWeight = abs(this.nearBiomeWeightArray[offsetIndex] / (biomeHeight + 2.0f));
-                    if (biomeHeight > centerBaseHeight) {
-                        biomeWeight *= 0.5f;
+                                float biomeHeight = biome.getBaseHeight();
+                                float biomeVolatility = biome.getHeightVariation();
+
+                                float biomeWeight = Math.abs(this.nearBiomeWeightArray[j++] / (biomeHeight + 2.0f));
+
+                                if (biomeHeight > centerBiomeHeight) {
+                                    biomeWeight *= 0.5f;
+                                }
+                                smoothVariation += biomeVolatility * biomeWeight;
+                                smoothHeight += biomeHeight * biomeWeight;
+
+                                biomeWeightSum += biomeWeight;
+                            }
+                        }
+                        smoothHeight = ConversionUtils.biomeHeightVanilla(smoothHeight / biomeWeightSum);
+                        smoothVariation = ConversionUtils.biomeHeightVariationVanilla(smoothVariation / biomeWeightSum);
+                    } else {
+                        smoothHeight = ConversionUtils.biomeHeightVanilla(centerBiome.getBaseHeight());
+                        smoothVariation = ConversionUtils.biomeHeightVariationVanilla(centerBiome.getHeightVariation());
                     }
-
-                    smoothHeight += biomeHeight * biomeWeight;
-                    smoothVolatility += biomeVariation * biomeWeight;
-                    totalWeight += biomeWeight;
+                    this.heights[i] = smoothHeight;
+                    this.variations[i] = smoothVariation;
+                    i++;
                 }
-
-                this.processedHeightVariation[i++] = ConversionUtils.biomeHeightVanilla(smoothHeight / totalWeight);
-                this.processedHeightVariation[i++] = ConversionUtils.biomeHeightVariationVanilla(smoothVolatility / totalWeight);
             }
         }
     }
 
     public double getBaseHeight(int x, int z) {
-        return this.processedHeightVariation[this.getHeightVariationIndex(x, z) << 1];
+        //return ConversionUtils.biomeHeightVanilla(this.biomes[this.getHeightVariationIndex(x, z)].getBaseHeight());
+        try {
+            return this.heights[this.getHeightVariationIndex(x, z)];
+        } catch (ArrayIndexOutOfBoundsException ioobe) {
+            return 0.0d;
+        }
     }
 
     public double getHeightVariation(int x, int z) {
-        return this.processedHeightVariation[(this.getHeightVariationIndex(x, z) << 1) + 1];
+        //return ConversionUtils.biomeHeightVariationVanilla(this.biomes[this.getHeightVariationIndex(x, z)].getHeightVariation());
+        return this.variations[this.getHeightVariationIndex(x, z)];
     }
 
     private int getHeightVariationIndex(int x, int z) {
-        return ((x - this.xOffset) >> this.level) * this.cacheSize + ((z - this.zOffset) >> this.level);
+        return (x - this.xOffset) * this.cacheSize + (z - this.zOffset);
     }
 
     @Override

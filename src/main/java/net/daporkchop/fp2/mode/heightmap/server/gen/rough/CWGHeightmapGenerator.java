@@ -47,7 +47,7 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     @Override
     public void init(@NonNull WorldServer world) {
         super.init(world);
-        this.ctx = ThreadRef.soft(() -> new CWGContext(world, 0, 2));
+        this.ctx = ThreadRef.soft(() -> new CWGContext(world, T_VOXELS + 1, 0, 2));
     }
 
     @Override
@@ -66,9 +66,11 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
         CWGContext ctx = this.ctx.get();
         ctx.init(baseX >> 4, baseZ >> 4, level);
 
-        int gbCacheStart = ctx.gbCacheStart;
-        int gbCacheSize = ctx.gbCacheSize;
-        Biome[] gbCache = ctx.gbCache;
+        int[] heights = new int[5 * 5];
+        for (int x = 0; x < 5; x++) {
+            for (int z = 0; z < 5; z++) {
+            }
+        }
 
         for (int x = 0; x < T_VOXELS; x++) {
             for (int z = 0; z < T_VOXELS; z++) {
@@ -82,7 +84,7 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
                 double dy = ctx.get(blockX, height + 1, blockZ) - density;
                 double dz = ctx.get(blockX, height, blockZ + 1) - density;
 
-                Biome biome = gbCache[((z >> 2) + gbCacheStart) * gbCacheSize + ((x >> 2) + gbCacheStart)];
+                Biome biome = ctx.biomes[(x + ctx.cacheOff) * ctx.cacheSize + z + ctx.cacheOff];
 
                 IBlockState state = Blocks.AIR.getDefaultState();
                 for (IBiomeBlockReplacer replacer : ctx.replacersForBiome(biome)) {
