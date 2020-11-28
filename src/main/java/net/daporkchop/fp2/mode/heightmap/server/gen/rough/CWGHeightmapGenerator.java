@@ -37,6 +37,8 @@ import net.minecraft.world.biome.Biome;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.util.compat.cwg.CWGContext.*;
+import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
  * @author DaPorkchop_
@@ -47,7 +49,7 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     @Override
     public void init(@NonNull WorldServer world) {
         super.init(world);
-        this.ctx = ThreadRef.soft(() -> new CWGContext(world, T_VOXELS + 1, 0, 2));
+        this.ctx = ThreadRef.soft(() -> new CWGContext(world, T_VOXELS + 1, 2));
     }
 
     @Override
@@ -64,11 +66,14 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
         HeightmapData data = new HeightmapData();
 
         CWGContext ctx = this.ctx.get();
-        ctx.init(baseX >> 4, baseZ >> 4, level);
+        ctx.init(baseX, baseZ, level);
 
         int[] heights = new int[5 * 5];
         for (int x = 0; x < 5; x++) {
             for (int z = 0; z < 5; z++) {
+                int blockX = baseX + (x << (GT_SHIFT + level));
+                int blockZ = baseZ + (z << (GT_SHIFT + level));
+                heights[x * 5 + z] = CWGHelper.getHeight(ctx, blockX, blockZ);
             }
         }
 
@@ -77,14 +82,19 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
                 int blockX = baseX + (x << level);
                 int blockZ = baseZ + (z << level);
 
-                int height = CWGHelper.getHeight(ctx, blockX, blockZ);
+                int X = x >> GT_SHIFT;
+                int Z = z >> GT_SHIFT;
+                int height = floorI(lerp(
+                        lerp(heights[X * 5 + Z], heights[X * 5 + Z + 1], (z & 3) / 4.0d),
+                        lerp(heights[(X + 1) * 5 + Z], heights[(X + 1) * 5 + Z + 1], (z & 3) / 4.0d),
+                        (x & 3) / 4.0d));
                 double density = ctx.get(blockX, height, blockZ);
 
                 double dx = ctx.get(blockX + 1, height, blockZ) - density;
                 double dy = ctx.get(blockX, height + 1, blockZ) - density;
                 double dz = ctx.get(blockX, height, blockZ + 1) - density;
 
-                Biome biome = ctx.biomes[(x + ctx.cacheOff) * ctx.cacheSize + z + ctx.cacheOff];
+                Biome biome = ctx.biomes[x * ctx.size + z + ctx.size];
 
                 IBlockState state = Blocks.AIR.getDefaultState();
                 for (IBiomeBlockReplacer replacer : ctx.replacersForBiome(biome)) {

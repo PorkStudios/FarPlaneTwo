@@ -51,30 +51,25 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
     protected final IBiomeBlockReplacer[][] biomeBlockReplacers;
     protected final BiomeProvider biomeProvider;
 
-    public final int padding;
     public final int smoothRadius;
     private final int smoothDiameter;
+    private final float[] nearBiomeWeightArray;
 
-    public final int cacheSize;
-    public final int cacheOff;
+    public final int size;
     public final Biome[] biomes;
 
     private final float[] heights;
     private final float[] variations;
-    private final float[] nearBiomeWeightArray;
 
     private final IBuilder delegateBuilder;
 
     //current state
-    private int cubeX;
-    private int cubeZ;
-    private int level;
+    private int baseX;
+    private int baseZ;
+    private int level = -1;
 
-    private int xOffset;
-    private int zOffset;
-
-    public CWGContext(@NonNull World world, int size, int padding, int smoothRadius) {
-        this.padding = notNegative(padding, "padding");
+    public CWGContext(@NonNull World world, int size, int smoothRadius) {
+        this.size = notNegative(size, "size");
         this.smoothRadius = notNegative(smoothRadius, "smoothRadius");
 
         CustomGeneratorSettings conf = CustomGeneratorSettings.getFromWorld(world);
@@ -91,17 +86,15 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
         this.biomeBlockReplacers = CWGHelper.blockReplacerMapToArray(CWGHelper.getReplacerMap(biomeSource));
         this.biomeProvider = CWGHelper.getBiomeGen(biomeSource);
 
-        this.cacheOff = this.padding;
-        this.cacheSize = size + this.padding * 2;
-        this.biomes = new Biome[this.cacheSize * this.cacheSize];
+        this.biomes = new Biome[this.size * this.size];
 
-        this.heights = new float[this.cacheSize * this.cacheSize];
-        this.variations = new float[this.cacheSize * this.cacheSize];
+        this.heights = new float[this.size * this.size];
+        this.variations = new float[this.size * this.size];
 
         this.smoothDiameter = smoothRadius * 2 + 1;
         this.nearBiomeWeightArray = new float[this.smoothDiameter * this.smoothDiameter];
-        for (int i = 0, x = -this.smoothRadius; x <= this.smoothRadius; x++) {
-            for (int z = -this.smoothRadius; z <= this.smoothRadius; z++) {
+        for (int i = 0, z = -this.smoothRadius; z <= this.smoothRadius; z++) {
+            for (int x = -this.smoothRadius; x <= this.smoothRadius; x++) {
                 this.nearBiomeWeightArray[i++] = (float) (10.0d / Math.sqrt(x * x + z * z + 0.2d));
             }
         }
@@ -122,67 +115,72 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
     /**
      * Initializes this context at the given position.
      *
-     * @param cubeX the base X coordinate (in cubes)
-     * @param cubeZ the base Z coordinate (in cubes)
+     * @param baseX the base X coordinate (in blocks)
+     * @param baseZ the base Z coordinate (in blocks)
      * @param level the detail level
      */
-    public void init(int cubeX, int cubeZ, int level) {
-        this.cubeX = cubeX;
-        this.cubeZ = cubeZ;
+    public void init(int baseX, int baseZ, int level) {
+        if (this.baseX == baseX && this.baseZ == baseZ && this.level == level) {
+            return; //already initialized to the given position, we don't need to do anything
+        }
+
+        this.baseX = baseX;
+        this.baseZ = baseZ;
         this.level = level;
 
-        this.xOffset = (cubeX << (T_SHIFT + level)) - this.padding;
-        this.zOffset = (cubeZ << (T_SHIFT + level)) - this.padding;
-
-        if (false && level == 0) { //base level, simply use vanilla system
-            checkState(this.biomeProvider.getBiomes(this.biomes, (cubeX << T_SHIFT) - this.padding, (cubeZ << T_SHIFT) - this.padding, this.cacheSize, this.cacheSize, false) == this.biomes);
+        if (level == 0) { //base level, simply use vanilla system
+            checkState(this.biomeProvider.getBiomes(this.biomes, baseX, baseZ, this.size, this.size, false) == this.biomes);
+            //convert ZX to XZ
+            for (int x = 0; x < this.size - 1; x++) {
+                for (int z = 1 + x; z < this.size; z++) {
+                    int src = z * this.size + x;
+                    int dst = x * this.size + z;
+                    Biome temp = this.biomes[src];
+                    this.biomes[src] = this.biomes[dst];
+                    this.biomes[dst] = temp;
+                }
+            }
         } else { //not the base level, scale it all up
             //TODO: optimized method for generating biomes at low resolution?
             //TODO: this does not handle smoothing correctly, the smoothing radius should be unaffected by the detail level
             BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-            for (int i = 0, x = 0; x < this.cacheSize; x++) {
-                for (int z = 0; z < this.cacheSize; z++) {
-                    pos.setPos(((cubeX << 4) - this.padding + x) << level, 0, ((cubeZ << 4) - this.padding + z) << level);
-                    Biome centerBiome = this.biomes[i] = this.biomeProvider.getBiome(pos, Biomes.PLAINS);
-
-                    float smoothVariation = 0.0f;
-                    float smoothHeight = 0.0f;
-
-                    if (this.smoothRadius > 0) {
-                        float centerBiomeHeight = centerBiome.getBaseHeight();
-                        float biomeWeightSum = 0.0f;
-
-                        int xx = ((cubeX << 4) - this.padding + x) & ~3;
-                        int zz = ((cubeZ << 4) - this.padding + z) & ~3;
-                        for (int j = 0, dx = -this.smoothRadius; dx <= this.smoothRadius; dx++) {
-                            for (int dz = -this.smoothRadius; dz <= this.smoothRadius; dz++) {
-                                pos.setPos(xx + (dx << GT_SHIFT), 0, zz + (dz << GT_SHIFT));
-                                Biome biome = this.biomeProvider.getBiome(pos, Biomes.PLAINS);
-
-                                float biomeHeight = biome.getBaseHeight();
-                                float biomeVolatility = biome.getHeightVariation();
-
-                                float biomeWeight = Math.abs(this.nearBiomeWeightArray[j++] / (biomeHeight + 2.0f));
-
-                                if (biomeHeight > centerBiomeHeight) {
-                                    biomeWeight *= 0.5f;
-                                }
-                                smoothVariation += biomeVolatility * biomeWeight;
-                                smoothHeight += biomeHeight * biomeWeight;
-
-                                biomeWeightSum += biomeWeight;
-                            }
-                        }
-                        smoothHeight = ConversionUtils.biomeHeightVanilla(smoothHeight / biomeWeightSum);
-                        smoothVariation = ConversionUtils.biomeHeightVariationVanilla(smoothVariation / biomeWeightSum);
-                    } else {
-                        smoothHeight = ConversionUtils.biomeHeightVanilla(centerBiome.getBaseHeight());
-                        smoothVariation = ConversionUtils.biomeHeightVariationVanilla(centerBiome.getHeightVariation());
-                    }
-                    this.heights[i] = smoothHeight;
-                    this.variations[i] = smoothVariation;
-                    i++;
+            for (int i = 0, x = 0; x < this.size; x++) {
+                for (int z = 0; z < this.size; z++) {
+                    this.biomes[i++] = this.biomeProvider.getBiome(pos.setPos(baseX + (x << level), 0, baseZ + (z << level)), Biomes.PLAINS);
                 }
+            }
+        }
+
+        Biome[] gBiomes = null;
+        for (int i = 0, x = 0; x < this.size; x++) {
+            for (int z = 0; z < this.size; z++, i++) {
+                gBiomes = this.biomeProvider.getBiomesForGeneration(gBiomes, ((baseX + x) >> GT_SHIFT) - this.smoothRadius, ((baseZ + z) >> GT_SHIFT) - this.smoothRadius, this.smoothDiameter, this.smoothDiameter);
+
+                float centerBiomeHeight = gBiomes[this.smoothRadius * this.smoothDiameter + this.smoothRadius].getBaseHeight();
+
+                float smoothVariation = 0.0f;
+                float smoothHeight = 0.0f;
+                float biomeWeightSum = 0.0f;
+
+                for (int j = 0; j < this.smoothDiameter * this.smoothDiameter; j++) {
+                    Biome biome = gBiomes[j];
+
+                    float biomeHeight = biome.getBaseHeight();
+                    float biomeVolatility = biome.getHeightVariation();
+
+                    float biomeWeight = Math.abs(this.nearBiomeWeightArray[j] / (biomeHeight + 2.0f));
+
+                    if (biomeHeight > centerBiomeHeight) {
+                        biomeWeight *= 0.5f;
+                    }
+                    smoothVariation += biomeVolatility * biomeWeight;
+                    smoothHeight += biomeHeight * biomeWeight;
+
+                    biomeWeightSum += biomeWeight;
+                }
+
+                this.heights[i] = ConversionUtils.biomeHeightVanilla(smoothHeight / biomeWeightSum);
+                this.variations[i] = ConversionUtils.biomeHeightVariationVanilla(smoothVariation / biomeWeightSum);
             }
         }
     }
@@ -202,7 +200,7 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
     }
 
     private int getHeightVariationIndex(int x, int z) {
-        return (x - this.xOffset) * this.cacheSize + (z - this.zOffset);
+        return (x - this.baseX) * this.size + (z - this.baseZ);
     }
 
     @Override
