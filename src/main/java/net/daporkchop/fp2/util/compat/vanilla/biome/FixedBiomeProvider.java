@@ -65,4 +65,10 @@ public class FixedBiomeProvider implements IBiomeProvider {
         checkArg(arr.length >= sizeX * sizeZ, "array (%d) too small! required: %d", arr.length, sizeX * sizeZ);
         PUnsafe.setMemory(arr, PUnsafe.ARRAY_BYTE_BASE_OFFSET, sizeX * sizeZ, (byte) this.biomeId);
     }
+
+    @Override
+    public void biomeIdsForGeneration(@NonNull int[] arr, int x, int z, int sizeX, int sizeZ) {
+        checkArg(arr.length >= sizeX * sizeZ, "array (%d) too small! required: %d", arr.length, sizeX * sizeZ);
+        Arrays.fill(arr, 0, sizeX * sizeZ, this.biomeId);
+    }
 }

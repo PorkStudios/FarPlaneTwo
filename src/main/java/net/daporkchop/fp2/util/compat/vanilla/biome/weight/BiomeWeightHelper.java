@@ -18,44 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.util.compat.vanilla.biome;
+package net.daporkchop.fp2.util.compat.vanilla.biome.weight;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.compat.vanilla.biome.layer.FastLayer;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeProvider;
-
-import static net.daporkchop.fp2.util.compat.vanilla.biome.BiomeHelper.*;
+import net.minecraft.world.gen.layer.GenLayer;
 
 /**
+ * Utility class for helping with the computation of biome base height and height variation, which uses a relatively complex
+ * weight system.
+ *
  * @author DaPorkchop_
  */
-public class FastThreadSafeBiomeProvider implements IBiomeProvider {
-    public FastThreadSafeBiomeProvider(@NonNull BiomeProvider provider) {
-        FastLayer[] fastLayers = makeFast(provider.genBiomes, provider.biomeIndexLayer);
-    }
+public interface BiomeWeightHelper {
+    int smoothRadius();
 
-    //TODO: implement everything
+    int smoothDiameter();
 
-    @Override
-    public Biome biome(int blockX, int blockZ) {
-        return null;
-    }
-
-    @Override
-    public int biomeId(int blockX, int blockZ) {
-        return 0;
-    }
-
-    @Override
-    public void biomes(@NonNull Biome[] arr, int blockX, int blockZ, int sizeX, int sizeZ) {
-    }
-
-    @Override
-    public void biomeIds(@NonNull byte[] arr, int blockX, int blockZ, int sizeX, int sizeZ) {
-    }
-
-    @Override
-    public void biomeIdsForGeneration(@NonNull int[] arr, int x, int z, int sizeX, int sizeZ) {
-    }
+    void compute(@NonNull GenLayer layer, int baseX, int baseZ, int level, int gSize, double[] heights, double[] variations);
 }

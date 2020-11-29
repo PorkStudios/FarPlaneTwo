@@ -70,6 +70,7 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -79,6 +80,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @UtilityClass
 public class BiomeHelper {
+    public static final int BIOME_COUNT = 256;
+
     public static final int ID_OCEAN = Biome.getIdForBiome(Biomes.OCEAN);
     public static final int ID_DEFAULT = Biome.getIdForBiome(Biomes.DEFAULT);
     public static final int ID_PLAINS = Biome.getIdForBiome(Biomes.PLAINS);
@@ -142,10 +145,12 @@ public class BiomeHelper {
     public static final int ID_MUTATED_MESA = Biome.getIdForBiome(Biomes.MUTATED_MESA);
     public static final int ID_MUTATED_MESA_ROCK = Biome.getIdForBiome(Biomes.MUTATED_MESA_ROCK);
     public static final int ID_MUTATED_MESA_CLEAR_ROCK = Biome.getIdForBiome(Biomes.MUTATED_MESA_CLEAR_ROCK);
-    
+
     //gets all direct children of a GenLayer
     public static final Map<Class<? extends GenLayer>, Function<GenLayer, GenLayer[]>> GET_CHILDREN = new IdentityHashMap<>();
     public static final Map<Class<? extends GenLayer>, Function<GenLayer, FastLayer>> FAST_MAPPERS = new IdentityHashMap<>();
+    public static final double[] BIOME_HEIGHTS = new double[BIOME_COUNT];
+    public static final double[] BIOME_VARIATIONS = new double[BIOME_COUNT];
 
     static {
         Function<GenLayer, GenLayer[]> parent = genLayer -> new GenLayer[]{ genLayer.parent };
@@ -194,6 +199,26 @@ public class BiomeHelper {
         FAST_MAPPERS.put(GenLayerSmooth.class, layer -> new FastLayerSmooth(layer.worldGenSeed));
         FAST_MAPPERS.put(GenLayerVoronoiZoom.class, layer -> new FastLayerVoronoiZoom(layer.worldGenSeed));
         FAST_MAPPERS.put(GenLayerZoom.class, layer -> new FastLayerZoom(layer.worldGenSeed));
+    }
+
+    static {
+        for (int id = 0; id < BIOME_COUNT; id++) {
+            Biome biome = Biome.getBiome(id, Biomes.PLAINS);
+            BIOME_HEIGHTS[id] = biome.getBaseHeight();
+            BIOME_VARIATIONS[id] = biome.getHeightVariation();
+        }
+    }
+
+    public static double weightFactor(double baseHeight) {
+        return abs(1.0d / (baseHeight + 2.0d));
+    }
+
+    public static double biomeHeightVanilla(double height) {
+        return height * (17.0d / 64.0d) - (1.0d / 256.0d);
+    }
+
+    public static double biomeHeightVariationVanilla(double heightVariation) {
+        return heightVariation * 2.4d + (4.0d / 15.0d);
     }
 
     private static void addAllLayers(Map<GenLayer, GenLayer[]> childrenMap, GenLayer layer) {

@@ -73,4 +73,16 @@ public interface IBiomeProvider {
      * @throws IllegalArgumentException if the given array is too small to fit the region
      */
     void biomeIds(@NonNull byte[] arr, int blockX, int blockZ, int sizeX, int sizeZ);
+
+    /**
+     * Generates the IDs of the generation (low-resolution) biomes in the given region.
+     *
+     * @param arr   the array to store the generated biomes' IDs in
+     * @param x     the X coordinate of the region to generate
+     * @param z     the Z coordinate of the region to generate
+     * @param sizeX the size of the region along the X axis
+     * @param sizeZ the size of the region along the Z axis
+     * @throws IllegalArgumentException if the given array is too small to fit the region
+     */
+    void biomeIdsForGeneration(@NonNull int[] arr, int x, int z, int sizeX, int sizeZ);
 }

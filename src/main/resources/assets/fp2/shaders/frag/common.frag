@@ -36,8 +36,8 @@ layout(binding = 1) uniform sampler2D lightmap_texture;
 
 in VS_OUT {
     vec3 pos;
+    vec2 light;
 
-    flat vec2 light;
     flat vec3 color;
     flat vec3 base_pos;
     flat int state;

@@ -18,44 +18,25 @@
  *
  */
 
-package net.daporkchop.fp2.util.compat.vanilla.biome;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.util.compat.vanilla.biome.layer.FastLayer;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeProvider;
+package net.daporkchop.fp2.util.compat.vanilla.biome.weight;
 
 import static net.daporkchop.fp2.util.compat.vanilla.biome.BiomeHelper.*;
 
 /**
+ * Extension of {@link VanillaBiomeWeightHelper} which accounts for the adjustment in biome heights and variations in amplified worlds.
+ *
  * @author DaPorkchop_
  */
-public class FastThreadSafeBiomeProvider implements IBiomeProvider {
-    public FastThreadSafeBiomeProvider(@NonNull BiomeProvider provider) {
-        FastLayer[] fastLayers = makeFast(provider.genBiomes, provider.biomeIndexLayer);
-    }
+public class AmplifiedBiomeWeightHelper extends VanillaBiomeWeightHelper {
+    public AmplifiedBiomeWeightHelper(double depthOffset, double depthFactor, double scaleOffset, double scaleFactor, int smoothRadius) {
+        super(depthOffset, depthFactor, scaleOffset, scaleFactor, smoothRadius);
 
-    //TODO: implement everything
-
-    @Override
-    public Biome biome(int blockX, int blockZ) {
-        return null;
-    }
-
-    @Override
-    public int biomeId(int blockX, int blockZ) {
-        return 0;
-    }
-
-    @Override
-    public void biomes(@NonNull Biome[] arr, int blockX, int blockZ, int sizeX, int sizeZ) {
-    }
-
-    @Override
-    public void biomeIds(@NonNull byte[] arr, int blockX, int blockZ, int sizeX, int sizeZ) {
-    }
-
-    @Override
-    public void biomeIdsForGeneration(@NonNull int[] arr, int x, int z, int sizeX, int sizeZ) {
+        for (int id = 0; id < BIOME_COUNT; id++) {
+            double height = this.heights[id];
+            if (height > 0.0d) {
+                this.weightFactors[id] = weightFactor(this.heights[id] = height * 2.0d + 1.0d);
+                this.variations[id] = this.variations[id] * 4.0d + 1.0d;
+            }
+        }
     }
 }

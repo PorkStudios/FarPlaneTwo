@@ -77,38 +77,49 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
             }
         }
 
-        for (int x = 0; x < T_VOXELS; x++) {
-            for (int z = 0; z < T_VOXELS; z++) {
-                int blockX = baseX + (x << level);
-                int blockZ = baseZ + (z << level);
+        for (int tileX = 0; tileX < GT_COUNT; tileX++) {
+            for (int tileZ = 0; tileZ < GT_COUNT; tileZ++) {
+                int hxz = heights[tileX * 5 + tileZ];
+                int hxZ = heights[tileX * 5 + (tileZ + 1)];
+                int hXz = heights[(tileX + 1) * 5 + tileZ];
+                int hXZ = heights[(tileX + 1) * 5 + (tileZ + 1)];
 
-                int X = x >> GT_SHIFT;
-                int Z = z >> GT_SHIFT;
-                int height = floorI(lerp(
-                        lerp(heights[X * 5 + Z], heights[X * 5 + Z + 1], (z & 3) / 4.0d),
-                        lerp(heights[(X + 1) * 5 + Z], heights[(X + 1) * 5 + Z + 1], (z & 3) / 4.0d),
-                        (x & 3) / 4.0d));
-                double density = ctx.get(blockX, height, blockZ);
+                double density = 0.5d;
+                double dx = (hXz - hxz) * 0.25d;
+                double dy = -1.0d;
+                double dz = (hxZ - hxz) * 0.25d;
 
-                double dx = ctx.get(blockX + 1, height, blockZ) - density;
-                double dy = ctx.get(blockX, height + 1, blockZ) - density;
-                double dz = ctx.get(blockX, height, blockZ + 1) - density;
+                for (int subX = 0; subX < GT_SIZE; subX++) {
+                    double fx = subX * (1.0d / GT_SIZE);
+                    double hz = lerp(hxz, hXz, fx);
+                    double hZ = lerp(hxZ, hXZ, fx);
 
-                Biome biome = ctx.biomes[x * ctx.size + z + ctx.size];
+                    for (int subZ = 0; subZ < GT_SIZE; subZ++) {
+                        double fz = subZ * (1.0d / GT_SIZE);
+                        int height = floorI(lerp(hz, hZ, fz));
 
-                IBlockState state = Blocks.AIR.getDefaultState();
-                for (IBiomeBlockReplacer replacer : ctx.replacersForBiome(biome)) {
-                    state = replacer.getReplacedBlock(state, blockX, height, blockZ, dx, dy, dz, density);
+                        int x = (tileX << GT_SHIFT) + subX;
+                        int z = (tileZ << GT_SHIFT) + subZ;
+                        int blockX = baseX + (x << level);
+                        int blockZ = baseZ + (z << level);
+
+                        int biome = ctx.biomes[x * ctx.size + z];
+
+                        IBlockState state = Blocks.AIR.getDefaultState();
+                        for (IBiomeBlockReplacer replacer : ctx.replacersForBiome(biome)) {
+                            state = replacer.getReplacedBlock(state, blockX, height, blockZ, dx, dy, dz, density);
+                        }
+
+                        data.height = height;
+                        data.state = Block.getStateId(state);
+                        data.light = (15 - clamp(this.seaLevel - height, 0, 5) * 3) << 4;
+                        data.biome = biome;
+                        data.waterLight = packCombinedLight(15 << 20);
+                        data.waterBiome = biome;
+
+                        piece.set(x, z, data);
+                    }
                 }
-
-                data.height = height;
-                data.state = Block.getStateId(state);
-                data.light = packCombinedLight((height < this.seaLevel ? max(15 - (this.seaLevel - height) * 3, 0) : 15) << 20);
-                data.biome = Biome.getIdForBiome(biome);
-                data.waterLight = packCombinedLight(15 << 20);
-                data.waterBiome = Biome.getIdForBiome(biome);
-
-                piece.set(x, z, data);
             }
         }
 

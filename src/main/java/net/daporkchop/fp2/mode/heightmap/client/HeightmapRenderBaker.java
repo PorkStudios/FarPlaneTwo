@@ -35,6 +35,7 @@ import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
 
+import java.util.Arrays;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
@@ -93,17 +94,19 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         int z = srcPos.z();
         int level = srcPos.level();
 
-        return Stream.of(
-                //same level
-                srcPos,
-                new HeightmapPos(x, z - 1, level),
-                new HeightmapPos(x - 1, z, level),
-                new HeightmapPos(x - 1, z - 1, level),
-                //below level
-                new HeightmapPos(x << 1, z << 1, level - 1),
-                new HeightmapPos(x << 1, (z << 1) - 1, level - 1),
-                new HeightmapPos((x << 1) - 1, z << 1, level - 1),
-                new HeightmapPos((x << 1) - 1, (z << 1) - 1, level - 1)); //TODO: possibly need to output a larger area below
+        HeightmapPos[] arr = new HeightmapPos[4 + 9];
+        int i = 0;
+        for (int dx = -1; dx <= 0; dx++) {
+            for (int dz = -1; dz <= 0; dz++) {
+                arr[i++] = new HeightmapPos(x + dx, z + dz, level);
+            }
+        }
+        for (int dx = -1; dx <= 0; dx++) {
+            for (int dz = -1; dz <= 0; dz++) {
+                arr[i++] = new HeightmapPos((x << 1) + dx, (z << 1) + dz, level - 1);
+            }
+        }
+        return Arrays.stream(arr, 0, i);
     }
 
     @Override
