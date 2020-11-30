@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.client;
 
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.FP2Config;
 import net.minecraft.client.renderer.GlStateManager;
 
 import static org.lwjgl.opengl.GL11.*;
@@ -35,24 +36,26 @@ public class ReversedZ {
     public boolean REVERSED = false;
 
     public void renderWorldPass_HEAD() {
-        REVERSED = true;
+        if (FP2Config.compatibility.reversedZ) {
+            REVERSED = true;
 
-        GlStateManager.depthFunc(GL_LEQUAL);
+            GlStateManager.depthFunc(GL_LEQUAL);
 
-        glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+            glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
 
-        GlStateManager.clearDepth(0.0d);
-        //GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
+            GlStateManager.clearDepth(0.0d);
+        }
     }
 
     public void renderWorldPass_TAIL() {
-        REVERSED = false;
+        if (REVERSED) {
+            REVERSED = false;
 
-        glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
-        GlStateManager.depthFunc(GL_LEQUAL);
+            glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
+            GlStateManager.depthFunc(GL_LEQUAL);
 
-        GlStateManager.clearDepth(1.0d);
-        //GlStateManager.clear(GL_DEPTH_BUFFER_BIT);
+            GlStateManager.clearDepth(1.0d);
+        }
     }
 
     public int modifyDepthFunc(int func) {

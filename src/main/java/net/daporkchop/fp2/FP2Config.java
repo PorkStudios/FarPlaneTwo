@@ -100,6 +100,12 @@ public class FP2Config {
     public static Performance performance = new Performance();
 
     @Config.Comment({
+            "Compatibility options."
+    })
+    @Config.LangKey("config.fp2.compatibility")
+    public static Compatibility compatibility = new Compatibility();
+
+    @Config.Comment({
             "Options for storage of far terrain tiles."
     })
     @Config.LangKey("config.fp2.storage")
@@ -161,6 +167,18 @@ public class FP2Config {
         })
         @Config.LangKey("config.fp2.performance.savePartial")
         public boolean savePartial = false;
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public static class Compatibility {
+        @Config.Comment({
+                "Whether or not to use a reversed-Z projection matrix on the client.",
+                "Enabling this prevents Z-fighting (flickering) of distant geometry, but may cause issues with other rendering mods."
+        })
+        @Config.LangKey("config.fp2.compatibility.reversedZ")
+        public boolean reversedZ = true;
     }
 
     /**
