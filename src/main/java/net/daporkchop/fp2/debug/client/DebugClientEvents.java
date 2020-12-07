@@ -47,6 +47,10 @@ public class DebugClientEvents {
         if (DebugKeyBindings.DROP_PIECES.isPressed()) {
             NETWORK_WRAPPER.sendToServer(new CPacketDropAllPieces());
         }
+        if (DebugKeyBindings.TOGGLE_REVERSED_Z.isPressed()) {
+            FP2Config.compatibility.reversedZ ^= true;
+            mc.player.sendMessage(new TextComponentString((FP2Config.compatibility.reversedZ ? "§aEnabled" : "§cDisabled") + " reversed-Z projection."));
+        }
         if (DebugKeyBindings.TOGGLE_VANILLA_RENDER.isPressed()) {
             FP2Config.debug.skipRenderWorld ^= true;
             mc.player.sendMessage(new TextComponentString((FP2Config.debug.skipRenderWorld ? "§cDisabled" : "§aEnabled") + " vanilla terrain."));

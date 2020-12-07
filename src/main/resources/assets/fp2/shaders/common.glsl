@@ -50,6 +50,8 @@ struct GlCamera {
     mat4 projection;
     mat4 modelview;
 
+    vec4 anti_flicker_offset;
+
     ivec3 position_floor;
     vec3 position_fract;
 };

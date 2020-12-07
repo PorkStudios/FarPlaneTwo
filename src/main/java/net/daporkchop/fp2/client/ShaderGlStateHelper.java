@@ -48,9 +48,9 @@ public class ShaderGlStateHelper {
     private final UniformBufferObject UBO = new UniformBufferObject();
 
     private final int OFFSET_CAMERA = 0;
-    private final int SIZE_CAMERA = 2 * MAT4_SIZE + IVEC3_SIZE + VEC3_SIZE;
+    private final int SIZE_CAMERA = 2 * MAT4_SIZE + VEC4_SIZE + IVEC3_SIZE + VEC3_SIZE;
 
-    private final int OFFSET_FOG = PMath.roundUp(OFFSET_CAMERA + SIZE_CAMERA, VEC4_SIZE);
+    private final int OFFSET_FOG = PMath.roundUp(OFFSET_CAMERA + SIZE_CAMERA, MAT4_SIZE);
     private final int SIZE_FOG = VEC4_SIZE + INT_SIZE + 4 * FLOAT_SIZE;
 
     private final int TOTAL_SIZE = OFFSET_FOG + SIZE_FOG;
@@ -66,31 +66,64 @@ public class ShaderGlStateHelper {
 
     public void update(float partialTicks, @NonNull Minecraft mc) {
         { //camera
-            glGetFloat(GL_PROJECTION_MATRIX, DirectBufferReuse.wrapFloat(ADDR_CAMERA, MAT4_ELEMENTS));
-            glGetFloat(GL_MODELVIEW_MATRIX, DirectBufferReuse.wrapFloat(ADDR_CAMERA + MAT4_SIZE, MAT4_ELEMENTS));
+            long addr = ADDR_CAMERA;
+
+            //mat4 projection
+            glGetFloat(GL_PROJECTION_MATRIX, DirectBufferReuse.wrapFloat(addr, MAT4_ELEMENTS));
+            addr += MAT4_SIZE;
+            //mat4 modelview
+            glGetFloat(GL_MODELVIEW_MATRIX, DirectBufferReuse.wrapFloat(addr, MAT4_ELEMENTS));
+            addr += MAT4_SIZE;
+
+            //vec4 anti_flicker_offset
+            PUnsafe.putFloat(addr + 0 * FLOAT_SIZE, 0.0f);
+            PUnsafe.putFloat(addr + 1 * FLOAT_SIZE, 0.0f);
+            PUnsafe.putFloat(addr + 2 * FLOAT_SIZE, ReversedZ.REVERSED ? 0.0001f : -0.0001f);
+            PUnsafe.putFloat(addr + 3 * FLOAT_SIZE, 0.0f);
+            addr += VEC4_SIZE;
 
             Entity entity = mc.getRenderViewEntity();
             double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
             double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks;
             double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
-            PUnsafe.putInt(ADDR_CAMERA + 2 * MAT4_SIZE + 0 * INT_SIZE, floorI(x));
-            PUnsafe.putInt(ADDR_CAMERA + 2 * MAT4_SIZE + 1 * INT_SIZE, floorI(y));
-            PUnsafe.putInt(ADDR_CAMERA + 2 * MAT4_SIZE + 2 * INT_SIZE, floorI(z));
-            PUnsafe.putFloat(ADDR_CAMERA + 2 * MAT4_SIZE + IVEC3_SIZE + 0 * FLOAT_SIZE, (float) frac(x));
-            PUnsafe.putFloat(ADDR_CAMERA + 2 * MAT4_SIZE + IVEC3_SIZE + 1 * FLOAT_SIZE, (float) frac(y));
-            PUnsafe.putFloat(ADDR_CAMERA + 2 * MAT4_SIZE + IVEC3_SIZE + 2 * FLOAT_SIZE, (float) frac(z));
+
+            //ivec3 position_floor
+            PUnsafe.putInt(addr + 0 * INT_SIZE, floorI(x));
+            PUnsafe.putInt(addr + 1 * INT_SIZE, floorI(y));
+            PUnsafe.putInt(addr + 2 * INT_SIZE, floorI(z));
+            addr += IVEC3_SIZE;
+            //vec3 position_fract
+            PUnsafe.putFloat(addr + 0 * FLOAT_SIZE, (float) frac(x));
+            PUnsafe.putFloat(addr + 1 * FLOAT_SIZE, (float) frac(y));
+            PUnsafe.putFloat(addr + 2 * FLOAT_SIZE, (float) frac(z));
+            addr += VEC3_SIZE;
         }
 
         { //fog
+            long addr = ADDR_FOG;
+
+            //vec4 color (already set externally)
+            addr += VEC4_SIZE;
+
             GlStateManager.FogState fogState = GlStateManager.fogState;
             boolean fogEnabled = fogState.fog.currentState
                                  && (!OF || PUnsafe.getInt(mc.gameSettings, OF_FOGTYPE_OFFSET) != OF_OFF);
 
-            PUnsafe.putFloat(ADDR_FOG + VEC4_SIZE + 0 * FLOAT_SIZE, fogState.density);
-            PUnsafe.putFloat(ADDR_FOG + VEC4_SIZE + 1 * FLOAT_SIZE, fogState.start);
-            PUnsafe.putFloat(ADDR_FOG + VEC4_SIZE + 2 * FLOAT_SIZE, fogState.end);
-            PUnsafe.putFloat(ADDR_FOG + VEC4_SIZE + 3 * FLOAT_SIZE, 1.0f / (fogState.end - fogState.start));
-            PUnsafe.putInt(ADDR_FOG + VEC4_SIZE + 4 * FLOAT_SIZE, fogEnabled ? fogState.mode : 0);
+            //float density
+            PUnsafe.putFloat(addr, fogState.density);
+            addr += FLOAT_SIZE;
+            //float start
+            PUnsafe.putFloat(addr, fogState.start);
+            addr += FLOAT_SIZE;
+            //float end
+            PUnsafe.putFloat(addr, fogState.end);
+            addr += FLOAT_SIZE;
+            //float scale
+            PUnsafe.putFloat(addr, 1.0f / (fogState.end - fogState.start));
+            addr += FLOAT_SIZE;
+            //int mode
+            PUnsafe.putInt(addr, fogEnabled ? fogState.mode : 0);
+            addr += INT_SIZE;
         }
     }
 

@@ -40,7 +40,7 @@ void main() {
 #endif
 
     //vertex position is detail mixed
-    gl_Position = cameraTransform(relativePos) - vec4(0., 0., 0.0001, 0.);
+    gl_Position = cameraTransform(relativePos) + glState.camera.anti_flicker_offset;
 
     //pass relative position to fragment shader (used to compute face normal)
     vs_out.pos = vs_out.base_pos = vec3(relativePos);
