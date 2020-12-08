@@ -110,12 +110,6 @@ layout(std430, binding = 1) buffer QUAD_DATA {
     BakedQuad quad_data[];
 };
 
-//Tile positions
-
-layout(std140, binding = 2) buffer FP2_TILE_POSITIONS {
-    ivec4 tile_positions[]; //xyz: tile XYZ position, w: level
-};
-
 //
 //
 // UTILITIES

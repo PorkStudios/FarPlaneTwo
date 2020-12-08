@@ -55,6 +55,8 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.opengl.GL33.*;
 
 /**
  * @author DaPorkchop_
@@ -80,6 +82,8 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     protected final Allocator indicesAllocator;
     protected final int indexType;
     protected final int indexSize;
+
+    protected final VertexBufferObject tilePositions = new VertexBufferObject();
 
     protected final int passes;
 
@@ -151,10 +155,15 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                 glEnableVertexAttribArray(i);
             }
 
+            try (VertexBufferObject vbo = this.tilePositions.bind()) {
+                glVertexAttribIPointer(0, 4, GL_INT, 0, 0);
+                glVertexAttribDivisor(0, 1);
+                vao.putDependency(0, vbo);
+            }
+
             try (VertexBufferObject vbo = this.vertices.bind()) {
                 this.baker.assignVertexAttributes();
-
-                for (int i = 0; i <= attribs; i++) {
+                for (int i = 1; i <= attribs; i++) {
                     vao.putDependency(i, vbo);
                 }
             }

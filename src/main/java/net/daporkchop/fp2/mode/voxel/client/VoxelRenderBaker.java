@@ -102,11 +102,11 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
     @Override
     public void assignVertexAttributes() {
         long offset = 0L;
-        glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, VOXEL_VERTEX_SIZE, offset); //state
-        glVertexAttribPointer(1, 2, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, offset += INT_SIZE); //light
-        glVertexAttribPointer(2, 3, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, offset += SHORT_SIZE); //color
-        glVertexAttribPointer(3, 3, GL_UNSIGNED_BYTE, false, VOXEL_VERTEX_SIZE, offset += MEDIUM_SIZE); //pos_low
-        glVertexAttribPointer(4, 3, GL_UNSIGNED_BYTE, false, VOXEL_VERTEX_SIZE, offset += MEDIUM_SIZE); //pos_high
+        glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, VOXEL_VERTEX_SIZE, offset); //state
+        glVertexAttribPointer(2, 2, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, offset += INT_SIZE); //light
+        glVertexAttribPointer(3, 3, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, offset += SHORT_SIZE); //color
+        glVertexAttribPointer(4, 3, GL_UNSIGNED_BYTE, false, VOXEL_VERTEX_SIZE, offset += MEDIUM_SIZE); //pos_low
+        glVertexAttribPointer(5, 3, GL_UNSIGNED_BYTE, false, VOXEL_VERTEX_SIZE, offset += MEDIUM_SIZE); //pos_high
     }
 
     @Override

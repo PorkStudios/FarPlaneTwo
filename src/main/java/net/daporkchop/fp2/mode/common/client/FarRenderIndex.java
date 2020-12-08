@@ -52,6 +52,8 @@ public class FarRenderIndex {
     protected final int indexSize;
     protected final int passes;
 
+    protected int uploaded = -1;
+
     public FarRenderIndex(AbstractFarRenderCache cache) {
         this.indexSize = cache.indexSize();
         this.vertexSize = cache.vertexSize();
@@ -128,7 +130,7 @@ public class FarRenderIndex {
                         .put(1) //instanceCount
                         .put(firstIndex) //firstIndex
                         .put(baseVertex) //baseVertex
-                        .put(0); //baseInstance
+                        .put(this.sizes[i]); //baseInstance
                 this.sizes[i]++;
 
                 firstIndex += indexCount;
@@ -157,20 +159,34 @@ public class FarRenderIndex {
             buffer.clear();
         }
         Arrays.fill(this.sizes, 0);
+        this.uploaded = -1;
     }
 
     public boolean isEmpty() {
         return or(this.sizes) == 0;
     }
 
+    public int count(int pass) {
+        return this.sizes[pass];
+    }
+
     public int upload(int pass) {
-        checkGLError("pre upload index");
         int size = this.sizes[pass];
-        if (size > 0) {
-            glBufferData(GL_SHADER_STORAGE_BUFFER, (IntBuffer) this.buffers[pass << 1].flip(), GL_STREAM_DRAW);
+        if (size > 0 && this.uploaded != pass) {
+            checkGLError("pre upload index");
+            glBufferData(GL_ARRAY_BUFFER, (IntBuffer) this.buffers[pass << 1].flip(), GL_STREAM_DRAW);
             glBufferData(GL_DRAW_INDIRECT_BUFFER, (IntBuffer) this.buffers[(pass << 1) + 1].flip(), GL_STREAM_DRAW);
+            checkGLError("post upload index");
+            this.uploaded = pass;
         }
-        checkGLError("post upload index");
         return size;
+    }
+
+    public IntBuffer getPositions(int pass) {
+        return this.buffers[pass << 1];
+    }
+
+    public IntBuffer getMultidrawCommands(int pass) {
+        return this.buffers[(pass << 1) + 1];
     }
 }

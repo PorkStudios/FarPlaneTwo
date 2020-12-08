@@ -50,7 +50,7 @@ public class ShaderGlStateHelper {
     private final int OFFSET_CAMERA = 0;
     private final int SIZE_CAMERA = 2 * MAT4_SIZE + VEC4_SIZE + IVEC3_SIZE + VEC3_SIZE;
 
-    private final int OFFSET_FOG = PMath.roundUp(OFFSET_CAMERA + SIZE_CAMERA, MAT4_SIZE);
+    private final int OFFSET_FOG = PMath.roundUp(OFFSET_CAMERA + SIZE_CAMERA, VEC4_SIZE);
     private final int SIZE_FOG = VEC4_SIZE + INT_SIZE + 4 * FLOAT_SIZE;
 
     private final int TOTAL_SIZE = OFFSET_FOG + SIZE_FOG;

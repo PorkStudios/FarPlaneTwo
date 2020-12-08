@@ -41,7 +41,6 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL40.*;
 import static org.lwjgl.opengl.GL43.*;
 
 /**
@@ -78,8 +77,7 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
                 GlStateManager.enableAlpha();
             }
             //water
-            //TODO: this is almost identical to the stuff in VoxelRenderPass.TRANSLUCENT, maybe abstract out this code a bit...
-            if (true){
+            if (true) {
                 glEnable(GL_STENCIL_TEST);
 
                 WATER_STENCIL_SHADER.use();

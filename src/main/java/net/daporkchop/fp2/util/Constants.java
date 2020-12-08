@@ -226,6 +226,23 @@ public class Constants {
         return allocateByteBuf(capacity).order(ByteOrder.nativeOrder());
     }
 
+    /**
+     * Ensures that the given buffer has the requested amount of space remaining. If not, the buffer will be grown.
+     *
+     * @param buffer the buffer
+     * @param needed the required space
+     * @return the buffer, or a new one if the buffer was grown
+     */
+    public static IntBuffer ensureWritable(IntBuffer buffer, int needed) {
+        if (buffer.remaining() < needed) {
+            IntBuffer bigger = createIntBuffer(buffer.capacity() << 1);
+            bigger.put((IntBuffer) buffer.flip());
+            PUnsafe.pork_releaseBuffer(buffer);
+            buffer = bigger;
+        }
+        return buffer;
+    }
+
     //reflection
 
     /**

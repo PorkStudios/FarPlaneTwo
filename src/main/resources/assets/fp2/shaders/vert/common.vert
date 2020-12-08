@@ -20,6 +20,14 @@
 
 //
 //
+// INPUTS
+//
+//
+
+layout(location = 0) in ivec4 tile_position;
+
+//
+//
 // OUTPUTS
 //
 //

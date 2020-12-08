@@ -29,6 +29,7 @@ import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
 import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
+import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
@@ -101,7 +102,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
 
         this.prepareGlState(partialTicks, world, mc, frustum);
         try (VertexArrayObject vao = this.cache.vao().bind();
-             ShaderStorageBuffer tilePositionsBuffer = this.tilePositionsBuffer.bind();
+             VertexBufferObject tilePositionsBuffer = this.cache.tilePositions.bind();
              DrawIndirectBuffer drawCommandBuffer = this.drawCommandBuffer.bind()) {
             this.updateAndBindUBOs(partialTicks, world, mc, frustum);
             checkGLError("post fp2 setup");
@@ -132,7 +133,6 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     protected void updateAndBindSSBOs(float partialTicks, WorldClient world, Minecraft mc, IFrustum frustum) {
         QUAD_LISTS.bindSSBO(0);
         QUAD_DATA.bindSSBO(1);
-        this.tilePositionsBuffer.bindSSBO(2);
     }
 
     protected void updateAndBindUBOs(float partialTicks, WorldClient world, Minecraft mc, IFrustum frustum) {

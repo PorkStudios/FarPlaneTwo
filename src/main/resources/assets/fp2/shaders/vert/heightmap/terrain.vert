@@ -24,14 +24,14 @@
 //
 //
 
-layout(location = 0) in int in_state;
-layout(location = 1) in vec2 in_light;
-layout(location = 2) in vec3 in_color;
+layout(location = 1) in int in_state;
+layout(location = 2) in vec2 in_light;
+layout(location = 3) in vec3 in_color;
 
-layout(location = 5) in ivec2 in_pos_low;
-layout(location = 6) in int in_height_low;
-layout(location = 7) in ivec2 in_pos_high;
-layout(location = 8) in int in_height_high;
+layout(location = 6) in ivec2 in_pos_low;
+layout(location = 7) in int in_height_low;
+layout(location = 8) in ivec2 in_pos_high;
+layout(location = 9) in int in_height_high;
 
 ivec3 getLowOffsetPre(int level) {
     return ivec3(in_pos_low.x << level, in_height_low, in_pos_low.y << level);

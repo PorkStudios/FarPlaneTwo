@@ -24,16 +24,15 @@
 //
 //
 
-layout(location = 0) in int in_state;
-layout(location = 1) in vec2 in_light;
-layout(location = 2) in vec3 in_color;
+layout(location = 1) in int in_state;
+layout(location = 2) in vec2 in_light;
+layout(location = 3) in vec3 in_color;
 
-layout(location = 3) in vec3 in_pos_low;
-layout(location = 4) in vec3 in_pos_high;
+layout(location = 4) in vec3 in_pos_low;
+layout(location = 5) in vec3 in_pos_high;
 
 void main() {
     //convert position to vec3 afterwards to minimize precision loss
-    ivec4 tile_position = tile_positions[gl_DrawID];
     ivec3 relative_tile_position = (tile_position.xyz << tile_position.w << T_SHIFT) - glState.camera.position_floor;
     vec3 relativePos = vec3(relative_tile_position) + in_pos_low * float(1 << tile_position.w) / 8. - glState.camera.position_fract;
 

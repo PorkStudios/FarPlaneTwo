@@ -24,7 +24,6 @@ import net.daporkchop.fp2.client.ClientEvents;
 import net.daporkchop.fp2.client.FP2ResourceReloadListener;
 import net.daporkchop.fp2.client.KeyBindings;
 import net.daporkchop.fp2.client.TexUVs;
-import net.daporkchop.fp2.client.gl.OpenGL;
 import net.daporkchop.fp2.debug.FP2Debug;
 import net.daporkchop.fp2.mode.heightmap.client.HeightmapRenderer;
 import net.daporkchop.fp2.mode.voxel.client.VoxelRenderer;
@@ -107,8 +106,8 @@ public class FP2 {
         MinecraftForge.EVENT_BUS.register(new ServerEvents());
 
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-            if (!OpenGL.isOpenGL46()) { //require at least OpenGL 4.6
-                unsupported("Your system does not support OpenGL 4.6!");
+            if (!GLContext.getCapabilities().OpenGL43) { //require at least OpenGL 4.3
+                unsupported("Your system does not support OpenGL 4.3!");
             }
 
             int size = glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);

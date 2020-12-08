@@ -52,6 +52,7 @@ import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerIntersection;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.PriorityCollection;
 import net.daporkchop.fp2.util.SimpleRecycler;
+import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.string.PUnsafeStrings;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
@@ -74,7 +75,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Getter
 public enum RenderMode {
-    HEIGHTMAP("2D", 7) {
+    HEIGHTMAP(7) {
         @Override
         protected void registerDefaultGenerators() {
             //rough
@@ -123,7 +124,7 @@ public enum RenderMode {
             return new HeightmapPiece[size];
         }
     },
-    VOXEL("3D", 4) {
+    VOXEL(4) {
         @Override
         protected void registerDefaultGenerators() {
             //rough
@@ -195,7 +196,9 @@ public enum RenderMode {
 
     private final int pieceVersion;
 
-    RenderMode(@NonNull String name, int pieceVersion) {
+    RenderMode(int pieceVersion) {
+        String name = PStrings.clone(this.name());
+        PUnsafeStrings.titleFormat(name);
         PUnsafeStrings.setEnumName(this, name.intern());
         this.pieceVersion = pieceVersion;
 

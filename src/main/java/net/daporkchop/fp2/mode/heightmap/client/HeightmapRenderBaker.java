@@ -77,15 +77,15 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
     @Override
     public void assignVertexAttributes() {
         long offset = 0L;
-        glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, HEIGHTMAP_VERTEX_SIZE, offset); //state
-        glVertexAttribPointer(1, 2, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += INT_SIZE); //light
-        glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //color
-        glVertexAttribPointer(3, 2, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += MEDIUM_SIZE); //light_water
-        glVertexAttribPointer(4, 4, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //color_water
-        glVertexAttribIPointer(5, 2, GL_UNSIGNED_BYTE, HEIGHTMAP_VERTEX_SIZE, offset += MEDIUM_SIZE); //pos_low
-        glVertexAttribIPointer(6, 1, GL_UNSIGNED_INT, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //height_low
-        glVertexAttribIPointer(7, 2, GL_UNSIGNED_BYTE, HEIGHTMAP_VERTEX_SIZE, offset += INT_SIZE); //pos_high
-        glVertexAttribIPointer(8, 1, GL_UNSIGNED_INT, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //height_high
+        glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, HEIGHTMAP_VERTEX_SIZE, offset); //state
+        glVertexAttribPointer(2, 2, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += INT_SIZE); //light
+        glVertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //color
+        glVertexAttribPointer(4, 2, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += MEDIUM_SIZE); //light_water
+        glVertexAttribPointer(5, 4, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //color_water
+        glVertexAttribIPointer(6, 2, GL_UNSIGNED_BYTE, HEIGHTMAP_VERTEX_SIZE, offset += MEDIUM_SIZE); //pos_low
+        glVertexAttribIPointer(7, 1, GL_UNSIGNED_INT, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //height_low
+        glVertexAttribIPointer(8, 2, GL_UNSIGNED_BYTE, HEIGHTMAP_VERTEX_SIZE, offset += INT_SIZE); //pos_high
+        glVertexAttribIPointer(9, 1, GL_UNSIGNED_INT, HEIGHTMAP_VERTEX_SIZE, offset += SHORT_SIZE); //height_high
     }
 
     @Override
