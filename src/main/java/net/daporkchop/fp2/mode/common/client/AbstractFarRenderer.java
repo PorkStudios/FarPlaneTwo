@@ -55,7 +55,6 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
 
     protected final int maxLevel = FP2Config.maxLevels - 1;
 
-    protected final ShaderStorageBuffer tilePositionsBuffer = new ShaderStorageBuffer();
     protected final DrawIndirectBuffer drawCommandBuffer = new DrawIndirectBuffer();
 
     public AbstractFarRenderer(@NonNull WorldClient world) {
@@ -102,7 +101,6 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
 
         this.prepareGlState(partialTicks, world, mc, frustum);
         try (VertexArrayObject vao = this.cache.vao().bind();
-             VertexBufferObject tilePositionsBuffer = this.cache.tilePositions.bind();
              DrawIndirectBuffer drawCommandBuffer = this.drawCommandBuffer.bind()) {
             this.updateAndBindUBOs(partialTicks, world, mc, frustum);
             checkGLError("post fp2 setup");

@@ -39,6 +39,7 @@ import net.minecraft.init.Blocks;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL43.*;
@@ -73,7 +74,7 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
             //solid terrain
             try (ShaderProgram shader = TERRAIN_SHADER.use()) {
                 GlStateManager.disableAlpha();
-                glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, size, 0);
+                glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, FarRenderIndex.POSITION_SIZE * INT_SIZE, size, FarRenderIndex.ENTRY_SIZE * INT_SIZE);
                 GlStateManager.enableAlpha();
             }
             //water
@@ -92,7 +93,7 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
 
                     GlStateManager.depthMask(false);
 
-                    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, size, 0);
+                    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, FarRenderIndex.POSITION_SIZE * INT_SIZE, size, FarRenderIndex.ENTRY_SIZE * INT_SIZE);
 
                     GlStateManager.depthMask(true);
 
@@ -111,7 +112,7 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
                     glStencilFunc(GL_EQUAL, 1, 0xFF);
                     glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-                    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, size, 0);
+                    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, FarRenderIndex.POSITION_SIZE * INT_SIZE, size, FarRenderIndex.ENTRY_SIZE * INT_SIZE);
 
                     GlStateManager.disableBlend();
                 }

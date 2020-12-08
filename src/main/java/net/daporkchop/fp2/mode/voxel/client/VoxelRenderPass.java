@@ -21,11 +21,13 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.common.client.FarRenderIndex;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.util.BlockRenderLayer;
 
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.voxel.client.VoxelRenderer.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL43.*;
@@ -103,6 +105,6 @@ public enum VoxelRenderPass {
     public static final int COUNT = VALUES.length;
 
     public void render(@NonNull Minecraft mc, int count) {
-        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, 0L, count, 0);
+        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, FarRenderIndex.POSITION_SIZE * INT_SIZE, count, FarRenderIndex.ENTRY_SIZE * INT_SIZE);
     }
 }

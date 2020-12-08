@@ -57,7 +57,7 @@ public final class VertexArrayObject extends GLObject<VertexArrayObject> {
         return () -> glDeleteVertexArrays(id);
     }
 
-    public VertexArrayObject putDependency(int location, @NonNull VertexBufferObject dependency) {
+    public VertexArrayObject putDependency(int location, @NonNull GLBufferObject dependency) {
         this.dependencies.put(notNegative(location, "location"), dependency);
         return this;
     }

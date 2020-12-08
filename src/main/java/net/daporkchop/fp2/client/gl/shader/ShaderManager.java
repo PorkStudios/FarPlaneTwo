@@ -87,7 +87,7 @@ public class ShaderManager {
 
     protected Shader get(@NonNull String[] names, @NonNull ShaderType type) {
         return new Shader(type, names, Stream.concat(
-                Stream.of("#version 420 core\n"), //add version prefix
+                Stream.of("#version 430 core\n"), //add version prefix
                 Arrays.stream(names)
                         .map((IOFunction<String, String>) fileName -> {
                             try (InputStream in = ShaderManager.class.getResourceAsStream(BASE_PATH + '/' + fileName)) {

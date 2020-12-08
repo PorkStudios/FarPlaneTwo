@@ -558,8 +558,17 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
             }
         }
 
-        //add self to render output
-        return index.add(level, node, this);
+        //actually add self to render output
+        if (!this.checkFlagsAND(node, FLAG_RENDERED)) {
+            return false;
+        } else if (!this.checkFlagsAND(node, FLAG_DATA)) {
+            //the node is rendered and has no data, which means it's all air and therefore can be considered to have already
+            // been "effectively" added to the render index
+            return true;
+        }
+
+        index.add(level, node, this);
+        return true;
     }
 
     @Override

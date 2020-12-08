@@ -83,8 +83,6 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     protected final int indexType;
     protected final int indexSize;
 
-    protected final VertexBufferObject tilePositions = new VertexBufferObject();
-
     protected final int passes;
 
     protected final IFarRenderBaker<POS, P> baker;
@@ -155,10 +153,12 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                 glEnableVertexAttribArray(i);
             }
 
-            try (VertexBufferObject vbo = this.tilePositions.bind()) {
-                glVertexAttribIPointer(0, 4, GL_INT, 0, 0);
+            {
+                glBindBuffer(GL_ARRAY_BUFFER, this.renderer.drawCommandBuffer.id());
+                glVertexAttribIPointer(0, 4, GL_INT, FarRenderIndex.ENTRY_SIZE * INT_SIZE, 0L);
                 glVertexAttribDivisor(0, 1);
-                vao.putDependency(0, vbo);
+                vao.putDependency(0, this.renderer.drawCommandBuffer);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
             }
 
             try (VertexBufferObject vbo = this.vertices.bind()) {
