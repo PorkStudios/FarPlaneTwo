@@ -43,6 +43,10 @@ public class FarRenderIndex {
     public static final int COMMAND_SIZE = 5;
     public static final int ENTRY_SIZE = POSITION_SIZE + COMMAND_SIZE;
 
+    public static final int POSITION_SIZE_BYTES = POSITION_SIZE * INT_SIZE;
+    public static final int COMMAND_SIZE_BYTES = COMMAND_SIZE * INT_SIZE;
+    public static final int ENTRY_SIZE_BYTES = POSITION_SIZE_BYTES + COMMAND_SIZE_BYTES;
+
     protected final IntBuffer[] buffers;
     protected final int[] sizes;
 
@@ -150,13 +154,5 @@ public class FarRenderIndex {
             this.uploaded = pass;
         }
         return size;
-    }
-
-    public IntBuffer getPositions(int pass) {
-        return this.buffers[pass << 1];
-    }
-
-    public IntBuffer getMultidrawCommands(int pass) {
-        return this.buffers[(pass << 1) + 1];
     }
 }

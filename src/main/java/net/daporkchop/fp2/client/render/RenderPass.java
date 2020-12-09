@@ -18,54 +18,52 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
+package net.daporkchop.fp2.client.render;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.common.client.FarRenderIndex;
-import net.minecraft.client.Minecraft;
+import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.TextureMap;
-import net.minecraft.util.BlockRenderLayer;
 
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.fp2.mode.voxel.client.VoxelRenderer.*;
+import static net.daporkchop.fp2.client.ClientConstants.*;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_
- * @see BlockRenderLayer
  */
-public enum VoxelRenderPass {
-    OPAQUE {
+public enum RenderPass {
+    SOLID {
         @Override
-        public void render(@NonNull Minecraft mc, int count) {
-            GlStateManager.disableAlpha();
+        public void render(@NonNull DrawMode mode, int tileCount) {
+            try (ShaderProgram program = mode.shaders.shader(mode, this, false).use()) {
+                GlStateManager.disableAlpha();
 
-            super.render(mc, count);
+                mode.draw0(tileCount);
 
-            GlStateManager.enableAlpha();
+                GlStateManager.enableAlpha();
+            }
         }
     },
     CUTOUT {
         @Override
-        public void render(@NonNull Minecraft mc, int count) {
-            mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
-            GlStateManager.disableCull();
+        public void render(@NonNull DrawMode mode, int tileCount) {
+            try (ShaderProgram program = mode.shaders.shader(mode, this, false).use()) {
+                mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
+                GlStateManager.disableCull();
 
-            super.render(mc, count);
+                mode.draw0(tileCount);
 
-            GlStateManager.enableCull();
-            mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
+                GlStateManager.enableCull();
+                mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
+            }
         }
     },
-    TRANSLUCENT {
+    TRANSPARENT {
         @Override
-        public void render(@NonNull Minecraft mc, int count) {
+        public void render(@NonNull DrawMode mode, int tileCount) {
             glEnable(GL_STENCIL_TEST);
 
-            STENCIL_SHADER.use();
-            {
+            try (ShaderProgram program = mode.shaders.shader(mode, this, true).use()) {
                 GlStateManager.colorMask(false, false, false, false);
 
                 GlStateManager.clear(GL_STENCIL_BUFFER_BIT);
@@ -75,15 +73,14 @@ public enum VoxelRenderPass {
 
                 GlStateManager.depthMask(false);
 
-                super.render(mc, count);
+                mode.draw0(tileCount);
 
                 GlStateManager.depthMask(true);
 
                 GlStateManager.colorMask(true, true, true, true);
             }
 
-            SOLID_SHADER.use();
-            {
+            try (ShaderProgram program = mode.shaders.shader(mode, this, false).use()) {
                 GlStateManager.enableBlend();
                 GlStateManager.tryBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
                 GlStateManager.alphaFunc(GL_GREATER, 0.1f);
@@ -92,7 +89,7 @@ public enum VoxelRenderPass {
                 glStencilFunc(GL_EQUAL, 1, 0xFF);
                 glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-                super.render(mc, count);
+                mode.draw0(tileCount);
 
                 GlStateManager.disableBlend();
             }
@@ -101,10 +98,12 @@ public enum VoxelRenderPass {
         }
     };
 
-    public static final VoxelRenderPass[] VALUES = values();
+    private static final RenderPass[] VALUES = values();
     public static final int COUNT = VALUES.length;
 
-    public void render(@NonNull Minecraft mc, int count) {
-        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, FarRenderIndex.POSITION_SIZE * INT_SIZE, count, FarRenderIndex.ENTRY_SIZE * INT_SIZE);
+    public static RenderPass fromOrdinal(int ordinal) {
+        return VALUES[ordinal];
     }
+
+    public abstract void render(@NonNull DrawMode mode, int tileCount);
 }

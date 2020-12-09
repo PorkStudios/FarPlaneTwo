@@ -47,10 +47,6 @@ public final class GLBuffer extends GLObject<GLBuffer> {
     protected final int usage;
     protected int target = -1;
 
-    public GLBuffer() {
-        this(GL_STREAM_DRAW);
-    }
-
     public GLBuffer(int usage) {
         super(glGenBuffers());
         this.usage = usage;

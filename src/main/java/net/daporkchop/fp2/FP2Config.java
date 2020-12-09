@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2;
 
+import net.daporkchop.fp2.client.render.DrawMode;
 import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraftforge.common.config.Config;
@@ -173,6 +174,12 @@ public class FP2Config {
      * @author DaPorkchop_
      */
     public static class Compatibility {
+        @Config.Comment({
+                "The mode to use for drawing geometry on-screen."
+        })
+        @Config.LangKey("config.fp2.compatibility.drawMode")
+        public DrawMode drawMode = DrawMode.MULTIDRAW;
+
         @Config.Comment({
                 "Whether or not to use a reversed-Z projection matrix on the client.",
                 "Enabling this prevents Z-fighting (flickering) of distant geometry, but may cause issues with other rendering mods."

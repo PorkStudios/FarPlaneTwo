@@ -21,9 +21,13 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.client.render.DrawMode;
+import net.daporkchop.fp2.client.render.IShaderHolder;
+import net.daporkchop.fp2.client.render.RenderPass;
 import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.FarRenderIndex;
@@ -36,7 +40,7 @@ import net.minecraft.client.multiplayer.WorldClient;
 /**
  * @author DaPorkchop_
  */
-public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
+public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> implements IShaderHolder {
     public static final ShaderProgram SOLID_SHADER = ShaderManager.get("voxel/solid");
     public static final ShaderProgram STENCIL_SHADER = ShaderManager.get("voxel/stencil");
 
@@ -56,14 +60,20 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
 
     @Override
     protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, @NonNull FarRenderIndex index) {
-        try (ShaderProgram shader = SOLID_SHADER.use()) {
-            for (int i = 0; i < VoxelRenderPass.COUNT; i++) {
-                int size = index.upload(i, this.drawCommandBuffer);
-                if (size > 0) {
-                    VoxelRenderPass.VALUES[i].render(mc, size);
-                }
+        try (DrawMode drawMode = FP2Config.compatibility.drawMode.start(index, this.drawCommandBuffer, this)) {
+            for (int i = 0; i < RenderPass.COUNT; i++) {
+                drawMode.draw(RenderPass.fromOrdinal(i), i);
             }
         }
+    }
+
+    @Override
+    public ShaderProgram shader(@NonNull DrawMode mode, @NonNull RenderPass pass, boolean stencil) {
+        switch (mode) {
+            case MULTIDRAW:
+                return stencil ? STENCIL_SHADER : SOLID_SHADER;
+        }
+        throw new IllegalArgumentException("mode=" + mode + ", pass=" + pass + ", stencil=" + stencil);
     }
 
     @Override

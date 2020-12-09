@@ -100,8 +100,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
         this.updateAndBindSSBOs(partialTicks, world, mc, frustum);
 
         this.prepareGlState(partialTicks, world, mc, frustum);
-        try (VertexArrayObject vao = this.cache.vao().bind();
-             GLBuffer drawCommandBuffer = this.drawCommandBuffer.bind(GL_DRAW_INDIRECT_BUFFER)) {
+        try (VertexArrayObject vao = this.cache.vao().bind()) {
             this.updateAndBindUBOs(partialTicks, world, mc, frustum);
             checkGLError("post fp2 setup");
 
