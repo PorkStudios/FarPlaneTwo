@@ -58,7 +58,7 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
     protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, @NonNull FarRenderIndex index) {
         try (ShaderProgram shader = SOLID_SHADER.use()) {
             for (int i = 0; i < VoxelRenderPass.COUNT; i++) {
-                int size = index.upload(i);
+                int size = index.upload(i, this.drawCommandBuffer);
                 if (size > 0) {
                     VoxelRenderPass.VALUES[i].render(mc, size);
                 }

@@ -22,7 +22,7 @@ package net.daporkchop.fp2.client;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.client.gl.object.UniformBufferObject;
+import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.util.DirectBufferReuse;
 import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -45,7 +45,7 @@ import static org.lwjgl.opengl.GL31.*;
  */
 @UtilityClass
 public class ShaderGlStateHelper {
-    private final UniformBufferObject UBO = new UniformBufferObject();
+    private final GLBuffer BUFFER = new GLBuffer(GL_STREAM_DRAW);
 
     private final int OFFSET_CAMERA = 0;
     private final int SIZE_CAMERA = 2 * MAT4_SIZE + VEC4_SIZE + IVEC3_SIZE + VEC3_SIZE;
@@ -71,6 +71,7 @@ public class ShaderGlStateHelper {
             //mat4 projection
             glGetFloat(GL_PROJECTION_MATRIX, DirectBufferReuse.wrapFloat(addr, MAT4_ELEMENTS));
             addr += MAT4_SIZE;
+
             //mat4 modelview
             glGetFloat(GL_MODELVIEW_MATRIX, DirectBufferReuse.wrapFloat(addr, MAT4_ELEMENTS));
             addr += MAT4_SIZE;
@@ -92,6 +93,7 @@ public class ShaderGlStateHelper {
             PUnsafe.putInt(addr + 1 * INT_SIZE, floorI(y));
             PUnsafe.putInt(addr + 2 * INT_SIZE, floorI(z));
             addr += IVEC3_SIZE;
+
             //vec3 position_fract
             PUnsafe.putFloat(addr + 0 * FLOAT_SIZE, (float) frac(x));
             PUnsafe.putFloat(addr + 1 * FLOAT_SIZE, (float) frac(y));
@@ -112,15 +114,19 @@ public class ShaderGlStateHelper {
             //float density
             PUnsafe.putFloat(addr, fogState.density);
             addr += FLOAT_SIZE;
+
             //float start
             PUnsafe.putFloat(addr, fogState.start);
             addr += FLOAT_SIZE;
+
             //float end
             PUnsafe.putFloat(addr, fogState.end);
             addr += FLOAT_SIZE;
+
             //float scale
             PUnsafe.putFloat(addr, 1.0f / (fogState.end - fogState.start));
             addr += FLOAT_SIZE;
+
             //int mode
             PUnsafe.putInt(addr, fogEnabled ? fogState.mode : 0);
             addr += INT_SIZE;
@@ -128,10 +134,10 @@ public class ShaderGlStateHelper {
     }
 
     public void bind() {
-        try (UniformBufferObject ubo = UBO.bind()) { //upload
-            glBufferData(GL_UNIFORM_BUFFER, DirectBufferReuse.wrapByte(DATA, TOTAL_SIZE), GL_STATIC_DRAW);
+        try (GLBuffer buffer = BUFFER.bind(GL_UNIFORM_BUFFER)) { //upload
+            buffer.upload(DATA, TOTAL_SIZE);
         }
-        UBO.bindUBO(0);
+        BUFFER.bindBase(GL_UNIFORM_BUFFER, 0);
     }
 
     public void updateFogColor(@NonNull FloatBuffer buffer) {

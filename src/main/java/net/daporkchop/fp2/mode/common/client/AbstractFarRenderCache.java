@@ -25,9 +25,8 @@ import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.client.gl.object.ElementArrayObject;
+import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
-import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
@@ -74,11 +73,11 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     protected final FarRenderIndex index;
     protected final VertexArrayObject vao = new VertexArrayObject();
 
-    protected final VertexBufferObject vertices = new VertexBufferObject();
+    protected final GLBuffer vertices = new GLBuffer(GL_DYNAMIC_DRAW);
     protected final Allocator verticesAllocator;
     protected final int vertexSize;
 
-    protected final ElementArrayObject indices = new ElementArrayObject();
+    protected final GLBuffer indices = new GLBuffer(GL_DYNAMIC_DRAW);
     protected final Allocator indicesAllocator;
     protected final int indexType;
     protected final int indexSize;
@@ -119,7 +118,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
             //grow SSBO
             checkGLError("pre resize vertices");
-            glBufferData(GL_ARRAY_BUFFER, newSize, GL_DYNAMIC_DRAW);
+            this.vertices.capacity(newSize);
 
             //re-upload data
             checkGLError("pre re-upload vertices");
@@ -132,7 +131,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
             //grow SSBO
             checkGLError("pre resize indices");
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, newSize, GL_DYNAMIC_DRAW);
+            this.indices.capacity(newSize);
 
             //re-upload data
             checkGLError("pre re-upload indices");
@@ -153,22 +152,20 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                 glEnableVertexAttribArray(i);
             }
 
-            {
-                glBindBuffer(GL_ARRAY_BUFFER, this.renderer.drawCommandBuffer.id());
+            try (GLBuffer vbo = this.renderer.drawCommandBuffer.bind(GL_ARRAY_BUFFER)) {
                 glVertexAttribIPointer(0, 4, GL_INT, FarRenderIndex.ENTRY_SIZE * INT_SIZE, 0L);
                 glVertexAttribDivisor(0, 1);
-                vao.putDependency(0, this.renderer.drawCommandBuffer);
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                vao.putDependency(0, vbo);
             }
 
-            try (VertexBufferObject vbo = this.vertices.bind()) {
+            try (GLBuffer vbo = this.vertices.bind(GL_ARRAY_BUFFER)) {
                 this.baker.assignVertexAttributes();
                 for (int i = 1; i <= attribs; i++) {
                     vao.putDependency(i, vbo);
                 }
             }
 
-            vao.putElementArray(this.indices.bind());
+            vao.putElementArray(this.indices.bind(GL_ELEMENT_ARRAY_BUFFER));
         } finally {
             for (int i = 0; i <= attribs; i++) {
                 glDisableVertexAttribArray(i);
@@ -261,8 +258,8 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                 return;
             }
 
-            try (VertexBufferObject verticesBuffer = this.vertices.bind();
-                 ElementArrayObject indicesBuffer = this.indices.bind()) {
+            try (GLBuffer verticesBuffer = this.vertices.bind(GL_ARRAY_BUFFER);
+                 GLBuffer indicesBuffer = this.indices.bind(GL_ELEMENT_ARRAY_BUFFER)) {
                 this.tree.putRenderData(pos, vertices, indices);
             }
         } finally {

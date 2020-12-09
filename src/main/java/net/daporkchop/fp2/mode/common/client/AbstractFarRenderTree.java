@@ -40,7 +40,6 @@ import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
-import static org.lwjgl.opengl.GL15.*;
 
 /**
  * Outrageously complex implementation of an n-tree utilizing 100% off-heap memory.
@@ -451,8 +450,8 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
         if (this.checkFlagsOR(node, FLAG_DATA)) {
             long data = node + this.data;
             checkGLError("pre upload vertices");
-            glBufferSubData(GL_ARRAY_BUFFER, (long) PUnsafe.getInt(data + RENDERDATA_VOFFSET) * this.vertexSize,
-                    DirectBufferReuse.wrapByte(PUnsafe.getLong(data + RENDERDATA_ADDR), PUnsafe.getInt(data + RENDERDATA_VCOUNT) * this.vertexSize));
+            this.cache.vertices.uploadRange((long) PUnsafe.getInt(data + RENDERDATA_VOFFSET) * this.vertexSize,
+                    PUnsafe.getLong(data + RENDERDATA_ADDR), (long) PUnsafe.getInt(data + RENDERDATA_VCOUNT) * this.vertexSize);
             checkGLError("post upload vertices");
         }
     }
@@ -466,10 +465,8 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
             }
 
             checkGLError("pre upload indices");
-            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (long) PUnsafe.getInt(data + RENDERDATA_IOFFSET) * this.indexSize, DirectBufferReuse.wrapByte(
-                    PUnsafe.getLong(data + RENDERDATA_ADDR) + PUnsafe.getInt(data + RENDERDATA_VCOUNT) * this.vertexSize,
-                    iCount * this.indexSize
-            ));
+            this.cache.indices.uploadRange((long) PUnsafe.getInt(data + RENDERDATA_IOFFSET) * this.indexSize,
+                    PUnsafe.getLong(data + RENDERDATA_ADDR) + PUnsafe.getInt(data + RENDERDATA_VCOUNT) * this.vertexSize, (long) iCount * this.indexSize);
             checkGLError("post upload indices");
         }
     }

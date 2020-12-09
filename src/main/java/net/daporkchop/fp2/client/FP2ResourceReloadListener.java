@@ -20,21 +20,10 @@
 
 package net.daporkchop.fp2.client;
 
-import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
-import net.daporkchop.fp2.util.Constants;
-import net.minecraft.client.renderer.texture.TextureUtil;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.IResourceManagerReloadListener;
-import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-
-import java.io.IOException;
-import java.nio.IntBuffer;
-
-import static net.daporkchop.fp2.client.TexUVs.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_

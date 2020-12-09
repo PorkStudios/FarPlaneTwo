@@ -26,8 +26,7 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
-import net.daporkchop.fp2.util.DirectBufferReuse;
+import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.math.vector.i.Vec2i;
 import net.daporkchop.lib.primitive.map.IntIntMap;
@@ -64,8 +63,8 @@ import static org.lwjgl.opengl.GL43.*;
  */
 @UtilityClass
 public class TexUVs {
-    public static final ShaderStorageBuffer QUAD_LISTS = new ShaderStorageBuffer();
-    public static final ShaderStorageBuffer QUAD_DATA = new ShaderStorageBuffer();
+    public static final GLBuffer QUAD_LISTS = new GLBuffer(GL_STATIC_DRAW);
+    public static final GLBuffer QUAD_DATA = new GLBuffer(GL_STATIC_DRAW);
 
     private static final Map<IBlockState, StateFaceReplacer> STATE_TO_REPLACER = new IdentityHashMap<>();
     private static final StateFaceReplacer DEFAULT_REPLACER = (state, face) -> state;
@@ -191,8 +190,8 @@ public class TexUVs {
                             .writeFloat(quad.tintFactor);
                 }
             }
-            try (ShaderStorageBuffer ssbo = QUAD_DATA.bind()) { //upload data
-                glBufferData(GL_SHADER_STORAGE_BUFFER, DirectBufferReuse.wrapByte(buffer.memoryAddress(), buffer.readableBytes()), GL_STATIC_DRAW);
+            try (GLBuffer ssbo = QUAD_DATA.bind(GL_SHADER_STORAGE_BUFFER)) { //upload data
+                ssbo.upload(buffer.memoryAddress(), buffer.readableBytes());
             }
 
             buffer.clear();
@@ -203,12 +202,17 @@ public class TexUVs {
                     buffer.writeInt(list.getX()).writeInt(list.getY());
                 }
             }
-            try (ShaderStorageBuffer ssbo = QUAD_LISTS.bind()) { //upload data
-                glBufferData(GL_SHADER_STORAGE_BUFFER, DirectBufferReuse.wrapByte(buffer.memoryAddress(), buffer.readableBytes()), GL_STATIC_DRAW);
+            try (GLBuffer ssbo = QUAD_LISTS.bind(GL_SHADER_STORAGE_BUFFER)) { //upload data
+                ssbo.upload(buffer.memoryAddress(), buffer.readableBytes());
             }
         } finally {
             buffer.release();
         }
+    }
+
+    public static void bind() {
+        QUAD_LISTS.bindBase(GL_SHADER_STORAGE_BUFFER, 0);
+        QUAD_DATA.bindBase(GL_SHADER_STORAGE_BUFFER, 1);
     }
 
     @FunctionalInterface

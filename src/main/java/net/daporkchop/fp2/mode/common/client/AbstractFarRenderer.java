@@ -25,11 +25,10 @@ import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.ShaderFP2StateHelper;
 import net.daporkchop.fp2.client.ShaderGlStateHelper;
+import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.client.gl.object.DrawIndirectBuffer;
-import net.daporkchop.fp2.client.gl.object.ShaderStorageBuffer;
+import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
-import net.daporkchop.fp2.client.gl.object.VertexBufferObject;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
@@ -42,10 +41,11 @@ import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
 
-import static net.daporkchop.fp2.client.TexUVs.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL40.*;
 
 /**
  * @author DaPorkchop_
@@ -55,7 +55,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
 
     protected final int maxLevel = FP2Config.maxLevels - 1;
 
-    protected final DrawIndirectBuffer drawCommandBuffer = new DrawIndirectBuffer();
+    protected final GLBuffer drawCommandBuffer = new GLBuffer(GL_STREAM_DRAW);
 
     public AbstractFarRenderer(@NonNull WorldClient world) {
         this.cache = this.createCache();
@@ -101,7 +101,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
 
         this.prepareGlState(partialTicks, world, mc, frustum);
         try (VertexArrayObject vao = this.cache.vao().bind();
-             DrawIndirectBuffer drawCommandBuffer = this.drawCommandBuffer.bind()) {
+             GLBuffer drawCommandBuffer = this.drawCommandBuffer.bind(GL_DRAW_INDIRECT_BUFFER)) {
             this.updateAndBindUBOs(partialTicks, world, mc, frustum);
             checkGLError("post fp2 setup");
 
@@ -129,8 +129,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     }
 
     protected void updateAndBindSSBOs(float partialTicks, WorldClient world, Minecraft mc, IFrustum frustum) {
-        QUAD_LISTS.bindSSBO(0);
-        QUAD_DATA.bindSSBO(1);
+        TexUVs.bind();
     }
 
     protected void updateAndBindUBOs(float partialTicks, WorldClient world, Minecraft mc, IFrustum frustum) {

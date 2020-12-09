@@ -23,8 +23,7 @@ package net.daporkchop.fp2.client;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2Config;
-import net.daporkchop.fp2.client.gl.object.UniformBufferObject;
-import net.daporkchop.fp2.util.DirectBufferReuse;
+import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 
@@ -37,7 +36,7 @@ import static org.lwjgl.opengl.GL31.*;
  */
 @UtilityClass
 public class ShaderFP2StateHelper {
-    private final UniformBufferObject UBO = new UniformBufferObject();
+    private final GLBuffer BUFFER = new GLBuffer(GL_STREAM_DRAW);
 
     private final int OFFSET_VIEW = 0;
     private final int SIZE_VIEW = 3 * INT_SIZE + 2 * FLOAT_SIZE;
@@ -54,19 +53,34 @@ public class ShaderFP2StateHelper {
 
     public void update(float partialTicks, @NonNull Minecraft mc) {
         { //view
-            PUnsafe.putInt(ADDR_VIEW + 0 * INT_SIZE, FP2Config.renderDistance);
-            PUnsafe.putInt(ADDR_VIEW + 1 * INT_SIZE, FP2Config.maxLevels);
-            PUnsafe.putInt(ADDR_VIEW + 2 * INT_SIZE, FP2Config.levelCutoffDistance);
+            long addr = ADDR_VIEW;
 
-            PUnsafe.putFloat(ADDR_VIEW + 3 * INT_SIZE + 0 * FLOAT_SIZE, (float) FP2Config.client.levelTransitionStart);
-            PUnsafe.putFloat(ADDR_VIEW + 3 * INT_SIZE + 1 * FLOAT_SIZE, (float) FP2Config.client.levelTransitionEnd);
+            //int renderDistance
+            PUnsafe.putInt(addr, FP2Config.renderDistance);
+            addr += INT_SIZE;
+
+            //int maxLevels
+            PUnsafe.putInt(addr, FP2Config.maxLevels);
+            addr += INT_SIZE;
+
+            //int levelCutoffDistance
+            PUnsafe.putInt(addr, FP2Config.levelCutoffDistance);
+            addr += INT_SIZE;
+
+            //float transitionStart
+            PUnsafe.putFloat(addr, (float) FP2Config.client.levelTransitionStart);
+            addr += FLOAT_SIZE;
+
+            //float transitionEnd
+            PUnsafe.putFloat(addr, (float) FP2Config.client.levelTransitionEnd);
+            addr += FLOAT_SIZE;
         }
     }
 
     public void bind() {
-        try (UniformBufferObject ubo = UBO.bind()) { //upload
-            glBufferData(GL_UNIFORM_BUFFER, DirectBufferReuse.wrapByte(DATA, TOTAL_SIZE), GL_STATIC_DRAW);
+        try (GLBuffer buffer = BUFFER.bind(GL_UNIFORM_BUFFER)) { //upload
+            buffer.upload(DATA, TOTAL_SIZE);
         }
-        UBO.bindUBO(1);
+        BUFFER.bindBase(GL_UNIFORM_BUFFER, 1);
     }
 }

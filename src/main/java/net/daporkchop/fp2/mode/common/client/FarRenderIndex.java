@@ -20,6 +20,8 @@
 
 package net.daporkchop.fp2.mode.common.client;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -139,11 +141,11 @@ public class FarRenderIndex {
         return this.sizes[pass];
     }
 
-    public int upload(int pass) {
+    public int upload(int pass, @NonNull GLBuffer buffer) {
         int size = this.sizes[pass];
         if (size > 0 && this.uploaded != pass) {
             checkGLError("pre upload index");
-            glBufferData(GL_DRAW_INDIRECT_BUFFER, (IntBuffer) this.buffers[pass].flip(), GL_STREAM_DRAW);
+            buffer.upload((IntBuffer) this.buffers[pass].flip());
             checkGLError("post upload index");
             this.uploaded = pass;
         }

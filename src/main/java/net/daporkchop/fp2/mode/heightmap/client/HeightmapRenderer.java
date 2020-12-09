@@ -69,7 +69,7 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
 
     @Override
     protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, @NonNull FarRenderIndex index) {
-        int size = index.upload(0);
+        int size = index.upload(0, this.drawCommandBuffer);
         if (size > 0) {
             //solid terrain
             try (ShaderProgram shader = TERRAIN_SHADER.use()) {

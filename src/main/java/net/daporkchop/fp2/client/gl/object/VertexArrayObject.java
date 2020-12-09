@@ -41,7 +41,6 @@ public final class VertexArrayObject extends GLObject<VertexArrayObject> {
         super(id);
     }
 
-    @Override
     public VertexArrayObject bind() {
         glBindVertexArray(this.id);
         return this;
@@ -57,7 +56,7 @@ public final class VertexArrayObject extends GLObject<VertexArrayObject> {
         return () -> glDeleteVertexArrays(id);
     }
 
-    public VertexArrayObject putDependency(int location, @NonNull GLBufferObject dependency) {
+    public VertexArrayObject putDependency(int location, @NonNull GLBuffer dependency) {
         this.dependencies.put(notNegative(location, "location"), dependency);
         return this;
     }
@@ -67,7 +66,7 @@ public final class VertexArrayObject extends GLObject<VertexArrayObject> {
         return this;
     }
 
-    public VertexArrayObject putElementArray(@NonNull ElementArrayObject dependency) {
+    public VertexArrayObject putElementArray(@NonNull GLBuffer dependency) {
         this.dependencies.put(-1, dependency);
         return this;
     }

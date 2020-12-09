@@ -44,8 +44,6 @@ public abstract class GLObject<T extends GLObject<T>> implements AutoCloseable {
         PCleaner.cleaner(this, () -> Minecraft.getMinecraft().addScheduledTask(r)); //create cleaner to ensure that the object is deleted later
     }
 
-    public abstract T bind();
-
     @Override
     public abstract void close();
 
