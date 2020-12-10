@@ -35,7 +35,7 @@ public enum RenderPass {
     SOLID {
         @Override
         public void render(@NonNull DrawMode mode, int tileCount) {
-            try (ShaderProgram program = mode.shaders.shader(mode, this, false).use()) {
+            try (ShaderProgram program = mode.shaders.getAndUseShader(mode, this, false)) {
                 GlStateManager.disableAlpha();
 
                 mode.draw0(tileCount);
@@ -47,7 +47,7 @@ public enum RenderPass {
     CUTOUT {
         @Override
         public void render(@NonNull DrawMode mode, int tileCount) {
-            try (ShaderProgram program = mode.shaders.shader(mode, this, false).use()) {
+            try (ShaderProgram program = mode.shaders.getAndUseShader(mode, this, false)) {
                 mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
                 GlStateManager.disableCull();
 
@@ -63,7 +63,7 @@ public enum RenderPass {
         public void render(@NonNull DrawMode mode, int tileCount) {
             glEnable(GL_STENCIL_TEST);
 
-            try (ShaderProgram program = mode.shaders.shader(mode, this, true).use()) {
+            try (ShaderProgram program = mode.shaders.getAndUseShader(mode, this, true)) {
                 GlStateManager.colorMask(false, false, false, false);
 
                 GlStateManager.clear(GL_STENCIL_BUFFER_BIT);
@@ -80,7 +80,7 @@ public enum RenderPass {
                 GlStateManager.colorMask(true, true, true, true);
             }
 
-            try (ShaderProgram program = mode.shaders.shader(mode, this, false).use()) {
+            try (ShaderProgram program = mode.shaders.getAndUseShader(mode, this, false)) {
                 GlStateManager.enableBlend();
                 GlStateManager.tryBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
                 GlStateManager.alphaFunc(GL_GREATER, 0.1f);

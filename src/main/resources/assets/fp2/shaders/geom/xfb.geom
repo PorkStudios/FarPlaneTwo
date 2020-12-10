@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-$today.year DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,14 +18,59 @@
  *
  */
 
-package net.daporkchop.fp2.client.render;
+#define PROVOKING (0)
 
-import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+vec3 normalVector() {
+    return normalize(cross(gs_in[PROVOKING].pos - gs_in[1].pos, gs_in[PROVOKING].pos - gs_in[2].pos));
+}
 
-/**
- * @author DaPorkchop_
- */
-public interface IShaderHolder {
-    ShaderProgram getAndUseShader(@NonNull DrawMode mode, @NonNull RenderPass pass, boolean stencil);
+//
+//
+// GEOMETRY SHADER-SPECIFIC CONFIGURATION
+//
+//
+
+layout(triangles) in;
+layout(triangle_strip, max_vertices = 3) out;
+
+//
+//
+// OUTPUTS
+//
+//
+
+out XFB_OUT {
+    vec3 pos;
+    vec4 color;
+    vec2 uv;
+    vec2 light;
+} xfb_out;
+
+//
+//
+// CONSTANTS
+//
+//
+
+const vec2 uv_factors[3] = vec2[](vec2(0., 1.), vec2(1., 0.), vec2(0., 0.));
+
+void main() {
+    vec3 normal = normalVector();
+    float diffuse = diffuseLight(normal);
+
+    ivec2 list = quad_lists[gs_in[PROVOKING].state * 6 + normalToFaceIndex(normal)];
+    BakedQuad quad = quad_data[list[0]];
+
+    vec4 color = vec4(max(gs_in[PROVOKING].color, vec3(quad.tintFactor)) * diffuse, 1.);
+
+    for (int i = 0; i < 3; i++) {
+        xfb_out.pos = gs_in[i].pos;
+        xfb_out.uv = mix(vec2(quad.minU, quad.minV), vec2(quad.maxU, quad.maxV), uv_factors[i]);
+        xfb_out.light = gs_in[i].light * 256.;
+
+        xfb_out.color = color;
+
+        EmitVertex();
+    }
+    EndPrimitive();
 }

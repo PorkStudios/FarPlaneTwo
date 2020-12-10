@@ -53,6 +53,8 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
     public static final ShaderProgram WATER_STENCIL_SHADER = ShaderManager.get("heightmap/water_stencil");
     public static final ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
 
+    public static final ShaderProgram XFB_TERRAIN_SHADER = ShaderManager.get("heightmap/xfb/terrain");
+
     public HeightmapRenderer(@NonNull WorldClient world) {
         super(world);
     }
@@ -84,16 +86,21 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
     }
 
     @Override
-    public ShaderProgram shader(@NonNull DrawMode mode, @NonNull RenderPass pass, boolean stencil) {
+    public ShaderProgram getAndUseShader(@NonNull DrawMode mode, @NonNull RenderPass pass, boolean stencil) {
         switch (mode) {
             case MULTIDRAW:
                 switch (pass) {
                     case SOLID:
-                        return TERRAIN_SHADER;
+                        return TERRAIN_SHADER.use();
                     case TRANSPARENT:
-                        return stencil ? WATER_STENCIL_SHADER : WATER_SHADER;
+                        return (stencil ? WATER_STENCIL_SHADER : WATER_SHADER).use();
                 }
                 break;
+            case TRANSFORM_FEEDBACK:
+                switch (pass) {
+                    case SOLID:
+                        return XFB_TERRAIN_SHADER.use();
+                }
         }
         throw new IllegalArgumentException("mode=" + mode + ", pass=" + pass + ", stencil=" + stencil);
     }

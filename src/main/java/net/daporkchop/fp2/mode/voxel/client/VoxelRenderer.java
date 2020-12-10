@@ -68,10 +68,10 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> imp
     }
 
     @Override
-    public ShaderProgram shader(@NonNull DrawMode mode, @NonNull RenderPass pass, boolean stencil) {
+    public ShaderProgram getAndUseShader(@NonNull DrawMode mode, @NonNull RenderPass pass, boolean stencil) {
         switch (mode) {
             case MULTIDRAW:
-                return stencil ? STENCIL_SHADER : SOLID_SHADER;
+                return (stencil ? STENCIL_SHADER : SOLID_SHADER).use();
         }
         throw new IllegalArgumentException("mode=" + mode + ", pass=" + pass + ", stencil=" + stencil);
     }

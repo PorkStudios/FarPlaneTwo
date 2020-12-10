@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-$today.year DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,14 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.client.render;
+//
+//
+// INPUTS
+//
+//
 
-import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+in gl_PerVertex {
+    vec4 gl_Position;
+} gl_in[];
 
-/**
- * @author DaPorkchop_
- */
-public interface IShaderHolder {
-    ShaderProgram getAndUseShader(@NonNull DrawMode mode, @NonNull RenderPass pass, boolean stencil);
-}
+in VS_OUT {
+    vec3 pos;
+    vec2 light;
+
+    flat vec3 color;
+    flat vec3 base_pos;
+    flat int state;
+} gs_in[];

@@ -65,13 +65,18 @@ public class ShaderManager {
                     }
 
                     checkState(meta.vert != null, "Program \"%s\" has no vertex shaders!", programName);
-                    checkState(meta.frag != null, "Program \"%s\" has no fragment shaders!", programName);
+                    if (meta.xfb_varying != null) {
+                        checkState(meta.frag == null, "Program \"%s\" has both fragment shaders and transform feedback outputs!", programName);
+                    } else {
+                        checkState(meta.frag != null, "Program \"%s\" has no fragment shaders!", programName);
+                    }
 
                     return new ShaderProgram(
                             programName,
                             get(meta.vert, ShaderType.VERTEX),
                             meta.geom != null ? get(meta.geom, ShaderType.GEOMETRY) : null,
-                            get(meta.frag, ShaderType.FRAGMENT));
+                            meta.frag != null ? get(meta.frag, ShaderType.FRAGMENT) : null,
+                            meta.xfb_varying);
                 }
             });
 
@@ -136,12 +141,17 @@ public class ShaderManager {
                 }
 
                 checkState(meta.vert != null, "Program \"%s\" has no vertex shaders!", programName);
-                checkState(meta.frag != null, "Program \"%s\" has no fragment shaders!", programName);
+                if (meta.xfb_varying != null) {
+                    checkState(meta.frag == null, "Program \"%s\" has both fragment shaders and transform feedback outputs!", programName);
+                } else {
+                    checkState(meta.frag != null, "Program \"%s\" has no fragment shaders!", programName);
+                }
 
                 program.reload(
                         get(meta.vert, ShaderType.VERTEX),
                         meta.geom != null ? get(meta.geom, ShaderType.GEOMETRY) : null,
-                        get(meta.frag, ShaderType.FRAGMENT));
+                        meta.frag != null ? get(meta.frag, ShaderType.FRAGMENT) : null,
+                        meta.xfb_varying);
                 shaderCount.incrementAndGet();
             });
             Minecraft.getMinecraft().player.sendMessage(new TextComponentString("§a" + shaderCount.get() + " shaders successfully reloaded."));

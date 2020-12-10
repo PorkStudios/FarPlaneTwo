@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL30.*;
 
 /**
  * Basic wrapper around a shader.
@@ -52,7 +53,7 @@ public final class ShaderProgram implements AutoCloseable {
      * @param geom the geometry shader
      * @param frag fragment shader
      */
-    protected ShaderProgram(@NonNull String name, @NonNull Shader vert, Shader geom, @NonNull Shader frag) {
+    protected ShaderProgram(@NonNull String name, @NonNull Shader vert, Shader geom, Shader frag, String[] xfb_varying) {
         this.name = name;
 
         //allocate program
@@ -62,22 +63,31 @@ public final class ShaderProgram implements AutoCloseable {
         AtomicInteger idReference = this.idReference;
         PCleaner.cleaner(this, () -> Minecraft.getMinecraft().addScheduledTask(() -> glDeleteProgram(idReference.get())));
 
-        this.link(this.id, vert, geom, frag);
+        this.link(this.id, vert, geom, frag, xfb_varying);
     }
 
-    private void link(int id, @NonNull Shader vert, Shader geom, @NonNull Shader frag)   {
+    private void link(int id, @NonNull Shader vert, Shader geom, Shader frag, String[] xfb_varying)   {
         checkArg(vert.type == ShaderType.VERTEX, "vert must be a VERTEX shader (%s)", vert.type);
         if (geom != null)   {
             checkArg(geom.type == ShaderType.GEOMETRY, "geom must be a GEOMETRY shader (%s)", geom.type);
         }
-        checkArg(frag.type == ShaderType.FRAGMENT, "frag must be a FRAGMENT shader (%s)", frag.type);
+        if (frag != null) {
+            checkArg(frag.type == ShaderType.FRAGMENT, "frag must be a FRAGMENT shader (%s)", frag.type);
+        }
 
         //attach shaders
         glAttachShader(id, vert.id);
         if (geom != null) {
             glAttachShader(id, geom.id);
         }
-        glAttachShader(id, frag.id);
+        if (frag != null) {
+            glAttachShader(id, frag.id);
+        }
+
+        //register transform feedback varyings
+        if (xfb_varying != null) {
+            glTransformFeedbackVaryings(id, xfb_varying, GL_INTERLEAVED_ATTRIBS);
+        }
 
         //link and validate
         glLinkProgram(id);
@@ -86,11 +96,11 @@ public final class ShaderProgram implements AutoCloseable {
         ShaderManager.validateProgramValidate(this.name, id);
     }
 
-    protected void reload(@NonNull Shader vert, Shader geom, @NonNull Shader frag)    {
+    protected void reload(@NonNull Shader vert, Shader geom, Shader frag, String[] xfb_varying)    {
         //attempt to link new code
         int newId = glCreateProgram();
         try {
-            this.link(newId, vert, geom, frag);
+            this.link(newId, vert, geom, frag, xfb_varying);
         } catch (Exception e)   {
             glDeleteProgram(newId);
             throw e;

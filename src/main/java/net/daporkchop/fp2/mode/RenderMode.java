@@ -197,9 +197,7 @@ public enum RenderMode {
     private final int pieceVersion;
 
     RenderMode(int pieceVersion) {
-        String name = PStrings.clone(this.name());
-        PUnsafeStrings.titleFormat(name);
-        PUnsafeStrings.setEnumName(this, name.intern());
+        PUnsafeStrings.setEnumName(this, PStrings.split(this.name(), '_').titleFormat().join(' ').intern());
         this.pieceVersion = pieceVersion;
 
         this.registerDefaultGenerators();

@@ -29,4 +29,6 @@ final class ProgramMeta {
     public String[] vert;
     public String[] geom;
     public String[] frag;
+
+    public String[] xfb_varying;
 }

@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.mode.common.client;
 
+import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.util.Constants;
@@ -47,6 +48,7 @@ public class FarRenderIndex {
     public static final int COMMAND_SIZE_BYTES = COMMAND_SIZE * INT_SIZE;
     public static final int ENTRY_SIZE_BYTES = POSITION_SIZE_BYTES + COMMAND_SIZE_BYTES;
 
+    @Getter
     protected final IntBuffer[] buffers;
     protected final int[] sizes;
 
