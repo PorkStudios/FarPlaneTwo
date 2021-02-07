@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,6 +24,7 @@ import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.client.KeyBindings;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.daporkchop.fp2.client.render.DrawMode;
 import net.daporkchop.fp2.net.client.CPacketDropAllPieces;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -58,6 +59,11 @@ public class DebugClientEvents {
         if (DebugKeyBindings.REBUILD_UVS.isPressed()) {
             TexUVs.reloadUVs();
             mc.player.sendMessage(new TextComponentString("§aRebuilt texture UVs."));
+        }
+        if (DebugKeyBindings.CYCLE_DRAW_MODE.isPressed()) {
+            DrawMode[] drawModes = DrawMode.values();
+            FP2Config.compatibility.drawMode = drawModes[(FP2Config.compatibility.drawMode.ordinal() + 1) % drawModes.length];
+            mc.player.sendMessage(new TextComponentString("§aSwitched to draw mode: " + drawModes));
         }
     }
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,18 +25,20 @@ import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.mode.common.client.FarRenderIndex;
-import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.string.PUnsafeStrings;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
+import net.minecraft.entity.Entity;
 
+import java.nio.IntBuffer;
 import java.util.stream.IntStream;
 
+import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.opengl.GL40.*;
 import static org.lwjgl.opengl.GL43.*;
@@ -122,8 +124,6 @@ public enum DrawMode implements AutoCloseable {
             checkGLError("post xfb");
             glBindVertexArray(0);
 
-            //GlStateManager.disableCull();
-
             try (GLBuffer buffer = this.buffer.bind(GL_ARRAY_BUFFER)) {
                 checkGLError("pre state init");
 
@@ -164,8 +164,6 @@ public enum DrawMode implements AutoCloseable {
                 checkGLError("post");
             }
             checkGLError("post2");
-
-            //GlStateManager.enableCull();
         }
 
         @Override
@@ -193,7 +191,73 @@ public enum DrawMode implements AutoCloseable {
 
             //Constants.LOGGER.info("transform feedback rendered {} primitives", glGetQueryObjectui(this.query, GL_QUERY_RESULT));
         }
-    };
+    }/*,
+    LEGACY {
+        @Override
+        public void draw(@NonNull RenderPass pass, int passNumber) { //currently broken
+            if (pass != RenderPass.SOLID || this.index.count(passNumber) <= 0) {
+                return;
+            }
+
+            glBindVertexArray(0);
+
+            checkGLError("pre state init");
+
+            GlStateManager.glEnableClientState(32884);
+            OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
+            GlStateManager.glEnableClientState(32888);
+            OpenGlHelper.setClientActiveTexture(OpenGlHelper.lightmapTexUnit);
+            GlStateManager.glEnableClientState(32888);
+            OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
+            GlStateManager.glEnableClientState(32886);
+
+            GlStateManager.resetColor();
+
+            checkGLError("pre vertex init");
+
+            GlStateManager.glVertexPointer(3, GL_FLOAT, 11 * FLOAT_SIZE, 0);
+            GlStateManager.glColorPointer(4, GL_FLOAT, 11 * FLOAT_SIZE, 3 * FLOAT_SIZE);
+            GlStateManager.glTexCoordPointer(2, GL_FLOAT, 11 * FLOAT_SIZE, 7 * FLOAT_SIZE);
+            OpenGlHelper.setClientActiveTexture(OpenGlHelper.lightmapTexUnit);
+            GlStateManager.glTexCoordPointer(2, GL_FLOAT, 11 * FLOAT_SIZE, 9 * FLOAT_SIZE);
+            OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
+
+            checkGLError("pre render");
+
+            Entity entity = mc.getRenderViewEntity();
+            double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) mc.getRenderPartialTicks();
+            double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) mc.getRenderPartialTicks();
+            double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) mc.getRenderPartialTicks();
+
+            IntBuffer buffer = this.index.buffers()[passNumber];
+            for (int t = 0, tileCount = this.index.count(passNumber); t < tileCount; t++) {
+                glPushMatrix();
+
+                int i = t * FarRenderIndex.ENTRY_SIZE;
+                glTranslated((buffer.get(i + 0) << T_SHIFT) - x, (buffer.get(i + 1) << T_SHIFT) - y, (buffer.get(i + 2) << T_SHIFT) - z);
+
+                //glDrawElementsIndirect();
+
+                glPopMatrix();
+            }
+
+            checkGLError("post render");
+
+            GlStateManager.glDisableClientState(32884);
+            OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
+            GlStateManager.glDisableClientState(32888);
+            OpenGlHelper.setClientActiveTexture(OpenGlHelper.lightmapTexUnit);
+            GlStateManager.glDisableClientState(32888);
+            OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
+            GlStateManager.glDisableClientState(32886);
+
+            checkGLError("post");
+        }
+
+        @Override
+        void draw0(int tileCount) {
+        }
+    }*/;
 
     protected FarRenderIndex index;
     protected GLBuffer commandBuffer;

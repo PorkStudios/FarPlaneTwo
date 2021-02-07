@@ -18,10 +18,10 @@
  *
  */
 
-#define PROVOKING (0)
+#define PROVOKING (2)
 
 vec3 normalVector() {
-    return normalize(cross(gs_in[PROVOKING].pos - gs_in[1].pos, gs_in[PROVOKING].pos - gs_in[2].pos));
+    return normalize(cross(gs_in[PROVOKING].pos - gs_in[0].pos, gs_in[PROVOKING].pos - gs_in[1].pos));
 }
 
 //
