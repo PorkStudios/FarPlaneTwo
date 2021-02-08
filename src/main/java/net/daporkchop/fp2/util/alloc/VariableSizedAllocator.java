@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,8 +23,6 @@ package net.daporkchop.fp2.util.alloc;
 import lombok.NonNull;
 import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.common.util.PArrays;
-import net.daporkchop.lib.primitive.lambda.IntIntFunction;
-import net.daporkchop.lib.primitive.lambda.LongLongConsumer;
 
 import java.util.Map;
 import java.util.NavigableMap;
@@ -37,6 +35,7 @@ import static net.minecraft.util.math.MathHelper.*;
 /**
  * @author DaPorkchop_
  */
+//TODO: make this work with 64-bit addresses
 public final class VariableSizedAllocator implements Allocator {
     private static final int MIN_ALLOC_SZ = 4;
 
@@ -47,34 +46,31 @@ public final class VariableSizedAllocator implements Allocator {
         return clamp(31 - Integer.numberOfLeadingZeros(max(size, MIN_ALLOC_SZ)) - 2, 0, BIN_MAX_IDX);
     }
 
-    protected final long block;
-    protected final IntIntFunction growFunction;
-    protected final LongLongConsumer resizeCallback;
-    protected int size;
+    protected final long blockSize;
+    protected final GrowFunction growFunction;
+    protected final CapacityManager manager;
+    protected int capacity;
 
     protected final Bin[] bins = PArrays.filled(BIN_COUNT, Bin[]::new, Bin::new);
     protected final NavigableMap<Integer, Node> nodes = new TreeMap<>();
 
-    public VariableSizedAllocator(long blockSize, @NonNull LongLongConsumer resizeCallback) {
-        this(blockSize, resizeCallback, 0);
+    public VariableSizedAllocator(long blockSize, @NonNull CapacityManager manager) {
+        this(blockSize, manager, GrowFunction.DEFAULT);
     }
 
-    public VariableSizedAllocator(long blockSize, @NonNull LongLongConsumer resizeCallback, int initialBlockCount) {
-        this(blockSize, resizeCallback, FixedSizeAllocator.DEFAULT_GROW_FUNCTION, initialBlockCount);
-    }
-
-    public VariableSizedAllocator(long blockSize, @NonNull LongLongConsumer resizeCallback, @NonNull IntIntFunction growFunction, int initialBlockCount) {
-        this.block = positive(blockSize, "blockSize");
-        this.size = notNegative(initialBlockCount, "initialBlockCount");
-        this.resizeCallback = resizeCallback;
+    public VariableSizedAllocator(long blockSize, @NonNull CapacityManager manager, @NonNull GrowFunction growFunction) {
+        this.blockSize = positive(blockSize, "blockSize");
+        this.manager = manager;
         this.growFunction = growFunction;
+
+        this.manager.brk(this.capacity = toInt(this.growFunction.grow(0L, blockSize << 4L)));
     }
 
     @Override
     public long alloc(long rawSize) {
         //round up to block size
-        rawSize = PMath.roundUp(positive(rawSize, "rawSize"), this.block);
-        int size = toInt(rawSize / this.block);
+        rawSize = PMath.roundUp(positive(rawSize, "rawSize"), this.blockSize);
+        int size = toInt(rawSize / this.blockSize);
 
         int index;
         Node found;
@@ -105,12 +101,12 @@ public final class VariableSizedAllocator implements Allocator {
         found.prev = null;
         found.next = null;
 
-        return found.base * this.block;
+        return found.base * this.blockSize;
     }
 
     @Override
     public void free(long address) {
-        Node head = this.nodes.get(toInt(address / this.block));
+        Node head = this.nodes.get(toInt(address / this.blockSize));
         checkArg(head != null, "invalid address: %d", address);
 
         Integer base = head.base;
@@ -144,28 +140,21 @@ public final class VariableSizedAllocator implements Allocator {
         this.bins[getBinIndex(head.size)].addNode(head);
     }
 
-    @Override
-    public void close() {
-        //no-op
-    }
-
     private boolean expand() {
-        int oldSize = this.size;
-        this.size = this.growFunction.applyAsInt(oldSize);
-        int deltaSize = this.size - oldSize;
-        checkState(deltaSize > 0, "size (%d) must be greater than previous size (%d)", this.size, oldSize);
-        this.resizeCallback.accept(this.block * oldSize, this.block * this.size);
+        int oldCapacity = this.capacity;
+        this.manager.sbrk(this.capacity = toInt(this.growFunction.grow(oldCapacity, this.blockSize)));
+        int deltaCapacity = this.capacity - oldCapacity;
 
         Map.Entry<Integer, Node> wildernessEntry = this.nodes.lastEntry();
         if (wildernessEntry != null && wildernessEntry.getValue().hole) {
             Node wilderness = wildernessEntry.getValue();
             this.bins[getBinIndex(wilderness.size)].removeNode(wilderness);
-            wilderness.size += deltaSize;
+            wilderness.size += deltaCapacity;
             this.bins[getBinIndex(wilderness.size)].addNode(wilderness);
         } else {
             Node wilderness = new Node();
-            wilderness.base = oldSize;
-            wilderness.size = deltaSize;
+            wilderness.base = oldCapacity;
+            wilderness.size = deltaCapacity;
             wilderness.hole = true;
             this.nodes.put(wilderness.base, wilderness);
             this.bins[getBinIndex(wilderness.size)].addNode(wilderness);

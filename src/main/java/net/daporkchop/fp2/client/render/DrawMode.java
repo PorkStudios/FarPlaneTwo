@@ -29,14 +29,10 @@ import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.string.PUnsafeStrings;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
-import net.minecraft.entity.Entity;
 
-import java.nio.IntBuffer;
 import java.util.stream.IntStream;
 
-import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL30.*;

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -41,6 +41,7 @@ public class OpenGL {
     public final int FLOAT_SIZE = Float.BYTES;
     public final int INT_SIZE = Integer.BYTES;
     public final int DOUBLE_SIZE = Double.BYTES;
+    public final int LONG_SIZE = Long.BYTES;
 
     public final int VEC2_ELEMENTS = 2;
     public final int VEC2_SIZE = VEC2_ELEMENTS * FLOAT_SIZE;

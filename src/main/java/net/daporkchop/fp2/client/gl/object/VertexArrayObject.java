@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -30,8 +30,8 @@ import static org.lwjgl.opengl.GL30.*;
 /**
  * @author DaPorkchop_
  */
-public final class VertexArrayObject extends GLObject<VertexArrayObject> {
-    private final Int2ObjectMap<GLObject> dependencies = new Int2ObjectOpenHashMap<>();
+public final class VertexArrayObject extends GLObject {
+    private final Int2ObjectMap<IGLBuffer> dependencies = new Int2ObjectOpenHashMap<>();
 
     public VertexArrayObject() {
         this(glGenVertexArrays());
@@ -56,7 +56,7 @@ public final class VertexArrayObject extends GLObject<VertexArrayObject> {
         return () -> glDeleteVertexArrays(id);
     }
 
-    public VertexArrayObject putDependency(int location, @NonNull GLBuffer dependency) {
+    public VertexArrayObject putDependency(int location, @NonNull IGLBuffer dependency) {
         this.dependencies.put(notNegative(location, "location"), dependency);
         return this;
     }
@@ -66,7 +66,7 @@ public final class VertexArrayObject extends GLObject<VertexArrayObject> {
         return this;
     }
 
-    public VertexArrayObject putElementArray(@NonNull GLBuffer dependency) {
+    public VertexArrayObject putElementArray(@NonNull IGLBuffer dependency) {
         this.dependencies.put(-1, dependency);
         return this;
     }

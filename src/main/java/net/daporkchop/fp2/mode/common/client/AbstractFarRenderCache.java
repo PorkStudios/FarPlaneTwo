@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,6 +24,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.client.AllocatedGLBuffer;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
@@ -32,8 +33,6 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SimpleRecycler;
-import net.daporkchop.fp2.util.alloc.Allocator;
-import net.daporkchop.fp2.util.alloc.VariableSizedAllocator;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.daporkchop.lib.common.misc.string.PStrings;
@@ -47,8 +46,6 @@ import java.util.function.IntFunction;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -73,12 +70,10 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     protected final FarRenderIndex index;
     protected final VertexArrayObject vao = new VertexArrayObject();
 
-    protected final GLBuffer vertices = new GLBuffer(GL_DYNAMIC_DRAW);
-    protected final Allocator verticesAllocator;
+    protected final AllocatedGLBuffer vertices;
     protected final int vertexSize;
 
-    protected final GLBuffer indices = new GLBuffer(GL_DYNAMIC_DRAW);
-    protected final Allocator indicesAllocator;
+    protected final AllocatedGLBuffer indices;
     protected final int indexType;
     protected final int indexSize;
 
@@ -113,31 +108,8 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
         this.tree = this.createTree();
 
-        this.verticesAllocator = new VariableSizedAllocator(this.vertexSize, (oldSize, newSize) -> {
-            LOGGER.info("Growing vertices buffer from {} to {} bytes", oldSize, newSize);
-
-            //grow SSBO
-            checkGLError("pre resize vertices");
-            this.vertices.capacity(newSize);
-
-            //re-upload data
-            checkGLError("pre re-upload vertices");
-            this.tree.forEach(this.tree::uploadVertices, FLAG_RENDERED);
-            checkGLError("post re-upload vertices");
-        });
-
-        this.indicesAllocator = new VariableSizedAllocator(this.indexSize, (oldSize, newSize) -> {
-            LOGGER.info("Growing indices buffer from {} to {} bytes", oldSize, newSize);
-
-            //grow SSBO
-            checkGLError("pre resize indices");
-            this.indices.capacity(newSize);
-
-            //re-upload data
-            checkGLError("pre re-upload indices");
-            this.tree.forEach(this.tree::uploadIndices, FLAG_RENDERED);
-            checkGLError("post re-upload indices");
-        });
+        this.vertices = AllocatedGLBuffer.create(GL_DYNAMIC_DRAW, this.vertexSize, true);
+        this.indices = AllocatedGLBuffer.create(GL_DYNAMIC_DRAW, this.indexSize, true);
 
         this.index = new FarRenderIndex(this);
 
@@ -158,7 +130,7 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                 vao.putDependency(0, vbo);
             }
 
-            try (GLBuffer vbo = this.vertices.bind(GL_ARRAY_BUFFER)) {
+            try (AllocatedGLBuffer vbo = this.vertices.bind(GL_ARRAY_BUFFER)) {
                 this.baker.assignVertexAttributes();
                 for (int i = 1; i <= attribs; i++) {
                     vao.putDependency(i, vbo);
@@ -258,8 +230,8 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                 return;
             }
 
-            try (GLBuffer verticesBuffer = this.vertices.bind(GL_ARRAY_BUFFER);
-                 GLBuffer indicesBuffer = this.indices.bind(GL_ELEMENT_ARRAY_BUFFER)) {
+            try (AllocatedGLBuffer verticesBuffer = this.vertices.bind(GL_ARRAY_BUFFER);
+                 AllocatedGLBuffer indicesBuffer = this.indices.bind(GL_ELEMENT_ARRAY_BUFFER)) {
                 this.tree.putRenderData(pos, vertices, indices);
             }
         } finally {

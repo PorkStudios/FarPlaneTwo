@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.client.gl.object;
 
+import io.netty.buffer.ByteBuf;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import lombok.Getter;
@@ -38,7 +39,7 @@ import static org.lwjgl.opengl.GL30.*;
 /**
  * @author DaPorkchop_
  */
-public final class GLBuffer extends GLObject<GLBuffer> {
+public class GLBuffer extends GLObject implements IGLBuffer {
     protected static final IntSet ACTIVE_TARGETS = new IntOpenHashSet();
 
     @Getter
@@ -52,16 +53,20 @@ public final class GLBuffer extends GLObject<GLBuffer> {
         this.usage = usage;
     }
 
-    /**
-     * Binds this buffer to the given binding target.
-     *
-     * @param target where the buffer should be bound to
-     */
+    @Override
     public GLBuffer bind(int target) {
         checkState(this.target < 0, "buffer id=%s is already bound!", this.id);
         checkState(ACTIVE_TARGETS.add(target), "target id=%s is already active!", target);
         glBindBuffer(this.target = target, this.id);
         return this;
+    }
+
+    @Override
+    public void close() {
+        checkState(this.target >= 0, "not bound!");
+        checkState(ACTIVE_TARGETS.remove(this.target));
+        glBindBuffer(this.target, 0);
+        this.target = -1;
     }
 
     /**
@@ -121,49 +126,33 @@ public final class GLBuffer extends GLObject<GLBuffer> {
         this.capacity = data.remaining() * (long) FLOAT_SIZE;
     }
 
-    /**
-     * Sets the buffer contents in a certain range.
-     *
-     * @param start the offset of the range inside the buffer (in bytes)
-     * @param addr  the base address of the data to upload
-     * @param size  the size of the data (in bytes)
-     */
+    @Override
     public void uploadRange(long start, long addr, long size) {
         checkState(this.target >= 0, "not bound!");
         checkRangeLen(this.capacity, start, size);
         glBufferSubData(this.target, start, DirectBufferReuse.wrapByte(addr, toInt(size, "size")));
     }
 
-    /**
-     * Sets the buffer contents in a certain range.
-     *
-     * @param start the offset of the range inside the buffer (in bytes)
-     * @param data  the data to upload
-     */
+    @Override
+    public void uploadRange(long start, @NonNull ByteBuf data) {
+        this.uploadRange(start, data.memoryAddress() + data.readerIndex(), data.readableBytes());
+    }
+
+    @Override
     public void uploadRange(long start, @NonNull ByteBuffer data) {
         checkState(this.target >= 0, "not bound!");
         checkRangeLen(this.capacity, start, data.remaining());
         glBufferSubData(this.target, start, data);
     }
 
-    /**
-     * Sets the buffer contents in a certain range.
-     *
-     * @param start the offset of the range inside the buffer (in bytes)
-     * @param data  the data to upload
-     */
+    @Override
     public void uploadRange(long start, @NonNull IntBuffer data) {
         checkState(this.target >= 0, "not bound!");
         checkRangeLen(this.capacity, start, data.remaining() * (long) INT_SIZE);
         glBufferSubData(this.target, start, data);
     }
 
-    /**
-     * Sets the buffer contents in a certain range.
-     *
-     * @param start the offset of the range inside the buffer (in bytes)
-     * @param data  the data to upload
-     */
+    @Override
     public void uploadRange(long start, @NonNull FloatBuffer data) {
         checkState(this.target >= 0, "not bound!");
         checkRangeLen(this.capacity, start, data.remaining() * (long) FLOAT_SIZE);
@@ -171,11 +160,10 @@ public final class GLBuffer extends GLObject<GLBuffer> {
     }
 
     @Override
-    public void close() {
+    public void downloadRange(long start, long addr, long size) {
         checkState(this.target >= 0, "not bound!");
-        checkState(ACTIVE_TARGETS.remove(this.target));
-        glBindBuffer(this.target, 0);
-        this.target = -1;
+        checkRangeLen(this.capacity, start, size);
+        glGetBufferSubData(this.target, start, DirectBufferReuse.wrapByte(addr, toInt(size, "size")));
     }
 
     @Override

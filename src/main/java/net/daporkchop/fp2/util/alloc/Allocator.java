@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,10 +20,12 @@
 
 package net.daporkchop.fp2.util.alloc;
 
+import net.daporkchop.lib.common.math.PMath;
+
 /**
  * @author DaPorkchop_
  */
-public interface Allocator extends AutoCloseable {
+public interface Allocator {
     /**
      * Allocates a region of the given size.
      *
@@ -42,10 +44,49 @@ public interface Allocator extends AutoCloseable {
     void free(long address);
 
     /**
-     * Closes this allocator, releasing all allocated resources.
-     * <p>
-     * Any regions which were not freed previously will be invalidated after return of this method.
+     * A callback function which computes the next size to grow the data to.
+     *
+     * @author DaPorkchop_
      */
-    @Override
-    void close();
+    @FunctionalInterface
+    interface GrowFunction {
+        GrowFunction DEFAULT = (oldCapacity, increment) -> {
+            final long STEP = 1 << 24L; // 16 MiB
+
+            return PMath.roundUp(oldCapacity + increment, STEP);
+        };
+
+        /**
+         * Computes the new capacity to grow to.
+         *
+         * @param oldCapacity the previous capacity
+         * @param increment   the minimum amount by which the capacity should be increased
+         * @return the new capacity. guaranteed to be at least {@code oldCapacity + increment}
+         */
+        long grow(long oldCapacity, long increment);
+    }
+
+    /**
+     * Contains callbacks which manage allocation of address space for an {@link Allocator}.
+     * <p>
+     * The names for {@link #brk(long)} and {@link #sbrk(long)} are inspired by the legacy POSIX syscalls of the same names.
+     *
+     * @author DaPorkchop_
+     * @see <a href="https://linux.die.net/man/2/sbrk">Linux Programmer's Manual</a>
+     */
+    interface CapacityManager {
+        /**
+         * Requests that the capacity be set to the given amount.
+         *
+         * @param capacity the requested capacity
+         */
+        void brk(long capacity);
+
+        /**
+         * Requests that the capacity be extended/truncated to the given amount.
+         *
+         * @param newCapacity the new capacity
+         */
+        void sbrk(long newCapacity);
+    }
 }

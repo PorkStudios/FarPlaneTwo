@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -328,11 +328,11 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
             //copy vertex data to new buffer
             vertices.readBytes(DirectBufferReuse.wrapByte(addr, verticesSize));
             addr += verticesSize;
-            PUnsafe.putInt(data + RENDERDATA_VOFFSET, toInt(this.cache.verticesAllocator.alloc(verticesSize) / this.vertexSize));
+            PUnsafe.putInt(data + RENDERDATA_VOFFSET, toInt(this.cache.vertices.alloc(verticesSize) / this.vertexSize));
             PUnsafe.putInt(data + RENDERDATA_VCOUNT, verticesSize / this.vertexSize);
 
             //copy index data to new buffer
-            PUnsafe.putInt(data + RENDERDATA_IOFFSET, toInt(this.cache.indicesAllocator.alloc(indicesTotalSize) / this.indexSize));
+            PUnsafe.putInt(data + RENDERDATA_IOFFSET, toInt(this.cache.indices.alloc(indicesTotalSize) / this.indexSize));
             for (int i = 0; i < indices.length; i++) {
                 ByteBuf buf = indices[i];
                 int indicesSize = buf.readableBytes();
@@ -355,8 +355,8 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
             this.clearFlags(node, FLAG_DATA);
 
             PUnsafe.freeMemory(PUnsafe.getLong(data + RENDERDATA_ADDR));
-            this.cache.verticesAllocator.free((long) PUnsafe.getInt(data + RENDERDATA_VOFFSET) * this.vertexSize);
-            this.cache.indicesAllocator.free((long) PUnsafe.getInt(data + RENDERDATA_IOFFSET) * this.indexSize);
+            this.cache.vertices.free((long) PUnsafe.getInt(data + RENDERDATA_VOFFSET) * this.vertexSize);
+            this.cache.indices.free((long) PUnsafe.getInt(data + RENDERDATA_IOFFSET) * this.indexSize);
         }
     }
 

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,8 +21,6 @@
 package net.daporkchop.fp2.util.alloc;
 
 import lombok.NonNull;
-import net.daporkchop.lib.primitive.lambda.IntIntFunction;
-import net.daporkchop.lib.primitive.lambda.LongLongConsumer;
 
 import java.util.BitSet;
 
@@ -34,68 +32,44 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public final class FixedSizeAllocator extends BitSet implements Allocator { //extend BitSet to eliminate an indirection
-    public static final IntIntFunction DEFAULT_GROW_FUNCTION = i -> {
-        if (i == 0) {
-            return 1;
-        } else if ((i & (1 << 30)) != 0) { //highest bit is set
-            if (i < Integer.MAX_VALUE) {
-                return Integer.MAX_VALUE;
-            } else {
-                throw new OutOfMemoryError();
-            }
-        } else {
-            return i << 1;
-        }
-    };
-
-    protected final long block;
-    protected final IntIntFunction growFunction;
-    protected final LongLongConsumer resizeCallback;
-    protected int size;
+    protected final long blockSize;
+    protected final GrowFunction growFunction;
+    protected final CapacityManager manager;
+    protected long capacity;
     protected int fromIndex = 0;
 
-    public FixedSizeAllocator(long blockSize, @NonNull LongLongConsumer resizeCallback) {
-        this(blockSize, resizeCallback, 0);
+    public FixedSizeAllocator(long blockSize, @NonNull CapacityManager manager) {
+        this(blockSize, manager, GrowFunction.DEFAULT);
     }
 
-    public FixedSizeAllocator(long blockSize, @NonNull LongLongConsumer resizeCallback, int initialBlockCount) {
-        this(blockSize, resizeCallback, DEFAULT_GROW_FUNCTION, initialBlockCount);
-    }
-
-    public FixedSizeAllocator(long blockSize, @NonNull LongLongConsumer resizeCallback, @NonNull IntIntFunction growFunction, int initialBlockCount) {
-        this.block = positive(blockSize, "blockSize");
-        this.size = notNegative(initialBlockCount, "initialBlockCount");
-        this.resizeCallback = resizeCallback;
+    public FixedSizeAllocator(long blockSize, @NonNull CapacityManager manager, @NonNull GrowFunction growFunction) {
+        this.blockSize = positive(blockSize, "blockSize");
+        this.manager = manager;
         this.growFunction = growFunction;
+
+        this.manager.brk(this.capacity = this.growFunction.grow(0L, blockSize << 4L));
     }
 
     @Override
     public long alloc(long size) {
-        checkArg(size == this.block, "size must be exactly block size (%d)", this.block);
+        checkArg(size == this.blockSize, "size must be exactly block size (%d)", this.blockSize);
         int slot = this.nextClearBit(this.fromIndex);
         this.set(slot);
         this.fromIndex = slot;
 
-        if (slot >= this.size) {
-            int oldSize = this.size;
-            this.size = this.growFunction.applyAsInt(oldSize);
-            checkState(this.size > oldSize, "size (%d) must be greater than previous size (%d)", this.size, oldSize);
-            this.resizeCallback.accept(this.block * oldSize, this.block * this.size);
+        long addr = slot * this.blockSize;
+        if (addr >= this.capacity) {
+            this.manager.sbrk(this.capacity = this.growFunction.grow(this.capacity, this.blockSize));
         }
-        return this.block * slot;
+        return addr;
     }
 
     @Override
     public void free(long address) {
-        int slot = toInt(address / this.block);
+        int slot = toInt(address / this.blockSize);
         this.clear(slot);
         if (slot < this.fromIndex) {
             this.fromIndex = slot;
         }
-    }
-
-    @Override
-    public void close() {
-        //no-op
     }
 }
