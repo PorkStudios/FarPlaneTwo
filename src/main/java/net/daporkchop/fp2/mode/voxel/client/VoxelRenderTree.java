@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,37 +23,31 @@ package net.daporkchop.fp2.mode.voxel.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
+import net.daporkchop.fp2.mode.common.client.AbstractFarRenderCache;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree;
+import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
-import java.nio.IntBuffer;
-
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
 public class VoxelRenderTree extends AbstractFarRenderTree<VoxelPos, VoxelPiece> {
-    public VoxelRenderTree(@NonNull VoxelRenderCache cache) {
-        super(cache, 3);
+    public VoxelRenderTree(@NonNull AbstractFarRenderCache<VoxelPos, VoxelPiece> cache, @NonNull IFarRenderStrategy<VoxelPos, VoxelPiece> strategy, int d) {
+        super(strategy, d, );
     }
 
     @Override
-    protected void storePos(long pos, @NonNull VoxelPos toStore) {
-        PUnsafe.putInt(pos + 0 * 4L, toStore.x());
-        PUnsafe.putInt(pos + 1 * 4L, toStore.y());
-        PUnsafe.putInt(pos + 2 * 4L, toStore.z());
-    }
-
-    @Override
-    protected boolean isPosEqual(int aLevel, long aPos, @NonNull VoxelPos b) {
-        return aLevel == b.level()
-               && PUnsafe.getInt(aPos + 0 * 4L) == b.x()
-               && PUnsafe.getInt(aPos + 1 * 4L) == b.y()
-               && PUnsafe.getInt(aPos + 2 * 4L) == b.z();
+    protected boolean isPosEqual(long a, @NonNull VoxelPos b) {
+        return PUnsafe.getInt(a + 0 * INT_SIZE) == b.x()
+               && PUnsafe.getInt(a + 1 * INT_SIZE) == b.y()
+               && PUnsafe.getInt(a + 2 * INT_SIZE) == b.z()
+               && PUnsafe.getInt(a + 3 * INT_SIZE) == b.level();
     }
 
     @Override
@@ -63,36 +57,37 @@ public class VoxelRenderTree extends AbstractFarRenderTree<VoxelPos, VoxelPiece>
     }
 
     @Override
-    protected boolean intersects(int level, long node, @NonNull Volume volume) {
-        int x = PUnsafe.getInt(node + this.pos + 0 * 4L);
-        int y = PUnsafe.getInt(node + this.pos + 1 * 4L);
-        int z = PUnsafe.getInt(node + this.pos + 2 * 4L);
-        int shift = level + T_SHIFT;
+    protected boolean intersects(long pos, @NonNull Volume volume) {
+        int x = PUnsafe.getInt(pos + 0 * INT_SIZE);
+        int y = PUnsafe.getInt(pos + 1 * INT_SIZE);
+        int z = PUnsafe.getInt(pos + 2 * INT_SIZE);
+        int shift = PUnsafe.getInt(pos + 3 * INT_SIZE) + T_SHIFT;
         return volume.intersects(x << shift, y << shift, z << shift, (x + 1) << shift, (y + 1) << shift, (z + 1) << shift);
     }
 
     @Override
-    protected boolean isNodeInFrustum(int level, long node, @NonNull IFrustum frustum) {
-        int x = PUnsafe.getInt(node + this.pos + 0 * 4L);
-        int y = PUnsafe.getInt(node + this.pos + 1 * 4L);
-        int z = PUnsafe.getInt(node + this.pos + 2 * 4L);
-        int shift = level + T_SHIFT;
+    protected boolean containedBy(long pos, @NonNull Volume volume) {
+        int x = PUnsafe.getInt(pos + 0 * INT_SIZE);
+        int y = PUnsafe.getInt(pos + 1 * INT_SIZE);
+        int z = PUnsafe.getInt(pos + 2 * INT_SIZE);
+        int shift = PUnsafe.getInt(pos + 3 * INT_SIZE) + T_SHIFT;
+        return volume.contains(x << shift, y << shift, z << shift, (x + 1) << shift, (y + 1) << shift, (z + 1) << shift);
+    }
+
+    @Override
+    protected boolean isNodeInFrustum(long pos, @NonNull IFrustum frustum) {
+        int x = PUnsafe.getInt(pos + 0 * INT_SIZE);
+        int y = PUnsafe.getInt(pos + 1 * INT_SIZE);
+        int z = PUnsafe.getInt(pos + 2 * INT_SIZE);
+        int shift = PUnsafe.getInt(pos + 3 * INT_SIZE) + T_SHIFT;
         return frustum.intersectsBB(x << shift, y << shift, z << shift, (x + 1) << shift, (y + 1) << shift, (z + 1) << shift);
     }
 
     @Override
-    protected boolean isVanillaRenderable(long node) {
-        int x = PUnsafe.getInt(node + this.pos + 0 * 4L);
-        int y = PUnsafe.getInt(node + this.pos + 1 * 4L);
-        int z = PUnsafe.getInt(node + this.pos + 2 * 4L);
+    protected boolean isVanillaRenderable(long pos) {
+        int x = PUnsafe.getInt(pos + 0 * INT_SIZE);
+        int y = PUnsafe.getInt(pos + 1 * INT_SIZE);
+        int z = PUnsafe.getInt(pos + 2 * INT_SIZE);
         return ClientConstants.isChunkRenderable(x, y, z);
-    }
-
-    @Override
-    protected void putNodePosForIndex(int level, long node, @NonNull IntBuffer dst) {
-        int x = PUnsafe.getInt(node + this.pos + 0 * 4L);
-        int y = PUnsafe.getInt(node + this.pos + 1 * 4L);
-        int z = PUnsafe.getInt(node + this.pos + 2 * 4L);
-        dst.put(x).put(y).put(z).put(level);
     }
 }

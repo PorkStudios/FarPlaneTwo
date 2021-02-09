@@ -20,53 +20,42 @@
 
 package net.daporkchop.fp2.mode.voxel.client;
 
+import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.daporkchop.fp2.client.AllocatedGLBuffer;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
-import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
-import net.daporkchop.fp2.mode.common.client.IFarRenderBaker;
+import net.daporkchop.fp2.mode.common.client.BakeOutput;
+import net.daporkchop.fp2.mode.common.client.strategy.MultidrawRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.mode.voxel.VoxelShaders;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.minecraft.client.multiplayer.WorldClient;
+
+import static org.lwjgl.opengl.GL15.*;
 
 /**
  * @author DaPorkchop_
  */
-public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
-    public VoxelRenderer(@NonNull WorldClient world) {
-        super(world);
+public class MultidrawVoxelRenderStrategy extends MultidrawRenderStrategy<VoxelPos, VoxelPiece> implements IVoxelRenderStrategy {
+    public MultidrawVoxelRenderStrategy() {
+        super(VoxelBake.VOXEL_VERTEX_SIZE, VoxelBake.VOXEL_VERTEX_ATTRIBUTE_COUNT);
     }
 
     @Override
-    protected VoxelRenderCache createCache() {
-        return new VoxelRenderCache(this);
-    }
-
-    @Override
-    public IFarRenderBaker<VoxelPos, VoxelPiece> baker() {
-        return new VoxelRenderBaker();
-    }
-
-    /*@Override
-    protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, @NonNull FarRenderIndex index) {
-        try (DrawMode drawMode = FP2Config.compatibility.drawMode.start(index, this.drawCommandBuffer, this)) {
-            for (int i = 0; i < RenderPass.COUNT; i++) {
-                drawMode.draw(RenderPass.fromOrdinal(i), i);
-            }
+    protected void configureVertexAttributes(int attributeIndex) {
+        try (AllocatedGLBuffer vertices = this.vertices.bind(GL_ARRAY_BUFFER)) {
+            VoxelBake.vertexAttributes(attributeIndex);
         }
     }
 
     @Override
-    public ShaderProgram getAndUseShader(@NonNull DrawMode mode, @NonNull RenderPass pass, boolean stencil) {
-        switch (mode) {
-            case MULTIDRAW:
-                return (stencil ? STENCIL_SHADER : SOLID_SHADER).use();
-        }
-        throw new IllegalArgumentException("mode=" + mode + ", pass=" + pass + ", stencil=" + stencil);
+    protected void bakeVertsAndIndices(@NonNull VoxelPos pos, @NonNull VoxelPiece[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
+        VoxelBake.bakeForShaderDraw(pos, srcs, verts, indices);
     }
 
     @Override
-    public RenderMode mode() {
-        return RenderMode.VOXEL;
-    }*/
+    protected void draw() {
+        try (ShaderProgram program = VoxelShaders.SOLID_SHADER.use()) {
+            this.drawSolid.draw();
+        }
+    }
 }

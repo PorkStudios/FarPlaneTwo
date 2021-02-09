@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -26,7 +26,7 @@ import net.daporkchop.fp2.client.KeyBindings;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.debug.FP2Debug;
 import net.daporkchop.fp2.mode.heightmap.client.HeightmapRenderer;
-import net.daporkchop.fp2.mode.voxel.client.VoxelRenderer;
+import net.daporkchop.fp2.mode.voxel.VoxelShaders;
 import net.daporkchop.fp2.net.client.CPacketDropAllPieces;
 import net.daporkchop.fp2.net.client.CPacketRenderMode;
 import net.daporkchop.fp2.net.server.SPacketPieceData;
@@ -142,7 +142,7 @@ public class FP2 {
 
             //load render classes on client thread
             PUnsafe.ensureClassInitialized(HeightmapRenderer.class);
-            PUnsafe.ensureClassInitialized(VoxelRenderer.class);
+            PUnsafe.ensureClassInitialized(VoxelShaders.class);
         }
     }
 

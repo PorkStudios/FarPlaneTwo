@@ -36,12 +36,12 @@ import java.util.List;
  */
 public final class BakeOutput {
     public final long renderData;
-    protected final long renderDataSize;
+    public final long size;
 
     protected final List<Task> tasks = new ArrayList<>();
 
     public BakeOutput(long renderDataSize) {
-        this.renderData = PUnsafe.allocateMemory(this, this.renderDataSize = renderDataSize);
+        this.renderData = PUnsafe.allocateMemory(this, this.size = renderDataSize);
     }
 
     public void submit(@NonNull Task task) {
@@ -65,12 +65,11 @@ public final class BakeOutput {
      * <p>
      * Must be called from the client thread.
      */
-    public void execute(long renderData) {
+    public void execute() {
         try {
             for (int i = 0, size = this.tasks.size(); i < size; i++) {
                 this.tasks.get(i).run(this.renderData);
             }
-            PUnsafe.copyMemory(this.renderData, renderData, this.renderDataSize);
         } finally {
             this.tasks.clear();
         }

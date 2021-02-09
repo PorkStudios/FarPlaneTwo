@@ -36,6 +36,7 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
+@Deprecated
 public class FarRenderIndex {
     public static final int POSITION_SIZE = 4;
     public static final int COMMAND_SIZE = 5;

@@ -23,7 +23,6 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.UnpooledByteBufAllocator;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.AllocatedGLBuffer;
@@ -86,20 +85,20 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, P extends IFarP
     }
 
     @Override
-    public void deleteRenderData(int tileX, int tileY, int tileZ, int zoom, long renderData) {
-        super.deleteRenderData(tileX, tileY, tileZ, zoom, renderData);
+    public void deleteRenderData(long renderData) {
+        super.deleteRenderData(renderData);
 
         this.indices.free(_renderdata_indexOffset(renderData));
     }
 
     @Override
-    protected void bakeVerts(int tileX, int tileY, int tileZ, int zoom, @NonNull P[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts) {
+    protected void bakeVerts(@NonNull POS pos, @NonNull P[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts) {
         ByteBuf[] indices = new ByteBuf[RENDER_PASS_COUNT];
         for (int i = 0; i < RENDER_PASS_COUNT; i++) {
             indices[i] = ByteBufAllocator.DEFAULT.directBuffer();
         }
         try {
-            this.bakeVertsAndIndices(tileX, tileY, tileZ, zoom, srcs, output, verts, indices);
+            this.bakeVertsAndIndices(pos, srcs, output, verts, indices);
 
             if (!verts.isReadable()) { //there are no vertices, meaning nothing to draw
                 return;
@@ -132,18 +131,18 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, P extends IFarP
         }
     }
 
-    protected abstract void bakeVertsAndIndices(int tileX, int tileY, int tileZ, int zoom, @NonNull P[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices);
+    protected abstract void bakeVertsAndIndices(@NonNull POS pos, @NonNull P[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices);
 
     @Override
-    public void executeBakeOutput(int tileX, int tileY, int tileZ, int zoom, @NonNull BakeOutput output, long renderData) {
+    public void executeBakeOutput(@NonNull POS pos, @NonNull BakeOutput output) {
         try (AllocatedGLBuffer indices = this.indices.bind(GL_ELEMENT_ARRAY_BUFFER)) {
-            super.executeBakeOutput(tileX, tileY, tileZ, zoom, output, renderData);
+            super.executeBakeOutput(pos, output);
         }
     }
 
-    protected void drawRef(@NonNull IDrawMode dst, long ref) {
-        long pos = _ref_pos(ref);
-        long renderData = _ref_renderData(ref);
+    protected void drawTile(@NonNull IDrawMode dst, long tile) {
+        long pos = _tile_pos(tile);
+        long renderData = _tile_renderData(tile);
 
         dst.drawElements(_pos_tileX(pos), _pos_tileY(pos), _pos_tileZ(pos), _pos_level(pos),
                 toInt(_renderdata_vertexOffset(renderData) / this.vertexSize), //baseVertex

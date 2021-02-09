@@ -80,15 +80,15 @@ public abstract class BaseRenderStrategy<POS extends IFarPos, P extends IFarPiec
     }
 
     @Override
-    public void deleteRenderData(int tileX, int tileY, int tileZ, int zoom, long renderData) {
+    public void deleteRenderData(long renderData) {
         this.vertices.free(_renderdata_vertexOffset(renderData));
     }
 
     @Override
-    public boolean bake(int tileX, int tileY, int tileZ, int zoom, @NonNull P[] srcs, @NonNull BakeOutput output) {
+    public boolean bake(@NonNull POS pos, @NonNull P[] srcs, @NonNull BakeOutput output) {
         ByteBuf verts = ByteBufAllocator.DEFAULT.directBuffer();
         try {
-            this.bakeVerts(tileX, tileY, tileZ, zoom, srcs, output, verts);
+            this.bakeVerts(pos, srcs, output, verts);
 
             int vertexCount = verts.readableBytes() / this.vertexSize;
 
@@ -104,12 +104,12 @@ public abstract class BaseRenderStrategy<POS extends IFarPos, P extends IFarPiec
         }
     }
 
-    protected abstract void bakeVerts(int tileX, int tileY, int tileZ, int zoom, @NonNull P[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts);
+    protected abstract void bakeVerts(@NonNull POS pos, @NonNull P[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts);
 
     @Override
-    public void executeBakeOutput(int tileX, int tileY, int tileZ, int zoom, @NonNull BakeOutput output, long renderData) {
+    public void executeBakeOutput(@NonNull POS pos, @NonNull BakeOutput output) {
         try (AllocatedGLBuffer vertices = this.vertices.bind(GL_ARRAY_BUFFER)) {
-            output.execute(renderData);
+            output.execute();
         }
     }
 }

@@ -56,6 +56,8 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
 
     protected final GLBuffer drawCommandBuffer = new GLBuffer(GL_STREAM_DRAW);
 
+    protected final DirectLongStack index = new DirectLongStack();
+
     public AbstractFarRenderer(@NonNull WorldClient world) {
         this.cache = this.createCache();
     }
@@ -89,7 +91,10 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
         ClientConstants.update();
 
         checkGLError("pre fp2 build index");
-        FarRenderIndex index = this.cache.rebuildIndex(this.createVolumesForSelection(partialTicks, world, mc, frustum), frustum);
+        Volume[] volumes = this.createVolumesForSelection(partialTicks, world, mc, frustum);
+
+
+        /*FarRenderIndex index = this.cache.rebuildIndex(volumes, frustum);
         checkGLError("post fp2 build index");
         if (index.isEmpty()) {
             return; //nothing to render...
@@ -110,7 +115,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
             checkGLError("pre fp2 reset");
             this.resetGlState(partialTicks, world, mc, frustum);
             checkGLError("post fp2 reset");
-        }
+        }*/
     }
 
     //TODO: use cylinders for heightmap and spheres for voxel

@@ -59,8 +59,6 @@ public class RenderConstants {
     public final long _POS_LEVEL_OFFSET = _POS_TILEZ_OFFSET + INT_SIZE;
 
     public final long _POS_SIZE = _POS_LEVEL_OFFSET + BYTE_SIZE;
-    public final long _REF_POS_OFFSET = 0L;
-    public final long _REF_RENDERDATA_OFFSET = _REF_POS_OFFSET + _POS_SIZE;
 
     public int _pos_tileX(long pos) {
         return PUnsafe.getInt(pos);
@@ -86,26 +84,11 @@ public class RenderConstants {
         PUnsafe.putInt(pos, tileZ);
     }
 
-    /*
-     * struct Ref {
-     *   Pos pos; //defined in RenderConstants.java
-     *   RenderData renderData; //defined by IFarRenderStrategy implementations
-     * };
-     */
-
     public int _pos_level(long pos) {
         return PUnsafe.getInt(pos);
     }
 
     public void _pos_level(long pos, int level) {
         PUnsafe.putInt(pos, level);
-    }
-
-    public long _ref_pos(long ref) {
-        return ref + _REF_POS_OFFSET;
-    }
-
-    public long _ref_renderData(long ref) {
-        return ref + _REF_RENDERDATA_OFFSET;
     }
 }

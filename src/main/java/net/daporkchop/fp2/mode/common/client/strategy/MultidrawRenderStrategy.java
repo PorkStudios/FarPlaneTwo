@@ -20,12 +20,15 @@
 
 package net.daporkchop.fp2.mode.common.client.strategy;
 
+import io.netty.buffer.ByteBuf;
+import lombok.NonNull;
 import net.daporkchop.fp2.client.AllocatedGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.render.IDrawMode;
 import net.daporkchop.fp2.client.render.IndirectMultiDrawMode;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.common.client.BakeOutput;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
@@ -50,7 +53,7 @@ public abstract class MultidrawRenderStrategy<POS extends IFarPos, P extends IFa
             this.drawSolid = new IndirectMultiDrawMode(0, vao);
 
             try (AllocatedGLBuffer vbo = this.vertices.bind(GL_ARRAY_BUFFER)) {
-                this.configureVertexAttributes();
+                this.configureVertexAttributes(1);
                 for (int i = 1; i <= vertexAttributeCount; i++) {
                     vao.putDependency(i, vbo);
                 }
@@ -66,14 +69,23 @@ public abstract class MultidrawRenderStrategy<POS extends IFarPos, P extends IFa
         }
     }
 
-    protected abstract void configureVertexAttributes();
+    protected abstract void configureVertexAttributes(int attributeIndex);
 
     @Override
-    public void render(long refv, int refc) {
+    protected abstract void bakeVertsAndIndices(@NonNull POS pos, @NonNull P[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices);
+
+    @Override
+    public void render(long tilev, int tilec) {
         try (IDrawMode output = this.drawSolid.begin()) {
-            for (int i = 0; i < refc; i++, refv += LONG_SIZE) {
-                this.drawRef(output, PUnsafe.getLong(refv));
+            for (int i = 0; i < tilec; i++, tilev += LONG_SIZE) {
+                this.drawTile(output, PUnsafe.getLong(tilev));
             }
         }
+
+        try (VertexArrayObject vao = this.vao.bind()) {
+            this.draw();
+        }
     }
+
+    protected abstract void draw();
 }

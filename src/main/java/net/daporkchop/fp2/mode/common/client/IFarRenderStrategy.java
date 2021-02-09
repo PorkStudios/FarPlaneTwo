@@ -21,8 +21,10 @@
 package net.daporkchop.fp2.mode.common.client;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.util.math.Volume;
 
 import java.util.stream.Stream;
 
@@ -30,6 +32,10 @@ import java.util.stream.Stream;
  * @author DaPorkchop_
  */
 public interface IFarRenderStrategy<POS extends IFarPos, P extends IFarPiece> {
+    //
+    // POSITION ENCODING/DECODING/HELPER METHODS
+    //
+
     /**
      * Gets the positions of all the pieces whose baked contents are affected by the content of the given piece.
      * <p>
@@ -51,15 +57,32 @@ public interface IFarRenderStrategy<POS extends IFarPos, P extends IFarPiece> {
     Stream<POS> bakeInputs(@NonNull POS dstPos);
 
     /**
+     * @return the size of a position stored by this rendering strategy
+     */
+    long posSize();
+
+    void writePos(@NonNull POS pos, long addr);
+
+    POS readPos(long addr);
+
+    //
+    // RENDER DATA METHODS
+    //
+
+    /**
      * @return the size of the render tree data stored by this rendering strategy
      */
     long renderDataSize();
 
-    void deleteRenderData(int tileX, int tileY, int tileZ, int zoom, long renderData);
+    void deleteRenderData(long renderData);
 
-    boolean bake(int tileX, int tileY, int tileZ, int zoom, @NonNull P[] srcs, @NonNull BakeOutput output);
+    //
+    // BAKING+RENDERING METHODS
+    //
 
-    void executeBakeOutput(int tileX, int tileY, int tileZ, int zoom, @NonNull BakeOutput output, long renderData);
+    boolean bake(@NonNull POS pos, @NonNull P[] srcs, @NonNull BakeOutput output);
 
-    void render(long refv, int refc); //haha yes C naming conventions
+    void executeBakeOutput(@NonNull POS pos, @NonNull BakeOutput output);
+
+    void render(long tilev, int tilec); //haha yes C naming conventions
 }

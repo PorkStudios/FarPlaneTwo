@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -47,10 +47,10 @@ public class HeightmapRenderTree extends AbstractFarRenderTree<HeightmapPos, Hei
     }
 
     @Override
-    protected boolean isPosEqual(int aLevel, long aPos, @NonNull HeightmapPos b) {
+    protected boolean isPosEqual(long a, @NonNull HeightmapPos b) {
         return aLevel == b.level()
-               && PUnsafe.getInt(aPos + 0 * 4L) == b.x()
-               && PUnsafe.getInt(aPos + 1 * 4L) == b.z();
+               && PUnsafe.getInt(a + 0 * 4L) == b.x()
+               && PUnsafe.getInt(a + 1 * 4L) == b.z();
     }
 
     @Override
@@ -60,9 +60,9 @@ public class HeightmapRenderTree extends AbstractFarRenderTree<HeightmapPos, Hei
     }
 
     @Override
-    protected boolean intersects(int level, long node, @NonNull Volume volume) {
-        int x = PUnsafe.getInt(node + this.pos + 0 * 4L);
-        int z = PUnsafe.getInt(node + this.pos + 1 * 4L);
+    protected boolean intersects(long pos, @NonNull Volume volume) {
+        int x = PUnsafe.getInt(pos + this.pos + 0 * 4L);
+        int z = PUnsafe.getInt(pos + this.pos + 1 * 4L);
         int shift = level + T_SHIFT;
         return volume.intersects(x << shift, Integer.MIN_VALUE, z << shift, (x + 1) << shift, Integer.MAX_VALUE, (z + 1) << shift);
     }
@@ -76,7 +76,7 @@ public class HeightmapRenderTree extends AbstractFarRenderTree<HeightmapPos, Hei
     }
 
     @Override
-    protected boolean isVanillaRenderable(long node) {
+    protected boolean isVanillaRenderable(long pos) {
         return false; //TODO
     }
 
