@@ -18,23 +18,18 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.client.strategy;
-
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
+package net.daporkchop.fp2.client.render;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class MultidrawBasedRenderStrategy<POS extends IFarPos, P extends IFarPiece> implements IFarRenderStrategy<POS, P> {
-    /*
-     * struct RenderData {
-     * };
-     */
+public interface IDrawMode extends AutoCloseable {
+    IDrawMode begin();
+
+    void drawElements(int tileX, int tileY, int tileZ, int zoom, int baseVertex, int firstIndex, int count);
 
     @Override
-    public long renderDataSize() {
-        return 0;
-    }
+    void close();
+
+    void draw();
 }

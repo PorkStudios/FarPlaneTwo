@@ -31,11 +31,6 @@ import java.util.stream.Stream;
  */
 public interface IFarRenderStrategy<POS extends IFarPos, P extends IFarPiece> {
     /**
-     * @return the size of the render tree data stored by this rendering strategy
-     */
-    long renderDataSize();
-
-    /**
      * Gets the positions of all the pieces whose baked contents are affected by the content of the given piece.
      * <p>
      * The returned {@link Stream} must be sequential!
@@ -55,7 +50,16 @@ public interface IFarRenderStrategy<POS extends IFarPos, P extends IFarPiece> {
      */
     Stream<POS> bakeInputs(@NonNull POS dstPos);
 
-    void bake(long renderData, int tileX, int tileY, int tileZ, int zoom, @NonNull P[] srcs);
+    /**
+     * @return the size of the render tree data stored by this rendering strategy
+     */
+    long renderDataSize();
+
+    void deleteRenderData(int tileX, int tileY, int tileZ, int zoom, long renderData);
+
+    boolean bake(int tileX, int tileY, int tileZ, int zoom, @NonNull P[] srcs, @NonNull BakeOutput output);
+
+    void executeBakeOutput(int tileX, int tileY, int tileZ, int zoom, @NonNull BakeOutput output, long renderData);
 
     void render(long refv, int refc); //haha yes C naming conventions
 }

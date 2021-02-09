@@ -24,7 +24,7 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
+import static org.lwjgl.opengl.GL11.*;
 
 /**
  * Constant values used throughout the render code.
@@ -35,8 +35,13 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class RenderConstants {
     public final int RENDER_PASS_COUNT = 3; //the total number of render passes
 
+    public final int INDEX_TYPE = GL_UNSIGNED_SHORT;
+    public final int INDEX_SIZE = SHORT_SIZE;
+    public final int INDEX_SHIFT = Integer.numberOfTrailingZeros(INDEX_SIZE);
+
     //
     // off-heap structs layouts
+    //TODO: figure out how to keep intellij from rearranging this area when reformatting
     //
 
     /*
@@ -54,6 +59,8 @@ public class RenderConstants {
     public final long _POS_LEVEL_OFFSET = _POS_TILEZ_OFFSET + INT_SIZE;
 
     public final long _POS_SIZE = _POS_LEVEL_OFFSET + BYTE_SIZE;
+    public final long _REF_POS_OFFSET = 0L;
+    public final long _REF_RENDERDATA_OFFSET = _REF_POS_OFFSET + _POS_SIZE;
 
     public int _pos_tileX(long pos) {
         return PUnsafe.getInt(pos);
@@ -79,14 +86,6 @@ public class RenderConstants {
         PUnsafe.putInt(pos, tileZ);
     }
 
-    public int _pos_level(long pos) {
-        return PUnsafe.getInt(pos);
-    }
-
-    public void _pos_level(long pos, int level) {
-        PUnsafe.putInt(pos, level);
-    }
-
     /*
      * struct Ref {
      *   Pos pos; //defined in RenderConstants.java
@@ -94,8 +93,13 @@ public class RenderConstants {
      * };
      */
 
-    public final long _REF_POS_OFFSET = 0L;
-    public final long _REF_RENDERDATA_OFFSET = _REF_POS_OFFSET + _POS_SIZE;
+    public int _pos_level(long pos) {
+        return PUnsafe.getInt(pos);
+    }
+
+    public void _pos_level(long pos, int level) {
+        PUnsafe.putInt(pos, level);
+    }
 
     public long _ref_pos(long ref) {
         return ref + _REF_POS_OFFSET;

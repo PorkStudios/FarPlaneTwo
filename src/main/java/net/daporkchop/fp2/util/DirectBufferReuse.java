@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -49,9 +49,9 @@ public class DirectBufferReuse {
     public final long BUFFER_CAPACITY_OFFSET = PUnsafe.pork_getOffset(Buffer.class, "capacity");
     public final long BUFFER_ADDRESS_OFFSET = PUnsafe.pork_getOffset(Buffer.class, "address");
 
-    protected final ByteBuffer BYTE = PUnsafe.allocateInstance(PorkUtil.classForName("java.nio.DirectByteBuffer"));
-    protected final FloatBuffer FLOAT = PUnsafe.allocateInstance(PorkUtil.classForName("java.nio.DirectFloatBufferU"));
-    protected final IntBuffer INT = PUnsafe.allocateInstance(PorkUtil.classForName("java.nio.DirectIntBufferU"));
+    public final ByteBuffer _BYTE = PUnsafe.allocateInstance(PorkUtil.classForName("java.nio.DirectByteBuffer"));
+    public final FloatBuffer _FLOAT = PUnsafe.allocateInstance(PorkUtil.classForName("java.nio.DirectFloatBufferU"));
+    public final IntBuffer _INT = PUnsafe.allocateInstance(PorkUtil.classForName("java.nio.DirectIntBufferU"));
 
     public void _resetBuffer(@NonNull Buffer buffer, long address, int capacity) {
         checkState(buffer.isDirect(), "buffer isn't direct! %s", buffer);
@@ -62,19 +62,19 @@ public class DirectBufferReuse {
     }
 
     public static ByteBuffer wrapByte(long address, int capacity) {
-        ByteBuffer buffer = BYTE;
+        ByteBuffer buffer = _BYTE;
         _resetBuffer(buffer, address, capacity);
         return buffer;
     }
 
     public static FloatBuffer wrapFloat(long address, int capacity) {
-        FloatBuffer buffer = FLOAT;
+        FloatBuffer buffer = _FLOAT;
         _resetBuffer(buffer, address, capacity);
         return buffer;
     }
 
     public static IntBuffer wrapInt(long address, int capacity) {
-        IntBuffer buffer = INT;
+        IntBuffer buffer = _INT;
         _resetBuffer(buffer, address, capacity);
         return buffer;
     }

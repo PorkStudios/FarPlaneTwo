@@ -21,12 +21,13 @@
 package net.daporkchop.fp2.mode.common.client.strategy;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.client.AllocatedGLBuffer;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.common.client.BakeOutput;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -67,9 +68,9 @@ public abstract class BaseRenderStrategy<POS extends IFarPos, P extends IFarPiec
     }
 
     protected final AllocatedGLBuffer vertices;
-    protected final long vertexSize;
+    protected final int vertexSize;
 
-    public BaseRenderStrategy(long vertexSize) {
+    public BaseRenderStrategy(int vertexSize) {
         this.vertices = AllocatedGLBuffer.create(GL_DYNAMIC_DRAW, this.vertexSize = vertexSize, true);
     }
 
@@ -79,8 +80,36 @@ public abstract class BaseRenderStrategy<POS extends IFarPos, P extends IFarPiec
     }
 
     @Override
-    public void bake(long renderData, int tileX, int tileY, int tileZ, int zoom, @NonNull P[] srcs) {
+    public void deleteRenderData(int tileX, int tileY, int tileZ, int zoom, long renderData) {
+        this.vertices.free(_renderdata_vertexOffset(renderData));
     }
 
-    protected abstract void bakeVerts(int tileX, int tileY, int tileZ, int zoom, @NonNull P[] srcs, @NonNull ByteBuf verts);
+    @Override
+    public boolean bake(int tileX, int tileY, int tileZ, int zoom, @NonNull P[] srcs, @NonNull BakeOutput output) {
+        ByteBuf verts = ByteBufAllocator.DEFAULT.directBuffer();
+        try {
+            this.bakeVerts(tileX, tileY, tileZ, zoom, srcs, output, verts);
+
+            int vertexCount = verts.readableBytes() / this.vertexSize;
+
+            if (vertexCount == 0) {
+                return false;
+            }
+
+            _renderdata_vertexCount(output.renderData, vertexCount);
+            output.uploadAndStoreAddress(verts.retain(), this.vertices, BaseRenderStrategy::_renderdata_vertexOffset);
+            return true;
+        } finally {
+            verts.release();
+        }
+    }
+
+    protected abstract void bakeVerts(int tileX, int tileY, int tileZ, int zoom, @NonNull P[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts);
+
+    @Override
+    public void executeBakeOutput(int tileX, int tileY, int tileZ, int zoom, @NonNull BakeOutput output, long renderData) {
+        try (AllocatedGLBuffer vertices = this.vertices.bind(GL_ARRAY_BUFFER)) {
+            output.execute(renderData);
+        }
+    }
 }

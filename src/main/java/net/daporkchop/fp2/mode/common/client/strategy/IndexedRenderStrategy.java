@@ -20,13 +20,23 @@
 
 package net.daporkchop.fp2.mode.common.client.strategy;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import lombok.Getter;
+import lombok.NonNull;
+import net.daporkchop.fp2.client.AllocatedGLBuffer;
+import net.daporkchop.fp2.client.render.IDrawMode;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.common.client.BakeOutput;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
+import static org.lwjgl.opengl.GL15.*;
 
 /**
  * @author DaPorkchop_
@@ -62,12 +72,82 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, P extends IFarP
         PUnsafe.putInt(renderData + _RENDERDATA_INDEXCOUNT_OFFSET + INT_SIZE * renderPass, indexCount);
     }
 
-    public IndexedRenderStrategy(long vertexSize) {
+    protected final AllocatedGLBuffer indices;
+
+    public IndexedRenderStrategy(int vertexSize) {
         super(vertexSize);
+
+        this.indices = AllocatedGLBuffer.create(GL_DYNAMIC_DRAW, INDEX_SIZE, true);
     }
 
     @Override
     public long renderDataSize() {
         return _RENDERDATA_SIZE;
+    }
+
+    @Override
+    public void deleteRenderData(int tileX, int tileY, int tileZ, int zoom, long renderData) {
+        super.deleteRenderData(tileX, tileY, tileZ, zoom, renderData);
+
+        this.indices.free(_renderdata_indexOffset(renderData));
+    }
+
+    @Override
+    protected void bakeVerts(int tileX, int tileY, int tileZ, int zoom, @NonNull P[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts) {
+        ByteBuf[] indices = new ByteBuf[RENDER_PASS_COUNT];
+        for (int i = 0; i < RENDER_PASS_COUNT; i++) {
+            indices[i] = ByteBufAllocator.DEFAULT.directBuffer();
+        }
+        try {
+            this.bakeVertsAndIndices(tileX, tileY, tileZ, zoom, srcs, output, verts, indices);
+
+            if (!verts.isReadable()) { //there are no vertices, meaning nothing to draw
+                return;
+            }
+
+            int totalIndexCount = 0;
+            for (int i = 0; i < RENDER_PASS_COUNT; i++) {
+                int indexCount = indices[i].readableBytes() >> INDEX_SHIFT;
+                _renderdata_indexCount(output.renderData, i, indexCount);
+                totalIndexCount += indexCount;
+            }
+
+            if (totalIndexCount == 0) { //there are no indices, meaning nothing to draw
+                verts.clear(); //clear vertex output buffer to ensure BaseRenderStrategy#bake reports that the tile is empty
+                return;
+            }
+
+            CompositeByteBuf merged = ByteBufAllocator.DEFAULT.compositeDirectBuffer(RENDER_PASS_COUNT);
+            for (ByteBuf buf : indices) {
+                if (buf.isReadable()) {
+                    merged.addComponent(buf.retain());
+                }
+            }
+
+            output.uploadAndStoreAddress(merged, this.indices, IndexedRenderStrategy::_renderdata_indexOffset);
+        } finally {
+            for (ByteBuf buf : indices) {
+                buf.release();
+            }
+        }
+    }
+
+    protected abstract void bakeVertsAndIndices(int tileX, int tileY, int tileZ, int zoom, @NonNull P[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices);
+
+    @Override
+    public void executeBakeOutput(int tileX, int tileY, int tileZ, int zoom, @NonNull BakeOutput output, long renderData) {
+        try (AllocatedGLBuffer indices = this.indices.bind(GL_ELEMENT_ARRAY_BUFFER)) {
+            super.executeBakeOutput(tileX, tileY, tileZ, zoom, output, renderData);
+        }
+    }
+
+    protected void drawRef(@NonNull IDrawMode dst, long ref) {
+        long pos = _ref_pos(ref);
+        long renderData = _ref_renderData(ref);
+
+        dst.drawElements(_pos_tileX(pos), _pos_tileY(pos), _pos_tileZ(pos), _pos_level(pos),
+                toInt(_renderdata_vertexOffset(renderData) / this.vertexSize), //baseVertex
+                toInt(_renderdata_indexOffset(renderData) >> INDEX_SHIFT), //firstIndex
+                _renderdata_indexCount(renderData, 0)); //count
     }
 }

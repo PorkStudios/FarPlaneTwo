@@ -25,10 +25,6 @@ import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.util.alloc.Allocator;
 import net.daporkchop.fp2.util.alloc.FixedSizeAllocator;
 import net.daporkchop.fp2.util.alloc.VariableSizedAllocator;
-import net.daporkchop.lib.unsafe.PUnsafe;
-
-import static java.lang.Math.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * An OpenGL buffer which manages dynamic allocation of data internally.
@@ -72,21 +68,7 @@ public interface AllocatedGLBuffer extends IGLBuffer, Allocator {
 
             @Override
             public void sbrk(long newCapacity) {
-                long retainedCapacity = min(notNegative(newCapacity, "newCapacity"), this.capacity());
-
-                long buffer = PUnsafe.allocateMemory(retainedCapacity);
-                try {
-                    //copy retained data into temporary cpu buffer
-                    this.downloadRange(0L, buffer, retainedCapacity);
-
-                    //update capacity
-                    this.capacity(newCapacity);
-
-                    //re-upload data again
-                    this.uploadRange(0L, buffer, retainedCapacity);
-                } finally {
-                    PUnsafe.freeMemory(buffer);
-                }
+                this.resize(newCapacity);
             }
         }
 

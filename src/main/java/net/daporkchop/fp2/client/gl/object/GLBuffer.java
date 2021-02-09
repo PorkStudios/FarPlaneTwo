@@ -26,11 +26,15 @@ import it.unimi.dsi.fastutil.ints.IntSet;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.util.DirectBufferReuse;
+import net.daporkchop.lib.unsafe.PUnsafe;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL15;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL15.*;
@@ -82,6 +86,42 @@ public class GLBuffer extends GLObject implements IGLBuffer {
     }
 
     /**
+     * Sets the capacity of this buffer.
+     * <p>
+     * Unlike {@link #capacity(long)}, this method will retain as much of the original data as possible.
+     * <p>
+     * If the new capacity is less than the current capacity, the buffer's contents will be truncated. If greater than the current capacity, the
+     * data will be extended with undefined contents.
+     *
+     * @param capacity the new capacity
+     */
+    public void resize(long capacity) {
+        checkState(this.target >= 0, "not bound!");
+        long retainedCapacity = min(this.capacity, notNegative(capacity, "capacity"));
+
+        if (retainedCapacity <= 0L) { //previous capacity was unset, so no data needs to be retained
+            this.capacity(capacity);
+            return;
+        } else if (this.capacity == capacity) { //capacity remains unchanged, nothing to do!
+            return;
+        }
+
+        long buffer = PUnsafe.allocateMemory(retainedCapacity);
+        try {
+            //download data to main memory
+            this.downloadRange(0L, buffer, retainedCapacity);
+
+            //update capacity
+            this.capacity(capacity);
+
+            //re-upload retained data
+            this.upload(buffer, retainedCapacity);
+        } finally {
+            PUnsafe.freeMemory(buffer);
+        }
+    }
+
+    /**
      * Sets the buffer contents.
      *
      * @param addr the base address of the data to upload
@@ -91,6 +131,30 @@ public class GLBuffer extends GLObject implements IGLBuffer {
         checkState(this.target >= 0, "not bound!");
         glBufferData(this.target, DirectBufferReuse.wrapByte(addr, toInt(size, "size")), this.usage);
         this.capacity = size;
+    }
+
+    /**
+     * Sets the buffer contents.
+     *
+     * @param data the data to upload
+     */
+    public void upload(@NonNull ByteBuf data) {
+        checkState(this.target >= 0, "not bound!");
+        int readableBytes = data.readableBytes();
+
+        if (data.hasMemoryAddress()) { //fast-track: upload whole buffer contents at once
+            glBufferData(this.target, data.internalNioBuffer(data.readerIndex(), readableBytes), this.usage);
+        } else { //assume the buffer is a composite (we don't care about heap buffers lol)
+            glBufferData(this.target, readableBytes, this.usage);
+            ByteBuffer[] nioBuffers = data.nioBuffers(data.readerIndex(), readableBytes);
+            long off = 0L;
+            for (ByteBuffer nioBuffer : nioBuffers) {
+                int size = nioBuffer.remaining();
+                glBufferSubData(this.target, off, nioBuffer);
+                off += size;
+            }
+        }
+        this.capacity = readableBytes;
     }
 
     /**
@@ -135,7 +199,20 @@ public class GLBuffer extends GLObject implements IGLBuffer {
 
     @Override
     public void uploadRange(long start, @NonNull ByteBuf data) {
-        this.uploadRange(start, data.memoryAddress() + data.readerIndex(), data.readableBytes());
+        checkState(this.target >= 0, "not bound!");
+        int readableBytes = data.readableBytes();
+        checkRangeLen(this.capacity, start, readableBytes);
+
+        if (data.hasMemoryAddress()) { //fast-track: upload whole buffer contents at once
+            glBufferSubData(this.target, start, data.internalNioBuffer(data.readerIndex(), readableBytes));
+        } else { //assume the buffer is a composite (we don't care about heap buffers lol)
+            ByteBuffer[] nioBuffers = data.nioBuffers(data.readerIndex(), readableBytes);
+            for (ByteBuffer nioBuffer : nioBuffers) {
+                int size = nioBuffer.remaining();
+                glBufferSubData(this.target, start, nioBuffer);
+                start += size;
+            }
+        }
     }
 
     @Override
@@ -179,5 +256,24 @@ public class GLBuffer extends GLObject implements IGLBuffer {
      */
     public void bindBase(int target, int index) {
         glBindBufferBase(target, index, this.id);
+    }
+
+    /**
+     * Maps the contents of this buffer into client address space.
+     * @param access one of {@link GL15#GL_READ_ONLY}, {@link GL15#GL_WRITE_ONLY} or {@link GL15#GL_READ_WRITE}
+     * @return the memory address of the mapped buffer contents
+     */
+    public long map(int access) {
+        checkState(this.target >= 0, "not bound!");
+        checkState(this.capacity >= 0L, "capacity is unset!");
+        return PUnsafe.pork_directBufferAddress(glMapBuffer(this.target, access, this.capacity, DirectBufferReuse._BYTE));
+    }
+
+    /**
+     * Unmaps the mapped buffer contents.
+     */
+    public void unmap() {
+        checkState(this.target >= 0, "not bound!");
+        glUnmapBuffer(this.target);
     }
 }
