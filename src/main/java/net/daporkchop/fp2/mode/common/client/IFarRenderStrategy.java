@@ -86,6 +86,4 @@ public interface IFarRenderStrategy<POS extends IFarPos, P extends IFarPiece> {
     void executeBakeOutput(@NonNull POS pos, @NonNull BakeOutput output);
 
     void render(long tilev, int tilec); //haha yes C naming conventions
-
-    void drawTile(@NonNull IDrawMode dst, long tile);
 }

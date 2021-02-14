@@ -25,6 +25,8 @@ import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.util.function.Consumer;
+
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
@@ -46,20 +48,22 @@ public class IndirectMultiDrawMode implements IDrawMode {
     public static final int ENTRY_SIZE_BYTES = POSITION_SIZE_BYTES + COMMAND_SIZE_BYTES;
 
     protected final GLBuffer buffer = new GLBuffer(GL_STREAM_DRAW);
+    protected final VertexArrayObject vao = new VertexArrayObject();
 
     protected long mappingAddress = -1L;
 
     protected int size;
     protected int capacity;
 
-    public IndirectMultiDrawMode(int attributeIndex, @NonNull VertexArrayObject vao) {
+    public IndirectMultiDrawMode(@NonNull Consumer<VertexArrayObject> vaoInitializer) {
         try (GLBuffer buffer = this.buffer.bind(GL_ARRAY_BUFFER)) {
-            glVertexAttribIPointer(attributeIndex, 4, GL_INT, ENTRY_SIZE_BYTES, 0L);
-            glVertexAttribDivisor(attributeIndex, 1);
-            vao.putDependency(attributeIndex, buffer);
-
             this.capacity = 1;
             buffer.capacity(this.capacity * ENTRY_SIZE_BYTES);
+        }
+
+        try (VertexArrayObject vao = this.vao.bindForChange()) {
+            vao.attrI(this.buffer, 4, GL_INT, ENTRY_SIZE_BYTES, 0, 1);
+            vaoInitializer.accept(vao);
         }
     }
 
@@ -113,7 +117,8 @@ public class IndirectMultiDrawMode implements IDrawMode {
 
     @Override
     public void draw() {
-        try (GLBuffer buffer = this.buffer.bind(GL_DRAW_INDIRECT_BUFFER)) {
+        try (VertexArrayObject vao = this.vao.bind();
+             GLBuffer buffer = this.buffer.bind(GL_DRAW_INDIRECT_BUFFER)) {
             glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, POSITION_SIZE_BYTES, this.size, ENTRY_SIZE_BYTES);
         }
     }

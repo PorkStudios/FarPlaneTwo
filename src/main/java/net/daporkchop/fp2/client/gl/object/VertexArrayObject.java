@@ -24,14 +24,22 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import lombok.NonNull;
 
+import java.util.function.IntConsumer;
+
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.opengl.GL33.*;
 
 /**
  * @author DaPorkchop_
  */
 public final class VertexArrayObject extends GLObject {
+    private static VertexArrayObject CURRENTLY_BOUND = null;
+
     private final Int2ObjectMap<IGLBuffer> dependencies = new Int2ObjectOpenHashMap<>();
+    private boolean changed;
 
     public VertexArrayObject() {
         this(glGenVertexArrays());
@@ -42,13 +50,42 @@ public final class VertexArrayObject extends GLObject {
     }
 
     public VertexArrayObject bind() {
+        checkState(CURRENTLY_BOUND == null, "a vertex array object is already bound!");
+        CURRENTLY_BOUND = this;
+
         glBindVertexArray(this.id);
+        return this;
+    }
+
+    public VertexArrayObject bindForChange() {
+        this.bind();
+
+        this.dependencies.clear();
+        this.changed = true;
+
         return this;
     }
 
     @Override
     public void close() {
+        checkState(CURRENTLY_BOUND == this, "not bound!");
+        CURRENTLY_BOUND = null;
+
         glBindVertexArray(0);
+
+        if (this.changed) {
+            this.changed = false;
+
+            if (this.dependencies.containsKey(-1)) {
+                this.dependencies.get(-1).close();
+            }
+
+            for (int i : this.dependencies.keySet()) {
+                if (i >= 0) {
+                    glDisableVertexAttribArray(i);
+                }
+            }
+        }
     }
 
     @Override
@@ -56,23 +93,42 @@ public final class VertexArrayObject extends GLObject {
         return () -> glDeleteVertexArrays(id);
     }
 
-    public VertexArrayObject putDependency(int location, @NonNull IGLBuffer dependency) {
-        this.dependencies.put(notNegative(location, "location"), dependency);
-        return this;
+    public void attrI(@NonNull IGLBuffer buffer, int size, int type, int stride, int offset, int divisor) {
+        this.nextIndex(buffer, idx -> {
+            glVertexAttribIPointer(idx, size, type, stride, offset);
+            if (divisor != 0) {
+                glVertexAttribDivisor(idx, divisor);
+            }
+        });
     }
 
-    public VertexArrayObject removeDependency(int location) {
-        this.dependencies.remove(notNegative(location, "location"));
-        return this;
+    public void attrF(@NonNull IGLBuffer buffer, int size, int type, boolean normalized, int stride, int offset, int divisor) {
+        this.nextIndex(buffer, idx -> {
+            glVertexAttribPointer(idx, size, type, normalized, stride, offset);
+            if (divisor != 0) {
+                glVertexAttribDivisor(idx, divisor);
+            }
+        });
     }
 
     public VertexArrayObject putElementArray(@NonNull IGLBuffer dependency) {
-        this.dependencies.put(-1, dependency);
+        checkState(CURRENTLY_BOUND == this, "not bound!");
+
+        this.dependencies.put(-1, dependency.bind(GL_ELEMENT_ARRAY_BUFFER));
         return this;
     }
 
-    public VertexArrayObject removeElementArray() {
-        this.dependencies.remove(-1);
-        return this;
+    protected void nextIndex(@NonNull IGLBuffer bufferIn, @NonNull IntConsumer callback) {
+        checkState(CURRENTLY_BOUND == this, "not bound!");
+
+        try (IGLBuffer buffer = bufferIn.bind(GL_ARRAY_BUFFER)) {
+            for (int i = 0; ; i++) {
+                if (this.dependencies.putIfAbsent(i, buffer) == null) {
+                    glEnableVertexAttribArray(i);
+                    callback.accept(i);
+                    return;
+                }
+            }
+        }
     }
 }

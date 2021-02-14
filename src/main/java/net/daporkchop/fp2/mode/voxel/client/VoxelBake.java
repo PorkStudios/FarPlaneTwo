@@ -23,6 +23,8 @@ package net.daporkchop.fp2.mode.voxel.client;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.client.gl.object.IGLBuffer;
+import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 
@@ -38,8 +40,6 @@ import static org.lwjgl.opengl.GL30.*;
  */
 @UtilityClass
 public class VoxelBake {
-    public final int VOXEL_VERTEX_ATTRIBUTE_COUNT = 5;
-
     public final int VOXEL_VERTEX_STATE_OFFSET = 0;
     public final int VOXEL_VERTEX_LIGHT_OFFSET = VOXEL_VERTEX_STATE_OFFSET + INT_SIZE;
     public final int VOXEL_VERTEX_COLOR_OFFSET = VOXEL_VERTEX_LIGHT_OFFSET + SHORT_SIZE;
@@ -48,12 +48,12 @@ public class VoxelBake {
 
     public final int VOXEL_VERTEX_SIZE = VOXEL_VERTEX_POS_HIGH_OFFSET + MEDIUM_SIZE + 1; // +1 in order to pad to 16 bytes
 
-    public void vertexAttributes(int attributeIndex) {
-        glVertexAttribIPointer(attributeIndex++, 1, GL_UNSIGNED_INT, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_STATE_OFFSET); //state
-        glVertexAttribPointer(attributeIndex++, 2, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_LIGHT_OFFSET); //light
-        glVertexAttribPointer(attributeIndex++, 3, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_COLOR_OFFSET); //color
-        glVertexAttribPointer(attributeIndex++, 3, GL_UNSIGNED_BYTE, false, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_POS_LOW_OFFSET); //pos_low
-        glVertexAttribPointer(attributeIndex++, 3, GL_UNSIGNED_BYTE, false, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_POS_HIGH_OFFSET); //pos_high
+    public void vertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao) {
+        vao.attrI(buffer, 1, GL_UNSIGNED_INT, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_STATE_OFFSET, 0); //state
+        vao.attrF(buffer, 2, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_LIGHT_OFFSET, 0); //light
+        vao.attrF(buffer, 3, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_COLOR_OFFSET, 0); //color
+        vao.attrF(buffer, 3, GL_UNSIGNED_BYTE, false, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_POS_LOW_OFFSET, 0); //pos_low
+        vao.attrF(buffer, 3, GL_UNSIGNED_BYTE, false, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_POS_HIGH_OFFSET, 0); //pos_high
     }
 
     public void bakeForShaderDraw(@NonNull VoxelPos pos, @NonNull VoxelPiece[] srcs, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {

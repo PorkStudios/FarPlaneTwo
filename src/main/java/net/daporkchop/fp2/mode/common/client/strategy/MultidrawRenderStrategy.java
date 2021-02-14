@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.AllocatedGLBuffer;
+import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.render.IDrawMode;
 import net.daporkchop.fp2.client.render.IndirectMultiDrawMode;
@@ -32,64 +32,49 @@ import net.daporkchop.fp2.mode.common.client.BakeOutput;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.fp2.util.Constants.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL20.*;
+import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 
 /**
  * @author DaPorkchop_
  */
 public abstract class MultidrawRenderStrategy<POS extends IFarPos, P extends IFarPiece> extends IndexedRenderStrategy<POS, P> {
-    protected final VertexArrayObject vao = new VertexArrayObject();
-    protected final IDrawMode draw;
+    protected final IDrawMode[] layers = new IDrawMode[RENDER_PASS_COUNT];
 
-    public MultidrawRenderStrategy(int vertexSize, int vertexAttributeCount) {
+    public MultidrawRenderStrategy(int vertexSize) {
         super(vertexSize);
 
-        try (VertexArrayObject vao = this.vao.bind()) {
-            for (int i = 0; i <= vertexAttributeCount; i++) {
-                glEnableVertexAttribArray(i);
-            }
-
-            this.draw = new IndirectMultiDrawMode(0, vao);
-
-            try (AllocatedGLBuffer vbo = this.vertices.bind(GL_ARRAY_BUFFER)) {
-                this.configureVertexAttributes(1);
-                for (int i = 1; i <= vertexAttributeCount; i++) {
-                    vao.putDependency(i, vbo);
-                }
-            }
-
-            vao.putElementArray(this.indices.bind(GL_ELEMENT_ARRAY_BUFFER));
-        } catch (Throwable t) {
-            LOGGER.error("unable to configure vao", t);
-            throw new RuntimeException(t);
-        } finally {
-            for (int i = 0; i <= vertexAttributeCount; i++) {
-                glDisableVertexAttribArray(i);
-            }
-
-            this.indices.close();
+        for (int i = 0; i < RENDER_PASS_COUNT; i++) {
+            this.layers[i] = new IndirectMultiDrawMode(vao -> {
+                this.configureVertexAttributes(this.vertices, vao);
+                vao.putElementArray(this.indices);
+            });
         }
     }
 
-    protected abstract void configureVertexAttributes(int attributeIndex);
+    protected abstract void configureVertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao);
 
     @Override
     protected abstract void bakeVertsAndIndices(@NonNull POS pos, @NonNull P[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices);
 
     @Override
     public void render(long tilev, int tilec) {
-        try (IDrawMode output = this.draw.begin()) {
+        for (IDrawMode layer : this.layers) {
+            layer.begin();
+        }
+        try {
             for (int i = 0; i < tilec; i++, tilev += LONG_SIZE) {
-                this.drawTile(output, PUnsafe.getLong(tilev));
+                this.drawTile(PUnsafe.getLong(tilev));
+            }
+        } finally {
+            for (IDrawMode layer : this.layers) {
+                layer.close();
             }
         }
 
-        try (VertexArrayObject vao = this.vao.bind()) {
-            this.draw();
-        }
+        this.draw();
     }
+
+    protected abstract void drawTile(long tile);
 
     protected abstract void draw();
 }

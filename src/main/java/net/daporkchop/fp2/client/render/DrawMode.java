@@ -42,6 +42,7 @@ import static org.lwjgl.opengl.GL43.*;
 /**
  * @author DaPorkchop_
  */
+@Deprecated
 public enum DrawMode implements AutoCloseable {
     MULTIDRAW {
         @Override

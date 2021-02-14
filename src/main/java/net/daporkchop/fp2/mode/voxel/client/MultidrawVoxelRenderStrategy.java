@@ -22,8 +22,8 @@ package net.daporkchop.fp2.mode.voxel.client;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
-import net.daporkchop.fp2.client.render.IDrawMode;
+import net.daporkchop.fp2.client.gl.object.IGLBuffer;
+import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.MultidrawRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
@@ -36,14 +36,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class MultidrawVoxelRenderStrategy extends MultidrawRenderStrategy<VoxelPos, VoxelPiece> implements IVoxelRenderStrategy {
+public class MultidrawVoxelRenderStrategy extends MultidrawRenderStrategy<VoxelPos, VoxelPiece> implements IVoxelRenderStrategy, IShaderBasedVoxelRenderStrategy {
     public MultidrawVoxelRenderStrategy() {
-        super(VoxelBake.VOXEL_VERTEX_SIZE, VoxelBake.VOXEL_VERTEX_ATTRIBUTE_COUNT);
+        super(VoxelBake.VOXEL_VERTEX_SIZE);
     }
 
     @Override
-    protected void configureVertexAttributes(int attributeIndex) {
-        VoxelBake.vertexAttributes(attributeIndex);
+    protected void configureVertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao) {
+        VoxelBake.vertexAttributes(buffer, vao);
     }
 
     @Override
@@ -53,19 +53,30 @@ public class MultidrawVoxelRenderStrategy extends MultidrawRenderStrategy<VoxelP
 
     @Override
     protected void draw() {
-        try (ShaderProgram program = VoxelShaders.SOLID_SHADER.use()) {
-            this.draw.draw();
-        }
+        this.drawSolid(this.layers[0]);
+        this.drawCutout(this.layers[1]);
+        this.drawTransparent(this.layers[2]);
     }
 
     @Override
-    public void drawTile(@NonNull IDrawMode dst, long tile) {
+    protected void drawTile(long tile) {
         long pos = _tile_pos(tile);
         long renderData = _tile_renderData(tile);
 
-        dst.drawElements(_pos_tileX(pos), _pos_tileY(pos), _pos_tileZ(pos), _pos_level(pos),
-                toInt(_renderdata_vertexOffset(renderData) / this.vertexSize), //baseVertex
-                toInt(_renderdata_indexOffset(renderData) >> INDEX_SHIFT), //firstIndex
-                _renderdata_indexCount(renderData, 0)); //count
+        int tileX = _pos_tileX(pos);
+        int tileY = _pos_tileY(pos);
+        int tileZ = _pos_tileZ(pos);
+        int level = _pos_level(pos);
+
+        int baseVertex = toInt(_renderdata_vertexOffset(renderData) / this.vertexSize);
+        int firstIndex = toInt(_renderdata_indexOffset(renderData) >> INDEX_SHIFT);
+
+        for (int i = 0; i < RENDER_PASS_COUNT; i++) {
+            int count = _renderdata_indexCount(renderData, i);
+            if (count != 0) {
+                this.layers[i].drawElements(tileX, tileY, tileZ, level, baseVertex, firstIndex, count);
+                firstIndex += count;
+            }
+        }
     }
 }
