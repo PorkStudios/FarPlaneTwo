@@ -80,14 +80,6 @@ public abstract class BaseRenderStrategy<POS extends IFarPos, P extends IFarPiec
     }
 
     @Override
-    public void copyRenderData(long src, long dst) {
-        long vertexOffset = _renderdata_vertexOffset(src);
-
-        _renderdata_vertexOffset(dst, _renderdata_vertexOffset(src));
-        _renderdata_vertexCount(dst, _renderdata_vertexCount(src));
-    }
-
-    @Override
     public void deleteRenderData(long renderData) {
         this.vertices.free(_renderdata_vertexOffset(renderData));
     }

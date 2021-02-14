@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -276,9 +276,9 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
         pos.setPos(blockX, blockY, blockZ);
         biomeAccess.biome(Biome.getBiome(data.biome, Biomes.PLAINS));
 
-        vertices.writeInt(TexUVs.STATEID_TO_INDEXID.get(data.states[0])); //state
-        vertices.writeShort(Constants.packedLightTo8BitVec2(data.light)); //light
-        vertices.writeMedium(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.states[0]), biomeAccess, pos, 0))); //color
+        vertices.writeIntLE(TexUVs.STATEID_TO_INDEXID.get(data.states[0])); //state
+        vertices.writeShortLE(Constants.packedLightTo8BitVec2(data.light)); //light
+        vertices.writeMediumLE(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.states[0]), biomeAccess, pos, 0))); //color
 
         final int offset = level == 0 ? POS_ONE >> 1 : 0;
 
@@ -330,8 +330,8 @@ public class VoxelRenderBaker implements IFarRenderBaker<VoxelPos, VoxelPiece> {
                 vertices.writeBytes(vertices, bufIndex - VOXEL_VERTEX_SIZE, VOXEL_VERTEX_SIZE);
             }
 
-            vertices.setInt(bufIndex, TexUVs.STATEID_TO_INDEXID.get(data.states[edge]));
-            vertices.setMedium(bufIndex + 6, Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.states[edge]), biomeAccess, pos, 0))); //color
+            vertices.setIntLE(bufIndex, TexUVs.STATEID_TO_INDEXID.get(data.states[edge]));
+            vertices.setMediumLE(bufIndex + 6, Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.states[edge]), biomeAccess, pos, 0))); //color
             map[baseMapIndex + edge] = indexCounter++;
         }
         return indexCounter;

@@ -31,7 +31,6 @@ import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.fp2.mode.voxel.client.VoxelRenderConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -55,7 +54,7 @@ public class MultidrawVoxelRenderStrategy extends MultidrawRenderStrategy<VoxelP
     @Override
     protected void draw() {
         try (ShaderProgram program = VoxelShaders.SOLID_SHADER.use()) {
-            this.drawSolid.draw();
+            this.draw.draw();
         }
     }
 
@@ -63,16 +62,6 @@ public class MultidrawVoxelRenderStrategy extends MultidrawRenderStrategy<VoxelP
     public void drawTile(@NonNull IDrawMode dst, long tile) {
         long pos = _tile_pos(tile);
         long renderData = _tile_renderData(tile);
-
-        int x = _pos_tileX(pos);
-        int y = _pos_tileY(pos);
-        int z = _pos_tileZ(pos);
-        int level = _pos_level(pos);
-
-        long vertexOffset = _renderdata_vertexOffset(renderData);
-        int vertexCount = _renderdata_vertexCount(renderData);
-        long indexOffset = _renderdata_indexOffset(renderData);
-        int indexCount = _renderdata_indexCount(renderData, 0);
 
         dst.drawElements(_pos_tileX(pos), _pos_tileY(pos), _pos_tileZ(pos), _pos_level(pos),
                 toInt(_renderdata_vertexOffset(renderData) / this.vertexSize), //baseVertex

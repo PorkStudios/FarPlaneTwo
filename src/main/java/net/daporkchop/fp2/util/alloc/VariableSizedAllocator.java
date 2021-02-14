@@ -64,6 +64,12 @@ public final class VariableSizedAllocator implements Allocator {
         this.growFunction = growFunction;
 
         this.manager.brk(this.capacity = toInt(this.growFunction.grow(0L, blockSize << 4L)));
+
+        Node wilderness = new Node();
+        wilderness.size = this.capacity;
+        wilderness.hole = true;
+        this.nodes.put(0, wilderness);
+        this.bins[getBinIndex(wilderness.size)].addNode(wilderness);
     }
 
     @Override

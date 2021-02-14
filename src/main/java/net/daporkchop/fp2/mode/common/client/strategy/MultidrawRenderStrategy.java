@@ -41,7 +41,7 @@ import static org.lwjgl.opengl.GL20.*;
  */
 public abstract class MultidrawRenderStrategy<POS extends IFarPos, P extends IFarPiece> extends IndexedRenderStrategy<POS, P> {
     protected final VertexArrayObject vao = new VertexArrayObject();
-    protected final IDrawMode drawSolid;
+    protected final IDrawMode draw;
 
     public MultidrawRenderStrategy(int vertexSize, int vertexAttributeCount) {
         super(vertexSize);
@@ -51,7 +51,7 @@ public abstract class MultidrawRenderStrategy<POS extends IFarPos, P extends IFa
                 glEnableVertexAttribArray(i);
             }
 
-            this.drawSolid = new IndirectMultiDrawMode(0, vao);
+            this.draw = new IndirectMultiDrawMode(0, vao);
 
             try (AllocatedGLBuffer vbo = this.vertices.bind(GL_ARRAY_BUFFER)) {
                 this.configureVertexAttributes(1);
@@ -80,7 +80,7 @@ public abstract class MultidrawRenderStrategy<POS extends IFarPos, P extends IFa
 
     @Override
     public void render(long tilev, int tilec) {
-        try (IDrawMode output = this.drawSolid.begin()) {
+        try (IDrawMode output = this.draw.begin()) {
             for (int i = 0; i < tilec; i++, tilev += LONG_SIZE) {
                 this.drawTile(output, PUnsafe.getLong(tilev));
             }

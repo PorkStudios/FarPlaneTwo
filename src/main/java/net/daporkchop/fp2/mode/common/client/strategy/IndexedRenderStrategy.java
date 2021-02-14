@@ -85,16 +85,6 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, P extends IFarP
     }
 
     @Override
-    public void copyRenderData(long src, long dst) {
-        super.copyRenderData(src, dst);
-
-        _renderdata_indexOffset(dst, _renderdata_indexOffset(src));
-        for (int i = 0; i < RENDER_PASS_COUNT; i++) {
-            _renderdata_indexCount(dst, i, _renderdata_indexCount(src, i));
-        }
-    }
-
-    @Override
     public void deleteRenderData(long renderData) {
         super.deleteRenderData(renderData);
 

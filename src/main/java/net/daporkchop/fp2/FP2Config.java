@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -41,7 +41,7 @@ public class FP2Config {
     })
     @Config.LangKey("config.fp2.renderMode")
     @Config.RequiresWorldRestart
-    public static RenderMode renderMode = RenderMode.HEIGHTMAP;
+    public static RenderMode renderMode = RenderMode.VOXEL;
 
     @Config.Comment({
             "The far plane render distance (in blocks)"

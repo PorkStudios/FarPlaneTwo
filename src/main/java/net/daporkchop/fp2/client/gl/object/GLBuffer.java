@@ -206,8 +206,7 @@ public class GLBuffer extends GLObject implements IGLBuffer {
         if (data.hasMemoryAddress()) { //fast-track: upload whole buffer contents at once
             glBufferSubData(this.target, start, data.internalNioBuffer(data.readerIndex(), readableBytes));
         } else { //assume the buffer is a composite (we don't care about heap buffers lol)
-            ByteBuffer[] nioBuffers = data.nioBuffers(data.readerIndex(), readableBytes);
-            for (ByteBuffer nioBuffer : nioBuffers) {
+            for (ByteBuffer nioBuffer : data.nioBuffers(data.readerIndex(), readableBytes)) {
                 int size = nioBuffer.remaining();
                 glBufferSubData(this.target, start, nioBuffer);
                 start += size;

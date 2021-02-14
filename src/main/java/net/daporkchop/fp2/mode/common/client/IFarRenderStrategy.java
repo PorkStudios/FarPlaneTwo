@@ -75,8 +75,6 @@ public interface IFarRenderStrategy<POS extends IFarPos, P extends IFarPiece> {
      */
     long renderDataSize();
 
-    void copyRenderData(long src, long dst);
-
     void deleteRenderData(long renderData);
 
     //

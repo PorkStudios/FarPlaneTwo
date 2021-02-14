@@ -20,8 +20,6 @@
 
 package net.daporkchop.fp2.client.render;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
@@ -76,7 +74,7 @@ public class IndirectMultiDrawMode implements IDrawMode {
     }
 
     @Override
-    public void drawElements(int tileX, int tileY, int tileZ, int zoom, int baseVertex, int firstIndex, int count) {
+    public void drawElements(int tileX, int tileY, int tileZ, int level, int baseVertex, int firstIndex, int count) {
         int size = this.size++;
         if (size == this.capacity) {
             this.grow();
@@ -86,7 +84,8 @@ public class IndirectMultiDrawMode implements IDrawMode {
         PUnsafe.putInt(baseAddr + 0 * INT_SIZE, tileX);
         PUnsafe.putInt(baseAddr + 1 * INT_SIZE, tileY);
         PUnsafe.putInt(baseAddr + 2 * INT_SIZE, tileZ);
-        PUnsafe.putInt(baseAddr + 3 * INT_SIZE, zoom);
+        PUnsafe.putInt(baseAddr + 3 * INT_SIZE, level);
+
         PUnsafe.putInt(baseAddr + 4 * INT_SIZE, count); //count
         PUnsafe.putInt(baseAddr + 5 * INT_SIZE, 1); //instanceCount
         PUnsafe.putInt(baseAddr + 6 * INT_SIZE, firstIndex); //firstIndex

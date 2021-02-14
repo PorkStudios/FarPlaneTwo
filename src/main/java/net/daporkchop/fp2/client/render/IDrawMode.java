@@ -26,7 +26,7 @@ package net.daporkchop.fp2.client.render;
 public interface IDrawMode extends AutoCloseable {
     IDrawMode begin();
 
-    void drawElements(int tileX, int tileY, int tileZ, int zoom, int baseVertex, int firstIndex, int count);
+    void drawElements(int tileX, int tileY, int tileZ, int level, int baseVertex, int firstIndex, int count);
 
     @Override
     void close();
