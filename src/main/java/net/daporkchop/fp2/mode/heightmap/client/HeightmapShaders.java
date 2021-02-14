@@ -18,19 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel;
+package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 
 /**
- * All of the {@link ShaderProgram}s used by the voxel renderer.
- *
  * @author DaPorkchop_
  */
 @UtilityClass
-public class VoxelShaders {
-    public static final ShaderProgram SOLID_SHADER = ShaderManager.get("voxel/solid");
-    public static final ShaderProgram STENCIL_SHADER = ShaderManager.get("voxel/stencil");
+public class HeightmapShaders {
+    public final ShaderProgram TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
+    public final ShaderProgram WATER_STENCIL_SHADER = ShaderManager.get("heightmap/water_stencil");
+    public final ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
+    public final ShaderProgram XFB_TERRAIN_SHADER = ShaderManager.get("heightmap/xfb/terrain");
 }

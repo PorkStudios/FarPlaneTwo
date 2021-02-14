@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.mode.common.client;
 
+import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.client.ClientConstants;
@@ -47,6 +48,7 @@ import static org.lwjgl.opengl.GL15.*;
 /**
  * @author DaPorkchop_
  */
+@Getter
 public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPiece> implements IFarRenderer<POS, P> {
     protected final AbstractFarRenderCache<POS, P> cache;
 
@@ -58,7 +60,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     protected final IFarRenderStrategy<POS, P> strategy;
 
     public AbstractFarRenderer(@NonNull WorldClient world) {
-        this.strategy = this.strategy();
+        this.strategy = this.createStrategy();
 
         this.cache = this.createCache();
     }
@@ -66,7 +68,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     /**
      * @return the {@link IFarRenderStrategy} used by this renderer
      */
-    protected abstract IFarRenderStrategy<POS, P> strategy();
+    protected abstract IFarRenderStrategy<POS, P> createStrategy();
 
     protected abstract AbstractFarRenderCache<POS, P> createCache();
 

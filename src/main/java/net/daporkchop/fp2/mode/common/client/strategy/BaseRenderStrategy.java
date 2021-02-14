@@ -71,7 +71,7 @@ public abstract class BaseRenderStrategy<POS extends IFarPos, P extends IFarPiec
     protected final int vertexSize;
 
     public BaseRenderStrategy(int vertexSize) {
-        this.vertices = AllocatedGLBuffer.create(GL_DYNAMIC_DRAW, this.vertexSize = vertexSize, true);
+        this.vertices = AllocatedGLBuffer.create("vertices", GL_DYNAMIC_DRAW, this.vertexSize = vertexSize, true);
     }
 
     @Override

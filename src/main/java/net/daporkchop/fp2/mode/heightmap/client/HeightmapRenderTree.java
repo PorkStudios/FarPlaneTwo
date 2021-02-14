@@ -23,34 +23,27 @@ package net.daporkchop.fp2.mode.heightmap.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
+import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 import net.daporkchop.fp2.util.math.Volume;
-import net.daporkchop.lib.unsafe.PUnsafe;
 
-import java.nio.IntBuffer;
-
+import static net.daporkchop.fp2.mode.heightmap.client.HeightmapRenderConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
 public class HeightmapRenderTree extends AbstractFarRenderTree<HeightmapPos, HeightmapPiece> {
-    public HeightmapRenderTree(@NonNull HeightmapRenderCache cache) {
-        super(cache, 2);
-    }
-
-    @Override
-    protected void storePos(long pos, @NonNull HeightmapPos toStore) {
-        PUnsafe.putInt(pos + 0 * 4L, toStore.x());
-        PUnsafe.putInt(pos + 1 * 4L, toStore.z());
+    public HeightmapRenderTree(@NonNull IFarRenderStrategy<HeightmapPos, HeightmapPiece> strategy, int maxLevel) {
+        super(strategy, 2, maxLevel);
     }
 
     @Override
     protected boolean isPosEqual(long a, @NonNull HeightmapPos b) {
-        return aLevel == b.level()
-               && PUnsafe.getInt(a + 0 * 4L) == b.x()
-               && PUnsafe.getInt(a + 1 * 4L) == b.z();
+        return _pos_tileX(a) == b.x()
+               && _pos_tileZ(a) == b.z()
+               && _pos_level(a) == b.level();
     }
 
     @Override
@@ -61,29 +54,30 @@ public class HeightmapRenderTree extends AbstractFarRenderTree<HeightmapPos, Hei
 
     @Override
     protected boolean intersects(long pos, @NonNull Volume volume) {
-        int x = PUnsafe.getInt(pos + this.pos + 0 * 4L);
-        int z = PUnsafe.getInt(pos + this.pos + 1 * 4L);
-        int shift = level + T_SHIFT;
+        int x = _pos_tileX(pos);
+        int z = _pos_tileZ(pos);
+        int shift = _pos_level(pos) + T_SHIFT;
         return volume.intersects(x << shift, Integer.MIN_VALUE, z << shift, (x + 1) << shift, Integer.MAX_VALUE, (z + 1) << shift);
     }
 
     @Override
-    protected boolean isNodeInFrustum(int level, long node, @NonNull IFrustum frustum) {
-        int x = PUnsafe.getInt(node + this.pos + 0 * 4L);
-        int z = PUnsafe.getInt(node + this.pos + 1 * 4L);
-        int shift = level + T_SHIFT;
+    protected boolean containedBy(long pos, @NonNull Volume volume) {
+        int x = _pos_tileX(pos);
+        int z = _pos_tileZ(pos);
+        int shift = _pos_level(pos) + T_SHIFT;
+        return volume.contains(x << shift, Integer.MIN_VALUE, z << shift, (x + 1) << shift, Integer.MAX_VALUE, (z + 1) << shift);
+    }
+
+    @Override
+    protected boolean isNodeInFrustum(long pos, @NonNull IFrustum frustum) {
+        int x = _pos_tileX(pos);
+        int z = _pos_tileZ(pos);
+        int shift = _pos_level(pos) + T_SHIFT;
         return frustum.intersectsBB(x << shift, Integer.MIN_VALUE, z << shift, (x + 1) << shift, Integer.MAX_VALUE, (z + 1) << shift);
     }
 
     @Override
     protected boolean isVanillaRenderable(long pos) {
         return false; //TODO
-    }
-
-    @Override
-    protected void putNodePosForIndex(int level, long node, @NonNull IntBuffer dst) {
-        int x = PUnsafe.getInt(node + this.pos + 0 * 4L);
-        int z = PUnsafe.getInt(node + this.pos + 1 * 4L);
-        dst.put(x).put(0).put(z).put(level);
     }
 }

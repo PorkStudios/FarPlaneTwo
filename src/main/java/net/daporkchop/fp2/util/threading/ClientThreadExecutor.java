@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,17 +23,11 @@ package net.daporkchop.fp2.util.threading;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.common.WorldWorkerManager;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import java.util.ArrayDeque;
-import java.util.Queue;
 import java.util.concurrent.Executor;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * An {@link Executor} which executes submitted tasks on the client thread.
@@ -47,11 +41,21 @@ public final class ClientThreadExecutor implements Executor {
 
     @Override
     public void execute(@NonNull Runnable task) {
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.isCallingFromMinecraftThread())  {
-            task.run();
-        } else {
-            Minecraft.getMinecraft().addScheduledTask(task);
-        }
+        ((MixinExecutor) Minecraft.getMinecraft()).execute(task);
+    }
+
+    /**
+     * {@link Executor}-like interface which is mixed in to {@link Minecraft}.
+     * <p>
+     * As a separate interface in order to avoid theoretical compatibility issues.
+     *
+     * @author DaPorkchop_
+     */
+    @FunctionalInterface
+    public interface MixinExecutor {
+        /**
+         * @see Executor#execute(Runnable)
+         */
+        void execute(@NonNull Runnable task);
     }
 }

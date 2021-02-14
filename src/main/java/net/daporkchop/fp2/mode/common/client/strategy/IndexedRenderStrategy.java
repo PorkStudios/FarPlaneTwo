@@ -76,7 +76,7 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, P extends IFarP
     public IndexedRenderStrategy(int vertexSize) {
         super(vertexSize);
 
-        this.indices = AllocatedGLBuffer.create(GL_DYNAMIC_DRAW, INDEX_SIZE, true);
+        this.indices = AllocatedGLBuffer.create("indices", GL_DYNAMIC_DRAW, INDEX_SIZE, true);
     }
 
     @Override
@@ -119,7 +119,7 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, P extends IFarP
             CompositeByteBuf merged = ByteBufAllocator.DEFAULT.compositeDirectBuffer(RENDER_PASS_COUNT);
             for (ByteBuf buf : indices) {
                 if (buf.isReadable()) {
-                    merged.addComponent(buf.retain());
+                    merged.addComponent(true, buf.retain());
                 }
             }
 
@@ -138,15 +138,5 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, P extends IFarP
         try (AllocatedGLBuffer indices = this.indices.bind(GL_ELEMENT_ARRAY_BUFFER)) {
             super.executeBakeOutput(pos, output);
         }
-    }
-
-    protected void drawTile(@NonNull IDrawMode dst, long tile) {
-        long pos = _tile_pos(tile);
-        long renderData = _tile_renderData(tile);
-
-        dst.drawElements(_pos_tileX(pos), _pos_tileY(pos), _pos_tileZ(pos), _pos_level(pos),
-                toInt(_renderdata_vertexOffset(renderData) / this.vertexSize), //baseVertex
-                toInt(_renderdata_indexOffset(renderData) >> INDEX_SHIFT), //firstIndex
-                _renderdata_indexCount(renderData, 0)); //count
     }
 }

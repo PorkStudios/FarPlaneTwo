@@ -115,7 +115,7 @@ public class GLBuffer extends GLObject implements IGLBuffer {
             this.capacity(capacity);
 
             //re-upload retained data
-            this.upload(buffer, retainedCapacity);
+            this.uploadRange(0L, buffer, retainedCapacity);
         } finally {
             PUnsafe.freeMemory(buffer);
         }

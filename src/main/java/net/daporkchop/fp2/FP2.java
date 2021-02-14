@@ -26,7 +26,8 @@ import net.daporkchop.fp2.client.KeyBindings;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.debug.FP2Debug;
 import net.daporkchop.fp2.mode.heightmap.client.HeightmapRenderer;
-import net.daporkchop.fp2.mode.voxel.VoxelShaders;
+import net.daporkchop.fp2.mode.heightmap.client.HeightmapShaders;
+import net.daporkchop.fp2.mode.voxel.client.VoxelShaders;
 import net.daporkchop.fp2.net.client.CPacketDropAllPieces;
 import net.daporkchop.fp2.net.client.CPacketRenderMode;
 import net.daporkchop.fp2.net.server.SPacketPieceData;
@@ -140,8 +141,8 @@ public class FP2 {
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
             TexUVs.initDefault();
 
-            //load render classes on client thread
-            PUnsafe.ensureClassInitialized(HeightmapRenderer.class);
+            //load shader classes on client thread
+            PUnsafe.ensureClassInitialized(HeightmapShaders.class);
             PUnsafe.ensureClassInitialized(VoxelShaders.class);
         }
     }

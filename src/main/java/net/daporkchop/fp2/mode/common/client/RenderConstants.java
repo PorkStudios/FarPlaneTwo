@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.mode.common.client;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -38,57 +37,4 @@ public class RenderConstants {
     public final int INDEX_TYPE = GL_UNSIGNED_SHORT;
     public final int INDEX_SIZE = SHORT_SIZE;
     public final int INDEX_SHIFT = Integer.numberOfTrailingZeros(INDEX_SIZE);
-
-    //
-    // off-heap structs layouts
-    //TODO: figure out how to keep intellij from rearranging this area when reformatting
-    //
-
-    /*
-     * struct Pos { // 16 bytes
-     *   int tileX;
-     *   int tileY;
-     *   int tileZ;
-     *   int level;
-     * };
-     */
-
-    public final long _POS_TILEX_OFFSET = 0L;
-    public final long _POS_TILEY_OFFSET = _POS_TILEX_OFFSET + INT_SIZE;
-    public final long _POS_TILEZ_OFFSET = _POS_TILEY_OFFSET + INT_SIZE;
-    public final long _POS_LEVEL_OFFSET = _POS_TILEZ_OFFSET + INT_SIZE;
-
-    public final long _POS_SIZE = _POS_LEVEL_OFFSET + BYTE_SIZE;
-
-    public int _pos_tileX(long pos) {
-        return PUnsafe.getInt(pos);
-    }
-
-    public void _pos_tileX(long pos, int tileX) {
-        PUnsafe.putInt(pos, tileX);
-    }
-
-    public int _pos_tileY(long pos) {
-        return PUnsafe.getInt(pos);
-    }
-
-    public void _pos_tileY(long pos, int tileY) {
-        PUnsafe.putInt(pos, tileY);
-    }
-
-    public int _pos_tileZ(long pos) {
-        return PUnsafe.getInt(pos);
-    }
-
-    public void _pos_tileZ(long pos, int tileZ) {
-        PUnsafe.putInt(pos, tileZ);
-    }
-
-    public int _pos_level(long pos) {
-        return PUnsafe.getInt(pos);
-    }
-
-    public void _pos_level(long pos, int level) {
-        PUnsafe.putInt(pos, level);
-    }
 }

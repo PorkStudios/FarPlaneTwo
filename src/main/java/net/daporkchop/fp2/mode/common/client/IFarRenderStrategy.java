@@ -22,6 +22,7 @@ package net.daporkchop.fp2.mode.common.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
+import net.daporkchop.fp2.client.render.IDrawMode;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.math.Volume;
@@ -85,4 +86,6 @@ public interface IFarRenderStrategy<POS extends IFarPos, P extends IFarPiece> {
     void executeBakeOutput(@NonNull POS pos, @NonNull BakeOutput output);
 
     void render(long tilev, int tilec); //haha yes C naming conventions
+
+    void drawTile(@NonNull IDrawMode dst, long tile);
 }

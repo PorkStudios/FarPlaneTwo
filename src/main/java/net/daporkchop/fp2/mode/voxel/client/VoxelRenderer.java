@@ -40,7 +40,7 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
     }
 
     @Override
-    protected IFarRenderStrategy<VoxelPos, VoxelPiece> strategy() {
+    protected IFarRenderStrategy<VoxelPos, VoxelPiece> createStrategy() {
         return new MultidrawVoxelRenderStrategy();
     }
 

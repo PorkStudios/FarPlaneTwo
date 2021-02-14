@@ -22,15 +22,16 @@ package net.daporkchop.fp2.mode.voxel.client;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.AllocatedGLBuffer;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.client.render.IDrawMode;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.MultidrawRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.VoxelShaders;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 
-import static org.lwjgl.opengl.GL15.*;
+import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
+import static net.daporkchop.fp2.mode.voxel.client.VoxelRenderConstants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -42,9 +43,7 @@ public class MultidrawVoxelRenderStrategy extends MultidrawRenderStrategy<VoxelP
 
     @Override
     protected void configureVertexAttributes(int attributeIndex) {
-        try (AllocatedGLBuffer vertices = this.vertices.bind(GL_ARRAY_BUFFER)) {
-            VoxelBake.vertexAttributes(attributeIndex);
-        }
+        VoxelBake.vertexAttributes(attributeIndex);
     }
 
     @Override
@@ -57,5 +56,16 @@ public class MultidrawVoxelRenderStrategy extends MultidrawRenderStrategy<VoxelP
         try (ShaderProgram program = VoxelShaders.SOLID_SHADER.use()) {
             this.drawSolid.draw();
         }
+    }
+
+    @Override
+    public void drawTile(@NonNull IDrawMode dst, long tile) {
+        long pos = _tile_pos(tile);
+        long renderData = _tile_renderData(tile);
+
+        dst.drawElements(_pos_tileX(pos), _pos_tileY(pos), _pos_tileZ(pos), _pos_level(pos),
+                toInt(_renderdata_vertexOffset(renderData) / this.vertexSize), //baseVertex
+                toInt(_renderdata_indexOffset(renderData) >> INDEX_SHIFT), //firstIndex
+                _renderdata_indexCount(renderData, 0)); //count
     }
 }

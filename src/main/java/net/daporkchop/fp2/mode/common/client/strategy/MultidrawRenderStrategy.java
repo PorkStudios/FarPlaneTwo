@@ -32,6 +32,7 @@ import net.daporkchop.fp2.mode.common.client.BakeOutput;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
 
@@ -60,6 +61,9 @@ public abstract class MultidrawRenderStrategy<POS extends IFarPos, P extends IFa
             }
 
             vao.putElementArray(this.indices.bind(GL_ELEMENT_ARRAY_BUFFER));
+        } catch (Throwable t) {
+            LOGGER.error("unable to configure vao", t);
+            throw new RuntimeException(t);
         } finally {
             for (int i = 0; i <= vertexAttributeCount; i++) {
                 glDisableVertexAttribArray(i);

@@ -8,7 +8,8 @@
     "client.multiplayer.MixinWorldClient",
     "client.renderer.MixinEntityRenderer",
     "client.renderer.MixinGlStateManager",
-    "client.shader.MixinFramebuffer"
+    "client.shader.MixinFramebuffer",
+    "client.MixinMinecraft"
   ],
   "mixins": [
     "entity.player.MixinEntityPlayerMP",

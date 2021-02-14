@@ -20,22 +20,17 @@
 
 package net.daporkchop.fp2.mode.voxel.client;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.mode.common.client.AbstractFarRenderCache;
-import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 
 /**
+ * All of the {@link ShaderProgram}s used by the voxel renderer.
+ *
  * @author DaPorkchop_
  */
-public class VoxelRenderCache extends AbstractFarRenderCache<VoxelPos, VoxelPiece> {
-    public VoxelRenderCache(@NonNull VoxelRenderer renderer) {
-        super(renderer);
-    }
-
-    @Override
-    protected VoxelRenderTree createTree() {
-        return new VoxelRenderTree(this.strategy, this.renderer.maxLevel());
-    }
+@UtilityClass
+public class VoxelShaders {
+    public static final ShaderProgram SOLID_SHADER = ShaderManager.get("voxel/solid");
+    public static final ShaderProgram STENCIL_SHADER = ShaderManager.get("voxel/stencil");
 }

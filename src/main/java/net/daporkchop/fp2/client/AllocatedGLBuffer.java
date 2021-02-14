@@ -20,11 +20,16 @@
 
 package net.daporkchop.fp2.client;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.util.alloc.Allocator;
 import net.daporkchop.fp2.util.alloc.FixedSizeAllocator;
 import net.daporkchop.fp2.util.alloc.VariableSizedAllocator;
+import net.daporkchop.lib.common.misc.string.PStrings;
+
+import static net.daporkchop.fp2.util.Constants.*;
+import static org.lwjgl.opengl.GL15.*;
 
 /**
  * An OpenGL buffer which manages dynamic allocation of data internally.
@@ -32,14 +37,19 @@ import net.daporkchop.fp2.util.alloc.VariableSizedAllocator;
  * @author DaPorkchop_
  */
 public interface AllocatedGLBuffer extends IGLBuffer, Allocator {
-    static AllocatedGLBuffer create(int usage, long blockSize, boolean variable) {
+    static AllocatedGLBuffer create(@NonNull String name, int usage, long blockSize, boolean variable) {
         abstract class Base extends GLBuffer implements AllocatedGLBuffer, Allocator.CapacityManager {
             protected final Allocator allocator;
+            protected final String name;
 
-            public Base(int usage, long blockSize) {
+            public Base(@NonNull String name, int usage, long blockSize) {
                 super(usage);
 
-                this.allocator = this.createAllocator(blockSize);
+                this.name = name;
+
+                try (Base base = this.bind(GL_ARRAY_BUFFER)) {
+                    this.allocator = this.createAllocator(blockSize);
+                }
             }
 
             protected abstract Allocator createAllocator(long blockSize);
@@ -62,24 +72,28 @@ public interface AllocatedGLBuffer extends IGLBuffer, Allocator {
 
             @Override
             public void brk(long capacity) {
+                LOGGER.info(PStrings.fastFormat("setting %s buffer capacity to %d bytes (%.2f MiB)", this.name, capacity, capacity / (1024.0d * 1024.0d)));
+
                 //simply set buffer capacity
                 this.capacity(capacity);
             }
 
             @Override
             public void sbrk(long newCapacity) {
+                LOGGER.info(PStrings.fastFormat("growing %s buffer capacity to %d bytes (%.2f MiB)", this.name, newCapacity, newCapacity / (1024.0d * 1024.0d)));
+
                 this.resize(newCapacity);
             }
         }
 
         return variable ?
-                new Base(usage, blockSize) {
+                new Base(name, usage, blockSize) {
                     @Override
                     protected Allocator createAllocator(long blockSize) {
                         return new VariableSizedAllocator(blockSize, this);
                     }
                 } :
-                new Base(usage, blockSize) {
+                new Base(name, usage, blockSize) {
                     @Override
                     protected Allocator createAllocator(long blockSize) {
                         return new FixedSizeAllocator(blockSize, this);

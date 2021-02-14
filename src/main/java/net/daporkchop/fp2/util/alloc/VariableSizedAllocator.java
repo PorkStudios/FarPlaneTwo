@@ -70,7 +70,7 @@ public final class VariableSizedAllocator implements Allocator {
     public long alloc(long rawSize) {
         //round up to block size
         rawSize = PMath.roundUp(positive(rawSize, "rawSize"), this.blockSize);
-        int size = toInt(rawSize / this.blockSize);
+        int size = toInt(rawSize);
 
         int index;
         Node found;
@@ -101,12 +101,12 @@ public final class VariableSizedAllocator implements Allocator {
         found.prev = null;
         found.next = null;
 
-        return found.base * this.blockSize;
+        return found.base;
     }
 
     @Override
     public void free(long address) {
-        Node head = this.nodes.get(toInt(address / this.blockSize));
+        Node head = this.nodes.get(toInt(address));
         checkArg(head != null, "invalid address: %d", address);
 
         Integer base = head.base;

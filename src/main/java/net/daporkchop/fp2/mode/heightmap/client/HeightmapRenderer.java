@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,7 +24,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.client.render.DrawMode;
 import net.daporkchop.fp2.client.render.IShaderHolder;
@@ -33,6 +32,7 @@ import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.FarRenderIndex;
 import net.daporkchop.fp2.mode.common.client.IFarRenderBaker;
+import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 import net.minecraft.block.Block;
@@ -49,14 +49,13 @@ import static org.lwjgl.opengl.GL20.*;
  */
 @SideOnly(Side.CLIENT)
 public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, HeightmapPiece> implements IShaderHolder {
-    public static final ShaderProgram TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
-    public static final ShaderProgram WATER_STENCIL_SHADER = ShaderManager.get("heightmap/water_stencil");
-    public static final ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
-
-    public static final ShaderProgram XFB_TERRAIN_SHADER = ShaderManager.get("heightmap/xfb/terrain");
-
     public HeightmapRenderer(@NonNull WorldClient world) {
         super(world);
+    }
+
+    @Override
+    protected IFarRenderStrategy<HeightmapPos, HeightmapPiece> createStrategy() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -64,17 +63,17 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
         return new HeightmapRenderCache(this);
     }
 
-    @Override
+    /*@Override
     public IFarRenderBaker<HeightmapPos, HeightmapPiece> baker() {
         return new HeightmapRenderBaker();
     }
 
     @Override
     protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, @NonNull FarRenderIndex index) {
-        try (ShaderProgram program = WATER_STENCIL_SHADER.use()) { //TODO: make this cleaner (possibly by making these fields part of FP2's state UBO)
+        try (ShaderProgram program = HeightmapShaders.WATER_STENCIL_SHADER.use()) { //TODO: make this cleaner (possibly by making these fields part of FP2's state UBO)
             glUniform1i(program.uniformLocation("seaLevel"), 63);
         }
-        try (ShaderProgram program = WATER_SHADER.use()) {
+        try (ShaderProgram program = HeightmapShaders.WATER_SHADER.use()) {
             glUniform1i(program.uniformLocation("seaLevel"), 63);
             glUniform1i(program.uniformLocation("in_state"), TexUVs.STATEID_TO_INDEXID.get(Block.getStateId(Blocks.WATER.getDefaultState())));
         }
@@ -83,7 +82,7 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
             drawMode.draw(RenderPass.SOLID, 0);
             drawMode.draw(RenderPass.TRANSPARENT, 0);
         }
-    }
+    }*/
 
     @Override
     public ShaderProgram getAndUseShader(@NonNull DrawMode mode, @NonNull RenderPass pass, boolean stencil) {
@@ -91,15 +90,15 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
             case MULTIDRAW:
                 switch (pass) {
                     case SOLID:
-                        return TERRAIN_SHADER.use();
+                        return HeightmapShaders.TERRAIN_SHADER.use();
                     case TRANSPARENT:
-                        return (stencil ? WATER_STENCIL_SHADER : WATER_SHADER).use();
+                        return (stencil ? HeightmapShaders.WATER_STENCIL_SHADER : HeightmapShaders.WATER_SHADER).use();
                 }
                 break;
             case TRANSFORM_FEEDBACK:
                 switch (pass) {
                     case SOLID:
-                        return XFB_TERRAIN_SHADER.use();
+                        return HeightmapShaders.XFB_TERRAIN_SHADER.use();
                 }
         }
         throw new IllegalArgumentException("mode=" + mode + ", pass=" + pass + ", stencil=" + stencil);

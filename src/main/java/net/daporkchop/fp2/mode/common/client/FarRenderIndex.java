@@ -60,7 +60,7 @@ public class FarRenderIndex {
     protected int uploaded = -1;
 
     public FarRenderIndex(AbstractFarRenderCache cache) {
-        this.passes = cache.passes();
+        this.passes = 0; //cache.passes();
 
         this.buffers = new IntBuffer[this.passes];
         for (int i = 0; i < this.passes; i++) {
@@ -109,7 +109,7 @@ public class FarRenderIndex {
     }
 
     public void add(int level, long node, AbstractFarRenderTree tree) {
-        long data = node + tree.data;
+        /*long data = node + tree.data;
         int baseVertex = PUnsafe.getInt(data + RENDERDATA_VOFFSET);
 
         int firstIndex = PUnsafe.getInt(data + RENDERDATA_IOFFSET);
@@ -126,7 +126,7 @@ public class FarRenderIndex {
 
                 firstIndex += indexCount;
             }
-        }
+        }*/
     }
 
     public void reset() {
