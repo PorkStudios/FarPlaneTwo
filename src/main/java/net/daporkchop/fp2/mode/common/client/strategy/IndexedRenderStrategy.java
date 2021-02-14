@@ -75,6 +75,8 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, P extends IFarP
 
     public IndexedRenderStrategy(int vertexSize) {
         super(vertexSize);
+
+        this.init();
     }
 
     @Override

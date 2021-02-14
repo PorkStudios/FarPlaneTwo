@@ -75,9 +75,5 @@ public abstract class MultidrawRenderStrategy<POS extends IFarPos, P extends IFa
 
     protected abstract void drawTile(long tile);
 
-    protected void render() {
-        this.renderSolid(this.passes[0]);
-        this.renderCutout(this.passes[1]);
-        this.renderTransparent(this.passes[2]);
-    }
+    protected abstract void render();
 }

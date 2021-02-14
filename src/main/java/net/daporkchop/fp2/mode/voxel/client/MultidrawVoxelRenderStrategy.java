@@ -72,4 +72,11 @@ public class MultidrawVoxelRenderStrategy extends MultidrawRenderStrategy<VoxelP
             }
         }
     }
+
+    @Override
+    protected void render() {
+        this.renderSolid(this.passes[0]);
+        this.renderCutout(this.passes[1]);
+        this.renderTransparent(this.passes[2]);
+    }
 }

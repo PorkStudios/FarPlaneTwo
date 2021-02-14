@@ -21,11 +21,8 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.shader.ShaderManager;
-import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
-import net.daporkchop.fp2.mode.common.client.IFarRenderBaker;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
@@ -48,24 +45,6 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
     protected VoxelRenderCache createCache() {
         return new VoxelRenderCache(this);
     }
-
-    /*@Override
-    protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, @NonNull FarRenderIndex index) {
-        try (DrawMode drawMode = FP2Config.compatibility.drawMode.start(index, this.drawCommandBuffer, this)) {
-            for (int i = 0; i < RenderPass.COUNT; i++) {
-                drawMode.draw(RenderPass.fromOrdinal(i), i);
-            }
-        }
-    }
-
-    @Override
-    public ShaderProgram getAndUseShader(@NonNull DrawMode mode, @NonNull RenderPass pass, boolean stencil) {
-        switch (mode) {
-            case MULTIDRAW:
-                return (stencil ? STENCIL_SHADER : SOLID_SHADER).use();
-        }
-        throw new IllegalArgumentException("mode=" + mode + ", pass=" + pass + ", stencil=" + stencil);
-    }*/
 
     @Override
     public RenderMode mode() {
