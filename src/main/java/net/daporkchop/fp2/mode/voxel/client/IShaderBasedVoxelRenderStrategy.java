@@ -20,75 +20,22 @@
 
 package net.daporkchop.fp2.mode.voxel.client;
 
-import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
-import net.daporkchop.fp2.client.render.IDrawMode;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.texture.TextureMap;
-
-import static net.daporkchop.fp2.client.ClientConstants.*;
-import static org.lwjgl.opengl.GL11.*;
+import net.daporkchop.fp2.mode.common.client.IShaderBasedRenderStrategy;
+import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 
 /**
  * @author DaPorkchop_
  */
-public interface IShaderBasedVoxelRenderStrategy {
-    default void drawSolid(@NonNull IDrawMode draw) {
-        try (ShaderProgram program = VoxelShaders.SOLID_SHADER.use()) {
-            GlStateManager.disableAlpha();
-
-            draw.draw();
-
-            GlStateManager.enableAlpha();
-        }
+public interface IShaderBasedVoxelRenderStrategy extends IVoxelRenderStrategy, IShaderBasedRenderStrategy<VoxelPos, VoxelPiece> {
+    @Override
+    default ShaderProgram blockShader() {
+        return VoxelShaders.BLOCK_SHADER;
     }
 
-    default void drawCutout(@NonNull IDrawMode draw) {
-        try (ShaderProgram program = VoxelShaders.SOLID_SHADER.use()) {
-            mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
-            GlStateManager.disableCull();
-
-            draw.draw();
-
-            GlStateManager.enableCull();
-            mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
-        }
-    }
-
-    default void drawTransparent(@NonNull IDrawMode draw) {
-        glEnable(GL_STENCIL_TEST);
-
-        try (ShaderProgram program = VoxelShaders.STENCIL_SHADER.use()) {
-            GlStateManager.colorMask(false, false, false, false);
-
-            GlStateManager.clear(GL_STENCIL_BUFFER_BIT);
-            glStencilMask(0xFF);
-            glStencilFunc(GL_ALWAYS, 1, 0xFF); //always allow all fragments
-            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
-            GlStateManager.depthMask(false);
-
-            draw.draw();
-
-            GlStateManager.depthMask(true);
-
-            GlStateManager.colorMask(true, true, true, true);
-        }
-
-        try (ShaderProgram program = VoxelShaders.SOLID_SHADER.use()) {
-            GlStateManager.enableBlend();
-            GlStateManager.tryBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
-            GlStateManager.alphaFunc(GL_GREATER, 0.1f);
-
-            glStencilMask(0);
-            glStencilFunc(GL_EQUAL, 1, 0xFF);
-            glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-
-            draw.draw();
-
-            GlStateManager.disableBlend();
-        }
-
-        glDisable(GL_STENCIL_TEST);
+    @Override
+    default ShaderProgram stencilShader() {
+        return VoxelShaders.STENCIL_SHADER;
     }
 }

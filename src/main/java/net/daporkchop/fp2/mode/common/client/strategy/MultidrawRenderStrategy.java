@@ -29,26 +29,25 @@ import net.daporkchop.fp2.client.render.IndirectMultiDrawMode;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
+import net.daporkchop.fp2.mode.common.client.ISimpleRenderStrategy;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class MultidrawRenderStrategy<POS extends IFarPos, P extends IFarPiece> extends IndexedRenderStrategy<POS, P> {
-    protected final IDrawMode[] layers = new IDrawMode[RENDER_PASS_COUNT];
-
+public abstract class MultidrawRenderStrategy<POS extends IFarPos, P extends IFarPiece> extends IndexedRenderStrategy<POS, P> implements ISimpleRenderStrategy<POS, P> {
     public MultidrawRenderStrategy(int vertexSize) {
         super(vertexSize);
+    }
 
-        for (int i = 0; i < RENDER_PASS_COUNT; i++) {
-            this.layers[i] = new IndirectMultiDrawMode(vao -> {
-                this.configureVertexAttributes(this.vertices, vao);
-                vao.putElementArray(this.indices);
-            });
-        }
+    @Override
+    protected IDrawMode createDraw() {
+        return new IndirectMultiDrawMode(vao -> {
+            this.configureVertexAttributes(this.vertices, vao);
+            vao.putElementArray(this.indices);
+        });
     }
 
     protected abstract void configureVertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao);
@@ -58,7 +57,7 @@ public abstract class MultidrawRenderStrategy<POS extends IFarPos, P extends IFa
 
     @Override
     public void render(long tilev, int tilec) {
-        for (IDrawMode layer : this.layers) {
+        for (IDrawMode layer : this.passes) {
             layer.begin();
         }
         try {
@@ -66,15 +65,19 @@ public abstract class MultidrawRenderStrategy<POS extends IFarPos, P extends IFa
                 this.drawTile(PUnsafe.getLong(tilev));
             }
         } finally {
-            for (IDrawMode layer : this.layers) {
+            for (IDrawMode layer : this.passes) {
                 layer.close();
             }
         }
 
-        this.draw();
+        this.render();
     }
 
     protected abstract void drawTile(long tile);
 
-    protected abstract void draw();
+    protected void render() {
+        this.renderSolid(this.passes[0]);
+        this.renderCutout(this.passes[1]);
+        this.renderTransparent(this.passes[2]);
+    }
 }

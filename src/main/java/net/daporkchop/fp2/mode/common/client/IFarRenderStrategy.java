@@ -21,11 +21,9 @@
 package net.daporkchop.fp2.mode.common.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.render.IDrawMode;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.util.math.Volume;
 
 import java.util.stream.Stream;
 

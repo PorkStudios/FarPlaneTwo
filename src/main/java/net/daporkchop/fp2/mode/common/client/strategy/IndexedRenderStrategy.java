@@ -71,12 +71,10 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, P extends IFarP
         PUnsafe.putInt(renderData + _RENDERDATA_INDEXCOUNT_OFFSET + INT_SIZE * renderPass, indexCount);
     }
 
-    protected final AllocatedGLBuffer indices;
+    protected final AllocatedGLBuffer indices = AllocatedGLBuffer.create("indices", GL_DYNAMIC_DRAW, INDEX_SIZE, true);
 
     public IndexedRenderStrategy(int vertexSize) {
         super(vertexSize);
-
-        this.indices = AllocatedGLBuffer.create("indices", GL_DYNAMIC_DRAW, INDEX_SIZE, true);
     }
 
     @Override

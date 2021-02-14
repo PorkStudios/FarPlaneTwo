@@ -18,19 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
+package net.daporkchop.fp2.mode.common.client;
 
-import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.client.gl.shader.ShaderManager;
-import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import lombok.NonNull;
+import net.daporkchop.fp2.client.render.IDrawMode;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 
 /**
- * All of the {@link ShaderProgram}s used by the voxel renderer.
- *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class VoxelShaders {
-    public static final ShaderProgram BLOCK_SHADER = ShaderManager.get("voxel/solid");
-    public static final ShaderProgram STENCIL_SHADER = ShaderManager.get("voxel/stencil");
+public interface ISimpleRenderStrategy<POS extends IFarPos, P extends IFarPiece> extends IFarRenderStrategy<POS, P> {
+    void renderSolid(@NonNull IDrawMode draw);
+
+    void renderCutout(@NonNull IDrawMode draw);
+
+    void renderTransparent(@NonNull IDrawMode draw);
 }

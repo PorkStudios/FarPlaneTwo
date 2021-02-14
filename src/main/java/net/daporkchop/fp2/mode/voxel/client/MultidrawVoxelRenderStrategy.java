@@ -36,7 +36,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class MultidrawVoxelRenderStrategy extends MultidrawRenderStrategy<VoxelPos, VoxelPiece> implements IVoxelRenderStrategy, IShaderBasedVoxelRenderStrategy {
+public class MultidrawVoxelRenderStrategy extends MultidrawRenderStrategy<VoxelPos, VoxelPiece> implements IShaderBasedVoxelRenderStrategy {
     public MultidrawVoxelRenderStrategy() {
         super(VoxelBake.VOXEL_VERTEX_SIZE);
     }
@@ -49,13 +49,6 @@ public class MultidrawVoxelRenderStrategy extends MultidrawRenderStrategy<VoxelP
     @Override
     protected void bakeVertsAndIndices(@NonNull VoxelPos pos, @NonNull VoxelPiece[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
         VoxelBake.bakeForShaderDraw(pos, srcs, verts, indices);
-    }
-
-    @Override
-    protected void draw() {
-        this.drawSolid(this.layers[0]);
-        this.drawCutout(this.layers[1]);
-        this.drawTransparent(this.layers[2]);
     }
 
     @Override
@@ -74,7 +67,7 @@ public class MultidrawVoxelRenderStrategy extends MultidrawRenderStrategy<VoxelP
         for (int i = 0; i < RENDER_PASS_COUNT; i++) {
             int count = _renderdata_indexCount(renderData, i);
             if (count != 0) {
-                this.layers[i].drawElements(tileX, tileY, tileZ, level, baseVertex, firstIndex, count);
+                this.passes[i].drawElements(tileX, tileY, tileZ, level, baseVertex, firstIndex, count);
                 firstIndex += count;
             }
         }

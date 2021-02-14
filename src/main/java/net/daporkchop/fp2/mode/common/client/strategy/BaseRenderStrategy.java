@@ -25,6 +25,7 @@ import io.netty.buffer.ByteBufAllocator;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.AllocatedGLBuffer;
+import net.daporkchop.fp2.client.render.IDrawMode;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
@@ -32,6 +33,7 @@ import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static org.lwjgl.opengl.GL15.*;
 
 /**
@@ -67,12 +69,20 @@ public abstract class BaseRenderStrategy<POS extends IFarPos, P extends IFarPiec
         PUnsafe.putInt(renderData + _RENDERDATA_VERTEXCOUNT_OFFSET, vertexCount);
     }
 
+    protected final IDrawMode[] passes = new IDrawMode[RENDER_PASS_COUNT];
+
     protected final AllocatedGLBuffer vertices;
     protected final int vertexSize;
 
     public BaseRenderStrategy(int vertexSize) {
         this.vertices = AllocatedGLBuffer.create("vertices", GL_DYNAMIC_DRAW, this.vertexSize = vertexSize, true);
+
+        for (int i = 0; i < RENDER_PASS_COUNT; i++) {
+            this.passes[i] = this.createDraw();
+        }
     }
+
+    protected abstract IDrawMode createDraw();
 
     @Override
     public long renderDataSize() {
