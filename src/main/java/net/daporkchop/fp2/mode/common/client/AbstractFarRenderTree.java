@@ -287,7 +287,8 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
             this.strategy.deleteRenderData(node + this.tile_renderData);
         }
 
-        PUnsafe.copyMemory(output.renderData, node + this.tile_renderData, output.size);
+        this.strategy.copyRenderData(output.renderData, node + this.tile_renderData);
+        //PUnsafe.copyMemory(output.renderData, node + this.tile_renderData, output.size);
 
         this.setFlags(node, FLAG_DATA);
     }

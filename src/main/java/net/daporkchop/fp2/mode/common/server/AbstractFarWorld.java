@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -226,7 +226,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
 
     @Override
     public void blockChanged(int x, int y, int z) {
-        this.schedulePieceForUpdate(this.fromBlockCoords(x, y, z), this.world.getTotalWorldTime());
+        //TODO: re-enable this
+        //this.schedulePieceForUpdate(this.fromBlockCoords(x, y, z), this.world.getTotalWorldTime());
     }
 
     protected abstract POS fromBlockCoords(int x, int y, int z);

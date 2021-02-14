@@ -52,7 +52,7 @@ class VoxelRenderConstants {
     public final long _POS_TILEZ_OFFSET = _POS_TILEY_OFFSET + INT_SIZE;
     public final long _POS_LEVEL_OFFSET = _POS_TILEZ_OFFSET + INT_SIZE;
 
-    public final long _POS_SIZE = _POS_LEVEL_OFFSET + BYTE_SIZE;
+    public final long _POS_SIZE = _POS_LEVEL_OFFSET + INT_SIZE;
 
     public int _pos_tileX(long pos) {
         return PUnsafe.getInt(pos + _POS_TILEX_OFFSET);
