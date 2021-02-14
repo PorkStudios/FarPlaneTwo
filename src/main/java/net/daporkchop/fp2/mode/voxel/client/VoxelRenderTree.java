@@ -38,8 +38,8 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 public class VoxelRenderTree extends AbstractFarRenderTree<VoxelPos, VoxelPiece> {
-    public VoxelRenderTree(@NonNull AbstractFarRenderCache<VoxelPos, VoxelPiece> cache, @NonNull IFarRenderStrategy<VoxelPos, VoxelPiece> strategy, int d) {
-        super(strategy, d, );
+    public VoxelRenderTree(@NonNull IFarRenderStrategy<VoxelPos, VoxelPiece> strategy, int maxLevel) {
+        super(strategy, 3, maxLevel);
     }
 
     @Override

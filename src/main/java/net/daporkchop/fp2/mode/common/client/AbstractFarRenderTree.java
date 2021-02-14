@@ -59,11 +59,8 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
      * - D: number of dimensions
      *
      * struct Node {
-     *   int flags;
-     *   - 0x00: top
-     *   - 0x01: bottom
-     *   - 0x02: dummy //whether or not this node is a dummy and cannot actually store any data
-     *   - 0x03: data //whether or not this node has been rendered and contains data
+     *   int flags; //TODO: make this field smaller
+     *   - 0x00: data //whether or not this node has been rendered and contains data
      *   Tile tile;
      *   Node* children[1 << D];
      * };
@@ -74,10 +71,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
      * };
      */
 
-    public static final int FLAG_TOP = 1 << 0;
-    public static final int FLAG_BOTTOM = 1 << 1;
-    public static final int FLAG_DUMMY = 1 << 2;
-    public static final int FLAG_DATA = 1 << 3;
+    public static final int FLAG_DATA = 1 << 0;
 
     // begin field offsets
 
@@ -117,7 +111,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
         LOGGER.info("{}D tree node size: {} bytes", d, this.nodeSize);
 
         PUnsafe.setMemory(this.root = PUnsafe.allocateMemory(this.nodeSize), this.nodeSize, (byte) 0);
-        PUnsafe.putInt(this.root + this.flags, FLAG_DUMMY);
+        PUnsafe.putInt(this.root + this.flags, 0);
 
         this.cleaner = PCleaner.cleaner(this, new ReleaseFunction<>(this.root, this.flags, this.children, this.tile_renderData, this.d, strategy));
     }
@@ -224,6 +218,21 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
     }
 
     /**
+     * Checks whether or not the given node has any children.
+     * @param node the node
+     * @return whether or not the given node has any children
+     */
+    protected boolean hasAnyChildren(long node) {
+        for (long addr = node + this.children, lastChildAddr = addr + ((long) LONG_SIZE << this.d); addr != lastChildAddr; addr += LONG_SIZE) {
+            long child = PUnsafe.getLong(addr);
+            if (child != 0L) { //child exists
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Runs the given function for every node in the tree.
      *
      * @param action        the function to run
@@ -288,20 +297,6 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
 
         long node = PUnsafe.allocateMemory(this.nodeSize);
         PUnsafe.setMemory(node, this.nodeSize, (byte) 0);
-
-        int flags = 0;
-        if (level > this.maxLevel) { //the node is above the maximum level, it can't be anything other than a placeholder node
-            flags |= FLAG_DUMMY;
-        } else {
-            if (level == this.maxLevel) { //the node is at the highest level
-                flags |= FLAG_TOP;
-            }
-            if (level == 0) { //the node is at the lowest level
-                flags |= FLAG_BOTTOM;
-            }
-        }
-        PUnsafe.putInt(node + this.flags, flags); //store flags in node
-
         this.strategy.writePos(pos, node + this.tile_pos);
 
         return node;
@@ -330,24 +325,22 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
                 //remove reference to child from children array
                 PUnsafe.putLong(node + this.children + this.childIndex(level, pos) * 8L, 0L);
 
-                if (!this.checkFlagsAND(node, FLAG_DATA)) { //node itself hasn't been rendered
-                    //search for any other non-null children
-                    for (long addr = node + this.children, lastChildAddr = addr + ((long) LONG_SIZE << this.d); addr != lastChildAddr; addr += LONG_SIZE) {
-                        if (PUnsafe.getLong(addr) != 0L) { //if a non-null child is found, this node cannot be deleted
-                            return false;
-                        }
-                    }
-
-                    return true; //this node is not rendered and has no children, therefore it must be deleted
+                if (!this.checkFlagsAND(node, FLAG_DATA)) { //node itself has no data
+                    //if the node has no children, we return true, indicating that this node is now empty and should be deleted
+                    return !this.hasAnyChildren(node);
                 }
             }
 
             return false; //no further changes are necessary
         } else { //current node is the target node
+            //mark the node as having no data
+            this.clearFlags(node, FLAG_DATA);
+
             //free render data allocations
             this.strategy.deleteRenderData(node + this.tile_renderData);
 
-            return true; //return true, indicating that this node is now empty and should be deleted
+            //if the node has no children, we return true, indicating that this node is now empty and should be deleted
+            return !this.hasAnyChildren(node);
         }
     }
 
@@ -401,7 +394,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
         //at this point we know that the tile has some data and is selectable
 
         CHILDREN:
-        if (level != 0 && this.containedBy(node + this.tile_pos, ranges[level - 1])) {
+        if (level != 0 && this.hasAnyChildren(node) && this.containedBy(node + this.tile_pos, ranges[level - 1])) {
             //this tile is entirely within the view distance of the lower zoom level for tiles below it, so let's consider selecting them as well
             //if all children are selectable, select all of them
             //otherwise (if only some/none of the children are selectable) we ignore all of the children and only output the current tile. the better
@@ -427,6 +420,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
                     break CHILDREN;
                 }
             }
+
             //all of the children were able to be added, so there's no reason for this node to be added
             return true;
         }

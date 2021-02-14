@@ -86,6 +86,13 @@ public final class DirectLongStack {
     }
 
     /**
+     * @return whether or not the stack is empty
+     */
+    public boolean isEmpty() {
+        return this.size == 0;
+    }
+
+    /**
      * Allows an external function to iterate over the contents of the stack.
      *
      * @param action a callback function which accepts the pointer to the base of the stack as well as the number of values

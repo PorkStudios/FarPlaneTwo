@@ -23,8 +23,10 @@ package net.daporkchop.fp2.mode.voxel.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.IFarRenderBaker;
+import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.minecraft.client.multiplayer.WorldClient;
@@ -38,13 +40,13 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
     }
 
     @Override
-    protected VoxelRenderCache createCache() {
-        return new VoxelRenderCache(this);
+    protected IFarRenderStrategy<VoxelPos, VoxelPiece> strategy() {
+        return new MultidrawVoxelRenderStrategy();
     }
 
     @Override
-    public IFarRenderBaker<VoxelPos, VoxelPiece> baker() {
-        return new VoxelRenderBaker();
+    protected VoxelRenderCache createCache() {
+        return new VoxelRenderCache(this);
     }
 
     /*@Override
@@ -63,10 +65,10 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
                 return (stencil ? STENCIL_SHADER : SOLID_SHADER).use();
         }
         throw new IllegalArgumentException("mode=" + mode + ", pass=" + pass + ", stencil=" + stencil);
-    }
+    }*/
 
     @Override
     public RenderMode mode() {
         return RenderMode.VOXEL;
-    }*/
+    }
 }

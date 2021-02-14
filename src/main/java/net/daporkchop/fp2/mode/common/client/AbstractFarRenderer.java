@@ -28,14 +28,12 @@ import net.daporkchop.fp2.client.ShaderGlStateHelper;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.math.Sphere;
 import net.daporkchop.fp2.util.math.Volume;
-import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
@@ -57,34 +55,30 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     protected final GLBuffer drawCommandBuffer = new GLBuffer(GL_STREAM_DRAW);
 
     protected final DirectLongStack index = new DirectLongStack();
+    protected final IFarRenderStrategy<POS, P> strategy;
 
     public AbstractFarRenderer(@NonNull WorldClient world) {
+        this.strategy = this.strategy();
+
         this.cache = this.createCache();
     }
+
+    /**
+     * @return the {@link IFarRenderStrategy} used by this renderer
+     */
+    protected abstract IFarRenderStrategy<POS, P> strategy();
 
     protected abstract AbstractFarRenderCache<POS, P> createCache();
 
     @Override
     public void receivePiece(@NonNull Compressed<POS, P> piece) {
-        ClientThreadExecutor.INSTANCE.execute(() -> this.cache.receivePiece(piece));
+        this.cache.receivePiece(piece);
     }
 
     @Override
     public void unloadPiece(@NonNull POS pos) {
-        ClientThreadExecutor.INSTANCE.execute(() -> this.cache.unloadPiece(pos));
+        this.cache.unloadPiece(pos);
     }
-
-    /**
-     * @return the {@link IFarRenderBaker} used by this renderer
-     */
-    public abstract IFarRenderBaker<POS, P> baker();
-
-    /**
-     * Actually renders the world.
-     *
-     * @param index the render index
-     */
-    protected abstract void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, @NonNull FarRenderIndex index);
 
     @Override
     public void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
@@ -93,6 +87,29 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
         checkGLError("pre fp2 build index");
         Volume[] volumes = this.createVolumesForSelection(partialTicks, world, mc, frustum);
 
+        this.index.clear();
+        this.cache.tree.select(volumes, frustum, this.index);
+
+        if (this.index.isEmpty()) {
+            return; //nothing to render...
+        }
+
+        checkGLError("pre fp2 setup");
+        this.updateAndBindSSBOs(partialTicks, world, mc, frustum);
+
+        this.prepareGlState(partialTicks, world, mc, frustum);
+        try {
+            this.updateAndBindUBOs(partialTicks, world, mc, frustum);
+            checkGLError("post fp2 setup");
+
+            checkGLError("pre fp2 render");
+            this.index.doWithValues(this.strategy::render);
+            checkGLError("post fp2 render");
+        } finally {
+            checkGLError("pre fp2 reset");
+            this.resetGlState(partialTicks, world, mc, frustum);
+            checkGLError("post fp2 reset");
+        }
 
         /*FarRenderIndex index = this.cache.rebuildIndex(volumes, frustum);
         checkGLError("post fp2 build index");

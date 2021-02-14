@@ -20,14 +20,9 @@
 
 package net.daporkchop.fp2.mode.common.client;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.AllocatedGLBuffer;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.client.gl.object.GLBuffer;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
@@ -35,7 +30,6 @@ import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
-import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.util.GenericMatcher;
 
 import java.lang.reflect.Array;
@@ -45,14 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntFunction;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL33.*;
 
 /**
  * @author DaPorkchop_
@@ -60,6 +47,7 @@ import static org.lwjgl.opengl.GL33.*;
 @Getter
 public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFarPiece> {
     protected final AbstractFarRenderer<POS, P> renderer;
+    protected final IFarRenderStrategy<POS, P> strategy;
 
     protected final AbstractFarRenderTree<POS, P> tree;
     protected final Map<POS, Compressed<POS, P>> pieces = new ConcurrentHashMap<>();
@@ -67,85 +55,16 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
     protected final IntFunction<POS[]> posArray;
     protected final IntFunction<P[]> pieceArray;
 
-    protected final FarRenderIndex index;
-    protected final VertexArrayObject vao = new VertexArrayObject();
-
-    protected final AllocatedGLBuffer vertices;
-    protected final int vertexSize;
-
-    protected final AllocatedGLBuffer indices;
-    protected final int indexType;
-    protected final int indexSize;
-
-    protected final int passes;
-
-    protected final IFarRenderBaker<POS, P> baker;
-
-    public AbstractFarRenderCache(@NonNull AbstractFarRenderer<POS, P> renderer, int vertexSize) {
+    public AbstractFarRenderCache(@NonNull AbstractFarRenderer<POS, P> renderer) {
         this.renderer = renderer;
+        this.strategy = renderer.strategy();
 
         Class<POS> posClass = GenericMatcher.uncheckedFind(this.getClass(), AbstractFarRenderCache.class, "POS");
         this.posArray = size -> uncheckedCast(Array.newInstance(posClass, size));
         Class<P> pieceClass = GenericMatcher.uncheckedFind(this.getClass(), AbstractFarRenderCache.class, "P");
         this.pieceArray = size -> uncheckedCast(Array.newInstance(pieceClass, size));
 
-        this.vertexSize = vertexSize;
-        switch (this.indexType = (this.baker = renderer.baker()).indexType()) {
-            case GL_UNSIGNED_BYTE:
-                this.indexSize = 1;
-                break;
-            case GL_UNSIGNED_SHORT:
-                this.indexSize = 2;
-                break;
-            case GL_UNSIGNED_INT:
-                this.indexSize = 4;
-                break;
-            default:
-                throw new IllegalArgumentException(PStrings.fastFormat("Invalid index type: %d", this.indexType));
-        }
-
-        this.passes = positive(this.baker.passes(), "passes");
-
         this.tree = this.createTree();
-
-        this.vertices = AllocatedGLBuffer.create(GL_DYNAMIC_DRAW, this.vertexSize, true);
-        this.indices = AllocatedGLBuffer.create(GL_DYNAMIC_DRAW, this.indexSize, true);
-
-        this.index = new FarRenderIndex(this);
-
-        this.rebuildVAO();
-    }
-
-    protected void rebuildVAO() {
-        checkGLError("pre rebuild VAO");
-        int attribs = this.baker.vertexAttributes();
-        try (VertexArrayObject vao = this.vao.bind()) {
-            for (int i = 0; i <= attribs; i++) {
-                glEnableVertexAttribArray(i);
-            }
-
-            try (GLBuffer vbo = this.renderer.drawCommandBuffer.bind(GL_ARRAY_BUFFER)) {
-                glVertexAttribIPointer(0, 4, GL_INT, FarRenderIndex.ENTRY_SIZE * INT_SIZE, 0L);
-                glVertexAttribDivisor(0, 1);
-                vao.putDependency(0, vbo);
-            }
-
-            try (AllocatedGLBuffer vbo = this.vertices.bind(GL_ARRAY_BUFFER)) {
-                this.baker.assignVertexAttributes();
-                for (int i = 1; i <= attribs; i++) {
-                    vao.putDependency(i, vbo);
-                }
-            }
-
-            vao.putElementArray(this.indices.bind(GL_ELEMENT_ARRAY_BUFFER));
-        } finally {
-            for (int i = 0; i <= attribs; i++) {
-                glDisableVertexAttribArray(i);
-            }
-
-            this.indices.close();
-        }
-        checkGLError("post rebuild VAO");
     }
 
     protected abstract AbstractFarRenderTree<POS, P> createTree();
@@ -155,13 +74,13 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
 
         this.pieces.put(pieceIn.pos(), pieceIn);
 
-        this.baker.bakeOutputs(pieceIn.pos())
+        this.strategy.bakeOutputs(pieceIn.pos())
                 .forEach(pos -> {
                     if (pos.level() < 0 || pos.level() > maxLevel) {
                         return;
                     }
 
-                    Compressed<POS, P>[] compressedInputPieces = uncheckedCast(this.baker.bakeInputs(pos)
+                    Compressed<POS, P>[] compressedInputPieces = uncheckedCast(this.strategy.bakeInputs(pos)
                             .map(this.pieces::get)
                             .toArray(Compressed[]::new));
 
@@ -175,70 +94,43 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
                             return;
                         }
 
-                        //TODO: allocate these buffers from a shared pool to prevent OOMEs if the render workers are faster than the client thread
-                        ByteBuf vertices = Constants.allocateByteBufNativeOrder(this.baker.estimatedVerticesBufferCapacity());
-                        ByteBuf[] indices = new ByteBuf[this.passes];
-                        int estimatedIndicesBufferCapacity = this.baker.estimatedIndicesBufferCapacity();
-                        for (int i = 0; i < this.passes; i++) {
-                            indices[i] = Constants.allocateByteBufNativeOrder(estimatedIndicesBufferCapacity);
-                        }
+                        SimpleRecycler<P> recycler = this.renderer.mode().pieceRecycler();
+                        P[] inputPieces = this.pieceArray.apply(compressedInputPieces.length);
                         try {
-                            SimpleRecycler<P> recycler = this.renderer.mode().pieceRecycler();
-                            P[] inputPieces = this.pieceArray.apply(compressedInputPieces.length);
-                            try {
-                                for (int i = 0; i < inputPieces.length; i++) { //inflate pieces
-                                    if (compressedInputPieces[i] != null) {
-                                        inputPieces[i] = compressedInputPieces[i].inflate(recycler);
-                                    }
-                                }
-
-                                this.baker.bake(pos, inputPieces, vertices, indices);
-
-                                //upload to GPU on client thread
-                                vertices.retain();
-                                for (int i = 0; i < indices.length; i++) {
-                                    ByteBuf buf = indices[i];
-                                    if (!buf.isReadable()) {
-                                        buf.release();
-                                        indices[i] = Unpooled.EMPTY_BUFFER;
-                                    } else {
-                                        buf.retain();
-                                    }
-                                }
-                                ClientThreadExecutor.INSTANCE.execute(() -> this.addPiece(piece, vertices, indices));
-                            } finally { //release pieces again
-                                for (int i = 0; i < inputPieces.length; i++) {
-                                    if (inputPieces[i] != null) {
-                                        recycler.release(inputPieces[i]);
-                                    }
+                            for (int i = 0; i < inputPieces.length; i++) { //inflate pieces
+                                if (compressedInputPieces[i] != null) {
+                                    inputPieces[i] = compressedInputPieces[i].inflate(recycler);
                                 }
                             }
-                        } finally {
-                            vertices.release();
-                            for (ByteBuf buf : indices) {
-                                buf.release();
+
+                            BakeOutput output = new BakeOutput(this.strategy.renderDataSize());
+                            if (this.strategy.bake(pos, inputPieces, output)) {
+                                ClientThreadExecutor.INSTANCE.execute(() -> this.addPiece(piece, output));
+                            } else { //baked tile contains nothing, so we
+                                ClientThreadExecutor.INSTANCE.execute(() -> this.addPiece(piece, null));
+                            }
+                        } finally { //release pieces again
+                            for (int i = 0; i < inputPieces.length; i++) {
+                                if (inputPieces[i] != null) {
+                                    recycler.release(inputPieces[i]);
+                                }
                             }
                         }
                     });
                 });
     }
 
-    public void addPiece(@NonNull Compressed<POS, P> piece, @NonNull ByteBuf vertices, @NonNull ByteBuf[] indices) {
-        try {
-            POS pos = piece.pos();
-            if (this.pieces.get(pos) != piece) {
-                return;
-            }
+    protected void addPiece(@NonNull Compressed<POS, P> piece, BakeOutput output) {
+        POS pos = piece.pos();
+        if (this.pieces.get(pos) != piece) {
+            return;
+        }
 
-            try (AllocatedGLBuffer verticesBuffer = this.vertices.bind(GL_ARRAY_BUFFER);
-                 AllocatedGLBuffer indicesBuffer = this.indices.bind(GL_ELEMENT_ARRAY_BUFFER)) {
-                this.tree.putRenderData(pos, vertices, indices);
-            }
-        } finally {
-            vertices.release();
-            for (ByteBuf buf : indices) {
-                buf.release();
-            }
+        if (output != null) { //finish bake and insert to tree
+            this.strategy.executeBakeOutput(piece.pos(), output);
+            this.tree.putRenderData(pos, output);
+        } else { //remove piece from tree
+            this.tree.removeNode(pos);
         }
     }
 
@@ -253,11 +145,5 @@ public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFar
             Constants.LOGGER.warn("Attempted to unload already non-existent piece at {}!", pos);
         }
         this.tree.removeNode(pos);
-    }
-
-    public FarRenderIndex rebuildIndex(@NonNull Volume[] ranges, @NonNull IFrustum frustum) {
-        this.index.reset();
-        this.tree.select(ranges, frustum, this.index);
-        return this.index;
     }
 }
