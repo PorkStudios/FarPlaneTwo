@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.common.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
-import net.daporkchop.fp2.client.render.IDrawMode;
+import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.minecraft.client.renderer.GlStateManager;
@@ -34,9 +34,9 @@ import static org.lwjgl.opengl.GL11.*;
 /**
  * @author DaPorkchop_
  */
-public interface IShaderBasedRenderStrategy<POS extends IFarPos, P extends IFarPiece> extends ISimpleRenderStrategy<POS, P> {
+public interface IShaderBasedMultipassRenderStrategy<POS extends IFarPos, P extends IFarPiece> extends IMultipassRenderStrategy<POS, P> {
     @Override
-    default void renderSolid(@NonNull IDrawMode draw) {
+    default void renderSolid(@NonNull IDrawCommandBuffer draw) {
         try (ShaderProgram program = this.blockShader().use()) {
             GlStateManager.disableAlpha();
 
@@ -47,7 +47,7 @@ public interface IShaderBasedRenderStrategy<POS extends IFarPos, P extends IFarP
     }
 
     @Override
-    default void renderCutout(@NonNull IDrawMode draw) {
+    default void renderCutout(@NonNull IDrawCommandBuffer draw) {
         try (ShaderProgram program = this.blockShader().use()) {
             mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
             GlStateManager.disableCull();
@@ -60,7 +60,7 @@ public interface IShaderBasedRenderStrategy<POS extends IFarPos, P extends IFarP
     }
 
     @Override
-    default void renderTransparent(@NonNull IDrawMode draw) {
+    default void renderTransparent(@NonNull IDrawCommandBuffer draw) {
         glEnable(GL_STENCIL_TEST);
 
         try (ShaderProgram program = this.stencilShader().use()) {

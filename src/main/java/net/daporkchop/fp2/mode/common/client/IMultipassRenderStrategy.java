@@ -18,24 +18,31 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
+package net.daporkchop.fp2.mode.common.client;
 
-import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
-import net.daporkchop.fp2.mode.common.client.IShaderBasedRenderStrategy;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
+import lombok.NonNull;
+import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+
+import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-public interface IShaderBasedVoxelRenderStrategy extends IVoxelRenderStrategy, IShaderBasedRenderStrategy<VoxelPos, VoxelPiece> {
-    @Override
-    default ShaderProgram blockShader() {
-        return VoxelShaders.BLOCK_SHADER;
+public interface IMultipassRenderStrategy<POS extends IFarPos, P extends IFarPiece> extends IFarRenderStrategy<POS, P> {
+    default void renderMultipass(@NonNull IDrawCommandBuffer[] passes) {
+        checkArg(passes.length == RENDER_PASS_COUNT, "invalid number of render passes: %d (expected %d)", passes.length, RENDER_PASS_COUNT);
+
+        this.renderSolid(passes[0]);
+        this.renderCutout(passes[1]);
+        this.renderTransparent(passes[2]);
     }
 
-    @Override
-    default ShaderProgram stencilShader() {
-        return VoxelShaders.STENCIL_SHADER;
-    }
+    void renderSolid(@NonNull IDrawCommandBuffer draw);
+
+    void renderCutout(@NonNull IDrawCommandBuffer draw);
+
+    void renderTransparent(@NonNull IDrawCommandBuffer draw);
 }

@@ -20,31 +20,47 @@
 
 package net.daporkchop.fp2.mode.common.client.strategy;
 
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.object.IGLBuffer;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
-import net.daporkchop.fp2.client.gl.commandbuffer.IndirectIndexedMultidrawCommandBuffer;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.common.client.BakeOutput;
+import net.daporkchop.fp2.mode.common.client.IMultipassRenderStrategy;
+import net.daporkchop.lib.common.util.PArrays;
+import net.daporkchop.lib.unsafe.PUnsafe;
+
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class MultidrawRenderStrategy<POS extends IFarPos, P extends IFarPiece> extends IndexedRenderStrategy<POS, P> {
-    public MultidrawRenderStrategy(int vertexSize) {
+public abstract class MultidrawMultipassRenderStrategy<POS extends IFarPos, P extends IFarPiece> extends MultidrawRenderStrategy<POS, P> implements IMultipassRenderStrategy<POS, P> {
+    protected final IDrawCommandBuffer[] passes = new IDrawCommandBuffer[RENDER_PASS_COUNT];
+
+    public MultidrawMultipassRenderStrategy(int vertexSize) {
         super(vertexSize);
+
+        PArrays.fill(this.passes, this::createCommandBuffer);
     }
 
     @Override
-    public IDrawCommandBuffer createCommandBuffer() {
-        return new IndirectIndexedMultidrawCommandBuffer(vao -> this.configureVertexAttributes(this.vertices, vao), this.indices);
+    public void render(long tilev, int tilec) {
+        for (IDrawCommandBuffer pass : this.passes) { //begin all passes
+            pass.begin();
+        }
+        try {
+            for (long end = tilev + (long) LONG_SIZE * tilec; tilev != end; tilev += LONG_SIZE) { //draw each tile individually
+                this.drawTile(this.passes, PUnsafe.getLong(tilev));
+            }
+        } finally {
+            for (IDrawCommandBuffer pass : this.passes) { //finish all passes
+                pass.close();
+            }
+        }
+
+        //render completed passes
+        this.renderMultipass(this.passes);
     }
 
-    protected abstract void configureVertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao);
-
-    @Override
-    protected abstract void bakeVertsAndIndices(@NonNull POS pos, @NonNull P[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices);
+    protected abstract void drawTile(@NonNull IDrawCommandBuffer[] passes, long tile);
 }

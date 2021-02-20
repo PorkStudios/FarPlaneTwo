@@ -18,18 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.client.render;
+package net.daporkchop.fp2.mode.voxel.client;
+
+import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.mode.common.client.IShaderBasedMultipassRenderStrategy;
+import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 
 /**
  * @author DaPorkchop_
  */
-public interface IDrawMode extends AutoCloseable {
-    IDrawMode begin();
-
-    void drawElements(int tileX, int tileY, int tileZ, int level, int baseVertex, int firstIndex, int count);
+public interface IShaderBasedVoxelMultipassRenderStrategy extends IVoxelRenderStrategy, IShaderBasedMultipassRenderStrategy<VoxelPos, VoxelPiece> {
+    @Override
+    default ShaderProgram blockShader() {
+        return VoxelShaders.BLOCK_SHADER;
+    }
 
     @Override
-    void close();
-
-    void draw();
+    default ShaderProgram stencilShader() {
+        return VoxelShaders.STENCIL_SHADER;
+    }
 }

@@ -24,8 +24,9 @@ import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
+import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
-import net.daporkchop.fp2.mode.common.client.strategy.MultidrawRenderStrategy;
+import net.daporkchop.fp2.mode.common.client.strategy.MultidrawMultipassRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 
@@ -36,7 +37,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class MultidrawVoxelRenderStrategy extends MultidrawRenderStrategy<VoxelPos, VoxelPiece> implements IShaderBasedVoxelRenderStrategy {
+public class MultidrawVoxelRenderStrategy extends MultidrawMultipassRenderStrategy<VoxelPos, VoxelPiece> implements IShaderBasedVoxelMultipassRenderStrategy {
     public MultidrawVoxelRenderStrategy() {
         super(VoxelBake.VOXEL_VERTEX_SIZE);
     }
@@ -52,13 +53,13 @@ public class MultidrawVoxelRenderStrategy extends MultidrawRenderStrategy<VoxelP
     }
 
     @Override
-    protected void drawTile(long tile) {
+    protected void drawTile(@NonNull IDrawCommandBuffer[] passes, long tile) {
         long pos = _tile_pos(tile);
         long renderData = _tile_renderData(tile);
 
-        int tileX = _pos_tileX(pos);
-        int tileY = _pos_tileY(pos);
-        int tileZ = _pos_tileZ(pos);
+        int tileX = _pos_x(pos);
+        int tileY = _pos_y(pos);
+        int tileZ = _pos_z(pos);
         int level = _pos_level(pos);
 
         int baseVertex = toInt(_renderdata_vertexOffset(renderData) / this.vertexSize);
@@ -67,16 +68,9 @@ public class MultidrawVoxelRenderStrategy extends MultidrawRenderStrategy<VoxelP
         for (int i = 0; i < RENDER_PASS_COUNT; i++) {
             int count = _renderdata_indexCount(renderData, i);
             if (count != 0) {
-                this.passes[i].drawElements(tileX, tileY, tileZ, level, baseVertex, firstIndex, count);
+                passes[i].drawElements(tileX, tileY, tileZ, level, baseVertex, firstIndex, count);
                 firstIndex += count;
             }
         }
-    }
-
-    @Override
-    protected void render() {
-        this.renderSolid(this.passes[0]);
-        this.renderCutout(this.passes[1]);
-        this.renderTransparent(this.passes[2]);
     }
 }

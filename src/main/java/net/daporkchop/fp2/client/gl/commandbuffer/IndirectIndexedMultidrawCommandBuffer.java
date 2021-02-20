@@ -18,10 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.client.render;
+package net.daporkchop.fp2.client.gl.commandbuffer;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
+import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -30,15 +31,15 @@ import java.util.function.Consumer;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL33.*;
 import static org.lwjgl.opengl.GL40.*;
 import static org.lwjgl.opengl.GL43.*;
 
 /**
+ * Implementation of {@link IDrawCommandBuffer} which implements indirect multidraw for indexed geometry.
+ *
  * @author DaPorkchop_
  */
-public class IndirectMultiDrawMode implements IDrawMode {
+public class IndirectIndexedMultidrawCommandBuffer implements IDrawCommandBuffer {
     public static final int POSITION_SIZE = 4;
     public static final int COMMAND_SIZE = 5;
     public static final int ENTRY_SIZE = POSITION_SIZE + COMMAND_SIZE;
@@ -55,7 +56,7 @@ public class IndirectMultiDrawMode implements IDrawMode {
     protected int size;
     protected int capacity;
 
-    public IndirectMultiDrawMode(@NonNull Consumer<VertexArrayObject> vaoInitializer) {
+    public IndirectIndexedMultidrawCommandBuffer(@NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray) {
         try (GLBuffer buffer = this.buffer.bind(GL_ARRAY_BUFFER)) {
             this.capacity = 1;
             buffer.capacity(this.capacity * ENTRY_SIZE_BYTES);
@@ -64,11 +65,13 @@ public class IndirectMultiDrawMode implements IDrawMode {
         try (VertexArrayObject vao = this.vao.bindForChange()) {
             vao.attrI(this.buffer, 4, GL_INT, ENTRY_SIZE_BYTES, 0, 1);
             vaoInitializer.accept(vao);
+
+            vao.putElementArray(elementArray);
         }
     }
 
     @Override
-    public IDrawMode begin() {
+    public IDrawCommandBuffer begin() {
         this.size = 0;
 
         try (GLBuffer buffer = this.buffer.bind(GL_DRAW_INDIRECT_BUFFER)) {
@@ -78,16 +81,16 @@ public class IndirectMultiDrawMode implements IDrawMode {
     }
 
     @Override
-    public void drawElements(int tileX, int tileY, int tileZ, int level, int baseVertex, int firstIndex, int count) {
+    public void drawElements(int x, int y, int z, int level, int baseVertex, int firstIndex, int count) {
         int size = this.size++;
         if (size == this.capacity) {
             this.grow();
         }
 
         long baseAddr = this.mappingAddress + (long) size * ENTRY_SIZE_BYTES;
-        PUnsafe.putInt(baseAddr + 0 * INT_SIZE, tileX);
-        PUnsafe.putInt(baseAddr + 1 * INT_SIZE, tileY);
-        PUnsafe.putInt(baseAddr + 2 * INT_SIZE, tileZ);
+        PUnsafe.putInt(baseAddr + 0 * INT_SIZE, x);
+        PUnsafe.putInt(baseAddr + 1 * INT_SIZE, y);
+        PUnsafe.putInt(baseAddr + 2 * INT_SIZE, z);
         PUnsafe.putInt(baseAddr + 3 * INT_SIZE, level);
 
         PUnsafe.putInt(baseAddr + 4 * INT_SIZE, count); //count

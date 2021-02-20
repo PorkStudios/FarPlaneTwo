@@ -39,32 +39,32 @@ class HeightmapRenderConstants {
 
     /*
      * struct Pos { // 12 bytes
-     *   int tileX;
-     *   int tileZ;
+     *   int x;
+     *   int z;
      *   int level;
      * };
      */
 
-    public final long _POS_TILEX_OFFSET = 0L;
-    public final long _POS_TILEZ_OFFSET = _POS_TILEX_OFFSET + INT_SIZE;
-    public final long _POS_LEVEL_OFFSET = _POS_TILEZ_OFFSET + INT_SIZE;
+    public final long _POS_X_OFFSET = 0L;
+    public final long _POS_Z_OFFSET = _POS_X_OFFSET + INT_SIZE;
+    public final long _POS_LEVEL_OFFSET = _POS_Z_OFFSET + INT_SIZE;
 
     public final long _POS_SIZE = _POS_LEVEL_OFFSET + BYTE_SIZE;
 
-    public int _pos_tileX(long pos) {
-        return PUnsafe.getInt(pos + _POS_TILEX_OFFSET);
+    public int _pos_x(long pos) {
+        return PUnsafe.getInt(pos + _POS_X_OFFSET);
     }
 
-    public void _pos_tileX(long pos, int tileX) {
-        PUnsafe.putInt(pos + _POS_TILEX_OFFSET, tileX);
+    public void _pos_x(long pos, int tileX) {
+        PUnsafe.putInt(pos + _POS_X_OFFSET, tileX);
     }
 
-    public int _pos_tileZ(long pos) {
-        return PUnsafe.getInt(pos + _POS_TILEZ_OFFSET);
+    public int _pos_z(long pos) {
+        return PUnsafe.getInt(pos + _POS_Z_OFFSET);
     }
 
-    public void _pos_tileZ(long pos, int tileZ) {
-        PUnsafe.putInt(pos + _POS_TILEZ_OFFSET, tileZ);
+    public void _pos_z(long pos, int tileZ) {
+        PUnsafe.putInt(pos + _POS_Z_OFFSET, tileZ);
     }
 
     public int _pos_level(long pos) {

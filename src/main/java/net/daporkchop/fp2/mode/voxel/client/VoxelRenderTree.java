@@ -42,9 +42,9 @@ public class VoxelRenderTree extends AbstractFarRenderTree<VoxelPos, VoxelPiece>
 
     @Override
     protected boolean isPosEqual(long a, @NonNull VoxelPos b) {
-        return _pos_tileX(a) == b.x()
-               && _pos_tileY(a) == b.y()
-               && _pos_tileZ(a) == b.z()
+        return _pos_x(a) == b.x()
+               && _pos_y(a) == b.y()
+               && _pos_z(a) == b.z()
                && _pos_level(a) == b.level();
     }
 
@@ -56,36 +56,36 @@ public class VoxelRenderTree extends AbstractFarRenderTree<VoxelPos, VoxelPiece>
 
     @Override
     protected boolean intersects(long pos, @NonNull Volume volume) {
-        int x = _pos_tileX(pos);
-        int y = _pos_tileY(pos);
-        int z = _pos_tileZ(pos);
+        int x = _pos_x(pos);
+        int y = _pos_y(pos);
+        int z = _pos_z(pos);
         int shift = _pos_level(pos) + T_SHIFT;
         return volume.intersects(x << shift, y << shift, z << shift, (x + 1) << shift, (y + 1) << shift, (z + 1) << shift);
     }
 
     @Override
     protected boolean containedBy(long pos, @NonNull Volume volume) {
-        int x = _pos_tileX(pos);
-        int y = _pos_tileY(pos);
-        int z = _pos_tileZ(pos);
+        int x = _pos_x(pos);
+        int y = _pos_y(pos);
+        int z = _pos_z(pos);
         int shift = _pos_level(pos) + T_SHIFT;
         return volume.contains(x << shift, y << shift, z << shift, (x + 1) << shift, (y + 1) << shift, (z + 1) << shift);
     }
 
     @Override
     protected boolean isNodeInFrustum(long pos, @NonNull IFrustum frustum) {
-        int x = _pos_tileX(pos);
-        int y = _pos_tileY(pos);
-        int z = _pos_tileZ(pos);
+        int x = _pos_x(pos);
+        int y = _pos_y(pos);
+        int z = _pos_z(pos);
         int shift = _pos_level(pos) + T_SHIFT;
         return frustum.intersectsBB(x << shift, y << shift, z << shift, (x + 1) << shift, (y + 1) << shift, (z + 1) << shift);
     }
 
     @Override
     protected boolean isVanillaRenderable(long pos) {
-        int x = _pos_tileX(pos);
-        int y = _pos_tileY(pos);
-        int z = _pos_tileZ(pos);
+        int x = _pos_x(pos);
+        int y = _pos_y(pos);
+        int z = _pos_z(pos);
         return ClientConstants.isChunkRenderable(x, y, z);
     }
 }

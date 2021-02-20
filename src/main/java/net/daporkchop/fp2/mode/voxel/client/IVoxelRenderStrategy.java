@@ -21,17 +21,14 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.daporkchop.fp2.util.math.Volume;
-import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.mode.voxel.client.VoxelRenderConstants.*;
 
 /**
  * @author DaPorkchop_
@@ -90,19 +87,14 @@ public interface IVoxelRenderStrategy extends IFarRenderStrategy<VoxelPos, Voxel
 
     @Override
     default void writePos(@NonNull VoxelPos pos, long addr) {
-        PUnsafe.putInt(addr + 0 * INT_SIZE, pos.x());
-        PUnsafe.putInt(addr + 1 * INT_SIZE, pos.y());
-        PUnsafe.putInt(addr + 2 * INT_SIZE, pos.z());
-        PUnsafe.putInt(addr + 3 * INT_SIZE, pos.level());
+        _pos_x(addr, pos.x());
+        _pos_y(addr, pos.y());
+        _pos_z(addr, pos.z());
+        _pos_level(addr, pos.level());
     }
 
     @Override
     default VoxelPos readPos(long addr) {
-        int x = PUnsafe.getInt(addr + 0 * INT_SIZE);
-        int y = PUnsafe.getInt(addr + 1 * INT_SIZE);
-        int z = PUnsafe.getInt(addr + 2 * INT_SIZE);
-        int level = PUnsafe.getInt(addr + 3 * INT_SIZE);
-
-        return new VoxelPos(x, y, z, level);
+        return new VoxelPos(_pos_x(addr), _pos_y(addr), _pos_z(addr), _pos_level(addr));
     }
 }

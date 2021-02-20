@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.mode.common.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.render.IDrawMode;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 

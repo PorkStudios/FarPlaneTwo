@@ -41,8 +41,8 @@ public class HeightmapRenderTree extends AbstractFarRenderTree<HeightmapPos, Hei
 
     @Override
     protected boolean isPosEqual(long a, @NonNull HeightmapPos b) {
-        return _pos_tileX(a) == b.x()
-               && _pos_tileZ(a) == b.z()
+        return _pos_x(a) == b.x()
+               && _pos_z(a) == b.z()
                && _pos_level(a) == b.level();
     }
 
@@ -54,24 +54,24 @@ public class HeightmapRenderTree extends AbstractFarRenderTree<HeightmapPos, Hei
 
     @Override
     protected boolean intersects(long pos, @NonNull Volume volume) {
-        int x = _pos_tileX(pos);
-        int z = _pos_tileZ(pos);
+        int x = _pos_x(pos);
+        int z = _pos_z(pos);
         int shift = _pos_level(pos) + T_SHIFT;
         return volume.intersects(x << shift, Integer.MIN_VALUE, z << shift, (x + 1) << shift, Integer.MAX_VALUE, (z + 1) << shift);
     }
 
     @Override
     protected boolean containedBy(long pos, @NonNull Volume volume) {
-        int x = _pos_tileX(pos);
-        int z = _pos_tileZ(pos);
+        int x = _pos_x(pos);
+        int z = _pos_z(pos);
         int shift = _pos_level(pos) + T_SHIFT;
         return volume.contains(x << shift, Integer.MIN_VALUE, z << shift, (x + 1) << shift, Integer.MAX_VALUE, (z + 1) << shift);
     }
 
     @Override
     protected boolean isNodeInFrustum(long pos, @NonNull IFrustum frustum) {
-        int x = _pos_tileX(pos);
-        int z = _pos_tileZ(pos);
+        int x = _pos_x(pos);
+        int z = _pos_z(pos);
         int shift = _pos_level(pos) + T_SHIFT;
         return frustum.intersectsBB(x << shift, Integer.MIN_VALUE, z << shift, (x + 1) << shift, Integer.MAX_VALUE, (z + 1) << shift);
     }
