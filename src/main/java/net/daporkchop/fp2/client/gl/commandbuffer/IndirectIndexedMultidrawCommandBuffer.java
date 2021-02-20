@@ -39,7 +39,7 @@ import static org.lwjgl.opengl.GL43.*;
  *
  * @author DaPorkchop_
  */
-public class IndirectIndexedMultidrawCommandBuffer implements IDrawCommandBuffer {
+public class IndirectIndexedMultidrawCommandBuffer extends IndirectMultidrawCommandBuffer {
     public static final int POSITION_SIZE = 4;
     public static final int COMMAND_SIZE = 5;
     public static final int ENTRY_SIZE = POSITION_SIZE + COMMAND_SIZE;
@@ -48,46 +48,15 @@ public class IndirectIndexedMultidrawCommandBuffer implements IDrawCommandBuffer
     public static final int COMMAND_SIZE_BYTES = COMMAND_SIZE * INT_SIZE;
     public static final int ENTRY_SIZE_BYTES = POSITION_SIZE_BYTES + COMMAND_SIZE_BYTES;
 
-    protected final GLBuffer buffer = new GLBuffer(GL_STREAM_DRAW);
-    protected final VertexArrayObject vao = new VertexArrayObject();
-
-    protected long mappingAddress = -1L;
-
-    protected int size;
-    protected int capacity;
-
     public IndirectIndexedMultidrawCommandBuffer(@NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray) {
-        try (GLBuffer buffer = this.buffer.bind(GL_ARRAY_BUFFER)) {
-            this.capacity = 1;
-            buffer.capacity(this.capacity * ENTRY_SIZE_BYTES);
-        }
-
-        try (VertexArrayObject vao = this.vao.bindForChange()) {
-            vao.attrI(this.buffer, 4, GL_INT, ENTRY_SIZE_BYTES, 0, 1);
-            vaoInitializer.accept(vao);
-
-            vao.putElementArray(elementArray);
-        }
-    }
-
-    @Override
-    public IDrawCommandBuffer begin() {
-        this.size = 0;
-
-        try (GLBuffer buffer = this.buffer.bind(GL_DRAW_INDIRECT_BUFFER)) {
-            this.mappingAddress = buffer.map(GL_WRITE_ONLY);
-        }
-        return this;
+        super(ENTRY_SIZE_BYTES, vaoInitializer, elementArray);
     }
 
     @Override
     public void drawElements(int x, int y, int z, int level, int baseVertex, int firstIndex, int count) {
-        int size = this.size++;
-        if (size == this.capacity) {
-            this.grow();
-        }
+        int size = this.next();
 
-        long baseAddr = this.mappingAddress + (long) size * ENTRY_SIZE_BYTES;
+        long baseAddr = this.addr + (long) size * ENTRY_SIZE_BYTES;
         PUnsafe.putInt(baseAddr + 0 * INT_SIZE, x);
         PUnsafe.putInt(baseAddr + 1 * INT_SIZE, y);
         PUnsafe.putInt(baseAddr + 2 * INT_SIZE, z);
@@ -100,29 +69,8 @@ public class IndirectIndexedMultidrawCommandBuffer implements IDrawCommandBuffer
         PUnsafe.putInt(baseAddr + 8 * INT_SIZE, size); //baseInstance
     }
 
-    protected void grow() {
-        try (GLBuffer buffer = this.buffer.bind(GL_DRAW_INDIRECT_BUFFER)) {
-            buffer.unmap();
-
-            this.capacity <<= 1;
-            buffer.resize((long) this.capacity * ENTRY_SIZE_BYTES);
-
-            this.mappingAddress = buffer.map(GL_WRITE_ONLY);
-        }
-    }
-
     @Override
-    public void close() {
-        try (GLBuffer buffer = this.buffer.bind(GL_DRAW_INDIRECT_BUFFER)) {
-            buffer.unmap();
-        }
-    }
-
-    @Override
-    public void draw() {
-        try (VertexArrayObject vao = this.vao.bind();
-             GLBuffer buffer = this.buffer.bind(GL_DRAW_INDIRECT_BUFFER)) {
-            glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, POSITION_SIZE_BYTES, this.size, ENTRY_SIZE_BYTES);
-        }
+    protected void multidraw0() {
+        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, POSITION_SIZE_BYTES, this.size, ENTRY_SIZE_BYTES);
     }
 }

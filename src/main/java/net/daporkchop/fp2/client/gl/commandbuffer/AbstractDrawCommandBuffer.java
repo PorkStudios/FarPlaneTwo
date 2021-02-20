@@ -18,95 +18,76 @@
  *
  */
 
-package net.daporkchop.fp2.util;
+package net.daporkchop.fp2.client.gl.commandbuffer;
 
-import lombok.NonNull;
-import net.daporkchop.lib.primitive.lambda.LongIntConsumer;
+import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static org.lwjgl.opengl.GL15.*;
 
 /**
- * An off-heap stack of {@code long}s.
- *
  * @author DaPorkchop_
  */
-public class DirectLongStack {
+public abstract class AbstractDrawCommandBuffer implements IDrawCommandBuffer {
     protected final AtomicLong cleanedAddr = new AtomicLong();
+    protected final long entrySize;
+
     protected long addr;
     protected int size;
     protected int capacity;
 
-    public DirectLongStack() {
-        this(64);
+    protected final GLBuffer buffer = new GLBuffer(GL_STREAM_DRAW);
+
+    public AbstractDrawCommandBuffer(long entrySize) {
+        this(entrySize, 1);
     }
 
-    public DirectLongStack(int capacity) {
-        this.capacity = positive(capacity, "capacity");
-        this.cleanedAddr.set(this.addr = PUnsafe.allocateMemory((long) this.capacity << 3L));
+    public AbstractDrawCommandBuffer(long entrySize, int initialCapacity) {
+        this.entrySize = positive(entrySize, "entrySize");
+        this.capacity = positive(initialCapacity, "initialCapacity");
+        this.cleanedAddr.set(this.addr = PUnsafe.allocateMemory(this.capacity * this.entrySize));
         PCleaner.cleaner(this, this.cleanedAddr);
     }
 
-    /**
-     * @return the current mark
-     */
-    public int mark() {
-        return this.size;
+    @Override
+    public IDrawCommandBuffer begin() {
+        this.size = 0;
+        return this;
     }
 
-    /**
-     * Resets the stack to the given mark.
-     *
-     * @param mark the mark obtained at the position to restore
-     */
-    public void restore(int mark) {
-        this.size = mark;
-    }
-
-    /**
-     * Pushes a value onto the stack.
-     *
-     * @param l the value to be pushed
-     */
-    public void push(long l) {
+    protected int next() {
         int size = this.size++;
-        if (size == this.capacity) { //increase stack size
+        if (size == this.capacity) {
             this.grow();
         }
-
-        PUnsafe.putLong(this.addr + ((long) size << 3L), l);
+        return size;
     }
 
     protected void grow() {
         this.capacity <<= 1;
-        this.cleanedAddr.set(this.addr = PUnsafe.reallocateMemory(this.addr, (long) this.capacity << 3L));
+        this.cleanedAddr.set(this.addr = PUnsafe.reallocateMemory(this.addr, this.capacity * this.entrySize));
     }
 
-    /**
-     * Removes all values from the stack.
-     */
-    public void clear() {
-        this.size = 0;
-    }
-
-    /**
-     * @return whether or not the stack is empty
-     */
-    public boolean isEmpty() {
-        return this.size == 0;
-    }
-
-    /**
-     * Allows an external function to iterate over the contents of the stack.
-     *
-     * @param action a callback function which accepts the pointer to the base of the stack as well as the number of values
-     */
-    public void doWithValues(@NonNull LongIntConsumer action) {
-        if (this.size > 0) {
-            action.accept(this.addr, this.size);
+    @Override
+    public void close() {
+        if (this.size != 0) {
+            this.upload(this.addr, this.size * this.entrySize);
         }
     }
+
+    protected abstract void upload(long addr, long size);
+
+    @Override
+    public void draw() {
+        if (this.size != 0) {
+            this.draw0();
+        }
+    }
+
+    protected abstract void draw0();
 }
