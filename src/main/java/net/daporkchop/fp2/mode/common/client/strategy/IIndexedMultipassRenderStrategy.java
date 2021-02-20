@@ -18,36 +18,32 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
+package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
-import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.minecraft.client.multiplayer.WorldClient;
+import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+
+import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
+import static net.daporkchop.fp2.mode.common.client.strategy.BaseRenderStrategy.*;
+import static net.daporkchop.fp2.mode.common.client.strategy.IndexedRenderStrategy.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
-    public VoxelRenderer(@NonNull WorldClient world) {
-        super(world);
-    }
+public interface IIndexedMultipassRenderStrategy<POS extends IFarPos, P extends IFarPiece> extends IMultipassRenderStrategy<POS, P> {
+    default void drawTileIndexedMultipass(@NonNull IDrawCommandBuffer[] passes, long renderData, int x, int y, int z, int level) {
+        int baseVertex = toInt(_renderdata_vertexOffset(renderData));
+        int firstIndex = toInt(_renderdata_indexOffset(renderData));
 
-    @Override
-    protected IFarRenderStrategy<VoxelPos, VoxelPiece> createStrategy() {
-        return new IndexedMultidrawVoxelRenderStrategy();
-    }
-
-    @Override
-    protected VoxelRenderCache createCache() {
-        return new VoxelRenderCache(this);
-    }
-
-    @Override
-    public RenderMode mode() {
-        return RenderMode.VOXEL;
+        for (int i = 0; i < RENDER_PASS_COUNT; i++) {
+            int count = _renderdata_indexCount(renderData, i);
+            if (count != 0) {
+                passes[i].drawElements(x, y, z, level, baseVertex, firstIndex, count);
+                firstIndex += count;
+            }
+        }
     }
 }

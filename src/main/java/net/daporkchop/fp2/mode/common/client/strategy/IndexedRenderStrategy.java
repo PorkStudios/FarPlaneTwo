@@ -26,6 +26,7 @@ import io.netty.buffer.CompositeByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.AllocatedGLBuffer;
+import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
@@ -33,6 +34,7 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL15.*;
 
 /**
@@ -84,7 +86,7 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, P extends IFarP
     public void deleteRenderData(long renderData) {
         super.deleteRenderData(renderData);
 
-        this.indices.free(_renderdata_indexOffset(renderData));
+        this.indices.free(_renderdata_indexOffset(renderData) * INDEX_SIZE);
     }
 
     @Override
@@ -119,7 +121,7 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, P extends IFarP
                 }
             }
 
-            output.uploadAndStoreAddress(merged, this.indices, IndexedRenderStrategy::_renderdata_indexOffset);
+            output.uploadAndStoreAddress(merged, this.indices, IndexedRenderStrategy::_renderdata_indexOffset, INDEX_SIZE);
         } finally {
             for (ByteBuf buf : indices) {
                 buf.release();

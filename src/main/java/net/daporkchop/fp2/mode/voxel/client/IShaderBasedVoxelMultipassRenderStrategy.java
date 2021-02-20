@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
-import net.daporkchop.fp2.mode.common.client.IShaderBasedMultipassRenderStrategy;
+import net.daporkchop.fp2.mode.common.client.strategy.IShaderBasedMultipassRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 

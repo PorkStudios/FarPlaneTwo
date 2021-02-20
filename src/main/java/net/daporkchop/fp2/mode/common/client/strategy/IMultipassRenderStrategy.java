@@ -18,13 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.client;
+package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -32,13 +35,36 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public interface IMultipassRenderStrategy<POS extends IFarPos, P extends IFarPiece> extends IFarRenderStrategy<POS, P> {
-    default void renderMultipass(@NonNull IDrawCommandBuffer[] passes) {
+    /**
+     * @return an array containing the {@link IDrawCommandBuffer} used for each render pass
+     */
+    IDrawCommandBuffer[] passes();
+
+    @Override
+    default void render(long tilev, int tilec) {
+        IDrawCommandBuffer[] passes = this.passes();
         checkArg(passes.length == RENDER_PASS_COUNT, "invalid number of render passes: %d (expected %d)", passes.length, RENDER_PASS_COUNT);
 
+        for (IDrawCommandBuffer pass : passes) { //begin all passes
+            pass.begin();
+        }
+        try {
+            for (long end = tilev + (long) LONG_SIZE * tilec; tilev != end; tilev += LONG_SIZE) { //draw each tile individually
+                this.drawTile(passes, PUnsafe.getLong(tilev));
+            }
+        } finally {
+            for (IDrawCommandBuffer pass : passes) { //finish all passes
+                pass.close();
+            }
+        }
+
+        //render completed passes
         this.renderSolid(passes[0]);
         this.renderCutout(passes[1]);
         this.renderTransparent(passes[2]);
     }
+
+    void drawTile(@NonNull IDrawCommandBuffer[] passes, long tile);
 
     void renderSolid(@NonNull IDrawCommandBuffer draw);
 

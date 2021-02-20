@@ -18,33 +18,43 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.client.strategy;
+package net.daporkchop.fp2.mode.voxel.client;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
-import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
-import net.daporkchop.fp2.client.gl.commandbuffer.IndirectIndexedMultidrawCommandBuffer;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
+import net.daporkchop.fp2.mode.common.client.strategy.IndexedMultidrawMultipassRenderStrategy;
+import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
+
+import static net.daporkchop.fp2.mode.voxel.client.VoxelRenderConstants.*;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class MultidrawRenderStrategy<POS extends IFarPos, P extends IFarPiece> extends IndexedRenderStrategy<POS, P> {
-    public MultidrawRenderStrategy(int vertexSize) {
-        super(vertexSize);
+public class IndexedMultidrawVoxelRenderStrategy extends IndexedMultidrawMultipassRenderStrategy<VoxelPos, VoxelPiece> implements IShaderBasedVoxelMultipassRenderStrategy {
+    public IndexedMultidrawVoxelRenderStrategy() {
+        super(VoxelBake.VOXEL_VERTEX_SIZE);
     }
 
     @Override
-    public IDrawCommandBuffer createCommandBuffer() {
-        return new IndirectIndexedMultidrawCommandBuffer(vao -> this.configureVertexAttributes(this.vertices, vao), this.indices);
+    protected void configureVertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao) {
+        VoxelBake.vertexAttributes(buffer, vao);
     }
 
-    protected abstract void configureVertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao);
+    @Override
+    protected void bakeVertsAndIndices(@NonNull VoxelPos pos, @NonNull VoxelPiece[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
+        VoxelBake.bakeForShaderDraw(pos, srcs, verts, indices);
+    }
 
     @Override
-    protected abstract void bakeVertsAndIndices(@NonNull POS pos, @NonNull P[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices);
+    public void drawTile(@NonNull IDrawCommandBuffer[] passes, long tile) {
+        long pos = _tile_pos(tile);
+        long renderData = _tile_renderData(tile);
+
+        this.drawTileIndexedMultipass(passes, renderData, _pos_x(pos), _pos_y(pos), _pos_z(pos), _pos_level(pos));
+    }
 }

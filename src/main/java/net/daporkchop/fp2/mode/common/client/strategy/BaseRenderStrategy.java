@@ -84,7 +84,7 @@ public abstract class BaseRenderStrategy<POS extends IFarPos, P extends IFarPiec
 
     @Override
     public void deleteRenderData(long renderData) {
-        this.vertices.free(_renderdata_vertexOffset(renderData));
+        this.vertices.free(_renderdata_vertexOffset(renderData) * this.vertexSize);
     }
 
     @Override
@@ -100,7 +100,7 @@ public abstract class BaseRenderStrategy<POS extends IFarPos, P extends IFarPiec
             }
 
             _renderdata_vertexCount(output.renderData, vertexCount);
-            output.uploadAndStoreAddress(verts.retain(), this.vertices, BaseRenderStrategy::_renderdata_vertexOffset);
+            output.uploadAndStoreAddress(verts.retain(), this.vertices, BaseRenderStrategy::_renderdata_vertexOffset, this.vertexSize);
             return true;
         } finally {
             verts.release();

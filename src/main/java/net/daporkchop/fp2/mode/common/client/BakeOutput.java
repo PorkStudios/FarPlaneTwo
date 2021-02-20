@@ -60,6 +60,10 @@ public final class BakeOutput {
         });
     }
 
+    public void uploadAndStoreAddress(@NonNull ByteBuf data, @NonNull AllocatedGLBuffer buffer, @NonNull LongLongConsumer setAddressCallback, int divisor) {
+        this.uploadAndStoreAddress(data, buffer, (renderData, addr) -> setAddressCallback.accept(renderData, addr / divisor));
+    }
+
     /**
      * Executes the bake commands.
      * <p>

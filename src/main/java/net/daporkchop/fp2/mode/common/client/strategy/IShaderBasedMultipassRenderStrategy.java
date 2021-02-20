@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.client;
+package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;

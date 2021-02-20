@@ -57,24 +57,24 @@ class VoxelRenderConstants {
         return PUnsafe.getInt(pos + _POS_X_OFFSET);
     }
 
-    public void _pos_x(long pos, int tileX) {
-        PUnsafe.putInt(pos + _POS_X_OFFSET, tileX);
+    public void _pos_x(long pos, int x) {
+        PUnsafe.putInt(pos + _POS_X_OFFSET, x);
     }
 
     public int _pos_y(long pos) {
         return PUnsafe.getInt(pos + _POS_Y_OFFSET);
     }
 
-    public void _pos_y(long pos, int tileY) {
-        PUnsafe.putInt(pos + _POS_Y_OFFSET, tileY);
+    public void _pos_y(long pos, int y) {
+        PUnsafe.putInt(pos + _POS_Y_OFFSET, y);
     }
 
     public int _pos_z(long pos) {
         return PUnsafe.getInt(pos + _POS_Z_OFFSET);
     }
 
-    public void _pos_z(long pos, int tileZ) {
-        PUnsafe.putInt(pos + _POS_Z_OFFSET, tileZ);
+    public void _pos_z(long pos, int z) {
+        PUnsafe.putInt(pos + _POS_Z_OFFSET, z);
     }
 
     public int _pos_level(long pos) {

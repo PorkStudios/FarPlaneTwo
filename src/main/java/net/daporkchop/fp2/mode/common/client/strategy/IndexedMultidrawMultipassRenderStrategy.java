@@ -18,36 +18,26 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
+package net.daporkchop.fp2.mode.common.client.strategy;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
-import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
-import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.minecraft.client.multiplayer.WorldClient;
+import lombok.Getter;
+import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.lib.common.util.PArrays;
+
+import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 
 /**
  * @author DaPorkchop_
  */
-public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
-    public VoxelRenderer(@NonNull WorldClient world) {
-        super(world);
-    }
+@Getter
+public abstract class IndexedMultidrawMultipassRenderStrategy<POS extends IFarPos, P extends IFarPiece> extends IndexedMultidrawRenderStrategy<POS, P> implements IMultipassRenderStrategy<POS, P> {
+    protected final IDrawCommandBuffer[] passes = new IDrawCommandBuffer[RENDER_PASS_COUNT];
 
-    @Override
-    protected IFarRenderStrategy<VoxelPos, VoxelPiece> createStrategy() {
-        return new IndexedMultidrawVoxelRenderStrategy();
-    }
+    public IndexedMultidrawMultipassRenderStrategy(int vertexSize) {
+        super(vertexSize);
 
-    @Override
-    protected VoxelRenderCache createCache() {
-        return new VoxelRenderCache(this);
-    }
-
-    @Override
-    public RenderMode mode() {
-        return RenderMode.VOXEL;
+        PArrays.fill(this.passes, this::createCommandBuffer);
     }
 }
