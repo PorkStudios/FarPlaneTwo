@@ -21,19 +21,22 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.fp2.mode.voxel.client.VoxelRenderConstants.*;
-
 /**
  * @author DaPorkchop_
  */
 public interface IVoxelRenderStrategy extends IFarRenderStrategy<VoxelPos, VoxelPiece> {
+    @Override
+    default RenderMode mode() {
+        return RenderMode.VOXEL;
+    }
+
     @Override
     default Stream<VoxelPos> bakeOutputs(@NonNull VoxelPos srcPos) {
         int x = srcPos.x();
@@ -78,23 +81,5 @@ public interface IVoxelRenderStrategy extends IFarRenderStrategy<VoxelPos, Voxel
                 new VoxelPos(x >> 1, (y >> 1) + 1, z >> 1, level + 1), new VoxelPos(x >> 1, (y >> 1) + 1, (z >> 1) + 1, level + 1),
                 new VoxelPos((x >> 1) + 1, y >> 1, z >> 1, level + 1), new VoxelPos((x >> 1) + 1, y >> 1, (z >> 1) + 1, level + 1),
                 new VoxelPos((x >> 1) + 1, (y >> 1) + 1, z >> 1, level + 1), new VoxelPos((x >> 1) + 1, (y >> 1) + 1, (z >> 1) + 1, level + 1));
-    }
-
-    @Override
-    default long posSize() {
-        return 4L * INT_SIZE;
-    }
-
-    @Override
-    default void writePos(@NonNull VoxelPos pos, long addr) {
-        _pos_x(addr, pos.x());
-        _pos_y(addr, pos.y());
-        _pos_z(addr, pos.z());
-        _pos_level(addr, pos.level());
-    }
-
-    @Override
-    default VoxelPos readPos(long addr) {
-        return new VoxelPos(_pos_x(addr), _pos_y(addr), _pos_z(addr), _pos_level(addr));
     }
 }

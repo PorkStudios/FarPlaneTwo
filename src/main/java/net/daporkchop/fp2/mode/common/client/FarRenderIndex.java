@@ -24,13 +24,12 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.IntBuffer;
 import java.util.Arrays;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.fp2.mode.common.client.AbstractFarRenderTree.*;
+import static net.daporkchop.fp2.mode.common.client.FarRenderTree.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -59,7 +58,7 @@ public class FarRenderIndex {
 
     protected int uploaded = -1;
 
-    public FarRenderIndex(AbstractFarRenderCache cache) {
+    public FarRenderIndex(FarRenderCache cache) {
         this.passes = 0; //cache.passes();
 
         this.buffers = new IntBuffer[this.passes];
@@ -108,7 +107,7 @@ public class FarRenderIndex {
         this.markIndex = mark;
     }
 
-    public void add(int level, long node, AbstractFarRenderTree tree) {
+    public void add(int level, long node, FarRenderTree tree) {
         /*long data = node + tree.data;
         int baseVertex = PUnsafe.getInt(data + RENDERDATA_VOFFSET);
 

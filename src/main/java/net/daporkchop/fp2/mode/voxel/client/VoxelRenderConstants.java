@@ -21,9 +21,7 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.lib.unsafe.PUnsafe;
-
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import net.daporkchop.fp2.mode.voxel.VoxelDirectPosAccess;
 
 /**
  * Constant values used throughout the voxel render code.
@@ -38,54 +36,6 @@ class VoxelRenderConstants {
     //
 
     /*
-     * struct Pos { // 16 bytes
-     *   int x;
-     *   int y;
-     *   int z;
-     *   int level;
-     * };
-     */
-
-    public final long _POS_X_OFFSET = 0L;
-    public final long _POS_Y_OFFSET = _POS_X_OFFSET + INT_SIZE;
-    public final long _POS_Z_OFFSET = _POS_Y_OFFSET + INT_SIZE;
-    public final long _POS_LEVEL_OFFSET = _POS_Z_OFFSET + INT_SIZE;
-
-    public final long _POS_SIZE = _POS_LEVEL_OFFSET + INT_SIZE;
-
-    public int _pos_x(long pos) {
-        return PUnsafe.getInt(pos + _POS_X_OFFSET);
-    }
-
-    public void _pos_x(long pos, int x) {
-        PUnsafe.putInt(pos + _POS_X_OFFSET, x);
-    }
-
-    public int _pos_y(long pos) {
-        return PUnsafe.getInt(pos + _POS_Y_OFFSET);
-    }
-
-    public void _pos_y(long pos, int y) {
-        PUnsafe.putInt(pos + _POS_Y_OFFSET, y);
-    }
-
-    public int _pos_z(long pos) {
-        return PUnsafe.getInt(pos + _POS_Z_OFFSET);
-    }
-
-    public void _pos_z(long pos, int z) {
-        PUnsafe.putInt(pos + _POS_Z_OFFSET, z);
-    }
-
-    public int _pos_level(long pos) {
-        return PUnsafe.getInt(pos + _POS_LEVEL_OFFSET);
-    }
-
-    public void _pos_level(long pos, int level) {
-        PUnsafe.putInt(pos + _POS_LEVEL_OFFSET, level);
-    }
-
-    /*
      * struct Tile {
      *   Pos pos;
      *   RenderData renderData;
@@ -93,7 +43,7 @@ class VoxelRenderConstants {
      */
 
     public final long _TILE_POS_OFFSET = 0L;
-    public final long _TILE_RENDERDATA_OFFSET = _TILE_POS_OFFSET + _POS_SIZE;
+    public final long _TILE_RENDERDATA_OFFSET = _TILE_POS_OFFSET + VoxelDirectPosAccess._SIZE;
 
     public long _tile_pos(long tile) {
         return tile + _TILE_POS_OFFSET;

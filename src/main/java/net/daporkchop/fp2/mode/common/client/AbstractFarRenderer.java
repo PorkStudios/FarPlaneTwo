@@ -51,7 +51,7 @@ import static org.lwjgl.opengl.GL15.*;
  */
 @Getter
 public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPiece> implements IFarRenderer<POS, P> {
-    protected final AbstractFarRenderCache<POS, P> cache;
+    protected final FarRenderCache<POS, P> cache;
 
     protected final int maxLevel = FP2Config.maxLevels - 1;
 
@@ -63,15 +63,13 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     public AbstractFarRenderer(@NonNull WorldClient world) {
         this.strategy = this.createStrategy();
 
-        this.cache = this.createCache();
+        this.cache = new FarRenderCache<>(this);
     }
 
     /**
      * @return the {@link IFarRenderStrategy} used by this renderer
      */
     protected abstract IFarRenderStrategy<POS, P> createStrategy();
-
-    protected abstract AbstractFarRenderCache<POS, P> createCache();
 
     @Override
     public void receivePiece(@NonNull Compressed<POS, P> piece) {

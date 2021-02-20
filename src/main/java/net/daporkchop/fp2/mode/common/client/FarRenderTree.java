@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.common.client;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
+import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.DirectLongStack;
@@ -51,7 +52,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  *
  * @author DaPorkchop_
  */
-public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarPiece> extends AbstractReleasable {
+public class FarRenderTree<POS extends IFarPos, P extends IFarPiece> extends AbstractReleasable {
     //this is enough levels for the tree to encompass the entire minecraft world
     public static final int DEPTH = 32 - Integer.numberOfLeadingZeros(60_000_000 >> T_SHIFT);
 
@@ -93,38 +94,31 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
     protected final int maxLevel;
 
     protected final long root;
+    protected final IFarDirectPosAccess<POS> directPosAccess;
     protected final IFarRenderStrategy<POS, P> strategy;
 
     protected final PCleaner cleaner;
 
-    public AbstractFarRenderTree(@NonNull IFarRenderStrategy<POS, P> strategy, int d, int maxLevel) {
-        this.d = positive(d, "d");
+    public FarRenderTree(@NonNull IFarRenderStrategy<POS, P> strategy, int maxLevel) {
+        this.strategy = strategy;
+        this.directPosAccess = this.strategy.mode().directPosAccess();
+        this.d = this.directPosAccess.axisCount();
         this.maxLevel = notNegative(maxLevel, "maxLevel");
 
-        this.strategy = strategy;
-        this.posSize = this.strategy.posSize();
+        this.posSize = this.directPosAccess.posSize();
         this.renderDataSize = this.strategy.renderDataSize();
 
         this.tile_renderData = this.tile + this.posSize;
         this.children = this.tile_renderData + this.renderDataSize;
 
         this.nodeSize = this.children + ((long) LONG_SIZE << this.d);
-        LOGGER.info("{}D tree node size: {} bytes", d, this.nodeSize);
+        LOGGER.info("{}D tree node size: {} bytes", this.d, this.nodeSize);
 
         PUnsafe.setMemory(this.root = PUnsafe.allocateMemory(this.nodeSize), this.nodeSize, (byte) 0);
         PUnsafe.putInt(this.root + this.flags, 0);
 
-        this.cleaner = PCleaner.cleaner(this, new ReleaseFunction<>(this.root, this.flags, this.children, this.tile_renderData, this.d, strategy));
+        this.cleaner = PCleaner.cleaner(this, new ReleaseFunction<>(this.root, this.flags, this.children, this.tile_renderData, this.d, this.strategy));
     }
-
-    /**
-     * Checks whether or not the given positions are equal.
-     *
-     * @param a   the coordinates of the first position
-     * @param b      the second position
-     * @return whether or not the given positions are equal
-     */
-    protected abstract boolean isPosEqual(long a, @NonNull POS b);
 
     /**
      * Gets the index of the child tile which contains the tile at the given position.
@@ -135,44 +129,14 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
      * @param pos   the target position
      * @return the index of the child tile which contains the tile at the given position
      */
-    protected abstract int childIndex(int level, @NonNull POS pos);
-
-    /**
-     * Checks whether or not the given node intersects the given volume.
-     *
-     * @param pos    the node position
-     * @param volume the volume
-     * @return whether or not the given node intersects the given volume
-     */
-    protected abstract boolean intersects(long pos, @NonNull Volume volume);
-
-    /**
-     * Checks whether or not the given node is contained by the given volume.
-     *
-     * @param pos    the node position
-     * @param volume the volume
-     * @return whether or not the given node is contained by the given volume
-     */
-    protected abstract boolean containedBy(long pos, @NonNull Volume volume);
-
-    /**
-     * Checks whether or not the given node is in the given frustum.
-     *
-     * @param pos     the node position
-     * @param frustum the frustum
-     * @return whether or not the given node is in the given frustum
-     */
-    protected abstract boolean isNodeInFrustum(long pos, @NonNull IFrustum frustum);
-
-    /**
-     * Checks whether or not the vanilla terrain at the given node's position is renderable.
-     * <p>
-     * Guaranteed to only be called for nodes on level 0.
-     *
-     * @param pos the node position
-     * @return whether or not the vanilla terrain at the given node's position is renderable
-     */
-    protected abstract boolean isVanillaRenderable(long pos);
+    protected int childIndex(int level, @NonNull POS pos) {
+        int shift = level - pos.level() - 1;
+        int i = 0;
+        for (int dim = 0; dim < this.d; dim++) {
+            i |= ((this.directPosAccess.getAxisHeap(pos, dim) >>> shift) & 1) << dim;
+        }
+        return i;
+    }
 
     /**
      * Checks whether or not the given node has all of the given flags set.
@@ -298,7 +262,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
 
         long node = PUnsafe.allocateMemory(this.nodeSize);
         PUnsafe.setMemory(node, this.nodeSize, (byte) 0);
-        this.strategy.writePos(pos, node + this.tile_pos);
+        this.directPosAccess.storePos(pos, node + this.tile_pos);
 
         return node;
     }
@@ -348,7 +312,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
     protected long findChildStep(int level, long node, POS pos) {
         notNegative(level, "level");
 
-        if (this.isPosEqual(node + this.tile_pos, pos)) {
+        if (pos.level() == level && pos.equals(this.directPosAccess.loadPos(node + this.tile_pos))) {
             return node;
         }
 
@@ -369,16 +333,16 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
 
     protected boolean select0(int level, long node, Volume[] ranges, IFrustum frustum, DirectLongStack index) {
         if (level < this.maxLevel //don't do range checking for the top level, as it will cause a bunch of pieces to be loaded but never rendered
-            && !this.intersects(node + this.tile_pos, ranges[level])) {
+            && !this.directPosAccess.intersects(node + this.tile_pos, ranges[level])) {
             //the view range for this level doesn't intersect this tile's bounding box,
             // so we can be certain that neither this tile nor any of its children would be contained
             return false;
         } else if (level < DEPTH //don't do frustum culling on the root node, as it doesn't have a valid position because it's not really "there"
-                   && !this.isNodeInFrustum(node + this.tile_pos, frustum)) {
+                   && !this.directPosAccess.inFrustum(node + this.tile_pos, frustum)) {
             //the frustum doesn't contain this tile's bounding box, so we can be certain that neither
             // this tile nor any of its children would be visible
             return true; //return true to prevent parent node from skipping all high-res pieces if some of them were outside of the frustum
-        } else if (level == 0 && this.isVanillaRenderable(node + this.tile_pos)) {
+        } else if (level == 0 && this.directPosAccess.isVanillaRenderable(node + this.tile_pos)) {
             //the node will be rendered by vanilla, so we don't want to draw over it
             return true;
         } else if (!this.checkFlagsAND(node, FLAG_DATA)) { //this node has no data
@@ -395,7 +359,7 @@ public abstract class AbstractFarRenderTree<POS extends IFarPos, P extends IFarP
         //at this point we know that the tile has some data and is selectable
 
         CHILDREN:
-        if (level != 0 && this.hasAnyChildren(node) && this.containedBy(node + this.tile_pos, ranges[level - 1])) {
+        if (level != 0 && this.hasAnyChildren(node) && this.directPosAccess.containedBy(node + this.tile_pos, ranges[level - 1])) {
             //this tile is entirely within the view distance of the lower zoom level for tiles below it, so let's consider selecting them as well
             //if all children are selectable, select all of them
             //otherwise (if only some/none of the children are selectable) we ignore all of the children and only output the current tile. the better

@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.common.client;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 
@@ -30,6 +31,8 @@ import java.util.stream.Stream;
  * @author DaPorkchop_
  */
 public interface IFarRenderStrategy<POS extends IFarPos, P extends IFarPiece> {
+    RenderMode mode();
+
     //
     // POSITION ENCODING/DECODING/HELPER METHODS
     //
@@ -53,15 +56,6 @@ public interface IFarRenderStrategy<POS extends IFarPos, P extends IFarPiece> {
      * @return the positions of all the pieces needed to create the given piece
      */
     Stream<POS> bakeInputs(@NonNull POS dstPos);
-
-    /**
-     * @return the size of a position stored by this rendering strategy
-     */
-    long posSize();
-
-    void writePos(@NonNull POS pos, long addr);
-
-    POS readPos(long addr);
 
     //
     // RENDER DATA METHODS

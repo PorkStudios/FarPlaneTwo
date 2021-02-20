@@ -27,6 +27,7 @@ import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.IndexedMultidrawMultipassRenderStrategy;
+import net.daporkchop.fp2.mode.voxel.VoxelDirectPosAccess;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 
@@ -55,6 +56,6 @@ public class IndexedMultidrawVoxelRenderStrategy extends IndexedMultidrawMultipa
         long pos = _tile_pos(tile);
         long renderData = _tile_renderData(tile);
 
-        this.drawTileIndexedMultipass(passes, renderData, _pos_x(pos), _pos_y(pos), _pos_z(pos), _pos_level(pos));
+        this.drawTileIndexedMultipass(passes, renderData, VoxelDirectPosAccess._x(pos), VoxelDirectPosAccess._y(pos), VoxelDirectPosAccess._z(pos), VoxelDirectPosAccess._level(pos));
     }
 }

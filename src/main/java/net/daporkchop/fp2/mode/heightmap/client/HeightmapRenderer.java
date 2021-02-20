@@ -58,11 +58,6 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    protected HeightmapRenderCache createCache() {
-        return new HeightmapRenderCache(this);
-    }
-
     /*@Override
     public IFarRenderBaker<HeightmapPos, HeightmapPiece> baker() {
         return new HeightmapRenderBaker();

@@ -42,11 +42,6 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
     }
 
     @Override
-    protected VoxelRenderCache createCache() {
-        return new VoxelRenderCache(this);
-    }
-
-    @Override
     public RenderMode mode() {
         return RenderMode.VOXEL;
     }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,6 +24,7 @@ import io.netty.buffer.ByteBuf;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
@@ -32,6 +33,7 @@ import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
+import net.daporkchop.fp2.mode.heightmap.HeightmapDirectPosAccess;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.client.HeightmapRenderer;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
@@ -41,6 +43,7 @@ import net.daporkchop.fp2.mode.heightmap.server.gen.HeightmapPieceScalerMax;
 import net.daporkchop.fp2.mode.heightmap.server.gen.exact.CCHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.exact.VanillaHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.rough.CWGHeightmapGenerator;
+import net.daporkchop.fp2.mode.voxel.VoxelDirectPosAccess;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.client.VoxelRenderer;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
@@ -123,6 +126,11 @@ public enum RenderMode {
         public IFarPiece[] pieceArray(int size) {
             return new HeightmapPiece[size];
         }
+
+        @Override
+        protected IFarDirectPosAccess directPosAccess0() {
+            return HeightmapDirectPosAccess.INSTANCE;
+        }
     },
     VOXEL(4) {
         @Override
@@ -171,6 +179,11 @@ public enum RenderMode {
         @Override
         public IFarPiece[] pieceArray(int size) {
             return new VoxelPiece[size];
+        }
+
+        @Override
+        protected IFarDirectPosAccess directPosAccess0() {
+            return VoxelDirectPosAccess.INSTANCE;
         }
     };
 
@@ -273,4 +286,10 @@ public enum RenderMode {
     public abstract IFarPos readPos(@NonNull ByteBuf src);
 
     public abstract IFarPiece[] pieceArray(int size);
+
+    protected abstract IFarDirectPosAccess directPosAccess0();
+
+    public <POS extends IFarPos> IFarDirectPosAccess<POS> directPosAccess() {
+        return uncheckedCast(this.directPosAccess0());
+    }
 }

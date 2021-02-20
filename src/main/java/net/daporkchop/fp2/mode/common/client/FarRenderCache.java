@@ -22,13 +22,11 @@ package net.daporkchop.fp2.mode.common.client;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SimpleRecycler;
-import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.daporkchop.lib.common.util.GenericMatcher;
 
@@ -45,29 +43,27 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarRenderCache<POS extends IFarPos, P extends IFarPiece> {
+public class FarRenderCache<POS extends IFarPos, P extends IFarPiece> {
     protected final AbstractFarRenderer<POS, P> renderer;
     protected final IFarRenderStrategy<POS, P> strategy;
 
-    protected final AbstractFarRenderTree<POS, P> tree;
+    protected final FarRenderTree<POS, P> tree;
     protected final Map<POS, Compressed<POS, P>> pieces = new ConcurrentHashMap<>();
 
     protected final IntFunction<POS[]> posArray;
     protected final IntFunction<P[]> pieceArray;
 
-    public AbstractFarRenderCache(@NonNull AbstractFarRenderer<POS, P> renderer) {
+    public FarRenderCache(@NonNull AbstractFarRenderer<POS, P> renderer) {
         this.renderer = renderer;
         this.strategy = renderer.strategy();
 
-        Class<POS> posClass = GenericMatcher.uncheckedFind(this.getClass(), AbstractFarRenderCache.class, "POS");
+        Class<POS> posClass = GenericMatcher.uncheckedFind(renderer.getClass(), AbstractFarRenderer.class, "POS");
         this.posArray = size -> uncheckedCast(Array.newInstance(posClass, size));
-        Class<P> pieceClass = GenericMatcher.uncheckedFind(this.getClass(), AbstractFarRenderCache.class, "P");
+        Class<P> pieceClass = GenericMatcher.uncheckedFind(renderer.getClass(), AbstractFarRenderer.class, "P");
         this.pieceArray = size -> uncheckedCast(Array.newInstance(pieceClass, size));
 
-        this.tree = this.createTree();
+        this.tree = new FarRenderTree<>(this.strategy, renderer.maxLevel());
     }
-
-    protected abstract AbstractFarRenderTree<POS, P> createTree();
 
     public void receivePiece(@NonNull Compressed<POS, P> pieceIn) {
         final int maxLevel = this.renderer.maxLevel;
