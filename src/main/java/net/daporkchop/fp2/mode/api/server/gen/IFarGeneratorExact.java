@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -69,4 +69,20 @@ public interface IFarGeneratorExact<POS extends IFarPos, P extends IFarPiece> ex
      * @return the extra data to be saved with the piece
      */
     long generate(@NonNull IBlockHeightAccess world, @NonNull POS pos, @NonNull P piece);
+
+    /**
+     * Factory method for creating instances of {@link IFarGeneratorExact}.
+     *
+     * @author DaPorkchop_
+     */
+    @FunctionalInterface
+    interface Factory<POS extends IFarPos, P extends IFarPiece> {
+        /**
+         * Creates a new {@link IFarGeneratorExact} in the given world.
+         *
+         * @param world the world
+         * @return the new {@link IFarGeneratorExact}, or {@code null} if no generator could be created for the given world
+         */
+        IFarGeneratorExact<POS, P> forWorld(@NonNull WorldServer world);
+    }
 }

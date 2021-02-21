@@ -25,7 +25,6 @@ import net.daporkchop.fp2.client.FP2ResourceReloadListener;
 import net.daporkchop.fp2.client.KeyBindings;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.debug.FP2Debug;
-import net.daporkchop.fp2.mode.heightmap.client.HeightmapRenderer;
 import net.daporkchop.fp2.mode.heightmap.client.HeightmapShaders;
 import net.daporkchop.fp2.mode.voxel.client.VoxelShaders;
 import net.daporkchop.fp2.net.client.CPacketDropAllPieces;
