@@ -28,9 +28,7 @@ import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
-import net.daporkchop.lib.common.util.GenericMatcher;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,16 +49,14 @@ public class FarRenderCache<POS extends IFarPos, P extends IFarPiece> {
     protected final Map<POS, Compressed<POS, P>> tiles = new ConcurrentHashMap<>();
 
     protected final IntFunction<POS[]> posArray;
-    protected final IntFunction<P[]> pieceArray;
+    protected final IntFunction<P[]> tileArray;
 
     public FarRenderCache(@NonNull AbstractFarRenderer<POS, P> renderer) {
         this.renderer = renderer;
         this.strategy = renderer.strategy();
 
-        Class<POS> posClass = GenericMatcher.uncheckedFind(renderer.getClass(), AbstractFarRenderer.class, "POS");
-        this.posArray = size -> uncheckedCast(Array.newInstance(posClass, size));
-        Class<P> pieceClass = GenericMatcher.uncheckedFind(renderer.getClass(), AbstractFarRenderer.class, "P");
-        this.pieceArray = size -> uncheckedCast(Array.newInstance(pieceClass, size));
+        this.posArray = renderer.mode()::posArray;
+        this.tileArray = renderer.mode()::tileArray;
 
         this.tree = new FarRenderTree<>(renderer.mode(), this.strategy, renderer.maxLevel());
     }
@@ -91,7 +87,7 @@ public class FarRenderCache<POS extends IFarPos, P extends IFarPiece> {
                         }
 
                         SimpleRecycler<P> recycler = this.renderer.mode().tileRecycler();
-                        P[] inputTiles = this.pieceArray.apply(compressedInputTiles.length);
+                        P[] inputTiles = this.tileArray.apply(compressedInputTiles.length);
                         try {
                             for (int i = 0; i < inputTiles.length; i++) { //inflate tiles
                                 if (compressedInputTiles[i] != null) {

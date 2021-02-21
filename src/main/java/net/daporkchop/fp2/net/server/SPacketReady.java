@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,6 +22,7 @@ package net.daporkchop.fp2.net.server;
 
 import io.netty.buffer.ByteBuf;
 import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.net.client.CPacketRenderMode;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
@@ -50,7 +51,7 @@ public class SPacketReady implements IMessage {
         public IMessage onMessage(SPacketReady message, MessageContext ctx) {
             ClientThreadExecutor.INSTANCE.execute(() -> {
                 Constants.LOGGER.debug("Server notified us that we are ready to go!");
-                NETWORK_WRAPPER.sendToServer(new CPacketRenderMode().mode(FP2Config.renderMode));
+                NETWORK_WRAPPER.sendToServer(new CPacketRenderMode().mode(IFarRenderMode.REGISTRY.get(FP2Config.renderMode)));
             });
             return null;
         }

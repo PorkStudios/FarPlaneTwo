@@ -29,9 +29,11 @@ import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.common.AbstractFarRenderMode;
+import net.daporkchop.fp2.mode.voxel.client.VoxelRenderer;
 import net.daporkchop.fp2.mode.voxel.event.RegisterExactVoxelGeneratorsEvent;
 import net.daporkchop.fp2.mode.voxel.event.RegisterRoughVoxelGeneratorsEvent;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.server.VoxelWorld;
 import net.daporkchop.fp2.mode.voxel.server.gen.exact.CCVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.gen.rough.CWGVoxelGenerator;
@@ -74,13 +76,13 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelPiece>
 
     @Override
     public IFarWorld<VoxelPos, VoxelPiece> world(@NonNull WorldServer world) {
-        return null;
+        return new VoxelWorld(world, this);
     }
 
     @Override
     @SideOnly(Side.CLIENT)
     public IFarRenderer<VoxelPos, VoxelPiece> renderer(@NonNull WorldClient world) {
-        return null;
+        return new VoxelRenderer(world, this);
     }
 
     @Override

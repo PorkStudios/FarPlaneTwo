@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.server;
 
 import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.net.server.SPacketReady;
 import net.daporkchop.fp2.mode.api.IFarContext;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
@@ -44,7 +45,7 @@ public class ServerEvents {
     @SubscribeEvent
     public void worldLoad(WorldEvent.Load event) {
         if (!event.getWorld().isRemote) {
-            ((IFarContext) event.getWorld()).init(FP2Config.renderMode);
+            ((IFarContext) event.getWorld()).init(IFarRenderMode.REGISTRY.get(FP2Config.renderMode));
             event.getWorld().addEventListener(new FarWorldBlockChangeListener(((IFarContext) event.getWorld()).world()));
         }
     }

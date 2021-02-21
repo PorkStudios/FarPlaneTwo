@@ -24,10 +24,10 @@ import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
 import net.daporkchop.fp2.mode.voxel.VoxelRenderMode;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.event.RegisterRenderModesEvent;
@@ -43,7 +43,8 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  */
 public interface IFarRenderMode<POS extends IFarPos, P extends IFarPiece> {
     OrderedRegistry<IFarRenderMode<?, ?>> REGISTRY = new RegisterRenderModesEvent(new LinkedOrderedRegistry<IFarRenderMode<?, ?>>()
-            .addLast("voxel", new VoxelRenderMode())).fire().immutableRegistry();
+            .addLast("voxel", new VoxelRenderMode())
+            .addLast("heightmap", new HeightmapRenderMode())).fire().immutableRegistry();
 
     /**
      * @return this storage version's name

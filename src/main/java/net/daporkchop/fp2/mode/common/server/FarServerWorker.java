@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -105,7 +105,7 @@ public class FarServerWorker<POS extends IFarPos, P extends IFarPiece> implement
             return compressedPiece;
         }
 
-        SimpleRecycler<P> pieceRecycler = this.world.mode().pieceRecycler();
+        SimpleRecycler<P> pieceRecycler = this.world.mode().tileRecycler();
         P piece = pieceRecycler.allocate();
         compressedPiece.writeLock().lock();
         try {
@@ -163,7 +163,7 @@ public class FarServerWorker<POS extends IFarPos, P extends IFarPiece> implement
     }
 
     public void updatePieceExact(PriorityTask<POS> root, POS pos, Compressed<POS, P> compressedPiece, long newTimestamp) {
-        SimpleRecycler<P> pieceRecycler = this.world.mode().pieceRecycler();
+        SimpleRecycler<P> pieceRecycler = this.world.mode().tileRecycler();
         P piece = pieceRecycler.allocate();
         compressedPiece.writeLock().lock();
         try {
@@ -214,8 +214,8 @@ public class FarServerWorker<POS extends IFarPos, P extends IFarPiece> implement
         }
 
         //inflate sources
-        SimpleRecycler<P> pieceRecycler = this.world.mode().pieceRecycler();
-        P[] srcs = uncheckedCast(this.world.mode().pieceArray(compressedSrcs.size()));
+        SimpleRecycler<P> pieceRecycler = this.world.mode().tileRecycler();
+        P[] srcs = uncheckedCast(this.world.mode().tileArray(compressedSrcs.size()));
         for (int i = 0; i < compressedSrcs.size(); i++) {
             Compressed<POS, P> compressedSrc = compressedSrcs.get(i);
             compressedSrc.readLock().lock();
