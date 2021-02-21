@@ -25,13 +25,11 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IReusablePersistent;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.lib.compression.zstd.Zstd;
-import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -97,16 +95,6 @@ public class Compressed<POS extends IFarPos, V extends IReusablePersistent> exte
         if (len >= 0) { //if length is -1 (0 on disk) there is no data
             src.readBytes(this.data = new byte[len]);
         }
-    }
-
-    /**
-     * Writes this value to the given {@link ByteBuf}, prefixed with the render mode and piece position.
-     *
-     * @param dst the {@link ByteBuf} to write to
-     */
-    public void writeWithModeAndPos(@NonNull ByteBuf dst) {
-        dst.writeByte(this.pos.mode().ordinal());
-        this.writeWithPos(dst);
     }
 
     /**

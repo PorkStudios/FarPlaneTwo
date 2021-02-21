@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,10 +21,13 @@
 package net.daporkchop.fp2.mode.heightmap.server;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
+import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
+import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
+import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.server.gen.HeightmapPieceScalerMax;
 import net.minecraft.world.WorldServer;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -33,8 +36,18 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 public class HeightmapWorld extends AbstractFarWorld<HeightmapPos, HeightmapPiece> {
-    public HeightmapWorld(@NonNull WorldServer world) {
-        super(world, RenderMode.HEIGHTMAP);
+    public HeightmapWorld(@NonNull WorldServer world, @NonNull HeightmapRenderMode mode) {
+        super(world, mode);
+    }
+
+    @Override
+    protected IFarScaler<HeightmapPos, HeightmapPiece> createScaler() {
+        return new HeightmapPieceScalerMax();
+    }
+
+    @Override
+    protected IFarPlayerTracker<HeightmapPos> createTracker() {
+        return new HeightmapPlayerTracker(this);
     }
 
     @Override

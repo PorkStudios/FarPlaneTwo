@@ -22,7 +22,9 @@ package net.daporkchop.fp2.mode.voxel;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
@@ -36,7 +38,10 @@ import net.daporkchop.fp2.mode.voxel.server.gen.rough.CWGVoxelGenerator;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
 import net.daporkchop.fp2.util.registry.LinkedOrderedRegistry;
+import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.WorldServer;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 /**
  * Implementation of {@link IFarRenderMode} for the voxel rendering mode.
@@ -70,6 +75,17 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelPiece>
     @Override
     public IFarWorld<VoxelPos, VoxelPiece> world(@NonNull WorldServer world) {
         return null;
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public IFarRenderer<VoxelPos, VoxelPiece> renderer(@NonNull WorldClient world) {
+        return null;
+    }
+
+    @Override
+    public IFarDirectPosAccess<VoxelPos> directPosAccess() {
+        return VoxelDirectPosAccess.INSTANCE;
     }
 
     @Override

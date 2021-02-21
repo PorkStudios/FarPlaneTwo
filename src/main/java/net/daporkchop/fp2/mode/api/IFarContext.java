@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,12 +21,10 @@
 package net.daporkchop.fp2.mode.api;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
-import net.daporkchop.fp2.util.IReusablePersistent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -37,9 +35,9 @@ public interface IFarContext<POS extends IFarPos, P extends IFarPiece, W extends
     /**
      * Initializes this context.
      *
-     * @param mode the new {@link RenderMode} to use
+     * @param mode the new {@link IFarRenderMode} to use
      */
-    void init(@NonNull RenderMode mode);
+    void init(@NonNull IFarRenderMode<POS, P> mode);
 
     /**
      * @return whether or not this context has been initialized
@@ -47,22 +45,16 @@ public interface IFarContext<POS extends IFarPos, P extends IFarPiece, W extends
     boolean isInitialized();
 
     /**
-     * @return the current {@link RenderMode}
+     * @return the current {@link IFarRenderMode}
      * @throws IllegalStateException if this context has not yet been initialized
      */
-    RenderMode mode();
+    IFarRenderMode<POS, P> mode();
 
     /**
      * @return the current {@link IFarWorld}
      * @throws IllegalStateException if this context has not yet been initialized
      */
     W world();
-
-    /**
-     * @return the current {@link IFarPlayerTracker}
-     * @throws IllegalStateException if this context has not yet been initialized
-     */
-    T tracker();
 
     /**
      * @return the current {@link IFarRenderer}, or {@code null} if this context has not yet been initialized

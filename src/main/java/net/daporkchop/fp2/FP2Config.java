@@ -21,7 +21,6 @@
 package net.daporkchop.fp2;
 
 import net.daporkchop.fp2.client.render.DrawMode;
-import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.fml.relauncher.Side;
@@ -41,7 +40,7 @@ public class FP2Config {
     })
     @Config.LangKey("config.fp2.renderMode")
     @Config.RequiresWorldRestart
-    public static RenderMode renderMode = RenderMode.VOXEL;
+    public static String renderMode = "voxel";
 
     @Config.Comment({
             "The far plane render distance (in blocks)"

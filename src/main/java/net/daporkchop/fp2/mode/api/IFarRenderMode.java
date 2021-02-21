@@ -22,7 +22,9 @@ package net.daporkchop.fp2.mode.api;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
@@ -31,7 +33,10 @@ import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.event.RegisterRenderModesEvent;
 import net.daporkchop.fp2.util.registry.LinkedOrderedRegistry;
 import net.daporkchop.fp2.util.registry.OrderedRegistry;
+import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.WorldServer;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 /**
  * @author DaPorkchop_
@@ -75,9 +80,23 @@ public interface IFarRenderMode<POS extends IFarPos, P extends IFarPiece> {
     IFarWorld<POS, P> world(@NonNull WorldServer world);
 
     /**
+     * Creates a new {@link IFarRenderer} for the given world.
+     *
+     * @param world the world
+     * @return the new {@link IFarRenderer}
+     */
+    @SideOnly(Side.CLIENT)
+    IFarRenderer<POS, P> renderer(@NonNull WorldClient world);
+
+    /**
      * @return a recycler for tile objects
      */
     SimpleRecycler<P> tileRecycler();
+
+    /**
+     * @return the {@link IFarDirectPosAccess} used by this render mode
+     */
+    IFarDirectPosAccess<POS> directPosAccess();
 
     /**
      * Reads a tile position from the given {@link ByteBuf}.

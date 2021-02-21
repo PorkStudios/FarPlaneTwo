@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,9 +24,10 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.IFarContext;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -39,16 +40,19 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 @Setter
 public class SPacketUnloadPiece implements IMessage {
     @NonNull
+    protected IFarRenderMode<?, ?> mode;
+    @NonNull
     protected IFarPos pos;
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.pos = RenderMode.fromOrdinal(buf.readInt()).readPos(buf);
+        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
+        this.pos = this.mode.readPos(buf);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeInt(this.pos.mode().ordinal());
+        Constants.writeString(buf, this.mode.name());
         this.pos.writePos(buf);
     }
 

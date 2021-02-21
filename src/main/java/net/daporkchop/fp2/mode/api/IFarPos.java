@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,7 +22,6 @@ package net.daporkchop.fp2.mode.api;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.minecraft.util.math.AxisAlignedBB;
 
@@ -53,14 +52,9 @@ public interface IFarPos extends Comparable<IFarPos> {
     }
 
     /**
-     * @return the {@link RenderMode} that this position is used for
-     */
-    RenderMode mode();
-
-    /**
      * Writes this position to the given {@link ByteBuf}.
      * <p>
-     * The written data must be deserializable by this position's render mode's {@link RenderMode#readPos(ByteBuf)} method.
+     * The written data must be deserializable by this position's render mode's {@link IFarRenderMode#readPos(ByteBuf)} method.
      *
      * @param dst the {@link ByteBuf} to write to
      */

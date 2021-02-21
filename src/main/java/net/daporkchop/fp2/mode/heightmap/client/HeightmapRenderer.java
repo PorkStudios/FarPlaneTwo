@@ -21,36 +21,26 @@
 package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.FP2Config;
-import net.daporkchop.fp2.client.TexUVs;
-import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.client.render.DrawMode;
 import net.daporkchop.fp2.client.render.IShaderHolder;
 import net.daporkchop.fp2.client.render.RenderPass;
-import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
-import net.daporkchop.fp2.mode.common.client.FarRenderIndex;
-import net.daporkchop.fp2.mode.common.client.IFarRenderBaker;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
 import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
-import net.minecraft.block.Block;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.init.Blocks;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-
-import static org.lwjgl.opengl.GL20.*;
 
 /**
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
 public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, HeightmapPiece> implements IShaderHolder {
-    public HeightmapRenderer(@NonNull WorldClient world) {
-        super(world);
+    public HeightmapRenderer(@NonNull WorldClient world, @NonNull HeightmapRenderMode mode) {
+        super(world, mode);
     }
 
     @Override
@@ -97,10 +87,5 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
                 }
         }
         throw new IllegalArgumentException("mode=" + mode + ", pass=" + pass + ", stencil=" + stencil);
-    }
-
-    @Override
-    public RenderMode mode() {
-        return RenderMode.HEIGHTMAP;
     }
 }

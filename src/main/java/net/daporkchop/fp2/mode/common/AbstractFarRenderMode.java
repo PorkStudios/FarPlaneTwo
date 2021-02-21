@@ -24,8 +24,10 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
@@ -35,7 +37,10 @@ import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
+import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.WorldServer;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -88,9 +93,16 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, P extends IFarP
     public abstract IFarWorld<POS, P> world(@NonNull WorldServer world);
 
     @Override
+    @SideOnly(Side.CLIENT)
+    public abstract IFarRenderer<POS, P> renderer(@NonNull WorldClient world);
+
+    @Override
     public SimpleRecycler<P> tileRecycler() {
         return this.recyclerRef.get();
     }
+
+    @Override
+    public abstract IFarDirectPosAccess<POS> directPosAccess();
 
     @Override
     public abstract POS readPos(@NonNull ByteBuf buf);

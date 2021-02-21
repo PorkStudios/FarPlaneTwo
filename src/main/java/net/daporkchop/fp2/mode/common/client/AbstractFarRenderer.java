@@ -31,6 +31,7 @@ import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.DirectLongStack;
@@ -51,6 +52,8 @@ import static org.lwjgl.opengl.GL15.*;
  */
 @Getter
 public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPiece> implements IFarRenderer<POS, P> {
+    protected final IFarRenderMode<POS, P> mode;
+
     protected final FarRenderCache<POS, P> cache;
 
     protected final int maxLevel = FP2Config.maxLevels - 1;
@@ -60,7 +63,9 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     protected final DirectLongStack index = new DirectLongStack();
     protected final IFarRenderStrategy<POS, P> strategy;
 
-    public AbstractFarRenderer(@NonNull WorldClient world) {
+    public AbstractFarRenderer(@NonNull WorldClient world, @NonNull IFarRenderMode<POS, P> mode) {
+        this.mode = mode;
+
         this.strategy = this.createStrategy();
 
         this.cache = new FarRenderCache<>(this);

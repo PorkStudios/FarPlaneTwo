@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.mode.common.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 
@@ -31,8 +30,6 @@ import java.util.stream.Stream;
  * @author DaPorkchop_
  */
 public interface IFarRenderStrategy<POS extends IFarPos, P extends IFarPiece> {
-    RenderMode mode();
-
     //
     // POSITION ENCODING/DECODING/HELPER METHODS
     //

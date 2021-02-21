@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.mode.api.server;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
@@ -81,6 +80,11 @@ public interface IFarWorld<POS extends IFarPos, P extends IFarPiece> extends Clo
      * @return the {@link IFarStorage} used for persistence of far terrain pieces
      */
     IFarStorage<POS, P> storage();
+
+    /**
+     * @return the {@link IFarPlayerTracker} used by this world
+     */
+    IFarPlayerTracker<POS> tracker();
 
     /**
      * @return the {@link IFarRenderMode} that this world is used by

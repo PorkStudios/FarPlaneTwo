@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,9 +25,10 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
-import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.IFarContext;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -43,16 +44,16 @@ import static net.daporkchop.fp2.util.Constants.*;
 @Getter
 public class CPacketRenderMode implements IMessage {
     @NonNull
-    protected RenderMode mode;
+    protected IFarRenderMode<?, ?> mode;
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.mode = RenderMode.fromOrdinal(buf.readInt());
+        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeInt(this.mode.ordinal());
+        Constants.writeString(buf, this.mode.name());
     }
 
     public static class Handler implements IMessageHandler<CPacketRenderMode, IMessage> {
@@ -65,7 +66,7 @@ public class CPacketRenderMode implements IMessage {
                     //send the packet here to ensure that it's sent before adding the player to the tracker
                     NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy().mode(FP2Config.renderMode), ctx.getServerHandler().player);
 
-                    ((IFarContext) ctx.getServerHandler().player.world).tracker().playerAdd(ctx.getServerHandler().player);
+                    ((IFarContext) ctx.getServerHandler().player.world).world().tracker().playerAdd(ctx.getServerHandler().player);
                     ((IFarPlayer) ctx.getServerHandler().player).markReady();
                 });
             }

@@ -18,14 +18,14 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.piece;
+package net.daporkchop.fp2.mode.heightmap;
 
-import net.daporkchop.fp2.util.IReusablePersistent;
+import lombok.experimental.UtilityClass;
 
 /**
- * The core component of all FarPlaneTwo render modes, a piece stores all the data required to render a terrain tile.
- *
  * @author DaPorkchop_
  */
-public interface IFarPiece extends IReusablePersistent {
+@UtilityClass
+public class HeightmapConstants {
+    public static final int STORAGE_VERSION = 7;
 }

@@ -53,7 +53,7 @@ public class SPacketPieceData implements IMessage {
     @Override
     public void toBytes(ByteBuf buf) {
         Constants.writeString(buf, this.mode.name());
-        this.piece.writeWithModeAndPos(buf);
+        this.piece.writeWithPos(buf);
     }
 
     public static class Handler implements IMessageHandler<SPacketPieceData, IMessage> {

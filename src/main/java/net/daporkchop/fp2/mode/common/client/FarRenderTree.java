@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.DirectLongStack;
 import net.daporkchop.fp2.util.math.Volume;
@@ -99,9 +100,9 @@ public class FarRenderTree<POS extends IFarPos, P extends IFarPiece> extends Abs
 
     protected final PCleaner cleaner;
 
-    public FarRenderTree(@NonNull IFarRenderStrategy<POS, P> strategy, int maxLevel) {
+    public FarRenderTree(@NonNull IFarRenderMode<POS, P> mode, @NonNull IFarRenderStrategy<POS, P> strategy, int maxLevel) {
         this.strategy = strategy;
-        this.directPosAccess = this.strategy.mode().directPosAccess();
+        this.directPosAccess = mode.directPosAccess();
         this.d = this.directPosAccess.axisCount();
         this.maxLevel = notNegative(maxLevel, "maxLevel");
 

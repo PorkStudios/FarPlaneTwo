@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.mode.voxel.server;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
+import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
@@ -43,6 +43,11 @@ public class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelPiece> {
     @Override
     protected IFarScaler<VoxelPos, VoxelPiece> createScaler() {
         return new VoxelScalerIntersection();
+    }
+
+    @Override
+    protected IFarPlayerTracker<VoxelPos> createTracker() {
+        return new VoxelPlayerTracker(this);
     }
 
     @Override

@@ -48,7 +48,7 @@ public class FarRenderCache<POS extends IFarPos, P extends IFarPiece> {
     protected final IFarRenderStrategy<POS, P> strategy;
 
     protected final FarRenderTree<POS, P> tree;
-    protected final Map<POS, Compressed<POS, P>> pieces = new ConcurrentHashMap<>();
+    protected final Map<POS, Compressed<POS, P>> tiles = new ConcurrentHashMap<>();
 
     protected final IntFunction<POS[]> posArray;
     protected final IntFunction<P[]> pieceArray;
@@ -62,53 +62,53 @@ public class FarRenderCache<POS extends IFarPos, P extends IFarPiece> {
         Class<P> pieceClass = GenericMatcher.uncheckedFind(renderer.getClass(), AbstractFarRenderer.class, "P");
         this.pieceArray = size -> uncheckedCast(Array.newInstance(pieceClass, size));
 
-        this.tree = new FarRenderTree<>(this.strategy, renderer.maxLevel());
+        this.tree = new FarRenderTree<>(renderer.mode(), this.strategy, renderer.maxLevel());
     }
 
-    public void receivePiece(@NonNull Compressed<POS, P> pieceIn) {
+    public void receivePiece(@NonNull Compressed<POS, P> tileIn) {
         final int maxLevel = this.renderer.maxLevel;
 
-        this.pieces.put(pieceIn.pos(), pieceIn);
+        this.tiles.put(tileIn.pos(), tileIn);
 
-        this.strategy.bakeOutputs(pieceIn.pos())
+        this.strategy.bakeOutputs(tileIn.pos())
                 .forEach(pos -> {
                     if (pos.level() < 0 || pos.level() > maxLevel) {
                         return;
                     }
 
-                    Compressed<POS, P>[] compressedInputPieces = uncheckedCast(this.strategy.bakeInputs(pos)
-                            .map(this.pieces::get)
+                    Compressed<POS, P>[] compressedInputTiles = uncheckedCast(this.strategy.bakeInputs(pos)
+                            .map(this.tiles::get)
                             .toArray(Compressed[]::new));
 
-                    Compressed<POS, P> piece = Arrays.stream(compressedInputPieces).filter(p -> p != null && pos.equals(p.pos())).findAny().orElse(null);
-                    if (piece == null) {
+                    Compressed<POS, P> tile = Arrays.stream(compressedInputTiles).filter(p -> p != null && pos.equals(p.pos())).findAny().orElse(null);
+                    if (tile == null) {
                         return;
                     }
 
                     RENDER_WORKERS.submit(pos, () -> {
-                        if (this.pieces.get(pos) != piece) { //piece was modified before this task could be executed
+                        if (this.tiles.get(pos) != tile) { //tile was modified before this task could be executed
                             return;
                         }
 
-                        SimpleRecycler<P> recycler = this.renderer.mode().pieceRecycler();
-                        P[] inputPieces = this.pieceArray.apply(compressedInputPieces.length);
+                        SimpleRecycler<P> recycler = this.renderer.mode().tileRecycler();
+                        P[] inputTiles = this.pieceArray.apply(compressedInputTiles.length);
                         try {
-                            for (int i = 0; i < inputPieces.length; i++) { //inflate pieces
-                                if (compressedInputPieces[i] != null) {
-                                    inputPieces[i] = compressedInputPieces[i].inflate(recycler);
+                            for (int i = 0; i < inputTiles.length; i++) { //inflate tiles
+                                if (compressedInputTiles[i] != null) {
+                                    inputTiles[i] = compressedInputTiles[i].inflate(recycler);
                                 }
                             }
 
                             BakeOutput output = new BakeOutput(this.strategy.renderDataSize());
-                            if (this.strategy.bake(pos, inputPieces, output)) {
-                                ClientThreadExecutor.INSTANCE.execute(() -> this.addPiece(piece, output));
-                            } else { //baked tile contains nothing, so we
-                                ClientThreadExecutor.INSTANCE.execute(() -> this.addPiece(piece, null));
+                            if (this.strategy.bake(pos, inputTiles, output)) {
+                                ClientThreadExecutor.INSTANCE.execute(() -> this.addPiece(tile, output));
+                            } else { //baked tile contains nothing, so we remove it
+                                ClientThreadExecutor.INSTANCE.execute(() -> this.addPiece(tile, null));
                             }
-                        } finally { //release pieces again
-                            for (int i = 0; i < inputPieces.length; i++) {
-                                if (inputPieces[i] != null) {
-                                    recycler.release(inputPieces[i]);
+                        } finally { //release tiles again
+                            for (int i = 0; i < inputTiles.length; i++) {
+                                if (inputTiles[i] != null) {
+                                    recycler.release(inputTiles[i]);
                                 }
                             }
                         }
@@ -118,7 +118,7 @@ public class FarRenderCache<POS extends IFarPos, P extends IFarPiece> {
 
     protected void addPiece(@NonNull Compressed<POS, P> piece, BakeOutput output) {
         POS pos = piece.pos();
-        if (this.pieces.get(pos) != piece) {
+        if (this.tiles.get(pos) != piece) {
             return;
         }
 
@@ -137,7 +137,7 @@ public class FarRenderCache<POS extends IFarPos, P extends IFarPiece> {
     }
 
     public void removePiece(@NonNull POS pos) {
-        if (this.pieces.remove(pos) == null) {
+        if (this.tiles.remove(pos) == null) {
             Constants.LOGGER.warn("Attempted to unload already non-existent piece at {}!", pos);
         }
         this.tree.removeNode(pos);

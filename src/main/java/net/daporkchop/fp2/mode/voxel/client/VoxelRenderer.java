@@ -21,10 +21,10 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.mode.voxel.VoxelRenderMode;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 import net.minecraft.client.multiplayer.WorldClient;
 
@@ -32,17 +32,12 @@ import net.minecraft.client.multiplayer.WorldClient;
  * @author DaPorkchop_
  */
 public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
-    public VoxelRenderer(@NonNull WorldClient world) {
-        super(world);
+    public VoxelRenderer(@NonNull WorldClient world, @NonNull VoxelRenderMode mode) {
+        super(world, mode);
     }
 
     @Override
     protected IFarRenderStrategy<VoxelPos, VoxelPiece> createStrategy() {
         return new IndexedMultidrawVoxelRenderStrategy();
-    }
-
-    @Override
-    public RenderMode mode() {
-        return RenderMode.VOXEL;
     }
 }

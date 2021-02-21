@@ -25,12 +25,12 @@ import com.google.common.cache.CacheBuilder;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
-import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarContext;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarStorage;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.ExactAsRoughGeneratorFallbackWrapper;
@@ -51,15 +51,11 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.function.BiFunction;
 
 import static net.daporkchop.fp2.util.Constants.*;
 
@@ -77,6 +73,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
     protected final IFarScaler<POS, P> scaler;
 
     protected final IFarStorage<POS, P> storage;
+
+    protected final IFarPlayerTracker<POS> tracker;
 
     //cache for loaded tiles
     protected final Cache<POS, Compressed<POS, P>> pieceCache = CacheBuilder.newBuilder()
@@ -115,6 +113,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
         this.lowResolution = FP2Config.performance.lowResolutionEnable && this.generatorRough.supportsLowResolution();
 
         this.scaler = this.createScaler();
+        this.tracker = this.createTracker();
+
         this.root = new File(world.getChunkSaveLocation(), "fp2/" + this.mode().name().toLowerCase());
         this.storage = new FarStorage<>(this.root, this.mode().storageVersion());
 
@@ -130,6 +130,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
     }
 
     protected abstract IFarScaler<POS, P> createScaler();
+
+    protected abstract IFarPlayerTracker<POS> createTracker();
 
     @Override
     public Compressed<POS, P> getPieceLazy(@NonNull POS pos) {
@@ -184,7 +186,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
 
     @SuppressWarnings("unchecked")
     public void notifyPlayerTracker(@NonNull Compressed<POS, P> piece) {
-        ((IFarContext) this.world).tracker().pieceChanged(piece);
+        ((IFarContext) this.world).world().tracker().pieceChanged(piece);
     }
 
     public boolean canGenerateRough(@NonNull POS pos) {

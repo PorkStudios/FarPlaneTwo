@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,7 +23,6 @@ package net.daporkchop.fp2.mode.voxel.piece;
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -157,11 +156,6 @@ public class VoxelPiece implements IFarPiece {
 
         VoxelPiece.writeData(this.addr + VoxelPiece.INDEX_SIZE + index * VoxelPiece.ENTRY_DATA_SIZE_BYTES, data);
         return this;
-    }
-
-    @Override
-    public RenderMode mode() {
-        return RenderMode.VOXEL;
     }
 
     @Override

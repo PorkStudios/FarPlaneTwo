@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.asm.client.multiplayer;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.IFarContext;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.World;
@@ -40,7 +40,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
         @Interface(iface = IFarContext.class, prefix = "fp2_world$", unique = true)
 })
 public abstract class MixinWorldClient extends World implements IFarContext {
-    private RenderMode mode;
+    private IFarRenderMode mode;
     private IFarRenderer renderer;
 
     protected MixinWorldClient() {
@@ -48,8 +48,8 @@ public abstract class MixinWorldClient extends World implements IFarContext {
     }
 
     @Override
-    public void init(@NonNull RenderMode mode) {
-        this.renderer = mode.createRenderer((WorldClient) (Object) this);
+    public void init(@NonNull IFarRenderMode mode) {
+        this.renderer = mode.renderer((WorldClient) (Object) this);
         this.mode = mode;
     }
 
@@ -59,7 +59,7 @@ public abstract class MixinWorldClient extends World implements IFarContext {
     }
 
     @Override
-    public RenderMode mode() {
+    public IFarRenderMode mode() {
         checkState(this.mode != null);
         return this.mode;
     }

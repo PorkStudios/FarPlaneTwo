@@ -18,14 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.piece;
+package net.daporkchop.fp2.mode.heightmap.event;
 
-import net.daporkchop.fp2.util.IReusablePersistent;
+import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
+import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
+import net.daporkchop.fp2.util.registry.OrderedRegistry;
+import net.minecraftforge.common.MinecraftForge;
 
 /**
- * The core component of all FarPlaneTwo render modes, a piece stores all the data required to render a terrain tile.
+ * Fired on {@link MinecraftForge#EVENT_BUS} to register rough tile generators for the heightmap render mode.
  *
  * @author DaPorkchop_
  */
-public interface IFarPiece extends IReusablePersistent {
+public class RegisterRoughHeightmapGeneratorsEvent extends AbstractOrderedRegistryEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapPiece>> {
+    public RegisterRoughHeightmapGeneratorsEvent(@NonNull OrderedRegistry<IFarGeneratorRough.Factory<HeightmapPos, HeightmapPiece>> registry) {
+        super(registry);
+    }
 }

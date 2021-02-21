@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,10 +22,8 @@ package net.daporkchop.fp2.mode.common.server;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
-import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.server.IFarStorage;
@@ -37,7 +35,6 @@ import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.primitive.map.IntObjMap;
 import net.daporkchop.lib.primitive.map.concurrent.IntObjConcurrentHashMap;
 import net.daporkchop.lib.unsafe.PUnsafe;
-import net.minecraft.world.WorldServer;
 
 import java.io.File;
 import java.io.IOException;

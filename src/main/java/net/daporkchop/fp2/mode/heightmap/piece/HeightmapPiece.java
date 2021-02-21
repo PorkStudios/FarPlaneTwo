@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,7 +24,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -129,9 +128,5 @@ public class HeightmapPiece implements IFarPiece {
             }
         }
         return false; //the heightmap renderer has no concept of an "empty" piece
-    }
-    @Override
-    public RenderMode mode() {
-        return RenderMode.HEIGHTMAP;
     }
 }

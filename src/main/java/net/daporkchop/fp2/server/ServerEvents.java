@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -71,14 +71,14 @@ public class ServerEvents {
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         Constants.LOGGER.debug("Handling logout for player {}", event.player.getName());
-        ((IFarContext) event.player.world).tracker().playerRemove((EntityPlayerMP) event.player);
+        ((IFarContext) event.player.world).world().tracker().playerRemove((EntityPlayerMP) event.player);
     }
 
     @SubscribeEvent
     public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
         if (!event.player.world.isRemote && ((IFarPlayer) event.player).isReady()) {
-            ((IFarContext) event.player.getServer().getWorld(event.fromDim)).tracker().playerRemove((EntityPlayerMP) event.player);
-            ((IFarContext) event.player.getServer().getWorld(event.toDim)).tracker().playerAdd((EntityPlayerMP) event.player);
+            ((IFarContext) event.player.getServer().getWorld(event.fromDim)).world().tracker().playerRemove((EntityPlayerMP) event.player);
+            ((IFarContext) event.player.getServer().getWorld(event.toDim)).world().tracker().playerAdd((EntityPlayerMP) event.player);
         }
     }
 
@@ -87,7 +87,7 @@ public class ServerEvents {
         if (!event.world.isRemote && event.phase == TickEvent.Phase.END) {
             long time = event.world.getTotalWorldTime();
             if (time % 20L == 0L) {
-                IFarPlayerTracker tracker = ((IFarContext) event.world).tracker();
+                IFarPlayerTracker tracker = ((IFarContext) event.world).world().tracker();
                 event.world.playerEntities.stream()
                         .map(EntityPlayerMP.class::cast)
                         .filter(player -> ((IFarPlayer) player).isReady())

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,7 +25,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
-import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.ChunkPos;
@@ -87,11 +86,6 @@ public class HeightmapPos implements IFarPos {
     @Override
     public HeightmapPos up() {
         return new HeightmapPos(this.x >> 1, this.z >> 1, this.level + 1);
-    }
-
-    @Override
-    public RenderMode mode() {
-        return RenderMode.HEIGHTMAP;
     }
 
     @Override
