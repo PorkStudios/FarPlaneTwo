@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,6 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
@@ -82,9 +83,9 @@ public interface IFarWorld<POS extends IFarPos, P extends IFarPiece> extends Clo
     IFarStorage<POS, P> storage();
 
     /**
-     * @return the {@link RenderMode} that this world is used for
+     * @return the {@link IFarRenderMode} that this world is used by
      */
-    RenderMode mode();
+    IFarRenderMode<POS, P> mode();
 
     void save();
 

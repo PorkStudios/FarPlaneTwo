@@ -20,23 +20,84 @@
 
 package net.daporkchop.fp2.mode.common;
 
+import io.netty.buffer.ByteBuf;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
+import net.daporkchop.lib.common.misc.string.PStrings;
+import net.daporkchop.lib.common.ref.Ref;
+import net.daporkchop.lib.common.ref.ThreadRef;
+import net.minecraft.world.WorldServer;
+
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Base implementation of {@link IFarRenderMode}.
  *
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
 public abstract class AbstractFarRenderMode<POS extends IFarPos, P extends IFarPiece> implements IFarRenderMode<POS, P> {
     protected final IFarGeneratorExact.Factory<POS, P>[] exactGeneratorFactories = this.exactGeneratorFactoryEvent().fire().collectValues();
     protected final IFarGeneratorRough.Factory<POS, P>[] roughGeneratorFactories = this.roughGeneratorFactoryEvent().fire().collectValues();
 
+    protected final Ref<SimpleRecycler<P>> recyclerRef = ThreadRef.soft(() -> new SimpleRecycler.OfReusablePersistent<>(this::newTile));
+
+    @Getter(lazy = true)
+    private final String name = REGISTRY.getName(this);
+    @Getter
+    protected final int storageVersion;
+
     protected abstract AbstractOrderedRegistryEvent<IFarGeneratorExact.Factory<POS, P>> exactGeneratorFactoryEvent();
 
     protected abstract AbstractOrderedRegistryEvent<IFarGeneratorRough.Factory<POS, P>> roughGeneratorFactoryEvent();
+
+    protected abstract P newTile();
+
+    @Override
+    public IFarGeneratorExact<POS, P> exactGenerator(@NonNull WorldServer world) {
+        return Arrays.stream(this.exactGeneratorFactories)
+                .map(f -> f.forWorld(world))
+                .filter(Objects::nonNull)
+                .findFirst().orElseThrow(() -> new IllegalStateException(PStrings.fastFormat(
+                        "No exact generator could be found for world %d (type: %s), mode:%s",
+                        world.provider.getDimension(),
+                        world.getWorldType(),
+                        this.name()
+                )));
+    }
+
+    @Override
+    public IFarGeneratorRough<POS, P> roughGenerator(@NonNull WorldServer world) {
+        return Arrays.stream(this.roughGeneratorFactories)
+                .map(f -> f.forWorld(world))
+                .filter(Objects::nonNull)
+                .findFirst().orElse(null);
+    }
+
+    @Override
+    public abstract IFarWorld<POS, P> world(@NonNull WorldServer world);
+
+    @Override
+    public SimpleRecycler<P> tileRecycler() {
+        return this.recyclerRef.get();
+    }
+
+    @Override
+    public abstract POS readPos(@NonNull ByteBuf buf);
+
+    @Override
+    public abstract POS[] posArray(int length);
+
+    @Override
+    public abstract P[] tileArray(int length);
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -54,6 +54,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import static java.lang.Math.*;
@@ -370,6 +371,16 @@ public class Constants {
     public static long readVarLongZigZag(@NonNull ByteBuf src) {
         long l = readVarLong(src);
         return (l >> 1L) ^ -(l & 1L);
+    }
+
+    public static void writeString(@NonNull ByteBuf dst, @NonNull String value) {
+        int i = dst.writerIndex();
+        int len = dst.writeInt(-1).writeCharSequence(value, StandardCharsets.UTF_8);
+        dst.setInt(i, len);
+    }
+
+    public static String readString(@NonNull ByteBuf src) {
+        return src.readCharSequence(src.readInt(), StandardCharsets.UTF_8).toString();
     }
 
     public static int or(@NonNull int[] arr) {

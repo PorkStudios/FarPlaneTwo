@@ -29,6 +29,7 @@ import net.daporkchop.fp2.mode.RenderMode;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarContext;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.server.IFarStorage;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
@@ -68,7 +69,7 @@ import static net.daporkchop.fp2.util.Constants.*;
 @Getter
 public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece> implements IFarWorld<POS, P> {
     protected final WorldServer world;
-    protected final RenderMode mode;
+    protected final IFarRenderMode<POS, P> mode;
     protected final File root;
 
     protected final IFarGeneratorRough<POS, P> generatorRough;
@@ -94,24 +95,12 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
 
     protected final boolean lowResolution;
 
-    public AbstractFarWorld(@NonNull WorldServer world, @NonNull RenderMode mode) {
+    public AbstractFarWorld(@NonNull WorldServer world, @NonNull IFarRenderMode<POS, P> mode) {
         this.world = world;
         this.mode = mode;
 
-        IFarGeneratorRough<POS, P> generatorRough = this.mode().<POS, P>generatorsRough().stream()
-                .map(f -> f.apply(world))
-                .filter(Objects::nonNull)
-                .findFirst().orElse(null);
-
-        IFarGeneratorExact<POS, P> generatorExact = this.mode().<POS, P>generatorsExact().stream()
-                .map(f -> f.apply(world))
-                .filter(Objects::nonNull)
-                .findFirst().orElseThrow(() -> new IllegalStateException(PStrings.fastFormat(
-                        "No exact generator could be found for world %d (type: %s), mode:%s",
-                        world.provider.getDimension(),
-                        world.getWorldType(),
-                        this.mode()
-                )));
+        IFarGeneratorRough<POS, P> generatorRough = this.mode().roughGenerator(world);
+        IFarGeneratorExact<POS, P> generatorExact = this.mode().exactGenerator(world);
 
         if (generatorRough == null) {
             LOGGER.warn("No rough generator exists for world {} (type: {})! Falling back to exact generator, this will have serious performance implications.", world.provider.getDimension(), world.getWorldType());
@@ -125,9 +114,9 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
 
         this.lowResolution = FP2Config.performance.lowResolutionEnable && this.generatorRough.supportsLowResolution();
 
-        this.scaler = this.mode().createScaler();
+        this.scaler = this.createScaler();
         this.root = new File(world.getChunkSaveLocation(), "fp2/" + this.mode().name().toLowerCase());
-        this.storage = new FarStorage<>(this.root, this.mode().pieceVersion());
+        this.storage = new FarStorage<>(this.root, this.mode().storageVersion());
 
         this.executor = new PriorityRecursiveExecutor<>(
                 FP2Config.generationThreads,
@@ -139,6 +128,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
 
         MinecraftForge.EVENT_BUS.register(this);
     }
+
+    protected abstract IFarScaler<POS, P> createScaler();
 
     @Override
     public Compressed<POS, P> getPieceLazy(@NonNull POS pos) {

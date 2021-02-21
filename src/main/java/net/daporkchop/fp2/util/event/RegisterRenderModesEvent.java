@@ -22,7 +22,7 @@ package net.daporkchop.fp2.util.event;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.util.OrderedRegistry;
+import net.daporkchop.fp2.util.registry.OrderedRegistry;
 import net.minecraftforge.common.MinecraftForge;
 
 /**

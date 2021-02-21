@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -72,21 +72,12 @@ public class Compressed<POS extends IFarPos, V extends IReusablePersistent> exte
     }
 
     /**
-     * Reads a value prefixed with the render mode and the piece position from the given {@link ByteBuf}.
-     *
-     * @param src the {@link ByteBuf} to read from
-     */
-    public Compressed(@NonNull ByteBuf src) {
-        this(src, RenderMode.fromOrdinal(src.readUnsignedByte()));
-    }
-
-    /**
      * Reads a value prefixed with the piece position from the given {@link ByteBuf}.
      *
      * @param src  the {@link ByteBuf} to read from
-     * @param mode the {@link RenderMode} that the value belongs to
+     * @param mode the {@link IFarRenderMode} that the value is used by
      */
-    public Compressed(@NonNull ByteBuf src, @NonNull RenderMode mode) {
+    public Compressed(@NonNull ByteBuf src, @NonNull IFarRenderMode<POS, ?> mode) {
         this(uncheckedCast(mode.readPos(src)), src);
     }
 

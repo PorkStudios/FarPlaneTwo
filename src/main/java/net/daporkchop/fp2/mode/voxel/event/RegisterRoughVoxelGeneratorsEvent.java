@@ -24,7 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.daporkchop.fp2.util.OrderedRegistry;
+import net.daporkchop.fp2.util.registry.OrderedRegistry;
 import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
 import net.minecraftforge.common.MinecraftForge;
 

@@ -18,9 +18,8 @@
  *
  */
 
-package net.daporkchop.fp2.util;
+package net.daporkchop.fp2.util.registry;
 
-import io.netty.channel.ChannelPipeline;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import net.daporkchop.lib.common.misc.string.PStrings;
@@ -30,6 +29,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -37,19 +37,11 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * A sort of "registry", in which entries are identified by a {@link String} key.
- * <p>
- * Entries maintain a strict order, and can be inserted/removed at either end of the registry, or at positions relative to each other.
- * <p>
- * Not thread-safe.
- * <p>
- * Inspired by Netty's {@link ChannelPipeline}.
- * <p>
- * Will probably be hoisted into PorkLib at some point.
+ * Mutable implementation of {@link OrderedRegistry} based on a linked list.
  *
  * @author DaPorkchop_
  */
-public final class OrderedRegistry<T> implements Iterable<Map.Entry<String, T>> {
+public class LinkedOrderedRegistry<T> implements OrderedRegistry<T> {
     /*
      * Implementation notes:
      *  Entries are stored as a tuple of their name and value in a linked list.
@@ -60,37 +52,21 @@ public final class OrderedRegistry<T> implements Iterable<Map.Entry<String, T>> 
 
     protected final List<Entry<T>> list = new LinkedList<>();
 
-    /**
-     * Adds a new entry at the beginning of the registry.
-     *
-     * @param name  the name
-     * @param value the value
-     */
+    @Override
     public OrderedRegistry<T> addFirst(@NonNull String name, @NonNull T value) {
         this.assertUniqueName(name);
         this.list.add(0, new Entry<>(name, value));
         return this;
     }
 
-    /**
-     * Adds a new entry at the end of the registry.
-     *
-     * @param name  the name
-     * @param value the value
-     */
+    @Override
     public OrderedRegistry<T> addLast(@NonNull String name, @NonNull T value) {
         this.assertUniqueName(name);
         this.list.add(new Entry<>(name, value));
         return this;
     }
 
-    /**
-     * Adds a new entry immediately before the entry with the given name.
-     *
-     * @param targetName the name of the entry that the new entry should be inserted before
-     * @param name       the name
-     * @param value      the value
-     */
+    @Override
     public OrderedRegistry<T> addBefore(@NonNull String targetName, @NonNull String name, @NonNull T value) {
         this.assertUniqueName(name);
         for (ListIterator<Entry<T>> itr = this.list.listIterator(); itr.hasNext(); ) {
@@ -103,13 +79,7 @@ public final class OrderedRegistry<T> implements Iterable<Map.Entry<String, T>> 
         throw new IllegalArgumentException(PStrings.fastFormat("unable to find entry with name \"%s\"!", targetName));
     }
 
-    /**
-     * Adds a new entry immediately before the entry with the given name.
-     *
-     * @param targetName the name of the entry that the new entry should be inserted before
-     * @param name       the name
-     * @param value      the value
-     */
+    @Override
     public OrderedRegistry<T> addAfter(@NonNull String targetName, @NonNull String name, @NonNull T value) {
         this.assertUniqueName(name);
         for (ListIterator<Entry<T>> itr = this.list.listIterator(); itr.hasNext(); ) {
@@ -121,23 +91,12 @@ public final class OrderedRegistry<T> implements Iterable<Map.Entry<String, T>> 
         throw new IllegalArgumentException(PStrings.fastFormat("unable to find entry with name \"%s\"!", targetName));
     }
 
-    /**
-     * Replaces the existing entry with the given name.
-     *
-     * @param targetName the name of the entry that the new entry should be inserted before
-     * @param value      the value
-     */
+    @Override
     public OrderedRegistry<T> set(@NonNull String targetName, @NonNull T value) {
         return this.set(targetName, targetName, value);
     }
 
-    /**
-     * Replaces the existing entry with the given name.
-     *
-     * @param targetName the name of the entry that the new entry should be inserted before
-     * @param newName    the name
-     * @param value      the value
-     */
+    @Override
     public OrderedRegistry<T> set(@NonNull String targetName, @NonNull String newName, @NonNull T value) {
         if (!targetName.equals(newName)) {
             this.assertUniqueName(newName);
@@ -151,11 +110,7 @@ public final class OrderedRegistry<T> implements Iterable<Map.Entry<String, T>> 
         throw new IllegalArgumentException(PStrings.fastFormat("unable to find entry with name \"%s\"!", targetName));
     }
 
-    /**
-     * Removes the existing entry with the given name.
-     *
-     * @param name the name of the entry to remove
-     */
+    @Override
     public OrderedRegistry<T> remove(@NonNull String name) {
         for (Iterator<Entry<T>> itr = this.list.iterator(); itr.hasNext(); ) {
             if (itr.next().name.equals(name)) {
@@ -166,11 +121,7 @@ public final class OrderedRegistry<T> implements Iterable<Map.Entry<String, T>> 
         throw new IllegalArgumentException(PStrings.fastFormat("unable to find entry with name \"%s\"!", name));
     }
 
-    /**
-     * Removes the existing entry with the given name.
-     *
-     * @param name the name of the entry to remove
-     */
+    @Override
     public T get(@NonNull String name) {
         for (Entry<T> entry : this.list) {
             if (entry.name.equals(name)) {
@@ -180,13 +131,21 @@ public final class OrderedRegistry<T> implements Iterable<Map.Entry<String, T>> 
         throw new IllegalArgumentException(PStrings.fastFormat("unable to find entry with name \"%s\"!", name));
     }
 
+    @Override
+    public String getName(@NonNull T value) {
+        for (Entry<T> entry : this.list) {
+            if (entry.value.equals(value)) {
+                return entry.name;
+            }
+        }
+        throw new IllegalArgumentException(PStrings.fastFormat("unable to find entry with value \"%s\"!", value));
+    }
+
     protected void assertUniqueName(@NonNull String name) {
         this.list.forEach(entry -> checkState(!entry.name.equals(name), "name \"%s\" is already used!", name));
     }
 
-    /**
-     * @return a {@link Stream} over all the entries in this registry
-     */
+    @Override
     public Stream<Map.Entry<String, T>> stream() {
         return uncheckedCast(this.list.stream());
     }
@@ -197,8 +156,8 @@ public final class OrderedRegistry<T> implements Iterable<Map.Entry<String, T>> 
     }
 
     @Override
-    public void forEach(@NonNull Consumer<? super Map.Entry<String, T>> action) {
-        this.list.forEach(action);
+    public void forEachEntry(@NonNull BiConsumer<String, ? super T> action) {
+        this.list.forEach(e -> action.accept(e.name, e.value));
     }
 
     @Override

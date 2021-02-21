@@ -20,7 +20,10 @@
 
 package net.daporkchop.fp2.mode.voxel;
 
+import io.netty.buffer.ByteBuf;
+import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.common.AbstractFarRenderMode;
@@ -31,8 +34,9 @@ import net.daporkchop.fp2.mode.voxel.server.gen.exact.CCVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.gen.rough.CWGVoxelGenerator;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.OrderedRegistry;
 import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
+import net.daporkchop.fp2.util.registry.LinkedOrderedRegistry;
+import net.minecraft.world.WorldServer;
 
 /**
  * Implementation of {@link IFarRenderMode} for the voxel rendering mode.
@@ -40,17 +44,46 @@ import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
  * @author DaPorkchop_
  */
 public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelPiece> {
+    public VoxelRenderMode() {
+        super(VoxelConstants.STORAGE_VERSION);
+    }
+
     @Override
     protected AbstractOrderedRegistryEvent<IFarGeneratorExact.Factory<VoxelPos, VoxelPiece>> exactGeneratorFactoryEvent() {
-        return new RegisterExactVoxelGeneratorsEvent(new OrderedRegistry<IFarGeneratorExact.Factory<VoxelPos, VoxelPiece>>()
+        return new RegisterExactVoxelGeneratorsEvent(new LinkedOrderedRegistry<IFarGeneratorExact.Factory<VoxelPos, VoxelPiece>>()
                 .addLast("cubic_chunks", world -> Constants.isCubicWorld(world) ? new CCVoxelGenerator() : null)
                 .addLast("vanilla", world -> new VanillaVoxelGenerator()));
     }
 
     @Override
     protected AbstractOrderedRegistryEvent<IFarGeneratorRough.Factory<VoxelPos, VoxelPiece>> roughGeneratorFactoryEvent() {
-        return new RegisterRoughVoxelGeneratorsEvent(new OrderedRegistry<IFarGeneratorRough.Factory<VoxelPos, VoxelPiece>>()
+        return new RegisterRoughVoxelGeneratorsEvent(new LinkedOrderedRegistry<IFarGeneratorRough.Factory<VoxelPos, VoxelPiece>>()
                 //TODO: remove "false && " once i actually get this working
                 .addLast("cubic_world_gen", world -> false && Constants.isCwgWorld(world) ? new CWGVoxelGenerator() : null));
+    }
+
+    @Override
+    protected VoxelPiece newTile() {
+        return new VoxelPiece();
+    }
+
+    @Override
+    public IFarWorld<VoxelPos, VoxelPiece> world(@NonNull WorldServer world) {
+        return null;
+    }
+
+    @Override
+    public VoxelPos readPos(@NonNull ByteBuf buf) {
+        return new VoxelPos(buf);
+    }
+
+    @Override
+    public VoxelPos[] posArray(int length) {
+        return new VoxelPos[length];
+    }
+
+    @Override
+    public VoxelPiece[] tileArray(int length) {
+        return new VoxelPiece[length];
     }
 }

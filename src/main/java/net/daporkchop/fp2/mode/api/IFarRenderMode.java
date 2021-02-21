@@ -20,15 +20,80 @@
 
 package net.daporkchop.fp2.mode.api;
 
+import io.netty.buffer.ByteBuf;
+import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.server.IFarWorld;
+import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
+import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.voxel.VoxelRenderMode;
-import net.daporkchop.fp2.util.OrderedRegistry;
+import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.event.RegisterRenderModesEvent;
+import net.daporkchop.fp2.util.registry.LinkedOrderedRegistry;
+import net.daporkchop.fp2.util.registry.OrderedRegistry;
+import net.minecraft.world.WorldServer;
 
 /**
  * @author DaPorkchop_
  */
 public interface IFarRenderMode<POS extends IFarPos, P extends IFarPiece> {
-    OrderedRegistry<IFarRenderMode<?, ?>> REGISTRY = new RegisterRenderModesEvent(new OrderedRegistry<IFarRenderMode<?, ?>>()
-            .addLast("voxel", new VoxelRenderMode())).fire().registry();
+    OrderedRegistry<IFarRenderMode<?, ?>> REGISTRY = new RegisterRenderModesEvent(new LinkedOrderedRegistry<IFarRenderMode<?, ?>>()
+            .addLast("voxel", new VoxelRenderMode())).fire().immutableRegistry();
+
+    /**
+     * @return this storage version's name
+     */
+    String name();
+
+    /**
+     * @return the storage format version number
+     */
+    int storageVersion();
+
+    /**
+     * Creates a new {@link IFarGeneratorExact} for the given world.
+     *
+     * @param world the world
+     * @return the new {@link IFarGeneratorExact}
+     */
+    IFarGeneratorExact<POS, P> exactGenerator(@NonNull WorldServer world);
+
+    /**
+     * Creates a new {@link IFarGeneratorRough} for the given world.
+     *
+     * @param world the world
+     * @return the new {@link IFarGeneratorRough}
+     */
+    IFarGeneratorRough<POS, P> roughGenerator(@NonNull WorldServer world);
+
+    /**
+     * Creates a new {@link IFarWorld} for the given world.
+     *
+     * @param world the world
+     * @return the new {@link IFarWorld}
+     */
+    IFarWorld<POS, P> world(@NonNull WorldServer world);
+
+    /**
+     * @return a recycler for tile objects
+     */
+    SimpleRecycler<P> tileRecycler();
+
+    /**
+     * Reads a tile position from the given {@link ByteBuf}.
+     *
+     * @param buf the {@link ByteBuf} to read from
+     * @return the tile position
+     */
+    POS readPos(@NonNull ByteBuf buf);
+
+    /**
+     * @return an array of {@link POS}
+     */
+    POS[] posArray(int length);
+
+    /**
+     * @return an array of {@link P}
+     */
+    P[] tileArray(int length);
 }

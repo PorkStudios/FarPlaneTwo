@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -26,6 +26,8 @@ import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarContext;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -38,15 +40,19 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 @Setter
 public class SPacketPieceData implements IMessage {
     @NonNull
-    protected Compressed piece;
+    protected IFarRenderMode<?, ?> mode;
+    @NonNull
+    protected Compressed<?, ?> piece;
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.piece = new Compressed(buf);
+        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
+        this.piece = new Compressed<>(buf, this.mode);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
+        Constants.writeString(buf, this.mode.name());
         this.piece.writeWithModeAndPos(buf);
     }
 

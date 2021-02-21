@@ -38,6 +38,8 @@ import static net.daporkchop.fp2.util.Constants.*;
  */
 @UtilityClass
 public class VoxelConstants {
+    public static final int STORAGE_VERSION = 4;
+
     /**
      * The size of the fractional part of a voxel position, in bits.
      */

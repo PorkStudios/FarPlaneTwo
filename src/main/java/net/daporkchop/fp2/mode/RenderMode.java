@@ -77,6 +77,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
+@Deprecated
 public enum RenderMode {
     HEIGHTMAP(7) {
         @Override

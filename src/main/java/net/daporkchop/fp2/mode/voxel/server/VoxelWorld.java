@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,9 +22,12 @@ package net.daporkchop.fp2.mode.voxel.server;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.RenderMode;
+import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.mode.voxel.VoxelRenderMode;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerIntersection;
 import net.minecraft.world.WorldServer;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -33,8 +36,13 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 public class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelPiece> {
-    public VoxelWorld(@NonNull WorldServer world) {
-        super(world, RenderMode.VOXEL);
+    public VoxelWorld(@NonNull WorldServer world, @NonNull VoxelRenderMode mode) {
+        super(world, mode);
+    }
+
+    @Override
+    protected IFarScaler<VoxelPos, VoxelPiece> createScaler() {
+        return new VoxelScalerIntersection();
     }
 
     @Override
