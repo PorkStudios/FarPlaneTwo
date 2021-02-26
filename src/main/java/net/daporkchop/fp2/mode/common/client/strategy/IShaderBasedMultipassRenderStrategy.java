@@ -24,7 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.TextureMap;
 
@@ -34,7 +34,7 @@ import static org.lwjgl.opengl.GL11.*;
 /**
  * @author DaPorkchop_
  */
-public interface IShaderBasedMultipassRenderStrategy<POS extends IFarPos, P extends IFarPiece> extends IMultipassRenderStrategy<POS, P> {
+public interface IShaderBasedMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile> extends IMultipassRenderStrategy<POS, T> {
     @Override
     default void renderSolid(@NonNull IDrawCommandBuffer draw) {
         try (ShaderProgram program = this.blockShader().use()) {

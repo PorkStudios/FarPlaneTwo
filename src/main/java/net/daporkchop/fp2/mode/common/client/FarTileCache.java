@@ -24,7 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -45,12 +45,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @SideOnly(Side.CLIENT)
 //TODO: this still has some race conditions - it's possible that addListener/removeListener might cause the listener to be notified twice for tiles that are
 // received/unloaded during the initial notification pass
-public class FarTileCache<POS extends IFarPos, P extends IFarPiece> implements IFarTileCache<POS, P>, Function<POS, Compressed<POS, P>> {
-    protected final Map<POS, Compressed<POS, P>> tiles = new ConcurrentHashMap<>();
-    protected final Collection<Listener<POS, P>> handlers = new CopyOnWriteArraySet<>();
+public class FarTileCache<POS extends IFarPos, T extends IFarTile> implements IFarTileCache<POS, T>, Function<POS, Compressed<POS, T>> {
+    protected final Map<POS, Compressed<POS, T>> tiles = new ConcurrentHashMap<>();
+    protected final Collection<Listener<POS, T>> handlers = new CopyOnWriteArraySet<>();
 
     @Override
-    public void receiveTile(@NonNull Compressed<POS, P> tile) {
+    public void receiveTile(@NonNull Compressed<POS, T> tile) {
         this.tiles.compute(tile.pos(), (pos, old) -> {
             if (old == null) {
                 this.handlers.forEach(listener -> listener.tileAdded(tile));
@@ -70,7 +70,7 @@ public class FarTileCache<POS extends IFarPos, P extends IFarPiece> implements I
     }
 
     @Override
-    public void addListener(@NonNull Listener<POS, P> listener, boolean notifyForExisting) {
+    public void addListener(@NonNull Listener<POS, T> listener, boolean notifyForExisting) {
         checkState(this.handlers.add(listener), "duplicate listener: %s", listener);
         if (notifyForExisting) {
             this.tiles.forEach((pos, tile) -> listener.tileAdded(tile));
@@ -78,7 +78,7 @@ public class FarTileCache<POS extends IFarPos, P extends IFarPiece> implements I
     }
 
     @Override
-    public void removeListener(@NonNull Listener<POS, P> listener, boolean notifyRemoval) {
+    public void removeListener(@NonNull Listener<POS, T> listener, boolean notifyRemoval) {
         checkState(this.handlers.remove(listener), "unknown listener: %s", listener);
         if (notifyRemoval) {
             this.tiles.forEach((pos, tile) -> listener.tileRemoved(pos));
@@ -86,7 +86,7 @@ public class FarTileCache<POS extends IFarPos, P extends IFarPiece> implements I
     }
 
     @Override
-    public Stream<Compressed<POS, P>> getTilesCached(@NonNull Stream<POS> positions) {
+    public Stream<Compressed<POS, T>> getTilesCached(@NonNull Stream<POS> positions) {
         return positions.map(this);
     }
 
@@ -95,7 +95,7 @@ public class FarTileCache<POS extends IFarPos, P extends IFarPiece> implements I
      */
     @Override
     @Deprecated
-    public Compressed<POS, P> apply(@NonNull POS pos) {
+    public Compressed<POS, T> apply(@NonNull POS pos) {
         return this.tiles.get(pos);
     }
 }

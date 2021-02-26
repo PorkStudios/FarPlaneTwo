@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.voxel.event;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.util.registry.OrderedRegistry;
 import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
 import net.minecraftforge.common.MinecraftForge;
@@ -33,8 +33,8 @@ import net.minecraftforge.common.MinecraftForge;
  *
  * @author DaPorkchop_
  */
-public class RegisterExactVoxelGeneratorsEvent extends AbstractOrderedRegistryEvent<IFarGeneratorExact.Factory<VoxelPos, VoxelPiece>> {
-    public RegisterExactVoxelGeneratorsEvent(@NonNull OrderedRegistry<IFarGeneratorExact.Factory<VoxelPos, VoxelPiece>> registry) {
+public class RegisterExactVoxelGeneratorsEvent extends AbstractOrderedRegistryEvent<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>> {
+    public RegisterExactVoxelGeneratorsEvent(@NonNull OrderedRegistry<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>> registry) {
         super(registry);
     }
 }

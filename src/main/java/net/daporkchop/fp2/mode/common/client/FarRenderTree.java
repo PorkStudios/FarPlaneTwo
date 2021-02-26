@@ -26,7 +26,7 @@ import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.util.DirectLongStack;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
@@ -53,7 +53,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  *
  * @author DaPorkchop_
  */
-public class FarRenderTree<POS extends IFarPos, P extends IFarPiece> extends AbstractReleasable {
+public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable {
     //this is enough levels for the tree to encompass the entire minecraft world
     public static final int DEPTH = 32 - Integer.numberOfLeadingZeros(60_000_000 >> T_SHIFT);
 
@@ -96,11 +96,11 @@ public class FarRenderTree<POS extends IFarPos, P extends IFarPiece> extends Abs
 
     protected final long root;
     protected final IFarDirectPosAccess<POS> directPosAccess;
-    protected final IFarRenderStrategy<POS, P> strategy;
+    protected final IFarRenderStrategy<POS, T> strategy;
 
     protected final PCleaner cleaner;
 
-    public FarRenderTree(@NonNull IFarRenderMode<POS, P> mode, @NonNull IFarRenderStrategy<POS, P> strategy, int maxLevel) {
+    public FarRenderTree(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T> strategy, int maxLevel) {
         this.strategy = strategy;
         this.directPosAccess = mode.directPosAccess();
         this.d = this.directPosAccess.axisCount();
@@ -222,9 +222,9 @@ public class FarRenderTree<POS extends IFarPos, P extends IFarPiece> extends Abs
     }
 
     /**
-     * Sets the render data for the piece at the given position.
+     * Sets the render data for the tile at the given position.
      *
-     * @param pos the position of the piece to set the render data for
+     * @param pos the position of the tile to set the render data for
      */
     public void putRenderData(@NonNull POS pos, @NonNull BakeOutput output) {
         this.putRenderData0(DEPTH, this.root, pos, output);
@@ -271,7 +271,7 @@ public class FarRenderTree<POS extends IFarPos, P extends IFarPiece> extends Abs
     /**
      * Removes the node at the given position.
      *
-     * @param pos the position of the piece to remove
+     * @param pos the position of the tile to remove
      */
     public void removeNode(@NonNull POS pos) {
         this.removeNode0(DEPTH, this.root, pos);
@@ -322,18 +322,18 @@ public class FarRenderTree<POS extends IFarPos, P extends IFarPiece> extends Abs
     }
 
     /**
-     * Selects all pieces that are applicable for the given view ranges and frustum and adds them to the render index.
+     * Selects all tiles that are applicable for the given view ranges and frustum and adds them to the render index.
      *
      * @param ranges  an array of volumes defining the LoD level cutoff ranges
      * @param frustum the view frustum
-     * @param index   the render index to add pieces to
+     * @param index   the render index to add tiles to
      */
     public void select(@NonNull Volume[] ranges, @NonNull IFrustum frustum, @NonNull DirectLongStack index) {
         this.select0(DEPTH, this.root, ranges, frustum, index);
     }
 
     protected boolean select0(int level, long node, Volume[] ranges, IFrustum frustum, DirectLongStack index) {
-        if (level < this.maxLevel //don't do range checking for the top level, as it will cause a bunch of pieces to be loaded but never rendered
+        if (level < this.maxLevel //don't do range checking for the top level, as it will cause a bunch of tiles to be loaded but never rendered
             && !this.directPosAccess.intersects(node + this.tile_pos, ranges[level])) {
             //the view range for this level doesn't intersect this tile's bounding box,
             // so we can be certain that neither this tile nor any of its children would be contained
@@ -342,7 +342,7 @@ public class FarRenderTree<POS extends IFarPos, P extends IFarPiece> extends Abs
                    && !this.directPosAccess.inFrustum(node + this.tile_pos, frustum)) {
             //the frustum doesn't contain this tile's bounding box, so we can be certain that neither
             // this tile nor any of its children would be visible
-            return true; //return true to prevent parent node from skipping all high-res pieces if some of them were outside of the frustum
+            return true; //return true to prevent parent node from skipping all high-res tiles if some of them were outside of the frustum
         } else if (level == 0 && this.directPosAccess.isVanillaRenderable(node + this.tile_pos)) {
             //the node will be rendered by vanilla, so we don't want to draw over it
             return true;
@@ -406,7 +406,7 @@ public class FarRenderTree<POS extends IFarPos, P extends IFarPiece> extends Abs
      * @author DaPorkchop_
      */
     @RequiredArgsConstructor
-    private static final class ReleaseFunction<POS extends IFarPos, P extends IFarPiece> implements Runnable {
+    private static final class ReleaseFunction<POS extends IFarPos, T extends IFarTile> implements Runnable {
         protected final long root;
         protected final long flags;
         protected final long children;
@@ -414,7 +414,7 @@ public class FarRenderTree<POS extends IFarPos, P extends IFarPiece> extends Abs
         protected final int d;
 
         @NonNull
-        protected final IFarRenderStrategy<POS, P> strategy;
+        protected final IFarRenderStrategy<POS, T> strategy;
 
         @Override
         public void run() {

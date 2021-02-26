@@ -18,12 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.piece;
+package net.daporkchop.fp2.mode.voxel;
 
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
@@ -36,7 +36,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class VoxelPiece implements IFarPiece {
+public class VoxelTile implements IFarTile {
     //layout (in ints):
     //0: (dx << 24) | (dy << 16) | (dz << 8) | edges
     //                                       ^ 2 bits are free
@@ -53,7 +53,7 @@ public class VoxelPiece implements IFarPiece {
     public static final int ENTRY_DATA_SIZE_BYTES = ENTRY_DATA_SIZE * 4;
 
     public static final int ENTRY_FULL_SIZE_BYTES = ENTRY_DATA_SIZE * 4 + 2;
-    public static final int PIECE_SIZE = INDEX_SIZE + ENTRY_FULL_SIZE_BYTES * ENTRY_COUNT;
+    public static final int TILE_SIZE = INDEX_SIZE + ENTRY_FULL_SIZE_BYTES * ENTRY_COUNT;
 
     static int index(int x, int y, int z) {
         checkArg(x >= 0 && x < T_VOXELS && y >= 0 && y < T_VOXELS && z >= 0 && z < T_VOXELS, "coordinates out of bounds (x=%d, y=%d, z=%d)", x, y, z);
@@ -99,16 +99,16 @@ public class VoxelPiece implements IFarPiece {
         return i0 & 0x3F;
     }
 
-    protected final long addr = PUnsafe.allocateMemory(this, PIECE_SIZE);
+    protected final long addr = PUnsafe.allocateMemory(this, TILE_SIZE);
 
-    protected int count = -1; //the number of voxels in the piece that are set
+    protected int count = -1; //the number of voxels in the tile that are set
 
-    public VoxelPiece() {
+    public VoxelTile() {
         this.reset();
     }
 
     /**
-     * @return the number of set voxels in this piece
+     * @return the number of set voxels in this tile
      */
     public int size() {
         return this.count;
@@ -147,14 +147,14 @@ public class VoxelPiece implements IFarPiece {
         return true;
     }
 
-    public VoxelPiece set(int x, int y, int z, VoxelData data) {
-        long indexAddr = this.addr + VoxelPiece.index(x, y, z) * 2L;
+    public VoxelTile set(int x, int y, int z, VoxelData data) {
+        long indexAddr = this.addr + VoxelTile.index(x, y, z) * 2L;
         int index = PUnsafe.getShort(indexAddr);
         if (index < 0) { //index is unset, allocate new one
             PUnsafe.putShort(indexAddr, (short) (index = this.count++));
         }
 
-        VoxelPiece.writeData(this.addr + VoxelPiece.INDEX_SIZE + index * VoxelPiece.ENTRY_DATA_SIZE_BYTES, data);
+        VoxelTile.writeData(this.addr + VoxelTile.INDEX_SIZE + index * VoxelTile.ENTRY_DATA_SIZE_BYTES, data);
         return this;
     }
 
@@ -162,7 +162,7 @@ public class VoxelPiece implements IFarPiece {
     public void reset() {
         if (this.count != 0) {
             this.count = 0;
-            PUnsafe.setMemory(this.addr, VoxelPiece.INDEX_SIZE, (byte) 0xFF); //fill index with -1
+            PUnsafe.setMemory(this.addr, VoxelTile.INDEX_SIZE, (byte) 0xFF); //fill index with -1
             //data doesn't need to be cleared, it's effectively wiped along with the index
         }
     }
@@ -188,7 +188,7 @@ public class VoxelPiece implements IFarPiece {
 
     @Override
     public boolean write(@NonNull ByteBuf dst) {
-        if (this.count == 0) { //piece is empty, nothing needs to be encoded
+        if (this.count == 0) { //tile is empty, nothing needs to be encoded
             return true;
         }
 
@@ -196,12 +196,12 @@ public class VoxelPiece implements IFarPiece {
         dst.writeIntLE(-1);
 
         int count = 0;
-        for (int i = 0; i < VoxelPiece.ENTRY_COUNT; i++)  { //iterate through the index and search for set voxels
+        for (int i = 0; i < VoxelTile.ENTRY_COUNT; i++)  { //iterate through the index and search for set voxels
             int index = PUnsafe.getShort(this.addr + i * 2L);
             if (index >= 0) { //voxel is set
                 dst.writeShortLE(i); //write position
-                long base = this.addr + VoxelPiece.INDEX_SIZE + index * VoxelPiece.ENTRY_DATA_SIZE_BYTES;
-                for (int j = 0; j < VoxelPiece.ENTRY_DATA_SIZE; j++) { //write voxel data
+                long base = this.addr + VoxelTile.INDEX_SIZE + index * VoxelTile.ENTRY_DATA_SIZE_BYTES;
+                for (int j = 0; j < VoxelTile.ENTRY_DATA_SIZE; j++) { //write voxel data
                     dst.writeIntLE(PUnsafe.getInt(base + j * 4L));
                 }
                 count++;

@@ -22,11 +22,10 @@ package net.daporkchop.fp2.mode.api;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.minecraft.util.math.AxisAlignedBB;
 
 /**
- * An identifier for a {@link IFarPiece}.
+ * An identifier for a {@link IFarTile}.
  *
  * @author DaPorkchop_
  */
@@ -79,7 +78,7 @@ public interface IFarPos extends Comparable<IFarPos> {
     boolean contains(@NonNull IFarPos posIn);
 
     /**
-     * @return the maximum volume that the piece at this position could possibly occupy
+     * @return the maximum volume that the tile at this position could possibly occupy
      */
     AxisAlignedBB bounds();
 

@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.api.ctx;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -40,7 +40,7 @@ public interface IFarWorldClient {
      * @param mode the {@link IFarRenderMode}
      * @return the {@link IFarClientContext} used by the given {@link IFarRenderMode} in this world
      */
-    <POS extends IFarPos, P extends IFarPiece> IFarClientContext<POS, P> contextFor(@NonNull IFarRenderMode<POS, P> mode);
+    <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> contextFor(@NonNull IFarRenderMode<POS, T> mode);
 
     /**
      * Makes the given render mode the active one for this world.
@@ -52,5 +52,5 @@ public interface IFarWorldClient {
     /**
      * @return the currently active render context, or {@code null} if none are active
      */
-    <POS extends IFarPos, P extends IFarPiece> IFarClientContext<POS, P> activeContext();
+    <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> activeContext();
 }

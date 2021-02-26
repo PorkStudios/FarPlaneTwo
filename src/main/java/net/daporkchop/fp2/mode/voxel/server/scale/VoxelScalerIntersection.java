@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,8 +24,8 @@ import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelData;
+import net.daporkchop.fp2.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.util.math.Vector3d;
 import net.daporkchop.fp2.util.math.qef.QefSolver;
 import net.minecraft.block.Block;
@@ -46,7 +46,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelPiece> {
+public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelTile> {
     public static final int SRC_MIN = -4;
     public static final int SRC_MAX = (T_VOXELS << 1) + 4;
     //public static final int SRC_MIN = 0;
@@ -57,7 +57,7 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelPiece>
     public static final int DST_MAX = T_VOXELS + 1;
     public static final int DST_SIZE = DST_MAX - DST_MIN;
 
-    protected static int srcPieceIndex(int x, int y, int z) {
+    protected static int srcTileIndex(int x, int y, int z) {
         final int fac = (((SRC_MAX - 1) >> T_SHIFT) + 1) - (SRC_MIN >> T_SHIFT);
         final int add = -(SRC_MIN >> T_SHIFT) << T_SHIFT;
         return (((x + add) >> T_SHIFT) * fac + ((y + add) >> T_SHIFT)) * fac + ((z + add) >> T_SHIFT);
@@ -112,7 +112,7 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelPiece>
     }
 
     @Override
-    public long scale(@NonNull VoxelPiece[] srcPieces, @NonNull VoxelPiece dst) {
+    public long scale(@NonNull VoxelTile[] srcTiles, @NonNull VoxelTile dst) {
         VoxelData data = new VoxelData();
         QefSolver qef = new QefSolver();
 
@@ -125,8 +125,8 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelPiece>
         for (int x = SRC_MIN; x < SRC_MAX; x++) {
             for (int y = SRC_MIN; y < SRC_MAX; y++) {
                 for (int z = SRC_MIN; z < SRC_MAX; z++) {
-                    VoxelPiece srcPiece = srcPieces[srcPieceIndex(x, y, z)];
-                    if (srcPiece != null && srcPiece.get(x & T_MASK, y & T_MASK, z & T_MASK, data)) {
+                    VoxelTile srcTile = srcTiles[srcTileIndex(x, y, z)];
+                    if (srcTile != null && srcTile.get(x & T_MASK, y & T_MASK, z & T_MASK, data)) {
                         srcVoxels.set(srcIndex(x, y, z));
 
                         int edges = 0;

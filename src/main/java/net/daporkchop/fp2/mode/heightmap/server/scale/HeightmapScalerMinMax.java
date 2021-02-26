@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,13 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.server.gen;
+package net.daporkchop.fp2.mode.heightmap.server.scale;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
+import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
+import net.daporkchop.fp2.mode.heightmap.HeightmapData;
 
 import java.util.stream.Stream;
 
@@ -33,13 +33,13 @@ import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Scales heightmap pieces by copying the sample with the greatest height deviation in each 2x2 square of high-detail samples.
+ * Scales heightmap tiles by copying the sample with the greatest height deviation in each 2x2 square of high-detail samples.
  * <p>
  * This probably isn't the absolute best solution, but it's pretty fast and does a good job of preserving detail in bumpy regions.
  *
  * @author DaPorkchop_
  */
-public class HeightmapPieceScalerMax implements IFarScaler<HeightmapPos, HeightmapPiece> {
+public class HeightmapScalerMinMax implements IFarScaler<HeightmapPos, HeightmapTile> {
     @Override
     public Stream<HeightmapPos> outputs(@NonNull HeightmapPos srcPos) {
         return Stream.of(srcPos.up());
@@ -61,12 +61,12 @@ public class HeightmapPieceScalerMax implements IFarScaler<HeightmapPos, Heightm
     }
 
     @Override
-    public long scale(@NonNull HeightmapPiece[] srcs, @NonNull HeightmapPiece dst) {
+    public long scale(@NonNull HeightmapTile[] srcs, @NonNull HeightmapTile dst) {
         HeightmapData data = new HeightmapData();
 
         for (int subX = 0; subX < 2; subX++) {
             for (int subZ = 0; subZ < 2; subZ++) {
-                HeightmapPiece src = srcs[subX * 2 + subZ];
+                HeightmapTile src = srcs[subX * 2 + subZ];
                 int baseX = subX * (T_VOXELS >> 1);
                 int baseZ = subZ * (T_VOXELS >> 1);
 
@@ -85,7 +85,7 @@ public class HeightmapPieceScalerMax implements IFarScaler<HeightmapPos, Heightm
         return 0L;
     }
 
-    protected void scaleSample(HeightmapPiece src, int srcX, int srcZ, HeightmapData data) {
+    protected void scaleSample(HeightmapTile src, int srcX, int srcZ, HeightmapData data) {
         int height0 = src.height(srcX, srcZ);
         int height1 = src.height(srcX, srcZ + 1);
         int height2 = src.height(srcX + 1, srcZ);

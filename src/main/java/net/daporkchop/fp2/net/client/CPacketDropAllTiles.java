@@ -18,49 +18,43 @@
  *
  */
 
-package net.daporkchop.fp2.net.server;
+package net.daporkchop.fp2.net.client;
 
 import io.netty.buffer.ByteBuf;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import net.daporkchop.fp2.mode.api.Compressed;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
+import net.daporkchop.fp2.mode.api.ctx.IFarContext;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
+import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-import static net.daporkchop.lib.common.util.PorkUtil.*;
+import static net.daporkchop.fp2.debug.FP2Debug.*;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-@Setter
-public class SPacketPieceData implements IMessage {
-    @NonNull
-    protected IFarRenderMode<?, ?> mode;
-    @NonNull
-    protected Compressed<?, ?> tile;
-
+public class CPacketDropAllTiles implements IMessage {
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
-        this.tile = new Compressed<>(buf, this.mode);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        Constants.writeString(buf, this.mode.name());
-        this.tile.writeWithPos(buf);
     }
 
-    public static class Handler implements IMessageHandler<SPacketPieceData, IMessage> {
+    public static class Handler implements IMessageHandler<CPacketDropAllTiles, IMessage> {
         @Override
-        public IMessage onMessage(SPacketPieceData message, MessageContext ctx) {
-            ((IFarWorldClient) ctx.getClientHandler().world).contextFor(message.mode).tileCache().receiveTile(uncheckedCast(message.tile));
+        public IMessage onMessage(CPacketDropAllTiles message, MessageContext ctx) {
+            if (!FP2_DEBUG) {
+                ctx.getServerHandler().disconnect(new TextComponentTranslation("fp2.debug.debugModeNotEnabled"));
+                return null;
+            }
+            IFarContext context = (IFarContext) ctx.getServerHandler().player.world;
+            ServerThreadExecutor.INSTANCE.execute(() -> {
+                Constants.LOGGER.info("Dropping all tiles");
+                context.world().tracker().debug_dropAllTiles();
+            });
             return null;
         }
     }

@@ -24,7 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
@@ -37,20 +37,20 @@ import java.io.IOException;
 /**
  * @author DaPorkchop_
  */
-public interface IFarWorld<POS extends IFarPos, P extends IFarPiece> extends Closeable {
+public interface IFarWorld<POS extends IFarPos, T extends IFarTile> extends Closeable {
     WorldServer world();
 
     AsyncBlockAccess blockAccess();
 
     /**
-     * Gets the {@link IFarPiece} at the given position.
+     * Gets the {@link IFarTile} at the given position.
      * <p>
-     * If the piece is already loaded, it will be returned. Otherwise, it will be queued for loading and this method will return {@code null}.
+     * If the tile is already loaded, it will be returned. Otherwise, it will be queued for loading and this method will return {@code null}.
      *
-     * @param pos the position of the piece to get
-     * @return the piece, or {@code null} if it isn't loaded yet
+     * @param pos the position of the tile to get
+     * @return the tile, or {@code null} if it isn't loaded yet
      */
-    Compressed<POS, P> getPieceLazy(@NonNull POS pos);
+    Compressed<POS, T> getTileLazy(@NonNull POS pos);
 
     /**
      * Fired whenever a block state changes.
@@ -64,22 +64,22 @@ public interface IFarWorld<POS extends IFarPos, P extends IFarPiece> extends Clo
     /**
      * @return the (possibly {@code null}) {@link IFarGeneratorRough} used for rough generation of far terrain
      */
-    IFarGeneratorRough<POS, P> generatorRough();
+    IFarGeneratorRough<POS, T> generatorRough();
 
     /**
      * @return the {@link IFarGeneratorExact} used for block-accurate generation of far terrain
      */
-    IFarGeneratorExact<POS, P> generatorExact();
+    IFarGeneratorExact<POS, T> generatorExact();
 
     /**
-     * @return the {@link IFarScaler} used for downscaling the far terrain pieces
+     * @return the {@link IFarScaler} used for downscaling the far terrain tiles
      */
-    IFarScaler<POS, P> scaler();
+    IFarScaler<POS, T> scaler();
 
     /**
-     * @return the {@link IFarStorage} used for persistence of far terrain pieces
+     * @return the {@link IFarStorage} used for persistence of far terrain tiles
      */
-    IFarStorage<POS, P> storage();
+    IFarStorage<POS, T> storage();
 
     /**
      * @return the {@link IFarPlayerTracker} used by this world
@@ -89,7 +89,7 @@ public interface IFarWorld<POS extends IFarPos, P extends IFarPiece> extends Clo
     /**
      * @return the {@link IFarRenderMode} that this world is used by
      */
-    IFarRenderMode<POS, P> mode();
+    IFarRenderMode<POS, T> mode();
 
     void save();
 

@@ -29,14 +29,14 @@ import net.daporkchop.fp2.mode.common.client.BakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.IndexedMultidrawMultipassRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelDirectPosAccess;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.VoxelTile;
 
 import static net.daporkchop.fp2.mode.voxel.client.VoxelRenderConstants.*;
 
 /**
  * @author DaPorkchop_
  */
-public class IndexedMultidrawVoxelRenderStrategy extends IndexedMultidrawMultipassRenderStrategy<VoxelPos, VoxelPiece> implements IShaderBasedVoxelMultipassRenderStrategy {
+public class IndexedMultidrawVoxelRenderStrategy extends IndexedMultidrawMultipassRenderStrategy<VoxelPos, VoxelTile> implements IShaderBasedVoxelMultipassRenderStrategy {
     public IndexedMultidrawVoxelRenderStrategy() {
         super(VoxelBake.VOXEL_VERTEX_SIZE);
     }
@@ -47,7 +47,7 @@ public class IndexedMultidrawVoxelRenderStrategy extends IndexedMultidrawMultipa
     }
 
     @Override
-    protected void bakeVertsAndIndices(@NonNull VoxelPos pos, @NonNull VoxelPiece[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
+    protected void bakeVertsAndIndices(@NonNull VoxelPos pos, @NonNull VoxelTile[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
         VoxelBake.bakeForShaderDraw(pos, srcs, verts, indices);
     }
 

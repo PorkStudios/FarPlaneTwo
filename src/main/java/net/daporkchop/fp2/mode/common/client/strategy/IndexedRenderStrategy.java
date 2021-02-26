@@ -26,22 +26,20 @@ import io.netty.buffer.CompositeByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.AllocatedGLBuffer;
-import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL15.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public abstract class IndexedRenderStrategy<POS extends IFarPos, P extends IFarPiece> extends BaseRenderStrategy<POS, P> {
+public abstract class IndexedRenderStrategy<POS extends IFarPos, T extends IFarTile> extends BaseRenderStrategy<POS, T> {
     /*
      * struct RenderData {
      *   [...] //inherited from BaseRenderStrategy
@@ -90,7 +88,7 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, P extends IFarP
     }
 
     @Override
-    protected void bakeVerts(@NonNull POS pos, @NonNull P[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts) {
+    protected void bakeVerts(@NonNull POS pos, @NonNull T[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts) {
         ByteBuf[] indices = new ByteBuf[RENDER_PASS_COUNT];
         for (int i = 0; i < RENDER_PASS_COUNT; i++) {
             indices[i] = ByteBufAllocator.DEFAULT.directBuffer();
@@ -129,7 +127,7 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, P extends IFarP
         }
     }
 
-    protected abstract void bakeVertsAndIndices(@NonNull POS pos, @NonNull P[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices);
+    protected abstract void bakeVertsAndIndices(@NonNull POS pos, @NonNull T[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices);
 
     @Override
     public void executeBakeOutput(@NonNull POS pos, @NonNull BakeOutput output) {

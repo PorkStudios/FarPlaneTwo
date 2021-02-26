@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.api.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -35,8 +35,8 @@ import java.util.stream.Stream;
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public interface IFarTileCache<POS extends IFarPos, P extends IFarPiece> {
-    void receiveTile(@NonNull Compressed<POS, P> tile);
+public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> {
+    void receiveTile(@NonNull Compressed<POS, T> tile);
 
     void unloadTile(@NonNull POS pos);
 
@@ -47,7 +47,7 @@ public interface IFarTileCache<POS extends IFarPos, P extends IFarPiece> {
      * @param notifyForExisting whether or not to call {@link Listener#tileAdded(Compressed)} for tiles that were already cached before
      *                          the listener was added
      */
-    void addListener(@NonNull Listener<POS, P> listener, boolean notifyForExisting);
+    void addListener(@NonNull Listener<POS, T> listener, boolean notifyForExisting);
 
     /**
      * Removes a previously added {@link Listener}.
@@ -55,7 +55,7 @@ public interface IFarTileCache<POS extends IFarPos, P extends IFarPiece> {
      * @param listener      the {@link Listener}
      * @param notifyRemoval whether or not to call {@link Listener#tileRemoved(IFarPos)} for all cached tiles
      */
-    void removeListener(@NonNull Listener<POS, P> listener, boolean notifyRemoval);
+    void removeListener(@NonNull Listener<POS, T> listener, boolean notifyRemoval);
 
     /**
      * Gets the given tiles at the given positions from the cache.
@@ -63,7 +63,7 @@ public interface IFarTileCache<POS extends IFarPos, P extends IFarPiece> {
      * @param positions the positions
      * @return the tiles at the given positions. Tiles that were not present in the cache will be {@code null}
      */
-    Stream<Compressed<POS, P>> getTilesCached(@NonNull Stream<POS> positions);
+    Stream<Compressed<POS, T>> getTilesCached(@NonNull Stream<POS> positions);
 
     /**
      * Receives notifications when a tile is updated in a {@link IFarTileCache}.
@@ -71,20 +71,20 @@ public interface IFarTileCache<POS extends IFarPos, P extends IFarPiece> {
      * @author DaPorkchop_
      */
     @SideOnly(Side.CLIENT)
-    interface Listener<POS extends IFarPos, P extends IFarPiece> {
+    interface Listener<POS extends IFarPos, T extends IFarTile> {
         /**
          * Fired when a new tile is added to the cache.
          *
          * @param tile the tile
          */
-        void tileAdded(@NonNull Compressed<POS, P> tile);
+        void tileAdded(@NonNull Compressed<POS, T> tile);
 
         /**
          * Fired when a tile's contents are changed.
          *
          * @param tile the tile
          */
-        void tileModified(@NonNull Compressed<POS, P> tile);
+        void tileModified(@NonNull Compressed<POS, T> tile);
 
         /**
          * Fired when a tile is removed from the cache.

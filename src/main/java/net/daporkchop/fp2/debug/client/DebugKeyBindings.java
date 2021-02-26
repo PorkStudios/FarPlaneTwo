@@ -34,7 +34,7 @@ import org.lwjgl.input.Keyboard;
 @UtilityClass
 public class DebugKeyBindings {
     public final KeyBinding RELOAD_SHADERS = new KeyBinding("key.fp2.debug.reloadShaders", Keyboard.KEY_0, "key.categories.fp2.debug");
-    public final KeyBinding DROP_PIECES = new KeyBinding("key.fp2.debug.dropPieces", Keyboard.KEY_9, "key.categories.fp2.debug");
+    public final KeyBinding DROP_TILES = new KeyBinding("key.fp2.debug.dropTiles", Keyboard.KEY_9, "key.categories.fp2.debug");
     public final KeyBinding TOGGLE_REVERSED_Z = new KeyBinding("key.fp2.debug.reversedZ", Keyboard.KEY_8, "key.categories.fp2.debug");
     public final KeyBinding TOGGLE_VANILLA_RENDER = new KeyBinding("key.fp2.debug.toggleVanillaRender", Keyboard.KEY_7, "key.categories.fp2.debug");
     public final KeyBinding REBUILD_UVS = new KeyBinding("key.fp2.debug.rebuildUVs", Keyboard.KEY_6, "key.categories.fp2.debug");
@@ -42,7 +42,7 @@ public class DebugKeyBindings {
 
     public void register() {
         ClientRegistry.registerKeyBinding(RELOAD_SHADERS);
-        ClientRegistry.registerKeyBinding(DROP_PIECES);
+        ClientRegistry.registerKeyBinding(DROP_TILES);
         ClientRegistry.registerKeyBinding(TOGGLE_REVERSED_Z);
         ClientRegistry.registerKeyBinding(TOGGLE_VANILLA_RENDER);
         ClientRegistry.registerKeyBinding(REBUILD_UVS);

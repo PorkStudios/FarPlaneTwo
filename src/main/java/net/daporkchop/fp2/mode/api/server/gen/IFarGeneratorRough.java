@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.api.server.gen;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.minecraft.world.WorldServer;
 
 /**
@@ -32,23 +32,23 @@ import net.minecraft.world.WorldServer;
  *
  * @author DaPorkchop_
  */
-public interface IFarGeneratorRough<POS extends IFarPos, P extends IFarPiece> extends IFarGenerator {
+public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> extends IFarGenerator {
     @Override
     void init(@NonNull WorldServer world);
 
     /**
-     * @return whether or not this generator can generate pieces at low resolution
+     * @return whether or not this generator can generate tiles at low resolution
      */
     boolean supportsLowResolution();
 
     /**
-     * Generates a rough estimate of the terrain in the given piece.
+     * Generates a rough estimate of the terrain in the given tile.
      *
-     * @param pos   the position of the piece to generate
-     * @param piece the piece to generate
-     * @return the extra data to be saved with the piece
+     * @param pos   the position of the tile to generate
+     * @param tile the tile to generate
+     * @return the extra data to be saved with the tile
      */
-    long generate(@NonNull POS pos, @NonNull P piece);
+    long generate(@NonNull POS pos, @NonNull T tile);
 
     /**
      * Factory method for creating instances of {@link IFarGeneratorRough}.
@@ -56,13 +56,13 @@ public interface IFarGeneratorRough<POS extends IFarPos, P extends IFarPiece> ex
      * @author DaPorkchop_
      */
     @FunctionalInterface
-    interface Factory<POS extends IFarPos, P extends IFarPiece> {
+    interface Factory<POS extends IFarPos, T extends IFarTile> {
         /**
          * Creates a new {@link IFarGeneratorRough} in the given world.
          *
          * @param world the world
          * @return the new {@link IFarGeneratorRough}, or {@code null} if no generator could be created for the given world
          */
-        IFarGeneratorRough<POS, P> forWorld(@NonNull WorldServer world);
+        IFarGeneratorRough<POS, T> forWorld(@NonNull WorldServer world);
     }
 }

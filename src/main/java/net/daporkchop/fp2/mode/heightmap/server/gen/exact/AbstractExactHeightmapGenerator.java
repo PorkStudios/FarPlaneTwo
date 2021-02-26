@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,8 +24,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
+import net.daporkchop.fp2.mode.heightmap.HeightmapData;
+import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -37,19 +37,19 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorExact<HeightmapPos, HeightmapPiece> {
+public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorExact<HeightmapPos, HeightmapTile> {
     @Override
-    public long generate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos posIn, @NonNull HeightmapPiece piece) {
-        int pieceX = posIn.x();
-        int pieceZ = posIn.z();
+    public long generate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos posIn, @NonNull HeightmapTile tile) {
+        int tileX = posIn.x();
+        int tileZ = posIn.z();
 
         HeightmapData data = new HeightmapData();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         for (int x = 0; x < T_VOXELS; x++) {
             for (int z = 0; z < T_VOXELS; z++) {
-                int height = world.getTopBlockY(pieceX * T_VOXELS + x, pieceZ * T_VOXELS + z);
-                pos.setPos(pieceX * T_VOXELS + x, height, pieceZ * T_VOXELS + z);
+                int height = world.getTopBlockY(tileX * T_VOXELS + x, tileZ * T_VOXELS + z);
+                pos.setPos(tileX * T_VOXELS + x, height, tileZ * T_VOXELS + z);
 
                 IBlockState state = world.getBlockState(pos);
                 while (state.getMaterial().isLiquid()) {
@@ -65,7 +65,7 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
                 data.waterLight = packCombinedLight(world.getCombinedLight(pos, 0));
                 data.waterBiome = Biome.getIdForBiome(world.getBiome(pos));
 
-                piece.set(x, z, data);
+                tile.set(x, z, data);
             }
         }
         return 0L;

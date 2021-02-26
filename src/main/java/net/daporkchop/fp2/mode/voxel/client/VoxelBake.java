@@ -27,8 +27,8 @@ import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelData;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.VoxelData;
+import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
@@ -95,7 +95,7 @@ public class VoxelBake {
         return ((ddx * T_VERTS + ddy) * T_VERTS + ddz) * 3 + edge;
     }
 
-    public void bakeForShaderDraw(@NonNull VoxelPos dstPos, @NonNull VoxelPiece[] srcs, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
+    public void bakeForShaderDraw(@NonNull VoxelPos dstPos, @NonNull VoxelTile[] srcs, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
         if (srcs[0] == null) {
             return;
         }
@@ -112,10 +112,10 @@ public class VoxelBake {
         final int[] map = MAP_RECYCLER.get().allocate();
 
         try {
-            //step 1: simply write vertices for all source pieces, and assign indices
+            //step 1: simply write vertices for all source tiles, and assign indices
             int indexCounter = 0;
             for (int i = 0; i < 8; i++) {
-                VoxelPiece src = srcs[i];
+                VoxelTile src = srcs[i];
                 if (src == null) {
                     continue;
                 }
@@ -191,7 +191,7 @@ public class VoxelBake {
         }
     }
 
-    protected int vertex(int baseX, int baseY, int baseZ, int level, int i, VoxelPiece[] srcs, int x, int y, int z, VoxelData data, ByteBuf vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, int[] map, int indexCounter) {
+    protected int vertex(int baseX, int baseY, int baseZ, int level, int i, VoxelTile[] srcs, int x, int y, int z, VoxelData data, ByteBuf vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, int[] map, int indexCounter) {
         baseX += (x & T_VOXELS) << level;
         baseY += (y & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
@@ -215,11 +215,11 @@ public class VoxelBake {
                 .writeByte((y << POS_FRACT_SHIFT) + data.y + offset)
                 .writeByte((z << POS_FRACT_SHIFT) + data.z + offset); //pos_low
 
-        int basePieceX = (baseX >> (level + T_SHIFT)) - ((i >> 2) & 1);
-        int basePieceY = (baseY >> (level + T_SHIFT)) - ((i >> 1) & 1);
-        int basePieceZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
-        VoxelPiece highPiece = srcs[8 | (i & (((basePieceX & 1) << 2) | ((basePieceY & 1) << 1) | (basePieceZ & 1)))];
-        if (highPiece == null) { //pos_high
+        int baseTileX = (baseX >> (level + T_SHIFT)) - ((i >> 2) & 1);
+        int baseTileY = (baseY >> (level + T_SHIFT)) - ((i >> 1) & 1);
+        int baseTileZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
+        VoxelTile highTile = srcs[8 | (i & (((baseTileX & 1) << 2) | ((baseTileY & 1) << 1) | (baseTileZ & 1)))];
+        if (highTile == null) { //pos_high
             vertices.writeByte((x << POS_FRACT_SHIFT) + data.x + offset)
                     .writeByte((y << POS_FRACT_SHIFT) + data.y + offset)
                     .writeByte((z << POS_FRACT_SHIFT) + data.z + offset);
@@ -231,7 +231,7 @@ public class VoxelBake {
             int highX = POS_ONE;
             int highY = POS_ONE;
             int highZ = POS_ONE;
-            if (highPiece.getOnlyPos((flooredX >> (level + 1)) & T_MASK, (flooredY >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK, data)) {
+            if (highTile.getOnlyPos((flooredX >> (level + 1)) & T_MASK, (flooredY >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK, data)) {
                 highX = data.x << 1;
                 highY = data.y << 1;
                 highZ = data.z << 1;

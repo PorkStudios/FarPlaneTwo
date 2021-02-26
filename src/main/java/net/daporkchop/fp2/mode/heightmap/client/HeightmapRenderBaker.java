@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,8 +25,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.mode.common.client.IFarRenderBaker;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapData;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
+import net.daporkchop.fp2.mode.heightmap.HeightmapData;
+import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
 import net.minecraft.block.Block;
@@ -48,7 +48,7 @@ import static org.lwjgl.opengl.GL30.*;
 /**
  * @author DaPorkchop_
  */
-public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, HeightmapPiece> {
+public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, HeightmapTile> {
     public static final int HEIGHTMAP_VERTEX_SIZE = INT_SIZE //state
                                                     + SHORT_SIZE //light
                                                     + MEDIUM_SIZE //color
@@ -139,7 +139,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
     }
 
     @Override
-    public void bake(@NonNull HeightmapPos dstPos, @NonNull HeightmapPiece[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf[] indices) {
+    public void bake(@NonNull HeightmapPos dstPos, @NonNull HeightmapTile[] srcs, @NonNull ByteBuf vertices, @NonNull ByteBuf[] indices) {
         if (srcs[0] == null) {
             return;
         }
@@ -226,7 +226,7 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         }
     }
 
-    private void writeVertex(int baseX, int baseZ, int level, int i, HeightmapPiece[] srcs, int x, int z, ByteBuf out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, HeightmapData data) {
+    private void writeVertex(int baseX, int baseZ, int level, int i, HeightmapTile[] srcs, int x, int z, ByteBuf out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, HeightmapData data) {
         baseX += (x & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
 
@@ -252,16 +252,16 @@ public class HeightmapRenderBaker implements IFarRenderBaker<HeightmapPos, Heigh
         //TODO: redo writing
         out.writeByte(x).writeByte(z).writeInt(data.height); //pos_low
 
-        int basePieceX = (baseX >> (level + T_SHIFT)) - (i >> 1);
-        int basePieceZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
-        HeightmapPiece highPiece = srcs[4 | (i & (((basePieceX & 1) << 1) | (basePieceZ & 1)))];
-        if (highPiece == null) { //pos_high
+        int baseTileX = (baseX >> (level + T_SHIFT)) - (i >> 1);
+        int baseTileZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
+        HeightmapTile highTile = srcs[4 | (i & (((baseTileX & 1) << 1) | (baseTileZ & 1)))];
+        if (highTile == null) { //pos_high
             out.writeByte(x).writeByte(z).writeInt(data.height);
         } else {
             final int flooredX = blockX & -(1 << (level + 1));
             final int flooredZ = blockZ & -(1 << (level + 1));
 
-            int highHeight = highPiece.height((flooredX >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK);
+            int highHeight = highTile.height((flooredX >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK);
 
             out.writeByte(x & ~1).writeByte(z & ~1).writeInt(highHeight);
         }

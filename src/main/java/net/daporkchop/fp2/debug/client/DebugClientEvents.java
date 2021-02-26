@@ -21,11 +21,10 @@
 package net.daporkchop.fp2.debug.client;
 
 import net.daporkchop.fp2.FP2Config;
-import net.daporkchop.fp2.client.KeyBindings;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.render.DrawMode;
-import net.daporkchop.fp2.net.client.CPacketDropAllPieces;
+import net.daporkchop.fp2.net.client.CPacketDropAllTiles;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
@@ -45,8 +44,8 @@ public class DebugClientEvents {
         if (DebugKeyBindings.RELOAD_SHADERS.isPressed()) {
             ShaderManager.reload();
         }
-        if (DebugKeyBindings.DROP_PIECES.isPressed()) {
-            NETWORK_WRAPPER.sendToServer(new CPacketDropAllPieces());
+        if (DebugKeyBindings.DROP_TILES.isPressed()) {
+            NETWORK_WRAPPER.sendToServer(new CPacketDropAllTiles());
         }
         if (DebugKeyBindings.TOGGLE_REVERSED_Z.isPressed()) {
             FP2Config.compatibility.reversedZ ^= true;

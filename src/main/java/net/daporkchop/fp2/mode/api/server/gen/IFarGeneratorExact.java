@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.api.server.gen;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
@@ -31,44 +31,44 @@ import net.minecraft.world.WorldServer;
 import java.util.stream.Stream;
 
 /**
- * Type of {@link IFarGenerator} which generates piece data based on block data in the world.
+ * Type of {@link IFarGenerator} which generates tile data based on block data in the world.
  * <p>
- * Exact generators only operate on pieces at level 0.
+ * Exact generators only operate on tiles at level 0.
  *
  * @author DaPorkchop_
  */
-public interface IFarGeneratorExact<POS extends IFarPos, P extends IFarPiece> extends IFarGenerator {
+public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> extends IFarGenerator {
     @Override
     void init(@NonNull WorldServer world);
 
     /**
-     * Gets the positions of all of the columns that need to be loaded in order for this generator to generate the piece at the given position.
+     * Gets the positions of all of the columns that need to be loaded in order for this generator to generate the tile at the given position.
      *
-     * @param pos the position of the piece to generate
-     * @return the positions of all of the columns that need to be loaded in order for this generator to generate the piece at the given position
+     * @param pos the position of the tile to generate
+     * @return the positions of all of the columns that need to be loaded in order for this generator to generate the tile at the given position
      */
     Stream<ChunkPos> neededColumns(@NonNull POS pos);
 
     /**
-     * Gets the positions of all of the cubes that need to be loaded in order for this generator to generate the piece at the given position.
+     * Gets the positions of all of the cubes that need to be loaded in order for this generator to generate the tile at the given position.
      * <p>
      * Note that this method is only guaranteed to be called in cubic chunks worlds.
      *
      * @param world the {@link IBlockHeightAccess} providing access to block/height data in the world
-     * @param pos   the position of the piece to generate
-     * @return the positions of all of the cubes that need to be loaded in order for this generator to generate the piece at the given position
+     * @param pos   the position of the tile to generate
+     * @return the positions of all of the cubes that need to be loaded in order for this generator to generate the tile at the given position
      */
     Stream<Vec3i> neededCubes(@NonNull IBlockHeightAccess world, @NonNull POS pos);
 
     /**
-     * Generates the terrain in the given piece.
+     * Generates the terrain in the given tile.
      *
      * @param world the {@link IBlockHeightAccess} providing access to block/height data in the world
-     * @param pos   the position of the piece to generate
-     * @param piece the piece to generate
-     * @return the extra data to be saved with the piece
+     * @param pos   the position of the tile to generate
+     * @param tile the tile to generate
+     * @return the extra data to be saved with the tile
      */
-    long generate(@NonNull IBlockHeightAccess world, @NonNull POS pos, @NonNull P piece);
+    long generate(@NonNull IBlockHeightAccess world, @NonNull POS pos, @NonNull T tile);
 
     /**
      * Factory method for creating instances of {@link IFarGeneratorExact}.
@@ -76,13 +76,13 @@ public interface IFarGeneratorExact<POS extends IFarPos, P extends IFarPiece> ex
      * @author DaPorkchop_
      */
     @FunctionalInterface
-    interface Factory<POS extends IFarPos, P extends IFarPiece> {
+    interface Factory<POS extends IFarPos, T extends IFarTile> {
         /**
          * Creates a new {@link IFarGeneratorExact} in the given world.
          *
          * @param world the world
          * @return the new {@link IFarGeneratorExact}, or {@code null} if no generator could be created for the given world
          */
-        IFarGeneratorExact<POS, P> forWorld(@NonNull WorldServer world);
+        IFarGeneratorExact<POS, T> forWorld(@NonNull WorldServer world);
     }
 }

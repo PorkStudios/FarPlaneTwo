@@ -25,20 +25,18 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.VoxelRenderMode;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.minecraft.client.multiplayer.WorldClient;
+import net.daporkchop.fp2.mode.voxel.VoxelTile;
 
 /**
  * @author DaPorkchop_
  */
-public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelPiece> {
-    public VoxelRenderer(@NonNull IFarRenderMode<VoxelPos, VoxelPiece> mode) {
+public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelTile> {
+    public VoxelRenderer(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
         super(mode);
     }
 
     @Override
-    protected IFarRenderStrategy<VoxelPos, VoxelPiece> createStrategy() {
+    protected IFarRenderStrategy<VoxelPos, VoxelTile> createStrategy() {
         return new IndexedMultidrawVoxelRenderStrategy();
     }
 }

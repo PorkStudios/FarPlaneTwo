@@ -26,13 +26,13 @@ import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.common.ctx.AbstractFarClientContext;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.client.VoxelRenderer;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.VoxelTile;
 
 /**
  * @author DaPorkchop_
  */
-public class VoxelClientContext extends AbstractFarClientContext<VoxelPos, VoxelPiece> {
-    public VoxelClientContext(@NonNull IFarRenderMode<VoxelPos, VoxelPiece> mode) {
+public class VoxelClientContext extends AbstractFarClientContext<VoxelPos, VoxelTile> {
+    public VoxelClientContext(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
         super(mode);
     }
 

@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -34,7 +34,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public interface IMultipassRenderStrategy<POS extends IFarPos, P extends IFarPiece> extends IFarRenderStrategy<POS, P> {
+public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile> extends IFarRenderStrategy<POS, T> {
     /**
      * @return an array containing the {@link IDrawCommandBuffer} used for each render pass
      */

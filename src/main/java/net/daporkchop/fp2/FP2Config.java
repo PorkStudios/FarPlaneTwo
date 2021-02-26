@@ -161,8 +161,8 @@ public class FP2Config {
         public boolean lowResolutionEnable = true;
 
         @Config.Comment({
-                "If low resolution refine is enabled, allows incomplete pieces to be saved.",
-                "This can provide a performance boost if the server is restarted while pieces are still being generated and low resolution refine is",
+                "If low resolution refine is enabled, allows incomplete tiles to be saved.",
+                "This can provide a performance boost if the server is restarted while tiles are still being generated and low resolution refine is",
                 "enabled, but will likely significantly reduce overall generation performance."
         })
         @Config.LangKey("config.fp2.performance.savePartial")

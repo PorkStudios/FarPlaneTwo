@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -51,7 +51,7 @@ public interface IReusablePersistent {
      * Writes this instance's state to the given {@link ByteBuf}.
      * <p>
      * This method returns a {@code boolean} indicating whether or not this instance was empty. Implementations may choose to treat 0 written bytes
-     * differently from being empty, so if {@code true} is returned, the state may be restored later simply by resetting the piece - {@link #read(ByteBuf)}
+     * differently from being empty, so if {@code true} is returned, the state may be restored later simply by resetting the tile - {@link #read(ByteBuf)}
      * must not be called.
      *
      * @param dst the {@link ByteBuf} to write to

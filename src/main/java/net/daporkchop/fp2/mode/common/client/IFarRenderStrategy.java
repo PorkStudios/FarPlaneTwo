@@ -22,35 +22,35 @@ package net.daporkchop.fp2.mode.common.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 
 import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarRenderStrategy<POS extends IFarPos, P extends IFarPiece> {
+public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile> {
     //
     // POSITION ENCODING/DECODING/HELPER METHODS
     //
 
     /**
-     * Gets the positions of all the pieces whose baked contents are affected by the content of the given piece.
+     * Gets the positions of all the tiles whose baked contents are affected by the content of the given tile.
      * <p>
      * The returned {@link Stream} must be sequential!
      *
-     * @param srcPos the position of the piece
-     * @return the positions of all the pieces whose contents are affected by the content of the given piece
+     * @param srcPos the position of the tile
+     * @return the positions of all the tiles whose contents are affected by the content of the given tile
      */
     Stream<POS> bakeOutputs(@NonNull POS srcPos);
 
     /**
-     * Gets the positions of all the pieces needed to bake the given piece.
+     * Gets the positions of all the tiles needed to bake the given tile.
      * <p>
      * The returned {@link Stream} must be sequential and in sorted order!
      *
-     * @param dstPos the position of the piece to generate
-     * @return the positions of all the pieces needed to create the given piece
+     * @param dstPos the position of the tile to generate
+     * @return the positions of all the tiles needed to create the given tile
      */
     Stream<POS> bakeInputs(@NonNull POS dstPos);
 
@@ -69,7 +69,7 @@ public interface IFarRenderStrategy<POS extends IFarPos, P extends IFarPiece> {
     // BAKING+RENDERING METHODS
     //
 
-    boolean bake(@NonNull POS pos, @NonNull P[] srcs, @NonNull BakeOutput output);
+    boolean bake(@NonNull POS pos, @NonNull T[] srcs, @NonNull BakeOutput output);
 
     void executeBakeOutput(@NonNull POS pos, @NonNull BakeOutput output);
 

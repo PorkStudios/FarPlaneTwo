@@ -18,14 +18,34 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.piece;
-
-import net.daporkchop.fp2.util.IReusablePersistent;
+package net.daporkchop.fp2.mode.heightmap;
 
 /**
- * The core component of all FarPlaneTwo render modes, a piece stores all the data required to render a terrain tile.
+ * Represents a single data sample contained in a heightmap tile.
  *
  * @author DaPorkchop_
  */
-public interface IFarPiece extends IReusablePersistent {
+public class HeightmapData {
+    public int height;
+    public int state;
+    public int light;
+    public int biome;
+
+    public int waterLight;
+    public int waterBiome;
+
+    /**
+     * Resets this instance.
+     *
+     * @return this instance
+     */
+    public HeightmapData reset() {
+        this.height = 0;
+        this.state = 0;
+        this.light = 0;
+        this.biome = 0;
+        this.waterLight = 0;
+        this.waterBiome = 0;
+        return this;
+    }
 }

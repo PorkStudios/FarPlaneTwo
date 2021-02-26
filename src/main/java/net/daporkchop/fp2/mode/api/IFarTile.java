@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,42 +18,14 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.piece;
+package net.daporkchop.fp2.mode.api;
 
-import java.util.Arrays;
-
-import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
+import net.daporkchop.fp2.util.IReusablePersistent;
 
 /**
- * Represents a single data sample contained in a voxel piece.
+ * The core component of all FarPlaneTwo render modes, a tile contains all the data at a tile position.
  *
  * @author DaPorkchop_
  */
-public class VoxelData {
-    //vertex position and mesh intersection data
-    public int x;
-    public int y;
-    public int z;
-    public int edges;
-
-    //block data (for texturing and shading)
-    public final int[] states = new int[EDGE_COUNT];
-    public int biome;
-    public int light;
-
-    /**
-     * Resets this instance.
-     *
-     * @return this instance
-     */
-    public VoxelData reset() {
-        this.x = 0;
-        this.y = 0;
-        this.z = 0;
-        this.edges = 0;
-        Arrays.fill(this.states, 0);
-        this.biome = 0;
-        this.light = 0;
-        return this;
-    }
+public interface IFarTile extends IReusablePersistent {
 }

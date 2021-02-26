@@ -24,7 +24,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
@@ -41,17 +41,17 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public class FarRenderCache<POS extends IFarPos, P extends IFarPiece> {
-    protected final AbstractFarRenderer<POS, P> renderer;
-    protected final IFarRenderStrategy<POS, P> strategy;
+public class FarRenderCache<POS extends IFarPos, T extends IFarTile> {
+    protected final AbstractFarRenderer<POS, T> renderer;
+    protected final IFarRenderStrategy<POS, T> strategy;
 
-    protected final FarRenderTree<POS, P> tree;
-    protected final Map<POS, Compressed<POS, P>> tiles = new ConcurrentHashMap<>();
+    protected final FarRenderTree<POS, T> tree;
+    protected final Map<POS, Compressed<POS, T>> tiles = new ConcurrentHashMap<>();
 
     protected final IntFunction<POS[]> posArray;
-    protected final IntFunction<P[]> tileArray;
+    protected final IntFunction<T[]> tileArray;
 
-    public FarRenderCache(@NonNull AbstractFarRenderer<POS, P> renderer) {
+    public FarRenderCache(@NonNull AbstractFarRenderer<POS, T> renderer) {
         this.renderer = renderer;
         this.strategy = renderer.strategy();
 
@@ -61,7 +61,7 @@ public class FarRenderCache<POS extends IFarPos, P extends IFarPiece> {
         this.tree = new FarRenderTree<>(renderer.mode(), this.strategy, renderer.maxLevel());
     }
 
-    public void receivePiece(@NonNull Compressed<POS, P> tileIn) {
+    public void receiveTile(@NonNull Compressed<POS, T> tileIn) {
         final int maxLevel = this.renderer.maxLevel;
 
         this.tiles.put(tileIn.pos(), tileIn);
@@ -72,11 +72,11 @@ public class FarRenderCache<POS extends IFarPos, P extends IFarPiece> {
                         return;
                     }
 
-                    Compressed<POS, P>[] compressedInputTiles = uncheckedCast(this.strategy.bakeInputs(pos)
+                    Compressed<POS, T>[] compressedInputTiles = uncheckedCast(this.strategy.bakeInputs(pos)
                             .map(this.tiles::get)
                             .toArray(Compressed[]::new));
 
-                    Compressed<POS, P> tile = Arrays.stream(compressedInputTiles).filter(p -> p != null && pos.equals(p.pos())).findAny().orElse(null);
+                    Compressed<POS, T> tile = Arrays.stream(compressedInputTiles).filter(p -> p != null && pos.equals(p.pos())).findAny().orElse(null);
                     if (tile == null) {
                         return;
                     }
@@ -86,8 +86,8 @@ public class FarRenderCache<POS extends IFarPos, P extends IFarPiece> {
                             return;
                         }
 
-                        SimpleRecycler<P> recycler = this.renderer.mode().tileRecycler();
-                        P[] inputTiles = this.tileArray.apply(compressedInputTiles.length);
+                        SimpleRecycler<T> recycler = this.renderer.mode().tileRecycler();
+                        T[] inputTiles = this.tileArray.apply(compressedInputTiles.length);
                         try {
                             for (int i = 0; i < inputTiles.length; i++) { //inflate tiles
                                 if (compressedInputTiles[i] != null) {
@@ -97,9 +97,9 @@ public class FarRenderCache<POS extends IFarPos, P extends IFarPiece> {
 
                             BakeOutput output = new BakeOutput(this.strategy.renderDataSize());
                             if (this.strategy.bake(pos, inputTiles, output)) {
-                                ClientThreadExecutor.INSTANCE.execute(() -> this.addPiece(tile, output));
+                                ClientThreadExecutor.INSTANCE.execute(() -> this.addTile(tile, output));
                             } else { //baked tile contains nothing, so we remove it
-                                ClientThreadExecutor.INSTANCE.execute(() -> this.addPiece(tile, null));
+                                ClientThreadExecutor.INSTANCE.execute(() -> this.addTile(tile, null));
                             }
                         } finally { //release tiles again
                             for (int i = 0; i < inputTiles.length; i++) {
@@ -112,29 +112,29 @@ public class FarRenderCache<POS extends IFarPos, P extends IFarPiece> {
                 });
     }
 
-    protected void addPiece(@NonNull Compressed<POS, P> piece, BakeOutput output) {
-        POS pos = piece.pos();
-        if (this.tiles.get(pos) != piece) {
+    protected void addTile(@NonNull Compressed<POS, T> tile, BakeOutput output) {
+        POS pos = tile.pos();
+        if (this.tiles.get(pos) != tile) {
             return;
         }
 
         if (output != null) { //finish bake and insert to tree
-            this.strategy.executeBakeOutput(piece.pos(), output);
+            this.strategy.executeBakeOutput(tile.pos(), output);
             this.tree.putRenderData(pos, output);
-        } else { //remove piece from tree
+        } else { //remove tile from tree
             this.tree.removeNode(pos);
         }
     }
 
-    public void unloadPiece(@NonNull POS pos) {
-        RENDER_WORKERS.submit(pos, () -> { //make sure that any in-progress bake tasks are finished before the piece is removed
-            ClientThreadExecutor.INSTANCE.execute(() -> this.removePiece(pos));
+    public void unloadTile(@NonNull POS pos) {
+        RENDER_WORKERS.submit(pos, () -> { //make sure that any in-progress bake tasks are finished before the tile is removed
+            ClientThreadExecutor.INSTANCE.execute(() -> this.removeTile(pos));
         });
     }
 
-    public void removePiece(@NonNull POS pos) {
+    public void removeTile(@NonNull POS pos) {
         if (this.tiles.remove(pos) == null) {
-            Constants.LOGGER.warn("Attempted to unload already non-existent piece at {}!", pos);
+            Constants.LOGGER.warn("Attempted to unload already non-existent tile at {}!", pos);
         }
         this.tree.removeNode(pos);
     }

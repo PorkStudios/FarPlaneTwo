@@ -27,14 +27,11 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.client.IFarRenderer;
-import net.daporkchop.fp2.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.common.client.FarTileCache;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
 import net.daporkchop.lib.common.misc.string.PStrings;
@@ -54,25 +51,25 @@ import java.util.Objects;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public abstract class AbstractFarRenderMode<POS extends IFarPos, P extends IFarPiece> implements IFarRenderMode<POS, P> {
-    protected final IFarGeneratorExact.Factory<POS, P>[] exactGeneratorFactories = this.exactGeneratorFactoryEvent().fire().collectValues();
-    protected final IFarGeneratorRough.Factory<POS, P>[] roughGeneratorFactories = this.roughGeneratorFactoryEvent().fire().collectValues();
+public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarTile> implements IFarRenderMode<POS, T> {
+    protected final IFarGeneratorExact.Factory<POS, T>[] exactGeneratorFactories = this.exactGeneratorFactoryEvent().fire().collectValues();
+    protected final IFarGeneratorRough.Factory<POS, T>[] roughGeneratorFactories = this.roughGeneratorFactoryEvent().fire().collectValues();
 
-    protected final Ref<SimpleRecycler<P>> recyclerRef = ThreadRef.soft(() -> new SimpleRecycler.OfReusablePersistent<>(this::newTile));
+    protected final Ref<SimpleRecycler<T>> recyclerRef = ThreadRef.soft(() -> new SimpleRecycler.OfReusablePersistent<>(this::newTile));
 
     @Getter(lazy = true)
     private final String name = REGISTRY.getName(this);
     @Getter
     protected final int storageVersion;
 
-    protected abstract AbstractOrderedRegistryEvent<IFarGeneratorExact.Factory<POS, P>> exactGeneratorFactoryEvent();
+    protected abstract AbstractOrderedRegistryEvent<IFarGeneratorExact.Factory<POS, T>> exactGeneratorFactoryEvent();
 
-    protected abstract AbstractOrderedRegistryEvent<IFarGeneratorRough.Factory<POS, P>> roughGeneratorFactoryEvent();
+    protected abstract AbstractOrderedRegistryEvent<IFarGeneratorRough.Factory<POS, T>> roughGeneratorFactoryEvent();
 
-    protected abstract P newTile();
+    protected abstract T newTile();
 
     @Override
-    public IFarGeneratorExact<POS, P> exactGenerator(@NonNull WorldServer world) {
+    public IFarGeneratorExact<POS, T> exactGenerator(@NonNull WorldServer world) {
         return Arrays.stream(this.exactGeneratorFactories)
                 .map(f -> f.forWorld(world))
                 .filter(Objects::nonNull)
@@ -85,7 +82,7 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, P extends IFarP
     }
 
     @Override
-    public IFarGeneratorRough<POS, P> roughGenerator(@NonNull WorldServer world) {
+    public IFarGeneratorRough<POS, T> roughGenerator(@NonNull WorldServer world) {
         return Arrays.stream(this.roughGeneratorFactories)
                 .map(f -> f.forWorld(world))
                 .filter(Objects::nonNull)
@@ -93,14 +90,14 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, P extends IFarP
     }
 
     @Override
-    public abstract IFarWorld<POS, P> world(@NonNull WorldServer world);
+    public abstract IFarWorld<POS, T> world(@NonNull WorldServer world);
 
     @SideOnly(Side.CLIENT)
     @Override
-    public abstract IFarClientContext<POS, P> clientContext(@NonNull WorldClient world);
+    public abstract IFarClientContext<POS, T> clientContext(@NonNull WorldClient world);
 
     @Override
-    public SimpleRecycler<P> tileRecycler() {
+    public SimpleRecycler<T> tileRecycler() {
         return this.recyclerRef.get();
     }
 
@@ -114,5 +111,5 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, P extends IFarP
     public abstract POS[] posArray(int length);
 
     @Override
-    public abstract P[] tileArray(int length);
+    public abstract T[] tileArray(int length);
 }

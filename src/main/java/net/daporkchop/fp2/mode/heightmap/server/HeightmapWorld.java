@@ -25,9 +25,9 @@ import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
+import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.server.gen.HeightmapPieceScalerMax;
+import net.daporkchop.fp2.mode.heightmap.server.scale.HeightmapScalerMinMax;
 import net.minecraft.world.WorldServer;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -35,14 +35,14 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public class HeightmapWorld extends AbstractFarWorld<HeightmapPos, HeightmapPiece> {
+public class HeightmapWorld extends AbstractFarWorld<HeightmapPos, HeightmapTile> {
     public HeightmapWorld(@NonNull WorldServer world, @NonNull HeightmapRenderMode mode) {
         super(world, mode);
     }
 
     @Override
-    protected IFarScaler<HeightmapPos, HeightmapPiece> createScaler() {
-        return new HeightmapPieceScalerMax();
+    protected IFarScaler<HeightmapPos, HeightmapTile> createScaler() {
+        return new HeightmapScalerMinMax();
     }
 
     @Override

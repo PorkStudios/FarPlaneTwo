@@ -25,7 +25,6 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IReusablePersistent;
 import net.daporkchop.fp2.util.SimpleRecycler;
@@ -38,19 +37,19 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * A wrapper around the compressed body of an {@link IFarPiece}.
+ * A wrapper around the compressed body of an {@link IFarTile}.
  *
  * @author DaPorkchop_
  */
 @Getter
 public class Compressed<POS extends IFarPos, V extends IReusablePersistent> extends ReentrantReadWriteLock {
     /**
-     * Timestamp indicating that the piece does not contain any data.
+     * Timestamp indicating that the tile does not contain any data.
      */
     public static final long VALUE_BLANK = Long.MIN_VALUE;
 
     /**
-     * Timestamp indicating that the piece's rough generation has been completed.
+     * Timestamp indicating that the tile's rough generation has been completed.
      */
     public static final long TIMESTAMP_GENERATED = -1L;
 
@@ -61,7 +60,7 @@ public class Compressed<POS extends IFarPos, V extends IReusablePersistent> exte
     protected long timestamp = VALUE_BLANK;
 
     /**
-     * Creates a new compressed value with no data at the given piece position.
+     * Creates a new compressed value with no data at the given tile position.
      *
      * @param pos the position of the value
      */
@@ -70,7 +69,7 @@ public class Compressed<POS extends IFarPos, V extends IReusablePersistent> exte
     }
 
     /**
-     * Reads a value prefixed with the piece position from the given {@link ByteBuf}.
+     * Reads a value prefixed with the tile position from the given {@link ByteBuf}.
      *
      * @param src  the {@link ByteBuf} to read from
      * @param mode the {@link IFarRenderMode} that the value is used by
@@ -82,7 +81,7 @@ public class Compressed<POS extends IFarPos, V extends IReusablePersistent> exte
     /**
      * Reads a value with no prefix from the given {@link ByteBuf}.
      *
-     * @param pos the piece position
+     * @param pos the tile position
      * @param src the {@link ByteBuf} to read from
      */
     public Compressed(@NonNull POS pos, @NonNull ByteBuf src) {
@@ -98,7 +97,7 @@ public class Compressed<POS extends IFarPos, V extends IReusablePersistent> exte
     }
 
     /**
-     * Writes this value to the given {@link ByteBuf}, prefixed with the piece position.
+     * Writes this value to the given {@link ByteBuf}, prefixed with the tile position.
      *
      * @param dst the {@link ByteBuf} to write to
      */

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,8 +24,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelData;
+import net.daporkchop.fp2.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.block.Block;
@@ -38,9 +38,9 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator implements IFarGeneratorExact<VoxelPos, VoxelPiece> {
+public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator implements IFarGeneratorExact<VoxelPos, VoxelTile> {
     @Override
-    public long generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelPiece piece) {
+    public long generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelTile tile) {
         final int baseX = posIn.blockX();
         final int baseY = posIn.blockY();
         final int baseZ = posIn.blockZ();
@@ -120,7 +120,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator i
                         data.light = Constants.packCombinedLight(skyLight << 20 | blockLight << 4);
                     }
 
-                    piece.set(dx, dy, dz, data);
+                    tile.set(dx, dy, dz, data);
                 }
             }
         }

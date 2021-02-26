@@ -28,12 +28,12 @@ import net.daporkchop.fp2.debug.FP2Debug;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.heightmap.client.HeightmapShaders;
 import net.daporkchop.fp2.mode.voxel.client.VoxelShaders;
-import net.daporkchop.fp2.net.client.CPacketDropAllPieces;
+import net.daporkchop.fp2.net.client.CPacketDropAllTiles;
 import net.daporkchop.fp2.net.client.CPacketRenderMode;
-import net.daporkchop.fp2.net.server.SPacketPieceData;
+import net.daporkchop.fp2.net.server.SPacketTileData;
 import net.daporkchop.fp2.net.server.SPacketReady;
 import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
-import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
+import net.daporkchop.fp2.net.server.SPacketUnloadTile;
 import net.daporkchop.fp2.server.ServerEvents;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
@@ -163,10 +163,10 @@ public class FP2 {
     protected void registerPackets() {
         int id = 0;
         NETWORK_WRAPPER.registerMessage(CPacketRenderMode.Handler.class, CPacketRenderMode.class, id++, Side.SERVER);
-        NETWORK_WRAPPER.registerMessage(CPacketDropAllPieces.Handler.class, CPacketDropAllPieces.class, id++, Side.SERVER);
+        NETWORK_WRAPPER.registerMessage(CPacketDropAllTiles.Handler.class, CPacketDropAllTiles.class, id++, Side.SERVER);
         NETWORK_WRAPPER.registerMessage(SPacketReady.Handler.class, SPacketReady.class, id++, Side.CLIENT);
         NETWORK_WRAPPER.registerMessage(SPacketRenderingStrategy.Handler.class, SPacketRenderingStrategy.class, id++, Side.CLIENT);
-        NETWORK_WRAPPER.registerMessage(SPacketPieceData.Handler.class, SPacketPieceData.class, id++, Side.CLIENT);
-        NETWORK_WRAPPER.registerMessage(SPacketUnloadPiece.Handler.class, SPacketUnloadPiece.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(SPacketTileData.Handler.class, SPacketTileData.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(SPacketUnloadTile.Handler.class, SPacketUnloadTile.class, id++, Side.CLIENT);
     }
 }

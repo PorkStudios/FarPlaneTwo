@@ -27,7 +27,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.AllocatedGLBuffer;
 import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -39,7 +39,7 @@ import static org.lwjgl.opengl.GL15.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseRenderStrategy<POS extends IFarPos, P extends IFarPiece> implements IFarRenderStrategy<POS, P> {
+public abstract class BaseRenderStrategy<POS extends IFarPos, T extends IFarTile> implements IFarRenderStrategy<POS, T> {
     /*
      * struct RenderData {
      *   u64 vertexOffset; //offset of vertex data from the beginning of gpu memory, in multiples of vertex size
@@ -88,7 +88,7 @@ public abstract class BaseRenderStrategy<POS extends IFarPos, P extends IFarPiec
     }
 
     @Override
-    public boolean bake(@NonNull POS pos, @NonNull P[] srcs, @NonNull BakeOutput output) {
+    public boolean bake(@NonNull POS pos, @NonNull T[] srcs, @NonNull BakeOutput output) {
         ByteBuf verts = ByteBufAllocator.DEFAULT.directBuffer();
         try {
             this.bakeVerts(pos, srcs, output, verts);
@@ -107,7 +107,7 @@ public abstract class BaseRenderStrategy<POS extends IFarPos, P extends IFarPiec
         }
     }
 
-    protected abstract void bakeVerts(@NonNull POS pos, @NonNull P[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts);
+    protected abstract void bakeVerts(@NonNull POS pos, @NonNull T[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts);
 
     @Override
     public void executeBakeOutput(@NonNull POS pos, @NonNull BakeOutput output) {

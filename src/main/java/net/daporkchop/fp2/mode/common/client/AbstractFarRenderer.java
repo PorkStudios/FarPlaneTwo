@@ -29,11 +29,10 @@ import net.daporkchop.fp2.client.ShaderGlStateHelper;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
-import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.util.DirectLongStack;
 import net.daporkchop.fp2.util.math.Sphere;
 import net.daporkchop.fp2.util.math.Volume;
@@ -51,19 +50,19 @@ import static org.lwjgl.opengl.GL15.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPiece> implements IFarRenderer {
-    protected final IFarRenderMode<POS, P> mode;
+public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTile> implements IFarRenderer {
+    protected final IFarRenderMode<POS, T> mode;
 
-    protected final FarRenderCache<POS, P> cache;
+    protected final FarRenderCache<POS, T> cache;
 
     protected final int maxLevel = FP2Config.maxLevels - 1;
 
     protected final GLBuffer drawCommandBuffer = new GLBuffer(GL_STREAM_DRAW);
 
     protected final DirectLongStack index = new DirectLongStack();
-    protected final IFarRenderStrategy<POS, P> strategy;
+    protected final IFarRenderStrategy<POS, T> strategy;
 
-    public AbstractFarRenderer(@NonNull IFarRenderMode<POS, P> mode) {
+    public AbstractFarRenderer(@NonNull IFarRenderMode<POS, T> mode) {
         this.mode = mode;
 
         this.strategy = this.createStrategy();
@@ -74,7 +73,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     /**
      * @return the {@link IFarRenderStrategy} used by this renderer
      */
-    protected abstract IFarRenderStrategy<POS, P> createStrategy();
+    protected abstract IFarRenderStrategy<POS, T> createStrategy();
 
     @Override
     public void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {

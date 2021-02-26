@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,8 +23,8 @@ package net.daporkchop.fp2.mode.voxel.server.gen.rough;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelData;
+import net.daporkchop.fp2.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.server.gen.AbstractVoxelGenerator;
 import net.daporkchop.lib.noise.NoiseSource;
 import net.daporkchop.lib.noise.engine.PerlinNoiseEngine;
@@ -40,7 +40,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 //TODO: this is currently only generating the mesh using perlin noise
-public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements IFarGeneratorRough<VoxelPos, VoxelPiece> {
+public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements IFarGeneratorRough<VoxelPos, VoxelTile> {
     //protected Ref<CWGContext> ctx;
     protected NoiseSource noise;
 
@@ -53,7 +53,7 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
     }
 
     @Override
-    public long generate(@NonNull VoxelPos pos, @NonNull VoxelPiece piece) {
+    public long generate(@NonNull VoxelPos pos, @NonNull VoxelTile tile) {
         int level = pos.level();
         int baseX = pos.blockX();
         int baseY = pos.blockY();
@@ -72,7 +72,7 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
         }
         this.noise.get(densityMap[1], baseX + DMAP_MIN, baseY + DMAP_MIN, baseZ + DMAP_MIN, 1.0d, 1.0d, 1.0d, DMAP_SIZE, DMAP_SIZE, DMAP_SIZE);
 
-        return this.buildMesh(baseX, baseY, baseZ, level, piece, densityMap, null);*/
+        return this.buildMesh(baseX, baseY, baseZ, level, tile, densityMap, null);*/
         return 0L;
     }
 

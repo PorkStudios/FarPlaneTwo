@@ -24,7 +24,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -43,21 +43,21 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class FarServerWorker<POS extends IFarPos, P extends IFarPiece> implements Consumer<PriorityTask<POS>> {
+public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements Consumer<PriorityTask<POS>> {
     @NonNull
-    protected final AbstractFarWorld<POS, P> world;
+    protected final AbstractFarWorld<POS, T> world;
 
     @Override
     public void accept(PriorityTask<POS> task) {
         switch (task.stage()) {
             case LOAD:
-                this.loadPiece(task, task.pos());
+                this.loadTile(task, task.pos());
                 break;
             case ROUGH:
-                this.world.pieceAvailable(this.roughGetPiece(task, task.pos()));
+                this.world.tileAvailable(this.roughGetTile(task, task.pos()));
                 break;
             case UPDATE:
-                this.updatePiece(task, task.pos());
+                this.updateTile(task, task.pos());
                 break;
             default:
                 throw new IllegalArgumentException(Objects.toString(task));
@@ -66,14 +66,14 @@ public class FarServerWorker<POS extends IFarPos, P extends IFarPiece> implement
 
     //
 
-    public void loadPiece(PriorityTask<POS> root, POS pos) {
-        Compressed<POS, P> compressedPiece = this.world.getPieceCachedOrLoad(pos);
-        if (compressedPiece.isGenerated()) {
-            //this unmarks the piece as not done and notifies the player tracker
-            this.world.pieceAvailable(compressedPiece);
+    public void loadTile(PriorityTask<POS> root, POS pos) {
+        Compressed<POS, T> compressedTile = this.world.getTileCachedOrLoad(pos);
+        if (compressedTile.isGenerated()) {
+            //this unmarks the tile as not done and notifies the player tracker
+            this.world.tileAvailable(compressedTile);
         } else {
-            //the piece has not been fully generated yet
-            //rather than getting the piece now, we enqueue it for rough generation later. this allows all of the LOAD tasks to run first, so that we can send the pieces that
+            //the tile has not been fully generated yet
+            //rather than getting the tile now, we enqueue it for rough generation later. this allows all of the LOAD tasks to run first, so that we can send the tiles that
             // are already available on disk as soon as possible
             this.world.executor.submit(new PriorityTask<>(TaskStage.ROUGH, pos));
         }
@@ -85,56 +85,56 @@ public class FarServerWorker<POS extends IFarPos, P extends IFarPiece> implement
     //
     //
 
-    public Compressed<POS, P> roughGetPiece(PriorityTask<POS> root, POS pos) {
+    public Compressed<POS, T> roughGetTile(PriorityTask<POS> root, POS pos) {
         if (this.world.canGenerateRough(pos)) {
-            //the piece can be generated using the rough generator
-            return this.roughGeneratePiece(root, pos);
+            //the tile can be generated using the rough generator
+            return this.roughGenerateTile(root, pos);
         } else {
-            //the piece is at a lower detail than 0, and low-resolution generation is not an option
-            //this will generate the piece and all pieces below it down to level 0 until the piece can be "generated" from scaled data
-            return this.roughScalePiece(root, pos);
+            //the tile is at a lower detail than 0, and low-resolution generation is not an option
+            //this will generate the tile and all tiles below it down to level 0 until the tile can be "generated" from scaled data
+            return this.roughScaleTile(root, pos);
         }
     }
 
-    public Compressed<POS, P> roughGeneratePiece(PriorityTask<POS> root, POS pos) {
+    public Compressed<POS, T> roughGenerateTile(PriorityTask<POS> root, POS pos) {
         checkArg(this.world.canGenerateRough(pos), "cannot do rough generation at %s!", pos);
         this.world.executor().checkForHigherPriorityWork(root);
 
-        Compressed<POS, P> compressedPiece = this.world.getPieceCachedOrLoad(pos);
-        if (compressedPiece.isGenerated()) { //break out early if piece is already done or newer
-            return compressedPiece;
+        Compressed<POS, T> compressedTile = this.world.getTileCachedOrLoad(pos);
+        if (compressedTile.isGenerated()) { //break out early if tile is already done or newer
+            return compressedTile;
         }
 
-        SimpleRecycler<P> pieceRecycler = this.world.mode().tileRecycler();
-        P piece = pieceRecycler.allocate();
-        compressedPiece.writeLock().lock();
+        SimpleRecycler<T> tileRecycler = this.world.mode().tileRecycler();
+        T tile = tileRecycler.allocate();
+        compressedTile.writeLock().lock();
         try {
-            if (compressedPiece.isGenerated()) {
-                return compressedPiece;
+            if (compressedTile.isGenerated()) {
+                return compressedTile;
             }
 
-            //generate piece
-            long extra = this.world.generatorRough().generate(pos, piece);
-            if (compressedPiece.set(Compressed.TIMESTAMP_GENERATED, piece, extra)) { //only notify world if the piece was changed
-                this.world.pieceChanged(compressedPiece, false);
+            //generate tile
+            long extra = this.world.generatorRough().generate(pos, tile);
+            if (compressedTile.set(Compressed.TIMESTAMP_GENERATED, tile, extra)) { //only notify world if the tile was changed
+                this.world.tileChanged(compressedTile, false);
             }
         } finally {
-            compressedPiece.writeLock().unlock();
-            pieceRecycler.release(piece);
+            compressedTile.writeLock().unlock();
+            tileRecycler.release(tile);
         }
 
-        return compressedPiece;
+        return compressedTile;
     }
 
-    public Compressed<POS, P> roughScalePiece(PriorityTask<POS> root, POS pos) {
+    public Compressed<POS, T> roughScaleTile(PriorityTask<POS> root, POS pos) {
         this.world.executor().checkForHigherPriorityWork(root);
 
-        Compressed<POS, P> compressedPiece = this.world.getPieceCachedOrLoad(pos);
-        if (compressedPiece.isGenerated()) { //break out early if piece is already done or newer
-            return compressedPiece;
+        Compressed<POS, T> compressedTile = this.world.getTileCachedOrLoad(pos);
+        if (compressedTile.isGenerated()) { //break out early if tile is already done or newer
+            return compressedTile;
         }
 
-        return this.scalePiece0(root, pos, compressedPiece, Compressed.TIMESTAMP_GENERATED, false);
+        return this.scaleTile0(root, pos, compressedTile, Compressed.TIMESTAMP_GENERATED, false);
     }
 
     //
@@ -143,31 +143,31 @@ public class FarServerWorker<POS extends IFarPos, P extends IFarPiece> implement
     //
     //
 
-    public void updatePiece(PriorityTask<POS> root, POS pos) {
+    public void updateTile(PriorityTask<POS> root, POS pos) {
         long newTimestamp = this.world.exactActive.remove(pos);
         if (newTimestamp < 0L) {
-            LOGGER.warn("Duplicate update task scheduled for piece at {}!", pos);
+            LOGGER.warn("Duplicate update task scheduled for tile at {}!", pos);
             return;
         }
 
-        Compressed<POS, P> compressedPiece = this.world.getPieceCachedOrLoad(pos);
-        if (compressedPiece.timestamp() >= newTimestamp) {
+        Compressed<POS, T> compressedTile = this.world.getTileCachedOrLoad(pos);
+        if (compressedTile.timestamp() >= newTimestamp) {
             return;
         }
 
         if (pos.level() == 0) {
-            this.updatePieceExact(root, pos, compressedPiece, newTimestamp);
+            this.updateTileExact(root, pos, compressedTile, newTimestamp);
         } else {
-            this.updatePieceScale(root, pos, compressedPiece, newTimestamp);
+            this.updateTileScale(root, pos, compressedTile, newTimestamp);
         }
     }
 
-    public void updatePieceExact(PriorityTask<POS> root, POS pos, Compressed<POS, P> compressedPiece, long newTimestamp) {
-        SimpleRecycler<P> pieceRecycler = this.world.mode().tileRecycler();
-        P piece = pieceRecycler.allocate();
-        compressedPiece.writeLock().lock();
+    public void updateTileExact(PriorityTask<POS> root, POS pos, Compressed<POS, T> compressedTile, long newTimestamp) {
+        SimpleRecycler<T> tileRecycler = this.world.mode().tileRecycler();
+        T tile = tileRecycler.allocate();
+        compressedTile.writeLock().lock();
         try {
-            if (compressedPiece.timestamp() >= newTimestamp) {
+            if (compressedTile.timestamp() >= newTimestamp) {
                 return;
             }
 
@@ -182,19 +182,19 @@ public class FarServerWorker<POS extends IFarPos, P extends IFarPiece> implement
                 PUnsafe.throwException(e);
             }
 
-            //generate piece
-            long extra = this.world.generatorExact().generate(access, pos, piece);
-            if (compressedPiece.set(newTimestamp, piece, extra)) { //only notify world if the piece was changed
-                this.world.pieceChanged(compressedPiece, true);
+            //generate tile
+            long extra = this.world.generatorExact().generate(access, pos, tile);
+            if (compressedTile.set(newTimestamp, tile, extra)) { //only notify world if the tile was changed
+                this.world.tileChanged(compressedTile, true);
             }
         } finally {
-            compressedPiece.writeLock().unlock();
-            pieceRecycler.release(piece);
+            compressedTile.writeLock().unlock();
+            tileRecycler.release(tile);
         }
     }
 
-    public void updatePieceScale(PriorityTask<POS> root, POS pos, Compressed<POS, P> compressedPiece, long newTimestamp) {
-        this.scalePiece0(root, pos, compressedPiece, newTimestamp, true);
+    public void updateTileScale(PriorityTask<POS> root, POS pos, Compressed<POS, T> compressedTile, long newTimestamp) {
+        this.scaleTile0(root, pos, compressedTile, newTimestamp, true);
     }
 
     //
@@ -203,49 +203,49 @@ public class FarServerWorker<POS extends IFarPos, P extends IFarPiece> implement
     //
     //
 
-    public Compressed<POS, P> scalePiece0(PriorityTask<POS> root, POS pos, Compressed<POS, P> compressedPiece, long newTimestamp, boolean allowScale) {
+    public Compressed<POS, T> scaleTile0(PriorityTask<POS> root, POS pos, Compressed<POS, T> compressedTile, long newTimestamp, boolean allowScale) {
         this.world.executor().checkForHigherPriorityWork(root);
 
         //generate scale inputs
         List<POS> srcPositions = this.world.scaler().inputs(pos).collect(Collectors.toList());
-        List<Compressed<POS, P>> compressedSrcs = new ArrayList<>(srcPositions.size());
+        List<Compressed<POS, T>> compressedSrcs = new ArrayList<>(srcPositions.size());
         for (POS srcPosition : srcPositions) {
-            compressedSrcs.add(this.roughGetPiece(root, srcPosition));
+            compressedSrcs.add(this.roughGetTile(root, srcPosition));
         }
 
         //inflate sources
-        SimpleRecycler<P> pieceRecycler = this.world.mode().tileRecycler();
-        P[] srcs = uncheckedCast(this.world.mode().tileArray(compressedSrcs.size()));
+        SimpleRecycler<T> tileRecycler = this.world.mode().tileRecycler();
+        T[] srcs = uncheckedCast(this.world.mode().tileArray(compressedSrcs.size()));
         for (int i = 0; i < compressedSrcs.size(); i++) {
-            Compressed<POS, P> compressedSrc = compressedSrcs.get(i);
+            Compressed<POS, T> compressedSrc = compressedSrcs.get(i);
             compressedSrc.readLock().lock();
-            srcs[i] = compressedSrc.inflate(pieceRecycler);
+            srcs[i] = compressedSrc.inflate(tileRecycler);
         }
 
-        P dst = pieceRecycler.allocate();
-        compressedPiece.writeLock().lock();
+        T dst = tileRecycler.allocate();
+        compressedTile.writeLock().lock();
         try {
-            if (compressedPiece.timestamp() >= newTimestamp) {
-                return compressedPiece;
+            if (compressedTile.timestamp() >= newTimestamp) {
+                return compressedTile;
             }
 
             //actually do scaling
             long extra = this.world.scaler().scale(srcs, dst);
-            if (compressedPiece.set(newTimestamp, dst, extra)) {
-                this.world.pieceChanged(compressedPiece, allowScale);
+            if (compressedTile.set(newTimestamp, dst, extra)) {
+                this.world.tileChanged(compressedTile, allowScale);
             }
         } finally {
-            compressedPiece.writeLock().unlock();
-            pieceRecycler.release(dst);
+            compressedTile.writeLock().unlock();
+            tileRecycler.release(dst);
 
             for (int i = 0; i < compressedSrcs.size(); i++) {
                 compressedSrcs.get(i).readLock().unlock();
                 if (srcs[i] != null) {
-                    pieceRecycler.release(srcs[i]);
+                    tileRecycler.release(srcs[i]);
                 }
             }
         }
 
-        return compressedPiece;
+        return compressedTile;
     }
 }

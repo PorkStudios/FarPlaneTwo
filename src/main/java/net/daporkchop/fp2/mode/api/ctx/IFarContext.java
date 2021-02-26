@@ -23,21 +23,19 @@ package net.daporkchop.fp2.mode.api.ctx;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.client.IFarRenderer;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarContext<POS extends IFarPos, P extends IFarPiece, W extends IFarWorld<POS, P>, T extends IFarPlayerTracker<POS>, R extends IFarRenderer> {
+public interface IFarContext<POS extends IFarPos, T extends IFarTile, W extends IFarWorld<POS, T>> {
     /**
      * Initializes this context.
      *
      * @param mode the new {@link IFarRenderMode} to use
      */
-    void init(@NonNull IFarRenderMode<POS, P> mode);
+    void init(@NonNull IFarRenderMode<POS, T> mode);
 
     /**
      * @return whether or not this context has been initialized
@@ -48,7 +46,7 @@ public interface IFarContext<POS extends IFarPos, P extends IFarPiece, W extends
      * @return the current {@link IFarRenderMode}
      * @throws IllegalStateException if this context has not yet been initialized
      */
-    IFarRenderMode<POS, P> mode();
+    IFarRenderMode<POS, T> mode();
 
     /**
      * @return the current {@link IFarWorld}

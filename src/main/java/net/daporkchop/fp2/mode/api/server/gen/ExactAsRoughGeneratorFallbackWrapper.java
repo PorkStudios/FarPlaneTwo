@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.api.server.gen;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -36,11 +36,11 @@ import net.minecraft.world.WorldServer;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, P extends IFarPiece> implements IFarGeneratorRough<POS, P> {
+public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, T extends IFarTile> implements IFarGeneratorRough<POS, T> {
     @NonNull
     protected final AsyncBlockAccess blockAccess;
     @NonNull
-    protected final IFarGeneratorExact<POS, P> exactGenerator;
+    protected final IFarGeneratorExact<POS, T> exactGenerator;
 
     @Override
     public void init(@NonNull WorldServer world) {
@@ -65,7 +65,7 @@ public class ExactAsRoughGeneratorFallbackWrapper<POS extends IFarPos, P extends
     }
 
     @Override
-    public long generate(@NonNull POS pos, @NonNull P piece) {
-        return this.exactGenerator.generate(this.prefetch(pos), pos, piece);
+    public long generate(@NonNull POS pos, @NonNull T tile) {
+        return this.exactGenerator.generate(this.prefetch(pos), pos, tile);
     }
 }

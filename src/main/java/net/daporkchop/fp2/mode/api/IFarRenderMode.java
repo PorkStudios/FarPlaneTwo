@@ -22,9 +22,7 @@ package net.daporkchop.fp2.mode.api;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
@@ -42,7 +40,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 /**
  * @author DaPorkchop_
  */
-public interface IFarRenderMode<POS extends IFarPos, P extends IFarPiece> {
+public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
     OrderedRegistry<IFarRenderMode<?, ?>> REGISTRY = new RegisterRenderModesEvent(new LinkedOrderedRegistry<IFarRenderMode<?, ?>>()
             .addLast("voxel", new VoxelRenderMode())
             .addLast("heightmap", new HeightmapRenderMode())).fire().immutableRegistry();
@@ -63,7 +61,7 @@ public interface IFarRenderMode<POS extends IFarPos, P extends IFarPiece> {
      * @param world the world
      * @return the new {@link IFarGeneratorExact}
      */
-    IFarGeneratorExact<POS, P> exactGenerator(@NonNull WorldServer world);
+    IFarGeneratorExact<POS, T> exactGenerator(@NonNull WorldServer world);
 
     /**
      * Creates a new {@link IFarGeneratorRough} for the given world.
@@ -71,7 +69,7 @@ public interface IFarRenderMode<POS extends IFarPos, P extends IFarPiece> {
      * @param world the world
      * @return the new {@link IFarGeneratorRough}
      */
-    IFarGeneratorRough<POS, P> roughGenerator(@NonNull WorldServer world);
+    IFarGeneratorRough<POS, T> roughGenerator(@NonNull WorldServer world);
 
     /**
      * Creates a new {@link IFarWorld} for the given world.
@@ -79,7 +77,7 @@ public interface IFarRenderMode<POS extends IFarPos, P extends IFarPiece> {
      * @param world the world
      * @return the new {@link IFarWorld}
      */
-    IFarWorld<POS, P> world(@NonNull WorldServer world);
+    IFarWorld<POS, T> world(@NonNull WorldServer world);
 
     /**
      * Creates a new {@link IFarClientContext} for the given world.
@@ -88,12 +86,12 @@ public interface IFarRenderMode<POS extends IFarPos, P extends IFarPiece> {
      * @return the new {@link IFarClientContext}
      */
     @SideOnly(Side.CLIENT)
-    IFarClientContext<POS, P> clientContext(@NonNull WorldClient world);
+    IFarClientContext<POS, T> clientContext(@NonNull WorldClient world);
 
     /**
      * @return a recycler for tile objects
      */
-    SimpleRecycler<P> tileRecycler();
+    SimpleRecycler<T> tileRecycler();
 
     /**
      * @return the {@link IFarDirectPosAccess} used by this render mode
@@ -114,7 +112,7 @@ public interface IFarRenderMode<POS extends IFarPos, P extends IFarPiece> {
     POS[] posArray(int length);
 
     /**
-     * @return an array of {@link P}
+     * @return an array of {@link T}
      */
-    P[] tileArray(int length);
+    T[] tileArray(int length);
 }

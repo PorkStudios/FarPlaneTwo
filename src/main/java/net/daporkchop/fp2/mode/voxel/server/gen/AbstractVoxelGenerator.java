@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.mode.voxel.server.gen;
 
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelData;
+import net.daporkchop.fp2.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.util.math.Vector3d;
 import net.daporkchop.fp2.util.math.qef.QefSolver;
 import net.daporkchop.lib.common.ref.Ref;
@@ -36,7 +36,7 @@ import static net.daporkchop.lib.common.math.PMath.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
+public abstract class AbstractVoxelGenerator<PARAM> extends AbstractFarGenerator {
     public static final int DMAP_MIN = -1;
     public static final int DMAP_MAX = T_VOXELS + 2;
     public static final int DMAP_SIZE = DMAP_MAX - DMAP_MIN;
@@ -79,7 +79,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
                 lerp(lerp(Xyz, XyZ, z), lerp(XYz, XYZ, z), y), x);
     }
 
-    protected long buildMesh(int baseX, int baseY, int baseZ, int level, VoxelPiece builder, double[][] densityMap, P param) {
+    protected long buildMesh(int baseX, int baseY, int baseZ, int level, VoxelTile builder, double[][] densityMap, PARAM param) {
         QefSolver qef = new QefSolver();
         VoxelData data = new VoxelData();
         Vector3d vec = new Vector3d();
@@ -176,7 +176,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
 
                     data.edges = edges;
 
-                    //solve QEF and set the piece data
+                    //solve QEF and set the tile data
                     qef.solve(vec, 0.1, 1, 0.5);
                     if (vec.x < 0.0d || vec.x > 1.0d
                         || vec.y < 0.0d || vec.y > 1.0d
@@ -204,7 +204,7 @@ public abstract class AbstractVoxelGenerator<P> extends AbstractFarGenerator {
         return 0L;
     }
 
-    protected abstract int getFaceState(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, int edge, int layer, P param);
+    protected abstract int getFaceState(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, int edge, int layer, PARAM param);
 
-    protected abstract void populateVoxelBlockData(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, VoxelData data, P param);
+    protected abstract void populateVoxelBlockData(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, VoxelData data, PARAM param);
 }

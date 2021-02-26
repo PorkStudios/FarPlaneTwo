@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 import lombok.Getter;
 import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.lib.common.util.PArrays;
 
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
@@ -32,7 +32,7 @@ import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class IndexedMultidrawMultipassRenderStrategy<POS extends IFarPos, P extends IFarPiece> extends IndexedMultidrawRenderStrategy<POS, P> implements IMultipassRenderStrategy<POS, P> {
+public abstract class IndexedMultidrawMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile> extends IndexedMultidrawRenderStrategy<POS, T> implements IMultipassRenderStrategy<POS, T> {
     protected final IDrawCommandBuffer[] passes = new IDrawCommandBuffer[RENDER_PASS_COUNT];
 
     public IndexedMultidrawMultipassRenderStrategy(int vertexSize) {

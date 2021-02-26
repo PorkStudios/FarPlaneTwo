@@ -18,43 +18,49 @@
  *
  */
 
-package net.daporkchop.fp2.net.client;
+package net.daporkchop.fp2.net.server;
 
 import io.netty.buffer.ByteBuf;
-import net.daporkchop.fp2.mode.api.ctx.IFarContext;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import net.daporkchop.fp2.mode.api.Compressed;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
-import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-import static net.daporkchop.fp2.debug.FP2Debug.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-public class CPacketDropAllPieces implements IMessage {
+@Getter
+@Setter
+public class SPacketTileData implements IMessage {
+    @NonNull
+    protected IFarRenderMode<?, ?> mode;
+    @NonNull
+    protected Compressed<?, ?> tile;
+
     @Override
     public void fromBytes(ByteBuf buf) {
+        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
+        this.tile = new Compressed<>(buf, this.mode);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
+        Constants.writeString(buf, this.mode.name());
+        this.tile.writeWithPos(buf);
     }
 
-    public static class Handler implements IMessageHandler<CPacketDropAllPieces, IMessage> {
+    public static class Handler implements IMessageHandler<SPacketTileData, IMessage> {
         @Override
-        public IMessage onMessage(CPacketDropAllPieces message, MessageContext ctx) {
-            if (!FP2_DEBUG) {
-                ctx.getServerHandler().disconnect(new TextComponentTranslation("fp2.debug.debugModeNotEnabled"));
-                return null;
-            }
-            IFarContext context = (IFarContext) ctx.getServerHandler().player.world;
-            ServerThreadExecutor.INSTANCE.execute(() -> {
-                Constants.LOGGER.info("Dropping all pieces");
-                context.world().tracker().debug_dropAllPieces();
-            });
+        public IMessage onMessage(SPacketTileData message, MessageContext ctx) {
+            ((IFarWorldClient) ctx.getClientHandler().world).contextFor(message.mode).tileCache().receiveTile(uncheckedCast(message.tile));
             return null;
         }
     }

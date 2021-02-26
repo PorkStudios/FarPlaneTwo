@@ -29,8 +29,8 @@ import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
-import net.daporkchop.fp2.net.server.SPacketPieceData;
-import net.daporkchop.fp2.net.server.SPacketUnloadPiece;
+import net.daporkchop.fp2.net.server.SPacketTileData;
+import net.daporkchop.fp2.net.server.SPacketUnloadTile;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -116,24 +116,24 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
     }
 
     @Override
-    public void pieceChanged(@NonNull Compressed<POS, ?> piece) {
-        if (piece.isGenerated()) {
+    public void tileChanged(@NonNull Compressed<POS, ?> tile) {
+        if (tile.isGenerated()) {
             if (!ServerThreadExecutor.INSTANCE.isServerThread()) {
-                ServerThreadExecutor.INSTANCE.execute(() -> this.pieceChanged(piece));
+                ServerThreadExecutor.INSTANCE.execute(() -> this.tileChanged(tile));
                 return;
             }
 
-            Entry entry = this.entries.get(piece.pos());
+            Entry entry = this.entries.get(tile.pos());
             if (entry != null) {
-                entry.pieceChanged(piece);
+                entry.tileChanged(tile);
             }
         }
     }
 
     @Override
-    public void debug_dropAllPieces() {
+    public void debug_dropAllTiles() {
         if (!ServerThreadExecutor.INSTANCE.isServerThread()) {
-            ServerThreadExecutor.INSTANCE.execute(this::debug_dropAllPieces);
+            ServerThreadExecutor.INSTANCE.execute(this::debug_dropAllTiles);
             return;
         }
 
@@ -148,10 +148,10 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
 
         if (this.world instanceof AbstractFarWorld) {
             if (((AbstractFarWorld) this.world).notDone.isEmpty()) {
-                LOGGER.info("Invalidating piece cache");
-                ((AbstractFarWorld) this.world).pieceCache.invalidateAll();
+                LOGGER.info("Invalidating tile cache");
+                ((AbstractFarWorld) this.world).tileCache.invalidateAll();
             } else {
-                LOGGER.info("Not invalidating piece cache because some pieces are still queued");
+                LOGGER.info("Not invalidating tile cache because some tiles are still queued");
             }
         }
     }
@@ -182,21 +182,21 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
         protected final POS pos;
         protected final Set<EntityPlayerMP> players = new ReferenceOpenHashSet<>();
 
-        protected Compressed<POS, ?> piece;
+        protected Compressed<POS, ?> tile;
 
         public Entry(@NonNull POS pos) {
             this.pos = pos;
 
-            //attempt to get piece now
-            this.piece = AbstractPlayerTracker.this.world.getPieceLazy(pos);
+            //attempt to get tile now
+            this.tile = AbstractPlayerTracker.this.world.getTileLazy(pos);
         }
 
         public void addPlayer(@NonNull EntityPlayerMP player) {
-            if (this.players.add(player) && this.piece != null) {
-                //player was newly added and the piece has been set, send it
+            if (this.players.add(player) && this.tile != null) {
+                //player was newly added and the tile has been set, send it
                 //TODO: make this not be async after fixing exact generator
-                GlobalEventExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(new SPacketPieceData()
-                        .mode(AbstractPlayerTracker.this.world.mode()).tile(this.piece), player));
+                GlobalEventExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(new SPacketTileData()
+                        .mode(AbstractPlayerTracker.this.world.mode()).tile(this.tile), player));
             }
         }
 
@@ -208,21 +208,21 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
                 checkState(AbstractPlayerTracker.this.entries.remove(this.pos, this), this);
             }
 
-            NETWORK_WRAPPER.sendTo(new SPacketUnloadPiece().mode(AbstractPlayerTracker.this.world.mode()).pos(this.pos), player);
+            NETWORK_WRAPPER.sendTo(new SPacketUnloadTile().mode(AbstractPlayerTracker.this.world.mode()).pos(this.pos), player);
         }
 
-        public void pieceChanged(@NonNull Compressed<POS, ?> piece) {
-            this.piece = piece;
+        public void tileChanged(@NonNull Compressed<POS, ?> tile) {
+            this.tile = tile;
 
             //send packet to all players
-            SPacketPieceData packet = new SPacketPieceData().mode(AbstractPlayerTracker.this.world.mode()).tile(piece);
+            SPacketTileData packet = new SPacketTileData().mode(AbstractPlayerTracker.this.world.mode()).tile(tile);
             //TODO: make this not be async after fixing exact generator
             this.players.forEach(player -> GlobalEventExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(packet, player)));
             //TODO: figure out what the above TODO was referring to
             //TODO: i have now figured out what it was referring to, actually fix it now
             //TODO: actually, i don't think there's any way i can reasonably fix this without breaking AsyncBlockAccess. i'll need to rework
-            // how pieces are stored on the server (the issue is a deadlock when the server thread is trying to serialize a piece while a worker
-            // generating said piece is waiting for the server thread to load a chunk required for generating the piece into AsyncBlockAccess)
+            // how tiles are stored on the server (the issue is a deadlock when the server thread is trying to serialize a tile while a worker
+            // generating said tile is waiting for the server thread to load a chunk required for generating the tile into AsyncBlockAccess)
             //this.players.forEach(player -> NETWORK_WRAPPER.sendTo(packet, player));
         }
     }

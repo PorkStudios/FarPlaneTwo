@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.heightmap.event;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
+import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
 import net.daporkchop.fp2.util.registry.OrderedRegistry;
 import net.minecraftforge.common.MinecraftForge;
@@ -33,8 +33,8 @@ import net.minecraftforge.common.MinecraftForge;
  *
  * @author DaPorkchop_
  */
-public class RegisterRoughHeightmapGeneratorsEvent extends AbstractOrderedRegistryEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapPiece>> {
-    public RegisterRoughHeightmapGeneratorsEvent(@NonNull OrderedRegistry<IFarGeneratorRough.Factory<HeightmapPos, HeightmapPiece>> registry) {
+public class RegisterRoughHeightmapGeneratorsEvent extends AbstractOrderedRegistryEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>> {
+    public RegisterRoughHeightmapGeneratorsEvent(@NonNull OrderedRegistry<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>> registry) {
         super(registry);
     }
 }

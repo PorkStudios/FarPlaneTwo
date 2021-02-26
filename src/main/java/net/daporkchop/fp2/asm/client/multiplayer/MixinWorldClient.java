@@ -25,7 +25,7 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
 import net.minecraft.client.multiplayer.WorldClient;
@@ -64,7 +64,7 @@ public abstract class MixinWorldClient extends World implements IFarWorldClient 
     }
 
     @Override
-    public <POS extends IFarPos, P extends IFarPiece> IFarClientContext<POS, P> contextFor(@NonNull IFarRenderMode<POS, P> mode) {
+    public <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> contextFor(@NonNull IFarRenderMode<POS, T> mode) {
         return uncheckedCast(this.contexts.computeIfAbsent(mode, this.computeFunction));
     }
 
@@ -74,7 +74,7 @@ public abstract class MixinWorldClient extends World implements IFarWorldClient 
     }
 
     @Override
-    public <POS extends IFarPos, P extends IFarPiece> IFarClientContext<POS, P> activeContext() {
+    public <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> activeContext() {
         return uncheckedCast(this.active);
     }
 }

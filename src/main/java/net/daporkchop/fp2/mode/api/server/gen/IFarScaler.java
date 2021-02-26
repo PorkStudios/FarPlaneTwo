@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,42 +22,42 @@ package net.daporkchop.fp2.mode.api.server.gen;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 
 import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarScaler<POS extends IFarPos, P extends IFarPiece> {
+public interface IFarScaler<POS extends IFarPos, T extends IFarTile> {
     /**
-     * Gets the positions of all the low-detail pieces whose contents are affected by the content of the given high-detail piece.
+     * Gets the positions of all the low-detail tiles whose contents are affected by the content of the given high-detail tile.
      * <p>
      * The returned {@link Stream} must be sequential!
      *
-     * @param srcPos the position of the high-detail piece
-     * @return the positions of all the low-detail pieces whose contents are affected by the content of the given high-detail piece
+     * @param srcPos the position of the high-detail tile
+     * @return the positions of all the low-detail tiles whose contents are affected by the content of the given high-detail tile
      */
     Stream<POS> outputs(@NonNull POS srcPos);
 
     /**
-     * Gets the positions of all the high-detail pieces needed to create the given low-detail piece.
+     * Gets the positions of all the high-detail tiles needed to create the given low-detail tile.
      * <p>
      * The returned {@link Stream} must be sequential!
      *
-     * @param dstPos the position of the low-detail piece to generate
-     * @return the positions of all the high-detail pieces needed to create the given low-detail piece
+     * @param dstPos the position of the low-detail tile to generate
+     * @return the positions of all the high-detail tiles needed to create the given low-detail tile
      */
     Stream<POS> inputs(@NonNull POS dstPos);
 
     /**
-     * Merges the content of the given high-detail pieces into the given low-detail data piece.
+     * Merges the content of the given high-detail tiles into the given low-detail data tile.
      *
-     * @param srcs an array containing the high-detail pieces. Pieces are in the same order as provided by the {@link Stream} returned by
-     *             {@link #inputs(IFarPos)}. Any of the pieces may be {@code null}, in which case they should be treated by the implementation
+     * @param srcs an array containing the high-detail tiles. Tiles are in the same order as provided by the {@link Stream} returned by
+     *             {@link #inputs(IFarPos)}. Any of the tiles may be {@code null}, in which case they should be treated by the implementation
      *             as if they were merely empty.
-     * @param dst  the low-detail piece to merge the content into
-     * @return the extra data to be saved with the piece
+     * @param dst  the low-detail tile to merge the content into
+     * @return the extra data to be saved with the tile
      */
-    long scale(@NonNull P[] srcs, @NonNull P dst);
+    long scale(@NonNull T[] srcs, @NonNull T dst);
 }

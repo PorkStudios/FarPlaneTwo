@@ -29,7 +29,7 @@ import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.ctx.IFarContext;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarStorage;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
@@ -63,21 +63,21 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece> implements IFarWorld<POS, P> {
+public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> implements IFarWorld<POS, T> {
     protected final WorldServer world;
-    protected final IFarRenderMode<POS, P> mode;
+    protected final IFarRenderMode<POS, T> mode;
     protected final File root;
 
-    protected final IFarGeneratorRough<POS, P> generatorRough;
-    protected final IFarGeneratorExact<POS, P> generatorExact;
-    protected final IFarScaler<POS, P> scaler;
+    protected final IFarGeneratorRough<POS, T> generatorRough;
+    protected final IFarGeneratorExact<POS, T> generatorExact;
+    protected final IFarScaler<POS, T> scaler;
 
-    protected final IFarStorage<POS, P> storage;
+    protected final IFarStorage<POS, T> storage;
 
     protected final IFarPlayerTracker<POS> tracker;
 
     //cache for loaded tiles
-    protected final Cache<POS, Compressed<POS, P>> pieceCache = CacheBuilder.newBuilder()
+    protected final Cache<POS, Compressed<POS, T>> tileCache = CacheBuilder.newBuilder()
             .concurrencyLevel(FP2Config.generationThreads)
             .weakValues()
             .build();
@@ -93,12 +93,12 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
 
     protected final boolean lowResolution;
 
-    public AbstractFarWorld(@NonNull WorldServer world, @NonNull IFarRenderMode<POS, P> mode) {
+    public AbstractFarWorld(@NonNull WorldServer world, @NonNull IFarRenderMode<POS, T> mode) {
         this.world = world;
         this.mode = mode;
 
-        IFarGeneratorRough<POS, P> generatorRough = this.mode().roughGenerator(world);
-        IFarGeneratorExact<POS, P> generatorExact = this.mode().exactGenerator(world);
+        IFarGeneratorRough<POS, T> generatorRough = this.mode().roughGenerator(world);
+        IFarGeneratorExact<POS, T> generatorExact = this.mode().exactGenerator(world);
 
         if (generatorRough == null) {
             LOGGER.warn("No rough generator exists for world {} (type: {})! Falling back to exact generator, this will have serious performance implications.", world.provider.getDimension(), world.getWorldType());
@@ -129,29 +129,29 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
         MinecraftForge.EVENT_BUS.register(this);
     }
 
-    protected abstract IFarScaler<POS, P> createScaler();
+    protected abstract IFarScaler<POS, T> createScaler();
 
     protected abstract IFarPlayerTracker<POS> createTracker();
 
     @Override
-    public Compressed<POS, P> getPieceLazy(@NonNull POS pos) {
-        Compressed<POS, P> piece = this.pieceCache.getIfPresent(pos);
-        if (piece == null || piece.timestamp() == Compressed.VALUE_BLANK) {
+    public Compressed<POS, T> getTileLazy(@NonNull POS pos) {
+        Compressed<POS, T> tile = this.tileCache.getIfPresent(pos);
+        if (tile == null || tile.timestamp() == Compressed.VALUE_BLANK) {
             if (this.notDone.putIfAbsent(pos, Boolean.TRUE) != Boolean.TRUE) {
-                //piece is not in cache and was newly marked as queued
+                //tile is not in cache and was newly marked as queued
                 this.executor.submit(new PriorityTask<>(TaskStage.LOAD, pos));
             }
             return null;
         }
-        return piece;
+        return tile;
     }
 
-    public Compressed<POS, P> getPieceCachedOrLoad(@NonNull POS pos) {
+    public Compressed<POS, T> getTileCachedOrLoad(@NonNull POS pos) {
         try {
-            return this.pieceCache.get(pos, () -> {
-                Compressed<POS, P> compressedPiece = this.storage.load(pos);
+            return this.tileCache.get(pos, () -> {
+                Compressed<POS, T> compressedTile = this.storage.load(pos);
                 //create new value if absent
-                return compressedPiece == null ? new Compressed<>(pos) : compressedPiece;
+                return compressedTile == null ? new Compressed<>(pos) : compressedTile;
             });
         } catch (ExecutionException e) {
             PUnsafe.throwException(e);
@@ -159,44 +159,44 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
         }
     }
 
-    public void savePiece(@NonNull Compressed<POS, P> piece) {
+    public void saveTile(@NonNull Compressed<POS, T> tile) {
         //this is non-blocking (unless the leveldb write buffer fills up)
-        this.storage.store(piece.pos(), piece);
+        this.storage.store(tile.pos(), tile);
     }
 
-    public void pieceAvailable(@NonNull Compressed<POS, P> piece) {
-        //unmark piece as being incomplete
-        this.notDone.remove(piece.pos());
+    public void tileAvailable(@NonNull Compressed<POS, T> tile) {
+        //unmark tile as being incomplete
+        this.notDone.remove(tile.pos());
 
-        this.notifyPlayerTracker(piece);
+        this.notifyPlayerTracker(tile);
     }
 
-    public void pieceChanged(@NonNull Compressed<POS, P> piece, boolean allowScale) {
-        this.pieceAvailable(piece);
+    public void tileChanged(@NonNull Compressed<POS, T> tile, boolean allowScale) {
+        this.tileAvailable(tile);
 
-        //save the piece
-        this.savePiece(piece);
+        //save the tile
+        this.saveTile(tile);
 
-        if (allowScale && piece.pos().level() < FP2Config.maxLevels - 1) {
-            long currTimestamp = piece.timestamp();
+        if (allowScale && tile.pos().level() < FP2Config.maxLevels - 1) {
+            long currTimestamp = tile.timestamp();
 
-            this.scaler.outputs(piece.pos()).forEach(outputPos -> this.schedulePieceForUpdate(outputPos, currTimestamp));
+            this.scaler.outputs(tile.pos()).forEach(outputPos -> this.scheduleTileForUpdate(outputPos, currTimestamp));
         }
     }
 
     @SuppressWarnings("unchecked")
-    public void notifyPlayerTracker(@NonNull Compressed<POS, P> piece) {
-        ((IFarContext) this.world).world().tracker().pieceChanged(piece);
+    public void notifyPlayerTracker(@NonNull Compressed<POS, T> tile) {
+        ((IFarContext) this.world).world().tracker().tileChanged(tile);
     }
 
     public boolean canGenerateRough(@NonNull POS pos) {
         return pos.level() == 0 || this.lowResolution;
     }
 
-    protected void schedulePieceForUpdate(@NonNull POS pos, long newTimestamp) {
+    protected void scheduleTileForUpdate(@NonNull POS pos, long newTimestamp) {
         //TODO: this is a race condition if an exact generation task queued in a previous tick occurs in between multiple block updates to
         // the same position during the current tick
-        //TODO: wait, is this actually correct? actually, i think the above condition might actually cause it to regenerate the same piece
+        //TODO: wait, is this actually correct? actually, i think the above condition might actually cause it to regenerate the same tile
         // multiple times for that tick
         if (this.exactActive.put(pos, newTimestamp) < 0L) {
             //position wasn't previously queued for update
@@ -220,7 +220,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
     @Override
     public void blockChanged(int x, int y, int z) {
         //TODO: re-enable this
-        //this.schedulePieceForUpdate(this.fromBlockCoords(x, y, z), this.world.getTotalWorldTime());
+        //this.scheduleTileForUpdate(this.fromBlockCoords(x, y, z), this.world.getTotalWorldTime());
     }
 
     protected abstract POS fromBlockCoords(int x, int y, int z);
@@ -255,14 +255,14 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
             return;
         }
 
-        LOGGER.trace("Saving incomplete pieces in DIM{}", this.world.provider.getDimension());
+        LOGGER.trace("Saving incomplete tiles in DIM{}", this.world.provider.getDimension());
 
         File tmpFile = PFiles.ensureFileExists(new File(this.root, "notDone.tmp"));
         File file = new File(this.root, "notDone");
 
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
         try (DataOut out = ZSTD_DEF.get().compressionStream(DataOut.wrapNonBuffered(tmpFile))) {
-            //piece load tasks
+            //tile load tasks
             this.notDone.entrySet().stream()
                     .filter(Map.Entry::getValue)
                     .map(Map.Entry::getKey)
@@ -296,8 +296,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
     }
 
     protected void loadNotDone() {
-        /*Collection<GetPieceTask<POS, P, D>> loadTasks = new ArrayList<>();
-        Collection<ExactUpdatePieceTask<POS, P, D>> exactGenerateTasks = new ArrayList<>();
+        /*Collection<GetTileTask<POS, P, D>> loadTasks = new ArrayList<>();
+        Collection<ExactUpdateTileTask<POS, P, D>> exactGenerateTasks = new ArrayList<>();
 
         try {
             File file = new File(this.root, "notDone");
@@ -307,13 +307,13 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
 
             ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
             try (DataIn in = ZSTD_INF.get().decompressionStream(DataIn.wrapNonBuffered(file))) {
-                //piece load tasks
+                //tile load tasks
                 for (int size; (size = in.readVarInt()) > 0; ) {
                     in.readFully(buf.clear().ensureWritable(size), size);
 
                     POS pos = uncheckedCast(this.mode.readPos(buf));
                     if (this.notDone(pos, true) && pos.level() < FP2Config.maxLevels) {
-                        loadTasks.add(new GetPieceTask<>(this, new TaskKey(TaskStage.LOAD, pos.level()), pos, TaskStage.LOAD));
+                        loadTasks.add(new GetTileTask<>(this, new TaskKey(TaskStage.LOAD, pos.level()), pos, TaskStage.LOAD));
                     }
                 }
 
@@ -324,7 +324,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
 
                     POS pos = uncheckedCast(this.mode.readPos(buf));
                     if (this.exactActive.put(pos, newTimestamp) < 0L && pos.level() < FP2Config.maxLevels) {
-                        exactGenerateTasks.add(new ExactUpdatePieceTask<>(this, new TaskKey(TaskStage.EXACT, pos.level()), pos, TaskStage.EXACT));
+                        exactGenerateTasks.add(new ExactUpdateTileTask<>(this, new TaskKey(TaskStage.EXACT, pos.level()), pos, TaskStage.EXACT));
                     }
                 }
             } finally {
@@ -333,7 +333,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, P extends IFarPiece>
         } catch (IOException e) {
             LOGGER.error("Unable to load incomplete tasks!", e);
         } finally {
-            LOGGER.info("Loaded {} persisted piece load tasks and {} persisted exact generate tasks", loadTasks.size(), exactGenerateTasks.size());
+            LOGGER.info("Loaded {} persisted tile load tasks and {} persisted exact generate tasks", loadTasks.size(), exactGenerateTasks.size());
             this.executor.submit(PorkUtil.<Collection<LazyTask<TaskKey, ?, ?>>>uncheckedCast(loadTasks));
             this.executor.submit(PorkUtil.<Collection<LazyTask<TaskKey, ?, ?>>>uncheckedCast(exactGenerateTasks));
         }*/

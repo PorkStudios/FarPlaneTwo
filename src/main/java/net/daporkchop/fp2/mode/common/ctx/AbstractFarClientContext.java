@@ -22,13 +22,12 @@ package net.daporkchop.fp2.mode.common.ctx;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.FarTileCache;
 
 /**
@@ -37,19 +36,19 @@ import net.daporkchop.fp2.mode.common.client.FarTileCache;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarClientContext<POS extends IFarPos, P extends IFarPiece> implements IFarClientContext<POS, P> {
-    protected final IFarTileCache<POS, P> tileCache;
+public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IFarTile> implements IFarClientContext<POS, T> {
+    protected final IFarTileCache<POS, T> tileCache;
     protected final IFarRenderer renderer;
-    protected final IFarRenderMode<POS, P> mode;
+    protected final IFarRenderMode<POS, T> mode;
 
-    public AbstractFarClientContext(@NonNull IFarRenderMode<POS, P> mode) {
+    public AbstractFarClientContext(@NonNull IFarRenderMode<POS, T> mode) {
         this.mode = mode;
 
         this.tileCache = this.tileCache0();
         this.renderer = this.renderer0();
     }
 
-    protected IFarTileCache<POS, P> tileCache0() {
+    protected IFarTileCache<POS, T> tileCache0() {
         return new FarTileCache<>();
     }
 

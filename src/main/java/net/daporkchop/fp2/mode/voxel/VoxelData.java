@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,34 +18,42 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.piece;
+package net.daporkchop.fp2.mode.voxel;
+
+import java.util.Arrays;
+
+import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 
 /**
- * Represents a single data sample contained in a heightmap piece.
+ * Represents a single data sample contained in a voxel tile.
  *
  * @author DaPorkchop_
  */
-public class HeightmapData {
-    public int height;
-    public int state;
-    public int light;
-    public int biome;
+public class VoxelData {
+    //vertex position and mesh intersection data
+    public int x;
+    public int y;
+    public int z;
+    public int edges;
 
-    public int waterLight;
-    public int waterBiome;
+    //block data (for texturing and shading)
+    public final int[] states = new int[EDGE_COUNT];
+    public int biome;
+    public int light;
 
     /**
      * Resets this instance.
      *
      * @return this instance
      */
-    public HeightmapData reset() {
-        this.height = 0;
-        this.state = 0;
-        this.light = 0;
+    public VoxelData reset() {
+        this.x = 0;
+        this.y = 0;
+        this.z = 0;
+        this.edges = 0;
+        Arrays.fill(this.states, 0);
         this.biome = 0;
-        this.waterLight = 0;
-        this.waterBiome = 0;
+        this.light = 0;
         return this;
     }
 }

@@ -24,7 +24,7 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.minecraft.client.multiplayer.WorldClient;
 
 /**
@@ -32,11 +32,11 @@ import net.minecraft.client.multiplayer.WorldClient;
  *
  * @author DaPorkchop_
  */
-public interface IFarClientContext<POS extends IFarPos, P extends IFarPiece> {
+public interface IFarClientContext<POS extends IFarPos, T extends IFarTile> {
     /**
      * @return a cache for tiles used by this context
      */
-    IFarTileCache<POS, P> tileCache();
+    IFarTileCache<POS, T> tileCache();
 
     /**
      * @return the renderer currently used by this context
@@ -46,5 +46,5 @@ public interface IFarClientContext<POS extends IFarPos, P extends IFarPiece> {
     /**
      * @return the render mode
      */
-    IFarRenderMode<POS, P> mode();
+    IFarRenderMode<POS, T> mode();
 }

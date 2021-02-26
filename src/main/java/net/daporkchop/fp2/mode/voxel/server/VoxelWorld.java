@@ -26,7 +26,7 @@ import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelRenderMode;
-import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
+import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerIntersection;
 import net.minecraft.world.WorldServer;
 
@@ -35,13 +35,13 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelPiece> {
+public class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelTile> {
     public VoxelWorld(@NonNull WorldServer world, @NonNull VoxelRenderMode mode) {
         super(world, mode);
     }
 
     @Override
-    protected IFarScaler<VoxelPos, VoxelPiece> createScaler() {
+    protected IFarScaler<VoxelPos, VoxelTile> createScaler() {
         return new VoxelScalerIntersection();
     }
 

@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.fp2.mode.common.client.strategy.BaseRenderStrategy.*;
@@ -33,7 +33,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public interface IIndexedMultipassRenderStrategy<POS extends IFarPos, P extends IFarPiece> extends IMultipassRenderStrategy<POS, P> {
+public interface IIndexedMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile> extends IMultipassRenderStrategy<POS, T> {
     default void drawTileIndexedMultipass(@NonNull IDrawCommandBuffer[] passes, long renderData, int x, int y, int z, int level) {
         int baseVertex = toInt(_renderdata_vertexOffset(renderData));
         int firstIndex = toInt(_renderdata_indexOffset(renderData));

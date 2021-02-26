@@ -39,7 +39,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Getter
 @Setter
-public class SPacketUnloadPiece implements IMessage {
+public class SPacketUnloadTile implements IMessage {
     @NonNull
     protected IFarRenderMode<?, ?> mode;
     @NonNull
@@ -57,9 +57,9 @@ public class SPacketUnloadPiece implements IMessage {
         this.pos.writePos(buf);
     }
 
-    public static class Handler implements IMessageHandler<SPacketUnloadPiece, IMessage> {
+    public static class Handler implements IMessageHandler<SPacketUnloadTile, IMessage> {
         @Override
-        public IMessage onMessage(SPacketUnloadPiece message, MessageContext ctx) {
+        public IMessage onMessage(SPacketUnloadTile message, MessageContext ctx) {
             ((IFarWorldClient) ctx.getClientHandler().world).contextFor(message.mode).tileCache().unloadTile(uncheckedCast(message.pos));
             return null;
         }

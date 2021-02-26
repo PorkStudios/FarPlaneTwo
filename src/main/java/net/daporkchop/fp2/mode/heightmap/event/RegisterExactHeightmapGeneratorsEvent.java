@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.heightmap.event;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
+import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
 import net.daporkchop.fp2.util.registry.OrderedRegistry;
 import net.minecraftforge.common.MinecraftForge;
@@ -33,8 +33,8 @@ import net.minecraftforge.common.MinecraftForge;
  *
  * @author DaPorkchop_
  */
-public class RegisterExactHeightmapGeneratorsEvent extends AbstractOrderedRegistryEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapPiece>> {
-    public RegisterExactHeightmapGeneratorsEvent(@NonNull OrderedRegistry<IFarGeneratorExact.Factory<HeightmapPos, HeightmapPiece>> registry) {
+public class RegisterExactHeightmapGeneratorsEvent extends AbstractOrderedRegistryEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>> {
+    public RegisterExactHeightmapGeneratorsEvent(@NonNull OrderedRegistry<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>> registry) {
         super(registry);
     }
 }

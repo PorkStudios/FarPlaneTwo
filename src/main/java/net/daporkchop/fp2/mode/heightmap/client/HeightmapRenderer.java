@@ -29,7 +29,7 @@ import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
-import net.daporkchop.fp2.mode.heightmap.piece.HeightmapPiece;
+import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -38,18 +38,18 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, HeightmapPiece> implements IShaderHolder {
+public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, HeightmapTile> implements IShaderHolder {
     public HeightmapRenderer(@NonNull WorldClient world, @NonNull HeightmapRenderMode mode) {
         super(mode);
     }
 
     @Override
-    protected IFarRenderStrategy<HeightmapPos, HeightmapPiece> createStrategy() {
+    protected IFarRenderStrategy<HeightmapPos, HeightmapTile> createStrategy() {
         throw new UnsupportedOperationException();
     }
 
     /*@Override
-    public IFarRenderBaker<HeightmapPos, HeightmapPiece> baker() {
+    public IFarRenderBaker<HeightmapPos, HeightmapTile> baker() {
         return new HeightmapRenderBaker();
     }
 

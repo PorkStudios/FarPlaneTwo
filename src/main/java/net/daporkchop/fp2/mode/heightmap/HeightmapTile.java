@@ -18,13 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.piece;
+package net.daporkchop.fp2.mode.heightmap;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -32,12 +32,12 @@ import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * A "piece" containing the data used by the heightmap rendering mode.
+ * A "tile" containing the data used by the heightmap rendering mode.
  *
  * @author DaPorkchop_
  */
 @Getter
-public class HeightmapPiece implements IFarPiece {
+public class HeightmapTile implements IFarTile {
     //layout (in ints):
     //0: height
     //1: (light << 24) | state
@@ -77,7 +77,7 @@ public class HeightmapPiece implements IFarPiece {
 
     protected final long addr = PUnsafe.allocateMemory(this, TOTAL_SIZE_BYTES);
 
-    public HeightmapPiece() {
+    public HeightmapTile() {
         this.reset();
     }
 
@@ -93,7 +93,7 @@ public class HeightmapPiece implements IFarPiece {
         writeData(this.addr + index(x, z) * 4L, data);
     }
 
-    public void copyTo(@NonNull HeightmapPiece dst) {
+    public void copyTo(@NonNull HeightmapTile dst) {
         PUnsafe.copyMemory(this.addr, dst.addr, TOTAL_SIZE_BYTES);
     }
 
@@ -127,6 +127,6 @@ public class HeightmapPiece implements IFarPiece {
                 dst.writeIntLE(PUnsafe.getInt(this.addr + i * 4L));
             }
         }
-        return false; //the heightmap renderer has no concept of an "empty" piece
+        return false; //the heightmap renderer has no concept of an "empty" tile
     }
 }
