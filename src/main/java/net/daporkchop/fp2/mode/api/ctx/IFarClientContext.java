@@ -18,47 +18,33 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api;
+package net.daporkchop.fp2.mode.api.ctx;
 
-import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
-import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
-import net.daporkchop.fp2.mode.api.server.IFarWorld;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.minecraft.client.multiplayer.WorldClient;
 
 /**
+ * A client-side context for a specific {@link IFarRenderMode} in a {@link WorldClient}.
+ *
  * @author DaPorkchop_
  */
-public interface IFarContext<POS extends IFarPos, P extends IFarPiece, W extends IFarWorld<POS, P>, T extends IFarPlayerTracker<POS>, R extends IFarRenderer<POS, P>> {
+public interface IFarClientContext<POS extends IFarPos, P extends IFarPiece> {
     /**
-     * Initializes this context.
-     *
-     * @param mode the new {@link IFarRenderMode} to use
+     * @return a cache for tiles used by this context
      */
-    void init(@NonNull IFarRenderMode<POS, P> mode);
+    IFarTileCache<POS, P> tileCache();
 
     /**
-     * @return whether or not this context has been initialized
+     * @return the renderer currently used by this context
      */
-    boolean isInitialized();
+    IFarRenderer renderer();
 
     /**
-     * @return the current {@link IFarRenderMode}
-     * @throws IllegalStateException if this context has not yet been initialized
+     * @return the render mode
      */
     IFarRenderMode<POS, P> mode();
-
-    /**
-     * @return the current {@link IFarWorld}
-     * @throws IllegalStateException if this context has not yet been initialized
-     */
-    W world();
-
-    /**
-     * @return the current {@link IFarRenderer}, or {@code null} if this context has not yet been initialized
-     */
-    @SideOnly(Side.CLIENT)
-    R renderer();
 }

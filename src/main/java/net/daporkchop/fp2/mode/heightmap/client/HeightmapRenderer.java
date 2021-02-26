@@ -40,7 +40,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, HeightmapPiece> implements IShaderHolder {
     public HeightmapRenderer(@NonNull WorldClient world, @NonNull HeightmapRenderMode mode) {
-        super(world, mode);
+        super(mode);
     }
 
     @Override

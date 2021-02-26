@@ -18,43 +18,40 @@
  *
  */
 
-package net.daporkchop.fp2.net.server;
+package net.daporkchop.fp2.mode.common.ctx;
 
-import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
-import net.daporkchop.fp2.util.Constants;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.daporkchop.fp2.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.mode.api.client.IFarTileCache;
+import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.common.client.FarTileCache;
 
 /**
+ * Base implementation of {@link IFarClientContext}.
+ *
  * @author DaPorkchop_
  */
-@Setter
 @Getter
-public class SPacketRenderingStrategy implements IMessage {
-    @NonNull
-    protected IFarRenderMode<?, ?> mode;
+public abstract class AbstractFarClientContext<POS extends IFarPos, P extends IFarPiece> implements IFarClientContext<POS, P> {
+    protected final IFarTileCache<POS, P> tileCache;
+    protected final IFarRenderer renderer;
+    protected final IFarRenderMode<POS, P> mode;
 
-    @Override
-    public void fromBytes(ByteBuf buf) {
-        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
+    public AbstractFarClientContext(@NonNull IFarRenderMode<POS, P> mode) {
+        this.mode = mode;
+
+        this.tileCache = this.tileCache0();
+        this.renderer = this.renderer0();
     }
 
-    @Override
-    public void toBytes(ByteBuf buf) {
-        Constants.writeString(buf, this.mode.name());
+    protected IFarTileCache<POS, P> tileCache0() {
+        return new FarTileCache<>();
     }
 
-    public static class Handler implements IMessageHandler<SPacketRenderingStrategy, IMessage> {
-        @Override
-        public IMessage onMessage(SPacketRenderingStrategy message, MessageContext ctx) {
-            ((IFarWorldClient) ctx.getClientHandler().world).switchTo(message.mode);
-            return null;
-        }
-    }
+    protected abstract IFarRenderer renderer0();
 }

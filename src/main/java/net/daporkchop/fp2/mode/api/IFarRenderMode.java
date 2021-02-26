@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.api;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
@@ -81,13 +82,13 @@ public interface IFarRenderMode<POS extends IFarPos, P extends IFarPiece> {
     IFarWorld<POS, P> world(@NonNull WorldServer world);
 
     /**
-     * Creates a new {@link IFarRenderer} for the given world.
+     * Creates a new {@link IFarClientContext} for the given world.
      *
      * @param world the world
-     * @return the new {@link IFarRenderer}
+     * @return the new {@link IFarClientContext}
      */
     @SideOnly(Side.CLIENT)
-    IFarRenderer<POS, P> renderer(@NonNull WorldClient world);
+    IFarClientContext<POS, P> clientContext(@NonNull WorldClient world);
 
     /**
      * @return a recycler for tile objects

@@ -18,43 +18,26 @@
  *
  */
 
-package net.daporkchop.fp2.net.server;
+package net.daporkchop.fp2.mode.voxel.ctx;
 
-import io.netty.buffer.ByteBuf;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
-import net.daporkchop.fp2.util.Constants;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.daporkchop.fp2.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.mode.common.ctx.AbstractFarClientContext;
+import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.mode.voxel.client.VoxelRenderer;
+import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
 
 /**
  * @author DaPorkchop_
  */
-@Setter
-@Getter
-public class SPacketRenderingStrategy implements IMessage {
-    @NonNull
-    protected IFarRenderMode<?, ?> mode;
-
-    @Override
-    public void fromBytes(ByteBuf buf) {
-        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
+public class VoxelClientContext extends AbstractFarClientContext<VoxelPos, VoxelPiece> {
+    public VoxelClientContext(@NonNull IFarRenderMode<VoxelPos, VoxelPiece> mode) {
+        super(mode);
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
-        Constants.writeString(buf, this.mode.name());
-    }
-
-    public static class Handler implements IMessageHandler<SPacketRenderingStrategy, IMessage> {
-        @Override
-        public IMessage onMessage(SPacketRenderingStrategy message, MessageContext ctx) {
-            ((IFarWorldClient) ctx.getClientHandler().world).switchTo(message.mode);
-            return null;
-        }
+    protected IFarRenderer renderer0() {
+        return new VoxelRenderer(this.mode);
     }
 }

@@ -25,6 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
@@ -78,10 +79,10 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
         return new HeightmapWorld(world, this);
     }
 
-    @Override
     @SideOnly(Side.CLIENT)
-    public IFarRenderer<HeightmapPos, HeightmapPiece> renderer(@NonNull WorldClient world) {
-        return new HeightmapRenderer(world, this);
+    @Override
+    public IFarClientContext<HeightmapPos, HeightmapPiece> clientContext(@NonNull WorldClient world) {
+        throw new UnsupportedOperationException(); //TODO
     }
 
     @Override

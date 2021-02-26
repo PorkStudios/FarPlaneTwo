@@ -25,11 +25,13 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.common.AbstractFarRenderMode;
 import net.daporkchop.fp2.mode.voxel.client.VoxelRenderer;
+import net.daporkchop.fp2.mode.voxel.ctx.VoxelClientContext;
 import net.daporkchop.fp2.mode.voxel.event.RegisterExactVoxelGeneratorsEvent;
 import net.daporkchop.fp2.mode.voxel.event.RegisterRoughVoxelGeneratorsEvent;
 import net.daporkchop.fp2.mode.voxel.piece.VoxelPiece;
@@ -79,10 +81,10 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelPiece>
         return new VoxelWorld(world, this);
     }
 
-    @Override
     @SideOnly(Side.CLIENT)
-    public IFarRenderer<VoxelPos, VoxelPiece> renderer(@NonNull WorldClient world) {
-        return new VoxelRenderer(world, this);
+    @Override
+    public IFarClientContext<VoxelPos, VoxelPiece> clientContext(@NonNull WorldClient world) {
+        return new VoxelClientContext(this);
     }
 
     @Override

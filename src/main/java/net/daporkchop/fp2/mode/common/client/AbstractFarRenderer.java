@@ -51,7 +51,7 @@ import static org.lwjgl.opengl.GL15.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPiece> implements IFarRenderer<POS, P> {
+public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPiece> implements IFarRenderer {
     protected final IFarRenderMode<POS, P> mode;
 
     protected final FarRenderCache<POS, P> cache;
@@ -63,7 +63,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
     protected final DirectLongStack index = new DirectLongStack();
     protected final IFarRenderStrategy<POS, P> strategy;
 
-    public AbstractFarRenderer(@NonNull WorldClient world, @NonNull IFarRenderMode<POS, P> mode) {
+    public AbstractFarRenderer(@NonNull IFarRenderMode<POS, P> mode) {
         this.mode = mode;
 
         this.strategy = this.createStrategy();
@@ -75,16 +75,6 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, P extends IFarPie
      * @return the {@link IFarRenderStrategy} used by this renderer
      */
     protected abstract IFarRenderStrategy<POS, P> createStrategy();
-
-    @Override
-    public void receivePiece(@NonNull Compressed<POS, P> piece) {
-        this.cache.receivePiece(piece);
-    }
-
-    @Override
-    public void unloadPiece(@NonNull POS pos) {
-        this.cache.unloadPiece(pos);
-    }
 
     @Override
     public void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {

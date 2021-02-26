@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,8 +24,10 @@ import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.client.ReversedZ;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.client.gl.camera.Frustum;
-import net.daporkchop.fp2.mode.api.IFarContext;
+import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.mode.api.ctx.IFarContext;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.entity.Entity;
@@ -72,8 +74,8 @@ public abstract class MixinEntityRenderer {
                     shift = At.Shift.BEFORE),
             allow = 1)
     private void renderWorldPass_doFarPlaneRender(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
-        IFarRenderer renderer = ((IFarContext) this.mc.world).renderer();
-        if (renderer != null) {
+        IFarClientContext<?, ?> context = ((IFarWorldClient) this.mc.world).activeContext();
+        if (context != null) {
             this.mc.profiler.endStartSection("fp2_render");
 
             this.frustum.initFromGlState();
@@ -86,7 +88,7 @@ public abstract class MixinEntityRenderer {
             this.frustum.setPosition(x, y, z);
 
             //render
-            renderer.render(partialTicks, this.mc.world, this.mc, this.frustum);
+            context.renderer().render(partialTicks, this.mc.world, this.mc, this.frustum);
         }
     }
 
@@ -127,7 +129,7 @@ public abstract class MixinEntityRenderer {
                     target = "Lnet/minecraft/client/renderer/EntityRenderer;farPlaneDistance:F",
                     opcode = Opcodes.PUTFIELD))
     private void setupCameraTransform_increaseFarPlaneDistance(EntityRenderer renderer, float farPlaneDistance) {
-        if (((IFarContext) this.mc.world).isInitialized()) {
+        if (((IFarWorldClient) this.mc.world).activeContext() != null) {
             //farPlaneDistance = FP2Config.renderDistance;
             farPlaneDistance = FP2Config.levelCutoffDistance << FP2Config.maxLevels >> 1;
             //TODO: i need a better system for computing this

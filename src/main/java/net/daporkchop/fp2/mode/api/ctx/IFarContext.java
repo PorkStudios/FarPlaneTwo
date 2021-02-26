@@ -18,43 +18,41 @@
  *
  */
 
-package net.daporkchop.fp2.net.server;
+package net.daporkchop.fp2.mode.api.ctx;
 
-import io.netty.buffer.ByteBuf;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
+import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
-import net.daporkchop.fp2.util.Constants;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.daporkchop.fp2.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
+import net.daporkchop.fp2.mode.api.server.IFarWorld;
 
 /**
  * @author DaPorkchop_
  */
-@Setter
-@Getter
-public class SPacketRenderingStrategy implements IMessage {
-    @NonNull
-    protected IFarRenderMode<?, ?> mode;
+public interface IFarContext<POS extends IFarPos, P extends IFarPiece, W extends IFarWorld<POS, P>, T extends IFarPlayerTracker<POS>, R extends IFarRenderer> {
+    /**
+     * Initializes this context.
+     *
+     * @param mode the new {@link IFarRenderMode} to use
+     */
+    void init(@NonNull IFarRenderMode<POS, P> mode);
 
-    @Override
-    public void fromBytes(ByteBuf buf) {
-        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
-    }
+    /**
+     * @return whether or not this context has been initialized
+     */
+    boolean isInitialized();
 
-    @Override
-    public void toBytes(ByteBuf buf) {
-        Constants.writeString(buf, this.mode.name());
-    }
+    /**
+     * @return the current {@link IFarRenderMode}
+     * @throws IllegalStateException if this context has not yet been initialized
+     */
+    IFarRenderMode<POS, P> mode();
 
-    public static class Handler implements IMessageHandler<SPacketRenderingStrategy, IMessage> {
-        @Override
-        public IMessage onMessage(SPacketRenderingStrategy message, MessageContext ctx) {
-            ((IFarWorldClient) ctx.getClientHandler().world).switchTo(message.mode);
-            return null;
-        }
-    }
+    /**
+     * @return the current {@link IFarWorld}
+     * @throws IllegalStateException if this context has not yet been initialized
+     */
+    W world();
 }

@@ -28,10 +28,13 @@ import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.mode.api.client.IFarTileCache;
+import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.piece.IFarPiece;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.mode.common.client.FarTileCache;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
 import net.daporkchop.lib.common.misc.string.PStrings;
@@ -92,9 +95,9 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, P extends IFarP
     @Override
     public abstract IFarWorld<POS, P> world(@NonNull WorldServer world);
 
-    @Override
     @SideOnly(Side.CLIENT)
-    public abstract IFarRenderer<POS, P> renderer(@NonNull WorldClient world);
+    @Override
+    public abstract IFarClientContext<POS, P> clientContext(@NonNull WorldClient world);
 
     @Override
     public SimpleRecycler<P> tileRecycler() {

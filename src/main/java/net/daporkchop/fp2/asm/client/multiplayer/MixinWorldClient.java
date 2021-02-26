@@ -21,51 +21,60 @@
 package net.daporkchop.fp2.asm.client.multiplayer;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarContext;
+import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
+import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Implements;
 import org.spongepowered.asm.mixin.Interface;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 
-import static net.daporkchop.lib.common.util.PValidation.*;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @Mixin(WorldClient.class)
 @Implements({
-        @Interface(iface = IFarContext.class, prefix = "fp2_world$", unique = true)
+        @Interface(iface = IFarWorldClient.class, prefix = "fp2_world$", unique = true)
 })
-public abstract class MixinWorldClient extends World implements IFarContext {
-    private IFarRenderMode mode;
-    private IFarRenderer renderer;
+public abstract class MixinWorldClient extends World implements IFarWorldClient {
+    @Unique
+    private final Map<IFarRenderMode, IFarClientContext> contexts = new ObjObjConcurrentHashMap<>();
+    @Unique
+    private final Function<IFarRenderMode, IFarClientContext> computeFunction = m ->
+            //always create context on client thread
+            CompletableFuture.supplyAsync(() -> m.clientContext(uncheckedCast(this)), ClientThreadExecutor.INSTANCE).join();
+
+    @Unique
+    private IFarClientContext active;
 
     protected MixinWorldClient() {
         super(null, null, null, null, false);
     }
 
     @Override
-    public void init(@NonNull IFarRenderMode mode) {
-        this.renderer = mode.renderer((WorldClient) (Object) this);
-        this.mode = mode;
+    public <POS extends IFarPos, P extends IFarPiece> IFarClientContext<POS, P> contextFor(@NonNull IFarRenderMode<POS, P> mode) {
+        return uncheckedCast(this.contexts.computeIfAbsent(mode, this.computeFunction));
     }
 
     @Override
-    public boolean isInitialized() {
-        return this.mode != null;
+    public void switchTo(IFarRenderMode<?, ?> mode) {
+        this.active = mode != null ? this.contextFor(mode) : null;
     }
 
     @Override
-    public IFarRenderMode mode() {
-        checkState(this.mode != null);
-        return this.mode;
-    }
-
-    @Override
-    public IFarRenderer renderer() {
-        return this.renderer;
+    public <POS extends IFarPos, P extends IFarPiece> IFarClientContext<POS, P> activeContext() {
+        return uncheckedCast(this.active);
     }
 }

@@ -22,10 +22,7 @@ package net.daporkchop.fp2.mode.api.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.mode.api.Compressed;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraftforge.fml.relauncher.Side;
@@ -33,14 +30,11 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 /**
  * @author DaPorkchop_
+ * @deprecated unsure if i want to move this into {@link IFarClientContext}
  */
 @SideOnly(Side.CLIENT)
-public interface IFarRenderer<POS extends IFarPos, P extends IFarPiece> {
+@Deprecated
+@FunctionalInterface
+public interface IFarRenderer {
     void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum);
-
-    void receivePiece(@NonNull Compressed<POS, P> piece);
-
-    void unloadPiece(@NonNull POS pos);
-
-    IFarRenderMode<POS, P> mode();
 }

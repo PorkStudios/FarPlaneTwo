@@ -24,14 +24,15 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import net.daporkchop.fp2.mode.api.IFarContext;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -58,12 +59,8 @@ public class SPacketUnloadPiece implements IMessage {
 
     public static class Handler implements IMessageHandler<SPacketUnloadPiece, IMessage> {
         @Override
-        @SuppressWarnings("unchecked")
         public IMessage onMessage(SPacketUnloadPiece message, MessageContext ctx) {
-            IFarContext farContext = (IFarContext) ctx.getClientHandler().world;
-            ClientThreadExecutor.INSTANCE.execute(() -> {
-                farContext.renderer().unloadPiece(message.pos);
-            });
+            ((IFarWorldClient) ctx.getClientHandler().world).contextFor(message.mode).tileCache().unloadTile(uncheckedCast(message.pos));
             return null;
         }
     }

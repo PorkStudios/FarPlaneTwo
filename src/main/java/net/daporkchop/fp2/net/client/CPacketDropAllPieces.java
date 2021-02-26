@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.net.client;
 
 import io.netty.buffer.ByteBuf;
-import net.daporkchop.fp2.mode.api.IFarContext;
+import net.daporkchop.fp2.mode.api.ctx.IFarContext;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.minecraft.util.text.TextComponentTranslation;

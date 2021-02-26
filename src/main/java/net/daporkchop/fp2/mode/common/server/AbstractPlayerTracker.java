@@ -196,7 +196,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
                 //player was newly added and the piece has been set, send it
                 //TODO: make this not be async after fixing exact generator
                 GlobalEventExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(new SPacketPieceData()
-                        .mode(AbstractPlayerTracker.this.world.mode()).piece(this.piece), player));
+                        .mode(AbstractPlayerTracker.this.world.mode()).tile(this.piece), player));
             }
         }
 
@@ -215,7 +215,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
             this.piece = piece;
 
             //send packet to all players
-            SPacketPieceData packet = new SPacketPieceData().mode(AbstractPlayerTracker.this.world.mode()).piece(piece);
+            SPacketPieceData packet = new SPacketPieceData().mode(AbstractPlayerTracker.this.world.mode()).tile(piece);
             //TODO: make this not be async after fixing exact generator
             this.players.forEach(player -> GlobalEventExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(packet, player)));
             //TODO: figure out what the above TODO was referring to

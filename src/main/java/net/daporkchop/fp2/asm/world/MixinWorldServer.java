@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.asm.world;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarContext;
+import net.daporkchop.fp2.mode.api.ctx.IFarContext;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.util.Constants;

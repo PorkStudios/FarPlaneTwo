@@ -27,7 +27,7 @@ import lombok.Setter;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
-import net.daporkchop.fp2.mode.api.IFarContext;
+import net.daporkchop.fp2.mode.api.ctx.IFarContext;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;

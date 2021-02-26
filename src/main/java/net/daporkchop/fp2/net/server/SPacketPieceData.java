@@ -25,13 +25,14 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.fp2.mode.api.Compressed;
-import net.daporkchop.fp2.mode.api.IFarContext;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -42,26 +43,24 @@ public class SPacketPieceData implements IMessage {
     @NonNull
     protected IFarRenderMode<?, ?> mode;
     @NonNull
-    protected Compressed<?, ?> piece;
+    protected Compressed<?, ?> tile;
 
     @Override
     public void fromBytes(ByteBuf buf) {
         this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
-        this.piece = new Compressed<>(buf, this.mode);
+        this.tile = new Compressed<>(buf, this.mode);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
         Constants.writeString(buf, this.mode.name());
-        this.piece.writeWithPos(buf);
+        this.tile.writeWithPos(buf);
     }
 
     public static class Handler implements IMessageHandler<SPacketPieceData, IMessage> {
         @Override
-        @SuppressWarnings("unchecked")
         public IMessage onMessage(SPacketPieceData message, MessageContext ctx) {
-            IFarContext farContext = (IFarContext) ctx.getClientHandler().world;
-            ClientThreadExecutor.INSTANCE.execute(() -> farContext.renderer().receivePiece(message.piece));
+            ((IFarWorldClient) ctx.getClientHandler().world).contextFor(message.mode).tileCache().receiveTile(uncheckedCast(message.tile));
             return null;
         }
     }

@@ -56,6 +56,7 @@ public class IndexedMultidrawVoxelRenderStrategy extends IndexedMultidrawMultipa
         long pos = _tile_pos(tile);
         long renderData = _tile_renderData(tile);
 
-        this.drawTileIndexedMultipass(passes, renderData, VoxelDirectPosAccess._x(pos), VoxelDirectPosAccess._y(pos), VoxelDirectPosAccess._z(pos), VoxelDirectPosAccess._level(pos));
+        this.drawTileIndexedMultipass(passes, renderData,
+                VoxelDirectPosAccess._x(pos), VoxelDirectPosAccess._y(pos), VoxelDirectPosAccess._z(pos), VoxelDirectPosAccess._level(pos));
     }
 }

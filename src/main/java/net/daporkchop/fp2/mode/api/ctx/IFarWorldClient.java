@@ -18,43 +18,39 @@
  *
  */
 
-package net.daporkchop.fp2.net.server;
+package net.daporkchop.fp2.mode.api.ctx;
 
-import io.netty.buffer.ByteBuf;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
+import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
-import net.daporkchop.fp2.util.Constants;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.daporkchop.fp2.mode.api.piece.IFarPiece;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 /**
+ * Provides access to {@link IFarClientContext} instances in a world.
+ *
  * @author DaPorkchop_
  */
-@Setter
-@Getter
-public class SPacketRenderingStrategy implements IMessage {
-    @NonNull
-    protected IFarRenderMode<?, ?> mode;
+@SideOnly(Side.CLIENT)
+public interface IFarWorldClient {
+    /**
+     * Gets the {@link IFarClientContext} used by the given {@link IFarRenderMode} in this world.
+     *
+     * @param mode the {@link IFarRenderMode}
+     * @return the {@link IFarClientContext} used by the given {@link IFarRenderMode} in this world
+     */
+    <POS extends IFarPos, P extends IFarPiece> IFarClientContext<POS, P> contextFor(@NonNull IFarRenderMode<POS, P> mode);
 
-    @Override
-    public void fromBytes(ByteBuf buf) {
-        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
-    }
+    /**
+     * Makes the given render mode the active one for this world.
+     *
+     * @param mode the new mode. If {@code null}, rendering will be disabled
+     */
+    void switchTo(IFarRenderMode<?, ?> mode);
 
-    @Override
-    public void toBytes(ByteBuf buf) {
-        Constants.writeString(buf, this.mode.name());
-    }
-
-    public static class Handler implements IMessageHandler<SPacketRenderingStrategy, IMessage> {
-        @Override
-        public IMessage onMessage(SPacketRenderingStrategy message, MessageContext ctx) {
-            ((IFarWorldClient) ctx.getClientHandler().world).switchTo(message.mode);
-            return null;
-        }
-    }
+    /**
+     * @return the currently active render context, or {@code null} if none are active
+     */
+    <POS extends IFarPos, P extends IFarPiece> IFarClientContext<POS, P> activeContext();
 }
