@@ -20,11 +20,9 @@
 
 package net.daporkchop.fp2.server;
 
-import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.net.server.SPacketReady;
-import net.daporkchop.fp2.mode.api.ctx.IFarContext;
-import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -34,9 +32,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
-import java.io.IOException;
-
-import static net.daporkchop.fp2.util.Constants.NETWORK_WRAPPER;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -45,20 +41,15 @@ public class ServerEvents {
     @SubscribeEvent
     public void worldLoad(WorldEvent.Load event) {
         if (!event.getWorld().isRemote) {
-            ((IFarContext) event.getWorld()).init(IFarRenderMode.REGISTRY.get(FP2Config.renderMode));
-            event.getWorld().addEventListener(new FarWorldBlockChangeListener(((IFarContext) event.getWorld()).world()));
+            //TODO: make this better
+            ((IFarWorldServer) event.getWorld()).forEachContext(context -> event.getWorld().addEventListener(new FarWorldBlockChangeListener(context.world())));
         }
     }
 
     @SubscribeEvent
     public void worldUnload(WorldEvent.Unload event) {
-        if (!event.getWorld().isRemote && ((IFarContext) event.getWorld()).isInitialized()) {
-            try {
-                ((IFarContext) event.getWorld()).world().close();
-                Constants.LOGGER.info("Closed far world storage in dimension {}.", event.getWorld().provider.getDimension());
-            } catch (IOException e) {
-                Constants.LOGGER.fatal("Unable to close far world storage!", e);
-            }
+        if (!event.getWorld().isRemote) {
+            ((IFarWorldServer) event.getWorld()).close();
         }
     }
 
@@ -72,14 +63,18 @@ public class ServerEvents {
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         Constants.LOGGER.debug("Handling logout for player {}", event.player.getName());
-        ((IFarContext) event.player.world).world().tracker().playerRemove((EntityPlayerMP) event.player);
+        IFarRenderMode<?, ?> mode = ((IFarPlayer) event.player).activeMode();
+        if (mode != null) {
+            ((IFarWorldServer) event.player.world).contextFor(mode).world().tracker().playerRemove((EntityPlayerMP) event.player);
+        }
     }
 
     @SubscribeEvent
     public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
-        if (!event.player.world.isRemote && ((IFarPlayer) event.player).isReady()) {
-            ((IFarContext) event.player.getServer().getWorld(event.fromDim)).world().tracker().playerRemove((EntityPlayerMP) event.player);
-            ((IFarContext) event.player.getServer().getWorld(event.toDim)).world().tracker().playerAdd((EntityPlayerMP) event.player);
+        IFarRenderMode<?, ?> mode;
+        if (!event.player.world.isRemote && (mode = ((IFarPlayer) event.player).activeMode()) != null) {
+            ((IFarWorldServer) event.player.getServer().getWorld(event.fromDim)).contextFor(mode).world().tracker().playerRemove((EntityPlayerMP) event.player);
+            ((IFarWorldServer) event.player.getServer().getWorld(event.toDim)).contextFor(mode).world().tracker().playerAdd((EntityPlayerMP) event.player);
         }
     }
 
@@ -88,11 +83,12 @@ public class ServerEvents {
         if (!event.world.isRemote && event.phase == TickEvent.Phase.END) {
             long time = event.world.getTotalWorldTime();
             if (time % 20L == 0L) {
-                IFarPlayerTracker tracker = ((IFarContext) event.world).world().tracker();
-                event.world.playerEntities.stream()
-                        .map(EntityPlayerMP.class::cast)
-                        .filter(player -> ((IFarPlayer) player).isReady())
-                        .forEach(tracker::playerMove);
+                event.world.playerEntities.forEach(player -> {
+                    IFarRenderMode<?, ?> mode = ((IFarPlayer) player).activeMode();
+                    if (mode != null) {
+                        ((IFarWorldServer) event.world).contextFor(mode).world().tracker().playerMove((EntityPlayerMP) player);
+                    }
+                });
             }
         }
     }

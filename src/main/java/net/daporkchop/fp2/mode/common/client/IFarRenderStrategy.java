@@ -23,13 +23,14 @@ package net.daporkchop.fp2.mode.common.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.lib.unsafe.capability.Releasable;
 
 import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile> {
+public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile> extends Releasable {
     //
     // POSITION ENCODING/DECODING/HELPER METHODS
     //

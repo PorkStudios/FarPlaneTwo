@@ -36,6 +36,7 @@ import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.util.DirectLongStack;
 import net.daporkchop.fp2.util.math.Sphere;
 import net.daporkchop.fp2.util.math.Volume;
+import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
@@ -50,10 +51,10 @@ import static org.lwjgl.opengl.GL15.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTile> implements IFarRenderer {
+public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarRenderer {
     protected final IFarRenderMode<POS, T> mode;
 
-    protected final FarRenderCache<POS, T> cache;
+    protected final BakeManager<POS, T> bakeManager;
 
     protected final int maxLevel = FP2Config.maxLevels - 1;
 
@@ -65,15 +66,21 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
     public AbstractFarRenderer(@NonNull IFarRenderMode<POS, T> mode) {
         this.mode = mode;
 
-        this.strategy = this.createStrategy();
-
-        this.cache = new FarRenderCache<>(this);
+        this.strategy = this.strategy0();
+        this.bakeManager = this.bakeManager0();
     }
 
     /**
      * @return the {@link IFarRenderStrategy} used by this renderer
      */
-    protected abstract IFarRenderStrategy<POS, T> createStrategy();
+    protected abstract IFarRenderStrategy<POS, T> strategy0();
+
+    /**
+     * @return a new {@link BakeManager}
+     */
+    protected BakeManager<POS, T> bakeManager0() {
+        return new BakeManager<>(this);
+    }
 
     @Override
     public void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
@@ -83,7 +90,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
         Volume[] volumes = this.createVolumesForSelection(partialTicks, world, mc, frustum);
 
         this.index.clear();
-        this.cache.tree.select(volumes, frustum, this.index);
+        this.bakeManager.tree.select(volumes, frustum, this.index);
 
         if (this.index.isEmpty()) {
             return; //nothing to render...
@@ -105,29 +112,6 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
             this.resetGlState(partialTicks, world, mc, frustum);
             checkGLError("post fp2 reset");
         }
-
-        /*FarRenderIndex index = this.cache.rebuildIndex(volumes, frustum);
-        checkGLError("post fp2 build index");
-        if (index.isEmpty()) {
-            return; //nothing to render...
-        }
-
-        checkGLError("pre fp2 setup");
-        this.updateAndBindSSBOs(partialTicks, world, mc, frustum);
-
-        this.prepareGlState(partialTicks, world, mc, frustum);
-        try (VertexArrayObject vao = this.cache.vao().bind()) {
-            this.updateAndBindUBOs(partialTicks, world, mc, frustum);
-            checkGLError("post fp2 setup");
-
-            checkGLError("pre fp2 render");
-            this.render0(partialTicks, world, mc, frustum, index);
-            checkGLError("post fp2 render");
-        } finally {
-            checkGLError("pre fp2 reset");
-            this.resetGlState(partialTicks, world, mc, frustum);
-            checkGLError("post fp2 reset");
-        }*/
     }
 
     //TODO: use cylinders for heightmap and spheres for voxel
@@ -162,5 +146,9 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
         mc.entityRenderer.disableLightmap();
 
         GlStateManager.depthFunc(GL_LEQUAL);
+    }
+
+    @Override
+    protected void doRelease() {
     }
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,14 +20,18 @@
 
 package net.daporkchop.fp2.asm.entity.player;
 
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import org.spongepowered.asm.mixin.Implements;
 import org.spongepowered.asm.mixin.Interface;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 
-import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -37,20 +41,20 @@ import static net.daporkchop.lib.common.util.PValidation.*;
         @Interface(iface = IFarPlayer.class, prefix = "fp2_player$", unique = true)
 })
 public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPlayer {
-    protected boolean ready;
+    @Unique
+    private IFarRenderMode activeMode;
 
     public MixinEntityPlayerMP() {
         super(null, null);
     }
 
     @Override
-    public boolean isReady() {
-        return this.ready;
+    public <POS extends IFarPos, T extends IFarTile> IFarRenderMode<POS, T> activeMode() {
+        return uncheckedCast(this.activeMode);
     }
 
     @Override
-    public synchronized void markReady() {
-        checkState(!this.ready, "already ready?!?");
-        this.ready = true;
+    public void activeMode(IFarRenderMode<?, ?> mode) {
+        this.activeMode = mode;
     }
 }

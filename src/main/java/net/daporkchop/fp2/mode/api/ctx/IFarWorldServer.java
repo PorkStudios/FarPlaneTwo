@@ -18,25 +18,42 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
+package net.daporkchop.fp2.mode.api.ctx;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
-import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.mode.api.IFarTile;
+import net.minecraft.world.WorldServer;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
+
+import java.util.function.Consumer;
 
 /**
+ * Provides access to {@link IFarServerContext} instances in a {@link WorldServer}.
+ *
  * @author DaPorkchop_
  */
-public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelTile> {
-    public VoxelRenderer(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
-        super(mode);
-    }
+@SideOnly(Side.CLIENT)
+public interface IFarWorldServer {
+    /**
+     * Gets the {@link IFarServerContext} used by the given {@link IFarServerContext} in this world.
+     *
+     * @param mode the {@link IFarRenderMode}
+     * @return the {@link IFarServerContext} used by the given {@link IFarServerContext} in this world
+     */
+    <POS extends IFarPos, T extends IFarTile> IFarServerContext<POS, T> contextFor(@NonNull IFarRenderMode<POS, T> mode);
 
-    @Override
-    protected IFarRenderStrategy<VoxelPos, VoxelTile> strategy0() {
-        return new IndexedMultidrawVoxelRenderStrategy();
-    }
+    /**
+     * Runs the given action on every {@link IFarServerContext}.
+     *
+     * @param action the action
+     */
+    void forEachContext(@NonNull Consumer<IFarServerContext<?, ?>> action);
+
+    /**
+     * Called when the world is being unloaded.
+     */
+    void close();
 }

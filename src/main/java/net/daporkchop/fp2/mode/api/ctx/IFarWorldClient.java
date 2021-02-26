@@ -24,11 +24,12 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 /**
- * Provides access to {@link IFarClientContext} instances in a world.
+ * Provides access to {@link IFarClientContext} instances in a {@link WorldClient}.
  *
  * @author DaPorkchop_
  */
@@ -53,4 +54,9 @@ public interface IFarWorldClient {
      * @return the currently active render context, or {@code null} if none are active
      */
     <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> activeContext();
+
+    /**
+     * Called when the world is being unloaded.
+     */
+    void close();
 }

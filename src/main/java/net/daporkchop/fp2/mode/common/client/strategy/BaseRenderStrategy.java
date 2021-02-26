@@ -31,6 +31,7 @@ import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static org.lwjgl.opengl.GL15.*;
@@ -39,7 +40,7 @@ import static org.lwjgl.opengl.GL15.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseRenderStrategy<POS extends IFarPos, T extends IFarTile> implements IFarRenderStrategy<POS, T> {
+public abstract class BaseRenderStrategy<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarRenderStrategy<POS, T> {
     /*
      * struct RenderData {
      *   u64 vertexOffset; //offset of vertex data from the beginning of gpu memory, in multiples of vertex size
@@ -114,5 +115,10 @@ public abstract class BaseRenderStrategy<POS extends IFarPos, T extends IFarTile
         try (AllocatedGLBuffer vertices = this.vertices.bind(GL_ARRAY_BUFFER)) {
             output.execute();
         }
+    }
+
+    @Override
+    protected void doRelease() {
+        this.vertices.delete();
     }
 }

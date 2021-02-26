@@ -25,6 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
@@ -41,24 +42,30 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public class FarRenderCache<POS extends IFarPos, T extends IFarTile> {
+public class BakeManager<POS extends IFarPos, T extends IFarTile> implements IFarTileCache.Listener<POS, T> {
     protected final AbstractFarRenderer<POS, T> renderer;
     protected final IFarRenderStrategy<POS, T> strategy;
 
     protected final FarRenderTree<POS, T> tree;
     protected final Map<POS, Compressed<POS, T>> tiles = new ConcurrentHashMap<>();
 
-    protected final IntFunction<POS[]> posArray;
-    protected final IntFunction<T[]> tileArray;
-
-    public FarRenderCache(@NonNull AbstractFarRenderer<POS, T> renderer) {
+    public BakeManager(@NonNull AbstractFarRenderer<POS, T> renderer) {
         this.renderer = renderer;
         this.strategy = renderer.strategy();
 
-        this.posArray = renderer.mode()::posArray;
-        this.tileArray = renderer.mode()::tileArray;
-
         this.tree = new FarRenderTree<>(renderer.mode(), this.strategy, renderer.maxLevel());
+    }
+
+    @Override
+    public void tileAdded(@NonNull Compressed<POS, T> tile) {
+    }
+
+    @Override
+    public void tileModified(@NonNull Compressed<POS, T> tile) {
+    }
+
+    @Override
+    public void tileRemoved(@NonNull POS pos) {
     }
 
     public void receiveTile(@NonNull Compressed<POS, T> tileIn) {
@@ -87,7 +94,7 @@ public class FarRenderCache<POS extends IFarPos, T extends IFarTile> {
                         }
 
                         SimpleRecycler<T> recycler = this.renderer.mode().tileRecycler();
-                        T[] inputTiles = this.tileArray.apply(compressedInputTiles.length);
+                        T[] inputTiles = this.renderer.mode().tileArray(compressedInputTiles.length);
                         try {
                             for (int i = 0; i < inputTiles.length; i++) { //inflate tiles
                                 if (compressedInputTiles[i] != null) {

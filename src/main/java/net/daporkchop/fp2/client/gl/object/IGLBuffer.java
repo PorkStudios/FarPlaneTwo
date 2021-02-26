@@ -93,4 +93,9 @@ public interface IGLBuffer extends AutoCloseable {
      * @param size  the size of the data (in bytes)
      */
     void downloadRange(long start, long addr, long size);
+
+    /**
+     * Deletes the buffer immediately (rather than relying on GC to delete it eventually).
+     */
+    void delete();
 }

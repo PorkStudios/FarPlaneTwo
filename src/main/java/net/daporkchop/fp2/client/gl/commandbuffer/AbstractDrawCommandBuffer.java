@@ -90,4 +90,9 @@ public abstract class AbstractDrawCommandBuffer implements IDrawCommandBuffer {
     }
 
     protected abstract void draw0();
+
+    @Override
+    public void delete() {
+        this.buffer.delete();
+    }
 }

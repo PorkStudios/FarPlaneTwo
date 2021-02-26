@@ -32,7 +32,6 @@ import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.minecraft.world.WorldServer;
 
 import java.io.Closeable;
-import java.io.IOException;
 
 /**
  * @author DaPorkchop_
@@ -91,8 +90,6 @@ public interface IFarWorld<POS extends IFarPos, T extends IFarTile> extends Clos
      */
     IFarRenderMode<POS, T> mode();
 
-    void save();
-
     @Override
-    void close() throws IOException;
+    void close();
 }

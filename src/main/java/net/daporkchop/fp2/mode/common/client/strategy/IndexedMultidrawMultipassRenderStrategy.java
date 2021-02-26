@@ -40,4 +40,13 @@ public abstract class IndexedMultidrawMultipassRenderStrategy<POS extends IFarPo
 
         PArrays.fill(this.passes, this::createCommandBuffer);
     }
+
+    @Override
+    protected void doRelease() {
+        super.doRelease();
+
+        for (IDrawCommandBuffer pass : this.passes) {
+            pass.delete();
+        }
+    }
 }

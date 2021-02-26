@@ -34,6 +34,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public abstract class GLObject implements AutoCloseable {
+    protected final PCleaner cleaner;
     protected final int id;
 
     public GLObject(int id) {
@@ -41,11 +42,18 @@ public abstract class GLObject implements AutoCloseable {
         this.id = id;
 
         Runnable r = this.delete(id);
-        PCleaner.cleaner(this, () -> Minecraft.getMinecraft().addScheduledTask(r)); //create cleaner to ensure that the object is deleted later
+        this.cleaner = PCleaner.cleaner(this, () -> Minecraft.getMinecraft().addScheduledTask(r)); //create cleaner to ensure that the object is deleted later
     }
 
     @Override
     public abstract void close();
+
+    /**
+     * Deletes the object immediately (rather than relying on GC to delete it eventually).
+     */
+    public void delete() {
+        this.cleaner.clean();
+    }
 
     /**
      * Gets a {@link Runnable} which will delete the object with the given ID when run.

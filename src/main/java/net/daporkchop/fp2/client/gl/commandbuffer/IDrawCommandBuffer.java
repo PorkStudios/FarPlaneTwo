@@ -62,4 +62,9 @@ public interface IDrawCommandBuffer extends AutoCloseable {
      * This method may be called multiple times.
      */
     void draw();
+
+    /**
+     * Deletes the buffer immediately (rather than relying on GC to delete it eventually).
+     */
+    void delete();
 }

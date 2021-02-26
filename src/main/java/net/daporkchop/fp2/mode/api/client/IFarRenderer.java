@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.api.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
+import net.daporkchop.lib.unsafe.capability.Releasable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraftforge.fml.relauncher.Side;
@@ -30,11 +30,8 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 /**
  * @author DaPorkchop_
- * @deprecated unsure if i want to move this into {@link IFarClientContext}
  */
 @SideOnly(Side.CLIENT)
-@Deprecated
-@FunctionalInterface
-public interface IFarRenderer {
+public interface IFarRenderer extends Releasable {
     void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum);
 }

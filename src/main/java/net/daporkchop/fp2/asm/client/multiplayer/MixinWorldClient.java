@@ -77,4 +77,9 @@ public abstract class MixinWorldClient extends World implements IFarWorldClient 
     public <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> activeContext() {
         return uncheckedCast(this.active);
     }
+
+    @Override
+    public void close() {
+        this.contexts.forEach((mode, context) -> context.close());
+    }
 }

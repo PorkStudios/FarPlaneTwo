@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.api;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
@@ -78,6 +79,14 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @return the new {@link IFarWorld}
      */
     IFarWorld<POS, T> world(@NonNull WorldServer world);
+
+    /**
+     * Creates a new {@link IFarServerContext} for the given world.
+     *
+     * @param world the world
+     * @return the new {@link IFarServerContext}
+     */
+    IFarServerContext<POS, T> serverContext(@NonNull WorldServer world);
 
     /**
      * Creates a new {@link IFarClientContext} for the given world.

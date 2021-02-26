@@ -58,7 +58,7 @@ public class FarRenderIndex {
 
     protected int uploaded = -1;
 
-    public FarRenderIndex(FarRenderCache cache) {
+    public FarRenderIndex(BakeManager cache) {
         this.passes = 0; //cache.passes();
 
         this.buffers = new IntBuffer[this.passes];

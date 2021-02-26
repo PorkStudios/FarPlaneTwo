@@ -44,7 +44,7 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
     }
 
     @Override
-    protected IFarRenderStrategy<HeightmapPos, HeightmapTile> createStrategy() {
+    protected IFarRenderStrategy<HeightmapPos, HeightmapTile> strategy0() {
         throw new UnsupportedOperationException();
     }
 

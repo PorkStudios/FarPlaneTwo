@@ -20,37 +20,29 @@
 
 package net.daporkchop.fp2.mode.api.ctx;
 
-import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 
 /**
+ * A client-side context for a specific {@link IFarRenderMode} in a {@link IFarWorldServer}.
+ *
  * @author DaPorkchop_
  */
-public interface IFarContext<POS extends IFarPos, T extends IFarTile, W extends IFarWorld<POS, T>> {
+public interface IFarServerContext<POS extends IFarPos, T extends IFarTile> extends AutoCloseable {
     /**
-     * Initializes this context.
-     *
-     * @param mode the new {@link IFarRenderMode} to use
+     * @return the {@link IFarWorld} used in this context
      */
-    void init(@NonNull IFarRenderMode<POS, T> mode);
+    IFarWorld<POS, T> world();
 
     /**
-     * @return whether or not this context has been initialized
-     */
-    boolean isInitialized();
-
-    /**
-     * @return the current {@link IFarRenderMode}
-     * @throws IllegalStateException if this context has not yet been initialized
+     * @return the render mode
      */
     IFarRenderMode<POS, T> mode();
 
-    /**
-     * @return the current {@link IFarWorld}
-     * @throws IllegalStateException if this context has not yet been initialized
-     */
-    W world();
+    @Override
+    default void close() {
+        this.world().close();
+    }
 }

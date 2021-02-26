@@ -22,17 +22,16 @@ package net.daporkchop.fp2.mode.api.ctx;
 
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
-import net.daporkchop.fp2.mode.api.IFarTile;
-import net.minecraft.client.multiplayer.WorldClient;
 
 /**
- * A client-side context for a specific {@link IFarRenderMode} in a {@link WorldClient}.
+ * A client-side context for a specific {@link IFarRenderMode} in a {@link IFarWorldClient}.
  *
  * @author DaPorkchop_
  */
-public interface IFarClientContext<POS extends IFarPos, T extends IFarTile> {
+public interface IFarClientContext<POS extends IFarPos, T extends IFarTile> extends AutoCloseable {
     /**
      * @return a cache for tiles used by this context
      */
@@ -47,4 +46,10 @@ public interface IFarClientContext<POS extends IFarPos, T extends IFarTile> {
      * @return the render mode
      */
     IFarRenderMode<POS, T> mode();
+
+    @Override
+    default void close() {
+        this.tileCache().release();
+        this.renderer().release();
+    }
 }

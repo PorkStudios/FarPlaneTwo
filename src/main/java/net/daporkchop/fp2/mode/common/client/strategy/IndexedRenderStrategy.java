@@ -135,4 +135,11 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, T extends IFarT
             super.executeBakeOutput(pos, output);
         }
     }
+
+    @Override
+    protected void doRelease() {
+        super.doRelease();
+
+        this.indices.delete();
+    }
 }

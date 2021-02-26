@@ -25,6 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;

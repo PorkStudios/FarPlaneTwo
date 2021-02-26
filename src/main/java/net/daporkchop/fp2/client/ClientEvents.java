@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,6 +23,7 @@ package net.daporkchop.fp2.client;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.asm.client.gui.IGuiScreen;
 import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiVideoSettings;
 import net.minecraftforge.client.event.GuiScreenEvent;
@@ -44,7 +45,14 @@ public class ClientEvents {
     @SubscribeEvent
     public void worldLoad(WorldEvent.Load event) {
         if (event.getWorld().isRemote) {
-            TexUVs.reloadUVs();
+            TexUVs.reloadUVs(); //TODO: figure out how the resource listener thing works
+        }
+    }
+
+    @SubscribeEvent
+    public void worldUnload(WorldEvent.Unload event) {
+        if (event.getWorld().isRemote) {
+            ((IFarWorldClient) event.getWorld()).close();
         }
     }
 

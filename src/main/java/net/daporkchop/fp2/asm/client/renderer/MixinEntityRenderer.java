@@ -25,8 +25,6 @@ import net.daporkchop.fp2.client.ReversedZ;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.client.gl.camera.Frustum;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.mode.api.ctx.IFarContext;
-import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;

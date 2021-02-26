@@ -25,6 +25,7 @@ import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -45,17 +46,18 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @SideOnly(Side.CLIENT)
 //TODO: this still has some race conditions - it's possible that addListener/removeListener might cause the listener to be notified twice for tiles that are
 // received/unloaded during the initial notification pass
-public class FarTileCache<POS extends IFarPos, T extends IFarTile> implements IFarTileCache<POS, T>, Function<POS, Compressed<POS, T>> {
+public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarTileCache<POS, T>, Function<POS, Compressed<POS, T>> {
     protected final Map<POS, Compressed<POS, T>> tiles = new ConcurrentHashMap<>();
-    protected final Collection<Listener<POS, T>> handlers = new CopyOnWriteArraySet<>();
+    protected final Collection<Listener<POS, T>> listeners = new CopyOnWriteArraySet<>();
 
     @Override
     public void receiveTile(@NonNull Compressed<POS, T> tile) {
+        this.assertNotReleased();
         this.tiles.compute(tile.pos(), (pos, old) -> {
             if (old == null) {
-                this.handlers.forEach(listener -> listener.tileAdded(tile));
+                this.listeners.forEach(listener -> listener.tileAdded(tile));
             } else {
-                this.handlers.forEach(listener -> listener.tileModified(tile));
+                this.listeners.forEach(listener -> listener.tileModified(tile));
             }
             return tile;
         });
@@ -63,15 +65,17 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> implements IF
 
     @Override
     public void unloadTile(@NonNull POS _pos) {
+        this.assertNotReleased();
         this.tiles.computeIfPresent(_pos, (pos, old) -> {
-            this.handlers.forEach(listener -> listener.tileRemoved(pos));
+            this.listeners.forEach(listener -> listener.tileRemoved(pos));
             return null;
         });
     }
 
     @Override
     public void addListener(@NonNull Listener<POS, T> listener, boolean notifyForExisting) {
-        checkState(this.handlers.add(listener), "duplicate listener: %s", listener);
+        this.assertNotReleased();
+        checkState(this.listeners.add(listener), "duplicate listener: %s", listener);
         if (notifyForExisting) {
             this.tiles.forEach((pos, tile) -> listener.tileAdded(tile));
         }
@@ -79,7 +83,8 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> implements IF
 
     @Override
     public void removeListener(@NonNull Listener<POS, T> listener, boolean notifyRemoval) {
-        checkState(this.handlers.remove(listener), "unknown listener: %s", listener);
+        this.assertNotReleased();
+        checkState(this.listeners.remove(listener), "unknown listener: %s", listener);
         if (notifyRemoval) {
             this.tiles.forEach((pos, tile) -> listener.tileRemoved(pos));
         }
@@ -87,6 +92,7 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> implements IF
 
     @Override
     public Stream<Compressed<POS, T>> getTilesCached(@NonNull Stream<POS> positions) {
+        this.assertNotReleased();
         return positions.map(this);
     }
 
@@ -97,5 +103,12 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> implements IF
     @Deprecated
     public Compressed<POS, T> apply(@NonNull POS pos) {
         return this.tiles.get(pos);
+    }
+
+    @Override
+    protected void doRelease() {
+        this.tiles.forEach((pos, tile) -> this.listeners.forEach(listener -> listener.tileRemoved(pos)));
+        this.tiles.clear();
+        this.listeners.clear();
     }
 }

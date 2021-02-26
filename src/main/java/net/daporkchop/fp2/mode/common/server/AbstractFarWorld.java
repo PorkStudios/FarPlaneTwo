@@ -24,9 +24,9 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.mode.api.Compressed;
-import net.daporkchop.fp2.mode.api.ctx.IFarContext;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -186,7 +186,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
     @SuppressWarnings("unchecked")
     public void notifyPlayerTracker(@NonNull Compressed<POS, T> tile) {
-        ((IFarContext) this.world).world().tracker().tileChanged(tile);
+        this.tracker.tileChanged(tile);
     }
 
     public boolean canGenerateRough(@NonNull POS pos) {
@@ -230,17 +230,18 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         return ((AsyncBlockAccess.Holder) this.world).asyncBlockAccess();
     }
 
-    @Override
+    /*@Override
     public void save() {
         try {
             this.saveNotDone();
         } catch (IOException e) {
             LOGGER.error("Unable to save in DIM" + this.world.provider.getDimension(), e);
         }
-    }
+    }*/ //TODO
 
     @Override
-    public void close() throws IOException {
+    @SneakyThrows(IOException.class)
+    public void close() {
         MinecraftForge.EVENT_BUS.unregister(this);
 
         LOGGER.trace("Shutting down generation workers in DIM{}", this.world.provider.getDimension());

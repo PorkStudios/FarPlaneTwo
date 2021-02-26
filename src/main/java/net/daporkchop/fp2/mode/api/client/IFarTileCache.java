@@ -24,6 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.lib.unsafe.capability.Releasable;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -35,7 +36,7 @@ import java.util.stream.Stream;
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> {
+public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> extends Releasable {
     void receiveTile(@NonNull Compressed<POS, T> tile);
 
     void unloadTile(@NonNull POS pos);

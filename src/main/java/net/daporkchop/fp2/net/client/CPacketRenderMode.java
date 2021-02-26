@@ -26,8 +26,8 @@ import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
-import net.daporkchop.fp2.mode.api.ctx.IFarContext;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
@@ -66,7 +66,7 @@ public class CPacketRenderMode implements IMessage {
                     //send the packet here to ensure that it's sent before adding the player to the tracker
                     NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy().mode(IFarRenderMode.REGISTRY.get(FP2Config.renderMode)), ctx.getServerHandler().player);
 
-                    ((IFarContext) ctx.getServerHandler().player.world).world().tracker().playerAdd(ctx.getServerHandler().player);
+                    ((IFarWorldServer) ctx.getServerHandler().player.world).contextFor(message.mode).world().tracker().playerAdd(ctx.getServerHandler().player);
                     ((IFarPlayer) ctx.getServerHandler().player).markReady();
                 });
             }

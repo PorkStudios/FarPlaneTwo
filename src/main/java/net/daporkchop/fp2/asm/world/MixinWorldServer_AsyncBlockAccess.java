@@ -20,10 +20,7 @@
 
 package net.daporkchop.fp2.asm.world;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.ctx.IFarContext;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.server.IFarWorld;
+import lombok.Getter;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.cc.CCAsyncBlockAccessImpl;
@@ -37,75 +34,46 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @Mixin(WorldServer.class)
 @Implements({
-        @Interface(iface = IFarContext.class, prefix = "fp2_world$", unique = true),
         @Interface(iface = AsyncBlockAccess.Holder.class, prefix = "fp2_asyncBlockAccess$", unique = true)
 })
-public abstract class MixinWorldServer extends World implements IFarContext, AsyncBlockAccess.Holder {
+public abstract class MixinWorldServer_AsyncBlockAccess extends World implements AsyncBlockAccess.Holder {
+    @Getter
+    @Unique
     protected AsyncBlockAccess asyncBlockAccess;
-
-    protected IFarRenderMode mode;
-    protected IFarWorld world;
-
     @Unique
     protected int cbaGcTicks;
-    @Unique
-    protected int saveTicks;
 
-    protected MixinWorldServer() {
+    protected MixinWorldServer_AsyncBlockAccess() {
         super(null, null, null, null, false);
     }
 
-    @Override
-    public AsyncBlockAccess asyncBlockAccess() {
-        return this.asyncBlockAccess;
+    @Inject(method = "Lnet/minecraft/world/WorldServer;init()Lnet/minecraft/world/World;",
+            at = @At("TAIL"))
+    private void fp2_init_setAsyncBlockAccessInstance(CallbackInfoReturnable<World> ci) {
+        checkState(this.asyncBlockAccess == null, "already initialized!");
+        this.asyncBlockAccess = Constants.isCubicWorld(this)
+                ? new CCAsyncBlockAccessImpl(uncheckedCast(this))
+                : new VanillaAsyncBlockAccessImpl(uncheckedCast(this));
     }
 
     @Inject(method = "Lnet/minecraft/world/WorldServer;tick()V",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/world/chunk/IChunkProvider;tick()Z",
                     shift = At.Shift.AFTER))
-    private void tick_postChunkProviderTick(CallbackInfo ci) {
+    private void fp2_tick_asyncBlockAccessGc(CallbackInfo ci) {
         if (this.cbaGcTicks++ > 40) {
             this.cbaGcTicks = 0;
             this.asyncBlockAccess.gc();
         }
-        if (this.saveTicks > 1200) {
-            this.saveTicks = 0;
-            this.world.save();
-        }
-    }
-
-    @Override
-    public void init(@NonNull IFarRenderMode mode) {
-        this.asyncBlockAccess = Constants.isCubicWorld(this)
-                                 ? new CCAsyncBlockAccessImpl((WorldServer) (Object) this)
-                                 : new VanillaAsyncBlockAccessImpl((WorldServer) (Object) this);
-        this.world = mode.world((WorldServer) (Object) this);
-        this.mode = mode;
-    }
-
-    @Override
-    public boolean isInitialized() {
-        return this.mode != null;
-    }
-
-    @Override
-    public IFarRenderMode mode() {
-        checkState(this.mode != null);
-        return this.mode;
-    }
-
-    @Override
-    public IFarWorld world() {
-        checkState(this.mode != null);
-        return this.world;
     }
 }
