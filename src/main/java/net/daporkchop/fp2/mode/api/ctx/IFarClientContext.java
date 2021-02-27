@@ -49,7 +49,7 @@ public interface IFarClientContext<POS extends IFarPos, T extends IFarTile> exte
 
     @Override
     default void close() {
-        this.tileCache().release();
         this.renderer().release();
+        this.tileCache().release();
     }
 }

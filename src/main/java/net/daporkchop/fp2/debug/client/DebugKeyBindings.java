@@ -38,7 +38,6 @@ public class DebugKeyBindings {
     public final KeyBinding TOGGLE_REVERSED_Z = new KeyBinding("key.fp2.debug.reversedZ", Keyboard.KEY_8, "key.categories.fp2.debug");
     public final KeyBinding TOGGLE_VANILLA_RENDER = new KeyBinding("key.fp2.debug.toggleVanillaRender", Keyboard.KEY_7, "key.categories.fp2.debug");
     public final KeyBinding REBUILD_UVS = new KeyBinding("key.fp2.debug.rebuildUVs", Keyboard.KEY_6, "key.categories.fp2.debug");
-    public final KeyBinding CYCLE_DRAW_MODE = new KeyBinding("key.fp2.debug.drawMode", Keyboard.KEY_5, "key.categories.fp2.debug");
 
     public void register() {
         ClientRegistry.registerKeyBinding(RELOAD_SHADERS);
@@ -46,6 +45,5 @@ public class DebugKeyBindings {
         ClientRegistry.registerKeyBinding(TOGGLE_REVERSED_Z);
         ClientRegistry.registerKeyBinding(TOGGLE_VANILLA_RENDER);
         ClientRegistry.registerKeyBinding(REBUILD_UVS);
-        ClientRegistry.registerKeyBinding(CYCLE_DRAW_MODE);
     }
 }

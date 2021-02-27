@@ -127,7 +127,7 @@ public class FP2Config {
                 "Default: <cpu count> - 1 (and at least 1)"
         })
         @Config.LangKey("config.fp2.client.renderThreads")
-        @Config.RequiresWorldRestart
+        @Config.RequiresMcRestart
         public int renderThreads = max(PorkUtil.CPU_COUNT - 1, 1);
 
         @Config.Comment({

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,11 +23,8 @@ package net.daporkchop.fp2.client;
 import io.github.opencubicchunks.cubicchunks.core.CubicChunksConfig;
 import io.github.opencubicchunks.cubicchunks.core.client.CubeProviderClient;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.util.threading.keyed.KeyedTaskScheduler;
-import net.daporkchop.fp2.util.threading.keyed.PriorityKeyedTaskScheduler;
-import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ChunkProviderClient;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -37,7 +34,6 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -47,24 +43,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class ClientConstants {
     public static final Minecraft mc = Minecraft.getMinecraft();
 
-    public static KeyedTaskScheduler<IFarPos> RENDER_WORKERS;
-
     public static AxisAlignedBB CURRENT_RENDER_BB;
-
-    public static void init() {
-        checkState(RENDER_WORKERS == null, "render workers already running?!?");
-
-        RENDER_WORKERS = new PriorityKeyedTaskScheduler<>(
-                FP2Config.client.renderThreads,
-                PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build());
-    }
-
-    public static void shutdown() {
-        checkState(RENDER_WORKERS != null, "render workers not running?!?");
-
-        RENDER_WORKERS.shutdown();
-        RENDER_WORKERS = null;
-    }
 
     public void update() {
         double offset = -8.0d;

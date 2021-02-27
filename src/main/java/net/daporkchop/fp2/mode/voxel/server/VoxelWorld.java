@@ -21,11 +21,11 @@
 package net.daporkchop.fp2.mode.voxel.server;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.VoxelRenderMode;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerIntersection;
 import net.minecraft.world.WorldServer;
@@ -36,7 +36,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 public class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelTile> {
-    public VoxelWorld(@NonNull WorldServer world, @NonNull VoxelRenderMode mode) {
+    public VoxelWorld(@NonNull WorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
         super(world, mode);
     }
 

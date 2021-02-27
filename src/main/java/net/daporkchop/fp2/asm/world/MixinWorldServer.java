@@ -21,20 +21,28 @@
 package net.daporkchop.fp2.asm.world;
 
 import com.google.common.collect.ImmutableMap;
+import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
+import net.daporkchop.fp2.util.threading.asyncblockaccess.cc.CCAsyncBlockAccessImpl;
+import net.daporkchop.fp2.util.threading.asyncblockaccess.vanilla.VanillaAsyncBlockAccessImpl;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.chunk.IChunkProvider;
 import org.spongepowered.asm.mixin.Implements;
 import org.spongepowered.asm.mixin.Interface;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Map;
@@ -48,33 +56,23 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Mixin(WorldServer.class)
 @Implements({
-        @Interface(iface = IFarWorldServer.class, prefix = "fp2_world$", unique = true)
+        @Interface(iface = IFarWorldServer.class, prefix = "fp2_world$", unique = true),
+        @Interface(iface = AsyncBlockAccess.Holder.class, prefix = "fp2_asyncBlockAccess$", unique = true)
 })
-public abstract class MixinWorldServer_IFarWorldServer extends World implements IFarWorldServer {
+public abstract class MixinWorldServer extends World implements IFarWorldServer, AsyncBlockAccess.Holder {
     @Unique
     protected Map<IFarRenderMode, IFarServerContext> contextsByMode;
     @Unique
     protected IFarServerContext[] contexts;
 
-    protected MixinWorldServer_IFarWorldServer() {
+    @Getter
+    @Unique
+    protected AsyncBlockAccess asyncBlockAccess;
+    @Unique
+    protected int cbaGcTicks;
+
+    protected MixinWorldServer() {
         super(null, null, null, null, false);
-    }
-
-    @Inject(method = "Lnet/minecraft/world/WorldServer;init()Lnet/minecraft/world/World;",
-            at = @At("TAIL"))
-    private void fp2_init_createServerContexts(CallbackInfoReturnable<World> ci) {
-        checkState(this.contextsByMode == null, "already initialized!");
-        ImmutableMap.Builder<IFarRenderMode, IFarServerContext> builder = ImmutableMap.builder();
-        IFarRenderMode.REGISTRY.forEachEntry((name, mode) -> builder.put(mode, mode.serverContext(uncheckedCast(this))));
-        this.contextsByMode = builder.build();
-        this.contexts = this.contextsByMode.values().toArray(new IFarServerContext[0]);
-    }
-
-    @Override
-    public <POS extends IFarPos, T extends IFarTile> IFarServerContext<POS, T> contextFor(@NonNull IFarRenderMode<POS, T> mode) {
-        IFarServerContext<POS, T> context = uncheckedCast(this.contextsByMode.get(mode));
-        checkArg(context != null, "cannot find context for unknown render mode: %s", mode);
-        return context;
     }
 
     @Override
@@ -85,7 +83,45 @@ public abstract class MixinWorldServer_IFarWorldServer extends World implements 
     }
 
     @Override
+    public void fp2_init() {
+        checkState(this.contextsByMode == null, "already initialized!");
+
+        this.asyncBlockAccess = Constants.isCubicWorld(this)
+                ? new CCAsyncBlockAccessImpl(uncheckedCast(this))
+                : new VanillaAsyncBlockAccessImpl(uncheckedCast(this));
+
+        ImmutableMap.Builder<IFarRenderMode, IFarServerContext> builder = ImmutableMap.builder();
+
+        IFarRenderMode mode = IFarRenderMode.REGISTRY.get(FP2Config.renderMode);
+        builder.put(mode, mode.serverContext(uncheckedCast(this)));
+
+        //TODO:
+        // IFarRenderMode.REGISTRY.forEachEntry((name, mode) -> builder.put(mode, mode.serverContext(uncheckedCast(this))));
+
+        this.contextsByMode = builder.build();
+        this.contexts = this.contextsByMode.values().toArray(new IFarServerContext[0]);
+    }
+
+    @Override
     public void close() {
         this.forEachContext(IFarServerContext::close);
+    }
+
+    @Inject(method = "Lnet/minecraft/world/WorldServer;tick()V",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/world/chunk/IChunkProvider;tick()Z",
+                    shift = At.Shift.AFTER))
+    private void fp2_tick_asyncBlockAccessGc(CallbackInfo ci) {
+        if (this.cbaGcTicks++ > 40) {
+            this.cbaGcTicks = 0;
+            this.asyncBlockAccess.gc();
+        }
+    }
+
+    @Override
+    public <POS extends IFarPos, T extends IFarTile> IFarServerContext<POS, T> contextFor(@NonNull IFarRenderMode<POS, T> mode) {
+        IFarServerContext<POS, T> context = uncheckedCast(this.contextsByMode.get(mode));
+        checkArg(context != null, "cannot find context for unknown render mode: %s", mode);
+        return context;
     }
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.util.threading.keyed;
 
 import lombok.NonNull;
+import net.daporkchop.lib.unsafe.capability.Releasable;
 
 import java.util.concurrent.Executor;
 
@@ -31,10 +32,10 @@ import java.util.concurrent.Executor;
  *
  * @author DaPorkchop_
  */
-public interface KeyedTaskScheduler<K> {
+public interface KeyedTaskScheduler<K> extends Releasable {
     void submit(@NonNull K key, @NonNull Runnable task);
 
-    Executor keyed(@NonNull K key);
-
-    void shutdown();
+    default Executor keyedExecutor(@NonNull K key) {
+        return task -> this.submit(key, task);
+    }
 }

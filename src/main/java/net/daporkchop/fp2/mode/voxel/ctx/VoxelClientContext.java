@@ -38,6 +38,6 @@ public class VoxelClientContext extends AbstractFarClientContext<VoxelPos, Voxel
 
     @Override
     protected IFarRenderer renderer0() {
-        return new VoxelRenderer(this.mode);
+        return new VoxelRenderer(this);
     }
 }

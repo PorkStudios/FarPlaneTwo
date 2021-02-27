@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -28,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.util.EqualsTieBreakComparator;
 import net.daporkchop.fp2.util.threading.ConcurrentUnboundedPriorityBlockingQueue;
 import net.daporkchop.lib.common.util.PorkUtil;
+import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -42,7 +43,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class PriorityKeyedTaskScheduler<K> implements KeyedTaskScheduler<K> {
+public class PriorityKeyedTaskScheduler<K> extends AbstractReleasable implements KeyedTaskScheduler<K> {
     protected final Thread[] threads;
     protected final LoadingCache<K, Queue<QueuedTaskWrapper>> queueCache = CacheBuilder.newBuilder()
             .weakValues()
@@ -53,14 +54,6 @@ public class PriorityKeyedTaskScheduler<K> implements KeyedTaskScheduler<K> {
                 }
             });
     protected final BlockingQueue<QueuedTaskWrapper> queue;
-    protected final LoadingCache<K, Executor> executorCache = CacheBuilder.newBuilder() //avoid allocating tons of lambda objects
-            .weakValues()
-            .build(new CacheLoader<K, Executor>() {
-                @Override
-                public Executor load(K key) throws Exception {
-                    return task -> PriorityKeyedTaskScheduler.this.submit(key, task);
-                }
-            });
     protected volatile boolean running = true;
 
     public PriorityKeyedTaskScheduler(int threads, @NonNull ThreadFactory threadFactory) {
@@ -88,11 +81,7 @@ public class PriorityKeyedTaskScheduler<K> implements KeyedTaskScheduler<K> {
     }
 
     @Override
-    public Executor keyed(@NonNull K key) {
-        return this.executorCache.getUnchecked(key);
-    }
-
-    public void shutdown() {
+    protected void doRelease() {
         this.running = false;
 
         //interrupt all workers

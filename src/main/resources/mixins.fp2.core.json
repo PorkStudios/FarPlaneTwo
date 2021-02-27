@@ -13,8 +13,7 @@
   ],
   "mixins": [
     "entity.player.MixinEntityPlayerMP",
-    "world.MixinWorldServer_IFarWorldServer",
-    "world.MixinWorldServer_AsyncBlockAccess",
+    "world.MixinWorldServer",
     "world.gen.layer.MixinIntCache"
   ]
 }

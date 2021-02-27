@@ -25,6 +25,7 @@ import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.client.render.DrawMode;
 import net.daporkchop.fp2.client.render.IShaderHolder;
 import net.daporkchop.fp2.client.render.RenderPass;
+import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
@@ -39,8 +40,8 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  */
 @SideOnly(Side.CLIENT)
 public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, HeightmapTile> implements IShaderHolder {
-    public HeightmapRenderer(@NonNull WorldClient world, @NonNull HeightmapRenderMode mode) {
-        super(mode);
+    public HeightmapRenderer(@NonNull IFarClientContext<HeightmapPos, HeightmapTile> context) {
+        super(context);
     }
 
     @Override

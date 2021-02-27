@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,16 +20,15 @@
 
 package net.daporkchop.fp2.util.threading.keyed;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
+import net.daporkchop.lib.unsafe.PUnsafe;
+import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 
 import java.util.ArrayDeque;
-import java.util.Queue;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 
@@ -40,33 +39,15 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class DefaultKeyedTaskScheduler<K> implements KeyedTaskScheduler<K> {
+public class DefaultKeyedTaskScheduler<K> extends AbstractReleasable implements KeyedTaskScheduler<K> {
+    protected final Map<K, TaskQueue> queues = new ObjObjConcurrentHashMap<>(); //faster computeIfAbsent than ordinary ConcurrentHashMap
+
     protected final Thread[] threads;
-
-    protected final LoadingCache<K, Executor> executorCache = CacheBuilder.newBuilder() //avoid allocating tons of lambda objects
-            .weakValues()
-            .build(new CacheLoader<K, Executor>() {
-                @Override
-                public Executor load(K key) throws Exception {
-                    return task -> DefaultKeyedTaskScheduler.this.submit(key, task);
-                }
-            });
-    protected final LoadingCache<K, Queue<Runnable>> queueCache = CacheBuilder.newBuilder()
-            .weakValues()
-            .build(new CacheLoader<K, Queue<Runnable>>() {
-                @Override
-                public Queue<Runnable> load(K key) throws Exception {
-                    return new ArrayDeque<>();
-                }
-            });
-
-    protected final BlockingQueue<Runnable> queue;
+    protected final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
 
     protected volatile boolean running = true;
 
     public DefaultKeyedTaskScheduler(int threads, @NonNull ThreadFactory threadFactory) {
-        this.queue = new LinkedBlockingQueue<>();
-
         this.threads = new Thread[positive(threads, "threads")];
 
         Runnable worker = new Worker();
@@ -76,24 +57,19 @@ public class DefaultKeyedTaskScheduler<K> implements KeyedTaskScheduler<K> {
     }
 
     @Override
-    public void submit(@NonNull K key, @NonNull Runnable task) {
-        Queue<Runnable> queue = this.queueCache.getUnchecked(key);
-        task = new QueuedTaskWrapper(task, queue);
-        synchronized (queue) {
-            queue.add(task);
-            if (queue.size() == 1) {
-                //the only task in the queue is this one, so let's submit it now
-                this.queue.add(task);
+    public void submit(@NonNull K keyIn, @NonNull Runnable task) {
+        this.assertNotReleased();
+        this.queues.compute(keyIn, (key, queue) -> {
+            if (queue == null) { //create new queue
+                queue = new TaskQueue(key);
             }
-        }
+            queue.enqueue(task);
+            return queue;
+        });
     }
 
     @Override
-    public Executor keyed(@NonNull K key) {
-        return this.executorCache.getUnchecked(key);
-    }
-
-    public void shutdown() {
+    protected void doRelease() {
         this.running = false;
 
         //interrupt all workers
@@ -114,25 +90,36 @@ public class DefaultKeyedTaskScheduler<K> implements KeyedTaskScheduler<K> {
     }
 
     @RequiredArgsConstructor
-    protected final class QueuedTaskWrapper implements Runnable {
+    protected final class TaskQueue extends ArrayDeque<Runnable> implements Runnable {
         @NonNull
-        protected final Runnable task;
-        @NonNull
-        protected final Queue<Runnable> queue;
+        protected final K key;
+
+        //this doesn't need to be synchronized - it's only accessed from inside (ObjObj)ConcurrentHashMap#compute, which synchronizes on the bucket
+        public void enqueue(@NonNull Runnable task) {
+            this.add(task);
+            if (this.size() == 1) { //our first task was submitted, so this task queue should be submitted to the executor
+                DefaultKeyedTaskScheduler.this.queue.add(this);
+            }
+        }
 
         @Override
         public void run() {
-            try {
-                this.task.run();
-            } finally {
-                synchronized (this.queue) {
-                    Runnable next = this.queue.poll();
-                    checkState(next == this, "this task wasn't the next one in the queue!");
-                    next = this.queue.peek();
-                    if (next != null) {
-                        DefaultKeyedTaskScheduler.this.queue.add(next);
+            checkState(DefaultKeyedTaskScheduler.this.queues.remove(this.key, this), "task queue not present?!?");
+
+            Throwable t0 = null;
+            for (Runnable r; (r = this.poll()) != null; ) {
+                try {
+                    r.run();
+                } catch (Throwable t1) {
+                    if (t0 == null) {
+                        t0 = t1;
+                    } else {
+                        t0.addSuppressed(t1);
                     }
                 }
+            }
+            if (t0 != null) {
+                PUnsafe.throwException(t0);
             }
         }
     }
@@ -152,7 +139,7 @@ public class DefaultKeyedTaskScheduler<K> implements KeyedTaskScheduler<K> {
 
             //work off queue
             Runnable task;
-            while ((task = DefaultKeyedTaskScheduler.this.queue.poll()) != null)   {
+            while ((task = DefaultKeyedTaskScheduler.this.queue.poll()) != null) {
                 try {
                     task.run();
                 } catch (Exception e) {

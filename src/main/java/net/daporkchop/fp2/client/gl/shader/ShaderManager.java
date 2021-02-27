@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,6 +25,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.debug.FP2Debug;
 import net.daporkchop.lib.binary.oio.StreamUtil;
 import net.daporkchop.lib.binary.oio.reader.UTF8FileReader;
 import net.daporkchop.lib.common.function.io.IOBiConsumer;
@@ -154,10 +155,10 @@ public class ShaderManager {
                         meta.xfb_varying);
                 shaderCount.incrementAndGet();
             });
-            Minecraft.getMinecraft().player.sendMessage(new TextComponentString("§a" + shaderCount.get() + " shaders successfully reloaded."));
+            FP2Debug.clientMsg("§a" + shaderCount.get() + " shaders successfully reloaded.");
         } catch (Exception e) {
             LOGGER.error("shader reload failed", e);
-            Minecraft.getMinecraft().player.sendMessage(new TextComponentString("§cshaders reload failed (check console)."));
+            FP2Debug.clientMsg("§cshaders reload failed (check console).");
         }
     }
 }

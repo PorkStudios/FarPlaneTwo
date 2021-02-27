@@ -33,7 +33,6 @@ import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -54,16 +53,6 @@ public class ClientEvents {
         if (event.getWorld().isRemote) {
             ((IFarWorldClient) event.getWorld()).close();
         }
-    }
-
-    @SubscribeEvent
-    public void connectedToServer(FMLNetworkEvent.ClientConnectedToServerEvent event) {
-        ClientConstants.init();
-    }
-
-    @SubscribeEvent
-    public void disconnectedFromServer(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
-        ClientConstants.shutdown();
     }
 
     @SubscribeEvent

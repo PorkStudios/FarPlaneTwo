@@ -18,47 +18,34 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.ctx;
+package net.daporkchop.fp2.mode.common.ctx;
 
+import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
+import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.minecraft.world.WorldServer;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-
-import java.util.function.Consumer;
 
 /**
- * Provides access to {@link IFarServerContext} instances in a {@link WorldServer}.
+ * Base implementation of {@link IFarServerContext}.
  *
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public interface IFarWorldServer {
-    /**
-     * Gets the {@link IFarServerContext} used by the given {@link IFarServerContext} in this world.
-     *
-     * @param mode the {@link IFarRenderMode}
-     * @return the {@link IFarServerContext} used by the given {@link IFarServerContext} in this world
-     */
-    <POS extends IFarPos, T extends IFarTile> IFarServerContext<POS, T> contextFor(@NonNull IFarRenderMode<POS, T> mode);
+@Getter
+public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IFarTile> implements IFarServerContext<POS, T> {
+    protected final WorldServer vanillaWorld;
+    protected final IFarWorld<POS, T> world;
+    protected final IFarRenderMode<POS, T> mode;
 
-    /**
-     * Runs the given action on every {@link IFarServerContext}.
-     *
-     * @param action the action
-     */
-    void forEachContext(@NonNull Consumer<IFarServerContext<?, ?>> action);
+    public AbstractFarServerContext(@NonNull WorldServer vanillaWorld, @NonNull IFarRenderMode<POS, T> mode) {
+        this.vanillaWorld = vanillaWorld;
+        this.mode = mode;
 
-    /**
-     * Called when the world is being loaded.
-     */
-    void fp2_init();
+        this.world = this.world0();
+    }
 
-    /**
-     * Called when the world is being unloaded.
-     */
-    void close();
+    protected abstract IFarWorld<POS, T> world0();
 }

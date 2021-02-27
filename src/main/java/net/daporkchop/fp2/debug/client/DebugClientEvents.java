@@ -24,6 +24,7 @@ import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.render.DrawMode;
+import net.daporkchop.fp2.debug.FP2Debug;
 import net.daporkchop.fp2.net.client.CPacketDropAllTiles;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -46,23 +47,19 @@ public class DebugClientEvents {
         }
         if (DebugKeyBindings.DROP_TILES.isPressed()) {
             NETWORK_WRAPPER.sendToServer(new CPacketDropAllTiles());
+            FP2Debug.clientMsg("§aReloading all tiles.");
         }
         if (DebugKeyBindings.TOGGLE_REVERSED_Z.isPressed()) {
             FP2Config.compatibility.reversedZ ^= true;
-            mc.player.sendMessage(new TextComponentString((FP2Config.compatibility.reversedZ ? "§aEnabled" : "§cDisabled") + " reversed-Z projection."));
+            FP2Debug.clientMsg((FP2Config.compatibility.reversedZ ? "§aEnabled" : "§cDisabled") + " reversed-Z projection.");
         }
         if (DebugKeyBindings.TOGGLE_VANILLA_RENDER.isPressed()) {
             FP2Config.debug.skipRenderWorld ^= true;
-            mc.player.sendMessage(new TextComponentString((FP2Config.debug.skipRenderWorld ? "§cDisabled" : "§aEnabled") + " vanilla terrain."));
+            FP2Debug.clientMsg((FP2Config.debug.skipRenderWorld ? "§cDisabled" : "§aEnabled") + " vanilla terrain.");
         }
         if (DebugKeyBindings.REBUILD_UVS.isPressed()) {
             TexUVs.reloadUVs();
-            mc.player.sendMessage(new TextComponentString("§aRebuilt texture UVs."));
-        }
-        if (DebugKeyBindings.CYCLE_DRAW_MODE.isPressed()) {
-            DrawMode[] drawModes = DrawMode.values();
-            FP2Config.compatibility.drawMode = drawModes[(FP2Config.compatibility.drawMode.ordinal() + 1) % drawModes.length];
-            mc.player.sendMessage(new TextComponentString("§aSwitched to draw mode: " + drawModes));
+            FP2Debug.clientMsg("§aRebuilt texture UVs.");
         }
     }
 }

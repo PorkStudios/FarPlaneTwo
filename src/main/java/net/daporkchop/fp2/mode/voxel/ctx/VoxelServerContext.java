@@ -18,47 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.ctx;
+package net.daporkchop.fp2.mode.voxel.ctx;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.api.server.IFarWorld;
+import net.daporkchop.fp2.mode.common.ctx.AbstractFarServerContext;
+import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.mode.voxel.server.VoxelWorld;
 import net.minecraft.world.WorldServer;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-
-import java.util.function.Consumer;
 
 /**
- * Provides access to {@link IFarServerContext} instances in a {@link WorldServer}.
- *
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public interface IFarWorldServer {
-    /**
-     * Gets the {@link IFarServerContext} used by the given {@link IFarServerContext} in this world.
-     *
-     * @param mode the {@link IFarRenderMode}
-     * @return the {@link IFarServerContext} used by the given {@link IFarServerContext} in this world
-     */
-    <POS extends IFarPos, T extends IFarTile> IFarServerContext<POS, T> contextFor(@NonNull IFarRenderMode<POS, T> mode);
+public class VoxelServerContext extends AbstractFarServerContext<VoxelPos, VoxelTile> {
+    public VoxelServerContext(@NonNull WorldServer vanillaWorld, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
+        super(vanillaWorld, mode);
+    }
 
-    /**
-     * Runs the given action on every {@link IFarServerContext}.
-     *
-     * @param action the action
-     */
-    void forEachContext(@NonNull Consumer<IFarServerContext<?, ?>> action);
-
-    /**
-     * Called when the world is being loaded.
-     */
-    void fp2_init();
-
-    /**
-     * Called when the world is being unloaded.
-     */
-    void close();
+    @Override
+    protected IFarWorld<VoxelPos, VoxelTile> world0() {
+        return new VoxelWorld(this.vanillaWorld(), this.mode);
+    }
 }

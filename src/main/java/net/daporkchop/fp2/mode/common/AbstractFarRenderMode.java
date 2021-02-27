@@ -27,10 +27,9 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.util.SimpleRecycler;
@@ -89,9 +88,6 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
                 .filter(Objects::nonNull)
                 .findFirst().orElse(null);
     }
-
-    @Override
-    public abstract IFarWorld<POS, T> world(@NonNull WorldServer world);
 
     @Override
     public abstract IFarServerContext<POS, T> serverContext(@NonNull WorldServer world);

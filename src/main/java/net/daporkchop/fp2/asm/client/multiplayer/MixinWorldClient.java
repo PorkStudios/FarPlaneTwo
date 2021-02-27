@@ -81,5 +81,6 @@ public abstract class MixinWorldClient extends World implements IFarWorldClient 
     @Override
     public void close() {
         this.contexts.forEach((mode, context) -> context.close());
+        this.contexts.clear();
     }
 }

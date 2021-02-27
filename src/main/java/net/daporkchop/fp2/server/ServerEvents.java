@@ -41,6 +41,7 @@ public class ServerEvents {
     @SubscribeEvent
     public void worldLoad(WorldEvent.Load event) {
         if (!event.getWorld().isRemote) {
+            ((IFarWorldServer) event.getWorld()).fp2_init();
             //TODO: make this better
             ((IFarWorldServer) event.getWorld()).forEachContext(context -> event.getWorld().addEventListener(new FarWorldBlockChangeListener(context.world())));
         }

@@ -33,6 +33,7 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.util.DirectLongStack;
 import net.daporkchop.fp2.util.math.Sphere;
 import net.daporkchop.fp2.util.math.Volume;
@@ -52,6 +53,7 @@ import static org.lwjgl.opengl.GL15.*;
  */
 @Getter
 public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarRenderer {
+    protected final IFarClientContext<POS, T> context;
     protected final IFarRenderMode<POS, T> mode;
 
     protected final BakeManager<POS, T> bakeManager;
@@ -63,8 +65,9 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
     protected final DirectLongStack index = new DirectLongStack();
     protected final IFarRenderStrategy<POS, T> strategy;
 
-    public AbstractFarRenderer(@NonNull IFarRenderMode<POS, T> mode) {
-        this.mode = mode;
+    public AbstractFarRenderer(@NonNull IFarClientContext<POS, T> context) {
+        this.context = context;
+        this.mode = context.mode();
 
         this.strategy = this.strategy0();
         this.bakeManager = this.bakeManager0();
@@ -79,7 +82,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
      * @return a new {@link BakeManager}
      */
     protected BakeManager<POS, T> bakeManager0() {
-        return new BakeManager<>(this);
+        return new BakeManager<>(this, this.context.tileCache());
     }
 
     @Override
@@ -150,5 +153,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
 
     @Override
     protected void doRelease() {
+        this.strategy.release();
+        this.bakeManager.release();
     }
 }

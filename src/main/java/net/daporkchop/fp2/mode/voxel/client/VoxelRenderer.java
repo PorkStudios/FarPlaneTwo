@@ -22,6 +22,7 @@ package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
@@ -31,8 +32,8 @@ import net.daporkchop.fp2.mode.voxel.VoxelTile;
  * @author DaPorkchop_
  */
 public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelTile> {
-    public VoxelRenderer(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
-        super(mode);
+    public VoxelRenderer(@NonNull IFarClientContext<VoxelPos, VoxelTile> context) {
+        super(context);
     }
 
     @Override

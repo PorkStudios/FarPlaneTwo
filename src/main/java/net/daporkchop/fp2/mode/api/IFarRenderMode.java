@@ -73,14 +73,6 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
     IFarGeneratorRough<POS, T> roughGenerator(@NonNull WorldServer world);
 
     /**
-     * Creates a new {@link IFarWorld} for the given world.
-     *
-     * @param world the world
-     * @return the new {@link IFarWorld}
-     */
-    IFarWorld<POS, T> world(@NonNull WorldServer world);
-
-    /**
      * Creates a new {@link IFarServerContext} for the given world.
      *
      * @param world the world

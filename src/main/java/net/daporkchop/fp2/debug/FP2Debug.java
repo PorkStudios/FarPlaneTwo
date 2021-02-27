@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,13 +20,17 @@
 
 package net.daporkchop.fp2.debug;
 
+import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.debug.client.DebugClientEvents;
 import net.daporkchop.fp2.debug.client.DebugKeyBindings;
+import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
+import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -36,6 +40,8 @@ import static net.daporkchop.fp2.util.Constants.*;
  */
 @UtilityClass
 public class FP2Debug {
+    public static final String CHAT_PREFIX = "§8§l[§9FarPlaneTwo Debug§8§l]§r ";
+
     public static final boolean FP2_DEBUG = Boolean.parseBoolean(System.getProperty("fp2.debug", "false"));
 
     public void preInit() {
@@ -58,5 +64,10 @@ public class FP2Debug {
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
             DebugKeyBindings.register();
         }
+    }
+
+    @SideOnly(Side.CLIENT)
+    public void clientMsg(@NonNull String msg) {
+        mc.player.sendMessage(new TextComponentString(CHAT_PREFIX + msg));
     }
 }

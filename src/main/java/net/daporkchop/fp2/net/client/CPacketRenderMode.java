@@ -67,7 +67,7 @@ public class CPacketRenderMode implements IMessage {
                     NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy().mode(IFarRenderMode.REGISTRY.get(FP2Config.renderMode)), ctx.getServerHandler().player);
 
                     ((IFarWorldServer) ctx.getServerHandler().player.world).contextFor(message.mode).world().tracker().playerAdd(ctx.getServerHandler().player);
-                    ((IFarPlayer) ctx.getServerHandler().player).markReady();
+                    ((IFarPlayer) ctx.getServerHandler().player).activeMode(message.mode);
                 });
             }
             return null;

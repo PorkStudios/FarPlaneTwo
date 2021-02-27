@@ -24,6 +24,7 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
+import net.minecraft.world.WorldServer;
 
 /**
  * A client-side context for a specific {@link IFarRenderMode} in a {@link IFarWorldServer}.
@@ -35,6 +36,11 @@ public interface IFarServerContext<POS extends IFarPos, T extends IFarTile> exte
      * @return the {@link IFarWorld} used in this context
      */
     IFarWorld<POS, T> world();
+
+    /**
+     * @return the vanilla {@link WorldServer}
+     */
+    WorldServer vanillaWorld();
 
     /**
      * @return the render mode
