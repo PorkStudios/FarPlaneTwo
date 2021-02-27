@@ -56,7 +56,6 @@ import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.concurrent.ForkJoinPool;
 
 import static java.lang.Math.*;
 
@@ -143,19 +142,6 @@ public class Constants {
         int blockLight = packedLight & 0xF;
         int skyLight = packedLight >> 4;
         return (((skyLight << 4) | skyLight) << 8) | ((blockLight << 4) | blockLight);
-    }
-
-    /**
-     * Creates a new {@link ForkJoinPool}.
-     *
-     * @param name        the name that the pool threads will have
-     * @param parallelism the pool's target parallelism
-     * @return a new {@link ForkJoinPool}
-     */
-    public static ForkJoinPool createPool(@NonNull String name, int parallelism) {
-        //TODO: set thread name
-        //TODO: use FastThreadLocalThread, somehow
-        return new ForkJoinPool(parallelism);
     }
 
     //the following methods are copied from LWJGL's BufferUtils in order to ensure their availability on the dedicated server as well

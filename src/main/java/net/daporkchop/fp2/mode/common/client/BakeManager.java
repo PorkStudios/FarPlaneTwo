@@ -27,20 +27,17 @@ import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
-import net.daporkchop.fp2.util.threading.keyed.DefaultKeyedTaskScheduler;
 import net.daporkchop.fp2.util.threading.keyed.KeyedTaskScheduler;
+import net.daporkchop.fp2.util.threading.keyed.PriorityKeyedTaskScheduler;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -84,9 +81,9 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
         this.tree = new FarRenderTree<>(renderer.mode(), this.strategy, renderer.maxLevel());
 
-        this.bakeExecutor = new DefaultKeyedTaskScheduler<>(
+        this.bakeExecutor = uncheckedCast(new PriorityKeyedTaskScheduler<>(
                 FP2Config.client.renderThreads,
-                PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build());
+                PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build()));
 
         this.tileCache.addListener(this, true);
     }
@@ -122,11 +119,9 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
     protected void notifyOutputs(@NonNull POS pos) {
         this.strategy.bakeOutputs(pos).forEach(outputPos -> {
-            if (outputPos.level() < 0 || outputPos.level() > this.renderer.maxLevel) {
+            if (outputPos.level() < 0 || outputPos.level() > this.renderer.maxLevel) { //output tile is at an invalid zoom level, skip it
                 return;
-            }
-
-            if (!this.bakeTimestamps.containsKey(outputPos)) { //if the output tile itself doesn't exist, there's obviously no reason to even consider it
+            } else if (!this.bakeTimestamps.containsKey(outputPos)) { //output tile doesn't exist, skip it
                 return;
             }
 

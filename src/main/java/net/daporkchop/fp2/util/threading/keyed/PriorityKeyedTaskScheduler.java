@@ -40,13 +40,13 @@ public class PriorityKeyedTaskScheduler<K extends Comparable<K>> extends Default
     }
 
     @Override
-    protected DefaultKeyedTaskScheduler<K>.TaskQueue createQueue(@NonNull K key) {
-        return new TaskQueue(key);
+    protected DefaultKeyedTaskScheduler<K>.TaskQueue createQueue(@NonNull K key, @NonNull Runnable task) {
+        return new TaskQueue(key, task);
     }
 
     protected class TaskQueue extends DefaultKeyedTaskScheduler<K>.TaskQueue implements Comparable<TaskQueue> {
-        public TaskQueue(@NonNull K key) {
-            super(key);
+        public TaskQueue(@NonNull K key, @NonNull Runnable task) {
+            super(key, task);
         }
 
         @Override

@@ -33,13 +33,22 @@ import java.util.concurrent.Executor;
  * @author DaPorkchop_
  */
 public interface KeyedTaskScheduler<K> extends Releasable {
+    /**
+     * Submits a task using the given key.
+     *
+     * @param key  the key
+     * @param task the task
+     */
     void submit(@NonNull K key, @NonNull Runnable task);
 
+    /**
+     * Submits a task using the given key.
+     * <p>
+     * This method may cause some number of pending tasks with an identical key to be discarded entirely. As a result, it should be considered unsafe, as
+     * it can very easily cause unexpected behavior to occur.
+     *
+     * @param key  the key
+     * @param task the task
+     */
     void submitExclusive(@NonNull K key, @NonNull Runnable task);
-
-    void cancelAll(@NonNull K key);
-
-    default Executor keyedExecutor(@NonNull K key) {
-        return task -> this.submit(key, task);
-    }
 }
