@@ -144,7 +144,9 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
     //
 
     public void updateTile(PriorityTask<POS> root, POS pos) {
-        long newTimestamp = this.world.exactActive.remove(pos);
+        //TODO: see AbstractFarWorld#scheduleTileForUpdate, in the if(true) block
+        // long newTimestamp = this.world.exactActive.remove(pos);
+        long newTimestamp = this.world.world.getTotalWorldTime() - 1L;
         if (newTimestamp < 0L) {
             LOGGER.warn("Duplicate update task scheduled for tile at {}!", pos);
             return;

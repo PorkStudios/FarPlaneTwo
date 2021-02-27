@@ -27,6 +27,7 @@ import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
+import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.daporkchop.fp2.util.threading.keyed.DefaultKeyedTaskScheduler;
@@ -36,6 +37,7 @@ import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
@@ -115,17 +117,21 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         checkState(this.bakeTimestamps.remove(pos) != null, "tile at %s hasn't been added?!?", pos);
 
         //make sure that any in-progress bake tasks are finished before the tile is removed
-        this.bakeExecutor.submit(pos, () -> ClientThreadExecutor.INSTANCE.execute(() -> this.tree.removeNode(pos)));
+        this.bakeExecutor.submitExclusive(pos, () -> ClientThreadExecutor.INSTANCE.execute(() -> this.tree.removeNode(pos)));
     }
 
     protected void notifyOutputs(@NonNull POS pos) {
         this.strategy.bakeOutputs(pos).forEach(outputPos -> {
+            if (outputPos.level() < 0 || outputPos.level() > this.renderer.maxLevel) {
+                return;
+            }
+
             if (!this.bakeTimestamps.containsKey(outputPos)) { //if the output tile itself doesn't exist, there's obviously no reason to even consider it
                 return;
             }
 
             //schedule tile for baking
-            this.bakeExecutor.submit(pos, () -> this.bake(pos));
+            this.bakeExecutor.submitExclusive(outputPos, () -> this.bake(outputPos));
         });
     }
 

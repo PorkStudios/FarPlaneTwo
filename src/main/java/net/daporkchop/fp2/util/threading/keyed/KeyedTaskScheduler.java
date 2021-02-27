@@ -35,6 +35,10 @@ import java.util.concurrent.Executor;
 public interface KeyedTaskScheduler<K> extends Releasable {
     void submit(@NonNull K key, @NonNull Runnable task);
 
+    void submitExclusive(@NonNull K key, @NonNull Runnable task);
+
+    void cancelAll(@NonNull K key);
+
     default Executor keyedExecutor(@NonNull K key) {
         return task -> this.submit(key, task);
     }

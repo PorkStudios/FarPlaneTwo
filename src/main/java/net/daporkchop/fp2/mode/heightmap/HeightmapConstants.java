@@ -27,5 +27,5 @@ import lombok.experimental.UtilityClass;
  */
 @UtilityClass
 public class HeightmapConstants {
-    public static final int STORAGE_VERSION = 7;
+    public static final int STORAGE_VERSION = 8;
 }

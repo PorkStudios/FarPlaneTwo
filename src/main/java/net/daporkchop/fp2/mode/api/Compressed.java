@@ -51,7 +51,7 @@ public class Compressed<POS extends IFarPos, V extends IReusablePersistent> exte
     /**
      * Timestamp indicating that the tile's rough generation has been completed.
      */
-    public static final long TIMESTAMP_GENERATED = -1L;
+    public static final long TIMESTAMP_GENERATED = 0L;
 
     protected final POS pos;
     protected long extra;

@@ -40,20 +40,33 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @RequiredArgsConstructor
 public class DefaultKeyedTaskScheduler<K> extends AbstractReleasable implements KeyedTaskScheduler<K> {
-    protected final Map<K, TaskQueue> queues = new ObjObjConcurrentHashMap<>(); //faster computeIfAbsent than ordinary ConcurrentHashMap
+    protected final Map<K, TaskQueue> queues;
+    protected final BlockingQueue<TaskQueue> queue;
 
     protected final Thread[] threads;
-    protected final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
-
     protected volatile boolean running = true;
 
     public DefaultKeyedTaskScheduler(int threads, @NonNull ThreadFactory threadFactory) {
-        this.threads = new Thread[positive(threads, "threads")];
+        this.queues = this.createQueues();
+        this.queue = this.createQueue();
 
+        this.threads = new Thread[positive(threads, "threads")];
         Runnable worker = new Worker();
         for (int i = 0; i < threads; i++) {
             (this.threads[i] = threadFactory.newThread(worker)).start();
         }
+    }
+
+    protected Map<K, TaskQueue> createQueues() {
+        return new ObjObjConcurrentHashMap<>();
+    }
+
+    protected BlockingQueue<TaskQueue> createQueue() {
+        return new LinkedBlockingQueue<>();
+    }
+
+    protected TaskQueue createQueue(@NonNull K key) {
+        return new TaskQueue(key);
     }
 
     @Override
@@ -61,10 +74,33 @@ public class DefaultKeyedTaskScheduler<K> extends AbstractReleasable implements 
         this.assertNotReleased();
         this.queues.compute(keyIn, (key, queue) -> {
             if (queue == null) { //create new queue
-                queue = new TaskQueue(key);
+                queue = this.createQueue(key);
             }
             queue.enqueue(task);
             return queue;
+        });
+    }
+
+    @Override
+    public void submitExclusive(@NonNull K keyIn, @NonNull Runnable task) {
+        this.queues.compute(keyIn, (key, queue) -> {
+            if (queue == null) { //create new queue
+                queue = this.createQueue(key);
+                queue.enqueue(task);
+            } else {
+                queue.clear();
+                queue.add(task);
+            }
+            return queue;
+        });
+    }
+
+    @Override
+    public void cancelAll(@NonNull K keyIn) {
+        this.assertNotReleased();
+        this.queues.computeIfPresent(keyIn, (key, queue) -> {
+            queue.clear();
+            return null;
         });
     }
 
@@ -90,7 +126,7 @@ public class DefaultKeyedTaskScheduler<K> extends AbstractReleasable implements 
     }
 
     @RequiredArgsConstructor
-    protected final class TaskQueue extends ArrayDeque<Runnable> implements Runnable {
+    protected class TaskQueue extends ArrayDeque<Runnable> implements Runnable {
         @NonNull
         protected final K key;
 

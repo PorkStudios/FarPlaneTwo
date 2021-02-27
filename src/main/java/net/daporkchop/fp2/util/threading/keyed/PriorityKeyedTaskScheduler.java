@@ -20,140 +20,38 @@
 
 package net.daporkchop.fp2.util.threading.keyed;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.util.EqualsTieBreakComparator;
 import net.daporkchop.fp2.util.threading.ConcurrentUnboundedPriorityBlockingQueue;
-import net.daporkchop.lib.common.util.PorkUtil;
-import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 
-import java.util.ArrayDeque;
-import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
-
-import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public class PriorityKeyedTaskScheduler<K> extends AbstractReleasable implements KeyedTaskScheduler<K> {
-    protected final Thread[] threads;
-    protected final LoadingCache<K, Queue<QueuedTaskWrapper>> queueCache = CacheBuilder.newBuilder()
-            .weakValues()
-            .build(new CacheLoader<K, Queue<QueuedTaskWrapper>>() {
-                @Override
-                public Queue<QueuedTaskWrapper> load(K key) throws Exception {
-                    return new ArrayDeque<>();
-                }
-            });
-    protected final BlockingQueue<QueuedTaskWrapper> queue;
-    protected volatile boolean running = true;
-
+public class PriorityKeyedTaskScheduler<K extends Comparable<K>> extends DefaultKeyedTaskScheduler<K> {
     public PriorityKeyedTaskScheduler(int threads, @NonNull ThreadFactory threadFactory) {
-        this.queue = new ConcurrentUnboundedPriorityBlockingQueue<>(new EqualsTieBreakComparator<>(null, false, true));
-
-        this.threads = new Thread[positive(threads, "threads")];
-
-        Runnable worker = new Worker();
-        for (int i = 0; i < threads; i++) {
-            (this.threads[i] = threadFactory.newThread(worker)).start();
-        }
+        super(threads, threadFactory);
     }
 
     @Override
-    public void submit(@NonNull K key, @NonNull Runnable taskIn) {
-        Queue<QueuedTaskWrapper> queue = this.queueCache.getUnchecked(key);
-        QueuedTaskWrapper task = new QueuedTaskWrapper(key, taskIn, queue);
-        synchronized (queue) {
-            queue.add(task);
-            if (queue.size() == 1) {
-                //the only task in the queue is this one, so let's submit it now
-                this.queue.add(task);
-            }
-        }
+    protected BlockingQueue<DefaultKeyedTaskScheduler<K>.TaskQueue> createQueue() {
+        return new ConcurrentUnboundedPriorityBlockingQueue<>();
     }
 
     @Override
-    protected void doRelease() {
-        this.running = false;
-
-        //interrupt all workers
-        for (Thread t : this.threads) {
-            t.interrupt();
-        }
-
-        //wait for all workers to shut down
-        for (Thread t : this.threads) {
-            do {
-                try {
-                    t.join();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            } while (t.isAlive());
-        }
+    protected DefaultKeyedTaskScheduler<K>.TaskQueue createQueue(@NonNull K key) {
+        return new TaskQueue(key);
     }
 
-    @RequiredArgsConstructor
-    protected final class QueuedTaskWrapper implements Runnable, Comparable<QueuedTaskWrapper> {
-        @NonNull
-        protected final K key;
-        @NonNull
-        protected final Runnable task;
-        @NonNull
-        protected final Queue<QueuedTaskWrapper> queue;
-
-        @Override
-        public void run() {
-            try {
-                this.task.run();
-            } finally {
-                synchronized (this.queue) {
-                    QueuedTaskWrapper next = this.queue.poll();
-                    checkState(next == this, "this task wasn't the next one in the queue!");
-                    next = this.queue.peek();
-                    if (next != null) {
-                        PriorityKeyedTaskScheduler.this.queue.add(next);
-                    }
-                }
-            }
+    protected class TaskQueue extends DefaultKeyedTaskScheduler<K>.TaskQueue implements Comparable<TaskQueue> {
+        public TaskQueue(@NonNull K key) {
+            super(key);
         }
 
         @Override
-        public int compareTo(QueuedTaskWrapper o) {
-            return PorkUtil.<Comparable<K>>uncheckedCast(this.key).compareTo(o.key);
-        }
-    }
-
-    protected class Worker implements Runnable {
-        @Override
-        public void run() {
-            while (PriorityKeyedTaskScheduler.this.running) {
-                try {
-                    PriorityKeyedTaskScheduler.this.queue.take().run();
-                } catch (InterruptedException e) {
-                    //gracefully exit on interrupt
-                } catch (Exception e) {
-                    LOGGER.error(Thread.currentThread().getName(), e);
-                }
-            }
-
-            //work off queue
-            Runnable task;
-            while ((task = PriorityKeyedTaskScheduler.this.queue.poll()) != null) {
-                try {
-                    task.run();
-                } catch (Exception e) {
-                    LOGGER.error(Thread.currentThread().getName(), e);
-                }
-            }
+        public int compareTo(TaskQueue o) {
+            return this.key.compareTo(o.key);
         }
     }
 }

@@ -93,6 +93,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
     protected final boolean lowResolution;
 
+    protected long currentTick = -1L;
+
     public AbstractFarWorld(@NonNull WorldServer world, @NonNull IFarRenderMode<POS, T> mode) {
         this.world = world;
         this.mode = mode;
@@ -198,6 +200,11 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         // the same position during the current tick
         //TODO: wait, is this actually correct? actually, i think the above condition might actually cause it to regenerate the same tile
         // multiple times for that tick
+
+        if (true) {
+            throw new UnsupportedOperationException(); //TODO: currently, exactActive never gets cleared
+        }
+
         if (this.exactActive.put(pos, newTimestamp) < 0L) {
             //position wasn't previously queued for update
             synchronized (this.pendingExactTasks) {
@@ -208,11 +215,14 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
     @SubscribeEvent
     public void onWorldTick(TickEvent.ServerTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && !this.pendingExactTasks.isEmpty()) {
-            //fire pending tasks
-            synchronized (this.pendingExactTasks) {
-                this.executor.submit(this.pendingExactTasks);
-                this.pendingExactTasks.clear();
+        if (event.phase == TickEvent.Phase.END) {
+            this.currentTick = this.world.getTotalWorldTime();
+            if (!this.pendingExactTasks.isEmpty()) {
+                //fire pending tasks
+                synchronized (this.pendingExactTasks) {
+                    this.executor.submit(this.pendingExactTasks);
+                    this.pendingExactTasks.clear();
+                }
             }
         }
     }
