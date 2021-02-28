@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.api;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.util.Constants;
@@ -37,12 +38,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * A wrapper around the compressed body of an {@link IFarTile}.
+ * A wrapper around a compressed {@link IFarTile}.
  *
  * @author DaPorkchop_
  */
 @Getter
-public class Compressed<POS extends IFarPos, V extends IReusablePersistent> extends ReentrantReadWriteLock {
+public final class Compressed<POS extends IFarPos, V extends IReusablePersistent> extends ReentrantReadWriteLock {
     /**
      * Timestamp indicating that the tile does not contain any data.
      */

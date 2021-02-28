@@ -21,17 +21,11 @@
 package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
-import net.daporkchop.fp2.client.render.DrawMode;
-import net.daporkchop.fp2.client.render.IShaderHolder;
-import net.daporkchop.fp2.client.render.RenderPass;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
-import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -39,7 +33,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, HeightmapTile> implements IShaderHolder {
+public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, HeightmapTile> {
     public HeightmapRenderer(@NonNull IFarClientContext<HeightmapPos, HeightmapTile> context) {
         super(context);
     }
@@ -69,24 +63,4 @@ public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, Heightm
             drawMode.draw(RenderPass.TRANSPARENT, 0);
         }
     }*/
-
-    @Override
-    public ShaderProgram getAndUseShader(@NonNull DrawMode mode, @NonNull RenderPass pass, boolean stencil) {
-        switch (mode) {
-            case MULTIDRAW:
-                switch (pass) {
-                    case SOLID:
-                        return HeightmapShaders.TERRAIN_SHADER.use();
-                    case TRANSPARENT:
-                        return (stencil ? HeightmapShaders.WATER_STENCIL_SHADER : HeightmapShaders.WATER_SHADER).use();
-                }
-                break;
-            case TRANSFORM_FEEDBACK:
-                switch (pass) {
-                    case SOLID:
-                        return HeightmapShaders.XFB_TERRAIN_SHADER.use();
-                }
-        }
-        throw new IllegalArgumentException("mode=" + mode + ", pass=" + pass + ", stencil=" + stencil);
-    }
 }

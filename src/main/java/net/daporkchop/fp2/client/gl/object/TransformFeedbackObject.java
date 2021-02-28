@@ -18,21 +18,43 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
+package net.daporkchop.fp2.client.gl.object;
 
-import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.client.gl.shader.ShaderManager;
-import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import static net.daporkchop.lib.common.util.PValidation.*;
+import static org.lwjgl.opengl.GL40.*;
 
 /**
- * All of the {@link ShaderProgram}s used by the voxel renderer.
- *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class VoxelShaders {
-    public static final ShaderProgram BLOCK_SHADER = ShaderManager.get("voxel/block");
-    public static final ShaderProgram BLOCK_SHADER_TRANSFORM_FEEDBACK = ShaderManager.get("voxel/xfb/block");
+public final class TransformFeedbackObject extends GLObject {
+    protected static TransformFeedbackObject CURRENTLY_BOUND = null;
 
-    public static final ShaderProgram STENCIL_SHADER = ShaderManager.get("voxel/stencil");
+    public TransformFeedbackObject() {
+        super(glGenTransformFeedbacks());
+    }
+
+    public TransformFeedbackObject bind() {
+        checkState(CURRENTLY_BOUND == null, "a transform feedback object is already bound!");
+        CURRENTLY_BOUND = this;
+
+        glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, this.id);
+        return this;
+    }
+
+    @Override
+    public void close() {
+        checkState(CURRENTLY_BOUND == this, "not bound!");
+        CURRENTLY_BOUND = null;
+
+        glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
+    }
+
+    @Override
+    protected Runnable delete(int id) {
+        return () -> glDeleteTransformFeedbacks(id);
+    }
+
+    public void draw(int mode) {
+        glDrawTransformFeedback(mode, this.id);
+    }
 }

@@ -52,7 +52,13 @@ out XFB_OUT {
 //
 //
 
-const vec2 uv_factors[3] = vec2[](vec2(0., 1.), vec2(1., 0.), vec2(0., 0.));
+//TODO: this needs to be re-designed somehow, as half the texture is off by 90°
+const vec2 uv_factors[3] = vec2[](vec2(0., 0.), vec2(1., 0.), vec2(1., 1.));
+
+vec3 antiFlicker(vec3 pos) {
+    float len = length(pos);
+    return pos * ((len + glState.camera.anti_flicker_offset.z) / len);
+}
 
 void main() {
     vec3 normal = normalVector();
@@ -64,7 +70,7 @@ void main() {
     vec4 color = vec4(max(gs_in[PROVOKING].color, vec3(quad.tintFactor)) * diffuse, 1.);
 
     for (int i = 0; i < 3; i++) {
-        xfb_out.pos = gs_in[i].pos;
+        xfb_out.pos = antiFlicker(gs_in[i].pos);
         xfb_out.uv = mix(vec2(quad.minU, quad.minV), vec2(quad.maxU, quad.maxV), uv_factors[i]);
         xfb_out.light = gs_in[i].light * 256.;
 

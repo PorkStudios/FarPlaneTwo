@@ -20,22 +20,15 @@
 
 package net.daporkchop.fp2.mode.voxel.client;
 
-import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
-import net.daporkchop.fp2.mode.common.client.strategy.IShaderBasedMultipassRenderStrategy;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
+import net.daporkchop.fp2.client.gl.commandbuffer.VanillaTransformFeedbackCommandBuffer;
 
 /**
  * @author DaPorkchop_
  */
-public interface IShaderBasedVoxelMultipassRenderStrategy extends IVoxelRenderStrategy, IShaderBasedMultipassRenderStrategy<VoxelPos, VoxelTile> {
+public class TransformFeedbackVoxelRenderStrategy extends AbstractIndexedMultidrawVoxelRenderStrategy implements IVanillaMultipassVoxelRenderStrategy {
     @Override
-    default ShaderProgram blockShader() {
-        return VoxelShaders.BLOCK_SHADER;
-    }
-
-    @Override
-    default ShaderProgram stencilShader() {
-        return VoxelShaders.STENCIL_SHADER;
+    public IDrawCommandBuffer createCommandBuffer() {
+        return new VanillaTransformFeedbackCommandBuffer(super.createCommandBuffer(), VoxelShaders.BLOCK_SHADER_TRANSFORM_FEEDBACK);
     }
 }

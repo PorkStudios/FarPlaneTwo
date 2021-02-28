@@ -57,6 +57,11 @@ public interface IDrawCommandBuffer extends AutoCloseable {
     void close();
 
     /**
+     * @return the number of vertices that will be drawn
+     */
+    long vertexCount();
+
+    /**
      * Issues the draw commands.
      * <p>
      * This method may be called multiple times.

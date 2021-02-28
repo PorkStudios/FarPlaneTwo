@@ -18,15 +18,14 @@
  *
  */
 
-package net.daporkchop.fp2.client.render;
+package net.daporkchop.fp2.mode.voxel.client;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.mode.common.client.strategy.IVanillaMultipassRenderStrategy;
+import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.mode.voxel.VoxelTile;
 
 /**
  * @author DaPorkchop_
  */
-@Deprecated
-public interface IShaderHolder {
-    ShaderProgram getAndUseShader(@NonNull DrawMode mode, @NonNull RenderPass pass, boolean stencil);
+public interface IVanillaMultipassVoxelRenderStrategy extends IMultipassVoxelRenderStrategy, IVanillaMultipassRenderStrategy<VoxelPos, VoxelTile> {
 }

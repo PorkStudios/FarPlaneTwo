@@ -20,19 +20,22 @@
 
 package net.daporkchop.fp2.mode.voxel.client;
 
-import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.mode.common.client.strategy.IShaderBasedMultipassRenderStrategy;
+import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.mode.voxel.VoxelTile;
 
 /**
- * All of the {@link ShaderProgram}s used by the voxel renderer.
- *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class VoxelShaders {
-    public static final ShaderProgram BLOCK_SHADER = ShaderManager.get("voxel/block");
-    public static final ShaderProgram BLOCK_SHADER_TRANSFORM_FEEDBACK = ShaderManager.get("voxel/xfb/block");
+public interface IShaderBasedMultipassVoxelRenderStrategy extends IMultipassVoxelRenderStrategy, IShaderBasedMultipassRenderStrategy<VoxelPos, VoxelTile> {
+    @Override
+    default ShaderProgram blockShader() {
+        return VoxelShaders.BLOCK_SHADER;
+    }
 
-    public static final ShaderProgram STENCIL_SHADER = ShaderManager.get("voxel/stencil");
+    @Override
+    default ShaderProgram stencilShader() {
+        return VoxelShaders.STENCIL_SHADER;
+    }
 }

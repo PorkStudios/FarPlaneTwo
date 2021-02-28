@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
@@ -38,6 +37,6 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelTile> {
 
     @Override
     protected IFarRenderStrategy<VoxelPos, VoxelTile> strategy0() {
-        return new IndexedMultidrawVoxelRenderStrategy();
+        return new ShaderBasedIndexedMultidrawVoxelRenderStrategy();
     }
 }

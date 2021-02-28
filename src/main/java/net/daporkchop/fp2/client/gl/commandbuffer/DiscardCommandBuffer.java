@@ -18,21 +18,43 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
+package net.daporkchop.fp2.client.gl.commandbuffer;
 
-import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.client.gl.shader.ShaderManager;
-import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 /**
- * All of the {@link ShaderProgram}s used by the voxel renderer.
+ * Implementation of {@link IDrawCommandBuffer} which silently discards all submitted commands.
  *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class VoxelShaders {
-    public static final ShaderProgram BLOCK_SHADER = ShaderManager.get("voxel/block");
-    public static final ShaderProgram BLOCK_SHADER_TRANSFORM_FEEDBACK = ShaderManager.get("voxel/xfb/block");
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public final class DiscardCommandBuffer implements IDrawCommandBuffer {
+    public static final DiscardCommandBuffer INSTANCE = new DiscardCommandBuffer();
 
-    public static final ShaderProgram STENCIL_SHADER = ShaderManager.get("voxel/stencil");
+    @Override
+    public IDrawCommandBuffer begin() {
+        return this;
+    }
+
+    @Override
+    public void drawElements(int x, int y, int z, int level, int baseVertex, int firstIndex, int count) {
+    }
+
+    @Override
+    public void close() {
+    }
+
+    @Override
+    public long vertexCount() {
+        return 0L;
+    }
+
+    @Override
+    public void draw() {
+    }
+
+    @Override
+    public void delete() {
+    }
 }

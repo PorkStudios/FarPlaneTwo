@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.client.gl.commandbuffer;
 
+import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
@@ -48,13 +49,26 @@ public class IndirectIndexedMultidrawCommandBuffer extends IndirectMultidrawComm
     public static final int COMMAND_SIZE_BYTES = COMMAND_SIZE * INT_SIZE;
     public static final int ENTRY_SIZE_BYTES = POSITION_SIZE_BYTES + COMMAND_SIZE_BYTES;
 
+    @Getter
+    protected long vertexCount;
+
     public IndirectIndexedMultidrawCommandBuffer(@NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray) {
         super(ENTRY_SIZE_BYTES, vaoInitializer, elementArray);
     }
 
     @Override
+    public IDrawCommandBuffer begin() {
+        super.begin();
+
+        this.vertexCount = 0L;
+        return this;
+    }
+
+    @Override
     public void drawElements(int x, int y, int z, int level, int baseVertex, int firstIndex, int count) {
         int size = this.next();
+
+        this.vertexCount += count * 3L;
 
         long baseAddr = this.addr + (long) size * ENTRY_SIZE_BYTES;
         PUnsafe.putInt(baseAddr + 0 * INT_SIZE, x);
