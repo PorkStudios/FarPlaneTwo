@@ -156,12 +156,12 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
             }
 
             BakeOutput output = new BakeOutput(this.strategy.renderDataSize());
-            boolean empty = this.strategy.bake(pos, srcs, output);
+            boolean nonEmpty = this.strategy.bake(pos, srcs, output);
             if (!this.bakeTimestamps.replace(pos, oldTimestamps, newTimestamps)) { //tile was removed while baking
                 return;
             }
 
-            if (empty) {
+            if (nonEmpty) {
                 ClientThreadExecutor.INSTANCE.execute(() -> {
                     if (this.bakeTimestamps.get(pos) != newTimestamps) { //tile was baked again since this task was submitted to the client thread
                         return;

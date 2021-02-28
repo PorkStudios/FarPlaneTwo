@@ -165,6 +165,6 @@ public class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos> {
     @SideOnly(Side.CLIENT)
     @Override
     public boolean isVanillaRenderable(long addr) {
-        return ClientConstants.isChunkRenderable(_x(addr), _y(addr), _z(addr));
+        return ClientConstants.isVanillaRenderable(_x(addr), _y(addr), _z(addr));
     }
 }

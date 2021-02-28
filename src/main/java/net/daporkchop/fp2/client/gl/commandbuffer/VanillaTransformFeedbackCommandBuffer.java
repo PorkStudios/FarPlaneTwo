@@ -22,6 +22,7 @@ package net.daporkchop.fp2.client.gl.commandbuffer;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.TransformFeedbackObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
@@ -97,19 +98,7 @@ public class VanillaTransformFeedbackCommandBuffer implements IDrawCommandBuffer
     @Override
     public void draw() {
         try (GLBuffer buffer = this.buffer.bind(GL_ARRAY_BUFFER)) {
-            checkGLError("pre state init");
-
-            GlStateManager.glEnableClientState(32884);
-            OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
-            GlStateManager.glEnableClientState(32888);
-            OpenGlHelper.setClientActiveTexture(OpenGlHelper.lightmapTexUnit);
-            GlStateManager.glEnableClientState(32888);
-            OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
-            GlStateManager.glEnableClientState(32886);
-
-            GlStateManager.resetColor();
-
-            checkGLError("pre vertex init");
+            ClientConstants.beginVanillaRender();
 
             GlStateManager.glVertexPointer(3, GL_FLOAT, VERTEX_BYTES, 0);
             GlStateManager.glColorPointer(4, GL_FLOAT, VERTEX_BYTES, 3 * FLOAT_SIZE);
@@ -118,23 +107,10 @@ public class VanillaTransformFeedbackCommandBuffer implements IDrawCommandBuffer
             GlStateManager.glTexCoordPointer(2, GL_FLOAT, VERTEX_BYTES, 9 * FLOAT_SIZE);
             OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
 
-            checkGLError("pre render");
-
             this.xfb.draw(GL_TRIANGLES);
 
-            checkGLError("pre reset state");
-
-            GlStateManager.glDisableClientState(32884);
-            OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
-            GlStateManager.glDisableClientState(32888);
-            OpenGlHelper.setClientActiveTexture(OpenGlHelper.lightmapTexUnit);
-            GlStateManager.glDisableClientState(32888);
-            OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
-            GlStateManager.glDisableClientState(32886);
-
-            checkGLError("post");
+            ClientConstants.endVanillaRender();
         }
-        checkGLError("post2");
     }
 
     @Override

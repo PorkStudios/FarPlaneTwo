@@ -23,17 +23,18 @@ package net.daporkchop.fp2.client;
 import io.github.opencubicchunks.cubicchunks.core.CubicChunksConfig;
 import io.github.opencubicchunks.cubicchunks.core.client.CubeProviderClient;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.util.threading.keyed.KeyedTaskScheduler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ChunkProviderClient;
+import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.debug.FP2Debug.*;
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author DaPorkchop_
@@ -57,11 +58,15 @@ public class ClientConstants {
                 x + sizeHorizontal, y + sizeVertical, z + sizeHorizontal);
     }
 
-    public boolean isChunkRenderable(int x, int y, int z) {
-        if (false && FP2_DEBUG) {
-            return false;
-        }
-
+    /**
+     * Checks whether the chunk section at the given chunk coordinates can be rendered by vanilla.
+     *
+     * @param x the X coordinate of the chunk section
+     * @param y the Y coordinate of the chunk section
+     * @param z the Z coordinate of the chunk section
+     * @return whether the chunk section at the given chunk coordinates can be rendered by vanilla
+     */
+    public boolean isVanillaRenderable(int x, int y, int z) {
         if (!CURRENT_RENDER_BB.intersects(x << 4, y << 4, z << 4, (x + 1) << 4, (y + 1) << 4, (z + 1) << 4)) {
             return false;
         }
@@ -72,5 +77,33 @@ public class ClientConstants {
         } else {
             return provider.isChunkGeneratedAt(x, z);
         }
+    }
+
+    /**
+     * Prepares the OpenGL state for vanilla-style vertex rendering.
+     */
+    public void beginVanillaRender() {
+        GlStateManager.glEnableClientState(GL_VERTEX_ARRAY);
+        OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
+        GlStateManager.glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        OpenGlHelper.setClientActiveTexture(OpenGlHelper.lightmapTexUnit);
+        GlStateManager.glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
+        GlStateManager.glEnableClientState(GL_COLOR_ARRAY);
+
+        GlStateManager.resetColor();
+    }
+
+    /**
+     * Resets the OpenGL state after vanilla-style vertex rendering.
+     */
+    public void endVanillaRender() {
+        GlStateManager.glDisableClientState(GL_VERTEX_ARRAY);
+        OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
+        GlStateManager.glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        OpenGlHelper.setClientActiveTexture(OpenGlHelper.lightmapTexUnit);
+        GlStateManager.glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
+        GlStateManager.glDisableClientState(GL_COLOR_ARRAY);
     }
 }

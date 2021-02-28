@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -72,4 +72,8 @@ public class OFHelper {
 
     public static final long OF_FOGTYPE_OFFSET = !OF ? -1L : PUnsafe.pork_getOffset(GameSettings.class, "ofFogType");
     public static final long OF_BETTERGRASS_OFFSET = !OF ? -1L : PUnsafe.pork_getOffset(GameSettings.class, "ofBetterGrass");
+
+    public static final int OF_SHADERS_ENTITYATTRIB = 10;
+    public static final int OF_SHADERS_MIDTEXCOORDATTRIB = 11;
+    public static final int OF_SHADERS_TANGENTATTRIB = 12;
 }

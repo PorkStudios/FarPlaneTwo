@@ -97,7 +97,8 @@ public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator i
 
                     if (edges == 0) {
                         //this voxel is only present as a dummy placeholder for other voxels to connect to, and is presumably air
-                        data.light = 0;
+                        pos.setPos(baseX + dx + 1, baseY + dy + 1, baseZ + dz + 1);
+                        data.light = Constants.packCombinedLight(world.getCombinedLight(pos, 0));
                     } else {
                         //compute average light levels for all non-opaque blocks
                         int skyLight = 0;
