@@ -26,12 +26,17 @@ import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.TransformFeedbackObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.util.compat.of.OFHelper;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL20;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.util.compat.of.OFHelper.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
 
 /**
@@ -39,7 +44,7 @@ import static org.lwjgl.opengl.GL30.*;
  */
 @RequiredArgsConstructor
 public class VanillaTransformFeedbackCommandBuffer implements IDrawCommandBuffer {
-    protected static final int VERTEX_BYTES = 11 * FLOAT_SIZE;
+    protected static final int VERTEX_BYTES = 11 * FLOAT_SIZE + 12 * FLOAT_SIZE;
 
     protected final GLBuffer buffer = new GLBuffer(GL_DYNAMIC_COPY);
     protected final TransformFeedbackObject xfb = new TransformFeedbackObject();
@@ -98,8 +103,6 @@ public class VanillaTransformFeedbackCommandBuffer implements IDrawCommandBuffer
     @Override
     public void draw() {
         try (GLBuffer buffer = this.buffer.bind(GL_ARRAY_BUFFER)) {
-            ClientConstants.beginVanillaRender();
-
             GlStateManager.glVertexPointer(3, GL_FLOAT, VERTEX_BYTES, 0);
             GlStateManager.glColorPointer(4, GL_FLOAT, VERTEX_BYTES, 3 * FLOAT_SIZE);
             GlStateManager.glTexCoordPointer(2, GL_FLOAT, VERTEX_BYTES, 7 * FLOAT_SIZE);
@@ -107,9 +110,13 @@ public class VanillaTransformFeedbackCommandBuffer implements IDrawCommandBuffer
             GlStateManager.glTexCoordPointer(2, GL_FLOAT, VERTEX_BYTES, 9 * FLOAT_SIZE);
             OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
 
-            this.xfb.draw(GL_TRIANGLES);
+            //optifine shader stuff
+            glNormalPointer(GL_FLOAT, VERTEX_BYTES, 11 * FLOAT_SIZE);
+            glVertexAttribPointer(OF_SHADERS_MIDTEXCOORDATTRIB, 2, GL_FLOAT, false, VERTEX_BYTES, 14 * FLOAT_SIZE);
+            glVertexAttribPointer(OF_SHADERS_TANGENTATTRIB, 4, GL_FLOAT, false, VERTEX_BYTES, 16 * FLOAT_SIZE);
+            glVertexAttribPointer(OF_SHADERS_ENTITYATTRIB, 3, GL_FLOAT, false, VERTEX_BYTES, 20 * FLOAT_SIZE);
 
-            ClientConstants.endVanillaRender();
+            this.xfb.draw(GL_TRIANGLES);
         }
     }
 

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,9 +21,8 @@
 package net.daporkchop.fp2.debug.asm.client.renderer;
 
 import net.daporkchop.fp2.FP2Config;
-import net.minecraft.client.renderer.EntityRenderer;
+import net.minecraft.client.renderer.ChunkRenderContainer;
 import net.minecraft.client.renderer.RenderGlobal;
-import net.minecraft.entity.Entity;
 import net.minecraft.util.BlockRenderLayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -32,16 +31,15 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 /**
  * @author DaPorkchop_
  */
-@Mixin(EntityRenderer.class)
-public abstract class MixinEntityRenderer {
-    @Redirect(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;DILnet/minecraft/entity/Entity;)I"))
-    private int debug_skipRenderBlockLayer(RenderGlobal r, BlockRenderLayer layer, double d, int i, Entity e)   {
+@Mixin(RenderGlobal.class)
+public abstract class MixinRenderGlobal {
+    @Redirect(method = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;)V",
+    at = @At(value = "INVOKE",
+    target = "Lnet/minecraft/client/renderer/ChunkRenderContainer;renderChunkLayer(Lnet/minecraft/util/BlockRenderLayer;)V"),
+    allow = 1)
+    private void fp2_debug_renderChunkLayer_skipVanilla(ChunkRenderContainer container, BlockRenderLayer layer) {
         if (!FP2Config.debug.skipRenderWorld)   {
-            return r.renderBlockLayer(layer, d, i, e);
-        } else {
-            return 0;
+            container.renderChunkLayer(layer);
         }
     }
 }

@@ -21,14 +21,19 @@
 package net.daporkchop.fp2.asm.client.renderer;
 
 import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.ReversedZ;
+import net.daporkchop.fp2.client.ShaderFP2StateHelper;
+import net.daporkchop.fp2.client.ShaderGlStateHelper;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.client.gl.camera.Frustum;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
+import net.minecraft.client.renderer.RenderGlobal;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.BlockRenderLayer;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -60,23 +65,25 @@ public abstract class MixinEntityRenderer {
     private final Frustum frustum = new Frustum();
 
     @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
-            at = @At(value = "HEAD"))
-    private void renderWorldPass_head(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
-        ReversedZ.renderWorldPass_HEAD();
+            at = @At("HEAD"))
+    private void fp2_renderWorldPass_enableReversedZ(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
+        ReversedZ.enable();
     }
 
     @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/GlStateManager;shadeModel(I)V",
-                    ordinal = 1,
-                    shift = At.Shift.BEFORE),
-            allow = 1)
-    private void renderWorldPass_doFarPlaneRender(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
+            at = @At("HEAD"))
+    private void fp2_renderWorldPass_prepare(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
         IFarClientContext<?, ?> context = ((IFarWorldClient) this.mc.world).activeContext();
         if (context != null) {
-            this.mc.profiler.endStartSection("fp2_render");
+            //this.mc.profiler.endStartSection("fp2_prepare");
 
+            ClientConstants.update();
+
+            //configure projection matrix
+            this.setupCameraTransform(partialTicks, pass);
             this.frustum.initFromGlState();
+            ShaderGlStateHelper.update(partialTicks, this.mc);
+            ShaderFP2StateHelper.update(partialTicks, this.mc);
 
             //set frustum position
             Entity entity = this.mc.getRenderViewEntity();
@@ -86,37 +93,50 @@ public abstract class MixinEntityRenderer {
             this.frustum.setPosition(x, y, z);
 
             //render
-            context.renderer().render(partialTicks, this.mc.world, this.mc, this.frustum);
+            context.renderer().prepare(partialTicks, this.mc, this.frustum);
         }
     }
+
+    /*@Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/GlStateManager;shadeModel(I)V",
+                    ordinal = 1,
+                    shift = At.Shift.BEFORE),
+            allow = 1)
+    private void fp2_renderWorldPass_render(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
+        IFarClientContext<?, ?> context = ((IFarWorldClient) this.mc.world).activeContext();
+        if (context != null) {
+            context.renderer().render(partialTicks, this.mc, this.frustum, , );
+        }
+    }*/
 
     //use reversed-z projection with infinite zFar everywhere
 
     @Redirect(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderCloudsCheck(Lnet/minecraft/client/renderer/RenderGlobal;FIDDD)V",
             at = @At(value = "INVOKE",
                     target = "Lorg/lwjgl/util/glu/Project;gluPerspective(FFFF)V"))
-    private void renderCloudsCheck_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar) {
+    private void fp2_renderCloudsCheck_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar) {
         MatrixHelper.reversedZ(fov, aspect, zNear);
     }
 
     @Redirect(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderHand(FI)V",
             at = @At(value = "INVOKE",
                     target = "Lorg/lwjgl/util/glu/Project;gluPerspective(FFFF)V"))
-    private void renderHand_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar) {
+    private void fp2_renderHand_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar) {
         MatrixHelper.reversedZ(fov, aspect, zNear);
     }
 
     @Redirect(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
             at = @At(value = "INVOKE",
                     target = "Lorg/lwjgl/util/glu/Project;gluPerspective(FFFF)V"))
-    private void renderWorldPass_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar) {
+    private void fp2_renderWorldPass_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar) {
         MatrixHelper.reversedZ(fov, aspect, zNear);
     }
 
     @Redirect(method = "Lnet/minecraft/client/renderer/EntityRenderer;setupCameraTransform(FI)V",
             at = @At(value = "INVOKE",
                     target = "Lorg/lwjgl/util/glu/Project;gluPerspective(FFFF)V"))
-    private void setupCameraTransform_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar) {
+    private void fp2_setupCameraTransform_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar) {
         MatrixHelper.reversedZ(fov, aspect, zNear);
     }
 
@@ -126,7 +146,7 @@ public abstract class MixinEntityRenderer {
             at = @At(value = "FIELD",
                     target = "Lnet/minecraft/client/renderer/EntityRenderer;farPlaneDistance:F",
                     opcode = Opcodes.PUTFIELD))
-    private void setupCameraTransform_increaseFarPlaneDistance(EntityRenderer renderer, float farPlaneDistance) {
+    private void fp2_setupCameraTransform_increaseFarPlaneDistance(EntityRenderer renderer, float farPlaneDistance) {
         if (((IFarWorldClient) this.mc.world).activeContext() != null) {
             //farPlaneDistance = FP2Config.renderDistance;
             farPlaneDistance = FP2Config.levelCutoffDistance << FP2Config.maxLevels >> 1;
@@ -140,7 +160,12 @@ public abstract class MixinEntityRenderer {
     @ModifyConstant(method = "Lnet/minecraft/client/renderer/EntityRenderer;enableLightmap()V",
             constant = @Constant(intValue = GL_CLAMP),
             allow = 2)
-    private int nooptifine_lightmapEdgeClampMode(int value) {
+    private int fp2_nooptifine_lightmapEdgeClampMode(int value) {
         return GL_CLAMP_TO_EDGE;
     }
+
+    //shadow methods
+
+    @Shadow
+    public abstract void setupCameraTransform(float partialTicks, int pass);
 }

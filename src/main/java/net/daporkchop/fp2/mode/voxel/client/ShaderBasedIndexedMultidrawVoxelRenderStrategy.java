@@ -20,8 +20,15 @@
 
 package net.daporkchop.fp2.mode.voxel.client;
 
+import lombok.NonNull;
+import net.minecraft.util.BlockRenderLayer;
+
 /**
  * @author DaPorkchop_
  */
 public class ShaderBasedIndexedMultidrawVoxelRenderStrategy extends AbstractIndexedMultidrawVoxelRenderStrategy implements IShaderBasedMultipassVoxelRenderStrategy {
+    @Override
+    public void render(@NonNull BlockRenderLayer layer, boolean pre) {
+        throw new UnsupportedOperationException(); //TODO
+    }
 }

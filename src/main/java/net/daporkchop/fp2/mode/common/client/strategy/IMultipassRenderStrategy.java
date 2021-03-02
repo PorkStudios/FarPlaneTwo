@@ -41,7 +41,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
     IDrawCommandBuffer[] passes();
 
     @Override
-    default void render(long tilev, int tilec) {
+    default void prepareRender(long tilev, int tilec) {
         IDrawCommandBuffer[] passes = this.passes();
         checkArg(passes.length == RENDER_PASS_COUNT, "invalid number of render passes: %d (expected %d)", passes.length, RENDER_PASS_COUNT);
 

@@ -25,6 +25,7 @@ import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.lib.unsafe.capability.Releasable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
+import net.minecraft.util.BlockRenderLayer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -33,5 +34,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  */
 @SideOnly(Side.CLIENT)
 public interface IFarRenderer extends Releasable {
-    void render(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum);
+    void prepare(float partialTicks, @NonNull Minecraft mc, @NonNull IFrustum frustum);
+
+    void render(@NonNull Minecraft mc, @NonNull BlockRenderLayer layer, boolean pre);
 }

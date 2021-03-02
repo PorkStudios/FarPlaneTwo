@@ -44,6 +44,11 @@ out XFB_OUT {
     vec4 color;
     vec2 uv;
     vec2 light;
+
+    vec3 normal;
+    vec2 midTexCoord;
+    vec4 tangent;
+    vec3 entity;
 } xfb_out;
 
 //
@@ -73,6 +78,11 @@ void main() {
         xfb_out.pos = antiFlicker(gs_in[i].pos);
         xfb_out.uv = mix(vec2(quad.minU, quad.minV), vec2(quad.maxU, quad.maxV), uv_factors[i]);
         xfb_out.light = gs_in[i].light * 256.;
+
+        xfb_out.normal = normal;
+        xfb_out.midTexCoord = mix(vec2(quad.minU, quad.minV), vec2(quad.maxU, quad.maxV), .5);
+        xfb_out.tangent = vec4(gs_in[PROVOKING].pos - gs_in[0].pos, 1.);
+        xfb_out.entity = vec3(float(gs_in[PROVOKING].state & 0xFF), 0., 0.);
 
         xfb_out.color = color;
 

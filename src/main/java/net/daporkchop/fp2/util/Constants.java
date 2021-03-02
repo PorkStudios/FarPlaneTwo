@@ -46,6 +46,9 @@ import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import org.apache.logging.log4j.Logger;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.CharBuffer;
@@ -58,6 +61,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import static java.lang.Math.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Various constants and helper methods used throughout the mod.
@@ -142,6 +146,25 @@ public class Constants {
         int blockLight = packedLight & 0xF;
         int skyLight = packedLight >> 4;
         return (((skyLight << 4) | skyLight) << 8) | ((blockLight << 4) | blockLight);
+    }
+
+    private static Class<?> toClass(@NonNull Object in) {
+        if (in instanceof Class) {
+            return uncheckedCast(in);
+        } else if (in instanceof String) {
+            return PorkUtil.classForName((String) in);
+        } else {
+            throw new IllegalArgumentException(PorkUtil.className(in));
+        }
+    }
+
+    public static MethodHandle staticHandle(@NonNull Object clazz, @NonNull Object returnType, @NonNull String name, @NonNull Object... params) {
+        try {
+            MethodType type = MethodType.methodType(toClass(returnType), Arrays.stream(params).map(Constants::toClass).toArray(Class[]::new));
+            return MethodHandles.lookup().findStatic(toClass(clazz), name, type);
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     //the following methods are copied from LWJGL's BufferUtils in order to ensure their availability on the dedicated server as well

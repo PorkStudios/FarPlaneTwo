@@ -20,13 +20,16 @@
 
 package net.daporkchop.fp2.util.compat.of;
 
+import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.settings.GameSettings;
+import net.minecraft.util.BlockRenderLayer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 
 /**
@@ -37,6 +40,8 @@ import java.lang.reflect.Method;
 @UtilityClass
 @SideOnly(Side.CLIENT)
 public class OFHelper {
+    //TODO: make intellij stop rearranging this class somehow
+
     public static final boolean OF;
     public static final String OF_VERSION;
 
@@ -76,4 +81,60 @@ public class OFHelper {
     public static final int OF_SHADERS_ENTITYATTRIB = 10;
     public static final int OF_SHADERS_MIDTEXCOORDATTRIB = 11;
     public static final int OF_SHADERS_TANGENTATTRIB = 12;
+
+    private static final MethodHandle OF_CONFIG_ISSHADERS = !OF ? null : Constants.staticHandle("Config", boolean.class, "isShaders");
+
+    private static final MethodHandle OF_SHADERSRENDER_BEGINTERRAINSOLID = !OF ? null : Constants.staticHandle("net.optifine.shaders.ShadersRender", void.class, "beginTerrainSolid");
+    private static final MethodHandle OF_SHADERSRENDER_BEGINTERRAINCUTOUTMIPPED = !OF ? null : Constants.staticHandle("net.optifine.shaders.ShadersRender", void.class, "beginTerrainCutoutMipped");
+    private static final MethodHandle OF_SHADERSRENDER_BEGINTERRAINCUTOUT = !OF ? null : Constants.staticHandle("net.optifine.shaders.ShadersRender", void.class, "beginTerrainCutout");
+    private static final MethodHandle OF_SHADERSRENDER_ENDTERRAIN = !OF ? null : Constants.staticHandle("net.optifine.shaders.ShadersRender", void.class, "endTerrain");
+    private static final MethodHandle OF_SHADERSRENDER_PRERENDERCHUNKLAYER = !OF ? null : Constants.staticHandle("net.optifine.shaders.ShadersRender", void.class, "preRenderChunkLayer", BlockRenderLayer.class);
+    private static final MethodHandle OF_SHADERSRENDER_POSTRENDERCHUNKLAYER = !OF ? null : Constants.staticHandle("net.optifine.shaders.ShadersRender", void.class, "postRenderChunkLayer", BlockRenderLayer.class);
+    private static final MethodHandle OF_SHADERS_BEGINWATER = !OF ? null : Constants.staticHandle("net.optifine.shaders.Shaders", void.class, "beginWater");
+    private static final MethodHandle OF_SHADERS_ENDWATER = !OF ? null : Constants.staticHandle("net.optifine.shaders.Shaders", void.class, "endWater");
+
+    @SneakyThrows(Throwable.class)
+    public static boolean of_Config_isShaders() {
+        return OF && (boolean) OF_CONFIG_ISSHADERS.invokeExact();
+    }
+
+    @SneakyThrows(Throwable.class)
+    public static void of_ShadersRender_beginTerrainSolid() {
+        OF_SHADERSRENDER_BEGINTERRAINSOLID.invokeExact();
+    }
+
+    @SneakyThrows(Throwable.class)
+    public static void of_ShadersRender_beginTerrainCutoutMipped() {
+        OF_SHADERSRENDER_BEGINTERRAINCUTOUTMIPPED.invokeExact();
+    }
+
+    @SneakyThrows(Throwable.class)
+    public static void of_ShadersRender_beginTerrainCutout() {
+        OF_SHADERSRENDER_BEGINTERRAINCUTOUT.invokeExact();
+    }
+
+    @SneakyThrows(Throwable.class)
+    public static void of_ShadersRender_endTerrain() {
+        OF_SHADERSRENDER_ENDTERRAIN.invokeExact();
+    }
+
+    @SneakyThrows(Throwable.class)
+    public static void of_ShadersRender_preRenderChunkLayer(BlockRenderLayer layer) {
+        OF_SHADERSRENDER_PRERENDERCHUNKLAYER.invokeExact(layer);
+    }
+
+    @SneakyThrows(Throwable.class)
+    public static void of_ShadersRender_postRenderChunkLayer(BlockRenderLayer layer) {
+        OF_SHADERSRENDER_POSTRENDERCHUNKLAYER.invokeExact(layer);
+    }
+
+    @SneakyThrows(Throwable.class)
+    public static void of_Shaders_beginWater() {
+        OF_SHADERS_BEGINWATER.invokeExact();
+    }
+
+    @SneakyThrows(Throwable.class)
+    public static void of_Shaders_endWater() {
+        OF_SHADERS_ENDWATER.invokeExact();
+    }
 }

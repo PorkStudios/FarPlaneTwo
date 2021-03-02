@@ -24,6 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.lib.unsafe.capability.Releasable;
+import net.minecraft.util.BlockRenderLayer;
 
 import java.util.stream.Stream;
 
@@ -67,12 +68,18 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile> ext
     void deleteRenderData(long renderData);
 
     //
-    // BAKING+RENDERING METHODS
+    // BAKE METHODS
     //
 
     boolean bake(@NonNull POS pos, @NonNull T[] srcs, @NonNull BakeOutput output);
 
     void executeBakeOutput(@NonNull POS pos, @NonNull BakeOutput output);
 
-    void render(long tilev, int tilec); //haha yes C naming conventions
+    //
+    // RENDER METHODS
+    //
+
+    void prepareRender(long tilev, int tilec); //haha yes C naming conventions
+
+    void render(@NonNull BlockRenderLayer layer, boolean pre);
 }

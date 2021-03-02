@@ -72,6 +72,6 @@ public class ClientEvents {
 
     @SubscribeEvent
     public void renderWorldLast(RenderWorldLastEvent event) {
-        ReversedZ.renderWorldPass_TAIL();
+        ReversedZ.disable();
     }
 }
