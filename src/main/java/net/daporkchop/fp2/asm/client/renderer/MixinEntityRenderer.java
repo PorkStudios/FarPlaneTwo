@@ -97,19 +97,6 @@ public abstract class MixinEntityRenderer {
         }
     }
 
-    /*@Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/GlStateManager;shadeModel(I)V",
-                    ordinal = 1,
-                    shift = At.Shift.BEFORE),
-            allow = 1)
-    private void fp2_renderWorldPass_render(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
-        IFarClientContext<?, ?> context = ((IFarWorldClient) this.mc.world).activeContext();
-        if (context != null) {
-            context.renderer().render(partialTicks, this.mc, this.frustum, , );
-        }
-    }*/
-
     //use reversed-z projection with infinite zFar everywhere
 
     @Redirect(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderCloudsCheck(Lnet/minecraft/client/renderer/RenderGlobal;FIDDD)V",

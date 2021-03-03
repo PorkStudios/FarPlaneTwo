@@ -40,15 +40,17 @@ layout(triangle_strip, max_vertices = 3) out;
 //
 
 out XFB_OUT {
-    vec3 pos;
-    vec4 color;
-    vec2 uv;
-    vec2 light;
+    layout(xfb_buffer = 0, xfb_offset = 0) vec3 pos;
+    layout(xfb_buffer = 0, xfb_offset = 12) uint color;
+    layout(xfb_buffer = 0, xfb_offset = 16) vec2 uv;
+    layout(xfb_buffer = 0, xfb_offset = 24) uint light;
 
+#ifdef OPTIFINE_SHADERS
     vec3 normal;
     vec2 midTexCoord;
     vec4 tangent;
     vec3 entity;
+#endif
 } xfb_out;
 
 //
@@ -65,6 +67,14 @@ vec3 antiFlicker(vec3 pos) {
     return pos * ((len + glState.camera.anti_flicker_offset.z) / len);
 }
 
+uint rgb_uint(ivec4 color) {
+    return color.a << 24 | color.r << 16 | color.g << 8 | color.b;
+}
+
+uint xy_uint(ivec2 pos) {
+    return pos.x << 16 | pos.y;
+}
+
 void main() {
     vec3 normal = normalVector();
     float diffuse = diffuseLight(normal);
@@ -72,19 +82,21 @@ void main() {
     ivec2 list = quad_lists[gs_in[PROVOKING].state * 6 + normalToFaceIndex(normal)];
     BakedQuad quad = quad_data[list[0]];
 
-    vec4 color = vec4(max(gs_in[PROVOKING].color, vec3(quad.tintFactor)) * diffuse, 1.);
+    uint color_uint = rgb_uint(ivec4(ivec3(max(gs_in[PROVOKING].color, vec3(quad.tintFactor)) * diffuse * 255.), 1));
 
     for (int i = 0; i < 3; i++) {
         xfb_out.pos = antiFlicker(gs_in[i].pos);
         xfb_out.uv = mix(vec2(quad.minU, quad.minV), vec2(quad.maxU, quad.maxV), uv_factors[i]);
-        xfb_out.light = gs_in[i].light * 256.;
+        xfb_out.light = xy_uint(ivec2(gs_in[i].light) << 8);
 
+#ifdef OPTIFINE_SHADERS
         xfb_out.normal = normal;
         xfb_out.midTexCoord = mix(vec2(quad.minU, quad.minV), vec2(quad.maxU, quad.maxV), .5);
         xfb_out.tangent = vec4(gs_in[PROVOKING].pos - gs_in[0].pos, 1.);
         xfb_out.entity = vec3(float(gs_in[PROVOKING].state & 0xFF), 0., 0.);
+#endif
 
-        xfb_out.color = color;
+        xfb_out.color = color_uint;
 
         EmitVertex();
     }

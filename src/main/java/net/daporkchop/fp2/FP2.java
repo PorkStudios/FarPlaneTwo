@@ -107,8 +107,8 @@ public class FP2 {
         MinecraftForge.EVENT_BUS.register(new ServerEvents());
 
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-            if (!GLContext.getCapabilities().OpenGL43) { //require at least OpenGL 4.3
-                unsupported("Your system does not support OpenGL 4.3!");
+            if (!GLContext.getCapabilities().OpenGL44) { //require at least OpenGL 4.4
+                unsupported("Your system does not support OpenGL 4.4!");
             }
 
             int size = glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);

@@ -18,57 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.debug;
+package net.daporkchop.fp2.debug.util;
 
+import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.debug.client.DebugClientEvents;
-import net.daporkchop.fp2.debug.client.DebugKeyBindings;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.common.event.FMLInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
-import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.client.ClientConstants.*;
 
 /**
- * Container class for FP2 debug mode.
+ * Debug mode utility methods.
  *
  * @author DaPorkchop_
  */
 @UtilityClass
-public class FP2Debug {
-    /**
-     * Whether or not we are currently running in debug mode.
-     */
-    public static final boolean FP2_DEBUG = Boolean.parseBoolean(System.getProperty("fp2.debug", "false"));
+public class DebugUtils {
+    public static final String CHAT_PREFIX = "§8§l[§9FarPlaneTwo Debug§8§l]§r ";
 
-    /**
-     * Called during {@link FMLPreInitializationEvent}.
-     */
-    public void preInit() {
-        if (!FP2_DEBUG) {
-            return;
-        }
-
-        bigWarning("FarPlaneTwo debug mode enabled!");
-
-        if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-            MinecraftForge.EVENT_BUS.register(new DebugClientEvents());
-        }
+    @SideOnly(Side.CLIENT)
+    public void clientMsg(@NonNull String msg) {
+        mc.player.sendMessage(new TextComponentString(CHAT_PREFIX + msg));
     }
-
-    /**
-     * Called during {@link FMLInitializationEvent}.
-     */
-    public void init() {
-        if (!FP2_DEBUG) {
-            return;
-        }
-
-        if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-            DebugKeyBindings.register();
-        }
-    }
-
 }

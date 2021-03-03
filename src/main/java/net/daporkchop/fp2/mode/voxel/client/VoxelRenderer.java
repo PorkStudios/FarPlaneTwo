@@ -37,6 +37,6 @@ public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelTile> {
 
     @Override
     protected IFarRenderStrategy<VoxelPos, VoxelTile> strategy0() {
-        return new TransformFeedbackVoxelRenderStrategy();
+        return new ShaderBasedIndexedMultidrawVoxelRenderStrategy();
     }
 }

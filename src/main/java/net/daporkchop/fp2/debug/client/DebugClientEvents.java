@@ -23,7 +23,7 @@ package net.daporkchop.fp2.debug.client;
 import net.daporkchop.fp2.FP2Config;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
-import net.daporkchop.fp2.debug.FP2Debug;
+import net.daporkchop.fp2.debug.util.DebugUtils;
 import net.daporkchop.fp2.net.client.CPacketDropAllTiles;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
@@ -44,19 +44,19 @@ public class DebugClientEvents {
         }
         if (DebugKeyBindings.DROP_TILES.isPressed()) {
             NETWORK_WRAPPER.sendToServer(new CPacketDropAllTiles());
-            FP2Debug.clientMsg("§aReloading all tiles.");
+            DebugUtils.clientMsg("§aReloading all tiles.");
         }
         if (DebugKeyBindings.TOGGLE_REVERSED_Z.isPressed()) {
             FP2Config.compatibility.reversedZ ^= true;
-            FP2Debug.clientMsg((FP2Config.compatibility.reversedZ ? "§aEnabled" : "§cDisabled") + " reversed-Z projection.");
+            DebugUtils.clientMsg((FP2Config.compatibility.reversedZ ? "§aEnabled" : "§cDisabled") + " reversed-Z projection.");
         }
         if (DebugKeyBindings.TOGGLE_VANILLA_RENDER.isPressed()) {
             FP2Config.debug.skipRenderWorld ^= true;
-            FP2Debug.clientMsg((FP2Config.debug.skipRenderWorld ? "§cDisabled" : "§aEnabled") + " vanilla terrain.");
+            DebugUtils.clientMsg((FP2Config.debug.skipRenderWorld ? "§cDisabled" : "§aEnabled") + " vanilla terrain.");
         }
         if (DebugKeyBindings.REBUILD_UVS.isPressed()) {
             TexUVs.reloadUVs();
-            FP2Debug.clientMsg("§aRebuilt texture UVs.");
+            DebugUtils.clientMsg("§aRebuilt texture UVs.");
         }
     }
 }

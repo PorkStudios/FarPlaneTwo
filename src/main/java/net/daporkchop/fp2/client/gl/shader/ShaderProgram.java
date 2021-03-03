@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -38,7 +38,7 @@ import static org.lwjgl.opengl.GL30.*;
  */
 @Getter
 public final class ShaderProgram implements AutoCloseable {
-    protected final String name;
+    protected final ShaderKey key;
     protected int id;
 
     //stores the id in an object that isn't this object to allow this to be garbage collected
@@ -48,13 +48,13 @@ public final class ShaderProgram implements AutoCloseable {
     /**
      * Creates a new shader program by attaching the given vertex shader with the given fragment shader.
      *
-     * @param name     the program's name
+     * @param key     the program's key
      * @param vert   the vertex shader
      * @param geom the geometry shader
      * @param frag fragment shader
      */
-    protected ShaderProgram(@NonNull String name, @NonNull Shader vert, Shader geom, Shader frag, String[] xfb_varying) {
-        this.name = name;
+    protected ShaderProgram(@NonNull ShaderKey key, @NonNull Shader vert, Shader geom, Shader frag, String[] xfb_varying) {
+        this.key = key;
 
         //allocate program
         this.idReference.set(this.id = glCreateProgram());
@@ -91,9 +91,9 @@ public final class ShaderProgram implements AutoCloseable {
 
         //link and validate
         glLinkProgram(id);
-        ShaderManager.validateProgramLink(this.name, id);
+        ShaderManager.validateProgramLink(this.key.toString(), id);
         glValidateProgram(id);
-        ShaderManager.validateProgramValidate(this.name, id);
+        ShaderManager.validateProgramValidate(this.key.toString(), id);
     }
 
     protected void reload(@NonNull Shader vert, Shader geom, Shader frag, String[] xfb_varying)    {
@@ -132,6 +132,13 @@ public final class ShaderProgram implements AutoCloseable {
     public ShaderProgram use() {
         glUseProgram(this.id);
         return this;
+    }
+
+    /**
+     * @return a new {@link ShaderBuilder} with the same initial properties as this shader program
+     */
+    public ShaderBuilder asBuilder() {
+        return new ShaderBuilder(this.key);
     }
 
     @Override

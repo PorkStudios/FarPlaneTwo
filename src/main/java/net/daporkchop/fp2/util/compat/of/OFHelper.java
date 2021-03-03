@@ -93,6 +93,8 @@ public class OFHelper {
     private static final MethodHandle OF_SHADERS_BEGINWATER = !OF ? null : Constants.staticHandle("net.optifine.shaders.Shaders", void.class, "beginWater");
     private static final MethodHandle OF_SHADERS_ENDWATER = !OF ? null : Constants.staticHandle("net.optifine.shaders.Shaders", void.class, "endWater");
 
+    public static final String OF_DEFINE_SHADERS = "OPTIFINE_SHADERS";
+
     @SneakyThrows(Throwable.class)
     public static boolean of_Config_isShaders() {
         return OF && (boolean) OF_CONFIG_ISSHADERS.invokeExact();

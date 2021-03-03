@@ -9,16 +9,5 @@
     "common.glsl",
     "geom/common.geom",
     "geom/xfb.geom"
-  ],
-  "xfb_varying": [
-    "XFB_OUT.pos",
-    "XFB_OUT.color",
-    "XFB_OUT.uv",
-    "XFB_OUT.light",
-
-    "XFB_OUT.normal",
-    "XFB_OUT.midTexCoord",
-    "XFB_OUT.tangent",
-    "XFB_OUT.entity"
   ]
 }

@@ -18,25 +18,29 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
+package net.daporkchop.fp2.client.gl.shader;
 
-import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.client.gl.shader.ShaderManager;
-import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
-import net.daporkchop.fp2.util.compat.of.OFHelper;
+import lombok.EqualsAndHashCode;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+
+import java.util.Map;
 
 /**
- * All of the {@link ShaderProgram}s used by the voxel renderer.
+ * A unique identifier for a {@link ShaderProgram}.
  *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class VoxelShaders {
-    public static final ShaderProgram BLOCK_SHADER = ShaderManager.get("voxel/block");
-    public static final ShaderProgram BLOCK_SHADER_TRANSFORM_FEEDBACK = ShaderManager.get("voxel/xfb/block");
-    public static final ShaderProgram BLOCK_SHADER_TRANSFORM_FEEDBACK_OPTIFINE = BLOCK_SHADER_TRANSFORM_FEEDBACK.asBuilder()
-            .define(OFHelper.OF_DEFINE_SHADERS)
-            .build();
+@RequiredArgsConstructor
+@EqualsAndHashCode
+public final class ShaderKey {
+    @NonNull
+    protected final String programName;
+    @NonNull
+    protected final Map<String, String> defines;
 
-    public static final ShaderProgram STENCIL_SHADER = ShaderManager.get("voxel/stencil");
+    @Override
+    public String toString() {
+        return this.programName + ' ' + this.defines;
+    }
 }
