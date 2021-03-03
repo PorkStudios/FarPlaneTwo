@@ -75,7 +75,7 @@ public abstract class MixinEntityRenderer {
     private void fp2_renderWorldPass_prepare(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
         IFarClientContext<?, ?> context = ((IFarWorldClient) this.mc.world).activeContext();
         if (context != null) {
-            //this.mc.profiler.endStartSection("fp2_prepare");
+            this.mc.profiler.startSection("fp2_prepare");
 
             ClientConstants.update();
 
@@ -94,6 +94,21 @@ public abstract class MixinEntityRenderer {
 
             //render
             context.renderer().prepare(partialTicks, this.mc, this.frustum);
+
+            this.mc.profiler.endSection();
+        }
+    }
+
+    @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/GlStateManager;shadeModel(I)V",
+                    ordinal = 1,
+                    shift = At.Shift.BEFORE),
+            allow = 1)
+    private void fp2_renderWorldPass_render(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
+        IFarClientContext<?, ?> context = ((IFarWorldClient) this.mc.world).activeContext();
+        if (context != null) {
+            context.renderer().render(this.mc, BlockRenderLayer.CUTOUT, false); //TODO: this is a hacky workaround
         }
     }
 

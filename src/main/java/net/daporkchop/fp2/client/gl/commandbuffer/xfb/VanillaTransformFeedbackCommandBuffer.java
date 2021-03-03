@@ -18,30 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
+package net.daporkchop.fp2.client.gl.commandbuffer.xfb;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
-import net.daporkchop.fp2.client.gl.commandbuffer.xfb.VanillaTransformFeedbackCommandBuffer;
-import net.minecraft.util.BlockRenderLayer;
+import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.minecraft.client.renderer.OpenGlHelper;
+
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL13.*;
 
 /**
  * @author DaPorkchop_
  */
-public class TransformFeedbackVoxelRenderStrategy extends AbstractIndexedMultidrawVoxelRenderStrategy implements IVanillaMultipassVoxelRenderStrategy {
-    @Override
-    public IDrawCommandBuffer createCommandBuffer() {
-        return new VanillaTransformFeedbackCommandBuffer(super.createCommandBuffer(), VoxelShaders.BLOCK_SHADER_TRANSFORM_FEEDBACK);
+public class VanillaTransformFeedbackCommandBuffer extends AbstractTransformFeedbackCommandBuffer {
+    protected static final int VERTEX_BYTES = 3 * FLOAT_SIZE //pos
+                                              + 1 * INT_SIZE //color
+                                              + 2 * FLOAT_SIZE //uv
+                                              + 1 * INT_SIZE; //light
+
+    public VanillaTransformFeedbackCommandBuffer(@NonNull IDrawCommandBuffer delegate, @NonNull ShaderProgram shader) {
+        super(delegate, shader, VERTEX_BYTES);
     }
 
     @Override
-    public void render(@NonNull BlockRenderLayer layer, boolean pre) {
-        if (layer == BlockRenderLayer.SOLID && !pre) {
-            this.renderSolid(this.passes[0]);
-        } else if (layer == BlockRenderLayer.CUTOUT_MIPPED && !pre) {
-            this.renderCutout(this.passes[1]);
-        } else if (layer == BlockRenderLayer.TRANSLUCENT && pre) {
-            this.renderTransparent(this.passes[2]);
-        }
+    protected void configureVertexAttributes() {
+        glVertexPointer(3, GL_FLOAT, VERTEX_BYTES, 0);
+        glColorPointer(4, GL_UNSIGNED_BYTE, VERTEX_BYTES, 3 * FLOAT_SIZE);
+        glTexCoordPointer(2, GL_FLOAT, VERTEX_BYTES, 3 * FLOAT_SIZE + 1 * INT_SIZE);
+        glClientActiveTexture(OpenGlHelper.lightmapTexUnit);
+        glTexCoordPointer(2, GL_SHORT, VERTEX_BYTES, 3 * FLOAT_SIZE + 1 * INT_SIZE + 2 * FLOAT_SIZE);
+        glClientActiveTexture(OpenGlHelper.defaultTexUnit);
     }
 }

@@ -38,7 +38,7 @@ import static org.lwjgl.opengl.GL30.*;
  */
 @Getter
 public final class ShaderProgram implements AutoCloseable {
-    protected final ShaderKey key;
+    protected final String name;
     protected int id;
 
     //stores the id in an object that isn't this object to allow this to be garbage collected
@@ -48,13 +48,13 @@ public final class ShaderProgram implements AutoCloseable {
     /**
      * Creates a new shader program by attaching the given vertex shader with the given fragment shader.
      *
-     * @param key     the program's key
+     * @param name     the program's name
      * @param vert   the vertex shader
      * @param geom the geometry shader
      * @param frag fragment shader
      */
-    protected ShaderProgram(@NonNull ShaderKey key, @NonNull Shader vert, Shader geom, Shader frag, String[] xfb_varying) {
-        this.key = key;
+    protected ShaderProgram(@NonNull String name, @NonNull Shader vert, Shader geom, Shader frag, String[] xfb_varying) {
+        this.name = name;
 
         //allocate program
         this.idReference.set(this.id = glCreateProgram());
@@ -91,9 +91,9 @@ public final class ShaderProgram implements AutoCloseable {
 
         //link and validate
         glLinkProgram(id);
-        ShaderManager.validateProgramLink(this.key.toString(), id);
+        ShaderManager.validateProgramLink(this.name, id);
         glValidateProgram(id);
-        ShaderManager.validateProgramValidate(this.key.toString(), id);
+        ShaderManager.validateProgramValidate(this.name, id);
     }
 
     protected void reload(@NonNull Shader vert, Shader geom, Shader frag, String[] xfb_varying)    {
@@ -132,13 +132,6 @@ public final class ShaderProgram implements AutoCloseable {
     public ShaderProgram use() {
         glUseProgram(this.id);
         return this;
-    }
-
-    /**
-     * @return a new {@link ShaderBuilder} with the same initial properties as this shader program
-     */
-    public ShaderBuilder asBuilder() {
-        return new ShaderBuilder(this.key);
     }
 
     @Override

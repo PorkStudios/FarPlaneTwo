@@ -1,11 +1,13 @@
 {
   "vert": [
+    "optifine_shader.glsl",
     "common.glsl",
     "vert/common.vert",
     "vert/fog.vert",
     "vert/voxel/voxel.vert"
   ],
   "geom": [
+    "optifine_shader.glsl",
     "common.glsl",
     "geom/common.geom",
     "geom/xfb.geom"

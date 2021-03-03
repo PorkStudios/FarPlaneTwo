@@ -18,18 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.commandbuffer;
+package net.daporkchop.fp2.client.gl.commandbuffer.xfb;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.TransformFeedbackObject;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.OpenGlHelper;
 
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL30.*;
@@ -38,9 +35,7 @@ import static org.lwjgl.opengl.GL30.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class VanillaTransformFeedbackCommandBuffer implements IDrawCommandBuffer {
-    protected static final int VERTEX_BYTES = 3 * FLOAT_SIZE + 1 * INT_SIZE + 2 * FLOAT_SIZE + 1 * INT_SIZE;
-
+public abstract class AbstractTransformFeedbackCommandBuffer implements IDrawCommandBuffer {
     protected final GLBuffer buffer = new GLBuffer(GL_DYNAMIC_COPY);
     protected final TransformFeedbackObject xfb = new TransformFeedbackObject();
 
@@ -48,6 +43,7 @@ public class VanillaTransformFeedbackCommandBuffer implements IDrawCommandBuffer
     protected final IDrawCommandBuffer delegate;
     @NonNull
     protected final ShaderProgram shader;
+    protected final int vertexSize;
 
     protected long vertices;
 
@@ -68,7 +64,7 @@ public class VanillaTransformFeedbackCommandBuffer implements IDrawCommandBuffer
         this.vertices = this.delegate.vertexCount();
 
         //ensure the buffer is big enough to fit all the vertices
-        long minBytes = this.vertices * VERTEX_BYTES;
+        long minBytes = this.vertices * this.vertexSize;
         if (minBytes > this.buffer.capacity()) {
             try (GLBuffer buffer = this.buffer.bind(GL_ARRAY_BUFFER)) {
                 buffer.capacity(minBytes);
@@ -98,22 +94,13 @@ public class VanillaTransformFeedbackCommandBuffer implements IDrawCommandBuffer
     @Override
     public void draw() {
         try (GLBuffer buffer = this.buffer.bind(GL_ARRAY_BUFFER)) {
-            GlStateManager.glVertexPointer(3, GL_FLOAT, VERTEX_BYTES, 0);
-            GlStateManager.glColorPointer(4, GL_UNSIGNED_BYTE, VERTEX_BYTES, 3 * FLOAT_SIZE);
-            GlStateManager.glTexCoordPointer(2, GL_FLOAT, VERTEX_BYTES, 3 * FLOAT_SIZE + 1 * INT_SIZE);
-            OpenGlHelper.setClientActiveTexture(OpenGlHelper.lightmapTexUnit);
-            GlStateManager.glTexCoordPointer(2, GL_SHORT, VERTEX_BYTES, 3 * FLOAT_SIZE + 1 * INT_SIZE + 2 * FLOAT_SIZE);
-            OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
-
-            //optifine shader stuff
-            /*glNormalPointer(GL_FLOAT, VERTEX_BYTES, 11 * FLOAT_SIZE);
-            glVertexAttribPointer(OF_SHADERS_MIDTEXCOORDATTRIB, 2, GL_FLOAT, false, VERTEX_BYTES, 14 * FLOAT_SIZE);
-            glVertexAttribPointer(OF_SHADERS_TANGENTATTRIB, 4, GL_FLOAT, false, VERTEX_BYTES, 16 * FLOAT_SIZE);
-            glVertexAttribPointer(OF_SHADERS_ENTITYATTRIB, 3, GL_FLOAT, false, VERTEX_BYTES, 20 * FLOAT_SIZE);*/
+            this.configureVertexAttributes();
 
             this.xfb.draw(GL_TRIANGLES);
         }
     }
+
+    protected abstract void configureVertexAttributes();
 
     @Override
     public void delete() {

@@ -23,22 +23,22 @@ package net.daporkchop.fp2.client.gl.shader;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.debug.FP2Debug;
 import net.daporkchop.fp2.debug.util.DebugUtils;
 import net.daporkchop.lib.binary.oio.StreamUtil;
 import net.daporkchop.lib.binary.oio.reader.UTF8FileReader;
 import net.daporkchop.lib.common.function.io.IOBiConsumer;
 import net.daporkchop.lib.common.function.io.IOFunction;
 import net.daporkchop.lib.common.misc.string.PStrings;
+import net.minecraft.client.Minecraft;
+import net.minecraft.util.text.TextComponentString;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -55,39 +55,32 @@ import static org.lwjgl.opengl.GL20.*;
 public class ShaderManager {
     protected final String BASE_PATH = "/assets/fp2/shaders";
 
-    protected final LoadingCache<ShaderKey, ShaderProgram> SHADER_CACHE = CacheBuilder.newBuilder()
+    protected final LoadingCache<String, ShaderProgram> SHADER_CACHE = CacheBuilder.newBuilder()
             .weakValues()
-            .build(new CacheLoader<ShaderKey, ShaderProgram>() {
+            .build(new CacheLoader<String, ShaderProgram>() {
                 @Override
-                public ShaderProgram load(ShaderKey key) throws Exception {
+                public ShaderProgram load(String programName) throws Exception {
                     ProgramMeta meta;
-                    try (InputStream in = ShaderManager.class.getResourceAsStream(PStrings.fastFormat("%s/prog/%s.json", BASE_PATH, key.programName))) {
-                        checkArg(in != null, "Unable to find shader meta file: \"%s/prog/%s.json\"!", BASE_PATH, key);
+                    try (InputStream in = ShaderManager.class.getResourceAsStream(PStrings.fastFormat("%s/prog/%s.json", BASE_PATH, programName))) {
+                        checkArg(in != null, "Unable to find shader meta file: \"%s/prog/%s.json\"!", BASE_PATH, programName);
                         meta = GSON.fromJson(new UTF8FileReader(in), ProgramMeta.class);
                     }
 
-                    checkState(meta.vert != null, "Program \"%s\" has no vertex shaders!", key);
+                    checkState(meta.vert != null, "Program \"%s\" has no vertex shaders!", programName);
                     if (meta.xfb_varying != null) {
-                        checkState(meta.frag == null, "Program \"%s\" has both fragment shaders and transform feedback outputs!", key);
+                        checkState(meta.frag == null, "Program \"%s\" has both fragment shaders and transform feedback outputs!", programName);
                     } else {
-                        checkState(key.programName.contains("/xfb/") || meta.frag != null, "Program \"%s\" has no fragment shaders!", key);
+                        checkState(meta.frag != null, "Program \"%s\" has no fragment shaders!", programName);
                     }
 
                     return new ShaderProgram(
-                            key,
-                            get(meta.vert, key.defines, ShaderType.VERTEX),
-                            meta.geom != null ? get(meta.geom, key.defines, ShaderType.GEOMETRY) : null,
-                            meta.frag != null ? get(meta.frag, key.defines, ShaderType.FRAGMENT) : null,
+                            programName,
+                            get(meta.vert, ShaderType.VERTEX),
+                            meta.geom != null ? get(meta.geom, ShaderType.GEOMETRY) : null,
+                            meta.frag != null ? get(meta.frag, ShaderType.FRAGMENT) : null,
                             meta.xfb_varying);
                 }
             });
-
-    /**
-     * @see #get(String, Map)
-     */
-    public ShaderProgram get(@NonNull String programName) {
-        return get(programName, ImmutableMap.of());
-    }
 
     /**
      * Obtains a shader program with the given name.
@@ -95,13 +88,13 @@ public class ShaderManager {
      * @param programName the name of the shader to get
      * @return the shader program with the given name
      */
-    public ShaderProgram get(@NonNull String programName, @NonNull Map<String, String> defines) {
-        return SHADER_CACHE.getUnchecked(new ShaderKey(programName, ImmutableMap.copyOf(defines)));
+    public ShaderProgram get(@NonNull String programName) {
+        return SHADER_CACHE.getUnchecked(programName);
     }
 
-    protected Shader get(@NonNull String[] names, @NonNull Map<String, String> defines, @NonNull ShaderType type) {
+    protected Shader get(@NonNull String[] names, @NonNull ShaderType type) {
         return new Shader(type, names, Stream.concat(
-                Stream.of(header(defines)),
+                Stream.of("#version 430 core\n"), //add version prefix
                 Arrays.stream(names)
                         .map((IOFunction<String, String>) fileName -> {
                             try (InputStream in = ShaderManager.class.getResourceAsStream(BASE_PATH + '/' + fileName)) {
@@ -110,12 +103,6 @@ public class ShaderManager {
                             }
                         }))
                 .toArray(String[]::new));
-    }
-
-    protected String header(@NonNull Map<String, String> defines) {
-        return defines.entrySet().stream()
-                .map(e -> "#define " + e.getKey() + ' ' + e.getValue())
-                .collect(Collectors.joining("\n", "#version 440 core\n", "\n"));
     }
 
     protected void validateShaderCompile(@NonNull String name, int id) {
@@ -148,24 +135,24 @@ public class ShaderManager {
     public void reload() {
         try {
             AtomicInteger shaderCount = new AtomicInteger();
-            SHADER_CACHE.asMap().forEach((IOBiConsumer<ShaderKey, ShaderProgram>) (key, program) -> {
+            SHADER_CACHE.asMap().forEach((IOBiConsumer<String, ShaderProgram>) (programName, program) -> {
                 ProgramMeta meta;
-                try (InputStream in = ShaderManager.class.getResourceAsStream(PStrings.fastFormat("%s/prog/%s.json", BASE_PATH, key.programName))) {
-                    checkArg(in != null, "Unable to find shader meta file: \"%s/prog/%s.json\"!", BASE_PATH, key);
+                try (InputStream in = ShaderManager.class.getResourceAsStream(PStrings.fastFormat("%s/prog/%s.json", BASE_PATH, programName))) {
+                    checkArg(in != null, "Unable to find shader meta file: \"%s/prog/%s.json\"!", BASE_PATH, programName);
                     meta = GSON.fromJson(new UTF8FileReader(in), ProgramMeta.class);
                 }
 
-                checkState(meta.vert != null, "Program \"%s\" has no vertex shaders!", key);
+                checkState(meta.vert != null, "Program \"%s\" has no vertex shaders!", programName);
                 if (meta.xfb_varying != null) {
-                    checkState(meta.frag == null, "Program \"%s\" has both fragment shaders and transform feedback outputs!", key);
+                    checkState(meta.frag == null, "Program \"%s\" has both fragment shaders and transform feedback outputs!", programName);
                 } else {
-                    checkState(key.programName.contains("/xfb/") || meta.frag != null, "Program \"%s\" has no fragment shaders!", key);
+                    checkState(meta.frag != null, "Program \"%s\" has no fragment shaders!", programName);
                 }
 
                 program.reload(
-                        get(meta.vert, key.defines, ShaderType.VERTEX),
-                        meta.geom != null ? get(meta.geom, key.defines, ShaderType.GEOMETRY) : null,
-                        meta.frag != null ? get(meta.frag, key.defines, ShaderType.FRAGMENT) : null,
+                        get(meta.vert, ShaderType.VERTEX),
+                        meta.geom != null ? get(meta.geom, ShaderType.GEOMETRY) : null,
+                        meta.frag != null ? get(meta.frag, ShaderType.FRAGMENT) : null,
                         meta.xfb_varying);
                 shaderCount.incrementAndGet();
             });

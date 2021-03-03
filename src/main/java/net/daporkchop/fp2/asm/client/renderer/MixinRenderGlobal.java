@@ -40,7 +40,7 @@ public abstract class MixinRenderGlobal {
     @Shadow
     public WorldClient world;
 
-    @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;)V",
+    /*@Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;)V",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/ChunkRenderContainer;renderChunkLayer(Lnet/minecraft/util/BlockRenderLayer;)V"),
             allow = 1)
@@ -61,5 +61,5 @@ public abstract class MixinRenderGlobal {
         if (context != null) {
             context.renderer().render(Minecraft.getMinecraft(), layer, false);
         }
-    }
+    }*/
 }

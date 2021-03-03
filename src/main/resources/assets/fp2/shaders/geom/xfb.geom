@@ -40,12 +40,12 @@ layout(triangle_strip, max_vertices = 3) out;
 //
 
 out XFB_OUT {
-    layout(xfb_buffer = 0, xfb_offset = 0) vec3 pos;
-    layout(xfb_buffer = 0, xfb_offset = 12) uint color;
-    layout(xfb_buffer = 0, xfb_offset = 16) vec2 uv;
-    layout(xfb_buffer = 0, xfb_offset = 24) uint light;
+    vec3 pos;
+    uint color;
+    vec2 uv;
+    uint light;
 
-#ifdef OPTIFINE_SHADERS
+#ifdef OPTIFINE_SHADER
     vec3 normal;
     vec2 midTexCoord;
     vec4 tangent;
@@ -89,7 +89,7 @@ void main() {
         xfb_out.uv = mix(vec2(quad.minU, quad.minV), vec2(quad.maxU, quad.maxV), uv_factors[i]);
         xfb_out.light = xy_uint(ivec2(gs_in[i].light) << 8);
 
-#ifdef OPTIFINE_SHADERS
+#ifdef OPTIFINE_SHADER
         xfb_out.normal = normal;
         xfb_out.midTexCoord = mix(vec2(quad.minU, quad.minV), vec2(quad.maxU, quad.maxV), .5);
         xfb_out.tangent = vec4(gs_in[PROVOKING].pos - gs_in[0].pos, 1.);

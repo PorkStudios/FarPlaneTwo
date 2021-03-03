@@ -28,7 +28,11 @@ import net.minecraft.util.BlockRenderLayer;
  */
 public class ShaderBasedIndexedMultidrawVoxelRenderStrategy extends AbstractIndexedMultidrawVoxelRenderStrategy implements IShaderBasedMultipassVoxelRenderStrategy {
     @Override
-    public void render(@NonNull BlockRenderLayer layer, boolean pre) {
-        throw new UnsupportedOperationException(); //TODO
+    public void render(@NonNull BlockRenderLayer layer, boolean pre) { //TODO: this is bad
+        if (layer == BlockRenderLayer.CUTOUT && !pre) {
+            this.renderSolid(this.passes[0]);
+            this.renderCutout(this.passes[1]);
+            this.renderTransparent(this.passes[2]);
+        }
     }
 }

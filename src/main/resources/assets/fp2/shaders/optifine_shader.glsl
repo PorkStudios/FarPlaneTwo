@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-$today.year DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,29 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.shader;
+//
+//
+// MACROS
+//
+//
 
-import lombok.EqualsAndHashCode;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-
-import java.util.Map;
-
-/**
- * A unique identifier for a {@link ShaderProgram}.
- *
- * @author DaPorkchop_
- */
-@RequiredArgsConstructor
-@EqualsAndHashCode
-public final class ShaderKey {
-    @NonNull
-    protected final String programName;
-    @NonNull
-    protected final Map<String, String> defines;
-
-    @Override
-    public String toString() {
-        return this.programName + ' ' + this.defines;
-    }
-}
+//we are currently preparing render data for transform feedback rendering for an optifine shader
+#define OPTIFINE_SHADER
