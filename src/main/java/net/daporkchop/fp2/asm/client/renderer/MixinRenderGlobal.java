@@ -20,17 +20,22 @@
 
 package net.daporkchop.fp2.asm.client.renderer;
 
+import net.daporkchop.fp2.client.ShaderGlStateHelper;
+import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.RenderGlobal;
+import net.minecraft.client.renderer.culling.ICamera;
+import net.minecraft.entity.Entity;
 import net.minecraft.util.BlockRenderLayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * @author DaPorkchop_
@@ -40,26 +45,48 @@ public abstract class MixinRenderGlobal {
     @Shadow
     public WorldClient world;
 
-    /*@Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;)V",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/ChunkRenderContainer;renderChunkLayer(Lnet/minecraft/util/BlockRenderLayer;)V"),
-            allow = 1)
-    private void fp2_renderBlockLayer_pre(BlockRenderLayer layer, CallbackInfo ci) {
+    @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;setupTerrain(Lnet/minecraft/entity/Entity;DLnet/minecraft/client/renderer/culling/ICamera;IZ)V",
+            at = @At("HEAD"))
+    private void fp2_setupTerrain_prepare(Entity viewEntity, double partialTicks, ICamera camera, int frameCount, boolean playerSpectator, CallbackInfo ci) {
         IFarClientContext<?, ?> context = ((IFarWorldClient) this.world).activeContext();
         if (context != null) {
-            context.renderer().render(Minecraft.getMinecraft(), layer, true);
+            Minecraft mc = Minecraft.getMinecraft();
+
+            ShaderGlStateHelper.update((float) partialTicks, mc);
+
+            mc.profiler.startSection("fp2_prepare");
+            context.renderer().prepare((float) partialTicks, mc, (IFrustum) camera);
+            mc.profiler.endSection();
         }
     }
 
-    @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;)V",
+    @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;DILnet/minecraft/entity/Entity;)I",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/ChunkRenderContainer;renderChunkLayer(Lnet/minecraft/util/BlockRenderLayer;)V",
+                    target = "Lnet/minecraft/client/renderer/RenderHelper;disableStandardItemLighting()V",
                     shift = At.Shift.AFTER),
             allow = 1)
-    private void fp2_renderBlockLayer_post(BlockRenderLayer layer, CallbackInfo ci) {
+    private void fp2_renderBlockLayer_pre(BlockRenderLayer layer, double partialTicks, int pass, Entity entity, CallbackInfoReturnable<Integer> ci) {
         IFarClientContext<?, ?> context = ((IFarWorldClient) this.world).activeContext();
         if (context != null) {
-            context.renderer().render(Minecraft.getMinecraft(), layer, false);
+            Minecraft mc = Minecraft.getMinecraft();
+
+            mc.profiler.startSection("fp2_render_pre");
+            context.renderer().render(mc, layer, true);
+            mc.profiler.endSection();
         }
-    }*/
+    }
+
+    @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;DILnet/minecraft/entity/Entity;)I",
+            at = @At(value = "RETURN"),
+            allow = 2, require = 2)
+    private void fp2_renderBlockLayer_post(BlockRenderLayer layer, double partialTicks, int pass, Entity entity, CallbackInfoReturnable<Integer> ci) {
+        IFarClientContext<?, ?> context = ((IFarWorldClient) this.world).activeContext();
+        if (context != null) {
+            Minecraft mc = Minecraft.getMinecraft();
+
+            mc.profiler.startSection("fp2_render_post");
+            context.renderer().render(mc, layer, false);
+            mc.profiler.endSection();
+        }
+    }
 }

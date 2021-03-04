@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -37,12 +37,15 @@ import static org.lwjgl.opengl.GL11.*;
  * @author DaPorkchop_
  */
 public class Frustum implements IFrustum, ICamera {
+    public static final Frustum INSTANCE = new Frustum();
+
     protected static void normalize(double[] arr, int off) {
         double len = sqrt(arr[off + 0] * arr[off + 0] + arr[off + 1] * arr[off + 1] + arr[off + 2] * arr[off + 2] + arr[off + 3] * arr[off + 3]);
-        arr[off + 0] /= len;
-        arr[off + 1] /= len;
-        arr[off + 2] /= len;
-        arr[off + 3] /= len;
+        double d = 1.0d / len; //jvm isn't allowed to do this optimization itself
+        arr[off + 0] *= d;
+        arr[off + 1] *= d;
+        arr[off + 2] *= d;
+        arr[off + 3] *= d;
     }
 
     private static double dot(double[] arr, int off, double x, double y, double z) {
@@ -59,6 +62,9 @@ public class Frustum implements IFrustum, ICamera {
     protected double y;
     protected double z;
 
+    /**
+     * Updates the frustum from the current OpenGL projection and modelview matrices.
+     */
     public void initFromGlState() {
         FloatBuffer buffer = MatrixHelper.get(GL_PROJECTION_MATRIX);
         for (int i = 0; i < MAT4_ELEMENTS; i++) {

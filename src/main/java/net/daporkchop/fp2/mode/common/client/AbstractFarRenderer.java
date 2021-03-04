@@ -116,13 +116,13 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
         }
 
         try {
-            //this.prepareGlState(partialTicks, mc);
+            //this.prepareGlState(mc);
             checkGLError("post fp2 render setup");
 
             this.strategy.render(layer, pre);
             checkGLError("post fp2 render");
         } finally {
-            //this.resetGlState(partialTicks, mc);
+            //this.resetGlState(mc);
             checkGLError("post fp2 render reset");
         }
     }

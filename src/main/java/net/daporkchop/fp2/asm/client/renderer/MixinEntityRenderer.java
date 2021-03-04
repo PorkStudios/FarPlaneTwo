@@ -61,55 +61,12 @@ public abstract class MixinEntityRenderer {
     @Shadow
     private float farPlaneDistance;
 
-    @Unique
-    private final Frustum frustum = new Frustum();
-
     @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
             at = @At("HEAD"))
-    private void fp2_renderWorldPass_enableReversedZ(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
+    private void fp2_renderWorldPass_pre(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
         ReversedZ.enable();
-    }
 
-    @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
-            at = @At("HEAD"))
-    private void fp2_renderWorldPass_prepare(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
-        IFarClientContext<?, ?> context = ((IFarWorldClient) this.mc.world).activeContext();
-        if (context != null) {
-            this.mc.profiler.startSection("fp2_prepare");
-
-            ClientConstants.update();
-
-            //configure projection matrix
-            this.setupCameraTransform(partialTicks, pass);
-            this.frustum.initFromGlState();
-            ShaderGlStateHelper.update(partialTicks, this.mc);
-            ShaderFP2StateHelper.update(partialTicks, this.mc);
-
-            //set frustum position
-            Entity entity = this.mc.getRenderViewEntity();
-            double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks;
-            double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks;
-            double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks;
-            this.frustum.setPosition(x, y, z);
-
-            //render
-            context.renderer().prepare(partialTicks, this.mc, this.frustum);
-
-            this.mc.profiler.endSection();
-        }
-    }
-
-    @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/GlStateManager;shadeModel(I)V",
-                    ordinal = 1,
-                    shift = At.Shift.BEFORE),
-            allow = 1)
-    private void fp2_renderWorldPass_render(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
-        IFarClientContext<?, ?> context = ((IFarWorldClient) this.mc.world).activeContext();
-        if (context != null) {
-            context.renderer().render(this.mc, BlockRenderLayer.CUTOUT, false); //TODO: this is a hacky workaround
-        }
+        ClientConstants.update();
     }
 
     //use reversed-z projection with infinite zFar everywhere
@@ -165,9 +122,4 @@ public abstract class MixinEntityRenderer {
     private int fp2_nooptifine_lightmapEdgeClampMode(int value) {
         return GL_CLAMP_TO_EDGE;
     }
-
-    //shadow methods
-
-    @Shadow
-    public abstract void setupCameraTransform(float partialTicks, int pass);
 }
