@@ -57,11 +57,6 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
                 pass.close();
             }
         }
-
-        //render completed passes
-        this.renderSolid(passes[0]);
-        this.renderCutout(passes[1]);
-        this.renderTransparent(passes[2]);
     }
 
     void drawTile(@NonNull IDrawCommandBuffer[] passes, long tile);

@@ -32,8 +32,8 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
 
 /**
@@ -77,33 +77,5 @@ public class ClientConstants {
         } else {
             return provider.isChunkGeneratedAt(x, z);
         }
-    }
-
-    /**
-     * Prepares the OpenGL state for vanilla-style vertex rendering.
-     */
-    public void beginVanillaRender() {
-        GlStateManager.glEnableClientState(GL_VERTEX_ARRAY);
-        OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
-        GlStateManager.glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        OpenGlHelper.setClientActiveTexture(OpenGlHelper.lightmapTexUnit);
-        GlStateManager.glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
-        GlStateManager.glEnableClientState(GL_COLOR_ARRAY);
-
-        GlStateManager.resetColor();
-    }
-
-    /**
-     * Resets the OpenGL state after vanilla-style vertex rendering.
-     */
-    public void endVanillaRender() {
-        GlStateManager.glDisableClientState(GL_VERTEX_ARRAY);
-        OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
-        GlStateManager.glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        OpenGlHelper.setClientActiveTexture(OpenGlHelper.lightmapTexUnit);
-        GlStateManager.glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
-        GlStateManager.glDisableClientState(GL_COLOR_ARRAY);
     }
 }

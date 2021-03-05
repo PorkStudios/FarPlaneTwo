@@ -22,6 +22,7 @@ package net.daporkchop.fp2.client.gl.commandbuffer.xfb;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.client.DrawMode;
 import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.TransformFeedbackObject;
@@ -73,6 +74,7 @@ public abstract class AbstractTransformFeedbackCommandBuffer implements IDrawCom
 
         //bind transform feedback object, shader and buffer, then execute a draw
         try (TransformFeedbackObject xfb = this.xfb.bind();
+             DrawMode drawMode = DrawMode.SHADER.begin(); //we're going to be doing "rendering" using a shader, so we need to be in shader mode
              ShaderProgram shader = this.shader.use()) {
             this.buffer.bindBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0);
 
@@ -93,6 +95,8 @@ public abstract class AbstractTransformFeedbackCommandBuffer implements IDrawCom
 
     @Override
     public void draw() {
+        DrawMode.LEGACY.require();
+
         try (GLBuffer buffer = this.buffer.bind(GL_ARRAY_BUFFER)) {
             this.configureVertexAttributes();
 

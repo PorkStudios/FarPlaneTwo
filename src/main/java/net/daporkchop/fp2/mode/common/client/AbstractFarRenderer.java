@@ -23,9 +23,6 @@ package net.daporkchop.fp2.mode.common.client;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2Config;
-import net.daporkchop.fp2.client.ShaderFP2StateHelper;
-import net.daporkchop.fp2.client.ShaderGlStateHelper;
-import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.mode.api.IFarPos;
@@ -38,13 +35,11 @@ import net.daporkchop.fp2.util.math.Sphere;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.BlockRenderLayer;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 
 /**
@@ -97,16 +92,8 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
             return; //nothing to render...
         }
 
-        try {
-            this.prepareGlState(mc);
-            checkGLError("post fp2 prepare setup");
-
-            this.index.doWithValues(this.strategy::prepareRender);
-            checkGLError("post fp2 prepare");
-        } finally {
-            this.resetGlState(mc);
-            checkGLError("post fp2 prepare reset");
-        }
+        this.index.doWithValues(this.strategy::prepareRender);
+        checkGLError("post fp2 prepare");
     }
 
     @Override
@@ -115,16 +102,8 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
             return; //nothing to render...
         }
 
-        try {
-            //this.prepareGlState(mc);
-            checkGLError("post fp2 render setup");
-
-            this.strategy.render(layer, pre);
-            checkGLError("post fp2 render");
-        } finally {
-            //this.resetGlState(mc);
-            checkGLError("post fp2 render reset");
-        }
+        this.strategy.render(layer, pre);
+        checkGLError("post fp2 render");
     }
 
     //TODO: use cylinders for heightmap and spheres for voxel
@@ -138,21 +117,6 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
             ranges[i] = new Sphere(x, y, z, FP2Config.levelCutoffDistance + T_VOXELS << i);
         }
         return ranges;
-    }
-
-    protected void prepareGlState(Minecraft mc) {
-        TexUVs.bind();
-        ShaderGlStateHelper.bind();
-        ShaderFP2StateHelper.bind();
-
-        GlStateManager.depthFunc(GL_LESS);
-        mc.entityRenderer.enableLightmap();
-    }
-
-    protected void resetGlState(Minecraft mc) {
-        mc.entityRenderer.disableLightmap();
-
-        GlStateManager.depthFunc(GL_LEQUAL);
     }
 
     @Override

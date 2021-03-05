@@ -119,7 +119,7 @@ public abstract class MixinEntityRenderer {
     @ModifyConstant(method = "Lnet/minecraft/client/renderer/EntityRenderer;enableLightmap()V",
             constant = @Constant(intValue = GL_CLAMP),
             allow = 2)
-    private int fp2_nooptifine_lightmapEdgeClampMode(int value) {
+    private int fp2_enableLightmap_setLightmapEdgeClampModeToEmulateOptifine(int value) {
         return GL_CLAMP_TO_EDGE;
     }
 }
