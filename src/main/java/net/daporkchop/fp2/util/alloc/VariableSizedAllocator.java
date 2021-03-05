@@ -20,39 +20,48 @@
 
 package net.daporkchop.fp2.util.alloc;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectRBTreeMap;
 import lombok.NonNull;
+import lombok.Setter;
 import net.daporkchop.lib.common.math.PMath;
-import net.daporkchop.lib.common.util.PArrays;
 
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.TreeMap;
+import java.util.Comparator;
+import java.util.NavigableSet;
+import java.util.TreeSet;
 
-import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static net.minecraft.util.math.MathHelper.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
+ * A simple, efficient memory allocator backed by a doubly linked list of segments sorted into buckets.
+ * <p>
+ * Nodes are inserted and removed from the list whenever an allocation is added or removed, and merged whenever possible.
+ * <p>
+ * Unallocated memory blocks are stored in a TreeSet to allow efficient detection of the smallest possible block that would fit an allocation of the given size.
+ *
  * @author DaPorkchop_
  */
-//TODO: make this work with 64-bit addresses
 public final class VariableSizedAllocator implements Allocator {
-    private static final int MIN_ALLOC_SZ = 4;
-
-    private static final int BIN_COUNT = 9;
-    private static final int BIN_MAX_IDX = (BIN_COUNT - 1);
-
-    private static int getBinIndex(int size) {
-        return clamp(31 - Integer.numberOfLeadingZeros(max(size, MIN_ALLOC_SZ)) - 2, 0, BIN_MAX_IDX);
-    }
+    protected static final long MIN_ALLOC_SZ = 64L; //the maximum number of bytes we are willing to waste as padding at the end of a block
 
     protected final long blockSize;
     protected final GrowFunction growFunction;
     protected final CapacityManager manager;
-    protected int capacity;
+    protected long capacity;
 
-    protected final Bin[] bins = PArrays.filled(BIN_COUNT, Bin[]::new, Bin::new);
-    protected final NavigableMap<Integer, Node> nodes = new TreeMap<>();
+    protected final NavigableSet<Node> emptyNodes = new TreeSet<>((Comparator<Object>) (_a, _b) -> {
+        Node b = (Node) _b;
+        if (_a instanceof Long) {
+            return Long.compare((Long) _a, b.size);
+        } else {
+            Node a = (Node) _a;
+            int d = Long.compare(a.size, b.size);
+            return d != 0 ? d : Long.compare(a.base, b.base);
+        }
+    });
+    protected final Long2ObjectMap<Node> usedNodes = new Long2ObjectRBTreeMap<>();
+    protected Node tail;
 
     public VariableSizedAllocator(long blockSize, @NonNull CapacityManager manager) {
         this(blockSize, manager, GrowFunction.DEFAULT);
@@ -65,193 +74,103 @@ public final class VariableSizedAllocator implements Allocator {
 
         this.manager.brk(this.capacity = toInt(this.growFunction.grow(0L, blockSize << 4L)));
 
-        Node wilderness = new Node();
-        wilderness.size = this.capacity;
-        wilderness.hole = true;
-        this.nodes.put(0, wilderness);
-        this.bins[getBinIndex(wilderness.size)].addNode(wilderness);
+        //create wilderness node
+        this.tail = new Node().base(0L).size(this.capacity);
+        this.emptyNodes.add(this.tail);
     }
 
     @Override
     public long alloc(long rawSize) {
         //round up to block size
         rawSize = PMath.roundUp(positive(rawSize, "rawSize"), this.blockSize);
-        int size = toInt(rawSize);
 
-        int index;
         Node found;
-
         do {
-            found = this.bins[index = getBinIndex(size)].getBestFit(size);
-            while (found == null && ++index < BIN_COUNT) {
-                found = this.bins[index].getBestFit(size);
-            }
+            found = this.emptyNodes.ceiling(uncheckedCast(rawSize));
         } while (found == null && this.expand());
-        checkState(found != null);
+        checkState(found != null, "unable to allocate memory!");
 
-        if (found.size - size > MIN_ALLOC_SZ) {
-            Node split = new Node();
-            split.base = found.base + size;
-            split.size = found.size - size;
-            split.hole = true;
+        this.emptyNodes.remove(found);
 
-            this.nodes.put(split.base, split);
-            this.bins[getBinIndex(split.size)].addNode(split);
-
-            found.size = size;
+        if (found.size - rawSize > MIN_ALLOC_SZ) { //we don't want to waste too much space at the end, so we split the node in two and leave the remaining space unallocated
+            Node split = new Node()
+                    .base(found.base + rawSize).size(found.size - rawSize)
+                    .next(found.next).prev(found);
+            found.size(rawSize).next(split);
+            if (split.next != null) {
+                split.next.prev(split);
+            } else {
+                this.tail = split;
+            }
+            this.emptyNodes.add(split);
         }
 
-        found.hole = false;
-        this.bins[index].removeNode(found);
-
-        found.prev = null;
-        found.next = null;
-
+        found.used(true);
+        this.usedNodes.put(found.base, found);
         return found.base;
     }
 
     @Override
     public void free(long address) {
-        Node head = this.nodes.get(toInt(address));
-        checkArg(head != null, "invalid address: %d", address);
+        Node node = this.usedNodes.remove(address);
+        checkArg(node != null, "invalid address: %d", address);
 
-        Integer base = head.base;
+        node.used(false);
+        if (node.next != null && !node.next.used) { //next node isn't used either, we can merge forwards
+            Node next = node.next;
+            this.emptyNodes.remove(next);
 
-        Integer nextBase = this.nodes.higherKey(base);
-        if (nextBase != null) {
-            Node next = this.nodes.get(nextBase);
-            if (next.hole) {
-                checkState(this.nodes.remove(nextBase, next));
-                this.bins[getBinIndex(next.size)].removeNode(next);
-
-                head.size += next.size;
+            node.size(node.size + next.size).next(next.next);
+            if (next.next != null) {
+                next.next.prev(node);
+            } else {
+                this.tail = node;
             }
         }
+        if (node.prev != null && !node.prev.used) { //previous node isn't used, we can merge backwards
+            Node prev = node.prev;
+            this.emptyNodes.remove(prev);
 
-        Integer prevBase = this.nodes.lowerKey(base);
-        if (prevBase != null) {
-            Node prev = this.nodes.get(prevBase);
-            if (prev.hole) {
-                this.bins[getBinIndex(prev.size)].removeNode(prev);
-
-                head.base = prev.base;
-                head.size += prev.size;
-
-                checkState(this.nodes.remove(base, head));
-                checkState(this.nodes.replace(prevBase, prev, head));
+            prev.size(prev.size + node.size).next(node.next);
+            if (node.next != null) {
+                node.next.prev(prev);
+            } else {
+                this.tail = prev;
             }
+
+            node = prev;
         }
 
-        head.hole = true;
-        this.bins[getBinIndex(head.size)].addNode(head);
+        this.emptyNodes.add(node);
     }
 
     private boolean expand() {
-        int oldCapacity = this.capacity;
-        this.manager.sbrk(this.capacity = toInt(this.growFunction.grow(oldCapacity, this.blockSize)));
-        int deltaCapacity = this.capacity - oldCapacity;
+        long oldCapacity = this.capacity;
+        long newCapacity = this.growFunction.grow(oldCapacity, this.blockSize);
+        checkState(newCapacity > oldCapacity, "newCapacity (%d) must be greater than oldCapacity (%d)", newCapacity, oldCapacity);
+        this.manager.sbrk(newCapacity);
+        this.capacity = newCapacity;
+        long deltaCapacity = newCapacity - oldCapacity;
 
-        Map.Entry<Integer, Node> wildernessEntry = this.nodes.lastEntry();
-        if (wildernessEntry != null && wildernessEntry.getValue().hole) {
-            Node wilderness = wildernessEntry.getValue();
-            this.bins[getBinIndex(wilderness.size)].removeNode(wilderness);
-            wilderness.size += deltaCapacity;
-            this.bins[getBinIndex(wilderness.size)].addNode(wilderness);
-        } else {
-            Node wilderness = new Node();
-            wilderness.base = oldCapacity;
-            wilderness.size = deltaCapacity;
-            wilderness.hole = true;
-            this.nodes.put(wilderness.base, wilderness);
-            this.bins[getBinIndex(wilderness.size)].addNode(wilderness);
+        if (this.tail.used) { //tail node is allocated, create new node to be used as tail
+            Node node = new Node().prev(this.tail).base(oldCapacity).size(deltaCapacity);
+            this.tail.next(node);
+            this.tail = node;
+            this.emptyNodes.add(node);
+        } else { //tail node is unused, expand it
+            this.emptyNodes.remove(this.tail);
+            this.tail.size(this.tail.size + deltaCapacity);
+            this.emptyNodes.add(this.tail);
         }
         return true;
     }
 
+    @Setter
     private static final class Node {
+        private long base;
+        private long size;
         private Node next;
         private Node prev;
-        private int base;
-        private int size;
-        private boolean hole;
-    }
-
-    private static final class Bin {
-        private Node head;
-
-        public void addNode(Node node) {
-            node.next = node.prev = null;
-
-            if (this.head == null) {
-                this.head = node;
-                return;
-            }
-
-            Node current = this.head;
-            Node previous = null;
-            while (current != null && current.size <= node.size) {
-                previous = current;
-                current = current.next;
-            }
-
-            if (current == null) {
-                previous.next = node;
-                node.prev = previous;
-            } else if (previous != null) {
-                node.next = current;
-                previous.next = node;
-
-                node.prev = previous;
-                current.prev = node;
-            } else {
-                node.next = this.head;
-                this.head.prev = node;
-                this.head = node;
-            }
-        }
-
-        public void removeNode(Node node) {
-            if (this.head == null) {
-                return;
-            } else if (this.head == node) {
-                this.head = this.head.next;
-                return;
-            }
-
-            Node temp = this.head.next;
-            while (temp != null) {
-                if (temp == node) {
-                    if (temp.next == null) {
-                        temp.prev.next = null;
-                    } else {
-                        temp.prev.next = temp.next;
-                        temp.next.prev = temp.prev;
-                    }
-                    return;
-                }
-                temp = temp.next;
-            }
-        }
-
-        public Node getBestFit(int size) {
-            Node temp = this.head;
-
-            while (temp != null) {
-                if (temp.size >= size) {
-                    return temp;
-                }
-                temp = temp.next;
-            }
-            return null;
-        }
-
-        public Node getLastNode() {
-            Node temp = this.head;
-
-            while (temp.next != null) {
-                temp = temp.next;
-            }
-            return temp;
-        }
+        private boolean used;
     }
 }
