@@ -64,7 +64,7 @@ public abstract class MixinRenderGlobal {
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/RenderHelper;disableStandardItemLighting()V",
                     shift = At.Shift.AFTER),
-            allow = 1)
+            allow = 1, require = 1)
     private void fp2_renderBlockLayer_pre(BlockRenderLayer layer, double partialTicks, int pass, Entity entity, CallbackInfoReturnable<Integer> ci) {
         IFarClientContext<?, ?> context = ((IFarWorldClient) this.world).activeContext();
         if (context != null) {
@@ -78,7 +78,7 @@ public abstract class MixinRenderGlobal {
 
     @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;DILnet/minecraft/entity/Entity;)I",
             at = @At(value = "RETURN"),
-            allow = 2, require = 2)
+            allow = 2, require = 1)
     private void fp2_renderBlockLayer_post(BlockRenderLayer layer, double partialTicks, int pass, Entity entity, CallbackInfoReturnable<Integer> ci) {
         IFarClientContext<?, ?> context = ((IFarWorldClient) this.world).activeContext();
         if (context != null) {
