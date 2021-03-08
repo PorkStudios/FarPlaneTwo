@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.asm.client.renderer;
 
+import net.daporkchop.fp2.client.ShaderFP2StateHelper;
 import net.daporkchop.fp2.client.ShaderGlStateHelper;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
@@ -53,6 +54,7 @@ public abstract class MixinRenderGlobal {
             Minecraft mc = Minecraft.getMinecraft();
 
             ShaderGlStateHelper.update((float) partialTicks, mc);
+            ShaderFP2StateHelper.update((float) partialTicks, mc);
 
             mc.profiler.startSection("fp2_prepare");
             context.renderer().prepare((float) partialTicks, mc, (IFrustum) camera);

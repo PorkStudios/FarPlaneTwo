@@ -64,6 +64,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      * struct Node {
      *   int flags; //TODO: make this field smaller
      *   - 0x00: data //whether or not this node has been rendered and contains data
+     *   - 0x01: empty //whether or not this node has been rendered, but contains no data
      *   Tile tile;
      *   Node* children[1 << D];
      * };
@@ -75,6 +76,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      */
 
     public static final int FLAG_DATA = 1 << 0;
+    public static final int FLAG_EMPTY = 1 << 1;
 
     // begin field offsets
 
@@ -226,7 +228,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      *
      * @param pos the position of the tile to set the render data for
      */
-    public void putRenderData(@NonNull POS pos, @NonNull BakeOutput output) {
+    public void putRenderData(@NonNull POS pos, BakeOutput output) {
         this.putRenderData0(DEPTH, this.root, pos, output);
     }
 
@@ -249,13 +251,15 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
 
     protected void setRenderData(long node, BakeOutput output) {
         //release exiting data if necessary
-        if (this.checkFlagsOR(node, FLAG_DATA)) {
-            this.strategy.deleteRenderData(node + this.tile_renderData);
+        this.deleteRenderData(node);
+
+        if (output != null) { //new render data is non-empty
+            PUnsafe.copyMemory(output.renderData, node + this.tile_renderData, output.size);
+
+            this.setFlags(node, FLAG_DATA);
+        } else { //new render data is empty
+            this.setFlags(node, FLAG_EMPTY);
         }
-
-        PUnsafe.copyMemory(output.renderData, node + this.tile_renderData, output.size);
-
-        this.setFlags(node, FLAG_DATA);
     }
 
     protected long createNode(int level, POS pos) {
@@ -299,20 +303,24 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
 
             return false; //no further changes are necessary
         } else { //current node is the target node
-            if (this.checkFlagsOR(node, FLAG_DATA)) { //current node has data
-                //mark the node as having no data
-                this.clearFlags(node, FLAG_DATA);
-
-                //free render data allocations
-                this.strategy.deleteRenderData(node + this.tile_renderData);
-
-                //zero out render data
-                PUnsafe.setMemory(node + this.tile_renderData, this.renderDataSize, (byte) 0);
-            }
+            this.deleteRenderData(node);
 
             //if the node has no children, we return true, indicating that this node is now empty and should be deleted
             return !this.hasAnyChildren(node);
         }
+    }
+
+    protected void deleteRenderData(long node) {
+        if (this.checkFlagsOR(node, FLAG_DATA)) { //current node has data
+            //free render data allocations
+            this.strategy.deleteRenderData(node + this.tile_renderData);
+
+            //zero out render data
+            PUnsafe.setMemory(node + this.tile_renderData, this.renderDataSize, (byte) 0);
+        }
+
+        //mark the node as not being rendered
+        this.clearFlags(node, FLAG_DATA | FLAG_EMPTY);
     }
 
     protected long findChildStep(int level, long node, POS pos) {
@@ -338,7 +346,10 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
     }
 
     protected boolean select0(int level, long node, Volume[] ranges, IFrustum frustum, DirectLongStack index) {
-        if (level < this.maxLevel //don't do range checking for the top level, as it will cause a bunch of tiles to be loaded but never rendered
+        if (this.checkFlagsOR(node, FLAG_EMPTY)) {
+            //this tile is rendered and empty, so we can be sure that none of its children will be non-empty and there's no reason to recurse any further
+            return true;
+        } else if (level < this.maxLevel //don't do range checking for the top level, as it will cause a bunch of tiles to be loaded but never rendered
             && !this.directPosAccess.intersects(node + this.tile_pos, ranges[level])) {
             //the view range for this level doesn't intersect this tile's bounding box,
             // so we can be certain that neither this tile nor any of its children would be contained
@@ -351,7 +362,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         } else if (level == 0 && this.directPosAccess.isVanillaRenderable(node + this.tile_pos)) {
             //the node will be rendered by vanilla, so we don't want to draw over it
             return true;
-        } else if (!this.checkFlagsAND(node, FLAG_DATA)) { //this node has no data
+        } else if (!this.checkFlagsOR(node, FLAG_DATA | FLAG_EMPTY)) { //this node has no data
             //try to select as many children as possible, but only return true if all of them were successful
             boolean allSuccess = true;
             for (long addr = node + this.children, lastChildAddr = addr + ((long) LONG_SIZE << this.d); addr != lastChildAddr; addr += LONG_SIZE) {

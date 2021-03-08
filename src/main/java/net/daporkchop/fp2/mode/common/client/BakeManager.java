@@ -145,7 +145,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         if (!compareTimestamps(oldTimestamps, newTimestamps)) { //nothing has changed, no need to re-render
             return;
         } else if (compressedInputTiles[0].isEmpty()) { //tile has no data, we "bake" it by deleting it if it exists
-            this.scheduleTileDeletion(pos, oldTimestamps);
+            this.scheduleEmptyTile(pos, oldTimestamps);
             return;
         }
 
@@ -173,7 +173,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
                     this.tree.putRenderData(pos, output);
                 });
             } else { //remove tile from render tree
-                this.scheduleTileDeletion(pos, newTimestamps);
+                this.scheduleEmptyTile(pos, newTimestamps);
             }
         } finally { //release tiles again
             for (int i = 0; i < srcs.length; i++) {
@@ -184,12 +184,12 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         }
     }
 
-    protected void scheduleTileDeletion(@NonNull POS pos, @NonNull long[] expectedTimestampArray) {
+    protected void scheduleEmptyTile(@NonNull POS pos, @NonNull long[] expectedTimestampArray) {
         ClientThreadExecutor.INSTANCE.execute(() -> {
             if (this.bakeTimestamps.get(pos) != expectedTimestampArray) { //tile was baked again since this task was submitted to the client thread
                 return;
             }
-            this.tree.removeNode(pos);
+            this.tree.putRenderData(pos, null);
         });
     }
 }

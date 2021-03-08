@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -46,11 +46,6 @@ public class ShaderFP2StateHelper {
     private final long DATA = PUnsafe.allocateMemory(TOTAL_SIZE);
     private final long ADDR_VIEW = DATA + OFFSET_VIEW;
 
-    public void updateAndBind(float partialTicks, @NonNull Minecraft mc) {
-        update(partialTicks, mc);
-        bind();
-    }
-
     public void update(float partialTicks, @NonNull Minecraft mc) {
         { //view
             long addr = ADDR_VIEW;
@@ -75,12 +70,13 @@ public class ShaderFP2StateHelper {
             PUnsafe.putFloat(addr, (float) FP2Config.client.levelTransitionEnd);
             addr += FLOAT_SIZE;
         }
-    }
 
-    public void bind() {
         try (GLBuffer buffer = BUFFER.bind(GL_UNIFORM_BUFFER)) { //upload
             buffer.upload(DATA, TOTAL_SIZE);
         }
+    }
+
+    public void bind() {
         BUFFER.bindBase(GL_UNIFORM_BUFFER, 1);
     }
 }

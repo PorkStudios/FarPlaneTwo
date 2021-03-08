@@ -67,6 +67,10 @@ public class ClientConstants {
      * @return whether the chunk section at the given chunk coordinates can be rendered by vanilla
      */
     public boolean isVanillaRenderable(int x, int y, int z) {
+        if (true) {
+            return false;
+        }
+
         if (!CURRENT_RENDER_BB.intersects(x << 4, y << 4, z << 4, (x + 1) << 4, (y + 1) << 4, (z + 1) << 4)) {
             return false;
         }
