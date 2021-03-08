@@ -299,11 +299,16 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
 
             return false; //no further changes are necessary
         } else { //current node is the target node
-            //mark the node as having no data
-            this.clearFlags(node, FLAG_DATA);
+            if (this.checkFlagsOR(node, FLAG_DATA)) { //current node has data
+                //mark the node as having no data
+                this.clearFlags(node, FLAG_DATA);
 
-            //free render data allocations
-            this.strategy.deleteRenderData(node + this.tile_renderData);
+                //free render data allocations
+                this.strategy.deleteRenderData(node + this.tile_renderData);
+
+                //zero out render data
+                PUnsafe.setMemory(node + this.tile_renderData, this.renderDataSize, (byte) 0);
+            }
 
             //if the node has no children, we return true, indicating that this node is now empty and should be deleted
             return !this.hasAnyChildren(node);
