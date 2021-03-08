@@ -25,9 +25,6 @@ import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.minecraft.client.renderer.GlStateManager;
-
-import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author DaPorkchop_
@@ -36,61 +33,29 @@ public interface IShaderBasedMultipassRenderStrategy<POS extends IFarPos, T exte
     @Override
     default void renderSolid(@NonNull IDrawCommandBuffer draw) {
         try (ShaderProgram program = this.blockShader().use()) {
-            GlStateManager.disableAlpha();
-
-            draw.draw();
-
-            GlStateManager.enableAlpha();
+            IMultipassRenderStrategy.super.renderSolid(draw);
         }
     }
 
     @Override
     default void renderCutout(@NonNull IDrawCommandBuffer draw) {
         try (ShaderProgram program = this.blockShader().use()) {
-            GlStateManager.disableCull();
-
-            draw.draw();
-
-            GlStateManager.enableCull();
+            IMultipassRenderStrategy.super.renderCutout(draw);
         }
     }
 
     @Override
-    default void renderTransparent(@NonNull IDrawCommandBuffer draw) {
-        glEnable(GL_STENCIL_TEST);
-
+    default void renderTransparentStencilPass(@NonNull IDrawCommandBuffer draw) {
         try (ShaderProgram program = this.stencilShader().use()) {
-            GlStateManager.colorMask(false, false, false, false);
-
-            GlStateManager.clear(GL_STENCIL_BUFFER_BIT);
-            glStencilMask(0xFF);
-            glStencilFunc(GL_ALWAYS, 1, 0xFF); //always allow all fragments
-            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
-            GlStateManager.depthMask(false);
-
-            draw.draw();
-
-            GlStateManager.depthMask(true);
-
-            GlStateManager.colorMask(true, true, true, true);
+            IMultipassRenderStrategy.super.renderTransparentStencilPass(draw);
         }
+    }
 
+    @Override
+    default void renderTransparentFragmentPass(@NonNull IDrawCommandBuffer draw) {
         try (ShaderProgram program = this.blockShader().use()) {
-            GlStateManager.enableBlend();
-            GlStateManager.tryBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
-            GlStateManager.alphaFunc(GL_GREATER, 0.1f);
-
-            glStencilMask(0);
-            glStencilFunc(GL_EQUAL, 1, 0xFF);
-            glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-
-            draw.draw();
-
-            GlStateManager.disableBlend();
+            IMultipassRenderStrategy.super.renderTransparentFragmentPass(draw);
         }
-
-        glDisable(GL_STENCIL_TEST);
     }
 
     /**

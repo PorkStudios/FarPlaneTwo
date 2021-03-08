@@ -30,13 +30,30 @@ import net.daporkchop.fp2.mode.voxel.VoxelTile;
 /**
  * @author DaPorkchop_
  */
-public class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelTile> {
+public abstract class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelTile> {
     public VoxelRenderer(@NonNull IFarClientContext<VoxelPos, VoxelTile> context) {
         super(context);
     }
 
-    @Override
-    protected IFarRenderStrategy<VoxelPos, VoxelTile> strategy0() {
-        return new ShaderBasedIndexedMultidrawVoxelRenderStrategy();
+    public static class ShaderMultidraw extends VoxelRenderer {
+        public ShaderMultidraw(@NonNull IFarClientContext<VoxelPos, VoxelTile> context) {
+            super(context);
+        }
+
+        @Override
+        protected IFarRenderStrategy<VoxelPos, VoxelTile> strategy0() {
+            return new ShaderBasedIndexedMultidrawVoxelRenderStrategy();
+        }
+    }
+
+    public static class TransformFeedback extends VoxelRenderer {
+        public TransformFeedback(@NonNull IFarClientContext<VoxelPos, VoxelTile> context) {
+            super(context);
+        }
+
+        @Override
+        protected IFarRenderStrategy<VoxelPos, VoxelTile> strategy0() {
+            return new TransformFeedbackVoxelRenderStrategy();
+        }
     }
 }

@@ -18,33 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
+package net.daporkchop.fp2.asm.client.settings;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.client.DrawMode;
-import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
-import net.daporkchop.fp2.client.gl.commandbuffer.xfb.VanillaTransformFeedbackCommandBuffer;
-import net.minecraft.util.BlockRenderLayer;
+import net.daporkchop.fp2.config.ConfigListenerManager;
+import net.minecraft.client.settings.GameSettings;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * @author DaPorkchop_
  */
-public class TransformFeedbackVoxelRenderStrategy extends AbstractIndexedMultidrawVoxelRenderStrategy implements IVanillaMultipassVoxelRenderStrategy {
-    @Override
-    public IDrawCommandBuffer createCommandBuffer() {
-        return new VanillaTransformFeedbackCommandBuffer(super.createCommandBuffer(), VoxelShaders.BLOCK_SHADER_TRANSFORM_FEEDBACK);
-    }
-
-    @Override
-    public void render(@NonNull BlockRenderLayer layer, boolean pre) {
-        try (DrawMode mode = DrawMode.LEGACY.begin()) {
-            if (layer == BlockRenderLayer.SOLID && !pre) {
-                this.renderSolid(this.passes[0]);
-            } else if (layer == BlockRenderLayer.CUTOUT_MIPPED && !pre) {
-                this.renderCutout(this.passes[1]);
-            } else if (layer == BlockRenderLayer.TRANSLUCENT && pre) {
-                this.renderTransparent(this.passes[2]);
-            }
-        }
+@Mixin(GameSettings.class)
+public abstract class MixinGameSettings {
+    @Inject(method = "Lnet/minecraft/client/settings/GameSettings;saveOptions()V",
+            at = @At("TAIL"))
+    private void fp2_saveOptions_notifyConfigListenerManager(CallbackInfo ci) {
+        ConfigListenerManager.fire();
     }
 }

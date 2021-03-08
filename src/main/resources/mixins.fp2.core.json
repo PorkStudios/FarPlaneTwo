@@ -11,6 +11,7 @@
     "client.renderer.MixinEntityRenderer",
     "client.renderer.MixinGlStateManager",
     "client.renderer.MixinRenderGlobal",
+    "client.settings.MixinGameSettings",
     "client.shader.MixinFramebuffer",
     "client.MixinMinecraft"
   ],

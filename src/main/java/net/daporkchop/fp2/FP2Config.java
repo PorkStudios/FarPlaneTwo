@@ -20,8 +20,13 @@
 
 package net.daporkchop.fp2;
 
+import net.daporkchop.fp2.config.ConfigListenerManager;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraftforge.common.config.Config;
+import net.minecraftforge.common.config.ConfigManager;
+import net.minecraftforge.fml.client.event.ConfigChangedEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.iq80.leveldb.CompressionType;
@@ -33,6 +38,7 @@ import static java.lang.Math.*;
  * @author DaPorkchop_
  */
 @Config(modid = FP2.MODID)
+@Mod.EventBusSubscriber
 public class FP2Config {
     @Config.Comment({
             "The mode that will be used for rendering distant terrain."
@@ -64,7 +70,7 @@ public class FP2Config {
     })
     @Config.RangeInt(min = 0)
     @Config.LangKey("config.fp2.levelCutoffDistance")
-    public static int levelCutoffDistance = 64;
+    public static int levelCutoffDistance = 128;
 
     @Config.Comment({
             "The number of threads that will be used for generating far plane terrain data.",
@@ -115,6 +121,14 @@ public class FP2Config {
     })
     @Config.LangKey("config.fp2.debug")
     public static Debug debug = new Debug();
+
+    @SubscribeEvent
+    public static void onConfigChanged(ConfigChangedEvent.OnConfigChangedEvent event) {
+        if (FP2.MODID.equals(event.getModID())) {
+            ConfigManager.sync(FP2.MODID, Config.Type.INSTANCE);
+            ConfigListenerManager.fire();
+        }
+    }
 
     /**
      * @author DaPorkchop_

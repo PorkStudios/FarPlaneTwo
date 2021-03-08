@@ -26,10 +26,14 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.texture.TextureMap;
 
+import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author DaPorkchop_
@@ -61,9 +65,61 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
 
     void drawTile(@NonNull IDrawCommandBuffer[] passes, long tile);
 
-    void renderSolid(@NonNull IDrawCommandBuffer draw);
+    default void renderSolid(@NonNull IDrawCommandBuffer draw) {
+        GlStateManager.disableAlpha();
 
-    void renderCutout(@NonNull IDrawCommandBuffer draw);
+        draw.draw();
 
-    void renderTransparent(@NonNull IDrawCommandBuffer draw);
+        GlStateManager.enableAlpha();
+    }
+
+    default void renderCutout(@NonNull IDrawCommandBuffer draw) {
+        mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
+        GlStateManager.disableCull();
+
+        draw.draw();
+
+        GlStateManager.enableCull();
+        mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
+    }
+
+    default void renderTransparent(@NonNull IDrawCommandBuffer draw) {
+        glEnable(GL_STENCIL_TEST);
+
+        this.renderTransparentStencilPass(draw);
+        this.renderTransparentFragmentPass(draw);
+
+        glDisable(GL_STENCIL_TEST);
+    }
+
+    default void renderTransparentStencilPass(@NonNull IDrawCommandBuffer draw) {
+        GlStateManager.colorMask(false, false, false, false);
+
+        GlStateManager.clear(GL_STENCIL_BUFFER_BIT);
+        glStencilMask(0xFF);
+        glStencilFunc(GL_ALWAYS, 1, 0xFF); //always allow all fragments
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+        GlStateManager.depthMask(false);
+
+        draw.draw();
+
+        GlStateManager.depthMask(true);
+
+        GlStateManager.colorMask(true, true, true, true);
+    }
+
+    default void renderTransparentFragmentPass(@NonNull IDrawCommandBuffer draw) {
+        GlStateManager.enableBlend();
+        GlStateManager.tryBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+        GlStateManager.alphaFunc(GL_GREATER, 0.1f);
+
+        glStencilMask(0);
+        glStencilFunc(GL_EQUAL, 1, 0xFF);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+        draw.draw();
+
+        GlStateManager.disableBlend();
+    }
 }

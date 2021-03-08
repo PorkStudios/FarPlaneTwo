@@ -18,33 +18,17 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.client.DrawMode;
-import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
-import net.daporkchop.fp2.client.gl.commandbuffer.xfb.VanillaTransformFeedbackCommandBuffer;
-import net.minecraft.util.BlockRenderLayer;
+package net.daporkchop.fp2.config;
 
 /**
+ * A listener for configuration change events.
+ *
  * @author DaPorkchop_
  */
-public class TransformFeedbackVoxelRenderStrategy extends AbstractIndexedMultidrawVoxelRenderStrategy implements IVanillaMultipassVoxelRenderStrategy {
-    @Override
-    public IDrawCommandBuffer createCommandBuffer() {
-        return new VanillaTransformFeedbackCommandBuffer(super.createCommandBuffer(), VoxelShaders.BLOCK_SHADER_TRANSFORM_FEEDBACK);
-    }
-
-    @Override
-    public void render(@NonNull BlockRenderLayer layer, boolean pre) {
-        try (DrawMode mode = DrawMode.LEGACY.begin()) {
-            if (layer == BlockRenderLayer.SOLID && !pre) {
-                this.renderSolid(this.passes[0]);
-            } else if (layer == BlockRenderLayer.CUTOUT_MIPPED && !pre) {
-                this.renderCutout(this.passes[1]);
-            } else if (layer == BlockRenderLayer.TRANSLUCENT && pre) {
-                this.renderTransparent(this.passes[2]);
-            }
-        }
-    }
+@FunctionalInterface
+public interface ConfigListener {
+    /**
+     * Fired whenever the config is changed.
+     */
+    void configChanged();
 }

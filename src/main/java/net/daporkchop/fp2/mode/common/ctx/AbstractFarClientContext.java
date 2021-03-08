@@ -22,12 +22,14 @@ package net.daporkchop.fp2.mode.common.ctx;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.config.ConfigListener;
+import net.daporkchop.fp2.config.ConfigListenerManager;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.FarTileCache;
 
 /**
@@ -36,21 +38,42 @@ import net.daporkchop.fp2.mode.common.client.FarTileCache;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IFarTile> implements IFarClientContext<POS, T> {
+public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IFarTile> implements IFarClientContext<POS, T>, ConfigListener {
     protected final IFarTileCache<POS, T> tileCache;
-    protected final IFarRenderer renderer;
+    protected IFarRenderer renderer;
     protected final IFarRenderMode<POS, T> mode;
 
     public AbstractFarClientContext(@NonNull IFarRenderMode<POS, T> mode) {
         this.mode = mode;
 
         this.tileCache = this.tileCache0();
-        this.renderer = this.renderer0();
+        this.configChanged();
+
+        ConfigListenerManager.add(this);
     }
 
     protected IFarTileCache<POS, T> tileCache0() {
         return new FarTileCache<>();
     }
 
-    protected abstract IFarRenderer renderer0();
+    protected abstract IFarRenderer renderer0(IFarRenderer old);
+
+    @Override
+    public void configChanged() {
+        IFarRenderer oldRenderer = this.renderer;
+        IFarRenderer newRenderer = this.renderer0(oldRenderer);
+        if (oldRenderer != newRenderer) {
+            this.renderer = newRenderer;
+            if (oldRenderer != null) {
+                oldRenderer.close();
+            }
+        }
+    }
+
+    @Override
+    public void close() {
+        ConfigListenerManager.remove(this);
+
+        IFarClientContext.super.close();
+    }
 }
