@@ -3,7 +3,13 @@
 [![Build Status](https://jenkins.daporkchop.net/job/PorkStudios/job/FarPlaneTwo/job/master/badge/icon)](https://jenkins.daporkchop.net/job/PorkStudios/job/FarPlaneTwo/)
 [![Discord](https://img.shields.io/discord/428813657816956929.svg)](https://discord.gg/FrBHHCk)
 
-Very much a work-in-progress, if you do decide to download this don't expect stuff to work correctly because it probably won't.
+[Download here](https://jenkins.daporkchop.net/job/PorkStudios/job/FarPlaneTwo/job/master/)
+
+## This mod is work-in-progress!
+
+*If you do decide to download this, don't expect stuff to work correctly because it probably won't.*
+
+**This mod currently supports the latest version of Forge for 1.12.2, and requires either [Cubic Chunks](https://github.com/OpenCubicChunks/CubicChunks) or [Mixin](https://www.curseforge.com/minecraft/mc-mods/mixin-0-7-0-8-compatibility) in order to launch correctly.**
 
 This is a Minecraft mod which implements a Level-of-Detail (LoD) terrain renderer into the game.
 

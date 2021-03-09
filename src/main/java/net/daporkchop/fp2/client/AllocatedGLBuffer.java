@@ -38,7 +38,7 @@ import static org.lwjgl.opengl.GL15.*;
  */
 public interface AllocatedGLBuffer extends IGLBuffer, Allocator {
     static AllocatedGLBuffer create(@NonNull String name, int usage, long blockSize, boolean variable) {
-        abstract class Base extends GLBuffer implements AllocatedGLBuffer, Allocator.CapacityManager {
+        abstract class Base extends GLBuffer implements AllocatedGLBuffer, SequentialHeapManager {
             protected final Allocator allocator;
             protected final String name;
 

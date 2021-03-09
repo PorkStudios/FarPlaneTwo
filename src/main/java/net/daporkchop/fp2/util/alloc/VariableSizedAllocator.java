@@ -47,7 +47,7 @@ public final class VariableSizedAllocator implements Allocator {
 
     protected final long blockSize;
     protected final GrowFunction growFunction;
-    protected final CapacityManager manager;
+    protected final SequentialHeapManager manager;
     protected long capacity;
 
     protected final NavigableSet<Node> emptyNodes = new TreeSet<>((Comparator<Object>) (_a, _b) -> {
@@ -63,11 +63,11 @@ public final class VariableSizedAllocator implements Allocator {
     protected final Long2ObjectMap<Node> usedNodes = new Long2ObjectRBTreeMap<>();
     protected Node tail;
 
-    public VariableSizedAllocator(long blockSize, @NonNull CapacityManager manager) {
+    public VariableSizedAllocator(long blockSize, @NonNull SequentialHeapManager manager) {
         this(blockSize, manager, GrowFunction.DEFAULT);
     }
 
-    public VariableSizedAllocator(long blockSize, @NonNull CapacityManager manager, @NonNull GrowFunction growFunction) {
+    public VariableSizedAllocator(long blockSize, @NonNull SequentialHeapManager manager, @NonNull GrowFunction growFunction) {
         this.blockSize = positive(blockSize, "blockSize");
         this.manager = manager;
         this.growFunction = growFunction;

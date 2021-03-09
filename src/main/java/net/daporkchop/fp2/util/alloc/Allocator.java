@@ -23,6 +23,8 @@ package net.daporkchop.fp2.util.alloc;
 import net.daporkchop.lib.common.math.PMath;
 
 /**
+ * Allocates memory regions in an arbitrary address space.
+ *
  * @author DaPorkchop_
  */
 public interface Allocator {
@@ -67,14 +69,14 @@ public interface Allocator {
     }
 
     /**
-     * Contains callbacks which manage allocation of address space for an {@link Allocator}.
+     * Contains callbacks which manage allocation of a contiguous heap for an {@link Allocator}.
      * <p>
      * The names for {@link #brk(long)} and {@link #sbrk(long)} are inspired by the legacy POSIX syscalls of the same names.
      *
      * @author DaPorkchop_
      * @see <a href="https://linux.die.net/man/2/sbrk">Linux Programmer's Manual</a>
      */
-    interface CapacityManager {
+    interface SequentialHeapManager {
         /**
          * Requests that the capacity be set to the given amount.
          *

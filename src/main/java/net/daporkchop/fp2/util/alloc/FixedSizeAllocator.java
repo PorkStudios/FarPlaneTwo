@@ -34,15 +34,15 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public final class FixedSizeAllocator extends BitSet implements Allocator { //extend BitSet to eliminate an indirection
     protected final long blockSize;
     protected final GrowFunction growFunction;
-    protected final CapacityManager manager;
+    protected final SequentialHeapManager manager;
     protected long capacity;
     protected int fromIndex = 0;
 
-    public FixedSizeAllocator(long blockSize, @NonNull CapacityManager manager) {
+    public FixedSizeAllocator(long blockSize, @NonNull SequentialHeapManager manager) {
         this(blockSize, manager, GrowFunction.DEFAULT);
     }
 
-    public FixedSizeAllocator(long blockSize, @NonNull CapacityManager manager, @NonNull GrowFunction growFunction) {
+    public FixedSizeAllocator(long blockSize, @NonNull SequentialHeapManager manager, @NonNull GrowFunction growFunction) {
         this.blockSize = positive(blockSize, "blockSize");
         this.manager = manager;
         this.growFunction = growFunction;

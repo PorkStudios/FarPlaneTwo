@@ -48,7 +48,7 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos> {
         final int baseZ = floorI(player.posZ) >> T_SHIFT;
 
         final int levels = FP2Config.maxLevels;
-        final int d = (FP2Config.levelCutoffDistance >> T_SHIFT) + 1;
+        final int d = (FP2Config.levelCutoffDistance >> T_SHIFT) + 2; //extra padding of 2 tiles to allow tiles to pre-load on the client when moving
 
         VoxelPos[] positions = new VoxelPos[pow(d * 2 + 1, 3) * levels];
         int i = 0;

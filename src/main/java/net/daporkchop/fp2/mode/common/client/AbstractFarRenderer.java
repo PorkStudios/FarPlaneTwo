@@ -32,6 +32,7 @@ import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.util.DirectLongStack;
 import net.daporkchop.fp2.util.math.Cube;
+import net.daporkchop.fp2.util.math.Cylinder;
 import net.daporkchop.fp2.util.math.Sphere;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
@@ -115,8 +116,10 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
         double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks;
         double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
         for (int i = 0; i < ranges.length; i++) {
-            ranges[i] = new Sphere(x, y, z, FP2Config.levelCutoffDistance + T_VOXELS << i);
+            //TODO: remove * 3 and fix transition seams in FarRenderTree
+            ranges[i] = new Sphere(x, y, z, (FP2Config.levelCutoffDistance + (T_VOXELS * 3)) << i);
             //ranges[i] = new Cube(x, y, z, FP2Config.levelCutoffDistance + T_VOXELS << i);
+            //ranges[i] = new Cylinder(x, z, (FP2Config.levelCutoffDistance + T_VOXELS << i) + T_VOXELS * 4);
         }
         return ranges;
     }
