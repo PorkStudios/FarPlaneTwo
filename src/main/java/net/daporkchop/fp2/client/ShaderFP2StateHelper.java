@@ -22,7 +22,7 @@ package net.daporkchop.fp2.client;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;

@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.debug.client;
 
-import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.debug.util.DebugUtils;

@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.net.server;
 
 import io.netty.buffer.ByteBuf;
-import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.net.client.CPacketRenderMode;
 import net.daporkchop.fp2.util.Constants;

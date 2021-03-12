@@ -25,7 +25,7 @@ import com.google.common.cache.CacheBuilder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
-import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;

@@ -18,8 +18,9 @@
  *
  */
 
-package net.daporkchop.fp2;
+package net.daporkchop.fp2.config;
 
+import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.config.ConfigListenerManager;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraftforge.common.config.Config;

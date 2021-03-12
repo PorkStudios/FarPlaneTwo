@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.client;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.config.FP2Config;
 import net.minecraft.client.renderer.GlStateManager;
 
 import static org.lwjgl.opengl.GL11.*;

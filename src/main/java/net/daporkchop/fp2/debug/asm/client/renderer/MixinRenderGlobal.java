@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.debug.asm.client.renderer;
 
-import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.config.FP2Config;
 import net.minecraft.client.renderer.ChunkRenderContainer;
 import net.minecraft.client.renderer.RenderGlobal;
 import net.minecraft.util.BlockRenderLayer;

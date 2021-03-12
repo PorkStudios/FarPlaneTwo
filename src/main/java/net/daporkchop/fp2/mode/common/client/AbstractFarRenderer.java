@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.common.client;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.FP2Config;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.mode.api.IFarPos;
@@ -31,8 +31,6 @@ import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.util.DirectLongStack;
-import net.daporkchop.fp2.util.math.Cube;
-import net.daporkchop.fp2.util.math.Cylinder;
 import net.daporkchop.fp2.util.math.Sphere;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
