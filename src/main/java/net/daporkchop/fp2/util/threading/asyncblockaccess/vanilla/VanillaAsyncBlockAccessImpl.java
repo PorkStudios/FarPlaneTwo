@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,7 +22,7 @@ package net.daporkchop.fp2.util.threading.asyncblockaccess.vanilla;
 
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import lombok.NonNull;
-import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
+import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.daporkchop.lib.common.math.BinMath;
@@ -112,11 +112,6 @@ public class VanillaAsyncBlockAccessImpl implements AsyncBlockAccess {
     }
 
     @Override
-    public void gc() {
-        this.cache.values().removeIf(o -> o instanceof Chunk && !((Chunk) o).isLoaded());
-    }
-
-    @Override
     public int getTopBlockY(int blockX, int blockZ) {
         return this.getChunk(blockX >> 4, blockZ >> 4).getHeightValue(blockX & 0xF, blockZ & 0xF) - 1;
     }
@@ -128,7 +123,7 @@ public class VanillaAsyncBlockAccessImpl implements AsyncBlockAccess {
 
     @Override
     public int getBlockLight(BlockPos pos) {
-        if (!this.world.isValid(pos))    {
+        if (!this.world.isValid(pos)) {
             return 0;
         } else {
             return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4).getLightFor(EnumSkyBlock.BLOCK, pos);
@@ -139,7 +134,7 @@ public class VanillaAsyncBlockAccessImpl implements AsyncBlockAccess {
     public int getSkyLight(BlockPos pos) {
         if (!this.world.provider.hasSkyLight()) {
             return 0;
-        } else if (!this.world.isValid(pos))    {
+        } else if (!this.world.isValid(pos)) {
             return 15;
         } else {
             return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4).getLightFor(EnumSkyBlock.SKY, pos);

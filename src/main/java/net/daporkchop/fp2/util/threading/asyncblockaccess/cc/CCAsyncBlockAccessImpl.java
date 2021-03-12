@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -28,7 +28,7 @@ import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import lombok.NonNull;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
+import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.daporkchop.lib.common.math.BinMath;
@@ -46,7 +46,6 @@ import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.chunk.Chunk;
 
 import java.util.Map;
 import java.util.Objects;
@@ -160,12 +159,6 @@ public class CCAsyncBlockAccessImpl implements AsyncBlockAccess {
                             .map(pos -> this.getCubeFuture(pos.getX(), pos.getY(), pos.getZ())).collect(Collectors.toList()))
                             .thenApply(cubeList -> new PrefetchedCubesCCAsyncBlockAccess(this, this.world, columnList.stream(), cubeList.stream()));
                 });
-    }
-
-    @Override
-    public void gc() {
-        this.cache2d.values().removeIf(o -> o instanceof Chunk && !((Chunk) o).isLoaded());
-        this.cache3d.values().removeIf(o -> o instanceof ICube && !((ICube) o).isCubeLoaded());
     }
 
     @Override

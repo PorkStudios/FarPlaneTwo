@@ -35,15 +35,10 @@ import net.daporkchop.fp2.util.threading.asyncblockaccess.cc.CCAsyncBlockAccessI
 import net.daporkchop.fp2.util.threading.asyncblockaccess.vanilla.VanillaAsyncBlockAccessImpl;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
-import net.minecraft.world.chunk.IChunkProvider;
 import org.spongepowered.asm.mixin.Implements;
 import org.spongepowered.asm.mixin.Interface;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Map;
 import java.util.function.Consumer;
@@ -68,8 +63,6 @@ public abstract class MixinWorldServer extends World implements IFarWorldServer,
     @Getter
     @Unique
     protected AsyncBlockAccess asyncBlockAccess;
-    @Unique
-    protected int cbaGcTicks;
 
     protected MixinWorldServer() {
         super(null, null, null, null, false);
@@ -105,17 +98,6 @@ public abstract class MixinWorldServer extends World implements IFarWorldServer,
     @Override
     public void close() {
         this.forEachContext(IFarServerContext::close);
-    }
-
-    @Inject(method = "Lnet/minecraft/world/WorldServer;tick()V",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/world/chunk/IChunkProvider;tick()Z",
-                    shift = At.Shift.AFTER))
-    private void fp2_tick_asyncBlockAccessGc(CallbackInfo ci) {
-        if (this.cbaGcTicks++ > 40) {
-            this.cbaGcTicks = 0;
-            this.asyncBlockAccess.gc();
-        }
     }
 
     @Override

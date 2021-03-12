@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.util.threading.asyncblockaccess;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.compat.vanilla.IBlockHeightAccess;
+import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.lib.concurrent.PFuture;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.tileentity.TileEntity;
@@ -63,11 +63,6 @@ public interface AsyncBlockAccess extends IBlockHeightAccess {
      * @return a single {@link IBlockHeightAccess} covering all of the given columns and cubes
      */
     PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction);
-
-    /**
-     * Drops some data from the cache.
-     */
-    void gc();
 
     @Override
     default boolean isAirBlock(BlockPos pos) {

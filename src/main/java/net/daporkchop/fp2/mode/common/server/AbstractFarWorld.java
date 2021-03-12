@@ -186,7 +186,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         }
     }
 
-    @SuppressWarnings("unchecked")
     public void notifyPlayerTracker(@NonNull Compressed<POS, T> tile) {
         this.tracker.tileChanged(tile);
     }

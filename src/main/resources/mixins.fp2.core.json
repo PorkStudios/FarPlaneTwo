@@ -18,6 +18,7 @@
   "mixins": [
     "entity.player.MixinEntityPlayerMP",
     "world.MixinWorldServer",
+    "world.chunk.storage.MixinRegionFileCache",
     "world.gen.layer.MixinIntCache"
   ]
 }

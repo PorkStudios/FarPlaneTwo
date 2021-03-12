@@ -22,7 +22,7 @@ package net.daporkchop.fp2.asm.world.gen.layer;
 
 import io.netty.util.concurrent.FastThreadLocal;
 import net.daporkchop.fp2.util.threading.DefaultFastThreadLocal;
-import net.daporkchop.fp2.util.compat.vanilla.TLIntCache;
+import net.daporkchop.fp2.compat.vanilla.TLIntCache;
 import net.minecraft.world.gen.layer.IntCache;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;

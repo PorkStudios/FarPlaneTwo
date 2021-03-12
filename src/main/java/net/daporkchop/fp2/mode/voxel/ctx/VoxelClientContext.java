@@ -27,7 +27,7 @@ import net.daporkchop.fp2.mode.common.ctx.AbstractFarClientContext;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.client.VoxelRenderer;
-import net.daporkchop.fp2.util.compat.of.OFHelper;
+import net.daporkchop.fp2.compat.of.OFHelper;
 
 /**
  * @author DaPorkchop_

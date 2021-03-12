@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -52,7 +52,7 @@ import java.util.List;
 import java.util.Map;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
-import static net.daporkchop.fp2.util.compat.of.OFHelper.*;
+import static net.daporkchop.fp2.compat.of.OFHelper.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL43.*;
 
