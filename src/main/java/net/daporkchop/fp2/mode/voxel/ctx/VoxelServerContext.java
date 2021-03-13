@@ -29,6 +29,8 @@ import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.server.VoxelWorld;
 import net.minecraft.world.WorldServer;
 
+import static net.daporkchop.fp2.util.Constants.*;
+
 /**
  * @author DaPorkchop_
  */
@@ -38,7 +40,9 @@ public class VoxelServerContext extends AbstractFarServerContext<VoxelPos, Voxel
     }
 
     @Override
-    protected IFarWorld<VoxelPos, VoxelTile> world0() {
-        return new VoxelWorld(this.vanillaWorld(), this.mode);
+    protected IFarWorld<VoxelPos, VoxelTile> world0(@NonNull WorldServer vanillaWorld) {
+        return isCubicWorld(vanillaWorld)
+                ? new VoxelWorld.CubicChunks(vanillaWorld, this.mode)
+                : new VoxelWorld.Vanilla(vanillaWorld, this.mode);
     }
 }

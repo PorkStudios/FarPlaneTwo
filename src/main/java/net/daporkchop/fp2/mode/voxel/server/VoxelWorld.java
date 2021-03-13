@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.mode.voxel.server;
 
+import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
@@ -28,14 +29,17 @@ import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerIntersection;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.chunk.Chunk;
 
-import static net.daporkchop.fp2.util.Constants.*;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
  */
-public class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelTile> {
+public abstract class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelTile> {
     public VoxelWorld(@NonNull WorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
         super(world, mode);
     }
@@ -50,8 +54,45 @@ public class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelTile> {
         return new VoxelPlayerTracker(this);
     }
 
-    @Override
-    protected VoxelPos fromBlockCoords(int x, int y, int z) {
-        return new VoxelPos(x >> T_SHIFT, y >> T_SHIFT, z >> T_SHIFT, 0);
+    /**
+     * @author DaPorkchop_
+     */
+    public static class Vanilla extends VoxelWorld {
+        public Vanilla(@NonNull WorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
+            super(world, mode);
+        }
+
+        @Override
+        public void onColumnSave(@NonNull Chunk column, @NonNull NBTTagCompound nbt) {
+            //schedule entire column to be updated
+            int x = column.x;
+            int z = column.z;
+            this.scheduleUpdate(IntStream.range(0, column.getWorld().getHeight() >> 4)
+                    .mapToObj(y -> new VoxelPos(x, y, z, 0)));
+        }
+
+        @Override
+        public void onCubeSave(@NonNull ICube cube, @NonNull NBTTagCompound nbt) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public static class CubicChunks extends VoxelWorld {
+        public CubicChunks(@NonNull WorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
+            super(world, mode);
+        }
+
+        @Override
+        public void onColumnSave(@NonNull Chunk column, @NonNull NBTTagCompound nbt) {
+            //no-op
+        }
+
+        @Override
+        public void onCubeSave(@NonNull ICube cube, @NonNull NBTTagCompound nbt) {
+            this.scheduleUpdate(Stream.of(new VoxelPos(cube.getX(), cube.getY(), cube.getZ(), 0)));
+        }
     }
 }

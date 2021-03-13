@@ -20,31 +20,24 @@
 
 package net.daporkchop.fp2;
 
-import net.daporkchop.fp2.client.ClientEvents;
-import net.daporkchop.fp2.client.FP2ResourceReloadListener;
+import net.daporkchop.fp2.client.FP2Client;
 import net.daporkchop.fp2.client.KeyBindings;
-import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.debug.FP2Debug;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.heightmap.client.HeightmapShaders;
-import net.daporkchop.fp2.mode.voxel.client.VoxelShaders;
 import net.daporkchop.fp2.net.client.CPacketDropAllTiles;
 import net.daporkchop.fp2.net.client.CPacketRenderMode;
 import net.daporkchop.fp2.net.server.SPacketTileData;
 import net.daporkchop.fp2.net.server.SPacketReady;
 import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
 import net.daporkchop.fp2.net.server.SPacketUnloadTile;
+import net.daporkchop.fp2.server.FP2Server;
 import net.daporkchop.fp2.server.ServerEvents;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.ldbjni.LevelDB;
-import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.unsafe.PUnsafe;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.IReloadableResourceManager;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -53,16 +46,9 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
 import net.minecraftforge.fml.relauncher.Side;
-import org.lwjgl.opengl.GLContext;
-
-import javax.swing.JOptionPane;
 
 import static net.daporkchop.fp2.FP2.*;
-import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_
@@ -74,54 +60,16 @@ import static org.lwjgl.opengl.GL43.*;
 public class FP2 {
     public static final String MODID = "fp2";
 
-    private static void unsupported(String msg) {
-        bigWarning(msg + "\nRequired by FarPlaneTwo.");
-        if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-            JOptionPane.showMessageDialog(null,
-                    msg + "\nRequired by FarPlaneTwo.",
-                    null, JOptionPane.ERROR_MESSAGE);
-        }
-        FMLCommonHandler.instance().exitJava(1, true);
-    }
-
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         LOGGER = event.getModLog();
 
-        if (!PlatformInfo.IS_64BIT) { //require 64-bit
-            unsupported("Your system or JVM is not 64-bit!");
-        } else if (!PlatformInfo.IS_LITTLE_ENDIAN) { //require little-endian
-            unsupported("Your system is not little-endian!");
-        }
-
-        System.setProperty("porklib.native.printStackTraces", "true");
-        if (!Zstd.PROVIDER.isNative()) {
-            Constants.bigWarning("Native ZSTD could not be loaded! This will have SERIOUS performance implications!");
-        }
-        if (!LevelDB.PROVIDER.isNative()) {
-            Constants.bigWarning("Native leveldb could not be loaded! This will have SERIOUS performance implications!");
-        }
-
         this.registerPackets();
 
-        ServerEvents.register();
+        FP2Server.preInit();
 
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-            if (!GLContext.getCapabilities().OpenGL44) { //require at least OpenGL 4.4
-                unsupported("Your system does not support OpenGL 4.4!");
-            }
-
-            int size = glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
-            LOGGER.info(PStrings.fastFormat("Max SSBO size: %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
-
-            if (!mc.getFramebuffer().isStencilEnabled()) {
-                checkState(mc.getFramebuffer().enableStencil(), "unable to enable stencil buffer!");
-                LOGGER.info("Successfully enabled stencil buffer!");
-            }
-
-            MinecraftForge.EVENT_BUS.register(new ClientEvents());
-
-            ((IReloadableResourceManager) Minecraft.getMinecraft().getResourceManager()).registerReloadListener(new FP2ResourceReloadListener());
+            FP2Client.preInit();
         }
 
         FP2Debug.preInit();
@@ -129,8 +77,10 @@ public class FP2 {
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
+        FP2Server.init();
+
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-            KeyBindings.register();
+            FP2Client.init();
         }
 
         FP2Debug.init();
@@ -138,14 +88,10 @@ public class FP2 {
 
     @Mod.EventHandler
     public void postInit(FMLPostInitializationEvent event) {
-        PUnsafe.ensureClassInitialized(IFarRenderMode.class);
+        FP2Server.postInit();
 
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-            TexUVs.initDefault();
-
-            //load shader classes on client thread
-            PUnsafe.ensureClassInitialized(HeightmapShaders.class);
-            PUnsafe.ensureClassInitialized(VoxelShaders.class);
+            FP2Client.postInit();
         }
     }
 

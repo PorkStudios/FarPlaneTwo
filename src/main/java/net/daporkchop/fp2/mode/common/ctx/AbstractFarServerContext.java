@@ -44,8 +44,8 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
         this.vanillaWorld = vanillaWorld;
         this.mode = mode;
 
-        this.world = this.world0();
+        this.world = this.world0(vanillaWorld);
     }
 
-    protected abstract IFarWorld<POS, T> world0();
+    protected abstract IFarWorld<POS, T> world0(@NonNull WorldServer vanillaWorld);
 }

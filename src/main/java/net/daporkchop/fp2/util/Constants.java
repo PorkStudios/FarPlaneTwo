@@ -41,11 +41,14 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
+import net.minecraftforge.fml.relauncher.Side;
 import org.apache.logging.log4j.Logger;
 
+import javax.swing.JOptionPane;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -412,5 +415,15 @@ public class Constants {
             val |= i;
         }
         return val;
+    }
+
+    public static void unsupported(String msg) {
+        bigWarning(msg + "\nRequired by FarPlaneTwo.");
+        if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
+            JOptionPane.showMessageDialog(null,
+                    msg + "\nRequired by FarPlaneTwo.",
+                    null, JOptionPane.ERROR_MESSAGE);
+        }
+        FMLCommonHandler.instance().exitJava(1, true);
     }
 }

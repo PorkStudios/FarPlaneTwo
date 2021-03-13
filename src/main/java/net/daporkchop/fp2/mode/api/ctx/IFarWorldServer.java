@@ -35,7 +35,6 @@ import java.util.function.Consumer;
  *
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
 public interface IFarWorldServer {
     /**
      * Gets the {@link IFarServerContext} used by the given {@link IFarServerContext} in this world.

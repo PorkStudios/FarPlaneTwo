@@ -52,15 +52,6 @@ public interface IFarWorld<POS extends IFarPos, T extends IFarTile> extends Clos
     Compressed<POS, T> getTileLazy(@NonNull POS pos);
 
     /**
-     * Fired whenever a block state changes.
-     *
-     * @param x the X coordinate of the block that changed
-     * @param y the Y coordinate of the block that changed
-     * @param z the Z coordinate of the block that changed
-     */
-    void blockChanged(int x, int y, int z);
-
-    /**
      * @return the (possibly {@code null}) {@link IFarGeneratorRough} used for rough generation of far terrain
      */
     IFarGeneratorRough<POS, T> generatorRough();

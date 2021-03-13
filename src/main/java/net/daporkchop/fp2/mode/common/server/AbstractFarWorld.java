@@ -37,6 +37,8 @@ import net.daporkchop.fp2.mode.api.server.gen.ExactAsRoughGeneratorFallbackWrapp
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
+import net.daporkchop.fp2.server.worldchange.IWorldChangeListener;
+import net.daporkchop.fp2.server.worldchange.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.threading.PriorityRecursiveExecutor;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.daporkchop.lib.common.misc.string.PStrings;
@@ -56,6 +58,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
 
@@ -63,7 +66,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> implements IFarWorld<POS, T> {
+public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> implements IFarWorld<POS, T>, IWorldChangeListener {
     protected final WorldServer world;
     protected final IFarRenderMode<POS, T> mode;
     protected final File root;
@@ -87,7 +90,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
     //contains positions of all tiles that are going to be updated with the exact generator
     protected final ObjLongMap<POS> exactActive = new ObjLongConcurrentHashMap<>(-1L);
-    protected final Collection<PriorityTask<POS>> pendingExactTasks = new ArrayList<>();
 
     protected final PriorityRecursiveExecutor<PriorityTask<POS>> executor; //TODO: make these global rather than per-dimension
 
@@ -128,7 +130,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
         this.loadNotDone();
 
-        MinecraftForge.EVENT_BUS.register(this);
+        WorldChangeListenerManager.add(this.world, this);
     }
 
     protected abstract IFarScaler<POS, T> createScaler();
@@ -180,9 +182,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.saveTile(tile);
 
         if (allowScale && tile.pos().level() < FP2Config.maxLevels - 1) {
-            long currTimestamp = tile.timestamp();
-
-            this.scaler.outputs(tile.pos()).forEach(outputPos -> this.scheduleTileForUpdate(outputPos, currTimestamp));
+            this.scheduleUpdate(this.scaler.outputs(tile.pos()));
         }
     }
 
@@ -194,45 +194,14 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         return pos.level() == 0 || this.lowResolution;
     }
 
-    protected void scheduleTileForUpdate(@NonNull POS pos, long newTimestamp) {
-        //TODO: this is a race condition if an exact generation task queued in a previous tick occurs in between multiple block updates to
-        // the same position during the current tick
-        //TODO: wait, is this actually correct? actually, i think the above condition might actually cause it to regenerate the same tile
-        // multiple times for that tick
-
-        if (true) {
-            throw new UnsupportedOperationException(); //TODO: currently, exactActive never gets cleared
-        }
-
-        if (this.exactActive.put(pos, newTimestamp) < 0L) {
-            //position wasn't previously queued for update
-            synchronized (this.pendingExactTasks) {
-                this.pendingExactTasks.add(new PriorityTask<>(TaskStage.UPDATE, pos));
+    protected void scheduleUpdate(@NonNull Stream<POS> positions) {
+        long newTimestamp = this.world.getTotalWorldTime();
+        positions.forEach(pos -> {
+            if (this.exactActive.put(pos, newTimestamp) < 0L) { //position wasn't previously queued for update
+                this.executor.submit(new PriorityTask<>(TaskStage.UPDATE, pos));
             }
-        }
+        });
     }
-
-    @SubscribeEvent
-    public void onWorldTick(TickEvent.ServerTickEvent event) {
-        if (event.phase == TickEvent.Phase.END) {
-            this.currentTick = this.world.getTotalWorldTime();
-            if (!this.pendingExactTasks.isEmpty()) {
-                //fire pending tasks
-                synchronized (this.pendingExactTasks) {
-                    this.executor.submit(this.pendingExactTasks);
-                    this.pendingExactTasks.clear();
-                }
-            }
-        }
-    }
-
-    @Override
-    public void blockChanged(int x, int y, int z) {
-        //TODO: re-enable this
-        //this.scheduleTileForUpdate(this.fromBlockCoords(x, y, z), this.world.getTotalWorldTime());
-    }
-
-    protected abstract POS fromBlockCoords(int x, int y, int z);
 
     @Override
     public AsyncBlockAccess blockAccess() {
@@ -251,7 +220,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
     @Override
     @SneakyThrows(IOException.class)
     public void close() {
-        MinecraftForge.EVENT_BUS.unregister(this);
+        WorldChangeListenerManager.remove(this.world, this);
 
         LOGGER.trace("Shutting down generation workers in DIM{}", this.world.provider.getDimension());
         this.executor.shutdown();

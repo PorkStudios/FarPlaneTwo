@@ -23,6 +23,7 @@ package net.daporkchop.fp2.compat.vanilla;
 import net.daporkchop.fp2.util.IHeightMap;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.biome.Biome;
 
 /**
  * Combination of {@link IBlockAccess} and {@link IHeightMap}.
@@ -30,13 +31,19 @@ import net.minecraft.world.IBlockAccess;
  * @author DaPorkchop_
  */
 public interface IBlockHeightAccess extends IBlockAccess, IHeightMap {
+    /**
+     * Re-definition of {@link IBlockAccess#getBiome(BlockPos)}, as that method's marked as client-only.
+     */
+    @Override
+    Biome getBiome(BlockPos pos);
+
     int getSkyLight(BlockPos pos);
 
     int getBlockLight(BlockPos pos);
 
     @Override
-    default int getCombinedLight(BlockPos pos, int defaultBlockLightValue)  {
+    default int getCombinedLight(BlockPos pos, int defaultBlockLightValue) {
         return (this.getSkyLight(pos) << 20)
-                | (Math.max(this.getBlockLight(pos), defaultBlockLightValue) << 4);
+               | (Math.max(this.getBlockLight(pos), defaultBlockLightValue) << 4);
     }
 }

@@ -18,56 +18,59 @@
  *
  */
 
-package net.daporkchop.fp2.debug;
+package net.daporkchop.fp2.server;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.debug.client.DebugClientEvents;
-import net.daporkchop.fp2.debug.client.DebugKeyBindings;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.ldbjni.LevelDB;
+import net.daporkchop.lib.common.system.PlatformInfo;
+import net.daporkchop.lib.compression.zstd.Zstd;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.fml.relauncher.Side;
 
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
- * Container class for FP2 debug mode.
+ * Manages initialization of FP2 on the server.
  *
  * @author DaPorkchop_
  */
 @UtilityClass
-public class FP2Debug {
-    /**
-     * Whether or not we are currently running in debug mode.
-     */
-    public static final boolean FP2_DEBUG = Boolean.parseBoolean(System.getProperty("fp2.debug", "false"));
-
+public class FP2Server {
     /**
      * Called during {@link FMLPreInitializationEvent}.
      */
     public void preInit() {
-        if (!FP2_DEBUG) {
-            return;
+        if (!PlatformInfo.IS_64BIT) { //require 64-bit
+            unsupported("Your system or JVM is not 64-bit!");
+        } else if (!PlatformInfo.IS_LITTLE_ENDIAN) { //require little-endian
+            unsupported("Your system is not little-endian!");
         }
 
-        bigWarning("FarPlaneTwo debug mode enabled!");
-
-        if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-            MinecraftForge.EVENT_BUS.register(new DebugClientEvents());
+        System.setProperty("porklib.native.printStackTraces", "true");
+        if (!Zstd.PROVIDER.isNative()) {
+            Constants.bigWarning("Native ZSTD could not be loaded! This will have SERIOUS performance implications!");
         }
+        if (!LevelDB.PROVIDER.isNative()) {
+            Constants.bigWarning("Native leveldb could not be loaded! This will have SERIOUS performance implications!");
+        }
+
+        ServerEvents.register();
     }
 
     /**
      * Called during {@link FMLInitializationEvent}.
      */
     public void init() {
-        if (!FP2_DEBUG) {
-            return;
-        }
+    }
 
-        if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-            DebugKeyBindings.register();
-        }
+    /**
+     * Called during {@link FMLPostInitializationEvent}.
+     */
+    public void postInit() {
+        PUnsafe.ensureClassInitialized(IFarRenderMode.class);
     }
 }

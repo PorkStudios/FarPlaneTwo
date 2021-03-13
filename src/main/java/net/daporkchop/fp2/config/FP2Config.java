@@ -21,15 +21,12 @@
 package net.daporkchop.fp2.config;
 
 import net.daporkchop.fp2.FP2;
-import net.daporkchop.fp2.config.ConfigListenerManager;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 import org.iq80.leveldb.CompressionType;
 import org.iq80.leveldb.Options;
 
@@ -96,7 +93,6 @@ public class FP2Config {
             "Config options available only on the client."
     })
     @Config.LangKey("config.fp2.client")
-    @SideOnly(Side.CLIENT)
     public static Client client = new Client();
 
     @Config.Comment({
@@ -134,7 +130,6 @@ public class FP2Config {
     /**
      * @author DaPorkchop_
      */
-    @SideOnly(Side.CLIENT)
     public static class Client {
         @Config.Comment({
                 "The number of threads that will be used for preparing far plane terrain data for rendering.",
@@ -222,7 +217,7 @@ public class FP2Config {
             @Config.RangeInt(min = 0)
             public int cacheSize;
 
-            public Options use()    {
+            public Options use() {
                 return new Options()
                         .writeBufferSize(this.writeBufferSize)
                         .maxOpenFiles(this.maxOpenFiles)

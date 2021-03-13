@@ -28,6 +28,7 @@ import net.daporkchop.fp2.util.reference.WeakEqualityForwardingReference;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraftforge.common.MinecraftForge;
 
 import java.util.Map;
 import java.util.Set;
@@ -38,6 +39,10 @@ import java.util.function.Predicate;
 
 /**
  * Manages delegation of events to registered {@link IWorldChangeListener}s.
+ * <p>
+ * This could also be implemented by having the listeners register themselves to {@link MinecraftForge#EVENT_BUS} to listen for the relevant events, but
+ * because the events are fired to every listener for every world, the runtime per event would be {@code O(<global_number_of_listeners>)} instead of
+ * {@code O(<world_number_of_listeners>)}.
  *
  * @author DaPorkchop_
  */
