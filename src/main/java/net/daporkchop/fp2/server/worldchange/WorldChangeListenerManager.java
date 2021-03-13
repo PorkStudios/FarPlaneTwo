@@ -1,0 +1,132 @@
+/*
+ * Adapted from The MIT License (MIT)
+ *
+ * Copyright (c) 2020-2021 DaPorkchop_
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software
+ * is furnished to do so, subject to the following conditions:
+ *
+ * Any persons and/or organizations using this software must include the above copyright notice and this permission notice,
+ * provide sufficient credit to the original authors of the project (IE: DaPorkchop_), as well as provide a link to the original project.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
+package net.daporkchop.fp2.server.worldchange;
+
+import io.github.opencubicchunks.cubicchunks.api.world.ICube;
+import lombok.NonNull;
+import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.util.reference.ReferenceHandlerThread;
+import net.daporkchop.fp2.util.reference.WeakEqualityForwardingReference;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+/**
+ * Manages delegation of events to registered {@link IWorldChangeListener}s.
+ *
+ * @author DaPorkchop_
+ */
+@UtilityClass
+public class WorldChangeListenerManager {
+    private final Map<World, Set<ListenerWrapper>> LISTENERS = new WeakHashMap<>();
+
+    private final Function<World, Set<ListenerWrapper>> COMPUTE_ARENA_FUNCTION = world -> new CopyOnWriteArraySet<>();
+
+    /**
+     * Adds a new listener for events in the given world.
+     *
+     * @param world    the {@link World} to listen for events in
+     * @param listener the {@link IWorldChangeListener} to add
+     */
+    public void add(@NonNull World world, @NonNull IWorldChangeListener listener) {
+        Set<ListenerWrapper> arena = LISTENERS.computeIfAbsent(world, COMPUTE_ARENA_FUNCTION);
+        arena.add(new ListenerWrapper(listener, arena));
+    }
+
+    /**
+     * Removes a listener that was previously being notified for events in the given world.
+     *
+     * @param world    the {@link World} to remove the listener from
+     * @param listener the {@link IWorldChangeListener} to remove
+     */
+    public void remove(@NonNull World world, @NonNull IWorldChangeListener listener) {
+        Set<ListenerWrapper> arena = LISTENERS.get(world);
+        if (arena != null) { //arena exists
+            arena.removeIf(wrapper -> wrapper == listener);
+        }
+    }
+
+    /**
+     * @see IWorldChangeListener#onColumnSave(Chunk, NBTTagCompound)
+     */
+    public void fireColumnSave(@NonNull Chunk column, @NonNull NBTTagCompound nbt) {
+        Set<ListenerWrapper> arena = LISTENERS.get(column.getWorld());
+        if (arena != null) { //arena exists
+            arena.forEach(wrapper -> {
+                IWorldChangeListener listener = wrapper.get();
+                if (listener != null) { //listener wasn't garbage collected
+                    listener.onColumnSave(column, nbt);
+                }
+            });
+        }
+    }
+
+    /**
+     * @see IWorldChangeListener#onCubeSave(ICube, NBTTagCompound)
+     */
+    public void fireCubeSave(@NonNull ICube cube, @NonNull NBTTagCompound nbt) {
+        Set<ListenerWrapper> arena = LISTENERS.get(cube.getWorld());
+        if (arena != null) { //arena exists
+            arena.forEach(wrapper -> {
+                IWorldChangeListener listener = wrapper.get();
+                if (listener != null) { //listener wasn't garbage collected
+                    listener.onCubeSave(cube, nbt);
+                }
+            });
+        }
+    }
+
+    /**
+     * Weak-referencing wrapper around an {@link IWorldChangeListener}.
+     *
+     * @author DaPorkchop_
+     */
+    private static class ListenerWrapper extends WeakEqualityForwardingReference<IWorldChangeListener> implements Runnable, Predicate<ListenerWrapper> {
+        private final Set<ListenerWrapper> arena;
+
+        public ListenerWrapper(@NonNull IWorldChangeListener referent, @NonNull Set<ListenerWrapper> arena) {
+            super(referent, ReferenceHandlerThread.queue());
+
+            this.arena = arena;
+        }
+
+        @Override
+        public void run() { //called by the reference handler thread after the listener is garbage collected
+            this.arena.removeIf(this);
+        }
+
+        /**
+         * @deprecated internal API, do not touch!
+         */
+        @Override
+        @Deprecated
+        public boolean test(ListenerWrapper wrapper) { //used by #run() to remove this wrapper from this.arena by its identity
+            return wrapper == this;
+        }
+    }
+}

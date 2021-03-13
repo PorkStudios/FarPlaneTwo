@@ -104,7 +104,7 @@ public class FP2 {
 
         this.registerPackets();
 
-        MinecraftForge.EVENT_BUS.register(new ServerEvents());
+        ServerEvents.register();
 
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
             if (!GLContext.getCapabilities().OpenGL44) { //require at least OpenGL 4.4

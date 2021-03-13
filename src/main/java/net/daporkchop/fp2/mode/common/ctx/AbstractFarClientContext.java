@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.common.ctx;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.config.ConfigListener;
+import net.daporkchop.fp2.config.IConfigListener;
 import net.daporkchop.fp2.config.ConfigListenerManager;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
@@ -38,7 +38,7 @@ import net.daporkchop.fp2.mode.common.client.FarTileCache;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IFarTile> implements IFarClientContext<POS, T>, ConfigListener {
+public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IFarTile> implements IFarClientContext<POS, T>, IConfigListener {
     protected final IFarTileCache<POS, T> tileCache;
     protected IFarRenderer renderer;
     protected final IFarRenderMode<POS, T> mode;

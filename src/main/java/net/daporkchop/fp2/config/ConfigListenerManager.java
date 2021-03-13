@@ -20,13 +20,14 @@
 
 package net.daporkchop.fp2.config;
 
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.util.reference.ReferenceHandlerThread;
+import net.daporkchop.fp2.util.reference.WeakEqualityForwardingReference;
 
-import java.lang.ref.Reference;
-import java.lang.ref.WeakReference;
-import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
@@ -36,45 +37,62 @@ import java.util.function.Predicate;
  */
 @UtilityClass
 public class ConfigListenerManager {
-    private final List<Reference<ConfigListener>> ACTIVE_LISTENERS = new ObjectArrayList<>();
+    private final Set<ListenerWrapper> ACTIVE_LISTENERS = new CopyOnWriteArraySet<>();
 
-    private final Predicate<Reference<ConfigListener>> CLEANUP_FILTER = ref -> ref.get() == null;
-    private final Predicate<Reference<ConfigListener>> FIRE_FILTER = ref -> {
-        ConfigListener listener = ref.get();
+    private final Consumer<ListenerWrapper> FIRE_CALLBACK = wrapper -> {
+        IConfigListener listener = wrapper.get();
         if (listener != null) {
             listener.configChanged();
-            return false;
-        } else { //the listener was GC'd, remove it
-            return true;
         }
     };
 
     /**
-     * Adds a new {@link ConfigListener}.
+     * Adds a new {@link IConfigListener}.
      *
-     * @param listener the {@link ConfigListener}
+     * @param listener the {@link IConfigListener}
      */
-    public void add(@NonNull ConfigListener listener) {
-        ACTIVE_LISTENERS.removeIf(CLEANUP_FILTER);
-        ACTIVE_LISTENERS.add(new WeakReference<>(listener));
+    public void add(@NonNull IConfigListener listener) {
+        ACTIVE_LISTENERS.add(new ListenerWrapper(listener));
     }
 
     /**
-     * Removes a previously added {@link ConfigListener}.
+     * Removes a previously added {@link IConfigListener}.
      *
-     * @param listener the {@link ConfigListener}
+     * @param listener the {@link IConfigListener}
      */
-    public void remove(@NonNull ConfigListener listener) {
-        ACTIVE_LISTENERS.removeIf(ref -> {
-            ConfigListener deRef = ref.get();
-            return deRef == null || deRef == listener;
-        });
+    public void remove(@NonNull IConfigListener listener) {
+        ACTIVE_LISTENERS.removeIf(wrapper -> wrapper == listener);
     }
 
     /**
-     * Fires the config changed event to all active {@link ConfigListener}s.
+     * Fires the config changed event to all active {@link IConfigListener}s.
      */
     public void fire() {
-        ACTIVE_LISTENERS.removeIf(FIRE_FILTER);
+        ACTIVE_LISTENERS.forEach(FIRE_CALLBACK);
+    }
+
+    /**
+     * Weak-referencing wrapper around an {@link IConfigListener}.
+     *
+     * @author DaPorkchop_
+     */
+    private static class ListenerWrapper extends WeakEqualityForwardingReference<IConfigListener> implements Runnable, Predicate<ListenerWrapper> {
+        public ListenerWrapper(@NonNull IConfigListener referent) {
+            super(referent, ReferenceHandlerThread.queue());
+        }
+
+        @Override
+        public void run() { //called by the reference handler thread after the listener is garbage collected
+            ACTIVE_LISTENERS.removeIf(this);
+        }
+
+        /**
+         * @deprecated internal API, do not touch!
+         */
+        @Override
+        @Deprecated
+        public boolean test(ListenerWrapper wrapper) { //used by #run() to remove this wrapper from ACTIVE_LISTENERS by its identity
+            return wrapper == this;
+        }
     }
 }

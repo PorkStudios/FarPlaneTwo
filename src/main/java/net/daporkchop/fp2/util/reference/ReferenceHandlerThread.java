@@ -18,17 +18,41 @@
  *
  */
 
-package net.daporkchop.fp2.config;
+package net.daporkchop.fp2.util.reference;
+
+import lombok.experimental.UtilityClass;
+import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
+
+import java.lang.ref.ReferenceQueue;
+
+import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * A listener for configuration change events.
+ * FP2's own reference handler thread.
  *
  * @author DaPorkchop_
  */
-@FunctionalInterface
-public interface ConfigListener {
+@UtilityClass
+public class ReferenceHandlerThread {
+    private final ReferenceQueue<?> QUEUE = new ReferenceQueue<>();
+
+    static {
+        PThreadFactories.builder().daemon().minPriority().name("FP2 Reference Handler").build().newThread(() -> {
+            while (true) {
+                try {
+                    ((Runnable) QUEUE.remove()).run();
+                } catch (Throwable t) {
+                    LOGGER.error("Unable to run reference callback", t);
+                }
+            }
+        }).start();
+    }
+
     /**
-     * Fired whenever the config is changed.
+     * @return a {@link ReferenceQueue}
      */
-    void configChanged();
+    public <T> ReferenceQueue<T> queue() {
+        return uncheckedCast(QUEUE);
+    }
 }

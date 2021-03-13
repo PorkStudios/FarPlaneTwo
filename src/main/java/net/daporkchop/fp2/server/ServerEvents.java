@@ -20,24 +20,47 @@
 
 package net.daporkchop.fp2.server;
 
+import io.github.opencubicchunks.cubicchunks.api.world.CubeDataEvent;
+import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.net.server.SPacketReady;
+import net.daporkchop.fp2.server.worldchange.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.text.TextComponentString;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.world.ChunkDataEvent;
 import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
+ * Forge event listeners used on the server.
+ *
  * @author DaPorkchop_
  */
+@UtilityClass
 public class ServerEvents {
+    private boolean REGISTERED = false;
+
+    public synchronized void register() {
+        checkState(!REGISTERED, "already registered!");
+        REGISTERED = true;
+
+        MinecraftForge.EVENT_BUS.register(ServerEvents.class);
+
+        if (CC) {
+            MinecraftForge.EVENT_BUS.register(_CC.class);
+        }
+    }
+
     @SubscribeEvent
     public void worldLoad(WorldEvent.Load event) {
         if (!event.getWorld().isRemote) {
@@ -91,6 +114,24 @@ public class ServerEvents {
                     }
                 });
             }
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public void onChunkDataSave(ChunkDataEvent.Save event) {
+        WorldChangeListenerManager.fireColumnSave(event.getChunk(), event.getData());
+    }
+
+    /**
+     * Forge event listeners for Cubic Chunks' events used on the server.
+     *
+     * @author DaPorkchop_
+     */
+    @UtilityClass
+    public static class _CC {
+        @SubscribeEvent(priority = EventPriority.LOWEST)
+        public void onCubeDataSave(CubeDataEvent.Save event) {
+            WorldChangeListenerManager.fireCubeSave(event.getCube(), event.getData());
         }
     }
 }
