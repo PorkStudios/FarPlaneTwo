@@ -143,7 +143,7 @@ public class ThreadSafeRegionFileCache {
      * @param chunkZ    the Z coordinate of the chunk
      * @return the data stored for the given chunk, or {@code null} if the chunk doesn't exist
      */
-    public RegionChunkData read(@NonNull Path regionDir, int chunkX, int chunkZ) throws IOException {
+    public DataInputStream read(@NonNull Path regionDir, int chunkX, int chunkZ) throws IOException {
         //attempt to open region
         RegionFile region = this.getRegion(region(regionDir, chunkX, chunkZ), false);
 
@@ -154,13 +154,7 @@ public class ThreadSafeRegionFileCache {
 
         try {
             //read chunk from region
-            DataInputStream stream = region.getChunkDataInputStream(chunkX & 0x1F, chunkZ & 0x1F);
-            if (stream == null) { //chunk doesn't exist
-                return null;
-            }
-
-            //return chunk data and timestamp
-            return new RegionChunkData(region.chunkTimestamps[(chunkZ & 0x1F) * 32 + (chunkX & 0x1F)] * 1000L, stream);
+            return region.getChunkDataInputStream(chunkX & 0x1F, chunkZ & 0x1F);
         } finally {
             PUnsafe.monitorExit(region);
         }

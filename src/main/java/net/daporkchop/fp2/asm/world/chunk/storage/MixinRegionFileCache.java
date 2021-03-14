@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.asm.world.chunk.storage;
 
 import net.daporkchop.fp2.compat.vanilla.region.RegionByteBufOutput;
-import net.daporkchop.fp2.compat.vanilla.region.RegionChunkData;
 import net.daporkchop.fp2.compat.vanilla.region.ThreadSafeRegionFileCache;
 import net.minecraft.world.chunk.storage.RegionFile;
 import net.minecraft.world.chunk.storage.RegionFileCache;
@@ -75,8 +74,7 @@ public abstract class MixinRegionFileCache {
     @Overwrite
     public static DataInputStream getChunkInputStream(File worldDir, int chunkX, int chunkZ) {
         try {
-            RegionChunkData data = ThreadSafeRegionFileCache.INSTANCE.read(worldDir.toPath().resolve("region"), chunkX, chunkZ);
-            return data != null ? data.input() : null;
+            return ThreadSafeRegionFileCache.INSTANCE.read(worldDir.toPath().resolve("region"), chunkX, chunkZ);
         } catch (IOException e) {
             e.printStackTrace();
             return null;
