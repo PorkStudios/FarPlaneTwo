@@ -20,7 +20,6 @@
 
 package net.daporkchop.fp2.mode.heightmap.server;
 
-import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
@@ -29,11 +28,7 @@ import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.server.scale.HeightmapScalerMinMax;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.WorldServer;
-import net.minecraft.world.chunk.Chunk;
-
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -54,12 +49,12 @@ public class HeightmapWorld extends AbstractFarWorld<HeightmapPos, HeightmapTile
     }
 
     @Override
-    public void onColumnSave(@NonNull Chunk column, @NonNull NBTTagCompound nbt) {
+    public void onColumnSaved(int columnX, int columnZ) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void onCubeSave(@NonNull ICube cube, @NonNull NBTTagCompound nbt) {
+    public void onCubeSaved(int cubeX, int cubeY, int cubeZ) {
         throw new UnsupportedOperationException();
     }
 }

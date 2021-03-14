@@ -56,7 +56,7 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     }
 
     @Override
-    public long generate(@NonNull HeightmapPos posIn, @NonNull HeightmapTile tile) {
+    public void generate(@NonNull HeightmapPos posIn, @NonNull HeightmapTile tile) {
         int level = posIn.level();
         int baseX = posIn.blockX();
         int baseZ = posIn.blockZ();

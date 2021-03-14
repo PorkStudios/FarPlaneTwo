@@ -28,4 +28,8 @@ import net.daporkchop.fp2.util.IReusablePersistent;
  * @author DaPorkchop_
  */
 public interface IFarTile extends IReusablePersistent {
+    /**
+     * @return any extra data that will be saved with the tile
+     */
+    long extra();
 }

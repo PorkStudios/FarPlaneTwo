@@ -20,7 +20,6 @@
 
 package net.daporkchop.fp2.mode.voxel.server;
 
-import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
@@ -29,12 +28,7 @@ import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerIntersection;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.WorldServer;
-import net.minecraft.world.chunk.Chunk;
-
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
@@ -63,16 +57,18 @@ public abstract class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelTile> {
         }
 
         @Override
-        public void onColumnSave(@NonNull Chunk column, @NonNull NBTTagCompound nbt) {
+        public void onColumnSaved(int columnX, int columnZ) {
             //schedule entire column to be updated
-            int x = column.x;
-            int z = column.z;
-            this.scheduleUpdate(IntStream.range(0, column.getWorld().getHeight() >> 4)
-                    .mapToObj(y -> new VoxelPos(x, y, z, 0)));
+            int height = this.world.getHeight() >> 4;
+            VoxelPos[] positions = new VoxelPos[height];
+            for (int y = 0; y < height; y++) {
+                positions[y] = new VoxelPos(columnX, y, columnZ, 0);
+            }
+            this.scheduleForUpdate(positions);
         }
 
         @Override
-        public void onCubeSave(@NonNull ICube cube, @NonNull NBTTagCompound nbt) {
+        public void onCubeSaved(int cubeX, int cubeY, int cubeZ) {
             throw new UnsupportedOperationException();
         }
     }
@@ -86,13 +82,13 @@ public abstract class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelTile> {
         }
 
         @Override
-        public void onColumnSave(@NonNull Chunk column, @NonNull NBTTagCompound nbt) {
+        public void onColumnSaved(int columnX, int columnZ) {
             //no-op
         }
 
         @Override
-        public void onCubeSave(@NonNull ICube cube, @NonNull NBTTagCompound nbt) {
-            this.scheduleUpdate(Stream.of(new VoxelPos(cube.getX(), cube.getY(), cube.getZ(), 0)));
+        public void onCubeSaved(int cubeX, int cubeY, int cubeZ) {
+            this.scheduleForUpdate(new VoxelPos(cubeX, cubeY, cubeZ, 0));
         }
     }
 }

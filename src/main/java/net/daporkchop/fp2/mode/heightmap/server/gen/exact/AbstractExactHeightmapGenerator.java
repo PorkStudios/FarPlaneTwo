@@ -39,7 +39,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  */
 public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorExact<HeightmapPos, HeightmapTile> {
     @Override
-    public long generate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos posIn, @NonNull HeightmapTile tile) {
+    public void generate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos posIn, @NonNull HeightmapTile tile) {
         int tileX = posIn.x();
         int tileZ = posIn.z();
 
@@ -68,6 +68,5 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
                 tile.set(x, z, data);
             }
         }
-        return 0L;
     }
 }

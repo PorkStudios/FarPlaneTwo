@@ -18,14 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.server.worldchange;
+package net.daporkchop.fp2.server.worldlistener;
 
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.util.reference.ReferenceHandlerThread;
 import net.daporkchop.fp2.util.reference.WeakEqualityForwardingReference;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;
@@ -38,7 +37,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
- * Manages delegation of events to registered {@link IWorldChangeListener}s.
+ * Manages delegation of events to registered {@link IWorldListener}s.
  * <p>
  * This could also be implemented by having the listeners register themselves to {@link MinecraftForge#EVENT_BUS} to listen for the relevant events, but
  * because the events are fired to every listener for every world, the runtime per event would be {@code O(<global_number_of_listeners>)} instead of
@@ -48,7 +47,7 @@ import java.util.function.Predicate;
  */
 @UtilityClass
 public class WorldChangeListenerManager {
-    private final Map<World, Set<ListenerWrapper>> LISTENERS = new WeakHashMap<>();
+    private final Map<World, Set<ListenerWrapper>> ARENAS = new WeakHashMap<>();
 
     private final Function<World, Set<ListenerWrapper>> COMPUTE_ARENA_FUNCTION = world -> new CopyOnWriteArraySet<>();
 
@@ -56,10 +55,10 @@ public class WorldChangeListenerManager {
      * Adds a new listener for events in the given world.
      *
      * @param world    the {@link World} to listen for events in
-     * @param listener the {@link IWorldChangeListener} to add
+     * @param listener the {@link IWorldListener} to add
      */
-    public void add(@NonNull World world, @NonNull IWorldChangeListener listener) {
-        Set<ListenerWrapper> arena = LISTENERS.computeIfAbsent(world, COMPUTE_ARENA_FUNCTION);
+    public void add(@NonNull World world, @NonNull IWorldListener listener) {
+        Set<ListenerWrapper> arena = ARENAS.computeIfAbsent(world, COMPUTE_ARENA_FUNCTION);
         arena.add(new ListenerWrapper(listener, arena));
     }
 
@@ -67,54 +66,74 @@ public class WorldChangeListenerManager {
      * Removes a listener that was previously being notified for events in the given world.
      *
      * @param world    the {@link World} to remove the listener from
-     * @param listener the {@link IWorldChangeListener} to remove
+     * @param listener the {@link IWorldListener} to remove
      */
-    public void remove(@NonNull World world, @NonNull IWorldChangeListener listener) {
-        Set<ListenerWrapper> arena = LISTENERS.get(world);
+    public void remove(@NonNull World world, @NonNull IWorldListener listener) {
+        Set<ListenerWrapper> arena = ARENAS.get(world);
         if (arena != null) { //arena exists
             arena.removeIf(wrapper -> wrapper == listener);
         }
     }
 
     /**
-     * @see IWorldChangeListener#onColumnSave(Chunk, NBTTagCompound)
+     * @see IWorldListener#onColumnSaved(int, int)
      */
-    public void fireColumnSave(@NonNull Chunk column, @NonNull NBTTagCompound nbt) {
-        Set<ListenerWrapper> arena = LISTENERS.get(column.getWorld());
+    public void fireColumnSave(@NonNull Chunk column) {
+        Set<ListenerWrapper> arena = ARENAS.get(column.getWorld());
         if (arena != null) { //arena exists
+            int x = column.x;
+            int z = column.z;
             arena.forEach(wrapper -> {
-                IWorldChangeListener listener = wrapper.get();
+                IWorldListener listener = wrapper.get();
                 if (listener != null) { //listener wasn't garbage collected
-                    listener.onColumnSave(column, nbt);
+                    listener.onColumnSaved(x, z);
                 }
             });
         }
     }
 
     /**
-     * @see IWorldChangeListener#onCubeSave(ICube, NBTTagCompound)
+     * @see IWorldListener#onCubeSaved(int, int, int)
      */
-    public void fireCubeSave(@NonNull ICube cube, @NonNull NBTTagCompound nbt) {
-        Set<ListenerWrapper> arena = LISTENERS.get(cube.getWorld());
+    public void fireCubeSave(@NonNull ICube cube) {
+        Set<ListenerWrapper> arena = ARENAS.get(cube.getWorld());
         if (arena != null) { //arena exists
+            int x = cube.getX();
+            int y = cube.getY();
+            int z = cube.getZ();
             arena.forEach(wrapper -> {
-                IWorldChangeListener listener = wrapper.get();
+                IWorldListener listener = wrapper.get();
                 if (listener != null) { //listener wasn't garbage collected
-                    listener.onCubeSave(cube, nbt);
+                    listener.onCubeSaved(x, y, z);
                 }
             });
         }
     }
 
     /**
-     * Weak-referencing wrapper around an {@link IWorldChangeListener}.
+     * @see IWorldListener#onTickEnd()
+     */
+    public void fireTickEnd(@NonNull World world) {
+        Set<ListenerWrapper> arena = ARENAS.get(world);
+        if (arena != null) { //arena exists
+            arena.forEach(wrapper -> {
+                IWorldListener listener = wrapper.get();
+                if (listener != null) { //listener wasn't garbage collected
+                    listener.onTickEnd();
+                }
+            });
+        }
+    }
+
+    /**
+     * Weak-referencing wrapper around an {@link IWorldListener}.
      *
      * @author DaPorkchop_
      */
-    private static class ListenerWrapper extends WeakEqualityForwardingReference<IWorldChangeListener> implements Runnable, Predicate<ListenerWrapper> {
+    private static class ListenerWrapper extends WeakEqualityForwardingReference<IWorldListener> implements Runnable, Predicate<ListenerWrapper> {
         private final Set<ListenerWrapper> arena;
 
-        public ListenerWrapper(@NonNull IWorldChangeListener referent, @NonNull Set<ListenerWrapper> arena) {
+        public ListenerWrapper(@NonNull IWorldListener referent, @NonNull Set<ListenerWrapper> arena) {
             super(referent, ReferenceHandlerThread.queue());
 
             this.arena = arena;

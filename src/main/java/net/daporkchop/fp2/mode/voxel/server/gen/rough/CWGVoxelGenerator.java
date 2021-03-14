@@ -53,7 +53,7 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
     }
 
     @Override
-    public long generate(@NonNull VoxelPos pos, @NonNull VoxelTile tile) {
+    public void generate(@NonNull VoxelPos pos, @NonNull VoxelTile tile) {
         int level = pos.level();
         int baseX = pos.blockX();
         int baseY = pos.blockY();
@@ -72,8 +72,7 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
         }
         this.noise.get(densityMap[1], baseX + DMAP_MIN, baseY + DMAP_MIN, baseZ + DMAP_MIN, 1.0d, 1.0d, 1.0d, DMAP_SIZE, DMAP_SIZE, DMAP_SIZE);
 
-        return this.buildMesh(baseX, baseY, baseZ, level, tile, densityMap, null);*/
-        return 0L;
+        this.buildMesh(baseX, baseY, baseZ, level, tile, densityMap, null);*/
     }
 
     @Override

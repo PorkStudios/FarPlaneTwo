@@ -33,12 +33,11 @@ import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarStorage;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
-import net.daporkchop.fp2.mode.api.server.gen.ExactAsRoughGeneratorFallbackWrapper;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
-import net.daporkchop.fp2.server.worldchange.IWorldChangeListener;
-import net.daporkchop.fp2.server.worldchange.WorldChangeListenerManager;
+import net.daporkchop.fp2.server.worldlistener.IWorldListener;
+import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.threading.PriorityRecursiveExecutor;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.daporkchop.lib.common.misc.string.PStrings;
@@ -47,14 +46,12 @@ import net.daporkchop.lib.primitive.map.ObjLongMap;
 import net.daporkchop.lib.primitive.map.concurrent.ObjLongConcurrentHashMap;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.WorldServer;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -66,7 +63,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> implements IFarWorld<POS, T>, IWorldChangeListener {
+public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> implements IFarWorld<POS, T>, IWorldListener {
     protected final WorldServer world;
     protected final IFarRenderMode<POS, T> mode;
     protected final File root;
@@ -91,11 +88,13 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
     //contains positions of all tiles that are going to be updated with the exact generator
     protected final ObjLongMap<POS> exactActive = new ObjLongConcurrentHashMap<>(-1L);
 
+    protected List<POS> pendingScheduledUpdates = new ArrayList<>();
+
     protected final PriorityRecursiveExecutor<PriorityTask<POS>> executor; //TODO: make these global rather than per-dimension
 
     protected final boolean lowResolution;
 
-    protected long currentTick = -1L;
+    protected long currentTime = -1L;
 
     public AbstractFarWorld(@NonNull WorldServer world, @NonNull IFarRenderMode<POS, T> mode) {
         this.world = world;
@@ -106,7 +105,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
         if (generatorRough == null) {
             LOGGER.warn("No rough generator exists for world {} (type: {})! Falling back to exact generator, this will have serious performance implications.", world.provider.getDimension(), world.getWorldType());
-            generatorRough = new ExactAsRoughGeneratorFallbackWrapper<>(this.blockAccess(), generatorExact);
             //TODO: make the fallback generator smart! rather than simply getting the chunks from the world, do generation and population in
             // a volatile, in-memory world clone to prevent huge numbers of chunks/cubes from potentially being generated (and therefore saved)
         }
@@ -182,7 +180,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.saveTile(tile);
 
         if (allowScale && tile.pos().level() < FP2Config.maxLevels - 1) {
-            this.scheduleUpdate(this.scaler.outputs(tile.pos()));
+            this.scheduleForUpdateImmediate(this.scaler.outputs(tile.pos()));
         }
     }
 
@@ -194,13 +192,35 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         return pos.level() == 0 || this.lowResolution;
     }
 
-    protected void scheduleUpdate(@NonNull Stream<POS> positions) {
-        long newTimestamp = this.world.getTotalWorldTime();
+    protected void scheduleForUpdateImmediate(@NonNull Stream<POS> positions) {
+        long newTimestamp = this.currentTime;
         positions.forEach(pos -> {
             if (this.exactActive.put(pos, newTimestamp) < 0L) { //position wasn't previously queued for update
                 this.executor.submit(new PriorityTask<>(TaskStage.UPDATE, pos));
             }
         });
+    }
+
+    protected void scheduleForUpdate(@NonNull POS... positions) {
+        this.pendingScheduledUpdates.addAll(Arrays.asList(positions));
+    }
+
+    protected void submitPendingUpdates() {
+        if (!this.pendingScheduledUpdates.isEmpty()) {
+            this.scheduleForUpdateImmediate(this.pendingScheduledUpdates.stream());
+            this.pendingScheduledUpdates = new ArrayList<>(); //replace with empty ArrayList again to avoid keeping useless large array in memory
+        }
+    }
+
+    @Override
+    public void onTickEnd() {
+        this.currentTime = this.world.getTotalWorldTime();
+
+        //submit all pending updates to the real update queue
+        //we need to defer this to the tick end, as onColumnSave/onCubeSave are fired BEFORE the nbt data is actually submitted to the anvil
+        // i/o queue, so if we queued it immediately there'd be no guarantee that the new data would be available by the time the task is picked up
+        // by a generation worker
+        this.submitPendingUpdates();
     }
 
     @Override
@@ -221,6 +241,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
     @SneakyThrows(IOException.class)
     public void close() {
         WorldChangeListenerManager.remove(this.world, this);
+        this.onTickEnd();
 
         LOGGER.trace("Shutting down generation workers in DIM{}", this.world.provider.getDimension());
         this.executor.shutdown();

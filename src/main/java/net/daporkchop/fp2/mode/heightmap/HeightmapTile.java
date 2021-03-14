@@ -129,4 +129,9 @@ public class HeightmapTile implements IFarTile {
         }
         return false; //the heightmap renderer has no concept of an "empty" tile
     }
+
+    @Override
+    public long extra() {
+        return 0L; //heightmap renderer doesn't use the extra data field
+    }
 }

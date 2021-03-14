@@ -44,11 +44,10 @@ public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> ext
     /**
      * Generates a rough estimate of the terrain in the given tile.
      *
-     * @param pos   the position of the tile to generate
+     * @param pos  the position of the tile to generate
      * @param tile the tile to generate
-     * @return the extra data to be saved with the tile
      */
-    long generate(@NonNull POS pos, @NonNull T tile);
+    void generate(@NonNull POS pos, @NonNull T tile);
 
     /**
      * Factory method for creating instances of {@link IFarGeneratorRough}.

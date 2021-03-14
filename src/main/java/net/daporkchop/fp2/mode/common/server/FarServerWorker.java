@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -113,9 +114,17 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
                 return compressedTile;
             }
 
-            //generate tile
-            long extra = this.world.generatorRough().generate(pos, tile);
-            if (compressedTile.set(Compressed.TIMESTAMP_GENERATED, tile, extra)) { //only notify world if the tile was changed
+            long newTimestamp;
+            IFarGeneratorRough generatorRough = this.world.generatorRough();
+            if (generatorRough != null) { //generate tile using rough generator
+                newTimestamp = Compressed.TIMESTAMP_GENERATED;
+                generatorRough.generate(pos, tile);
+            } else { //there is no rough generator - we'll have to fall back to using the exact generator
+                newTimestamp = this.world.currentTime;
+                this.doExactPrefetchAndGenerate(pos, tile);
+            }
+
+            if (compressedTile.set(newTimestamp, tile, tile.extra())) { //only notify world if the tile was changed
                 this.world.tileChanged(compressedTile, false);
             }
         } finally {
@@ -173,26 +182,31 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
                 return;
             }
 
-            //prefetch terrain
-            IBlockHeightAccess access = null;
-            try {
-                access = this.world.blockAccess().prefetchAsync(this.world.generatorExact().neededColumns(pos),
-                        world -> this.world.generatorExact().neededCubes(world, pos))
-                        .sync().getNow();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                PUnsafe.throwException(e);
-            }
+            this.doExactPrefetchAndGenerate(pos, tile);
 
-            //generate tile
-            long extra = this.world.generatorExact().generate(access, pos, tile);
-            if (compressedTile.set(newTimestamp, tile, extra)) { //only notify world if the tile was changed
+            if (compressedTile.set(newTimestamp, tile, tile.extra())) { //only notify world if the tile was changed
                 this.world.tileChanged(compressedTile, true);
             }
         } finally {
             compressedTile.writeLock().unlock();
             tileRecycler.release(tile);
         }
+    }
+
+    protected void doExactPrefetchAndGenerate(POS pos, T tile) {
+        //prefetch terrain
+        IBlockHeightAccess access = null;
+        try {
+            access = this.world.blockAccess().prefetchAsync(this.world.generatorExact().neededColumns(pos),
+                    world -> this.world.generatorExact().neededCubes(world, pos))
+                    .sync().getNow();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            PUnsafe.throwException(e);
+        }
+
+        //generate tile
+        this.world.generatorExact().generate(access, pos, tile);
     }
 
     public void updateTileScale(PriorityTask<POS> root, POS pos, Compressed<POS, T> compressedTile, long newTimestamp) {

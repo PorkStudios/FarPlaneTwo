@@ -21,9 +21,9 @@
 package net.daporkchop.fp2.mode.api.server.gen;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.WorldServer;
@@ -65,10 +65,9 @@ public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> ext
      *
      * @param world the {@link IBlockHeightAccess} providing access to block/height data in the world
      * @param pos   the position of the tile to generate
-     * @param tile the tile to generate
-     * @return the extra data to be saved with the tile
+     * @param tile  the tile to generate
      */
-    long generate(@NonNull IBlockHeightAccess world, @NonNull POS pos, @NonNull T tile);
+    void generate(@NonNull IBlockHeightAccess world, @NonNull POS pos, @NonNull T tile);
 
     /**
      * Factory method for creating instances of {@link IFarGeneratorExact}.

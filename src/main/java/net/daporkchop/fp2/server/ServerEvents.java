@@ -25,7 +25,7 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.net.server.SPacketReady;
-import net.daporkchop.fp2.server.worldchange.WorldChangeListenerManager;
+import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -103,6 +103,8 @@ public class ServerEvents {
     @SubscribeEvent
     public void onWorldTick(TickEvent.WorldTickEvent event) {
         if (!event.world.isRemote && event.phase == TickEvent.Phase.END) {
+            WorldChangeListenerManager.fireTickEnd(event.world);
+
             long time = event.world.getTotalWorldTime();
             if (time % 20L == 0L) {
                 event.world.playerEntities.forEach(player -> {
@@ -117,7 +119,7 @@ public class ServerEvents {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onChunkDataSave(ChunkDataEvent.Save event) {
-        WorldChangeListenerManager.fireColumnSave(event.getChunk(), event.getData());
+        WorldChangeListenerManager.fireColumnSave(event.getChunk());
     }
 
     /**
@@ -129,7 +131,7 @@ public class ServerEvents {
     public static class _CC {
         @SubscribeEvent(priority = EventPriority.LOWEST)
         public void onCubeDataSave(CubeDataEvent.Save event) {
-            WorldChangeListenerManager.fireCubeSave(event.getCube(), event.getData());
+            WorldChangeListenerManager.fireCubeSave(event.getCube());
         }
     }
 }

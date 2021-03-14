@@ -18,32 +18,39 @@
  *
  */
 
-package net.daporkchop.fp2.server.worldchange;
+package net.daporkchop.fp2.server.worldlistener;
 
-import io.github.opencubicchunks.cubicchunks.api.world.ICube;
+import io.github.opencubicchunks.cubicchunks.api.util.CubePos;
 import lombok.NonNull;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.world.chunk.Chunk;
+import net.minecraft.util.math.ChunkPos;
+
+import java.util.stream.Stream;
 
 /**
- * Listens for (chunks/)columns/cubes being saved in a world.
+ * Listens for events in a world.
  *
  * @author DaPorkchop_
  */
-public interface IWorldChangeListener {
+public interface IWorldListener {
     /**
-     * Fired when a column is being saved.
+     * Fired immediately before a column is saved.
      *
-     * @param column the column being saved
-     * @param nbt    the nbt data that will be saved
+     * @param columnX the column's X coordinate
+     * @param columnZ the column's Z coordinate
      */
-    void onColumnSave(@NonNull Chunk column, @NonNull NBTTagCompound nbt);
+    void onColumnSaved(int columnX, int columnZ);
 
     /**
-     * Fired when a cube is being saved.
+     * Fired after a batch of cubes are saved.
      *
-     * @param cube the cube being saved
-     * @param nbt  the nbt data that will be saved
+     * @param cubeX the cube's X coordinate
+     * @param cubeY the cube's Y coordinate
+     * @param cubeZ the cube's Z coordinate
      */
-    void onCubeSave(@NonNull ICube cube, @NonNull NBTTagCompound nbt);
+    void onCubeSaved(int cubeX, int cubeY, int cubeZ);
+
+    /**
+     * Fired after a world tick is completed.
+     */
+    void onTickEnd();
 }

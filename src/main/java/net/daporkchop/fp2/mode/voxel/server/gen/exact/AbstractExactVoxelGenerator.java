@@ -40,7 +40,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  */
 public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator implements IFarGeneratorExact<VoxelPos, VoxelTile> {
     @Override
-    public long generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelTile tile) {
+    public void generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelTile tile) {
         final int baseX = posIn.blockX();
         final int baseY = posIn.blockY();
         final int baseZ = posIn.blockZ();
@@ -127,6 +127,6 @@ public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator i
         }
 
         //TODO: compute neighbor connections
-        return 0L;
+        tile.extra(0L);
     }
 }

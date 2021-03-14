@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.voxel;
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -103,6 +104,9 @@ public class VoxelTile implements IFarTile {
 
     protected int count = -1; //the number of voxels in the tile that are set
 
+    @Setter
+    protected long extra = 0L;
+
     public VoxelTile() {
         this.reset();
     }
@@ -160,6 +164,8 @@ public class VoxelTile implements IFarTile {
 
     @Override
     public void reset() {
+        this.extra = 0L;
+
         if (this.count != 0) {
             this.count = 0;
             PUnsafe.setMemory(this.addr, VoxelTile.INDEX_SIZE, (byte) 0xFF); //fill index with -1
