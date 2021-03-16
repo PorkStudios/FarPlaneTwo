@@ -44,9 +44,9 @@ import java.util.stream.Stream;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public abstract class AbstractPrefetchedAsyncBlockAccess implements AsyncBlockAccess {
+public abstract class AbstractPrefetchedAsyncBlockAccess<P extends AsyncBlockAccess> implements AsyncBlockAccess {
     @NonNull
-    protected final AsyncBlockAccess parent;
+    protected final P parent;
     @NonNull
     protected final WorldServer world;
 

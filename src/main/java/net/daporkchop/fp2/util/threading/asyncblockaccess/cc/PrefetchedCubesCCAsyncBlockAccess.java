@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -49,7 +49,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class PrefetchedCubesCCAsyncBlockAccess extends PrefetchedColumnsCCAsyncBlockAccess {
     protected final XYZMap<ICube> cubes = new XYZMap<>(0.75f, 16);
 
-    public PrefetchedCubesCCAsyncBlockAccess(AsyncBlockAccess parent, WorldServer world, Stream<IColumn> columns, Stream<ICube> cubes) {
+    public PrefetchedCubesCCAsyncBlockAccess(CCAsyncBlockAccessImpl parent, WorldServer world, Stream<IColumn> columns, Stream<ICube> cubes) {
         super(parent, world, columns);
 
         cubes.forEach(cube -> {

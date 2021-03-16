@@ -2,6 +2,8 @@
 
 [![Build Status](https://jenkins.daporkchop.net/job/PorkStudios/job/FarPlaneTwo/job/master/badge/icon)](https://jenkins.daporkchop.net/job/PorkStudios/job/FarPlaneTwo/)
 [![Discord](https://img.shields.io/discord/428813657816956929.svg)](https://discord.gg/FrBHHCk)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/PorkStudios/FarPlaneTwo)
+![Lines of code](https://img.shields.io/tokei/lines/github/PorkStudios/FarPlaneTwo)
 
 [Download here](https://jenkins.daporkchop.net/job/PorkStudios/job/FarPlaneTwo/job/master/)
 

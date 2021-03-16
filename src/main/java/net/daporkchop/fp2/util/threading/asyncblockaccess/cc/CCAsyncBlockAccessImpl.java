@@ -23,22 +23,28 @@ package net.daporkchop.fp2.util.threading.asyncblockaccess.cc;
 import io.github.opencubicchunks.cubicchunks.api.util.CubePos;
 import io.github.opencubicchunks.cubicchunks.api.world.IColumn;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
-import io.github.opencubicchunks.cubicchunks.api.world.ICubeProviderServer;
-import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
+import io.github.opencubicchunks.cubicchunks.core.asm.mixin.ICubicWorldInternal;
+import io.github.opencubicchunks.cubicchunks.core.server.chunkio.ICubeIO;
+import io.github.opencubicchunks.cubicchunks.core.world.ICubeProviderInternal;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import lombok.NonNull;
-import net.daporkchop.fp2.util.Constants;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
-import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
+import net.daporkchop.fp2.server.GlobalNBTWriteCache;
+import net.daporkchop.fp2.util.reference.WeakLongKeySelfRemovingReference;
+import net.daporkchop.fp2.util.reference.WeakSelfRemovingReference;
+import net.daporkchop.fp2.util.threading.LazyRunnablePFuture;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.concurrent.PFuture;
 import net.daporkchop.lib.concurrent.PFutures;
+import net.daporkchop.lib.primitive.lambda.LongObjObjFunction;
 import net.daporkchop.lib.primitive.map.LongObjMap;
 import net.daporkchop.lib.primitive.map.concurrent.LongObjConcurrentHashMap;
 import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
@@ -46,11 +52,13 @@ import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.chunk.Chunk;
 
+import java.lang.ref.Reference;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.LongFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -61,87 +69,172 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  *
  * @author DaPorkchop_
  */
-//this makes the assumption that asynchronous read-only access to Chunk is safe, which seems to be the case although i'm not entirely sure. testing needed
 public class CCAsyncBlockAccessImpl implements AsyncBlockAccess {
     protected final WorldServer world;
+    protected final ICubeIO io;
 
     protected final LongObjMap<Object> cache2d = new LongObjConcurrentHashMap<>();
-    protected final LongFunction<PFuture<IColumn>> cacheMiss2d;
-
     protected final Map<CubePos, Object> cache3d = new ObjObjConcurrentHashMap<>();
-    protected final Function<CubePos, PFuture<ICube>> cacheMiss3d;
 
     public CCAsyncBlockAccessImpl(@NonNull WorldServer world) {
         this.world = world;
-
-        this.cacheMiss2d = l -> {
-            PFuture<IColumn> future = PFutures.computeAsync(
-                    () -> (IColumn) this.world.getChunk(BinMath.unpackX(l), BinMath.unpackY(l)),
-                    ServerThreadExecutor.INSTANCE);
-            future.thenAccept(column -> this.cache2d.replace(l, future, column)); //replace future with chunk instance in cache, to avoid indirection
-            future.thenAccept(column -> Constants.LOGGER.info("loaded column ({},{}}) into cache", column.getX(), column.getZ()));
-            return future;
-        };
-
-        this.cacheMiss3d = pos -> {
-            PFuture<ICube> future = PFutures.computeAsync(
-                    () -> ((ICubeProviderServer) ((ICubicWorld) this.world).getCubeCache()).getCube(pos.getX(), pos.getY(), pos.getZ(), ICubeProviderServer.Requirement.LIGHT),
-                    ServerThreadExecutor.INSTANCE);
-            future.thenAcceptAsync(cube -> this.cache3d.replace(pos, future, cube));
-            return future;
-        };
-    }
-
-    protected Object fetchColumn(int chunkX, int chunkZ) {
-        return this.cache2d.computeIfAbsent(BinMath.packXY(chunkX, chunkZ), this.cacheMiss2d);
+        this.io = ((ICubeProviderInternal.Server) ((ICubicWorldInternal) world).getCubeCache()).getCubeIO();
     }
 
     protected IColumn getColumn(int chunkX, int chunkZ) {
-        Object o = this.fetchColumn(chunkX, chunkZ);
-        if (o instanceof IColumn) {
-            return (IColumn) o;
-        } else if (o instanceof PFuture) {
-            return PorkUtil.<PFuture<IColumn>>uncheckedCast(o).join();
-        } else {
-            throw new RuntimeException(Objects.toString(o));
+        class State implements LongObjObjFunction<Object, Object> {
+            Object column;
+
+            @Override
+            public Object apply(long pos, Object column) {
+                if (column instanceof Reference) {
+                    this.column = PorkUtil.<Reference<IColumn>>uncheckedCast(column).get();
+                } else if (column instanceof LazyRunnablePFuture) {
+                    this.column = column;
+                }
+
+                if (this.column != null) { //column object or future was obtained successfully, keep existing value in cache
+                    return column;
+                } else { //column isn't loaded or was garbage collected, we need to load it anew
+                    return this.column = new ColumnLoadingLazyFuture(pos);
+                }
+            }
+
+            public IColumn resolve() {
+                if (this.column instanceof IColumn) {
+                    return (IColumn) this.column;
+                } else if (this.column instanceof LazyRunnablePFuture) {
+                    LazyRunnablePFuture<IColumn> future = uncheckedCast(this.column);
+                    future.run();
+                    return future.join();
+                }
+
+                throw new IllegalStateException(Objects.toString(this.column));
+            }
         }
+
+        State state = new State();
+        this.cache2d.compute(BinMath.packXY(chunkX, chunkZ), state);
+        return state.resolve();
     }
 
     protected PFuture<IColumn> getColumnFuture(int chunkX, int chunkZ) {
-        Object o = this.fetchColumn(chunkX, chunkZ);
-        if (o instanceof IColumn) {
-            return PFutures.successful((IColumn) o, ImmediateEventExecutor.INSTANCE);
-        } else if (o instanceof PFuture) {
-            return uncheckedCast(o);
-        } else {
-            throw new RuntimeException(Objects.toString(o));
+        class State implements LongObjObjFunction<Object, Object> {
+            Object column;
+
+            @Override
+            public Object apply(long pos, Object column) {
+                if (column instanceof Reference) {
+                    this.column = PorkUtil.<Reference<IColumn>>uncheckedCast(column).get();
+                } else if (column instanceof LazyRunnablePFuture) {
+                    this.column = column;
+                }
+
+                if (this.column != null) { //column object or future was obtained successfully, keep existing value in cache
+                    return column;
+                } else { //column isn't loaded or was garbage collected, we need to load it anew
+                    return this.column = new ColumnLoadingLazyFuture(pos);
+                }
+            }
+
+            public PFuture<IColumn> resolve() {
+                if (this.column instanceof IColumn) {
+                    return PFutures.successful((IColumn) this.column, ImmediateEventExecutor.INSTANCE);
+                } else if (this.column instanceof LazyRunnablePFuture) {
+                    LazyRunnablePFuture<IColumn> future = uncheckedCast(this.column);
+                    future.run();
+                    return future;
+                }
+
+                throw new IllegalStateException(Objects.toString(this.column));
+            }
         }
+
+        State state = new State();
+        this.cache2d.compute(BinMath.packXY(chunkX, chunkZ), state);
+        return state.resolve();
     }
 
-    protected Object fetchCube(int chunkX, int cubeY, int chunkZ) {
-        return this.cache3d.computeIfAbsent(new CubePos(chunkX, cubeY, chunkZ), this.cacheMiss3d);
+    protected ICube getCube(int cubeX, int cubeY, int cubeZ) {
+        class State extends CubePos implements BiFunction<CubePos, Object, Object> {
+            Object cube;
+
+            public State(int cubeX, int cubeY, int cubeZ) {
+                super(cubeX, cubeY, cubeZ);
+            }
+
+            @Override
+            public Object apply(CubePos pos, Object cube) {
+                if (cube instanceof Reference) {
+                    this.cube = PorkUtil.<Reference<ICube>>uncheckedCast(cube).get();
+                } else if (cube instanceof LazyRunnablePFuture) {
+                    this.cube = cube;
+                }
+
+                if (this.cube != null) { //cube object or future was obtained successfully, keep existing value in cache
+                    return cube;
+                } else { //cube isn't loaded or was garbage collected, we need to load it anew
+                    return this.cube = new CubeLoadingLazyFuture(pos);
+                }
+            }
+
+            public ICube resolve() {
+                if (this.cube instanceof ICube) {
+                    return (ICube) this.cube;
+                } else if (this.cube instanceof LazyRunnablePFuture) {
+                    LazyRunnablePFuture<ICube> future = uncheckedCast(this.cube);
+                    future.run();
+                    return future.join();
+                }
+
+                throw new IllegalStateException(Objects.toString(this.cube));
+            }
+        }
+
+        State state = new State(cubeX, cubeY, cubeZ);
+        this.cache3d.compute(state, state);
+        return state.resolve();
     }
 
-    protected ICube getCube(int chunkX, int cubeY, int chunkZ) {
-        Object o = this.fetchCube(chunkX, cubeY, chunkZ);
-        if (o instanceof ICube) {
-            return (ICube) o;
-        } else if (o instanceof PFuture) {
-            return PorkUtil.<PFuture<ICube>>uncheckedCast(o).join();
-        } else {
-            throw new RuntimeException(Objects.toString(o));
-        }
-    }
+    protected PFuture<ICube> getCubeFuture(int cubeX, int cubeY, int cubeZ) {
+        class State extends CubePos implements BiFunction<CubePos, Object, Object> {
+            Object cube;
 
-    protected PFuture<ICube> getCubeFuture(int chunkX, int cubeY, int chunkZ) {
-        Object o = this.fetchCube(chunkX, cubeY, chunkZ);
-        if (o instanceof ICube) {
-            return PFutures.successful((ICube) o, ImmediateEventExecutor.INSTANCE);
-        } else if (o instanceof PFuture) {
-            return uncheckedCast(o);
-        } else {
-            throw new RuntimeException(Objects.toString(o));
+            public State(int cubeX, int cubeY, int cubeZ) {
+                super(cubeX, cubeY, cubeZ);
+            }
+
+            @Override
+            public Object apply(CubePos pos, Object cube) {
+                if (cube instanceof Reference) {
+                    this.cube = PorkUtil.<Reference<ICube>>uncheckedCast(cube).get();
+                } else if (cube instanceof LazyRunnablePFuture) {
+                    this.cube = cube;
+                }
+
+                if (this.cube != null) { //cube object or future was obtained successfully, keep existing value in cache
+                    return cube;
+                } else { //cube isn't loaded or was garbage collected, we need to load it anew
+                    return this.cube = new CubeLoadingLazyFuture(pos);
+                }
+            }
+
+            public PFuture<ICube> resolve() {
+                if (this.cube instanceof ICube) {
+                    return PFutures.successful((ICube) this.cube, ImmediateEventExecutor.INSTANCE);
+                } else if (this.cube instanceof LazyRunnablePFuture) {
+                    LazyRunnablePFuture<ICube> future = uncheckedCast(this.cube);
+                    future.run();
+                    return future;
+                }
+
+                throw new IllegalStateException(Objects.toString(this.cube));
+            }
         }
+
+        State state = new State(cubeX, cubeY, cubeZ);
+        this.cache3d.compute(state, state);
+        return state.resolve();
     }
 
     @Override
@@ -204,5 +297,73 @@ public class CCAsyncBlockAccessImpl implements AsyncBlockAccess {
     @Override
     public WorldType getWorldType() {
         return this.world.getWorldType();
+    }
+
+    /**
+     * Lazily loads columns.
+     *
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    protected class ColumnLoadingLazyFuture extends LazyRunnablePFuture<IColumn> {
+        protected final long pos;
+
+        @Override
+        protected IColumn run0() throws Exception {
+            NBTTagCompound nbt = GlobalNBTWriteCache.INSTANCE.getColumnData(CCAsyncBlockAccessImpl.this.world, BinMath.unpackX(this.pos), BinMath.unpackY(this.pos));
+
+            ICubeIO.PartialData<Chunk> data;
+            if (nbt == null) { //not in write cache, load it from disk
+                data = CCAsyncBlockAccessImpl.this.io.loadColumnNbt(BinMath.unpackX(this.pos), BinMath.unpackY(this.pos));
+            } else { //re-use cached nbt
+                data = new ICubeIO.PartialData<>(null, nbt);
+            }
+
+            CCAsyncBlockAccessImpl.this.io.loadColumnAsyncPart(data, BinMath.unpackX(this.pos), BinMath.unpackY(this.pos));
+            return (IColumn) data.getObject();
+        }
+
+        @Override
+        protected void postRun() {
+            //swap out self in cache with a weak reference to self
+            CCAsyncBlockAccessImpl.this.cache2d.replace(this.pos, this, new WeakLongKeySelfRemovingReference<>(this.getNow(), this.pos, CCAsyncBlockAccessImpl.this.cache2d));
+        }
+    }
+
+    /**
+     * Lazily loads cubes.
+     *
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    protected class CubeLoadingLazyFuture extends LazyRunnablePFuture<ICube> {
+        @NonNull
+        protected final CubePos pos;
+
+        @Override
+        protected ICube run0() throws Exception {
+            Chunk column = (Chunk) CCAsyncBlockAccessImpl.this.getColumn(this.pos.getX(), this.pos.getZ());
+            if (column == null) { //a cube cannot exist without a column, so we assume that the cube is non-existent as well
+                return null;
+            }
+
+            NBTTagCompound nbt = GlobalNBTWriteCache.INSTANCE.getCubeData(CCAsyncBlockAccessImpl.this.world, this.pos.getX(), this.pos.getY(), this.pos.getZ());
+
+            ICubeIO.PartialData<ICube> data;
+            if (nbt == null) { //not in write cache, load it from disk
+                data = CCAsyncBlockAccessImpl.this.io.loadCubeNbt(column, this.pos.getY());
+            } else { //re-use cached nbt
+                data = new ICubeIO.PartialData<>(null, nbt);
+            }
+
+            CCAsyncBlockAccessImpl.this.io.loadCubeAsyncPart(data, column, this.pos.getY());
+            return data.getObject();
+        }
+
+        @Override
+        protected void postRun() {
+            //swap out self in cache with a weak reference to self
+            CCAsyncBlockAccessImpl.this.cache3d.replace(this.pos, this, new WeakSelfRemovingReference<>(this.getNow(), this.pos, CCAsyncBlockAccessImpl.this.cache3d));
+        }
     }
 }

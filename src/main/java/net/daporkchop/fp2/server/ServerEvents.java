@@ -119,7 +119,7 @@ public class ServerEvents {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onChunkDataSave(ChunkDataEvent.Save event) {
-        WorldChangeListenerManager.fireColumnSave(event.getChunk());
+        WorldChangeListenerManager.fireColumnSave(event.getChunk(), event.getData());
     }
 
     /**
@@ -131,7 +131,7 @@ public class ServerEvents {
     public static class _CC {
         @SubscribeEvent(priority = EventPriority.LOWEST)
         public void onCubeDataSave(CubeDataEvent.Save event) {
-            WorldChangeListenerManager.fireCubeSave(event.getCube());
+            WorldChangeListenerManager.fireCubeSave(event.getCube(), event.getData());
         }
     }
 }

@@ -18,45 +18,44 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.server;
+package net.daporkchop.fp2.server.worldlistener;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
-import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
-import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
-import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
-import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.server.scale.HeightmapScalerMinMax;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
 
 /**
+ * Listens for events in a world.
+ *
  * @author DaPorkchop_
  */
-public class HeightmapWorld extends AbstractFarWorld<HeightmapPos, HeightmapTile> {
-    public HeightmapWorld(@NonNull WorldServer world, @NonNull HeightmapRenderMode mode) {
-        super(world, mode);
-    }
+public interface IWorldChangeListener {
+    /**
+     * Fired immediately before a column is saved.
+     *
+     * @param world   the world that the column is in
+     * @param columnX the column's X coordinate
+     * @param columnZ the column's Z coordinate
+     * @param nbt     the column's NBT data
+     */
+    void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt);
 
-    @Override
-    protected IFarScaler<HeightmapPos, HeightmapTile> createScaler() {
-        return new HeightmapScalerMinMax();
-    }
+    /**
+     * Fired immediately before a cube is saved.
+     *
+     * @param world the world that the cube is in
+     * @param cubeX the cube's X coordinate
+     * @param cubeY the cube's Y coordinate
+     * @param cubeZ the cube's Z coordinate
+     * @param nbt   the cube's NBT data
+     */
+    void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt);
 
-    @Override
-    protected IFarPlayerTracker<HeightmapPos> createTracker() {
-        return new HeightmapPlayerTracker(this);
-    }
-
-    @Override
-    public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt) {
-        throw new UnsupportedOperationException();
+    /**
+     * Fired after a world tick is completed.
+     */
+    @Deprecated
+    default void onTickEnd() {
+        //no-op
     }
 }

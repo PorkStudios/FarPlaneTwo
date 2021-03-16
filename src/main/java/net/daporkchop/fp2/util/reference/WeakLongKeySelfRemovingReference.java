@@ -18,39 +18,32 @@
  *
  */
 
-package net.daporkchop.fp2.server.worldlistener;
+package net.daporkchop.fp2.util.reference;
 
-import io.github.opencubicchunks.cubicchunks.api.util.CubePos;
 import lombok.NonNull;
-import net.minecraft.util.math.ChunkPos;
+import net.daporkchop.lib.primitive.map.LongObjMap;
 
-import java.util.stream.Stream;
+import java.lang.ref.WeakReference;
 
 /**
- * Listens for events in a world.
+ * A {@link WeakReference} which removes itself (using a fixed key) from a {@link LongObjMap} when its reference is garbage collected.
  *
  * @author DaPorkchop_
  */
-public interface IWorldListener {
-    /**
-     * Fired immediately before a column is saved.
-     *
-     * @param columnX the column's X coordinate
-     * @param columnZ the column's Z coordinate
-     */
-    void onColumnSaved(int columnX, int columnZ);
+public class WeakLongKeySelfRemovingReference<T> extends WeakReference<T> implements Runnable {
+    protected final LongObjMap<?> map;
+    protected final long key;
 
-    /**
-     * Fired after a batch of cubes are saved.
-     *
-     * @param cubeX the cube's X coordinate
-     * @param cubeY the cube's Y coordinate
-     * @param cubeZ the cube's Z coordinate
-     */
-    void onCubeSaved(int cubeX, int cubeY, int cubeZ);
+    public WeakLongKeySelfRemovingReference(@NonNull T referent, long key, @NonNull LongObjMap<?> map) {
+        super(referent, ReferenceHandlerThread.queue());
 
-    /**
-     * Fired after a world tick is completed.
-     */
-    void onTickEnd();
+        this.map = map;
+        this.key = key;
+    }
+
+    @Override
+    public void run() {
+        //remove self from map
+        this.map.remove(this.key, this);
+    }
 }

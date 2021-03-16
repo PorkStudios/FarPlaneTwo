@@ -28,6 +28,8 @@ import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerIntersection;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 
 /**
@@ -57,7 +59,7 @@ public abstract class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelTile> {
         }
 
         @Override
-        public void onColumnSaved(int columnX, int columnZ) {
+        public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
             //schedule entire column to be updated
             int height = this.world.getHeight() >> 4;
             VoxelPos[] positions = new VoxelPos[height];
@@ -68,7 +70,7 @@ public abstract class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelTile> {
         }
 
         @Override
-        public void onCubeSaved(int cubeX, int cubeY, int cubeZ) {
+        public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt) {
             throw new UnsupportedOperationException();
         }
     }
@@ -82,12 +84,12 @@ public abstract class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelTile> {
         }
 
         @Override
-        public void onColumnSaved(int columnX, int columnZ) {
+        public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
             //no-op
         }
 
         @Override
-        public void onCubeSaved(int cubeX, int cubeY, int cubeZ) {
+        public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt) {
             this.scheduleForUpdate(new VoxelPos(cubeX, cubeY, cubeZ, 0));
         }
     }
