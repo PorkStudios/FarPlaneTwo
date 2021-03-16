@@ -18,43 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.server.worldlistener;
+package net.daporkchop.fp2.compat.cc;
 
 import lombok.NonNull;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.world.World;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.compat.vanilla.IBiomeAccess;
+import net.minecraft.init.Biomes;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.biome.Biome;
 
 /**
- * Listens for events in a world.
+ * Wraps a column into a 2D-only {@link IBiomeAccess}.
  *
  * @author DaPorkchop_
  */
-public interface IWorldChangeListener {
-    /**
-     * Fired immediately before a column is saved.
-     *
-     * @param world   the world that the column is in
-     * @param columnX the column's X coordinate
-     * @param columnZ the column's Z coordinate
-     * @param nbt     the column's NBT data
-     */
-    void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt);
+@RequiredArgsConstructor
+public class Column2dBiomeAccessWrapper implements IBiomeAccess {
+    @NonNull
+    protected final byte[] biomeArray;
 
-    /**
-     * Fired immediately before a cube is saved.
-     *
-     * @param world the world that the cube is in
-     * @param cubeX the cube's X coordinate
-     * @param cubeY the cube's Y coordinate
-     * @param cubeZ the cube's Z coordinate
-     * @param nbt   the cube's NBT data
-     */
-    void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt);
-
-    /**
-     * Fired after a world tick is completed.
-     */
-    default void onTickEnd() {
-        //no-op
+    @Override
+    public Biome getBiome(@NonNull BlockPos pos) {
+        return Biome.getBiome(this.biomeArray[(pos.getX() & 0xF) << 4 | (pos.getZ() & 0xF)] & 0xFF, Biomes.PLAINS);
     }
 }

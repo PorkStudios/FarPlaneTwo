@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Implementation of {@link AsyncBlockAccess} returned by {@link VanillaAsyncBlockAccessImpl#prefetchAsync(Stream)}.
+ * Implementation of {@link AsyncBlockAccess} returned by {@link AsyncBlockAccess#prefetch(Stream)}.
  *
  * @author DaPorkchop_
  */

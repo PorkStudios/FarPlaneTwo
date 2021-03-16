@@ -23,6 +23,7 @@ package net.daporkchop.fp2.client;
 import io.github.opencubicchunks.cubicchunks.core.CubicChunksConfig;
 import io.github.opencubicchunks.cubicchunks.core.client.CubeProviderClient;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.config.FP2Config;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ChunkProviderClient;
 import net.minecraft.client.renderer.GlStateManager;
@@ -32,6 +33,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -67,6 +69,10 @@ public class ClientConstants {
      * @return whether the chunk section at the given chunk coordinates can be rendered by vanilla
      */
     public boolean isVanillaRenderable(int x, int y, int z) {
+        if (FP2_DEBUG && FP2Config.debug.skipRenderWorld) {
+            return false;
+        }
+
         if (!CURRENT_RENDER_BB.intersects(x << 4, y << 4, z << 4, (x + 1) << 4, (y + 1) << 4, (z + 1) << 4)) {
             return false;
         }

@@ -48,7 +48,7 @@ public interface AsyncBlockAccess extends IBlockHeightAccess {
      * @param columns a {@link Stream} containing the positions of all the columns to get
      * @return a single {@link IBlockHeightAccess} covering all of the given columns
      */
-    PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> columns);
+    IBlockHeightAccess prefetch(@NonNull Stream<ChunkPos> columns);
 
     /**
      * Asynchronously prefetches the columns and cubes at the given positions into a single {@link IBlockHeightAccess}.
@@ -62,7 +62,7 @@ public interface AsyncBlockAccess extends IBlockHeightAccess {
      *                             may choose to ignore this parameter.
      * @return a single {@link IBlockHeightAccess} covering all of the given columns and cubes
      */
-    PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction);
+    IBlockHeightAccess prefetch(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction);
 
     @Override
     default boolean isAirBlock(BlockPos pos) {

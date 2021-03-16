@@ -18,43 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.server.worldlistener;
+package net.daporkchop.fp2.compat.vanilla;
 
 import lombok.NonNull;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.world.World;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.biome.Biome;
 
 /**
- * Listens for events in a world.
+ * Provides read-only access to biomes.
  *
  * @author DaPorkchop_
  */
-public interface IWorldChangeListener {
+public interface IBiomeAccess {
     /**
-     * Fired immediately before a column is saved.
+     * Gets the biome at the given position
      *
-     * @param world   the world that the column is in
-     * @param columnX the column's X coordinate
-     * @param columnZ the column's Z coordinate
-     * @param nbt     the column's NBT data
+     * @param pos the position
+     * @return the biome at the given position
      */
-    void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt);
-
-    /**
-     * Fired immediately before a cube is saved.
-     *
-     * @param world the world that the cube is in
-     * @param cubeX the cube's X coordinate
-     * @param cubeY the cube's Y coordinate
-     * @param cubeZ the cube's Z coordinate
-     * @param nbt   the cube's NBT data
-     */
-    void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt);
-
-    /**
-     * Fired after a world tick is completed.
-     */
-    default void onTickEnd() {
-        //no-op
-    }
+    Biome getBiome(@NonNull BlockPos pos);
 }

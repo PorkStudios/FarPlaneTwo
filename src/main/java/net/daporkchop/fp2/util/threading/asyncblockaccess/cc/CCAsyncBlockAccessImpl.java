@@ -29,8 +29,11 @@ import io.github.opencubicchunks.cubicchunks.core.world.ICubeProviderInternal;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.compat.cc.Column2dBiomeAccessWrapper;
+import net.daporkchop.fp2.compat.cc.cube.CubeWithoutWorld;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
-import net.daporkchop.fp2.server.GlobalNBTWriteCache;
+import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
+import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.reference.WeakLongKeySelfRemovingReference;
 import net.daporkchop.fp2.util.reference.WeakSelfRemovingReference;
 import net.daporkchop.fp2.util.threading.LazyRunnablePFuture;
@@ -49,12 +52,14 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.EnumSkyBlock;
+import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.chunk.Chunk;
 
 import java.lang.ref.Reference;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -69,16 +74,21 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  *
  * @author DaPorkchop_
  */
-public class CCAsyncBlockAccessImpl implements AsyncBlockAccess {
+public class CCAsyncBlockAccessImpl implements AsyncBlockAccess, IWorldChangeListener {
     protected final WorldServer world;
     protected final ICubeIO io;
 
+    protected final LongObjMap<Reference<NBTTagCompound>> nbtCache2d = new LongObjConcurrentHashMap<>();
     protected final LongObjMap<Object> cache2d = new LongObjConcurrentHashMap<>();
+
+    protected final Map<CubePos, Reference<NBTTagCompound>> nbtCache3d = new ObjObjConcurrentHashMap<>();
     protected final Map<CubePos, Object> cache3d = new ObjObjConcurrentHashMap<>();
 
     public CCAsyncBlockAccessImpl(@NonNull WorldServer world) {
         this.world = world;
         this.io = ((ICubeProviderInternal.Server) ((ICubicWorldInternal) world).getCubeCache()).getCubeIO();
+
+        WorldChangeListenerManager.add(this.world, this);
     }
 
     protected IColumn getColumn(int chunkX, int chunkZ) {
@@ -238,20 +248,33 @@ public class CCAsyncBlockAccessImpl implements AsyncBlockAccess {
     }
 
     @Override
-    public PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> columns) {
-        return PFutures.mergeToList(columns.map(pos -> this.getColumnFuture(pos.x, pos.z)).collect(Collectors.toList()))
-                .thenApply(columnList -> new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, columnList.stream()));
+    public IBlockHeightAccess prefetch(@NonNull Stream<ChunkPos> columns) {
+        List<PFuture<IColumn>> columnFutures = columns.map(pos -> this.getColumnFuture(pos.x, pos.z)).collect(Collectors.toList());
+        return new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, columnFutures.stream().map(PFuture::join));
     }
 
     @Override
-    public PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) {
-        return PFutures.mergeToList(columns.map(pos -> this.getColumnFuture(pos.x, pos.z)).collect(Collectors.toList()))
-                .thenCompose(columnList -> {
-                    IBlockHeightAccess tempColumnsAccess = new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, columnList.stream());
-                    return PFutures.mergeToList(cubesMappingFunction.apply(tempColumnsAccess)
-                            .map(pos -> this.getCubeFuture(pos.getX(), pos.getY(), pos.getZ())).collect(Collectors.toList()))
-                            .thenApply(cubeList -> new PrefetchedCubesCCAsyncBlockAccess(this, this.world, columnList.stream(), cubeList.stream()));
-                });
+    public IBlockHeightAccess prefetch(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) {
+        List<PFuture<IColumn>> columnFutures = columns.map(pos -> this.getColumnFuture(pos.x, pos.z)).collect(Collectors.toList());
+        List<IColumn> columnList = columnFutures.stream().map(PFuture::join).collect(Collectors.toList());
+
+        List<PFuture<ICube>> cubeFutures = cubesMappingFunction.apply(new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, columnList.stream()))
+                .map(pos -> this.getCubeFuture(pos.getX(), pos.getY(), pos.getZ())).collect(Collectors.toList());
+        return new PrefetchedCubesCCAsyncBlockAccess(this, this.world, columnList.stream(), cubeFutures.stream().map(PFuture::join));
+    }
+
+    @Override
+    public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
+        long pos = BinMath.packXY(columnX, columnZ);
+        this.nbtCache2d.put(pos, new WeakLongKeySelfRemovingReference<>(nbt, pos, this.nbtCache2d));
+        this.cache2d.remove(pos);
+    }
+
+    @Override
+    public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt) {
+        CubePos pos = new CubePos(cubeX, cubeY, cubeZ);
+        this.nbtCache3d.put(pos, new WeakSelfRemovingReference<>(nbt, pos, this.nbtCache3d));
+        this.cache3d.remove(pos);
     }
 
     @Override
@@ -310,10 +333,11 @@ public class CCAsyncBlockAccessImpl implements AsyncBlockAccess {
 
         @Override
         protected IColumn run0() throws Exception {
-            NBTTagCompound nbt = GlobalNBTWriteCache.INSTANCE.getColumnData(CCAsyncBlockAccessImpl.this.world, BinMath.unpackX(this.pos), BinMath.unpackY(this.pos));
+            Reference<NBTTagCompound> reference = CCAsyncBlockAccessImpl.this.nbtCache2d.get(this.pos);
+            NBTTagCompound nbt;
 
             ICubeIO.PartialData<Chunk> data;
-            if (nbt == null) { //not in write cache, load it from disk
+            if (reference == null || (nbt = reference.get()) == null) { //not in write cache, load it from disk
                 data = CCAsyncBlockAccessImpl.this.io.loadColumnNbt(BinMath.unpackX(this.pos), BinMath.unpackY(this.pos));
             } else { //re-use cached nbt
                 data = new ICubeIO.PartialData<>(null, nbt);
@@ -347,17 +371,18 @@ public class CCAsyncBlockAccessImpl implements AsyncBlockAccess {
                 return null;
             }
 
-            NBTTagCompound nbt = GlobalNBTWriteCache.INSTANCE.getCubeData(CCAsyncBlockAccessImpl.this.world, this.pos.getX(), this.pos.getY(), this.pos.getZ());
+            Reference<NBTTagCompound> reference = CCAsyncBlockAccessImpl.this.nbtCache3d.get(this.pos);
+            NBTTagCompound nbt;
 
             ICubeIO.PartialData<ICube> data;
-            if (nbt == null) { //not in write cache, load it from disk
+            if (reference == null || (nbt = reference.get()) == null) { //not in write cache, load it from disk
                 data = CCAsyncBlockAccessImpl.this.io.loadCubeNbt(column, this.pos.getY());
             } else { //re-use cached nbt
                 data = new ICubeIO.PartialData<>(null, nbt);
             }
 
             CCAsyncBlockAccessImpl.this.io.loadCubeAsyncPart(data, column, this.pos.getY());
-            return data.getObject();
+            return new CubeWithoutWorld(data.getObject().getStorage(), new Column2dBiomeAccessWrapper(column.getBiomeArray()), this.pos);
         }
 
         @Override

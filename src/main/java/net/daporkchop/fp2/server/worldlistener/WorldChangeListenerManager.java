@@ -135,7 +135,6 @@ public class WorldChangeListenerManager {
     /**
      * @see IWorldChangeListener#onTickEnd()
      */
-    @Deprecated
     public void fireTickEnd(@NonNull World world) {
         Consumer<ListenerWrapper> callback = wrapper -> {
             IWorldChangeListener listener = wrapper.get();

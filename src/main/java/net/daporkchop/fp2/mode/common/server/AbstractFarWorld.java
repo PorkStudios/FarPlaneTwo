@@ -51,7 +51,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -88,8 +87,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
     //contains positions of all tiles that are going to be updated with the exact generator
     protected final ObjLongMap<POS> exactActive = new ObjLongConcurrentHashMap<>(-1L);
 
-    protected List<POS> pendingScheduledUpdates = new ArrayList<>();
-
     protected final PriorityRecursiveExecutor<PriorityTask<POS>> executor; //TODO: make these global rather than per-dimension
 
     protected final boolean lowResolution;
@@ -109,10 +106,12 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
             // a volatile, in-memory world clone to prevent huge numbers of chunks/cubes from potentially being generated (and therefore saved)
         }
 
-        (this.generatorRough = generatorRough).init(world);
+        if ((this.generatorRough = generatorRough) != null) {
+            generatorRough.init(world);
+        }
         (this.generatorExact = generatorExact).init(world);
 
-        this.lowResolution = FP2Config.performance.lowResolutionEnable && this.generatorRough.supportsLowResolution();
+        this.lowResolution = FP2Config.performance.lowResolutionEnable && this.generatorRough != null && this.generatorRough.supportsLowResolution();
 
         this.scaler = this.createScaler();
         this.tracker = this.createTracker();
@@ -180,7 +179,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.saveTile(tile);
 
         if (allowScale && tile.pos().level() < FP2Config.maxLevels - 1) {
-            this.scheduleForUpdateImmediate(this.scaler.outputs(tile.pos()));
+            this.scheduleForUpdate(this.scaler.outputs(tile.pos()));
         }
     }
 
@@ -192,7 +191,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         return pos.level() == 0 || this.lowResolution;
     }
 
-    protected void scheduleForUpdateImmediate(@NonNull Stream<POS> positions) {
+    protected void scheduleForUpdate(@NonNull Stream<POS> positions) {
         long newTimestamp = this.currentTime;
         positions.forEach(pos -> {
             if (this.exactActive.put(pos, newTimestamp) < 0L) { //position wasn't previously queued for update
@@ -202,25 +201,12 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
     }
 
     protected void scheduleForUpdate(@NonNull POS... positions) {
-        this.pendingScheduledUpdates.addAll(Arrays.asList(positions));
-    }
-
-    protected void submitPendingUpdates() {
-        if (!this.pendingScheduledUpdates.isEmpty()) {
-            this.scheduleForUpdateImmediate(this.pendingScheduledUpdates.stream());
-            this.pendingScheduledUpdates = new ArrayList<>(); //replace with empty ArrayList again to avoid keeping useless large array in memory
-        }
+        this.scheduleForUpdate(Stream.of(positions));
     }
 
     @Override
     public void onTickEnd() {
         this.currentTime = this.world.getTotalWorldTime();
-
-        //submit all pending updates to the real update queue
-        //we need to defer this to the tick end, as onColumnSave/onCubeSave are fired BEFORE the nbt data is actually submitted to the anvil
-        // i/o queue, so if we queued it immediately there'd be no guarantee that the new data would be available by the time the task is picked up
-        // by a generation worker
-        this.submitPendingUpdates();
     }
 
     @Override

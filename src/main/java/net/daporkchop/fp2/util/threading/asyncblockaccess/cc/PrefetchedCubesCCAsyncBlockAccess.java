@@ -23,18 +23,12 @@ package net.daporkchop.fp2.util.threading.asyncblockaccess.cc;
 import io.github.opencubicchunks.cubicchunks.api.util.XYZMap;
 import io.github.opencubicchunks.cubicchunks.api.world.IColumn;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
-import lombok.NonNull;
-import net.daporkchop.fp2.util.threading.asyncblockaccess.AbstractPrefetchedAsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
-import net.daporkchop.lib.primitive.map.LongObjMap;
-import net.daporkchop.lib.primitive.map.open.LongObjOpenHashMap;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.chunk.Chunk;
 
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -42,7 +36,7 @@ import java.util.stream.Stream;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Implementation of {@link AsyncBlockAccess} returned by {@link CCAsyncBlockAccessImpl#prefetchAsync(Stream, Function)}.
+ * Implementation of {@link AsyncBlockAccess} returned by {@link AsyncBlockAccess#prefetch(Stream, Function)}.
  *
  * @author DaPorkchop_
  */

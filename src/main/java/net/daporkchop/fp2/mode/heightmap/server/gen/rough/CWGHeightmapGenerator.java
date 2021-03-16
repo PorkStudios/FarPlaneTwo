@@ -120,7 +120,5 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
                 }
             }
         }
-
-        return 0L;
     }
 }

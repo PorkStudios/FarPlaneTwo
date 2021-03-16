@@ -23,7 +23,6 @@ package net.daporkchop.fp2.util.threading.asyncblockaccess;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
-import net.daporkchop.lib.concurrent.PFuture;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -38,8 +37,8 @@ import java.util.stream.Stream;
 /**
  * Implementation of {@link AsyncBlockAccess} which delegates all method calls to a parent instance.
  * <p>
- * Intended for use as a base for implementations returned by {@link AsyncBlockAccess#prefetchAsync(Stream)} and
- * {@link AsyncBlockAccess#prefetchAsync(Stream, Function)}.
+ * Intended for use as a base for implementations returned by {@link AsyncBlockAccess#prefetch(Stream)} and
+ * {@link AsyncBlockAccess#prefetch(Stream, Function)}.
  *
  * @author DaPorkchop_
  */
@@ -51,13 +50,13 @@ public abstract class AbstractPrefetchedAsyncBlockAccess<P extends AsyncBlockAcc
     protected final WorldServer world;
 
     @Override
-    public final PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> columns) {
-        return this.parent.prefetchAsync(columns);
+    public final IBlockHeightAccess prefetch(@NonNull Stream<ChunkPos> columns) {
+        return this.parent.prefetch(columns);
     }
 
     @Override
-    public final PFuture<IBlockHeightAccess> prefetchAsync(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) {
-        return this.parent.prefetchAsync(columns, cubesMappingFunction);
+    public final IBlockHeightAccess prefetch(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) {
+        return this.parent.prefetch(columns, cubesMappingFunction);
     }
 
     @Override

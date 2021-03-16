@@ -20,10 +20,15 @@
 
 package net.daporkchop.fp2.util.threading;
 
+import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.ImmediateEventExecutor;
+import net.daporkchop.lib.concurrent.PExecutors;
 import net.daporkchop.lib.concurrent.PFuture;
 import net.daporkchop.lib.concurrent.future.DefaultPFuture;
 import net.daporkchop.lib.unsafe.PUnsafe;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 
 /**
  * A {@link PFuture} which must be run manually (using {@link Runnable#run()}) in order to compute its value.
@@ -36,7 +41,7 @@ public abstract class LazyRunnablePFuture<V> extends DefaultPFuture<V> implement
     protected volatile int started = 0;
 
     public LazyRunnablePFuture() {
-        super(ImmediateEventExecutor.INSTANCE);
+        super(PExecutors.FORKJOINPOOL);
     }
 
     @Override

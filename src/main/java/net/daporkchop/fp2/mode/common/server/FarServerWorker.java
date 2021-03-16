@@ -22,13 +22,12 @@ package net.daporkchop.fp2.mode.common.server;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.util.SimpleRecycler;
-import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
-import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -153,9 +152,7 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
     //
 
     public void updateTile(PriorityTask<POS> root, POS pos) {
-        //TODO: see AbstractFarWorld#scheduleTileForUpdate, in the if(true) block
-        // long newTimestamp = this.world.exactActive.remove(pos);
-        long newTimestamp = this.world.world.getTotalWorldTime() - 1L;
+        long newTimestamp = this.world.exactActive.remove(pos);
         if (newTimestamp < 0L) {
             LOGGER.warn("Duplicate update task scheduled for tile at {}!", pos);
             return;
@@ -195,15 +192,8 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
 
     protected void doExactPrefetchAndGenerate(POS pos, T tile) {
         //prefetch terrain
-        IBlockHeightAccess access = null;
-        try {
-            access = this.world.blockAccess().prefetchAsync(this.world.generatorExact().neededColumns(pos),
-                    world -> this.world.generatorExact().neededCubes(world, pos))
-                    .sync().getNow();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            PUnsafe.throwException(e);
-        }
+        IBlockHeightAccess access = this.world.blockAccess().prefetch(this.world.generatorExact().neededColumns(pos),
+                world -> this.world.generatorExact().neededCubes(world, pos));
 
         //generate tile
         this.world.generatorExact().generate(access, pos, tile);
