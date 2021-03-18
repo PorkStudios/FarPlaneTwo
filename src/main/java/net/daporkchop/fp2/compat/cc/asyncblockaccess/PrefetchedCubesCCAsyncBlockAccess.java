@@ -18,54 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.asyncblockaccess.vanilla;
+package net.daporkchop.fp2.compat.cc.asyncblockaccess;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.util.threading.asyncblockaccess.AbstractPrefetchedAsyncBlockAccess;
+import io.github.opencubicchunks.cubicchunks.api.util.XYZMap;
+import io.github.opencubicchunks.cubicchunks.api.world.IColumn;
+import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
-import net.daporkchop.lib.primitive.map.LongObjMap;
-import net.daporkchop.lib.primitive.map.open.LongObjOpenHashMap;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.chunk.Chunk;
 
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Implementation of {@link AsyncBlockAccess} returned by {@link AsyncBlockAccess#prefetch(Stream)}.
+ * Implementation of {@link AsyncBlockAccess} returned by {@link AsyncBlockAccess#prefetch(Stream, Function)}.
  *
  * @author DaPorkchop_
  */
-public class PrefetchedColumnsVanillaAsyncBlockAccess extends AbstractPrefetchedAsyncBlockAccess<VanillaAsyncBlockAccessImpl> {
-    protected final LongObjMap<Chunk> chunks = new LongObjOpenHashMap<>();
+public class PrefetchedCubesCCAsyncBlockAccess extends PrefetchedColumnsCCAsyncBlockAccess {
+    protected final XYZMap<ICube> cubes = new XYZMap<>(0.75f, 16);
 
-    public PrefetchedColumnsVanillaAsyncBlockAccess(VanillaAsyncBlockAccessImpl parent, WorldServer world, @NonNull Stream<Chunk> chunks) {
-        super(parent, world);
+    public PrefetchedCubesCCAsyncBlockAccess(CCAsyncBlockAccessImpl parent, WorldServer world, Stream<IColumn> columns, Stream<ICube> cubes) {
+        super(parent, world, columns);
 
-        chunks.forEach(chunk -> {
-            long key = ChunkPos.asLong(chunk.x, chunk.z);
-            checkArg(this.chunks.putIfAbsent(key, chunk) == null, "duplicate chunk at (%d, %d)", chunk.x, chunk.z);
+        cubes.forEach(cube -> {
+            checkArg(this.cubes.put(cube) == null, "duplicate cube at (%d, %d, %d)", cube.getX(), cube.getY(), cube.getZ());
         });
-    }
-
-    @Override
-    public int getTopBlockY(int blockX, int blockZ) {
-        Chunk chunk = this.chunks.get(ChunkPos.asLong(blockX >> 4, blockZ >> 4));
-        if (chunk != null) {
-            return chunk.getHeightValue(blockX & 0xF, blockZ & 0xF) - 1;
-        }
-        return super.getTopBlockY(blockX, blockZ);
-    }
-
-    @Override
-    public int getTopBlockYBelow(int blockX, int blockY, int blockZ) {
-        throw new UnsupportedOperationException("Not implemented"); //TODO: i could actually write an implementation for this
     }
 
     @Override
@@ -73,10 +56,10 @@ public class PrefetchedColumnsVanillaAsyncBlockAccess extends AbstractPrefetched
         if (!this.world.isValid(pos))    {
             return this.world.provider.hasSkyLight() ? 0xF << 20 : 0;
         } else {
-            Chunk chunk = this.chunks.get(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4));
-            if (chunk != null) {
-                int skyLight = this.world.provider.hasSkyLight() ? chunk.getLightFor(EnumSkyBlock.SKY, pos) : 0;
-                int blockLight = chunk.getLightFor(EnumSkyBlock.BLOCK, pos);
+            ICube cube = this.cubes.get(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4);
+            if (cube != null) {
+                int skyLight = this.world.provider.hasSkyLight() ? cube.getLightFor(EnumSkyBlock.SKY, pos) : 0;
+                int blockLight = cube.getLightFor(EnumSkyBlock.BLOCK, pos);
                 return (skyLight << 20) | (blockLight << 4);
             }
             return super.getCombinedLight(pos, defaultBlockLightValue);
@@ -88,9 +71,9 @@ public class PrefetchedColumnsVanillaAsyncBlockAccess extends AbstractPrefetched
         if (!this.world.isValid(pos))    {
             return 0;
         } else {
-            Chunk chunk = this.chunks.get(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4));
-            if (chunk != null) {
-                return chunk.getLightFor(EnumSkyBlock.BLOCK, pos);
+            ICube cube = this.cubes.get(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4);
+            if (cube != null) {
+                return cube.getLightFor(EnumSkyBlock.BLOCK, pos);
             }
             return super.getBlockLight(pos);
         }
@@ -103,9 +86,9 @@ public class PrefetchedColumnsVanillaAsyncBlockAccess extends AbstractPrefetched
         } else if (!this.world.isValid(pos))    {
             return 15;
         } else {
-            Chunk chunk = this.chunks.get(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4));
-            if (chunk != null) {
-                return chunk.getLightFor(EnumSkyBlock.SKY, pos);
+            ICube cube = this.cubes.get(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4);
+            if (cube != null) {
+                return cube.getLightFor(EnumSkyBlock.SKY, pos);
             }
             return super.getSkyLight(pos);
         }
@@ -113,18 +96,18 @@ public class PrefetchedColumnsVanillaAsyncBlockAccess extends AbstractPrefetched
 
     @Override
     public IBlockState getBlockState(BlockPos pos) {
-        Chunk chunk = this.chunks.get(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4));
-        if (chunk != null) {
-            return chunk.getBlockState(pos);
+        ICube cube = this.cubes.get(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4);
+        if (cube != null) {
+            return cube.getBlockState(pos);
         }
         return super.getBlockState(pos);
     }
 
     @Override
     public Biome getBiome(BlockPos pos) {
-        Chunk chunk = this.chunks.get(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4));
-        if (chunk != null) {
-            return chunk.getBiome(pos, this.world.getBiomeProvider());
+        ICube cube = this.cubes.get(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4);
+        if (cube != null) {
+            return cube.getBiome(pos);
         }
         return super.getBiome(pos);
     }

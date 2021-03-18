@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.asyncblockaccess.cc;
+package net.daporkchop.fp2.compat.cc.asyncblockaccess;
 
 import io.github.opencubicchunks.cubicchunks.api.world.IColumn;
 import lombok.NonNull;
