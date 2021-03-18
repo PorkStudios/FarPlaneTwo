@@ -21,9 +21,9 @@
 package biome;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.compat.vanilla.biome.layer.FastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
 
-import static net.daporkchop.fp2.util.compat.vanilla.biome.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**

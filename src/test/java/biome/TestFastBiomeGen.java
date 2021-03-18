@@ -20,7 +20,7 @@
 
 package biome;
 
-import net.daporkchop.fp2.util.compat.vanilla.biome.layer.FastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
 import net.minecraft.init.Bootstrap;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.gen.ChunkGeneratorSettings;
@@ -49,7 +49,7 @@ import org.junit.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-import static net.daporkchop.fp2.util.compat.vanilla.biome.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
