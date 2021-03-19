@@ -21,46 +21,52 @@
 package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
+import net.daporkchop.fp2.util.math.Cylinder;
+import net.daporkchop.fp2.util.math.Sphere;
+import net.daporkchop.fp2.util.math.Volume;
+import net.minecraft.client.Minecraft;
+import net.minecraft.entity.Entity;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, HeightmapTile> {
+public abstract class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, HeightmapTile> {
     public HeightmapRenderer(@NonNull IFarClientContext<HeightmapPos, HeightmapTile> context) {
         super(context);
     }
 
     @Override
-    protected IFarRenderStrategy<HeightmapPos, HeightmapTile> strategy0() {
-        throw new UnsupportedOperationException();
+    protected Volume[] createVolumesForSelection(float partialTicks, Minecraft mc) {
+        Volume[] ranges = new Volume[this.maxLevel + 1];
+        Entity entity = mc.getRenderViewEntity();
+        double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
+        double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
+        for (int i = 0; i < ranges.length; i++) {
+            //TODO: remove * 3 and fix transition seams in FarRenderTree
+            ranges[i] = new Cylinder(x, z, (FP2Config.levelCutoffDistance + (T_VOXELS * 3)) << i);
+        }
+        return ranges;
     }
 
-    /*@Override
-    public IFarRenderBaker<HeightmapPos, HeightmapTile> baker() {
-        return new HeightmapRenderBaker();
+    public static class ShaderMultidraw extends HeightmapRenderer {
+        public ShaderMultidraw(@NonNull IFarClientContext<HeightmapPos, HeightmapTile> context) {
+            super(context);
+        }
+
+        @Override
+        protected IFarRenderStrategy<HeightmapPos, HeightmapTile> strategy0() {
+            return new ShaderBasedIndexedMultidrawHeightmapRenderStrategy();
+        }
     }
-
-    @Override
-    protected void render0(float partialTicks, @NonNull WorldClient world, @NonNull Minecraft mc, @NonNull IFrustum frustum, @NonNull FarRenderIndex index) {
-        try (ShaderProgram program = HeightmapShaders.WATER_STENCIL_SHADER.use()) { //TODO: make this cleaner (possibly by making these fields part of FP2's state UBO)
-            glUniform1i(program.uniformLocation("seaLevel"), 63);
-        }
-        try (ShaderProgram program = HeightmapShaders.WATER_SHADER.use()) {
-            glUniform1i(program.uniformLocation("seaLevel"), 63);
-            glUniform1i(program.uniformLocation("in_state"), TexUVs.STATEID_TO_INDEXID.get(Block.getStateId(Blocks.WATER.getDefaultState())));
-        }
-
-        try (DrawMode drawMode = FP2Config.compatibility.drawMode.start(index, this.drawCommandBuffer, this)) {
-            drawMode.draw(RenderPass.SOLID, 0);
-            drawMode.draw(RenderPass.TRANSPARENT, 0);
-        }
-    }*/
 }

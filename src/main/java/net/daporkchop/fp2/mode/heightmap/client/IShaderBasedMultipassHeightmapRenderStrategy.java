@@ -20,36 +20,27 @@
 
 package net.daporkchop.fp2.mode.heightmap.client;
 
-import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.mode.heightmap.HeightmapDirectPosAccess;
+import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.mode.common.client.strategy.IShaderBasedMultipassRenderStrategy;
+import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 
 /**
- * Constant values used throughout the heightmap render code.
- *
  * @author DaPorkchop_
  */
-@UtilityClass
-class HeightmapRenderConstants {
-    //
-    // off-heap structs layouts
-    //TODO: figure out how to keep intellij from rearranging this area when reformatting
-    //
-
-    /*
-     * struct Tile {
-     *   Pos pos;
-     *   RenderData renderData;
-     * };
-     */
-
-    public final long _TILE_POS_OFFSET = 0L;
-    public final long _TILE_RENDERDATA_OFFSET = _TILE_POS_OFFSET + HeightmapDirectPosAccess._SIZE;
-
-    public long _tile_pos(long tile) {
-        return tile + _TILE_POS_OFFSET;
+public interface IShaderBasedMultipassHeightmapRenderStrategy extends IMultipassHeightmapRenderStrategy, IShaderBasedMultipassRenderStrategy<HeightmapPos, HeightmapTile> {
+    @Override
+    default ShaderProgram blockShader() {
+        return HeightmapShaders.TERRAIN_SHADER;
     }
 
-    public long _tile_renderData(long tile) {
-        return tile + _TILE_RENDERDATA_OFFSET;
+    @Override
+    default ShaderProgram blockShaderTransparent() {
+        return HeightmapShaders.WATER_SHADER;
+    }
+
+    @Override
+    default ShaderProgram stencilShader() {
+        return HeightmapShaders.WATER_STENCIL_SHADER;
     }
 }

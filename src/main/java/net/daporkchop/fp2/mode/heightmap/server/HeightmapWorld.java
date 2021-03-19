@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.heightmap.server;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
@@ -35,8 +36,8 @@ import net.minecraft.world.WorldServer;
 /**
  * @author DaPorkchop_
  */
-public class HeightmapWorld extends AbstractFarWorld<HeightmapPos, HeightmapTile> {
-    public HeightmapWorld(@NonNull WorldServer world, @NonNull HeightmapRenderMode mode) {
+public abstract class HeightmapWorld extends AbstractFarWorld<HeightmapPos, HeightmapTile> {
+    public HeightmapWorld(@NonNull WorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
         super(world, mode);
     }
 
@@ -50,13 +51,35 @@ public class HeightmapWorld extends AbstractFarWorld<HeightmapPos, HeightmapTile
         return new HeightmapPlayerTracker(this);
     }
 
-    @Override
-    public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
-        throw new UnsupportedOperationException();
+    public static class Vanilla extends HeightmapWorld {
+        public Vanilla(@NonNull WorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
+            super(world, mode);
+        }
+
+        @Override
+        public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
+            this.scheduleForUpdate(new HeightmapPos(columnX, columnZ, 0));
+        }
+
+        @Override
+        public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt) {
+            throw new UnsupportedOperationException();
+        }
     }
 
-    @Override
-    public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt) {
-        throw new UnsupportedOperationException();
+    public static class CubicChunks extends HeightmapWorld {
+        public CubicChunks(@NonNull WorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
+            super(world, mode);
+        }
+
+        @Override
+        public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
+            this.scheduleForUpdate(new HeightmapPos(columnX, columnZ, 0));
+        }
+
+        @Override
+        public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt) {
+            this.scheduleForUpdate(new HeightmapPos(cubeX, cubeZ, 0));
+        }
     }
 }

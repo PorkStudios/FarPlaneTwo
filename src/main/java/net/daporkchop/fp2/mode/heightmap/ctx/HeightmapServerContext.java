@@ -18,38 +18,31 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.client;
+package net.daporkchop.fp2.mode.heightmap.ctx;
 
-import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.mode.heightmap.HeightmapDirectPosAccess;
+import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.server.IFarWorld;
+import net.daporkchop.fp2.mode.common.ctx.AbstractFarServerContext;
+import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
+import net.daporkchop.fp2.mode.heightmap.server.HeightmapWorld;
+import net.minecraft.world.WorldServer;
+
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
- * Constant values used throughout the heightmap render code.
- *
  * @author DaPorkchop_
  */
-@UtilityClass
-class HeightmapRenderConstants {
-    //
-    // off-heap structs layouts
-    //TODO: figure out how to keep intellij from rearranging this area when reformatting
-    //
-
-    /*
-     * struct Tile {
-     *   Pos pos;
-     *   RenderData renderData;
-     * };
-     */
-
-    public final long _TILE_POS_OFFSET = 0L;
-    public final long _TILE_RENDERDATA_OFFSET = _TILE_POS_OFFSET + HeightmapDirectPosAccess._SIZE;
-
-    public long _tile_pos(long tile) {
-        return tile + _TILE_POS_OFFSET;
+public class HeightmapServerContext extends AbstractFarServerContext<HeightmapPos, HeightmapTile> {
+    public HeightmapServerContext(@NonNull WorldServer vanillaWorld, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
+        super(vanillaWorld, mode);
     }
 
-    public long _tile_renderData(long tile) {
-        return tile + _TILE_RENDERDATA_OFFSET;
+    @Override
+    protected IFarWorld<HeightmapPos, HeightmapTile> world0(@NonNull WorldServer vanillaWorld) {
+        return isCubicWorld(vanillaWorld)
+                ? new HeightmapWorld.CubicChunks(vanillaWorld, this.mode)
+                : new HeightmapWorld.Vanilla(vanillaWorld, this.mode);
     }
 }

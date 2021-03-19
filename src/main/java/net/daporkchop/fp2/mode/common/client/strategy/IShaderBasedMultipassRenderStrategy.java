@@ -53,7 +53,7 @@ public interface IShaderBasedMultipassRenderStrategy<POS extends IFarPos, T exte
 
     @Override
     default void renderTransparentFragmentPass(@NonNull IDrawCommandBuffer draw) {
-        try (ShaderProgram program = this.blockShader().use()) {
+        try (ShaderProgram program = this.blockShaderTransparent().use()) {
             IMultipassRenderStrategy.super.renderTransparentFragmentPass(draw);
         }
     }
@@ -62,6 +62,13 @@ public interface IShaderBasedMultipassRenderStrategy<POS extends IFarPos, T exte
      * @return the shader used for rendering blocks
      */
     ShaderProgram blockShader();
+
+    /**
+     * @return the shader used for rendering blocks
+     */
+    default ShaderProgram blockShaderTransparent() {
+        return this.blockShader();
+    }
 
     /**
      * @return the shader used for preparing the stencil buffer

@@ -30,6 +30,8 @@ import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.common.AbstractFarRenderMode;
+import net.daporkchop.fp2.mode.heightmap.ctx.HeightmapClientContext;
+import net.daporkchop.fp2.mode.heightmap.ctx.HeightmapServerContext;
 import net.daporkchop.fp2.mode.heightmap.event.RegisterExactHeightmapGeneratorsEvent;
 import net.daporkchop.fp2.mode.heightmap.event.RegisterRoughHeightmapGeneratorsEvent;
 import net.daporkchop.fp2.mode.heightmap.server.HeightmapWorld;
@@ -74,13 +76,13 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
 
     @Override
     public IFarServerContext<HeightmapPos, HeightmapTile> serverContext(@NonNull WorldServer world) {
-        throw new UnsupportedOperationException(); //TODO
+        return new HeightmapServerContext(world, this);
     }
 
     @SideOnly(Side.CLIENT)
     @Override
     public IFarClientContext<HeightmapPos, HeightmapTile> clientContext(@NonNull WorldClient world) {
-        throw new UnsupportedOperationException(); //TODO
+        return new HeightmapClientContext(this);
     }
 
     @Override
