@@ -59,15 +59,15 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
     @Override
     protected AbstractOrderedRegistryEvent<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>> exactGeneratorFactoryEvent() {
         return new RegisterExactVoxelGeneratorsEvent(new LinkedOrderedRegistry<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>>()
-                .addLast("cubic_chunks", world -> Constants.isCubicWorld(world) ? new CCVoxelGenerator() : null)
-                .addLast("vanilla", world -> new VanillaVoxelGenerator()));
+                .addLast("cubic_chunks", world -> Constants.isCubicWorld(world) ? new CCVoxelGenerator(world) : null)
+                .addLast("vanilla", VanillaVoxelGenerator::new));
     }
 
     @Override
     protected AbstractOrderedRegistryEvent<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>> roughGeneratorFactoryEvent() {
         return new RegisterRoughVoxelGeneratorsEvent(new LinkedOrderedRegistry<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>>()
                 //TODO: remove "false && " once i actually get this working
-                .addLast("cubic_world_gen", world -> false && Constants.isCwgWorld(world) ? new CWGVoxelGenerator() : null));
+                .addLast("cubic_world_gen", world -> false && Constants.isCwgWorld(world) ? new CWGVoxelGenerator(world) : null));
     }
 
     @Override

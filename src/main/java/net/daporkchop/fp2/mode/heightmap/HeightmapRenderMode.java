@@ -57,14 +57,14 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
     @Override
     protected AbstractOrderedRegistryEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>> exactGeneratorFactoryEvent() {
         return new RegisterExactHeightmapGeneratorsEvent(new LinkedOrderedRegistry<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>>()
-                .addLast("cubic_chunks", world -> Constants.isCubicWorld(world) ? new CCHeightmapGenerator() : null)
-                .addLast("vanilla", world -> new VanillaHeightmapGenerator()));
+                .addLast("cubic_chunks", world -> Constants.isCubicWorld(world) ? new CCHeightmapGenerator(world) : null)
+                .addLast("vanilla", VanillaHeightmapGenerator::new));
     }
 
     @Override
     protected AbstractOrderedRegistryEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>> roughGeneratorFactoryEvent() {
         return new RegisterRoughHeightmapGeneratorsEvent(new LinkedOrderedRegistry<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>>()
-                .addLast("cubic_world_gen", world -> Constants.isCwgWorld(world) ? new CWGHeightmapGenerator() : null));
+                .addLast("cubic_world_gen", world -> Constants.isCwgWorld(world) ? new CWGHeightmapGenerator(world) : null));
     }
 
     @Override

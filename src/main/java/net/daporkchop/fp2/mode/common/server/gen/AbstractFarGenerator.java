@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -29,16 +29,9 @@ import net.minecraft.world.WorldServer;
  * @author DaPorkchop_
  */
 public abstract class AbstractFarGenerator implements IFarGenerator {
-    protected static final long SEALEVEL_OFFSET = PUnsafe.pork_getOffset(AbstractFarGenerator.class, "seaLevel");
+    protected final int seaLevel;
 
-    protected final int seaLevel; //this is final to allow JIT to hoist slow getfield opcodes out of the main loop when referenced in a loop
-
-    public AbstractFarGenerator() {
-        this.seaLevel = Integer.MIN_VALUE;
-    }
-
-    @Override
-    public void init(@NonNull WorldServer world) {
-        PUnsafe.putInt(this, SEALEVEL_OFFSET, world.getSeaLevel());
+    public AbstractFarGenerator(@NonNull WorldServer world) {
+        this.seaLevel = world.getSeaLevel();
     }
 }

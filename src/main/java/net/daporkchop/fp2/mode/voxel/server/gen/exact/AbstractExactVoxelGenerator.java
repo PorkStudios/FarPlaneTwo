@@ -30,6 +30,7 @@ import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.block.Block;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
@@ -39,6 +40,10 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator implements IFarGeneratorExact<VoxelPos, VoxelTile> {
+    public AbstractExactVoxelGenerator(@NonNull WorldServer world) {
+        super(world);
+    }
+
     @Override
     public void generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelTile tile) {
         final int baseX = posIn.blockX();

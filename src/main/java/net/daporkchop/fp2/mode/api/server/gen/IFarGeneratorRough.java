@@ -33,9 +33,6 @@ import net.minecraft.world.WorldServer;
  * @author DaPorkchop_
  */
 public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> extends IFarGenerator {
-    @Override
-    void init(@NonNull WorldServer world);
-
     /**
      * @return whether or not this generator can generate tiles at low resolution
      */

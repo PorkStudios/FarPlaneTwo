@@ -42,11 +42,11 @@ import static net.daporkchop.lib.common.math.PMath.*;
  * @author DaPorkchop_
  */
 public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
-    protected Ref<CWGContext> ctx;
+    protected final Ref<CWGContext> ctx;
 
-    @Override
-    public void init(@NonNull WorldServer world) {
-        super.init(world);
+    public CWGHeightmapGenerator(@NonNull WorldServer world) {
+        super(world);
+
         this.ctx = ThreadRef.soft(() -> new CWGContext(world, T_VOXELS + 1, 2));
     }
 

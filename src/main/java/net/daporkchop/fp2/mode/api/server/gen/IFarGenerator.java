@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,9 +20,6 @@
 
 package net.daporkchop.fp2.mode.api.server.gen;
 
-import lombok.NonNull;
-import net.minecraft.world.WorldServer;
-
 /**
  * Extracts height and color information from a world for use by a rendering mode.
  * <p>
@@ -31,12 +28,4 @@ import net.minecraft.world.WorldServer;
  * @author DaPorkchop_
  */
 public interface IFarGenerator {
-    /**
-     * Initializes this instance.
-     * <p>
-     * An instance is only initialized once. No other methods will be called on this instance until initialization is complete.
-     *
-     * @param world the world that the heightmap will be generated for
-     */
-    void init(@NonNull WorldServer world);
 }

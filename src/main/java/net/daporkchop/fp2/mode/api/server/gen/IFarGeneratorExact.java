@@ -38,9 +38,6 @@ import java.util.stream.Stream;
  * @author DaPorkchop_
  */
 public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> extends IFarGenerator {
-    @Override
-    void init(@NonNull WorldServer world);
-
     /**
      * Gets the positions of all of the columns that need to be loaded in order for this generator to generate the tile at the given position.
      *

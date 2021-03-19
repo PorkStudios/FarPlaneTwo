@@ -30,6 +30,7 @@ import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -38,6 +39,10 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorExact<HeightmapPos, HeightmapTile> {
+    public AbstractExactHeightmapGenerator(@NonNull WorldServer world) {
+        super(world);
+    }
+
     @Override
     public void generate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos posIn, @NonNull HeightmapTile tile) {
         int tileX = posIn.x();

@@ -114,7 +114,7 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
             }
 
             long newTimestamp;
-            IFarGeneratorRough generatorRough = this.world.generatorRough();
+            IFarGeneratorRough<POS, T> generatorRough = this.world.generatorRough();
             if (generatorRough != null) { //generate tile using rough generator
                 newTimestamp = Compressed.TIMESTAMP_GENERATED;
                 generatorRough.generate(pos, tile);

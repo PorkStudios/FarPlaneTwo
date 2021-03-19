@@ -49,8 +49,6 @@ import net.minecraft.world.WorldServer;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -97,19 +95,14 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.world = world;
         this.mode = mode;
 
-        IFarGeneratorRough<POS, T> generatorRough = this.mode().roughGenerator(world);
-        IFarGeneratorExact<POS, T> generatorExact = this.mode().exactGenerator(world);
+        this.generatorRough = this.mode().roughGenerator(world);
+        this.generatorExact = this.mode().exactGenerator(world);
 
-        if (generatorRough == null) {
+        if (this.generatorRough == null) {
             LOGGER.warn("No rough generator exists for world {} (type: {})! Falling back to exact generator, this will have serious performance implications.", world.provider.getDimension(), world.getWorldType());
             //TODO: make the fallback generator smart! rather than simply getting the chunks from the world, do generation and population in
             // a volatile, in-memory world clone to prevent huge numbers of chunks/cubes from potentially being generated (and therefore saved)
         }
-
-        if ((this.generatorRough = generatorRough) != null) {
-            generatorRough.init(world);
-        }
-        (this.generatorExact = generatorExact).init(world);
 
         this.lowResolution = FP2Config.performance.lowResolutionEnable && this.generatorRough != null && this.generatorRough.supportsLowResolution();
 

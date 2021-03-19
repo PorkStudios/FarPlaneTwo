@@ -41,12 +41,12 @@ import static net.daporkchop.fp2.util.Constants.*;
  */
 //TODO: this is currently only generating the mesh using perlin noise
 public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements IFarGeneratorRough<VoxelPos, VoxelTile> {
-    //protected Ref<CWGContext> ctx;
-    protected NoiseSource noise;
+    //protected final Ref<CWGContext> ctx;
+    protected final NoiseSource noise;
 
-    @Override
-    public void init(@NonNull WorldServer world) {
-        super.init(world);
+    public CWGVoxelGenerator(@NonNull WorldServer world) {
+        super(world);
+
         //this.ctx = ThreadRef.soft(() -> new CWGContext(world, 1, 2));
 
         this.noise = new PerlinNoiseEngine(new FastPRandom(world.getSeed())).scaled(1.0d / 16.0d);

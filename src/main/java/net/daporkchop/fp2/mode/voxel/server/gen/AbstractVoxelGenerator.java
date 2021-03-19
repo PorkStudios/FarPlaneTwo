@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.mode.voxel.server.gen;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
@@ -27,6 +28,7 @@ import net.daporkchop.fp2.util.math.Vector3d;
 import net.daporkchop.fp2.util.math.qef.QefSolver;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
+import net.minecraft.world.WorldServer;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
@@ -77,6 +79,10 @@ public abstract class AbstractVoxelGenerator<PARAM> extends AbstractFarGenerator
         return lerp(
                 lerp(lerp(xyz, xyZ, z), lerp(xYz, xYZ, z), y),
                 lerp(lerp(Xyz, XyZ, z), lerp(XYz, XYZ, z), y), x);
+    }
+
+    public AbstractVoxelGenerator(@NonNull WorldServer world) {
+        super(world);
     }
 
     protected long buildMesh(int baseX, int baseY, int baseZ, int level, VoxelTile builder, double[][] densityMap, PARAM param) {

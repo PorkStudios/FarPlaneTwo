@@ -25,6 +25,7 @@ import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
+import net.minecraft.world.WorldServer;
 
 import java.util.stream.Stream;
 
@@ -32,6 +33,10 @@ import java.util.stream.Stream;
  * @author DaPorkchop_
  */
 public class VanillaVoxelGenerator extends AbstractExactVoxelGenerator {
+    public VanillaVoxelGenerator(@NonNull WorldServer world) {
+        super(world);
+    }
+
     @Override
     public Stream<ChunkPos> neededColumns(@NonNull VoxelPos pos) {
         return Stream.of(
