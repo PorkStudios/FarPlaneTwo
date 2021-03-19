@@ -18,8 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.compat.cc;
+package net.daporkchop.fp2.compat.cc.biome;
 
+import io.github.opencubicchunks.cubicchunks.api.util.Coords;
+import io.github.opencubicchunks.cubicchunks.api.world.ICube;
+import io.github.opencubicchunks.cubicchunks.core.util.AddressTools;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.compat.vanilla.IBiomeAccess;
@@ -28,17 +31,19 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
 
 /**
- * Wraps a column into a 2D-only {@link IBiomeAccess}.
+ * Wraps an {@link ICube}'s biome data into an {@link IBiomeAccess}.
  *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class Column2dBiomeAccessWrapper implements IBiomeAccess {
+public class CubeBiomeAccessWrapper implements IBiomeAccess {
     @NonNull
     protected final byte[] biomeArray;
 
     @Override
     public Biome getBiome(@NonNull BlockPos pos) {
-        return Biome.getBiome(this.biomeArray[(pos.getX() & 0xF) << 4 | (pos.getZ() & 0xF)] & 0xFF, Biomes.PLAINS);
+        int biomeX = Coords.blockToBiome(pos.getX());
+        int biomeZ = Coords.blockToBiome(pos.getZ());
+        return Biome.getBiome(this.biomeArray[AddressTools.getBiomeAddress(biomeX, biomeZ)] & 0xFF, Biomes.PLAINS);
     }
 }

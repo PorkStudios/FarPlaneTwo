@@ -32,8 +32,10 @@ import io.github.opencubicchunks.cubicchunks.core.world.cube.Cube;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.compat.cc.Column2dBiomeAccessWrapper;
+import net.daporkchop.fp2.compat.cc.biome.Column2dBiomeAccessWrapper;
+import net.daporkchop.fp2.compat.cc.biome.CubeBiomeAccessWrapper;
 import net.daporkchop.fp2.compat.cc.cube.CubeWithoutWorld;
+import net.daporkchop.fp2.compat.vanilla.IBiomeAccess;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
@@ -405,8 +407,12 @@ public class CCAsyncBlockAccessImpl implements AsyncBlockAccess, IWorldChangeLis
 
                 CCAsyncBlockAccessImpl.this.io.loadCubeAsyncPart(data, column, this.pos.getY());
                 if (data.getObject() != null && data.getObject().isSurfaceTracked()) {
-                    return new CubeWithoutWorld(PorkUtil.fallbackIfNull(data.getObject().getStorage(), CCAsyncBlockAccessImpl.this.emptyStorage),
-                            new Column2dBiomeAccessWrapper(column.getBiomeArray()), this.pos);
+                    //override per-cube biomes if necessary
+                    IBiomeAccess biomeAccess = data.getObject() instanceof Cube && ((Cube) data.getObject()).getBiomeArray() != null
+                            ? new CubeBiomeAccessWrapper(((Cube) data.getObject()).getBiomeArray())
+                            : new Column2dBiomeAccessWrapper(column.getBiomeArray());
+
+                    return new CubeWithoutWorld(PorkUtil.fallbackIfNull(data.getObject().getStorage(), CCAsyncBlockAccessImpl.this.emptyStorage), biomeAccess, this.pos);
                 }
 
                 //load and save cube immediately on server thread
