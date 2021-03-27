@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.util.threading.fj;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -32,8 +33,8 @@ import java.util.concurrent.ForkJoinTask;
  * @author DaPorkchop_
  */
 @Getter
-@Setter
-@Accessors(fluent = false)
+@Setter(AccessLevel.PROTECTED)
+@Accessors(chain = false, fluent = false)
 public final class CompletedForkJoinTask<V> extends ForkJoinTask<V> {
     protected V rawResult;
 

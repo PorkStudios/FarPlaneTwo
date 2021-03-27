@@ -44,6 +44,7 @@ import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedExcepti
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.futurecache.IAsyncCache;
 import net.daporkchop.lib.common.util.PorkUtil;
+import net.daporkchop.lib.concurrent.PFutures;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
@@ -226,9 +227,9 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
      *
      * @author DaPorkchop_
      */
-    protected class ColumnCache extends AsyncCacheNBTBase<ChunkPos, Void, IColumn> {
+    protected class ColumnCache extends AsyncCacheNBTBase<ChunkPos, Object, IColumn> {
         @Override
-        protected IColumn parseNBT(@NonNull ChunkPos key, @NonNull Void param, @NonNull NBTTagCompound nbt) {
+        protected IColumn parseNBT(@NonNull ChunkPos key, @NonNull Object param, @NonNull NBTTagCompound nbt) {
             ICubeIO.PartialData<Chunk> data = new ICubeIO.PartialData<>(null, nbt);
             CCAsyncBlockAccessImpl.this.io.loadColumnAsyncPart(data, key.x, key.z);
             return (IColumn) data.getObject();
@@ -236,16 +237,16 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
 
         @Override
         @SneakyThrows(IOException.class)
-        protected IColumn loadFromDisk(@NonNull ChunkPos key, @NonNull Void param) {
+        protected IColumn loadFromDisk(@NonNull ChunkPos key, @NonNull Object param) {
             ICubeIO.PartialData<Chunk> data = CCAsyncBlockAccessImpl.this.io.loadColumnNbt(key.x, key.z);
             CCAsyncBlockAccessImpl.this.io.loadColumnAsyncPart(data, key.x, key.z);
             return (IColumn) data.getObject();
         }
 
         @Override
-        protected void triggerGeneration(@NonNull ChunkPos key, @NonNull Void param) {
+        protected void triggerGeneration(@NonNull ChunkPos key, @NonNull Object param) {
             //load and immediately save column on server thread
-            CompletableFuture.runAsync(() -> {
+            PFutures.runAsync(() -> {
                 Chunk column = ((ICubicWorldServer) CCAsyncBlockAccessImpl.this.world)
                         .getCubeCache().getColumn(key.x, key.z, ICubeProviderServer.Requirement.POPULATE);
                 if (column != null && !column.isEmpty()) {
@@ -283,7 +284,7 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
 
         @Override
         protected void triggerGeneration(@NonNull CubePos key, @NonNull Chunk param) {
-            CompletableFuture.runAsync(() -> {
+            PFutures.runAsync(() -> {
                 //TODO: save column as well if needed
                 ICube cube = ((ICubicWorldServer) CCAsyncBlockAccessImpl.this.world)
                         .getCubeCache().getCube(key.getX(), key.getY(), key.getZ(), ICubeProviderServer.Requirement.LIGHT);

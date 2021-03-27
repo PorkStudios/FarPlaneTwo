@@ -30,6 +30,7 @@ import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.util.threading.futurecache.IAsyncCache;
+import net.daporkchop.lib.concurrent.PFutures;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
@@ -181,26 +182,26 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
      *
      * @author DaPorkchop_
      */
-    protected class ChunkCache extends AsyncCacheNBTBase<ChunkPos, Void, Chunk> {
+    protected class ChunkCache extends AsyncCacheNBTBase<ChunkPos, Object, Chunk> {
         //TODO: this doesn't handle the difference between "chunk is populated" and "chunk and its neighbors are populated", which is important because vanilla is very dumb
 
         @Override
-        protected Chunk parseNBT(@NonNull ChunkPos key, @NonNull Void param, @NonNull NBTTagCompound nbt) {
+        protected Chunk parseNBT(@NonNull ChunkPos key, @NonNull Object param, @NonNull NBTTagCompound nbt) {
             Chunk chunk = VanillaAsyncBlockAccessImpl.this.io.checkedReadChunkFromNBT(VanillaAsyncBlockAccessImpl.this.world, key.x, key.z, nbt);
             return chunk.isTerrainPopulated() ? chunk : null;
         }
 
         @Override
         @SneakyThrows(IOException.class)
-        protected Chunk loadFromDisk(@NonNull ChunkPos key, @NonNull Void param) {
+        protected Chunk loadFromDisk(@NonNull ChunkPos key, @NonNull Object param) {
             Object[] data = VanillaAsyncBlockAccessImpl.this.io.loadChunk__Async(VanillaAsyncBlockAccessImpl.this.world, key.x, key.z);
             Chunk chunk = data != null ? (Chunk) data[0] : null;
             return chunk != null && chunk.isTerrainPopulated() ? chunk : null;
         }
 
         @Override
-        protected void triggerGeneration(@NonNull ChunkPos key, @NonNull Void param) {
-            CompletableFuture.runAsync(() -> {
+        protected void triggerGeneration(@NonNull ChunkPos key, @NonNull Object param) {
+            PFutures.runAsync(() -> {
                 int x = key.x;
                 int z = key.z;
 
