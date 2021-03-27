@@ -30,7 +30,7 @@ import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
+import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.compat.cc.asyncblockaccess.CCAsyncBlockAccessImpl;
 import net.daporkchop.fp2.compat.vanilla.asyncblockaccess.VanillaAsyncBlockAccessImpl;
 import net.minecraft.world.World;
@@ -52,9 +52,9 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @Mixin(WorldServer.class)
 @Implements({
         @Interface(iface = IFarWorldServer.class, prefix = "fp2_world$", unique = true),
-        @Interface(iface = AsyncBlockAccess.Holder.class, prefix = "fp2_asyncBlockAccess$", unique = true)
+        @Interface(iface = IAsyncBlockAccess.Holder.class, prefix = "fp2_asyncBlockAccess$", unique = true)
 })
-public abstract class MixinWorldServer extends World implements IFarWorldServer, AsyncBlockAccess.Holder {
+public abstract class MixinWorldServer extends World implements IFarWorldServer, IAsyncBlockAccess.Holder {
     @Unique
     protected Map<IFarRenderMode, IFarServerContext> contextsByMode;
     @Unique
@@ -62,7 +62,7 @@ public abstract class MixinWorldServer extends World implements IFarWorldServer,
 
     @Getter
     @Unique
-    protected AsyncBlockAccess asyncBlockAccess;
+    protected IAsyncBlockAccess asyncBlockAccess;
 
     protected MixinWorldServer() {
         super(null, null, null, null, false);

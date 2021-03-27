@@ -39,7 +39,7 @@ import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.threading.PriorityRecursiveExecutor;
-import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
+import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.primitive.map.ObjLongMap;
@@ -127,6 +127,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
     protected abstract IFarPlayerTracker<POS> createTracker();
 
+    protected abstract boolean anyVanillaTerrainExistsAt(@NonNull POS pos);
+
     @Override
     public Compressed<POS, T> getTileLazy(@NonNull POS pos) {
         Compressed<POS, T> tile = this.tileCache.getIfPresent(pos);
@@ -181,7 +183,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
     }
 
     public boolean canGenerateRough(@NonNull POS pos) {
-        return pos.level() == 0 || this.lowResolution;
+        return this.generatorRough != null && (pos.level() == 0 || this.lowResolution);
     }
 
     protected void scheduleForUpdate(@NonNull Stream<POS> positions) {
@@ -203,8 +205,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
     }
 
     @Override
-    public AsyncBlockAccess blockAccess() {
-        return ((AsyncBlockAccess.Holder) this.world).asyncBlockAccess();
+    public IAsyncBlockAccess blockAccess() {
+        return ((IAsyncBlockAccess.Holder) this.world).asyncBlockAccess();
     }
 
     /*@Override

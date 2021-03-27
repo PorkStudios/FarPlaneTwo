@@ -22,7 +22,7 @@ package net.daporkchop.fp2.compat.vanilla.asyncblockaccess;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AbstractPrefetchedAsyncBlockAccess;
-import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
+import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.lib.primitive.map.LongObjMap;
 import net.daporkchop.lib.primitive.map.open.LongObjOpenHashMap;
 import net.minecraft.block.state.IBlockState;
@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Implementation of {@link AsyncBlockAccess} returned by {@link AsyncBlockAccess#prefetch(Stream)}.
+ * Implementation of {@link IAsyncBlockAccess} returned by {@link IAsyncBlockAccess#prefetch(Stream)}.
  *
  * @author DaPorkchop_
  */

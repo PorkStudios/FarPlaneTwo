@@ -20,23 +20,16 @@
 
 package net.daporkchop.fp2.compat.vanilla.asyncblockaccess;
 
-import io.netty.util.concurrent.ImmediateEventExecutor;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
-import net.daporkchop.fp2.util.reference.WeakLongKeySelfRemovingReference;
-import net.daporkchop.fp2.util.threading.LazyRunnablePFuture;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
-import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
-import net.daporkchop.lib.common.math.BinMath;
-import net.daporkchop.lib.common.util.PorkUtil;
-import net.daporkchop.lib.concurrent.PFuture;
-import net.daporkchop.lib.concurrent.PFutures;
-import net.daporkchop.lib.primitive.lambda.LongObjObjFunction;
-import net.daporkchop.lib.primitive.map.LongObjMap;
-import net.daporkchop.lib.primitive.map.concurrent.LongObjConcurrentHashMap;
+import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
+import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
+import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
+import net.daporkchop.fp2.util.threading.futurecache.IAsyncCache;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
@@ -52,29 +45,25 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.AnvilChunkLoader;
 
 import java.io.IOException;
-import java.lang.ref.Reference;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinTask;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Default implementation of {@link AsyncBlockAccess} for vanilla worlds.
+ * Default implementation of {@link IAsyncBlockAccess} for vanilla worlds.
  *
  * @author DaPorkchop_
  */
-//this makes the assumption that asynchronous read-only access to Chunk is safe, which seems to be the case although i'm not entirely sure. testing needed
-public class VanillaAsyncBlockAccessImpl implements AsyncBlockAccess, IWorldChangeListener {
+public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeListener {
     protected final WorldServer world;
     protected final AnvilChunkLoader io;
 
-    protected final LongObjMap<Reference<NBTTagCompound>> nbtCache = new LongObjConcurrentHashMap<>();
-    protected final LongObjMap<Object> cache = new LongObjConcurrentHashMap<>();
+    protected final ChunkCache chunks = new ChunkCache();
 
     public VanillaAsyncBlockAccessImpl(@NonNull WorldServer world) {
         this.world = world;
@@ -83,84 +72,21 @@ public class VanillaAsyncBlockAccessImpl implements AsyncBlockAccess, IWorldChan
         WorldChangeListenerManager.add(this.world, this);
     }
 
-    protected Chunk getChunk(int chunkX, int chunkZ) {
-        class State implements LongObjObjFunction<Object, Object> {
-            Object chunk;
+    @Override
+    public IBlockHeightAccess prefetch(@NonNull Stream<ChunkPos> columns) {
+        //collect all futures into a list first in order to issue all tasks at once before blocking, thus ensuring maximum parallelism
+        List<ForkJoinTask<Chunk>> chunkFutures = columns.map(pos -> this.chunks.get(pos, true)).collect(Collectors.toList());
 
-            @Override
-            public Object apply(long pos, Object chunk) {
-                if (chunk instanceof Reference) {
-                    this.chunk = PorkUtil.<Reference<Chunk>>uncheckedCast(chunk).get();
-                } else if (chunk instanceof LazyRunnablePFuture) {
-                    this.chunk = chunk;
-                }
-
-                if (this.chunk != null) { //chunk object or future was obtained successfully, keep existing value in cache
-                    return chunk;
-                } else { //chunk isn't loaded or was garbage collected, we need to load it anew
-                    return this.chunk = new ChunkLoadingLazyFuture(pos);
-                }
-            }
-
-            public Chunk resolve() {
-                if (this.chunk instanceof Chunk) {
-                    return (Chunk) this.chunk;
-                } else if (this.chunk instanceof LazyRunnablePFuture) {
-                    LazyRunnablePFuture<Chunk> future = uncheckedCast(this.chunk);
-                    future.run();
-                    return future.join();
-                }
-
-                throw new IllegalStateException(Objects.toString(this.chunk));
-            }
-        }
-
-        State state = new State();
-        this.cache.compute(BinMath.packXY(chunkX, chunkZ), state);
-        return state.resolve();
-    }
-
-    protected PFuture<Chunk> getChunkFuture(int chunkX, int chunkZ) {
-        class State implements LongObjObjFunction<Object, Object> {
-            Object chunk;
-
-            @Override
-            public Object apply(long pos, Object chunk) {
-                if (chunk instanceof Reference) {
-                    this.chunk = PorkUtil.<Reference<Chunk>>uncheckedCast(chunk).get();
-                } else if (chunk instanceof LazyRunnablePFuture) {
-                    this.chunk = chunk;
-                }
-
-                if (this.chunk != null) { //chunk object or future was obtained successfully, keep existing value in cache
-                    return chunk;
-                } else { //chunk isn't loaded or was garbage collected, we need to load it anew
-                    return this.chunk = new ChunkLoadingLazyFuture(pos);
-                }
-            }
-
-            public PFuture<Chunk> resolve() {
-                if (this.chunk instanceof Chunk) {
-                    return PFutures.successful((Chunk) this.chunk, ImmediateEventExecutor.INSTANCE);
-                } else if (this.chunk instanceof LazyRunnablePFuture) {
-                    LazyRunnablePFuture<Chunk> future = uncheckedCast(this.chunk);
-                    future.run();
-                    return future;
-                }
-
-                throw new IllegalStateException(Objects.toString(this.chunk));
-            }
-        }
-
-        State state = new State();
-        this.cache.compute(BinMath.packXY(chunkX, chunkZ), state);
-        return state.resolve();
+        return new PrefetchedColumnsVanillaAsyncBlockAccess(this, this.world, chunkFutures.stream().map(ForkJoinTask::join));
     }
 
     @Override
-    public IBlockHeightAccess prefetch(@NonNull Stream<ChunkPos> columns) {
-        List<PFuture<Chunk>> chunkFutures = columns.map(pos -> this.getChunkFuture(pos.x, pos.z)).collect(Collectors.toList());
-        return new PrefetchedColumnsVanillaAsyncBlockAccess(this, this.world, chunkFutures.stream().map(PFuture::join));
+    public IBlockHeightAccess prefetchWithoutGenerating(@NonNull Stream<ChunkPos> columns) throws GenerationNotAllowedException {
+        //collect all futures into a list first in order to issue all tasks at once before blocking, thus ensuring maximum parallelism
+        List<ForkJoinTask<Chunk>> chunkFutures = columns.map(pos -> this.chunks.get(pos, false)).collect(Collectors.toList());
+
+        return new PrefetchedColumnsVanillaAsyncBlockAccess(this, this.world, chunkFutures.stream()
+                .map(ForkJoinTask::join).peek(GenerationNotAllowedException.throwIfNull()));
     }
 
     @Override
@@ -169,15 +95,40 @@ public class VanillaAsyncBlockAccessImpl implements AsyncBlockAccess, IWorldChan
     }
 
     @Override
+    public IBlockHeightAccess prefetchWithoutGenerating(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) throws GenerationNotAllowedException {
+        return this.prefetchWithoutGenerating(columns); //silently ignore cubes
+    }
+
+    @Override
     public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
-        long pos = BinMath.packXY(columnX, columnZ);
-        this.nbtCache.put(pos, new WeakLongKeySelfRemovingReference<>(nbt, pos, this.nbtCache));
-        this.cache.remove(pos);
+        this.chunks.notifyUpdate(new ChunkPos(columnX, columnZ), nbt);
+    }
+
+    @Override
+    public boolean anyColumnExists(int minColumnX, int maxColumnX, int minColumnZ, int maxColumnZ) {
+        for (int columnX = minColumnX; columnX < maxColumnX; columnX++) {
+            for (int columnZ = minColumnZ; columnZ < maxColumnZ; columnZ++) {
+                //TODO: if (this.nbtCache.containsKey(BinMath.packXY(columnX, columnZ)) || this.io.isChunkGeneratedAt(columnX, columnZ)) {
+                if (this.io.isChunkGeneratedAt(columnX, columnZ)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean anyCubeExists(int minCubeX, int maxCubeX, int minCubeY, int maxCubeY, int minCubeZ, int maxCubeZ) {
+        return minCubeY < 16 && maxCubeY >= 0 && this.anyColumnExists(minCubeX, maxCubeX, minCubeZ, maxCubeZ);
     }
 
     @Override
     public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt) {
         throw new UnsupportedOperationException("vanilla world shouldn't have cubes!");
+    }
+
+    protected Chunk getChunk(int chunkX, int chunkZ) {
+        return this.chunks.get(new ChunkPos(chunkX, chunkZ), true).join();
     }
 
     @Override
@@ -226,63 +177,46 @@ public class VanillaAsyncBlockAccessImpl implements AsyncBlockAccess, IWorldChan
     }
 
     /**
-     * Lazily loads chunks.
+     * {@link IAsyncCache} for chunks.
      *
      * @author DaPorkchop_
      */
-    @RequiredArgsConstructor
-    protected class ChunkLoadingLazyFuture extends LazyRunnablePFuture<Chunk> {
-        protected final long pos;
+    protected class ChunkCache extends AsyncCacheNBTBase<ChunkPos, Void, Chunk> {
+        //TODO: this doesn't handle the difference between "chunk is populated" and "chunk and its neighbors are populated", which is important because vanilla is very dumb
 
         @Override
-        protected Chunk run0() throws Exception {
-            while (true) {
-                Reference<NBTTagCompound> reference = VanillaAsyncBlockAccessImpl.this.nbtCache.get(this.pos);
-                NBTTagCompound nbt;
-
-                Chunk chunk;
-                if (reference == null || (nbt = reference.get()) == null) { //not in write cache, load it from disk
-                    Object[] data = VanillaAsyncBlockAccessImpl.this.io.loadChunk__Async(VanillaAsyncBlockAccessImpl.this.world, BinMath.unpackX(this.pos), BinMath.unpackY(this.pos));
-                    chunk = data != null ? (Chunk) data[0] : null;
-                } else { //re-use cached nbt
-                    chunk = VanillaAsyncBlockAccessImpl.this.io.checkedReadChunkFromNBT(VanillaAsyncBlockAccessImpl.this.world, BinMath.unpackX(this.pos), BinMath.unpackY(this.pos), nbt);
-                }
-
-                if (chunk != null && !chunk.isEmpty() && chunk.isTerrainPopulated()) {
-                    return chunk;
-                }
-
-                //load and immediately save column on server thread
-                CompletableFuture.runAsync(() -> {
-                    int x = BinMath.unpackX(this.pos);
-                    int z = BinMath.unpackY(this.pos);
-
-                    //we load the chunk, as well as all of its neighbors, all in a specific order in order to ensure that the chunk is FULLY populated.
-                    // see net.minecraftforge.server.command.ChunkGenWorker#doWork() for more info
-
-                    for (int dx = -1; dx <= 0; dx++) {
-                        for (int dz = -1; dz <= 0; dz++) {
-                            VanillaAsyncBlockAccessImpl.this.world.getChunk(x + dx, z + dz);
-                            VanillaAsyncBlockAccessImpl.this.world.getChunk(x + dx + 1, z + dz);
-                            VanillaAsyncBlockAccessImpl.this.world.getChunk(x + dx + 1, z + dz + 1);
-                            VanillaAsyncBlockAccessImpl.this.world.getChunk(x + dx, z + dz + 1);
-                        }
-                    }
-
-                    Chunk c = VanillaAsyncBlockAccessImpl.this.world.getChunk(BinMath.unpackX(this.pos), BinMath.unpackY(this.pos));
-                    try {
-                        VanillaAsyncBlockAccessImpl.this.io.saveChunk(VanillaAsyncBlockAccessImpl.this.world, c);
-                    } catch (IOException | MinecraftException e) {
-                        LOGGER.error("Unable to save chunk!", e);
-                    }
-                }, ServerThreadExecutor.INSTANCE).join();
-            }
+        protected Chunk parseNBT(@NonNull ChunkPos key, @NonNull Void param, @NonNull NBTTagCompound nbt) {
+            Chunk chunk = VanillaAsyncBlockAccessImpl.this.io.checkedReadChunkFromNBT(VanillaAsyncBlockAccessImpl.this.world, key.x, key.z, nbt);
+            return chunk.isTerrainPopulated() ? chunk : null;
         }
 
         @Override
-        protected void postRun() {
-            //swap out self in cache with a weak reference to self
-            VanillaAsyncBlockAccessImpl.this.cache.replace(this.pos, this, new WeakLongKeySelfRemovingReference<>(this.getNow(), this.pos, VanillaAsyncBlockAccessImpl.this.cache));
+        @SneakyThrows(IOException.class)
+        protected Chunk loadFromDisk(@NonNull ChunkPos key, @NonNull Void param) {
+            Object[] data = VanillaAsyncBlockAccessImpl.this.io.loadChunk__Async(VanillaAsyncBlockAccessImpl.this.world, key.x, key.z);
+            Chunk chunk = data != null ? (Chunk) data[0] : null;
+            return chunk != null && chunk.isTerrainPopulated() ? chunk : null;
+        }
+
+        @Override
+        protected void triggerGeneration(@NonNull ChunkPos key, @NonNull Void param) {
+            CompletableFuture.runAsync(() -> {
+                int x = key.x;
+                int z = key.z;
+
+                //see net.minecraftforge.server.command.ChunkGenWorker#doWork() for more info
+
+                Chunk chunk = VanillaAsyncBlockAccessImpl.this.world.getChunk(x, z);
+                VanillaAsyncBlockAccessImpl.this.world.getChunk(x + 1, z);
+                VanillaAsyncBlockAccessImpl.this.world.getChunk(x + 1, z + 1);
+                VanillaAsyncBlockAccessImpl.this.world.getChunk(x, z + 1);
+
+                try {
+                    VanillaAsyncBlockAccessImpl.this.io.saveChunk(VanillaAsyncBlockAccessImpl.this.world, chunk);
+                } catch (IOException | MinecraftException e) {
+                    LOGGER.error("Unable to save chunk!", e);
+                }
+            }, ServerThreadExecutor.INSTANCE).join();
         }
     }
 }

@@ -23,6 +23,7 @@ package net.daporkchop.fp2.util.threading.asyncblockaccess;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
+import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -35,15 +36,15 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
- * Implementation of {@link AsyncBlockAccess} which delegates all method calls to a parent instance.
+ * Implementation of {@link IAsyncBlockAccess} which delegates all method calls to a parent instance.
  * <p>
- * Intended for use as a base for implementations returned by {@link AsyncBlockAccess#prefetch(Stream)} and
- * {@link AsyncBlockAccess#prefetch(Stream, Function)}.
+ * Intended for use as a base for implementations returned by {@link IAsyncBlockAccess#prefetch(Stream)} and
+ * {@link IAsyncBlockAccess#prefetch(Stream, Function)}.
  *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public abstract class AbstractPrefetchedAsyncBlockAccess<P extends AsyncBlockAccess> implements AsyncBlockAccess {
+public abstract class AbstractPrefetchedAsyncBlockAccess<P extends IAsyncBlockAccess> implements IAsyncBlockAccess {
     @NonNull
     protected final P parent;
     @NonNull
@@ -55,8 +56,28 @@ public abstract class AbstractPrefetchedAsyncBlockAccess<P extends AsyncBlockAcc
     }
 
     @Override
+    public IBlockHeightAccess prefetchWithoutGenerating(@NonNull Stream<ChunkPos> columns) throws GenerationNotAllowedException {
+        return this.parent.prefetchWithoutGenerating(columns);
+    }
+
+    @Override
     public final IBlockHeightAccess prefetch(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) {
         return this.parent.prefetch(columns, cubesMappingFunction);
+    }
+
+    @Override
+    public IBlockHeightAccess prefetchWithoutGenerating(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) throws GenerationNotAllowedException {
+        return this.parent.prefetchWithoutGenerating(columns, cubesMappingFunction);
+    }
+
+    @Override
+    public boolean anyColumnExists(int minColumnX, int maxColumnX, int minColumnZ, int maxColumnZ) {
+        return this.parent.anyColumnExists(minColumnX, maxColumnX, minColumnZ, maxColumnZ);
+    }
+
+    @Override
+    public boolean anyCubeExists(int minCubeX, int maxCubeX, int minCubeY, int maxCubeY, int minCubeZ, int maxCubeZ) {
+        return this.parent.anyCubeExists(minCubeX, maxCubeX, minCubeY, maxCubeY, minCubeZ, maxCubeZ);
     }
 
     @Override

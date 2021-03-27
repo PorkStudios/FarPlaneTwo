@@ -66,7 +66,7 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
 
     //
 
-    public void loadTile(PriorityTask<POS> root, POS pos) {
+    public Compressed<POS, T> loadTile(PriorityTask<POS> root, POS pos) {
         Compressed<POS, T> compressedTile = this.world.getTileCachedOrLoad(pos);
         if (compressedTile.isGenerated()) {
             //this unmarks the tile as not done and notifies the player tracker
@@ -77,6 +77,7 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
             // are already available on disk as soon as possible
             this.world.executor.submit(new PriorityTask<>(TaskStage.ROUGH, pos));
         }
+        return compressedTile;
     }
 
     //
@@ -86,11 +87,22 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
     //
 
     public Compressed<POS, T> roughGetTile(PriorityTask<POS> root, POS pos) {
+        if (this.world.anyVanillaTerrainExistsAt(pos)) {
+            //there's some terrain at the given position, let's try to generate something with it
+            if (pos.level() == 0) {
+                //the position is at detail level 0, do exact generation
+                return this.updateTile(root, pos, this.world.currentTime - 1L);
+            } else {
+                //TODO: this will cause infinite cascading terrain pregeneration
+                return this.roughScaleTile(root, pos);
+            }
+        }
+
         if (this.world.canGenerateRough(pos)) {
             //the tile can be generated using the rough generator
             return this.roughGenerateTile(root, pos);
         } else {
-            //the tile is at a lower detail than 0, and low-resolution generation is not an option
+            //the tile cannot be generated using the rough generator
             //this will generate the tile and all tiles below it down to level 0 until the tile can be "generated" from scaled data
             return this.roughScaleTile(root, pos);
         }
@@ -158,9 +170,13 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
             return;
         }
 
+        this.updateTile(root, pos, newTimestamp);
+    }
+
+    public Compressed<POS, T> updateTile(PriorityTask<POS> root, POS pos, long newTimestamp) {
         Compressed<POS, T> compressedTile = this.world.getTileCachedOrLoad(pos);
         if (compressedTile.timestamp() >= newTimestamp) {
-            return;
+            return compressedTile;
         }
 
         if (pos.level() == 0) {
@@ -168,6 +184,8 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
         } else {
             this.updateTileScale(root, pos, compressedTile, newTimestamp);
         }
+
+        return compressedTile;
     }
 
     public void updateTileExact(PriorityTask<POS> root, POS pos, Compressed<POS, T> compressedTile, long newTimestamp) {

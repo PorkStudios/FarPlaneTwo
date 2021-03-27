@@ -28,7 +28,7 @@ import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
-import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncBlockAccess;
+import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.minecraft.world.WorldServer;
 
 import java.io.Closeable;
@@ -39,7 +39,7 @@ import java.io.Closeable;
 public interface IFarWorld<POS extends IFarPos, T extends IFarTile> extends Closeable {
     WorldServer world();
 
-    AsyncBlockAccess blockAccess();
+    IAsyncBlockAccess blockAccess();
 
     /**
      * Gets the {@link IFarTile} at the given position.

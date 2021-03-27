@@ -22,7 +22,7 @@ package net.daporkchop.fp2.util.threading.asyncblockaccess;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
-import net.daporkchop.lib.concurrent.PFuture;
+import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
@@ -38,22 +38,36 @@ import java.util.stream.Stream;
  *
  * @author DaPorkchop_
  */
-public interface AsyncBlockAccess extends IBlockHeightAccess {
+public interface IAsyncBlockAccess extends IBlockHeightAccess {
     /**
      * Asynchronously prefetches the columns at the given positions into a single {@link IBlockHeightAccess}.
      * <p>
-     * The returned {@link IBlockHeightAccess} will be able to respond to queries outside of the requested area, but they will be significantly
+     * The returned {@link IBlockHeightAccess} will be able to respond to queries outside of the requested area, but they may be significantly
      * slower.
      *
      * @param columns a {@link Stream} containing the positions of all the columns to get
      * @return a single {@link IBlockHeightAccess} covering all of the given columns
+     * @see #prefetchWithoutGenerating(Stream)
      */
     IBlockHeightAccess prefetch(@NonNull Stream<ChunkPos> columns);
 
     /**
+     * Asynchronously prefetches the columns at the given positions into a single {@link IBlockHeightAccess}.
+     * <p>
+     * The returned {@link IBlockHeightAccess} will be able to respond to queries outside of the requested area, but they may be significantly
+     * slower.
+     *
+     * @param columns a {@link Stream} containing the positions of all the columns to get
+     * @return a single {@link IBlockHeightAccess} covering all of the given columns
+     * @throws GenerationNotAllowedException if any terrain would need to be generated
+     * @see #prefetch(Stream)
+     */
+    IBlockHeightAccess prefetchWithoutGenerating(@NonNull Stream<ChunkPos> columns) throws GenerationNotAllowedException;
+
+    /**
      * Asynchronously prefetches the columns and cubes at the given positions into a single {@link IBlockHeightAccess}.
      * <p>
-     * The returned {@link IBlockHeightAccess} will be able to respond to queries outside of the requested area, but they will be significantly
+     * The returned {@link IBlockHeightAccess} will be able to respond to queries outside of the requested area, but they may be significantly
      * slower.
      *
      * @param columns              a {@link Stream} containing the positions of all the columns to get
@@ -61,8 +75,35 @@ public interface AsyncBlockAccess extends IBlockHeightAccess {
      *                             is an {@link IBlockHeightAccess} containing only the requested chunks, but no cubes. Note that implementations
      *                             may choose to ignore this parameter.
      * @return a single {@link IBlockHeightAccess} covering all of the given columns and cubes
+     * @see #prefetchWithoutGenerating(Stream, Function)
      */
     IBlockHeightAccess prefetch(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction);
+
+    /**
+     * Asynchronously prefetches the columns and cubes at the given positions into a single {@link IBlockHeightAccess}.
+     * <p>
+     * The returned {@link IBlockHeightAccess} will be able to respond to queries outside of the requested area, but they may be significantly
+     * slower.
+     *
+     * @param columns              a {@link Stream} containing the positions of all the columns to get
+     * @param cubesMappingFunction a function to produce a {@link Stream} containing the positions of all the cubes to get. The input parameter
+     *                             is an {@link IBlockHeightAccess} containing only the requested chunks, but no cubes. Note that implementations
+     *                             may choose to ignore this parameter.
+     * @return a single {@link IBlockHeightAccess} covering all of the given columns and cubes
+     * @throws GenerationNotAllowedException if any terrain would need to be generated
+     * @see #prefetch(Stream, Function)
+     */
+    IBlockHeightAccess prefetchWithoutGenerating(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) throws GenerationNotAllowedException;
+
+    /**
+     * @return whether or not any columns in the given area exist
+     */
+    boolean anyColumnExists(int minColumnX, int maxColumnX, int minColumnZ, int maxColumnZ);
+
+    /**
+     * @return whether or not any cubes in the given area exist
+     */
+    boolean anyCubeExists(int minCubeX, int maxCubeX, int minCubeY, int maxCubeY, int minCubeZ, int maxCubeZ);
 
     @Override
     default boolean isAirBlock(BlockPos pos) {
@@ -90,11 +131,11 @@ public interface AsyncBlockAccess extends IBlockHeightAccess {
     }
 
     /**
-     * Allows access to the {@link AsyncBlockAccess} belonging to a {@link net.minecraft.world.WorldServer}.
+     * Allows access to the {@link IAsyncBlockAccess} belonging to a {@link net.minecraft.world.WorldServer}.
      *
      * @author DaPorkchop_
      */
     interface Holder {
-        AsyncBlockAccess asyncBlockAccess();
+        IAsyncBlockAccess asyncBlockAccess();
     }
 }

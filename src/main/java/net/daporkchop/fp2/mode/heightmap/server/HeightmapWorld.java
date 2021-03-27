@@ -51,14 +51,22 @@ public abstract class HeightmapWorld extends AbstractFarWorld<HeightmapPos, Heig
         return new HeightmapPlayerTracker(this);
     }
 
+    @Override
+    protected boolean anyVanillaTerrainExistsAt(@NonNull HeightmapPos pos) {
+        int x = pos.x();
+        int z = pos.z();
+        int level = pos.level();
+        return this.blockAccess().anyColumnExists(x << level, (x + 1) << level, z << level, (z + 1) << level);
+    }
+
+    @Override
+    public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
+        this.scheduleForUpdate(new HeightmapPos(columnX, columnZ, 0));
+    }
+
     public static class Vanilla extends HeightmapWorld {
         public Vanilla(@NonNull WorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
             super(world, mode);
-        }
-
-        @Override
-        public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
-            this.scheduleForUpdate(new HeightmapPos(columnX, columnZ, 0));
         }
 
         @Override
@@ -70,11 +78,6 @@ public abstract class HeightmapWorld extends AbstractFarWorld<HeightmapPos, Heig
     public static class CubicChunks extends HeightmapWorld {
         public CubicChunks(@NonNull WorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
             super(world, mode);
-        }
-
-        @Override
-        public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
-            this.scheduleForUpdate(new HeightmapPos(columnX, columnZ, 0));
         }
 
         @Override
