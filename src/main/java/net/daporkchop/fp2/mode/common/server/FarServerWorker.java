@@ -28,6 +28,7 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.util.SimpleRecycler;
+import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -87,18 +88,23 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
     //
 
     public Compressed<POS, T> roughGetTile(PriorityTask<POS> root, POS pos) {
-        if (this.world.anyVanillaTerrainExistsAt(pos)) {
+        //TODO: this is ugly
+        if (false && this.world.anyVanillaTerrainExistsAt(pos)) {
             //there's some terrain at the given position, let's try to generate something with it
             if (pos.level() == 0) {
                 //the position is at detail level 0, do exact generation
-                return this.updateTile(root, pos, this.world.currentTime - 1L);
+                try {
+                    return this.attemptRoughWithExact(root, pos, this.world.currentTime - 1L);
+                } catch (GenerationNotAllowedException e) {
+                    //the terrain existed, but wasn't populated so we don't want to use it
+                }
             } else {
-                //TODO: this will cause infinite cascading terrain pregeneration
+                //force the tile to be scaled, which will cause this to be executed recursively
                 return this.roughScaleTile(root, pos);
             }
         }
 
-        if (this.world.canGenerateRough(pos)) {
+        if (pos.level() == 0 || this.world.canGenerateRough(pos)) {
             //the tile can be generated using the rough generator
             return this.roughGenerateTile(root, pos);
         } else {
@@ -108,8 +114,37 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
         }
     }
 
+    public Compressed<POS, T> attemptRoughWithExact(PriorityTask<POS> root, POS pos, long newTimestamp) throws GenerationNotAllowedException {
+        this.world.executor().checkForHigherPriorityWork(root);
+
+        Compressed<POS, T> compressedTile = this.world.getTileCachedOrLoad(pos);
+        if (compressedTile.timestamp() >= newTimestamp) { //break out early if tile is already done or newer
+            return compressedTile;
+        }
+
+        SimpleRecycler<T> tileRecycler = this.world.mode().tileRecycler();
+        T tile = tileRecycler.allocate();
+        compressedTile.writeLock().lock();
+        try {
+            if (compressedTile.timestamp() >= newTimestamp) {
+                return compressedTile;
+            }
+
+            this.doExactPrefetchAndGenerate(pos, tile, false);
+
+            if (compressedTile.set(newTimestamp, tile, tile.extra())) { //only notify world if the tile was changed
+                this.world.tileChanged(compressedTile, false);
+            }
+        } finally {
+            compressedTile.writeLock().unlock();
+            tileRecycler.release(tile);
+        }
+
+        return compressedTile;
+    }
+
     public Compressed<POS, T> roughGenerateTile(PriorityTask<POS> root, POS pos) {
-        checkArg(this.world.canGenerateRough(pos), "cannot do rough generation at %s!", pos);
+        checkArg(pos.level() == 0 || this.world.canGenerateRough(pos), "cannot do rough generation at %s!", pos);
         this.world.executor().checkForHigherPriorityWork(root);
 
         Compressed<POS, T> compressedTile = this.world.getTileCachedOrLoad(pos);
@@ -132,12 +167,14 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
                 generatorRough.generate(pos, tile);
             } else { //there is no rough generator - we'll have to fall back to using the exact generator
                 newTimestamp = this.world.currentTime;
-                this.doExactPrefetchAndGenerate(pos, tile);
+                this.doExactPrefetchAndGenerate(pos, tile, true);
             }
 
             if (compressedTile.set(newTimestamp, tile, tile.extra())) { //only notify world if the tile was changed
                 this.world.tileChanged(compressedTile, false);
             }
+        } catch (GenerationNotAllowedException e) { //impossible
+            throw new IllegalStateException(e);
         } finally {
             compressedTile.writeLock().unlock();
             tileRecycler.release(tile);
@@ -197,21 +234,24 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
                 return;
             }
 
-            this.doExactPrefetchAndGenerate(pos, tile);
+            this.doExactPrefetchAndGenerate(pos, tile, false);
 
             if (compressedTile.set(newTimestamp, tile, tile.extra())) { //only notify world if the tile was changed
                 this.world.tileChanged(compressedTile, true);
             }
+        } catch (GenerationNotAllowedException e) {
+            //silently discard
         } finally {
             compressedTile.writeLock().unlock();
             tileRecycler.release(tile);
         }
     }
 
-    protected void doExactPrefetchAndGenerate(POS pos, T tile) {
+    protected void doExactPrefetchAndGenerate(POS pos, T tile, boolean generationAllowed) throws GenerationNotAllowedException {
         //prefetch terrain
-        IBlockHeightAccess access = this.world.blockAccess().prefetch(this.world.generatorExact().neededColumns(pos),
-                world -> this.world.generatorExact().neededCubes(world, pos));
+        IBlockHeightAccess access = generationAllowed
+                ? this.world.blockAccess().prefetch(this.world.generatorExact().neededColumns(pos), world -> this.world.generatorExact().neededCubes(world, pos))
+                : this.world.blockAccess().prefetchWithoutGenerating(this.world.generatorExact().neededColumns(pos), world -> this.world.generatorExact().neededCubes(world, pos));
 
         //generate tile
         this.world.generatorExact().generate(access, pos, tile);

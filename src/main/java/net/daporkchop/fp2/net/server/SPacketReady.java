@@ -37,6 +37,7 @@ import static net.daporkchop.fp2.util.Constants.NETWORK_WRAPPER;
  *
  * @author DaPorkchop_
  */
+//TODO: this still seems to be being received too early sometimes
 public class SPacketReady implements IMessage {
     @Override
     public void fromBytes(ByteBuf buf) {

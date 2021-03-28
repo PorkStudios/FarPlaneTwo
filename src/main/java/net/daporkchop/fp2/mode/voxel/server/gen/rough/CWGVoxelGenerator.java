@@ -20,36 +20,50 @@
 
 package net.daporkchop.fp2.mode.voxel.server.gen.rough;
 
+import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.cwg.CWGContext;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.server.gen.AbstractVoxelGenerator;
-import net.daporkchop.lib.noise.NoiseSource;
-import net.daporkchop.lib.noise.engine.PerlinNoiseEngine;
-import net.daporkchop.lib.random.impl.FastPRandom;
+import net.daporkchop.lib.common.math.PMath;
+import net.daporkchop.lib.common.ref.Ref;
+import net.daporkchop.lib.common.ref.ThreadRef;
+import net.daporkchop.lib.math.grid.Grid3d;
+import net.daporkchop.lib.math.interpolation.Interpolation;
+import net.daporkchop.lib.math.interpolation.LinearInterpolation;
 import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.WorldServer;
 
+import static io.github.opencubicchunks.cubicchunks.api.util.Coords.*;
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.compat.cwg.CWGContext.*;
+import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
  * @author DaPorkchop_
  */
 //TODO: this is currently only generating the mesh using perlin noise
-public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements IFarGeneratorRough<VoxelPos, VoxelTile> {
-    //protected final Ref<CWGContext> ctx;
-    protected final NoiseSource noise;
+public class CWGVoxelGenerator extends AbstractVoxelGenerator<CWGContext> implements IFarGeneratorRough<VoxelPos, VoxelTile> {
+    public static final int LOWRES_MIN = DMAP_MIN >> GT_SHIFT;
+    public static final int LOWRES_MAX = (DMAP_MAX >> GT_SHIFT) + 2;
+    public static final int LOWRES_SIZE = LOWRES_MAX - LOWRES_MIN;
+    public static final int LOWRES_SIZE_3 = LOWRES_SIZE * LOWRES_SIZE * LOWRES_SIZE;
+
+    protected final Ref<CWGContext> ctx;
 
     public CWGVoxelGenerator(@NonNull WorldServer world) {
         super(world);
 
-        //this.ctx = ThreadRef.soft(() -> new CWGContext(world, 1, 2));
-
-        this.noise = new PerlinNoiseEngine(new FastPRandom(world.getSeed())).scaled(1.0d / 16.0d);
+        this.ctx = ThreadRef.soft(() -> new CWGContext(world, DMAP_SIZE + 7, 2));
     }
 
     @Override
@@ -59,32 +73,61 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<Void> implements I
         int baseY = pos.blockY();
         int baseZ = pos.blockZ();
 
-        //CWGContext ctx = this.ctx.get();
-        //ctx.init(baseX >> 4, baseY >> 4, baseZ >> 4, level);
-        /*double[][] densityMap = DMAP_CACHE.get();
+        CWGContext ctx = this.ctx.get();
+        ctx.init(baseX + (DMAP_MIN >> GT_SHIFT << GT_SHIFT << level), baseZ + (DMAP_MIN >> GT_SHIFT << GT_SHIFT << level), level);
+        double[][] densityMap = DMAP_CACHE.get();
 
+        //water
         for (int x = DMAP_MIN; x < DMAP_MAX; x++) {
             for (int y = DMAP_MIN; y < DMAP_MAX; y++) {
                 for (int z = DMAP_MIN; z < DMAP_MAX; z++) {
-                    densityMap[0][densityIndex(x, y, z)] = baseY + y < this.seaLevel ? -1.0d : 1.0d;
+                    densityMap[0][densityIndex(x, y, z)] = baseY + (y << level) < this.seaLevel ? -1.0d : 1.0d;
                 }
             }
         }
-        this.noise.get(densityMap[1], baseX + DMAP_MIN, baseY + DMAP_MIN, baseZ + DMAP_MIN, 1.0d, 1.0d, 1.0d, DMAP_SIZE, DMAP_SIZE, DMAP_SIZE);
 
-        this.buildMesh(baseX, baseY, baseZ, level, tile, densityMap, null);*/
+        //blocks
+        Grid3d grid = Grid3d.of(new double[LOWRES_SIZE_3], LOWRES_MIN, LOWRES_MIN, LOWRES_MIN, LOWRES_SIZE, LOWRES_SIZE, LOWRES_SIZE);
+        for (int x = LOWRES_MIN; x < LOWRES_MAX; x++) {
+            for (int y = LOWRES_MIN; y < LOWRES_MAX; y++) {
+                for (int z = LOWRES_MIN; z < LOWRES_MAX; z++) {
+                    grid.setD(x, y, z, -ctx.get(baseX + (x << GT_SHIFT << level), baseY + (y << GT_SHIFT << level), baseZ + (z << GT_SHIFT << level)));
+                }
+            }
+        }
+        Interpolation interp = new LinearInterpolation();
+        for (int x = DMAP_MIN; x < DMAP_MAX; x++) {
+            for (int y = DMAP_MIN; y < DMAP_MAX; y++) {
+                for (int z = DMAP_MIN; z < DMAP_MAX; z++) {
+                    densityMap[1][densityIndex(x, y, z)] = interp.getInterpolated(x * 0.25d, y * 0.25d, z * 0.25d, grid);
+                }
+            }
+        }
+
+        this.buildMesh(baseX, baseY, baseZ, level, tile, densityMap, ctx);
     }
 
     @Override
-    protected int getFaceState(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, int edge, int layer, Void param) {
-        return layer == 0 ? Block.getStateId(Blocks.WATER.getDefaultState()) : 1;
+    protected int getFaceState(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, double density0, double density1, int edge, int layer, CWGContext ctx) {
+        if (layer == 0) { //layer 0 is always water lol
+            return Block.getStateId(Blocks.WATER.getDefaultState());
+        }
+
+        double density = -min(density0, density1);
+
+        IBlockState state = Blocks.AIR.getDefaultState();
+        for (IBiomeBlockReplacer replacer : ctx.replacersForBiome(ctx.getBiome(blockX, blockZ))) {
+            state = replacer.getReplacedBlock(state, blockX, blockY, blockZ, nx, ny, nz, density);
+        }
+
+        return Block.getStateId(state);
     }
 
     @Override
-    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, VoxelData data, Void param) {
+    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, VoxelData data, CWGContext ctx) {
         blockY++;
         data.light = packCombinedLight((blockY < this.seaLevel ? max(15 - (this.seaLevel - blockY) * 3, 0) : 15) << 20);
-        data.biome = 0;
+        data.biome = ctx.getBiome(blockX, blockZ);
     }
 
     @Override

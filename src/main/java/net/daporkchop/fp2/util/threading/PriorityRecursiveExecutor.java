@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,6 +25,7 @@ import net.daporkchop.fp2.util.threading.ConcurrentUnboundedPriorityBlockingQueu
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Collection;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -62,7 +63,7 @@ public class PriorityRecursiveExecutor<T extends Comparable<T> & Predicate<T>> i
     }
 
     public void checkForHigherPriorityWork(@NonNull T root) {
-        if (Thread.interrupted()) {
+        if (!this.running) {
             PUnsafe.throwException(new InterruptedException());
         }
 

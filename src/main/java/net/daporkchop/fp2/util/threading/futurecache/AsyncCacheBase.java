@@ -129,14 +129,15 @@ public abstract class AsyncCacheBase<K, V> implements IAsyncCache<K, V> {
         @Override
         protected V compute() {
             V value = AsyncCacheBase.this.load(this.key, this.allowGeneration);
+            V cacheValue = value;
 
             if (value == null) {
                 checkState(!this.allowGeneration, "allowGeneration was true, but the value for %s wasn't generated!", this.key);
-                value = uncheckedCast(new CompletedForkJoinTask<>(null));
+                cacheValue = uncheckedCast(new CompletedForkJoinTask<>(null));
             }
 
             //replace ForkJoinTask in cache with a weak reference
-            AsyncCacheBase.this.map.replace(this.key, this, new WeakSelfRemovingReference<>(value, this.key, AsyncCacheBase.this.map));
+            AsyncCacheBase.this.map.replace(this.key, this, new WeakSelfRemovingReference<>(cacheValue, this.key, AsyncCacheBase.this.map));
             return value;
         }
     }

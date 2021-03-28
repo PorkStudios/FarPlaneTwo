@@ -85,12 +85,12 @@ public abstract class AbstractVoxelGenerator<PARAM> extends AbstractFarGenerator
         super(world);
     }
 
-    protected long buildMesh(int baseX, int baseY, int baseZ, int level, VoxelTile builder, double[][] densityMap, PARAM param) {
+    protected void buildMesh(int baseX, int baseY, int baseZ, int level, VoxelTile builder, double[][] densityMap, PARAM param) {
         QefSolver qef = new QefSolver();
         VoxelData data = new VoxelData();
         Vector3d vec = new Vector3d();
 
-        double dn = 0.001d * (1 << level);
+        //double dn = 0.001d;
 
         int[] tMap = TMAP_CACHE.get();
         for (int di = 0, x = DMAP_MIN; x < DMAP_MAX; x++) {
@@ -153,9 +153,13 @@ public abstract class AbstractVoxelGenerator<PARAM> extends AbstractFarGenerator
                         double py = lerp((c0 >> 1) & 1, (c1 >> 1) & 1, t);
                         double pz = lerp(c0 & 1, c1 & 1, t);
 
-                        double nx = sampleDensity(dx + px + dn, dy + py, dz + pz, densityMap[layer]) - sampleDensity(dx + px - dn, dy + py, dz + pz, densityMap[layer]);
+                        //TODO: figure out whether or not this actually makes any significant difference
+                        /*double nx = sampleDensity(dx + px + dn, dy + py, dz + pz, densityMap[layer]) - sampleDensity(dx + px - dn, dy + py, dz + pz, densityMap[layer]);
                         double ny = sampleDensity(dx + px, dy + py + dn, dz + pz, densityMap[layer]) - sampleDensity(dx + px, dy + py - dn, dz + pz, densityMap[layer]);
-                        double nz = sampleDensity(dx + px, dy + py, dz + pz + dn, densityMap[layer]) - sampleDensity(dx + px, dy + py, dz + pz - dn, densityMap[layer]);
+                        double nz = sampleDensity(dx + px, dy + py, dz + pz + dn, densityMap[layer]) - sampleDensity(dx + px, dy + py, dz + pz - dn, densityMap[layer]);*/
+                        double nx = sampleDensity(dx, dy, dz, densityMap[layer]) - sampleDensity(dx + 1.0d, dy, dz, densityMap[layer]);
+                        double ny = sampleDensity(dx, dy, dz, densityMap[layer]) - sampleDensity(dx, dy + 1.0d, dz, densityMap[layer]);
+                        double nz = sampleDensity(dx, dy, dz, densityMap[layer]) - sampleDensity(dx, dy, dz + 1.0d, densityMap[layer]);
                         totalNx += nx;
                         totalNy += ny;
                         totalNz += nz;
@@ -170,7 +174,7 @@ public abstract class AbstractVoxelGenerator<PARAM> extends AbstractFarGenerator
                             } else {
                                 edges |= EDGE_DIR_POSITIVE << (faceEdge << 1);
                             }
-                            data.states[faceEdge] = this.getFaceState(baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level), level, nx, ny, nz, faceEdge, layer, param);
+                            data.states[faceEdge] = this.getFaceState(baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level), level, nx, ny, nz, density0, density1, faceEdge, layer, param);
                         }
                     }
 
@@ -207,10 +211,10 @@ public abstract class AbstractVoxelGenerator<PARAM> extends AbstractFarGenerator
             }
         }
 
-        return 0L;
+        builder.extra(0L); //TODO: compute neighbor connections
     }
 
-    protected abstract int getFaceState(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, int edge, int layer, PARAM param);
+    protected abstract int getFaceState(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, double density0, double density1, int edge, int layer, PARAM param);
 
     protected abstract void populateVoxelBlockData(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, VoxelData data, PARAM param);
 }

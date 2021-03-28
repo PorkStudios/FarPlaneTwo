@@ -212,4 +212,8 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
         }
         return d * 0.2d * 17.0d / 64.0d;
     }
+
+    public int getBiome(int x, int z) {
+        return this.biomes[((x - this.baseX) >> this.level) * this.size + ((z - this.baseZ) >> this.level)];
+    }
 }

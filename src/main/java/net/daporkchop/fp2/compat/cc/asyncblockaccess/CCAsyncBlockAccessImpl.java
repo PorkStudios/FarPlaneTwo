@@ -264,7 +264,8 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
     protected class CubeCache extends AsyncCacheNBTBase<CubePos, Chunk, ICube> {
         @Override
         protected Chunk getParamFor(@NonNull CubePos key, boolean allowGeneration) {
-            return (Chunk) CCAsyncBlockAccessImpl.this.columns.get(key.chunkPos(), allowGeneration).join();
+            Object o = CCAsyncBlockAccessImpl.this.columns.get(key.chunkPos(), allowGeneration).join();
+            return (Chunk) o;
         }
 
         @Override

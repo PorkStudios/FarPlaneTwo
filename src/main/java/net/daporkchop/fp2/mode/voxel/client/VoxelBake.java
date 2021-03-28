@@ -26,8 +26,8 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
+import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SimpleRecycler;
@@ -215,32 +215,35 @@ public class VoxelBake {
                 .writeByte((y << POS_FRACT_SHIFT) + data.y + offset)
                 .writeByte((z << POS_FRACT_SHIFT) + data.z + offset); //pos_low
 
+        boolean highWritten = false;
+
         int baseTileX = (baseX >> (level + T_SHIFT)) - ((i >> 2) & 1);
         int baseTileY = (baseY >> (level + T_SHIFT)) - ((i >> 1) & 1);
         int baseTileZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
         VoxelTile highTile = srcs[8 | (i & (((baseTileX & 1) << 2) | ((baseTileY & 1) << 1) | (baseTileZ & 1)))];
-        if (highTile == null) { //pos_high
+        if (highTile != null) { //pos_high
+            final int highFloorMask = T_MASK & (T_MASK << 1);
+            final int highX = (blockX >> level) & highFloorMask;
+            final int highY = (blockY >> level) & highFloorMask;
+            final int highZ = (blockZ >> level) & highFloorMask;
+
+            if (highTile.getOnlyPos(highX, highY, highZ, data)) {
+                vertices.writeByte(((x & ~1) << POS_FRACT_SHIFT) + (data.x << 1))
+                        .writeByte(((y & ~1) << POS_FRACT_SHIFT) + (data.y << 1))
+                        .writeByte(((z & ~1) << POS_FRACT_SHIFT) + (data.z << 1));
+
+                highWritten = true;
+            } else {
+                //TODO: find nearest voxel in parent tile that exists and use that
+            }
+        }
+
+        if (!highWritten) {
             vertices.writeByte((x << POS_FRACT_SHIFT) + data.x + offset)
                     .writeByte((y << POS_FRACT_SHIFT) + data.y + offset)
                     .writeByte((z << POS_FRACT_SHIFT) + data.z + offset);
-        } else {
-            final int flooredX = blockX & -(1 << (level + 1));
-            final int flooredY = blockY & -(1 << (level + 1));
-            final int flooredZ = blockZ & -(1 << (level + 1));
-
-            int highX = POS_ONE;
-            int highY = POS_ONE;
-            int highZ = POS_ONE;
-            if (highTile.getOnlyPos((flooredX >> (level + 1)) & T_MASK, (flooredY >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK, data)) {
-                highX = data.x << 1;
-                highY = data.y << 1;
-                highZ = data.z << 1;
-            }
-
-            vertices.writeByte(((x & ~1) << POS_FRACT_SHIFT) + highX)
-                    .writeByte(((y & ~1) << POS_FRACT_SHIFT) + highY)
-                    .writeByte(((z & ~1) << POS_FRACT_SHIFT) + highZ);
         }
+
         vertices.writeByte(0); //pad to 16 bytes
 
         EDGES:

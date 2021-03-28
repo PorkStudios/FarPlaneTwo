@@ -28,6 +28,7 @@ import net.daporkchop.fp2.net.server.SPacketReady;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IFarPlayer;
+import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.common.MinecraftForge;
@@ -78,7 +79,7 @@ public class ServerEvents {
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         Constants.LOGGER.debug("Handling login for player {}", event.player.getName());
-        NETWORK_WRAPPER.sendTo(new SPacketReady(), (EntityPlayerMP) event.player);
+        ServerThreadExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(new SPacketReady(), (EntityPlayerMP) event.player));
         event.player.sendMessage(new TextComponentString("§c§lFarPlaneTwo pre-pre-pre-alpha build: use at your own risk!"));
     }
 

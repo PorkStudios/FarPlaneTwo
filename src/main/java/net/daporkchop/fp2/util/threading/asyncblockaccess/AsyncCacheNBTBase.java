@@ -81,7 +81,7 @@ public abstract class AsyncCacheNBTBase<K, P, V> extends AsyncCacheBase<K, V> {
 
             V value = this.loadFromDisk(key, param);
             if (value != null || !allowGeneration) {
-                return this.bakeValue(key, param, value);
+                return value != null ? this.bakeValue(key, param, value) : null;
             }
 
             this.triggerGeneration(key, param);
