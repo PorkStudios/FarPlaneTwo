@@ -187,6 +187,7 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
     @Override
     public double get(int x, int y, int z) {
         int i = ((x - this.baseX) >> (GT_SHIFT + this.level)) * this.gSize + ((z - this.baseZ) >> (GT_SHIFT + this.level));
+        //TODO: this (height+variation) isn't identical to CWG
         double height = this.heights[i] * this.heightFactor + this.heightOffset;
         double variation = this.variations[i] * (height > y ? this.specialHeightVariationFactorBelowAverageY : 1.0d) * this.heightVariationFactor + this.heightVariationOffset;
 

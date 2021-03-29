@@ -46,6 +46,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
+//TODO: this needs a LOT of work
 public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelTile> {
     public static final int SRC_MIN = -4;
     public static final int SRC_MAX = (T_VOXELS << 1) + 4;

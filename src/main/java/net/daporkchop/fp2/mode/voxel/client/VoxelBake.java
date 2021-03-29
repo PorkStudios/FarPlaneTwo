@@ -209,40 +209,143 @@ public class VoxelBake {
         vertices.writeShortLE(Constants.packedLightTo8BitVec2(data.light)); //light
         vertices.writeMediumLE(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.states[0]), biomeAccess, pos, 0))); //color
 
-        final int offset = level == 0 ? POS_ONE >> 1 : 0;
+        int offset = level == 0 ? POS_ONE >> 1 : 0;
 
-        vertices.writeByte((x << POS_FRACT_SHIFT) + data.x + offset)
-                .writeByte((y << POS_FRACT_SHIFT) + data.y + offset)
-                .writeByte((z << POS_FRACT_SHIFT) + data.z + offset); //pos_low
-
-        boolean highWritten = false;
+        int lowX = (x << POS_FRACT_SHIFT) + data.x + offset;
+        int lowY = (y << POS_FRACT_SHIFT) + data.y + offset;
+        int lowZ = (z << POS_FRACT_SHIFT) + data.z + offset;
+        int highX = lowX;
+        int highY = lowY;
+        int highZ = lowZ;
 
         int baseTileX = (baseX >> (level + T_SHIFT)) - ((i >> 2) & 1);
         int baseTileY = (baseY >> (level + T_SHIFT)) - ((i >> 1) & 1);
         int baseTileZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
         VoxelTile highTile = srcs[8 | (i & (((baseTileX & 1) << 2) | ((baseTileY & 1) << 1) | (baseTileZ & 1)))];
-        if (highTile != null) { //pos_high
-            final int highFloorMask = T_MASK & (T_MASK << 1);
-            final int highX = (blockX >> level) & highFloorMask;
-            final int highY = (blockY >> level) & highFloorMask;
-            final int highZ = (blockZ >> level) & highFloorMask;
-
-            if (highTile.getOnlyPos(highX, highY, highZ, data)) {
-                vertices.writeByte(((x & ~1) << POS_FRACT_SHIFT) + (data.x << 1))
-                        .writeByte(((y & ~1) << POS_FRACT_SHIFT) + (data.y << 1))
-                        .writeByte(((z & ~1) << POS_FRACT_SHIFT) + (data.z << 1));
-
-                highWritten = true;
-            } else {
-                //TODO: find nearest voxel in parent tile that exists and use that
+        if (highTile != null) {
+            int flooredX = blockX & -(1 << (level + 1));
+            int flooredY = blockY & -(1 << (level + 1));
+            int flooredZ = blockZ & -(1 << (level + 1));
+            if (highTile.getOnlyPos((flooredX >> (level + 1)) & T_MASK, (flooredY >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK, data)) {
+                highX = ((x & ~1) << POS_FRACT_SHIFT) + (data.x << 1);
+                highY = ((y & ~1) << POS_FRACT_SHIFT) + (data.y << 1);
+                highZ = ((z & ~1) << POS_FRACT_SHIFT) + (data.z << 1);
             }
         }
 
-        if (!highWritten) {
+        vertices.writeByte(lowX).writeByte(lowY).writeByte(lowZ); //pos_low
+        vertices.writeByte(highX).writeByte(highY).writeByte(highZ); //pos_high
+        /*} else if (false) {
             vertices.writeByte((x << POS_FRACT_SHIFT) + data.x + offset)
                     .writeByte((y << POS_FRACT_SHIFT) + data.y + offset)
-                    .writeByte((z << POS_FRACT_SHIFT) + data.z + offset);
-        }
+                    .writeByte((z << POS_FRACT_SHIFT) + data.z + offset); //pos_low
+
+            boolean highWritten = false;
+
+            int baseTileX = (baseX >> (level + T_SHIFT)) - ((i >> 2) & 1);
+            int baseTileY = (baseY >> (level + T_SHIFT)) - ((i >> 1) & 1);
+            int baseTileZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
+            VoxelTile highTile = srcs[8 | (i & (((baseTileX & 1) << 2) | ((baseTileY & 1) << 1) | (baseTileZ & 1)))];
+            if (highTile != null) { //pos_high
+                final int highFloorMask = T_MASK & (T_MASK << 1);
+                final int highX = (blockX >> level) & highFloorMask;
+                final int highY = (blockY >> level) & highFloorMask;
+                final int highZ = (blockZ >> level) & highFloorMask;
+
+                if (highTile.getOnlyPos(highX, highY, highZ, data)) {
+                    vertices.writeShortLE(((x & ~1) << POS_FRACT_SHIFT) + (data.x << 1))
+                            .writeShortLE(((y & ~1) << POS_FRACT_SHIFT) + (data.y << 1))
+                            .writeShortLE(((z & ~1) << POS_FRACT_SHIFT) + (data.z << 1));
+
+                    highWritten = true;
+                } else {
+                    //TODO: find nearest voxel in parent tile that exists and use that
+                }
+            }
+
+            if (!highWritten) {
+                vertices.writeShortLE((x << POS_FRACT_SHIFT) + data.x + offset)
+                        .writeShortLE((y << POS_FRACT_SHIFT) + data.y + offset)
+                        .writeShortLE((z << POS_FRACT_SHIFT) + data.z + offset);
+            }
+        } else {
+            final int lx = (x << POS_FRACT_SHIFT) + data.x + offset;
+            final int ly = (y << POS_FRACT_SHIFT) + data.y + offset;
+            final int lz = (z << POS_FRACT_SHIFT) + data.z + offset;
+
+            vertices.writeByte(lx).writeByte(ly).writeByte(lz); //pos_low
+
+            { //pos_high
+                int baseTileX = (baseX >> (level + T_SHIFT)) - ((i >> 2) & 1);
+                int baseTileY = (baseY >> (level + T_SHIFT)) - ((i >> 1) & 1);
+                int baseTileZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
+                int otx = (baseTileX & 1);
+                int oty = (baseTileY & 1);
+                int otz = (baseTileZ & 1);
+
+                long bestDist = Long.MAX_VALUE;
+                int bdx = lx;
+                int bdy = ly;
+                int bdz = lz;
+
+                //TODO: use some fancy datastructure (probably a tree) to accelerate this
+                for (int pi = 8, tx = -1; tx <= 1; tx++) {
+                    for (int ty = -1; ty <= 1; ty++) {
+                        for (int tz = -1; tz <= 1; tz++, pi++) {
+                            VoxelTile t = srcs[pi];
+                            if (t != null) {
+                                if (false) {
+                                    for (int ti = 0, size = t.size(); ti < size; ti++) {
+                                        int vpos = t.get(ti, data);
+                                        int xx = vpos >> (T_SHIFT << 1);
+                                        int yy = (vpos >> T_SHIFT) & T_MASK;
+                                        int zz = vpos & T_MASK;
+
+                                        int hx = ((((tx << T_SHIFT) - (otx << (T_SHIFT >> 1)) + xx) << POS_FRACT_SHIFT) + data.x) << 1;
+                                        int hy = ((((ty << T_SHIFT) - (oty << (T_SHIFT >> 1)) + yy) << POS_FRACT_SHIFT) + data.y) << 1;
+                                        int hz = ((((tz << T_SHIFT) - (otz << (T_SHIFT >> 1)) + zz) << POS_FRACT_SHIFT) + data.z) << 1;
+                                        long dx = lx - hx;
+                                        long dy = ly - hy;
+                                        long dz = lz - hz;
+                                        long dist = dx * dx + dy * dy + dz * dz;
+                                        if (dist < bestDist) {
+                                            bestDist = dist;
+                                            bdx = hx;
+                                            bdy = hy;
+                                            bdz = hz;
+                                        }
+                                    }
+                                } else {
+                                    for (int xx = 0; xx < T_VOXELS; xx++) {
+                                        for (int yy = 0; yy < T_VOXELS; yy++) {
+                                            for (int zz = 0; zz < T_VOXELS; zz++) {
+                                                if (t.getOnlyPos(xx, yy, zz, data)) {
+                                                    int hx = ((((tx << T_SHIFT) - (otx << T_SHIFT >> 1) + xx) << POS_FRACT_SHIFT) + data.x) << 1;
+                                                    int hy = ((((ty << T_SHIFT) - (oty << T_SHIFT >> 1) + yy) << POS_FRACT_SHIFT) + data.y) << 1;
+                                                    int hz = ((((tz << T_SHIFT) - (otz << T_SHIFT >> 1) + zz) << POS_FRACT_SHIFT) + data.z) << 1;
+                                                    long dx = lx - hx;
+                                                    long dy = ly - hy;
+                                                    long dz = lz - hz;
+                                                    long dist = dx * dx + dy * dy + dz * dz;
+                                                    if (dist < bestDist) {
+                                                        bestDist = dist;
+                                                        bdx = hx;
+                                                        bdy = hy;
+                                                        bdz = hz;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                vertices.writeShortLE(bdx).writeShortLE(bdy).writeShortLE(bdz);
+            }
+        }*/
 
         vertices.writeByte(0); //pad to 16 bytes
 

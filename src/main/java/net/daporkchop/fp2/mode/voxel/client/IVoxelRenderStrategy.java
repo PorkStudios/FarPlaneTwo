@@ -64,16 +64,22 @@ public interface IVoxelRenderStrategy extends IFarRenderStrategy<VoxelPos, Voxel
         int z = dstPos.z();
         int level = dstPos.level();
 
-        return Stream.of(
-                //same level
-                dstPos, new VoxelPos(x, y, z + 1, level),
-                new VoxelPos(x, y + 1, z, level), new VoxelPos(x, y + 1, z + 1, level),
-                new VoxelPos(x + 1, y, z, level), new VoxelPos(x + 1, y, z + 1, level),
-                new VoxelPos(x + 1, y + 1, z, level), new VoxelPos(x + 1, y + 1, z + 1, level),
-                //above level
-                new VoxelPos(x >> 1, y >> 1, z >> 1, level + 1), new VoxelPos(x >> 1, y >> 1, (z >> 1) + 1, level + 1),
-                new VoxelPos(x >> 1, (y >> 1) + 1, z >> 1, level + 1), new VoxelPos(x >> 1, (y >> 1) + 1, (z >> 1) + 1, level + 1),
-                new VoxelPos((x >> 1) + 1, y >> 1, z >> 1, level + 1), new VoxelPos((x >> 1) + 1, y >> 1, (z >> 1) + 1, level + 1),
-                new VoxelPos((x >> 1) + 1, (y >> 1) + 1, z >> 1, level + 1), new VoxelPos((x >> 1) + 1, (y >> 1) + 1, (z >> 1) + 1, level + 1));
+        VoxelPos[] arr = new VoxelPos[8 + 8];
+        int i = 0;
+        for (int dx = 0; dx <= 1; dx++) {
+            for (int dy = 0; dy <= 1; dy++) {
+                for (int dz = 0; dz <= 1; dz++) {
+                    arr[i++] = new VoxelPos(x + dx, y + dy, z + dz, level);
+                }
+            }
+        }
+        for (int dx = 0; dx <= 1; dx++) {
+            for (int dy = 0; dy <= 1; dy++) {
+                for (int dz = 0; dz <= 1; dz++) {
+                    arr[i++] = new VoxelPos((x >> 1) + dx, (y >> 1) + dy, (z >> 1) + dz, level + 1);
+                }
+            }
+        }
+        return Stream.of(arr);
     }
 }
