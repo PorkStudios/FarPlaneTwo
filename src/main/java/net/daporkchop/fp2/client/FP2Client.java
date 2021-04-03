@@ -53,8 +53,8 @@ public class FP2Client {
      * Called during {@link FMLPreInitializationEvent}.
      */
     public void preInit() {
-        if (!GLContext.getCapabilities().OpenGL44) { //require at least OpenGL 4.4
-            unsupported("Your system does not support OpenGL 4.4!");
+        if (!GLContext.getCapabilities().OpenGL45) { //require at least OpenGL 4.5
+            unsupported("Your system does not support OpenGL 4.5!");
         }
 
         int size = glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
