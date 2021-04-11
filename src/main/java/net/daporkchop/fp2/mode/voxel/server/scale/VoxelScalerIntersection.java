@@ -47,6 +47,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 //TODO: this needs a LOT of work
+//TODO: re-implement using something based on https://www.researchgate.net/publication/220792145_Model_Simplification_Using_Vertex-Clustering
 public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelTile> {
     public static final int SRC_MIN = -4;
     public static final int SRC_MAX = (T_VOXELS << 1) + 4;
