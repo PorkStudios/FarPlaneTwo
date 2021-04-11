@@ -23,7 +23,6 @@ package net.daporkchop.fp2.server;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.ldbjni.LevelDB;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -53,9 +52,6 @@ public class FP2Server {
         System.setProperty("porklib.native.printStackTraces", "true");
         if (!Zstd.PROVIDER.isNative()) {
             Constants.bigWarning("Native ZSTD could not be loaded! This will have SERIOUS performance implications!");
-        }
-        if (!LevelDB.PROVIDER.isNative()) {
-            Constants.bigWarning("Native leveldb could not be loaded! This will have SERIOUS performance implications!");
         }
 
         ServerEvents.register();

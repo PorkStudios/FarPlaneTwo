@@ -27,8 +27,6 @@ import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import org.iq80.leveldb.CompressionType;
-import org.iq80.leveldb.Options;
 
 import static java.lang.Math.*;
 
@@ -114,7 +112,8 @@ public class FP2Config {
     public static Storage storage = new Storage();
 
     @Config.Comment({
-            "Config options useful while developing the mod."
+            "Config options useful while developing the mod.",
+            "Note: these options will be ignored unless you add '-Dfp2.debug=true' to your JVM launch arguments."
     })
     @Config.LangKey("config.fp2.debug")
     public static Debug debug = new Debug();
@@ -194,41 +193,6 @@ public class FP2Config {
      * @author DaPorkchop_
      */
     public static class Storage {
-        @Config.Comment({
-                "The options used by the leveldb databases for storing far terrain data.",
-                "Don't touch this unless you know what you're doing!"
-        })
-        @Config.LangKey("config.fp2.storage.leveldb")
-        @Config.RequiresWorldRestart
-        public Leveldb leveldb = new Leveldb();
-
-        public static class Leveldb {
-            @Config.RangeInt(min = 0)
-            public int writeBufferSize = 4 << 20;
-            @Config.RangeInt(min = 1)
-            public int maxOpenFiles = 1000;
-            @Config.RangeInt(min = 1)
-            public int blockRestartInterval = 16;
-            @Config.RangeInt(min = 1)
-            public int blockSize = 4 * 1024;
-            public CompressionType compressionType = CompressionType.NONE;
-            public boolean verifyChecksums = true;
-            public boolean paranoidChecks;
-            @Config.RangeInt(min = 0)
-            public int cacheSize;
-
-            public Options use() {
-                return new Options()
-                        .writeBufferSize(this.writeBufferSize)
-                        .maxOpenFiles(this.maxOpenFiles)
-                        .blockRestartInterval(this.blockRestartInterval)
-                        .blockSize(this.blockSize)
-                        .compressionType(this.compressionType)
-                        .verifyChecksums(this.verifyChecksums)
-                        .paranoidChecks(this.paranoidChecks)
-                        .cacheSize(this.cacheSize);
-            }
-        }
     }
 
     /**

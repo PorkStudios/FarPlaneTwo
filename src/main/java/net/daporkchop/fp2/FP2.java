@@ -21,23 +21,15 @@
 package net.daporkchop.fp2;
 
 import net.daporkchop.fp2.client.FP2Client;
-import net.daporkchop.fp2.client.KeyBindings;
 import net.daporkchop.fp2.debug.FP2Debug;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.net.client.CPacketDropAllTiles;
 import net.daporkchop.fp2.net.client.CPacketRenderMode;
-import net.daporkchop.fp2.net.server.SPacketTileData;
 import net.daporkchop.fp2.net.server.SPacketReady;
 import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
+import net.daporkchop.fp2.net.server.SPacketTileData;
 import net.daporkchop.fp2.net.server.SPacketUnloadTile;
 import net.daporkchop.fp2.server.FP2Server;
-import net.daporkchop.fp2.server.ServerEvents;
-import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
-import net.daporkchop.ldbjni.LevelDB;
-import net.daporkchop.lib.common.system.PlatformInfo;
-import net.daporkchop.lib.compression.zstd.Zstd;
-import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -55,7 +47,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  */
 @Mod(modid = MODID,
         useMetadata = true,
-        dependencies = "after:cubicchunks@[1.12.2-0.0.1126.0,)",
+        dependencies = "required-after:forgerocks@[6.13.3-1.12.2,);after:cubicchunks@[1.12.2-0.0.1126.0,)",
         acceptedMinecraftVersions = "1.12.2")
 public class FP2 {
     public static final String MODID = "fp2";

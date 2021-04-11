@@ -77,6 +77,11 @@ public class VoxelPos implements IFarPos {
     }
 
     @Override
+    public int[] coordinates() {
+        return new int[]{ this.x, this.y, this.z };
+    }
+
+    @Override
     public VoxelPos upTo(int targetLevel) {
         if (targetLevel == this.level) {
             return this;

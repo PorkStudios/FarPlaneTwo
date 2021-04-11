@@ -73,6 +73,11 @@ public class HeightmapPos implements IFarPos {
     }
 
     @Override
+    public int[] coordinates() {
+        return new int[]{ this.x, this.z };
+    }
+
+    @Override
     public HeightmapPos upTo(int targetLevel) {
         if (targetLevel == this.level) {
             return this;

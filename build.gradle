@@ -52,9 +52,9 @@ ext {
     minecraftVersion = "1.12.2"
 
     //dependency things
+    forgerocksVersion = "6.13.3-1.12.2"
     guavaVersion = "21.0"
     junitVersion = "4.12"
-    leveldbVersion = "0.0.10-SNAPSHOT"
     lombokVersion = "1.16.20"
     mixinVersion = "0.8.1-SNAPSHOT"
     porklibVersion = "0.5.5-SNAPSHOT"
@@ -79,10 +79,6 @@ repositories {
     maven {
         name = "SpongePowered"
         url = "https://repo.spongepowered.org/maven/"
-    }
-    maven {
-        name = "NukkitX"
-        url = "https://repo.nukkitx.com/snapshot/"
     }
     maven {
         name = "elytradev"
@@ -110,9 +106,7 @@ dependencies {
         exclude group: "io.netty"
     }
 
-    shade("net.daporkchop:leveldb-mcpe-jni:$leveldbVersion")  {
-        exclude group: "io.netty"
-    }
+    compile "net.daporkchop:forgerocks:$forgerocksVersion"
 
     deobfProvided "io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT"
     deobfProvided "io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT"

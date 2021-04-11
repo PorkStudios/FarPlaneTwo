@@ -23,22 +23,31 @@ package net.daporkchop.fp2.mode.common.server;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.server.IFarStorage;
 import net.daporkchop.fp2.util.IReusablePersistent;
-import net.daporkchop.ldbjni.LevelDB;
-import net.daporkchop.ldbjni.direct.DirectDB;
 import net.daporkchop.lib.common.misc.file.PFiles;
-import net.daporkchop.lib.common.misc.string.PStrings;
-import net.daporkchop.lib.primitive.map.IntObjMap;
-import net.daporkchop.lib.primitive.map.concurrent.IntObjConcurrentHashMap;
-import net.daporkchop.lib.unsafe.PUnsafe;
+import org.rocksdb.ColumnFamilyDescriptor;
+import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.ColumnFamilyOptions;
+import org.rocksdb.CompressionType;
+import org.rocksdb.DBOptions;
+import org.rocksdb.FlushOptions;
+import org.rocksdb.ReadOptions;
+import org.rocksdb.RocksDB;
+import org.rocksdb.RocksDBException;
+import org.rocksdb.WriteOptions;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.function.IntFunction;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -47,25 +56,82 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 public class FarStorage<POS extends IFarPos, V extends IReusablePersistent> implements IFarStorage<POS, V> {
-    protected final IntObjMap<DirectDB> dbs = new IntObjConcurrentHashMap<>();
-    protected final File storageRoot;
+    protected static final DBOptions DB_OPTIONS = new DBOptions()
+            .setCreateIfMissing(true)
+            .setCreateMissingColumnFamilies(true)
+            .setAllowConcurrentMemtableWrite(true);
 
-    protected final IntFunction<DirectDB> dbOpenFunction;
+    protected static final ColumnFamilyOptions CF_OPTIONS = new ColumnFamilyOptions()
+            .setCompressionType(CompressionType.ZSTD_COMPRESSION);
+
+    protected static final ReadOptions READ_OPTIONS = new ReadOptions();
+    protected static final WriteOptions WRITE_OPTIONS = new WriteOptions();
+    protected static final FlushOptions FLUSH_OPTIONS = new FlushOptions().setWaitForFlush(true).setAllowWriteStall(true);
+
+    protected static final byte[] COLUMN_NAME_TILES = "tiles".getBytes(StandardCharsets.UTF_8);
+
+    protected static void writeInterleavedBits(@NonNull ByteBuf dst, @NonNull int... coords) {
+        for (int bit = 0; bit < coords.length * 32; ) {
+            int b = 0;
+            for (int i = 7; i >= 0; i--, bit++) {
+                b |= ((coords[bit % coords.length] >>> (bit / coords.length)) & 1) << i;
+            }
+            dst.writeByte(b);
+        }
+    }
+
+    @SneakyThrows(RocksDBException.class)
+    protected static ByteBuf get(@NonNull RocksDB db, @NonNull ColumnFamilyHandle handle, @NonNull ByteBuf key) {
+        ByteBuffer keyNioBuffer = key.nioBuffer();
+
+        //pre-allocate 64KiB for initial buffer
+        ByteBuf value = ByteBufAllocator.DEFAULT.directBuffer(1 << 16);
+
+        int len = db.get(handle, READ_OPTIONS, keyNioBuffer, value.nioBuffer());
+
+        if (len == RocksDB.NOT_FOUND) { //value wasn't found
+            value.release();
+            return null;
+        } else if (len > value.writableBytes()) { //value was found, but is bigger than the buffer
+            //grow buffer to required size and try again
+            value.ensureWritable(len);
+
+            len = db.get(handle, READ_OPTIONS, keyNioBuffer, value.nioBuffer());
+        }
+        return value.writerIndex(len);
+    }
+
+    @SneakyThrows(RocksDBException.class)
+    protected static void put(@NonNull RocksDB db, @NonNull ColumnFamilyHandle handle, @NonNull ByteBuf key, @NonNull ByteBuf value) {
+        db.put(handle, WRITE_OPTIONS, key.nioBuffer(), value.nioBuffer());
+    }
+
     protected final int version;
 
+    protected final RocksDB db;
+    protected final List<ColumnFamilyHandle> handles;
+    protected final ColumnFamilyHandle cfTiles;
+
+    @SneakyThrows(RocksDBException.class)
     public FarStorage(@NonNull File storageRoot, int version) {
         this.version = version;
-        this.storageRoot = PFiles.ensureDirectoryExists(storageRoot);
 
-        this.dbOpenFunction = i -> {
-            try {
-                return LevelDB.PROVIDER.open(new File(this.storageRoot, String.valueOf(i)), FP2Config.storage.leveldb.use());
-            } catch (IOException e) {
-                LOGGER.error(PStrings.fastFormat("Unable to open DB in %s at level %d", this.storageRoot, i), e);
-                PUnsafe.throwException(e);
-                throw new RuntimeException(e); //unreachable
-            }
-        };
+        File markerFile = new File(storageRoot, "v2");
+        if (PFiles.checkDirectoryExists(storageRoot) && !PFiles.checkFileExists(markerFile)) { //it's an old storage
+            PFiles.rmContentsParallel(storageRoot);
+        }
+        PFiles.ensureDirectoryExists(storageRoot);
+
+        List<ColumnFamilyDescriptor> descriptors = Arrays.asList(
+                new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, CF_OPTIONS),
+                new ColumnFamilyDescriptor(COLUMN_NAME_TILES, CF_OPTIONS));
+        this.handles = new ArrayList<>(descriptors.size());
+
+        this.db = RocksDB.open(DB_OPTIONS, storageRoot.getPath(), descriptors, this.handles);
+
+        this.cfTiles = this.handles.get(1);
+
+        PFiles.ensureFileExists(markerFile); //create marker file
     }
 
     @Override
@@ -74,34 +140,29 @@ public class FarStorage<POS extends IFarPos, V extends IReusablePersistent> impl
             return null;
         }
 
+        //read from db
+        ByteBuf key = ByteBufAllocator.DEFAULT.directBuffer();
+        ByteBuf packed;
         try {
-            //read from db
-            ByteBuf key = ByteBufAllocator.DEFAULT.buffer();
-            ByteBuf packed;
-            try {
-                pos.writePosNoLevel(key);
-                if ((packed = this.dbs.computeIfAbsent(pos.level(), this.dbOpenFunction).getZeroCopy(key)) == null) {
-                    return null;
-                }
-            } finally {
-                key.release();
-            }
+            key.writeInt(pos.level()); //encode position
+            writeInterleavedBits(key, pos.coordinates());
 
-            //unpack
-            boolean release = true;
-            try {
-                if (readVarInt(packed) == this.version) {
-                    return new Compressed<>(pos, packed);
-                }
-                return null;
-            } finally {
-                if (release) {
-                    packed.release();
-                }
+            packed = get(this.db, this.cfTiles, key);
+        } finally {
+            key.release();
+        }
+
+        //unpack
+        boolean release = true;
+        try {
+            if (packed != null && readVarInt(packed) == this.version) {
+                return new Compressed<>(pos, packed);
             }
-        } catch (Exception e) {
-            LOGGER.error(PStrings.fastFormat("Unable to load tile %s from DB at %s", pos, this.storageRoot), e);
             return null;
+        } finally {
+            if (release) {
+                packed.release();
+            }
         }
     }
 
@@ -111,44 +172,32 @@ public class FarStorage<POS extends IFarPos, V extends IReusablePersistent> impl
             return;
         }
 
-        ByteBuf packed = ByteBufAllocator.DEFAULT.buffer();
+        ByteBuf key = ByteBufAllocator.DEFAULT.directBuffer();
+        ByteBuf packed = ByteBufAllocator.DEFAULT.directBuffer();
         try {
+            key.writeInt(pos.level()); //encode position
+            writeInterleavedBits(key, pos.coordinates());
+
             //write value
             writeVarInt(packed, this.version); //prefix with version
             value.write(packed);
 
             //write to db
-            ByteBuf key = ByteBufAllocator.DEFAULT.buffer();
-            try {
-                pos.writePosNoLevel(key);
-                this.dbs.computeIfAbsent(pos.level(), this.dbOpenFunction).put(key, packed);
-            } finally {
-                key.release();
-            }
-        } catch (Exception e) {
-            LOGGER.error(PStrings.fastFormat("Unable to save tile %s to DB at %s", pos, this.storageRoot), e);
+            put(this.db, this.cfTiles, key, packed);
         } finally {
-            if (packed != null) {
-                packed.release();
-            }
+            packed.release();
+            key.release();
         }
     }
 
     @Override
     public void close() throws IOException {
-        IOException root = null;
-        for (DirectDB db : this.dbs.values()) {
-            try {
-                db.close();
-            } catch (IOException e) {
-                if (root == null) {
-                    root = new IOException("Unable to close all DBs in " + this.storageRoot);
-                }
-                root.addSuppressed(e);
-            }
-        }
-        if (root != null) {
-            throw root;
+        try {
+            this.db.flush(FLUSH_OPTIONS, this.handles);
+            this.handles.forEach(ColumnFamilyHandle::close); //close column families before db
+            this.db.close();
+        } catch (RocksDBException e) {
+            throw new IOException(e);
         }
     }
 }

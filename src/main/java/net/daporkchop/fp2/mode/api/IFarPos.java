@@ -63,6 +63,11 @@ public interface IFarPos extends Comparable<IFarPos> {
     }
 
     /**
+     * @return the coordinates of this position (excluding the detail level)
+     */
+    int[] coordinates();
+
+    /**
      * Writes this position to the given {@link ByteBuf}, without including the detail level
      *
      * @param dst the {@link ByteBuf} to write to
