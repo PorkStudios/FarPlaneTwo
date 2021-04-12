@@ -58,8 +58,8 @@ public interface IFarPos extends Comparable<IFarPos> {
      * @param dst the {@link ByteBuf} to write to
      */
     default void writePos(@NonNull ByteBuf dst) {
-        this.writePosNoLevel(dst);
         dst.writeInt(this.level());
+        this.writePosNoLevel(dst);
     }
 
     /**
