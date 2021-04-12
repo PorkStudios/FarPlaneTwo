@@ -11,13 +11,15 @@
 
 *If you do decide to download this, don't expect stuff to work correctly because it probably won't.*
 
-**This mod currently supports the latest version of Forge for 1.12.2, and requires either [Cubic Chunks](https://github.com/OpenCubicChunks/CubicChunks) or [Mixin](https://www.curseforge.com/minecraft/mc-mods/mixin-0-7-0-8-compatibility) in order to launch correctly.**
+**This mod currently supports the latest version of Forge for 1.12.2. It requires both [ForgeRocks](https://www.curseforge.com/minecraft/mc-mods/forgerocks) and [Mixin](https://www.curseforge.com/minecraft/mc-mods/mixin-0-7-0-8-compatibility) in order to launch correctly.**  
+(Mixin isn't needed if you're using [Cubic Chunks](https://github.com/OpenCubicChunks/CubicChunks))
 
 This is a Minecraft mod which implements a Level-of-Detail (LoD) terrain renderer into the game.
 
 The name is in reference to [Foghrye4's CWGFarPlaneView](https://www.curseforge.com/minecraft/mc-mods/cwg-far-plane-view), which is an addon for CubicWorldGen (which, in turn, is an addon for Cubic Chunks) which renders a plane at sea level with block and biome colors, and served as the original inspiration for me to make this.
 
 My end goal is to achieve the following:
+
 - be able to use render distances of *at least* 100 thousand blocks
 - cause at most a 25% decrease in performance when using my i5-2520M's integrated graphics
 - be compatible with [Cubic Chunks](https://github.com/OpenCubicChunks/CubicChunks)

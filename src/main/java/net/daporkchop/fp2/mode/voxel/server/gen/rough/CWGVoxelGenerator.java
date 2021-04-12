@@ -24,11 +24,10 @@ import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockRe
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.cwg.CWGContext;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.server.gen.AbstractVoxelGenerator;
-import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
 import net.daporkchop.lib.math.grid.Grid3d;
@@ -37,16 +36,11 @@ import net.daporkchop.lib.math.interpolation.LinearInterpolation;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.WorldServer;
 
-import static io.github.opencubicchunks.cubicchunks.api.util.Coords.*;
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.compat.cwg.CWGContext.*;
-import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
  * @author DaPorkchop_
@@ -126,7 +120,9 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<CWGContext> implem
     @Override
     protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, VoxelData data, CWGContext ctx) {
         blockY++;
-        data.light = packCombinedLight((blockY < this.seaLevel ? max(15 - (this.seaLevel - blockY) * 3, 0) : 15) << 20);
+
+        int seaLevel = this.seaLevel >> level << level; //truncate lower bits in order to scale the sea level to the current zoom level
+        data.light = packCombinedLight((blockY < seaLevel ? max(15 - (seaLevel - blockY) * 3, 0) : 15) << 20);
         data.biome = ctx.getBiome(blockX, blockZ);
     }
 

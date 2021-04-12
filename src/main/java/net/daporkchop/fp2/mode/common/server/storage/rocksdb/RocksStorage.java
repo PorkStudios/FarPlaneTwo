@@ -18,16 +18,18 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.server;
+package net.daporkchop.fp2.mode.common.server.storage.rocksdb;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.server.IFarStorage;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.util.IReusablePersistent;
 import net.daporkchop.lib.common.misc.file.PFiles;
 import org.rocksdb.ColumnFamilyDescriptor;
@@ -39,6 +41,8 @@ import org.rocksdb.FlushOptions;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
+import org.rocksdb.TransactionDB;
+import org.rocksdb.TransactionDBOptions;
 import org.rocksdb.WriteOptions;
 
 import java.io.File;
@@ -55,11 +59,14 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public class FarStorage<POS extends IFarPos, V extends IReusablePersistent> implements IFarStorage<POS, V> {
+public final class RocksStorage<POS extends IFarPos, V extends IReusablePersistent> implements IFarStorage<POS, V> {
     protected static final DBOptions DB_OPTIONS = new DBOptions()
             .setCreateIfMissing(true)
             .setCreateMissingColumnFamilies(true)
-            .setAllowConcurrentMemtableWrite(true);
+            .setAllowConcurrentMemtableWrite(true)
+            .setKeepLogFileNum(1L);
+
+    protected static final TransactionDBOptions TX_DB_OPTIONS = new TransactionDBOptions();
 
     protected static final ColumnFamilyOptions CF_OPTIONS = new ColumnFamilyOptions()
             .setCompressionType(CompressionType.ZSTD_COMPRESSION);
@@ -69,6 +76,7 @@ public class FarStorage<POS extends IFarPos, V extends IReusablePersistent> impl
     protected static final FlushOptions FLUSH_OPTIONS = new FlushOptions().setWaitForFlush(true).setAllowWriteStall(true);
 
     protected static final byte[] COLUMN_NAME_TILES = "tiles".getBytes(StandardCharsets.UTF_8);
+    protected static final byte[] COLUMN_NAME_DIRTY = "dirty".getBytes(StandardCharsets.UTF_8);
 
     protected static void writeInterleavedBits(@NonNull ByteBuf dst, @NonNull int... coords) {
         for (int bit = 0; bit < coords.length * 32; ) {
@@ -80,6 +88,10 @@ public class FarStorage<POS extends IFarPos, V extends IReusablePersistent> impl
         }
     }
 
+    //
+    // rocksdb helper methods
+    //
+
     @SneakyThrows(RocksDBException.class)
     protected static ByteBuf get(@NonNull RocksDB db, @NonNull ColumnFamilyHandle handle, @NonNull ByteBuf key) {
         ByteBuffer keyNioBuffer = key.nioBuffer();
@@ -87,7 +99,7 @@ public class FarStorage<POS extends IFarPos, V extends IReusablePersistent> impl
         //pre-allocate 64KiB for initial buffer
         ByteBuf value = ByteBufAllocator.DEFAULT.directBuffer(1 << 16);
 
-        int len = db.get(handle, READ_OPTIONS, keyNioBuffer, value.nioBuffer());
+        int len = db.get(handle, READ_OPTIONS, keyNioBuffer, value.nioBuffer(value.readerIndex(), value.capacity()));
 
         if (len == RocksDB.NOT_FOUND) { //value wasn't found
             value.release();
@@ -96,7 +108,7 @@ public class FarStorage<POS extends IFarPos, V extends IReusablePersistent> impl
             //grow buffer to required size and try again
             value.ensureWritable(len);
 
-            len = db.get(handle, READ_OPTIONS, keyNioBuffer, value.nioBuffer());
+            len = db.get(handle, READ_OPTIONS, keyNioBuffer, value.nioBuffer(value.readerIndex(), value.capacity()));
         }
         return value.writerIndex(len);
     }
@@ -106,15 +118,28 @@ public class FarStorage<POS extends IFarPos, V extends IReusablePersistent> impl
         db.put(handle, WRITE_OPTIONS, key.nioBuffer(), value.nioBuffer());
     }
 
+    @SneakyThrows(RocksDBException.class)
+    protected static void delete(@NonNull RocksDB db, @NonNull ColumnFamilyHandle handle, @NonNull ByteBuf key) {
+        db.delete(handle, WRITE_OPTIONS, key.nioBuffer());
+    }
+
+    protected final IFarRenderMode<POS, ?> mode;
+
+    protected final TransactionDB db;
+    protected final List<ColumnFamilyHandle> handles;
+
+    protected final ColumnFamilyHandle cfTiles;
+    protected final ColumnFamilyHandle cfDirty;
+
     protected final int version;
 
-    protected final RocksDB db;
-    protected final List<ColumnFamilyHandle> handles;
-    protected final ColumnFamilyHandle cfTiles;
+    @Getter
+    protected final RocksDirtyTracker<POS> dirtyTracker;
 
     @SneakyThrows(RocksDBException.class)
-    public FarStorage(@NonNull File storageRoot, int version) {
-        this.version = version;
+    public RocksStorage(@NonNull IFarRenderMode<POS, ?> mode, @NonNull File storageRoot) {
+        this.mode = mode;
+        this.version = mode.storageVersion();
 
         File markerFile = new File(storageRoot, "v2");
         if (PFiles.checkDirectoryExists(storageRoot) && !PFiles.checkFileExists(markerFile)) { //it's an old storage
@@ -124,14 +149,18 @@ public class FarStorage<POS extends IFarPos, V extends IReusablePersistent> impl
 
         List<ColumnFamilyDescriptor> descriptors = Arrays.asList(
                 new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, CF_OPTIONS),
-                new ColumnFamilyDescriptor(COLUMN_NAME_TILES, CF_OPTIONS));
+                new ColumnFamilyDescriptor(COLUMN_NAME_TILES, CF_OPTIONS),
+                new ColumnFamilyDescriptor(COLUMN_NAME_DIRTY, CF_OPTIONS));
         this.handles = new ArrayList<>(descriptors.size());
 
-        this.db = RocksDB.open(DB_OPTIONS, storageRoot.getPath(), descriptors, this.handles);
+        this.db = TransactionDB.open(DB_OPTIONS, TX_DB_OPTIONS, storageRoot.getPath(), descriptors, this.handles);
 
         this.cfTiles = this.handles.get(1);
+        this.cfDirty = this.handles.get(2);
 
         PFiles.ensureFileExists(markerFile); //create marker file
+
+        this.dirtyTracker = new RocksDirtyTracker<>(this);
     }
 
     @Override
@@ -152,17 +181,19 @@ public class FarStorage<POS extends IFarPos, V extends IReusablePersistent> impl
             key.release();
         }
 
+        if (packed == null) { //the data doesn't exist on disk
+            return null;
+        }
+
         //unpack
-        boolean release = true;
         try {
-            if (packed != null && readVarInt(packed) == this.version) {
+            int packedVersion = readVarInt(packed);
+            if (packedVersion == this.version) {
                 return new Compressed<>(pos, packed);
             }
             return null;
         } finally {
-            if (release) {
-                packed.release();
-            }
+            packed.release();
         }
     }
 

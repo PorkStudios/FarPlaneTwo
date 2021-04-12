@@ -31,11 +31,12 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
-import net.daporkchop.fp2.mode.api.server.IFarStorage;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
+import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
+import net.daporkchop.fp2.mode.common.server.storage.rocksdb.RocksStorage;
 import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.threading.PriorityRecursiveExecutor;
@@ -73,17 +74,12 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
     protected final IFarPlayerTracker<POS> tracker;
 
-    //cache for loaded tiles
-    protected final Cache<POS, Compressed<POS, T>> tileCache = CacheBuilder.newBuilder()
+    //TODO: somehow merge tileCache and notDone
+    protected final Cache<POS, Compressed<POS, T>> tileCache = CacheBuilder.newBuilder() //cache for loaded tiles
             .concurrencyLevel(FP2Config.generationThreads)
             .weakValues()
             .build();
-
-    //contains positions of all tiles that aren't done
-    protected final Map<POS, Boolean> notDone = new ConcurrentHashMap<>(); //TODO: make this (and also exactActive) (and also the task queue) lazily overflow to disk, because the queue might get REALLY big
-
-    //contains positions of all tiles that are going to be updated with the exact generator
-    protected final ObjLongMap<POS> exactActive = new ObjLongConcurrentHashMap<>(-1L);
+    protected final Map<POS, Boolean> notDone = new ConcurrentHashMap<>(); //contains positions of all tiles that aren't done
 
     protected final PriorityRecursiveExecutor<PriorityTask<POS>> executor; //TODO: make these global rather than per-dimension
 
@@ -110,7 +106,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.tracker = this.createTracker();
 
         this.root = new File(world.getChunkSaveLocation(), "fp2/" + this.mode().name().toLowerCase());
-        this.storage = new FarStorage<>(this.root, this.mode().storageVersion());
+        this.storage = new RocksStorage<>(mode, this.root);
 
         this.executor = new PriorityRecursiveExecutor<>(
                 FP2Config.generationThreads,
@@ -118,7 +114,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
                         .collapsingId().name(PStrings.fastFormat("FP2 DIM%d Generation Thread #%%d", world.provider.getDimension())).build(),
                 new FarServerWorker<>(this));
 
-        this.loadNotDone();
+        //add all dirty tiles to update queue
+        this.storage.dirtyTracker().forEachDirtyPos((pos, timestamp) -> this.enqueueUpdate(pos));
 
         WorldChangeListenerManager.add(this.world, this);
     }
@@ -186,13 +183,16 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         return this.generatorRough != null && (pos.level() == 0 || this.lowResolution);
     }
 
+    protected void enqueueUpdate(@NonNull POS pos) {
+        this.executor.submit(new PriorityTask<>(TaskStage.UPDATE, pos));
+    }
+
     protected void scheduleForUpdate(@NonNull Stream<POS> positions) {
-        long newTimestamp = this.currentTime;
-        positions.forEach(pos -> {
-            if (this.exactActive.put(pos, newTimestamp) < 0L) { //position wasn't previously queued for update
-                this.executor.submit(new PriorityTask<>(TaskStage.UPDATE, pos));
-            }
-        });
+        //if (this.exactActive.put(pos, newTimestamp) < 0L) {
+
+        this.storage.dirtyTracker()
+                .markDirty(positions, this.currentTime)
+                .forEach(this::enqueueUpdate);
     }
 
     protected void scheduleForUpdate(@NonNull POS... positions) {
@@ -209,15 +209,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         return ((IAsyncBlockAccess.Holder) this.world).asyncBlockAccess();
     }
 
-    /*@Override
-    public void save() {
-        try {
-            this.saveNotDone();
-        } catch (IOException e) {
-            LOGGER.error("Unable to save in DIM" + this.world.provider.getDimension(), e);
-        }
-    }*/ //TODO
-
     @Override
     @SneakyThrows(IOException.class)
     public void close() {
@@ -228,95 +219,5 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.executor.shutdown();
         LOGGER.trace("Shutting down storage in DIM{}", this.world.provider.getDimension());
         this.storage.close();
-        this.saveNotDone();
-    }
-
-    protected void saveNotDone() throws IOException {
-        /*if (FP2_DEBUG && (FP2Config.debug.disablePersistence || FP2Config.debug.disableWrite) || this.notDone.isEmpty()) {
-            return;
-        }
-
-        LOGGER.trace("Saving incomplete tiles in DIM{}", this.world.provider.getDimension());
-
-        File tmpFile = PFiles.ensureFileExists(new File(this.root, "notDone.tmp"));
-        File file = new File(this.root, "notDone");
-
-        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
-        try (DataOut out = ZSTD_DEF.get().compressionStream(DataOut.wrapNonBuffered(tmpFile))) {
-            //tile load tasks
-            this.notDone.entrySet().stream()
-                    .filter(Map.Entry::getValue)
-                    .map(Map.Entry::getKey)
-                    .forEach((IOConsumer<POS>) pos -> {
-                        pos.writePos(buf.clear());
-                        checkState(buf.isReadable(), "position %s serialized to 0 bytes!", pos);
-                        out.writeVarInt(buf.readableBytes());
-                        out.write(buf);
-                    });
-            out.writeVarInt(0);
-
-            //exact generate tasks
-            this.exactActive.forEach((pos, newTimestamp) -> {
-                try {
-                    pos.writePos(buf.clear());
-                    checkState(buf.isReadable(), "position %s serialized to 0 bytes!", pos);
-                    out.writeVarInt(buf.readableBytes());
-                    out.writeVarLong(newTimestamp);
-                    out.write(buf);
-                } catch (IOException e) {
-                    PUnsafe.throwException(e);
-                    throw new RuntimeException(e);
-                }
-            });
-            out.writeVarInt(0);
-        } finally {
-            buf.release();
-        }
-
-        Files.move(tmpFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);*/
-    }
-
-    protected void loadNotDone() {
-        /*Collection<GetTileTask<POS, P, D>> loadTasks = new ArrayList<>();
-        Collection<ExactUpdateTileTask<POS, P, D>> exactGenerateTasks = new ArrayList<>();
-
-        try {
-            File file = new File(this.root, "notDone");
-            if (FP2_DEBUG && (FP2Config.debug.disablePersistence || FP2Config.debug.disableRead) || !PFiles.checkFileExists(file)) {
-                return; //don't bother attempting to load
-            }
-
-            ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
-            try (DataIn in = ZSTD_INF.get().decompressionStream(DataIn.wrapNonBuffered(file))) {
-                //tile load tasks
-                for (int size; (size = in.readVarInt()) > 0; ) {
-                    in.readFully(buf.clear().ensureWritable(size), size);
-
-                    POS pos = uncheckedCast(this.mode.readPos(buf));
-                    if (this.notDone(pos, true) && pos.level() < FP2Config.maxLevels) {
-                        loadTasks.add(new GetTileTask<>(this, new TaskKey(TaskStage.LOAD, pos.level()), pos, TaskStage.LOAD));
-                    }
-                }
-
-                //exact update tasks
-                for (int size; (size = in.readVarInt()) > 0; ) {
-                    in.readFully(buf.clear().ensureWritable(size), size);
-                    long newTimestamp = in.readVarLong();
-
-                    POS pos = uncheckedCast(this.mode.readPos(buf));
-                    if (this.exactActive.put(pos, newTimestamp) < 0L && pos.level() < FP2Config.maxLevels) {
-                        exactGenerateTasks.add(new ExactUpdateTileTask<>(this, new TaskKey(TaskStage.EXACT, pos.level()), pos, TaskStage.EXACT));
-                    }
-                }
-            } finally {
-                buf.release();
-            }
-        } catch (IOException e) {
-            LOGGER.error("Unable to load incomplete tasks!", e);
-        } finally {
-            LOGGER.info("Loaded {} persisted tile load tasks and {} persisted exact generate tasks", loadTasks.size(), exactGenerateTasks.size());
-            this.executor.submit(PorkUtil.<Collection<LazyTask<TaskKey, ?, ?>>>uncheckedCast(loadTasks));
-            this.executor.submit(PorkUtil.<Collection<LazyTask<TaskKey, ?, ?>>>uncheckedCast(exactGenerateTasks));
-        }*/
     }
 }

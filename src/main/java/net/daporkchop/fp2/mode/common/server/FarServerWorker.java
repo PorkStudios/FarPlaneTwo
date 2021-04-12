@@ -201,13 +201,16 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
     //
 
     public void updateTile(PriorityTask<POS> root, POS pos) {
-        long newTimestamp = this.world.exactActive.remove(pos);
+        long newTimestamp = this.world.storage.dirtyTracker().dirtyTimestamp(pos);
         if (newTimestamp < 0L) {
             LOGGER.warn("Duplicate update task scheduled for tile at {}!", pos);
             return;
         }
 
         this.updateTile(root, pos, newTimestamp);
+
+        //remove tile from tracker again
+        this.world.storage.dirtyTracker().clearDirty(pos, newTimestamp);
     }
 
     public Compressed<POS, T> updateTile(PriorityTask<POS> root, POS pos, long newTimestamp) {

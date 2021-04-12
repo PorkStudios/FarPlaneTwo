@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.net.server;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.net.client.CPacketRenderMode;
@@ -29,6 +30,8 @@ import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+
+import java.util.concurrent.TimeUnit;
 
 import static net.daporkchop.fp2.util.Constants.NETWORK_WRAPPER;
 
@@ -50,10 +53,12 @@ public class SPacketReady implements IMessage {
     public static class Handler implements IMessageHandler<SPacketReady, IMessage> {
         @Override
         public IMessage onMessage(SPacketReady message, MessageContext ctx) {
-            ClientThreadExecutor.INSTANCE.execute(() -> {
-                Constants.LOGGER.debug("Server notified us that we are ready to go!");
-                NETWORK_WRAPPER.sendToServer(new CPacketRenderMode().mode(IFarRenderMode.REGISTRY.get(FP2Config.renderMode)));
-            });
+            GlobalEventExecutor.INSTANCE.schedule(() -> { //TODO: better workaround
+                ClientThreadExecutor.INSTANCE.execute(() -> {
+                    Constants.LOGGER.debug("Server notified us that we are ready to go!");
+                    NETWORK_WRAPPER.sendToServer(new CPacketRenderMode().mode(IFarRenderMode.REGISTRY.get(FP2Config.renderMode)));
+                });
+            }, 1L, TimeUnit.SECONDS);
             return null;
         }
     }

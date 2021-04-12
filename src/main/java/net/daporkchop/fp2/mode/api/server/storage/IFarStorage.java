@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.server;
+package net.daporkchop.fp2.mode.api.server.storage;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.Compressed;
@@ -27,6 +27,7 @@ import net.daporkchop.fp2.util.IReusablePersistent;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.function.Consumer;
 
 /**
  * Handles reading and writing of far terrain data.
@@ -49,6 +50,11 @@ public interface IFarStorage<POS extends IFarPos, V extends IReusablePersistent>
      * @param value the value to save
      */
     void store(@NonNull POS pos, @NonNull Compressed<POS, V> value);
+
+    /**
+     * @return the {@link IFarDirtyTracker} used by this storage
+     */
+    IFarDirtyTracker<POS> dirtyTracker();
 
     /**
      * Closes this storage.

@@ -67,11 +67,6 @@ public interface IFarWorld<POS extends IFarPos, T extends IFarTile> extends Clos
     IFarScaler<POS, T> scaler();
 
     /**
-     * @return the {@link IFarStorage} used for persistence of far terrain tiles
-     */
-    IFarStorage<POS, T> storage();
-
-    /**
      * @return the {@link IFarPlayerTracker} used by this world
      */
     IFarPlayerTracker<POS> tracker();
