@@ -54,10 +54,10 @@ public class HeightmapScalerMinMax implements IFarScaler<HeightmapPos, Heightmap
         int level = dstPos.level();
 
         return Stream.of(
-                new HeightmapPos(x, z, level - 1),
-                new HeightmapPos(x, z + 1, level - 1),
-                new HeightmapPos(x + 1, z, level - 1),
-                new HeightmapPos(x + 1, z + 1, level - 1));
+                new HeightmapPos(level - 1, x, z),
+                new HeightmapPos(level - 1, x, z + 1),
+                new HeightmapPos(level - 1, x + 1, z),
+                new HeightmapPos(level - 1, x + 1, z + 1));
     }
 
     @Override

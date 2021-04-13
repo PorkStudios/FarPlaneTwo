@@ -25,7 +25,6 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
-import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.server.scale.HeightmapScalerMinMax;
@@ -61,7 +60,7 @@ public abstract class HeightmapWorld extends AbstractFarWorld<HeightmapPos, Heig
 
     @Override
     public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
-        this.scheduleForUpdate(new HeightmapPos(columnX, columnZ, 0));
+        this.scheduleForUpdate(new HeightmapPos(0, columnX, columnZ));
     }
 
     public static class Vanilla extends HeightmapWorld {
@@ -82,7 +81,7 @@ public abstract class HeightmapWorld extends AbstractFarWorld<HeightmapPos, Heig
 
         @Override
         public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt) {
-            this.scheduleForUpdate(new HeightmapPos(cubeX, cubeZ, 0));
+            this.scheduleForUpdate(new HeightmapPos(0, cubeX, cubeZ));
         }
     }
 }

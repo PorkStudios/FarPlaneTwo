@@ -43,14 +43,14 @@ public interface IVoxelRenderStrategy extends IFarRenderStrategy<VoxelPos, Voxel
         for (int dx = -1; dx <= 0; dx++) {
             for (int dy = -1; dy <= 0; dy++) {
                 for (int dz = -1; dz <= 0; dz++) {
-                    arr[i++] = new VoxelPos(x + dx, y + dy, z + dz, level);
+                    arr[i++] = new VoxelPos(level, x + dx, y + dy, z + dz);
                 }
             }
         }
         for (int dx = -2; dx <= 0; dx++) {
             for (int dy = -2; dy <= 0; dy++) {
                 for (int dz = -2; dz <= 0; dz++) {
-                    arr[i++] = new VoxelPos((x << 1) + dx, (y << 1) + dy, (z << 1) + dz, level - 1);
+                    arr[i++] = new VoxelPos(level - 1, (x << 1) + dx, (y << 1) + dy, (z << 1) + dz);
                 }
             }
         }
@@ -69,14 +69,14 @@ public interface IVoxelRenderStrategy extends IFarRenderStrategy<VoxelPos, Voxel
         for (int dx = 0; dx <= 1; dx++) {
             for (int dy = 0; dy <= 1; dy++) {
                 for (int dz = 0; dz <= 1; dz++) {
-                    arr[i++] = new VoxelPos(x + dx, y + dy, z + dz, level);
+                    arr[i++] = new VoxelPos(level, x + dx, y + dy, z + dz);
                 }
             }
         }
         for (int dx = 0; dx <= 1; dx++) {
             for (int dy = 0; dy <= 1; dy++) {
                 for (int dz = 0; dz <= 1; dz++) {
-                    arr[i++] = new VoxelPos((x >> 1) + dx, (y >> 1) + dy, (z >> 1) + dz, level + 1);
+                    arr[i++] = new VoxelPos(level + 1, (x >> 1) + dx, (y >> 1) + dy, (z >> 1) + dz);
                 }
             }
         }

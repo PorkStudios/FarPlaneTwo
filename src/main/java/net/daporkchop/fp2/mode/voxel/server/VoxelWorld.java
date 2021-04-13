@@ -73,7 +73,7 @@ public abstract class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelTile> {
             int height = this.world.getHeight() >> 4;
             VoxelPos[] positions = new VoxelPos[height];
             for (int y = 0; y < height; y++) {
-                positions[y] = new VoxelPos(columnX, y, columnZ, 0);
+                positions[y] = new VoxelPos(0, columnX, y, columnZ);
             }
             this.scheduleForUpdate(positions);
         }
@@ -99,7 +99,7 @@ public abstract class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelTile> {
 
         @Override
         public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt) {
-            this.scheduleForUpdate(new VoxelPos(cubeX, cubeY, cubeZ, 0));
+            this.scheduleForUpdate(new VoxelPos(0, cubeX, cubeY, cubeZ));
         }
     }
 }

@@ -106,7 +106,7 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelTile> 
         for (int i = 0, dx = min; dx < max; dx++) {
             for (int dy = min; dy < max; dy++) {
                 for (int dz = min; dz < max; dz++) {
-                    positions[i++] = new VoxelPos(x + dx, y + dy, z + dz, level);
+                    positions[i++] = new VoxelPos(level, x + dx, y + dy, z + dz);
                 }
             }
         }

@@ -39,9 +39,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Getter
 @ToString
 public class HeightmapPos implements IFarPos {
+    protected final int level;
     protected final int x;
     protected final int z;
-    protected final int level;
 
     public HeightmapPos(@NonNull ByteBuf buf) {
         this(buf.readInt(), buf.readInt(), buf.readInt());
@@ -85,12 +85,12 @@ public class HeightmapPos implements IFarPos {
         checkArg(targetLevel > this.level, "targetLevel (%d) must be greater than current level (%d)", targetLevel, this.level);
 
         int shift = targetLevel - this.level;
-        return new HeightmapPos(this.x >> shift, this.z >> shift, targetLevel);
+        return new HeightmapPos(targetLevel, this.x >> shift, this.z >> shift);
     }
 
     @Override
     public HeightmapPos up() {
-        return new HeightmapPos(this.x >> 1, this.z >> 1, this.level + 1);
+        return new HeightmapPos(this.level + 1, this.x >> 1, this.z >> 1);
     }
 
     @Override

@@ -64,7 +64,7 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos> {
             for (int x = xMin; x <= xMax; x++) {
                 for (int y = yMin; y <= yMax; y++)  {
                     for (int z = zMin; z <= zMax; z++) {
-                        positions[i++] = new VoxelPos(x, y, z, lvl);
+                        positions[i++] = new VoxelPos(lvl, x, y, z);
                     }
                 }
             }

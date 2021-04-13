@@ -107,7 +107,7 @@ public class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos> {
 
     @Override
     public VoxelPos loadPos(long addr) {
-        return new VoxelPos(_x(addr), _y(addr), _z(addr), _level(addr));
+        return new VoxelPos(_level(addr), _x(addr), _y(addr), _z(addr));
     }
 
     @Override

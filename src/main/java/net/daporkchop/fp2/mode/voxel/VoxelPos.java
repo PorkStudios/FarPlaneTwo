@@ -38,10 +38,10 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Getter
 @ToString
 public class VoxelPos implements IFarPos {
+    protected final int level;
     protected final int x;
     protected final int y;
     protected final int z;
-    protected final int level;
 
     public VoxelPos(@NonNull ByteBuf buf) {
         this(buf.readInt(), buf.readInt(), buf.readInt(), buf.readInt());
@@ -89,12 +89,12 @@ public class VoxelPos implements IFarPos {
         checkArg(targetLevel > this.level, "targetLevel (%d) must be greater than current level (%d)", targetLevel, this.level);
 
         int shift = targetLevel - this.level;
-        return new VoxelPos(this.x >> shift, this.y >> shift, this.z >> shift, targetLevel);
+        return new VoxelPos(targetLevel, this.x >> shift, this.y >> shift, this.z >> shift);
     }
 
     @Override
     public VoxelPos up() {
-        return new VoxelPos(this.x >> 1, this.y >> 1, this.z >> 1, this.level + 1);
+        return new VoxelPos(this.level + 1, this.x >> 1, this.y >> 1, this.z >> 1);
     }
 
     @Override

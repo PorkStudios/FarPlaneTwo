@@ -95,7 +95,7 @@ public class HeightmapDirectPosAccess implements IFarDirectPosAccess<HeightmapPo
 
     @Override
     public HeightmapPos loadPos(long addr) {
-        return new HeightmapPos(_x(addr), _z(addr), _level(addr));
+        return new HeightmapPos(_level(addr), _x(addr), _z(addr));
     }
 
     @Override

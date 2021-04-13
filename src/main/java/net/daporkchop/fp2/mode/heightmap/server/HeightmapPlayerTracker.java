@@ -60,7 +60,7 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos> 
 
             for (int x = xMin; x <= xMax; x++) {
                 for (int z = zMin; z <= zMax; z++) {
-                    positions[i++] = new HeightmapPos(x, z, lvl);
+                    positions[i++] = new HeightmapPos(lvl, x, z);
                 }
             }
         }

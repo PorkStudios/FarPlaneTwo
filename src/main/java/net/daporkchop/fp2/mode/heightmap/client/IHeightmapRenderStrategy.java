@@ -42,12 +42,12 @@ public interface IHeightmapRenderStrategy extends IFarRenderStrategy<HeightmapPo
         int i = 0;
         for (int dx = -1; dx <= 0; dx++) {
             for (int dz = -1; dz <= 0; dz++) {
-                arr[i++] = new HeightmapPos(x + dx, z + dz, level);
+                arr[i++] = new HeightmapPos(level, x + dx, z + dz);
             }
         }
         for (int dx = -1; dx <= 0; dx++) {
             for (int dz = -1; dz <= 0; dz++) {
-                arr[i++] = new HeightmapPos((x << 1) + dx, (z << 1) + dz, level - 1);
+                arr[i++] = new HeightmapPos(level - 1, (x << 1) + dx, (z << 1) + dz);
             }
         }
         return Arrays.stream(arr, 0, i);
@@ -62,13 +62,13 @@ public interface IHeightmapRenderStrategy extends IFarRenderStrategy<HeightmapPo
         return Stream.of(
                 //same level
                 dstPos,
-                new HeightmapPos(x, z + 1, level),
-                new HeightmapPos(x + 1, z, level),
-                new HeightmapPos(x + 1, z + 1, level),
+                new HeightmapPos(level, x, z + 1),
+                new HeightmapPos(level, x + 1, z),
+                new HeightmapPos(level, x + 1, z + 1),
                 //above level
-                new HeightmapPos(x >> 1, z >> 1, level + 1),
-                new HeightmapPos(x >> 1, (z >> 1) + 1, level + 1),
-                new HeightmapPos((x >> 1) + 1, z >> 1, level + 1),
-                new HeightmapPos((x >> 1) + 1, (z >> 1) + 1, level + 1));
+                new HeightmapPos(level + 1, x >> 1, z >> 1),
+                new HeightmapPos(level + 1, x >> 1, (z >> 1) + 1),
+                new HeightmapPos(level + 1, (x >> 1) + 1, z >> 1),
+                new HeightmapPos(level + 1, (x >> 1) + 1, (z >> 1) + 1));
     }
 }
