@@ -23,12 +23,10 @@ void main() {
     ivec3 relative_tile_position = (tile_position.xyz << tile_position.w << T_SHIFT) - glState.camera.position_floor;
     vec3 relativePos = vec3(relative_tile_position + getLowOffsetPre(tile_position.w)) + getLowOffsetPost() - glState.camera.position_fract;
 
-    float depth = length(relativePos);
-
-    //set fog depth here, simply because it's going to change by at most a few blocks (negligable) and this prevents us from having to compute the depth twice
-    fog_out.depth = depth;
-
 #ifdef USE_LOD
+    //LoD blending should only be done in 2D for heightmap mode to avoid seams
+    float depth = length(relativePos.xz);
+
     //mix low and high vertex positions based on depth
     float cutoff_scale = float(fp2_state.view.levelCutoffDistance << tile_position.w);
     float start = cutoff_scale * fp2_state.view.transitionStart;
@@ -37,6 +35,9 @@ void main() {
     vec3 relativePos_high = vec3(relative_tile_position + getHighOffsetPre(tile_position.w)) + getHighOffsetPost() - glState.camera.position_fract;
     relativePos = mix(relativePos_high, relativePos, clamp((end - depth) * (1. / (end - start)), 0., 1.));
 #endif
+
+    //set fog depth based on vertex distance to camera
+    fog_out.depth = length(relativePos);
 
     //vertex position is detail mixed
     gl_Position = cameraTransform(relativePos) + glState.camera.anti_flicker_offset;
