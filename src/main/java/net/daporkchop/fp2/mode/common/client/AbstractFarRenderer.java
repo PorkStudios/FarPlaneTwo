@@ -30,7 +30,7 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.util.DirectLongStack;
+import net.daporkchop.fp2.util.datastructure.DirectLongStack;
 import net.daporkchop.fp2.util.math.Sphere;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;

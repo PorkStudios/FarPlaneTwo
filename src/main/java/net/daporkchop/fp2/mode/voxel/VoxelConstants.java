@@ -124,6 +124,10 @@ public class VoxelConstants {
             1, 1, 1
     };
 
+    public static final int BAKE_HIGH_RADIUS_MIN = -1;
+    public static final int BAKE_HIGH_RADIUS_MAX = 1;
+    public static final int BAKE_HIGH_CNT = BAKE_HIGH_RADIUS_MAX - BAKE_HIGH_RADIUS_MIN + 1;
+
     public static final int TYPE_AIR = 0;
     public static final int TYPE_TRANSPARENT = 1;
     public static final int TYPE_OPAQUE = 2;

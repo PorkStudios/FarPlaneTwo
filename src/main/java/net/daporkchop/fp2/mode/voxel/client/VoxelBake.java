@@ -32,6 +32,7 @@ import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
+import net.daporkchop.fp2.util.datastructure.PointOctree3I;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
 import net.minecraft.block.Block;
@@ -41,7 +42,9 @@ import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
@@ -76,14 +79,14 @@ public class VoxelBake {
     public final int VOXEL_VERTEX_POS_LOW_OFFSET = VOXEL_VERTEX_COLOR_OFFSET + MEDIUM_SIZE;
     public final int VOXEL_VERTEX_POS_HIGH_OFFSET = VOXEL_VERTEX_POS_LOW_OFFSET + MEDIUM_SIZE;
 
-    public final int VOXEL_VERTEX_SIZE = VOXEL_VERTEX_POS_HIGH_OFFSET + MEDIUM_SIZE + 1; // +1 in order to pad to 16 bytes
+    public final int VOXEL_VERTEX_SIZE = VOXEL_VERTEX_POS_HIGH_OFFSET + 3 * SHORT_SIZE;
 
     public void vertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao) {
         vao.attrI(buffer, 1, GL_UNSIGNED_INT, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_STATE_OFFSET, 0); //state
         vao.attrF(buffer, 2, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_LIGHT_OFFSET, 0); //light
         vao.attrF(buffer, 3, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_COLOR_OFFSET, 0); //color
         vao.attrF(buffer, 3, GL_UNSIGNED_BYTE, false, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_POS_LOW_OFFSET, 0); //pos_low
-        vao.attrF(buffer, 3, GL_UNSIGNED_BYTE, false, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_POS_HIGH_OFFSET, 0); //pos_high
+        vao.attrF(buffer, 3, GL_SHORT, false, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_POS_HIGH_OFFSET, 0); //pos_high
     }
 
     protected static int vertexMapIndex(int dx, int dy, int dz, int i, int edge) {
@@ -101,9 +104,9 @@ public class VoxelBake {
         }
 
         final int level = dstPos.level();
-        final int baseX = dstPos.blockX();
-        final int baseY = dstPos.blockY();
-        final int baseZ = dstPos.blockZ();
+        final int blockX = dstPos.blockX();
+        final int blockY = dstPos.blockY();
+        final int blockZ = dstPos.blockZ();
 
         final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
@@ -112,7 +115,10 @@ public class VoxelBake {
         final int[] map = MAP_RECYCLER.get().allocate();
 
         try {
-            //step 1: simply write vertices for all source tiles, and assign indices
+            //step 1: build octree
+            PointOctree3I octree = buildHighPointOctree(srcs, data, dstPos);
+
+            //step 2: write vertices for all source tiles, and assign indices
             int indexCounter = 0;
             for (int i = 0; i < 8; i++) {
                 VoxelTile src = srcs[i];
@@ -130,13 +136,13 @@ public class VoxelBake {
                                 continue;
                             }
 
-                            indexCounter = vertex(baseX, baseY, baseZ, level, i, srcs, dx + (((i >> 2) & 1) << T_SHIFT), dy + (((i >> 1) & 1) << T_SHIFT), dz + ((i & 1) << T_SHIFT), data, verts, pos, biomeAccess, map, indexCounter);
+                            indexCounter = vertex(blockX, blockY, blockZ, level, dx + (((i >> 2) & 1) << T_SHIFT), dy + (((i >> 1) & 1) << T_SHIFT), dz + ((i & 1) << T_SHIFT), data, verts, pos, biomeAccess, map, indexCounter, octree);
                         }
                     }
                 }
             }
 
-            //step 2: write indices to actually connect the vertices and build the mesh
+            //step 3: write indices to actually connect the vertices and build the mesh
             for (int dx = 0; dx < T_VOXELS; dx++) {
                 for (int dy = 0; dy < T_VOXELS; dy++) {
                     for (int dz = 0; dz < T_VOXELS; dz++) {
@@ -191,7 +197,44 @@ public class VoxelBake {
         }
     }
 
-    protected int vertex(int baseX, int baseY, int baseZ, int level, int i, VoxelTile[] srcs, int x, int y, int z, VoxelData data, ByteBuf vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, int[] map, int indexCounter) {
+    protected PointOctree3I buildHighPointOctree(VoxelTile[] srcs, VoxelData data, VoxelPos pos) {
+        List<int[]> highPoints = new ArrayList<>();
+
+        int offX = -(pos.x() & 1) << (T_SHIFT + POS_FRACT_SHIFT);
+        int offY = -(pos.y() & 1) << (T_SHIFT + POS_FRACT_SHIFT);
+        int offZ = -(pos.z() & 1) << (T_SHIFT + POS_FRACT_SHIFT);
+
+        for (int i = 8, tx = BAKE_HIGH_RADIUS_MIN; tx <= BAKE_HIGH_RADIUS_MAX; tx++) {
+            for (int ty = BAKE_HIGH_RADIUS_MIN; ty <= BAKE_HIGH_RADIUS_MAX; ty++) {
+                for (int tz = BAKE_HIGH_RADIUS_MIN; tz <= BAKE_HIGH_RADIUS_MAX; tz++) {
+                    VoxelTile tile = srcs[i++];
+                    if (tile == null) {
+                        continue;
+                    }
+
+                    for (int dx = 0; dx < T_VOXELS; dx++) {
+                        for (int dy = 0; dy < T_VOXELS; dy++) {
+                            for (int dz = 0; dz < T_VOXELS; dz++) {
+                                if (!tile.getOnlyPos(dx, dy, dz, data)) {
+                                    continue;
+                                }
+
+                                highPoints.add(new int[]{
+                                        (tx << (T_SHIFT + POS_FRACT_SHIFT + 1)) + (data.x << 1) + (dx << (POS_FRACT_SHIFT + 1)) + offX,
+                                        (ty << (T_SHIFT + POS_FRACT_SHIFT + 1)) + (data.y << 1) + (dy << (POS_FRACT_SHIFT + 1)) + offY,
+                                        (tz << (T_SHIFT + POS_FRACT_SHIFT + 1)) + (data.z << 1) + (dz << (POS_FRACT_SHIFT + 1)) + offZ
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return new PointOctree3I(highPoints.toArray(new int[0][]));
+    }
+
+    protected int vertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, VoxelData data, ByteBuf vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, int[] map, int indexCounter, PointOctree3I octree) {
         baseX += (x & T_VOXELS) << level;
         baseY += (y & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
@@ -218,25 +261,15 @@ public class VoxelBake {
         int highY = lowY;
         int highZ = lowZ;
 
-        int baseTileX = (baseX >> (level + T_SHIFT)) - ((i >> 2) & 1);
-        int baseTileY = (baseY >> (level + T_SHIFT)) - ((i >> 1) & 1);
-        int baseTileZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
-        VoxelTile highTile = srcs[8 | (i & (((baseTileX & 1) << 2) | ((baseTileY & 1) << 1) | (baseTileZ & 1)))];
-        if (highTile != null) {
-            int flooredX = blockX & -(1 << (level + 1));
-            int flooredY = blockY & -(1 << (level + 1));
-            int flooredZ = blockZ & -(1 << (level + 1));
-            if (highTile.getOnlyPos((flooredX >> (level + 1)) & T_MASK, (flooredY >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK, data)) {
-                highX = ((x & ~1) << POS_FRACT_SHIFT) + (data.x << 1);
-                highY = ((y & ~1) << POS_FRACT_SHIFT) + (data.y << 1);
-                highZ = ((z & ~1) << POS_FRACT_SHIFT) + (data.z << 1);
-            }
+        int[] closestHighPoint = octree.nearestNeighbor(new int[]{ lowX, lowY, lowZ });
+        if (closestHighPoint != null) {
+            highX = closestHighPoint[0];
+            highY = closestHighPoint[1];
+            highZ = closestHighPoint[2];
         }
 
         vertices.writeByte(lowX).writeByte(lowY).writeByte(lowZ); //pos_low
-        vertices.writeByte(highX).writeByte(highY).writeByte(highZ); //pos_high
-
-        vertices.writeByte(0); //pad to 16 bytes
+        vertices.writeShortLE(highX).writeShortLE(highY).writeShortLE(highZ); //pos_high
 
         EDGES:
         for (int edge = 0; edge < EDGE_COUNT; edge++) {

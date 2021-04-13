@@ -37,8 +37,8 @@ import net.minecraft.world.gen.layer.IntCache;
 import java.lang.reflect.Field;
 import java.util.Random;
 
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.compat.cwg.CWGHelper.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -60,6 +60,8 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
     protected final double[] heights;
     protected final double[] variations;
 
+    @Deprecated
+    protected final BiomeSource biomeSource;
     protected final BiomeProvider biomeProvider;
     protected final BiomeWeightHelper weightHelper;
     protected final IBiomeBlockReplacer[][] biomeBlockReplacers;
@@ -94,6 +96,7 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
             throw new RuntimeException(e);
         }
 
+        this.biomeSource = biomeSource;
         this.biomeBlockReplacers = CWGHelper.blockReplacerMapToArray(CWGHelper.getReplacerMap(biomeSource));
         this.biomeProvider = CWGHelper.getBiomeGen(biomeSource);
 
@@ -188,8 +191,10 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
     public double get(int x, int y, int z) {
         int i = ((x - this.baseX) >> (GT_SHIFT + this.level)) * this.gSize + ((z - this.baseZ) >> (GT_SHIFT + this.level));
         //TODO: this (height+variation) isn't identical to CWG
-        double height = this.heights[i] * this.heightFactor + this.heightOffset;
-        double variation = this.variations[i] * (height > y ? this.specialHeightVariationFactorBelowAverageY : 1.0d) * this.heightVariationFactor + this.heightVariationOffset;
+        //double height = this.heights[i] * this.heightFactor + this.heightOffset;
+        //double variation = this.variations[i] * (height > y ? this.specialHeightVariationFactorBelowAverageY : 1.0d) * this.heightVariationFactor + this.heightVariationOffset;
+        double height = this.biomeSource.getHeight(x, y, z) * this.heightFactor + this.heightOffset;
+        double variation = this.biomeSource.getVolatility(x, y, z) * (height > y ? this.specialHeightVariationFactorBelowAverageY : 1.0d) * this.heightVariationFactor + this.heightVariationOffset;
 
         double low = sample(this.lowSeed, x, y, z, this.lowNoiseOctaves, this.lowNoiseFrequencyX, this.lowNoiseFrequencyY, this.lowNoiseFrequencyZ, this.lowScale) * this.lowNoiseFactor + this.lowNoiseOffset;
         double high = sample(this.highSeed, x, y, z, this.highNoiseOctaves, this.highNoiseFrequencyX, this.highNoiseFrequencyY, this.highNoiseFrequencyZ, this.highScale) * this.highNoiseFactor + this.highNoiseOffset;

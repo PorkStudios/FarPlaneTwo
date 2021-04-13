@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.util;
+package net.daporkchop.fp2.util.datastructure;
 
 import lombok.NonNull;
 import net.daporkchop.lib.primitive.lambda.LongIntConsumer;
