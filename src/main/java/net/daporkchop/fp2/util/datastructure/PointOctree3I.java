@@ -42,7 +42,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 //TODO: this is a simple implementation, but certainly not particularly fast. let's optimize this to use flattened structures (probably off-heap)
-public class PointOctree3I {
+public final class PointOctree3I {
     protected static final int TARGET_POINTS_PER_NODE = 256;
 
     protected final Node root;

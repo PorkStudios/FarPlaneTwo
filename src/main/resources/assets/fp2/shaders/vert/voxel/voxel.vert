@@ -46,7 +46,7 @@ void main() {
     float start = cutoff_scale * fp2_state.view.transitionStart;
     float end = cutoff_scale * fp2_state.view.transitionEnd;
 
-    vec3 relativePos_high = vec3(relative_tile_position) + in_pos_high * float(1 << tile_position.w) / 8. - glState.camera.position_fract;
+    vec3 relativePos_high = vec3(relative_tile_position) + in_pos_high * 2. * float(1 << tile_position.w) / 8. - glState.camera.position_fract;
     relativePos = mix(relativePos_high, relativePos, clamp((end - depth) * (1. / (end - start)), 0., 1.));
 
     //vertex position is detail mixed

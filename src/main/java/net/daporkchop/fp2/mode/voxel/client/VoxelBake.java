@@ -79,7 +79,7 @@ public class VoxelBake {
     public final int VOXEL_VERTEX_POS_LOW_OFFSET = VOXEL_VERTEX_COLOR_OFFSET + MEDIUM_SIZE;
     public final int VOXEL_VERTEX_POS_HIGH_OFFSET = VOXEL_VERTEX_POS_LOW_OFFSET + MEDIUM_SIZE;
 
-    public final int VOXEL_VERTEX_SIZE = VOXEL_VERTEX_POS_HIGH_OFFSET + 3 * SHORT_SIZE;
+    public final int VOXEL_VERTEX_SIZE = VOXEL_VERTEX_POS_HIGH_OFFSET + 3 * SHORT_SIZE;// + 1; // +1 to pad to 16 bytes
 
     public void vertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao) {
         vao.attrI(buffer, 1, GL_UNSIGNED_INT, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_STATE_OFFSET, 0); //state
@@ -200,9 +200,12 @@ public class VoxelBake {
     protected PointOctree3I buildHighPointOctree(VoxelTile[] srcs, VoxelData data, VoxelPos pos) {
         List<int[]> highPoints = new ArrayList<>();
 
-        int offX = -(pos.x() & 1) << (T_SHIFT + POS_FRACT_SHIFT);
-        int offY = -(pos.y() & 1) << (T_SHIFT + POS_FRACT_SHIFT);
-        int offZ = -(pos.z() & 1) << (T_SHIFT + POS_FRACT_SHIFT);
+        int x = pos.x() & 1;
+        int y = pos.y() & 1;
+        int z = pos.z() & 1;
+        int offX = -x << (T_SHIFT + POS_FRACT_SHIFT) >> 1;
+        int offY = -y << (T_SHIFT + POS_FRACT_SHIFT) >> 1;
+        int offZ = -z << (T_SHIFT + POS_FRACT_SHIFT) >> 1;
 
         for (int i = 8, tx = BAKE_HIGH_RADIUS_MIN; tx <= BAKE_HIGH_RADIUS_MAX; tx++) {
             for (int ty = BAKE_HIGH_RADIUS_MIN; ty <= BAKE_HIGH_RADIUS_MAX; ty++) {
@@ -220,9 +223,9 @@ public class VoxelBake {
                                 }
 
                                 highPoints.add(new int[]{
-                                        (tx << (T_SHIFT + POS_FRACT_SHIFT + 1)) + (data.x << 1) + (dx << (POS_FRACT_SHIFT + 1)) + offX,
-                                        (ty << (T_SHIFT + POS_FRACT_SHIFT + 1)) + (data.y << 1) + (dy << (POS_FRACT_SHIFT + 1)) + offY,
-                                        (tz << (T_SHIFT + POS_FRACT_SHIFT + 1)) + (data.z << 1) + (dz << (POS_FRACT_SHIFT + 1)) + offZ
+                                        (tx << (T_SHIFT + POS_FRACT_SHIFT)) + (dx << POS_FRACT_SHIFT) + data.x + offX,
+                                        (ty << (T_SHIFT + POS_FRACT_SHIFT)) + (dy << POS_FRACT_SHIFT) + data.y + offY,
+                                        (tz << (T_SHIFT + POS_FRACT_SHIFT)) + (dz << POS_FRACT_SHIFT) + data.z + offZ
                                 });
                             }
                         }
@@ -257,11 +260,11 @@ public class VoxelBake {
         int lowX = (x << POS_FRACT_SHIFT) + data.x + offset;
         int lowY = (y << POS_FRACT_SHIFT) + data.y + offset;
         int lowZ = (z << POS_FRACT_SHIFT) + data.z + offset;
-        int highX = lowX;
-        int highY = lowY;
-        int highZ = lowZ;
+        int highX = lowX >> 1;
+        int highY = lowY >> 1;
+        int highZ = lowZ >> 1;
 
-        int[] closestHighPoint = octree.nearestNeighbor(new int[]{ lowX, lowY, lowZ });
+        int[] closestHighPoint = octree.nearestNeighbor(new int[]{ highX, highY, highZ });
         if (closestHighPoint != null) {
             highX = closestHighPoint[0];
             highY = closestHighPoint[1];
@@ -270,6 +273,8 @@ public class VoxelBake {
 
         vertices.writeByte(lowX).writeByte(lowY).writeByte(lowZ); //pos_low
         vertices.writeShortLE(highX).writeShortLE(highY).writeShortLE(highZ); //pos_high
+
+        //vertices.writeByte(0); //pad to 16 bytes
 
         EDGES:
         for (int edge = 0; edge < EDGE_COUNT; edge++) {
