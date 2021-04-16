@@ -145,53 +145,50 @@ public class VoxelBake {
             }
 
             //step 3: write indices to actually connect the vertices and build the mesh
-            for (int dx = 0; dx < T_VOXELS; dx++) {
-                for (int dy = 0; dy < T_VOXELS; dy++) {
-                    for (int dz = 0; dz < T_VOXELS; dz++) {
-                        if (!srcs[0].get(dx, dy, dz, data)) {
-                            continue;
-                        }
+            for (int j = 0; j < srcs[0].count(); j++) {
+                int voxelPos = srcs[0].get(j, data);
+                int dx = (voxelPos >> (T_SHIFT << 1)) & T_MASK;
+                int dy = (voxelPos >> T_SHIFT) & T_MASK;
+                int dz = voxelPos & T_MASK;
 
-                        int edges = data.edges;
-                        if ((((edges >> 2) ^ (edges >> 3)) & 1) != 0) { //for some reason y is backwards... let's invert it
-                            edges ^= EDGE_DIR_MASK << 2;
-                        }
-                        for (int edge = 0; edge < EDGE_COUNT; edge++) {
-                            if ((edges & (EDGE_DIR_MASK << (edge << 1))) == EDGE_DIR_NONE) {
-                                continue;
-                            }
+                int edges = data.edges;
+                if ((((edges >> 2) ^ (edges >> 3)) & 1) != 0) { //for some reason y is backwards... let's invert it
+                    edges ^= EDGE_DIR_MASK << 2;
+                }
+                for (int edge = 0; edge < EDGE_COUNT; edge++) {
+                    if ((edges & (EDGE_DIR_MASK << (edge << 1))) == EDGE_DIR_NONE) {
+                        continue;
+                    }
 
-                            int base = edge * CONNECTION_INDEX_COUNT;
-                            int oppositeCorner, c0, c1, provoking;
-                            if ((provoking = map[vertexMapIndex(dx, dy, dz, base, edge)]) < 0
-                                || (c0 = map[vertexMapIndex(dx, dy, dz, base + 1, edge)]) < 0
-                                || (c1 = map[vertexMapIndex(dx, dy, dz, base + 2, edge)]) < 0
-                                || (oppositeCorner = map[vertexMapIndex(dx, dy, dz, base + 3, edge)]) < 0) {
-                                continue; //skip if any of the vertices are missing
-                            }
+                    int base = edge * CONNECTION_INDEX_COUNT;
+                    int oppositeCorner, c0, c1, provoking;
+                    if ((provoking = map[vertexMapIndex(dx, dy, dz, base, edge)]) < 0
+                        || (c0 = map[vertexMapIndex(dx, dy, dz, base + 1, edge)]) < 0
+                        || (c1 = map[vertexMapIndex(dx, dy, dz, base + 2, edge)]) < 0
+                        || (oppositeCorner = map[vertexMapIndex(dx, dy, dz, base + 3, edge)]) < 0) {
+                        continue; //skip if any of the vertices are missing
+                    }
 
-                            IBlockState state = Block.getStateById(data.states[edge]);
-                            ByteBuf buf = indices[renderType(state)];
+                    IBlockState state = Block.getStateById(data.states[edge]);
+                    ByteBuf buf = indices[renderType(state)];
 
-                            boolean water = state.getBlock() == Blocks.WATER;
-                            if (water) {
-                                edges |= EDGE_DIR_BOTH << (edge << 1);
-                            }
+                    boolean water = state.getBlock() == Blocks.WATER;
+                    if (water) {
+                        edges |= EDGE_DIR_BOTH << (edge << 1);
+                    }
 
-                            if ((edges & (EDGE_DIR_NEGATIVE << (edge << 1))) != 0) { //the face has the negative bit set
-                                if ((edges & (EDGE_DIR_POSITIVE << (edge << 1))) != 0) { //the positive bit is set as well, output the face once before flipping
-                                    emitQuad(buf, oppositeCorner, c0, c1, provoking);
-                                }
-
-                                //flip the face around
-                                int i = c0;
-                                c0 = c1;
-                                c1 = i;
-                            }
-
+                    if ((edges & (EDGE_DIR_NEGATIVE << (edge << 1))) != 0) { //the face has the negative bit set
+                        if ((edges & (EDGE_DIR_POSITIVE << (edge << 1))) != 0) { //the positive bit is set as well, output the face once before flipping
                             emitQuad(buf, oppositeCorner, c0, c1, provoking);
                         }
+
+                        //flip the face around
+                        int i = c0;
+                        c0 = c1;
+                        c1 = i;
                     }
+
+                    emitQuad(buf, oppositeCorner, c0, c1, provoking);
                 }
             }
         } finally {
@@ -202,9 +199,9 @@ public class VoxelBake {
     protected PointOctree3I buildHighPointOctree(VoxelTile[] srcs, VoxelData data, VoxelPos pos) {
         IntList highPoints = new IntArrayList();
 
-        int offX = -(pos.x() & 1) << (T_SHIFT + POS_FRACT_SHIFT) >> 1;
-        int offY = -(pos.y() & 1) << (T_SHIFT + POS_FRACT_SHIFT) >> 1;
-        int offZ = -(pos.z() & 1) << (T_SHIFT + POS_FRACT_SHIFT) >> 1;
+        int offX = -(pos.x() & 1) << (T_SHIFT + POS_FRACT_SHIFT);
+        int offY = -(pos.y() & 1) << (T_SHIFT + POS_FRACT_SHIFT);
+        int offZ = -(pos.z() & 1) << (T_SHIFT + POS_FRACT_SHIFT);
 
         for (int i = 8, tx = BAKE_HIGH_RADIUS_MIN; tx <= BAKE_HIGH_RADIUS_MAX; tx++) {
             for (int ty = BAKE_HIGH_RADIUS_MIN; ty <= BAKE_HIGH_RADIUS_MAX; ty++) {
@@ -214,18 +211,20 @@ public class VoxelBake {
                         continue;
                     }
 
-                    for (int dx = 0; dx < T_VOXELS; dx++) {
-                        for (int dy = 0; dy < T_VOXELS; dy++) {
-                            for (int dz = 0; dz < T_VOXELS; dz++) {
-                                if (!tile.getOnlyPos(dx, dy, dz, data)) {
-                                    continue;
-                                }
+                    for (int j = 0; j < tile.count(); j++) {
+                        int voxelPos = tile.getOnlyPos(j, data);
+                        int dx = (voxelPos >> (T_SHIFT << 1)) & T_MASK;
+                        int dy = (voxelPos >> T_SHIFT) & T_MASK;
+                        int dz = voxelPos & T_MASK;
 
-                                int px = (tx << (T_SHIFT + POS_FRACT_SHIFT)) + (dx << POS_FRACT_SHIFT) + data.x + offX;
-                                int py = (ty << (T_SHIFT + POS_FRACT_SHIFT)) + (dy << POS_FRACT_SHIFT) + data.y + offY;
-                                int pz = (tz << (T_SHIFT + POS_FRACT_SHIFT)) + (dz << POS_FRACT_SHIFT) + data.z + offZ;
-                                highPoints.add(Int2_10_10_10_Rev.packCoords(px, py, pz));
-                            }
+                        int px = (tx << (T_SHIFT + POS_FRACT_SHIFT + 1)) + (dx << (POS_FRACT_SHIFT + 1)) + (data.x << 1) + offX;
+                        int py = (ty << (T_SHIFT + POS_FRACT_SHIFT + 1)) + (dy << (POS_FRACT_SHIFT + 1)) + (data.y << 1) + offY;
+                        int pz = (tz << (T_SHIFT + POS_FRACT_SHIFT + 1)) + (dz << (POS_FRACT_SHIFT + 1)) + (data.z << 1) + offZ;
+
+                        if (px >= Int2_10_10_10_Rev.MIN_AXIS_VALUE && px <= Int2_10_10_10_Rev.MAX_AXIS_VALUE
+                            && py >= Int2_10_10_10_Rev.MIN_AXIS_VALUE && py <= Int2_10_10_10_Rev.MAX_AXIS_VALUE
+                            && pz >= Int2_10_10_10_Rev.MIN_AXIS_VALUE && pz <= Int2_10_10_10_Rev.MAX_AXIS_VALUE) { //this will only discard a very small minority of vertices
+                            highPoints.add(Int2_10_10_10_Rev.packCoords(px, py, pz));
                         }
                     }
                 }
@@ -258,9 +257,9 @@ public class VoxelBake {
         int lowX = (x << POS_FRACT_SHIFT) + data.x + offset;
         int lowY = (y << POS_FRACT_SHIFT) + data.y + offset;
         int lowZ = (z << POS_FRACT_SHIFT) + data.z + offset;
-        int highX = lowX >> 1;
-        int highY = lowY >> 1;
-        int highZ = lowZ >> 1;
+        int highX = lowX;
+        int highY = lowY;
+        int highZ = lowZ;
 
         int closestHighPoint = octree.nearestNeighbor(highX, highY, highZ);
         if (closestHighPoint >= 0) {

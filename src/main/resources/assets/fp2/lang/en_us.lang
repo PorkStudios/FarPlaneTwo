@@ -19,7 +19,7 @@ key.fp2.debug.rebuildUVs=Rebuild far texture UVs
 #
 
 config.fp2.renderMode=Render mode
-config.fp2.renderDistance=Render distance
+config.fp2.renderDistance=Render distance (currently unused)
 config.fp2.maxLevels=Max LoD levels
 config.fp2.levelCutoffDistance=LoD level cutoff distance
 config.fp2.generationThreads=Generation threads

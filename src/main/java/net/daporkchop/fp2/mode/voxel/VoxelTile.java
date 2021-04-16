@@ -112,13 +112,6 @@ public class VoxelTile implements IFarTile {
     }
 
     /**
-     * @return the number of set voxels in this tile
-     */
-    public int size() {
-        return this.count;
-    }
-
-    /**
      * Gets the voxel at the given index.
      *
      * @param index  the index of the voxel to get
@@ -128,6 +121,12 @@ public class VoxelTile implements IFarTile {
     public int get(int index, VoxelData data) {
         long base = this.addr + INDEX_SIZE + checkIndex(this.count, index) * ENTRY_FULL_SIZE_BYTES;
         readData(base + 2L, data);
+        return PUnsafe.getChar(base);
+    }
+
+    public int getOnlyPos(int index, VoxelData data) {
+        long base = this.addr + INDEX_SIZE + checkIndex(this.count, index) * ENTRY_FULL_SIZE_BYTES;
+        readOnlyPos(base + 2L, data);
         return PUnsafe.getChar(base);
     }
 

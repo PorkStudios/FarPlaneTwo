@@ -122,7 +122,7 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelTile> 
         BitSet dstVoxels = new BitSet(DST_SIZE * DST_SIZE * DST_SIZE);
 
         int[] srcEdges = new int[SRC_SIZE * SRC_SIZE * SRC_SIZE];
-        int[] srcBiomesLights = new int[SRC_SIZE * SRC_SIZE * SRC_SIZE];
+        int[] srcBiomesAndLights = new int[SRC_SIZE * SRC_SIZE * SRC_SIZE];
         int[] srcStates = new int[SRC_SIZE * SRC_SIZE * SRC_SIZE * 3];
         for (int x = SRC_MIN; x < SRC_MAX; x++) {
             for (int y = SRC_MIN; y < SRC_MAX; y++) {
@@ -140,7 +140,7 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelTile> 
                             }
                         }
                         srcEdges[srcIndex(x, y, z)] = edges;
-                        srcBiomesLights[srcIndex(x, y, z)] = data.biome << 8 | data.light;
+                        srcBiomesAndLights[srcIndex(x, y, z)] = data.biome << 8 | data.light;
                     }
                 }
             }
@@ -266,8 +266,8 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelTile> 
                                         for (int dz = 0; dz < 2; dz++) {
                                             if ((data.states[edge] = srcStates[srcIndex((x << 1) + dx, (y << 1) + dy, (z << 1) + dz, edge)]) != 0) {
                                                 int si = srcIndex((x << 1) + dx, (y << 1) + dy, (z << 1) + dz);
-                                                data.biome = srcBiomesLights[si] >> 8;
-                                                data.light = srcBiomesLights[si] & 0xFF;
+                                                data.biome = srcBiomesAndLights[si] >> 8;
+                                                data.light = srcBiomesAndLights[si] & 0xFF;
                                                 break VOXEL_SEARCH;
                                             }
                                         }
