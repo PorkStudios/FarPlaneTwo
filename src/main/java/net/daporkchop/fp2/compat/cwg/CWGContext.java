@@ -180,11 +180,11 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
             }
         }
 
-        this.weightHelper.compute(this.biomeProvider.genBiomes, baseX >> GT_SHIFT, baseZ >> GT_SHIFT, level, this.gSize, this.heights, this.variations);
+        /*this.weightHelper.compute(this.biomeProvider.genBiomes, baseX >> GT_SHIFT, baseZ >> GT_SHIFT, level, this.gSize, this.heights, this.variations);
         for (int i = 0, len = this.gSize * this.gSize; i < len; i++) { //convert to CWG format
             this.heights[i] = BiomeHelper.biomeHeightVanilla(this.heights[i]);
             this.variations[i] = BiomeHelper.biomeHeightVariationVanilla(this.variations[i]);
-        }
+        }*/
     }
 
     @Override

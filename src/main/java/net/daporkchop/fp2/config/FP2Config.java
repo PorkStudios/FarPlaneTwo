@@ -66,7 +66,7 @@ public class FP2Config {
     })
     @Config.RangeInt(min = 0)
     @Config.LangKey("config.fp2.levelCutoffDistance")
-    public static int levelCutoffDistance = 128;
+    public static int levelCutoffDistance = 256;
 
     @Config.Comment({
             "The number of threads that will be used for generating far plane terrain data.",

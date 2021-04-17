@@ -66,8 +66,7 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
     @Override
     protected AbstractOrderedRegistryEvent<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>> roughGeneratorFactoryEvent() {
         return new RegisterRoughVoxelGeneratorsEvent(new LinkedOrderedRegistry<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>>()
-                //TODO: remove "false && " once i actually get this working
-                .addLast("cubic_world_gen", world -> false && Constants.isCwgWorld(world) ? new CWGVoxelGenerator(world) : null));
+                .addLast("cubic_world_gen", world -> Constants.isCwgWorld(world) ? new CWGVoxelGenerator(world) : null));
     }
 
     @Override
