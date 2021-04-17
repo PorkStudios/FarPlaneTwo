@@ -47,7 +47,7 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos> 
         final int baseZ = floorI(player.posZ) >> T_SHIFT;
 
         final int levels = FP2Config.maxLevels;
-        final int d = (FP2Config.levelCutoffDistance >> T_SHIFT) + 2; //extra padding of 2 tiles to allow tiles to pre-load on the client when moving
+        final int d = (FP2Config.levelCutoffDistance >> T_SHIFT) + 3; //extra padding of 3 tiles to allow tiles to pre-load on the client when moving
 
         HeightmapPos[] positions = new HeightmapPos[pow(d * 2 + 1, 2) * levels];
         int i = 0;

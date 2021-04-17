@@ -62,8 +62,9 @@ public class HeightmapBake {
     public static final int HEIGHTMAP_VERTEX_HEIGHT_LOW_OFFSET = HEIGHTMAP_VERTEX_POS_LOW_OFFSET + SHORT_SIZE;
     public static final int HEIGHTMAP_VERTEX_POS_HIGH_OFFSET = HEIGHTMAP_VERTEX_HEIGHT_LOW_OFFSET + INT_SIZE;
     public static final int HEIGHTMAP_VERTEX_HEIGHT_HIGH_OFFSET = HEIGHTMAP_VERTEX_POS_HIGH_OFFSET + SHORT_SIZE;
+    public static final int HEIGHTMAP_VERTEX_HEIGHT_WATER_OFFSET = HEIGHTMAP_VERTEX_HEIGHT_HIGH_OFFSET + INT_SIZE;
 
-    public static final int HEIGHTMAP_VERTEX_SIZE = HEIGHTMAP_VERTEX_HEIGHT_HIGH_OFFSET + INT_SIZE;
+    public static final int HEIGHTMAP_VERTEX_SIZE = HEIGHTMAP_VERTEX_HEIGHT_WATER_OFFSET + INT_SIZE;
 
     public void vertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao) {
         vao.attrI(buffer, 1, GL_UNSIGNED_INT, HEIGHTMAP_VERTEX_SIZE, HEIGHTMAP_VERTEX_STATE_OFFSET, 0); //state
@@ -72,9 +73,10 @@ public class HeightmapBake {
         vao.attrF(buffer, 2, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, HEIGHTMAP_VERTEX_LIGHT_WATER_OFFSET, 0); //light_water
         vao.attrF(buffer, 4, GL_UNSIGNED_BYTE, true, HEIGHTMAP_VERTEX_SIZE, HEIGHTMAP_VERTEX_COLOR_WATER_OFFSET, 0); //color_water
         vao.attrI(buffer, 2, GL_UNSIGNED_BYTE, HEIGHTMAP_VERTEX_SIZE, HEIGHTMAP_VERTEX_POS_LOW_OFFSET, 0); //pos_low
-        vao.attrI(buffer, 1, GL_UNSIGNED_INT, HEIGHTMAP_VERTEX_SIZE, HEIGHTMAP_VERTEX_HEIGHT_LOW_OFFSET, 0); //height_low
+        vao.attrI(buffer, 1, GL_INT, HEIGHTMAP_VERTEX_SIZE, HEIGHTMAP_VERTEX_HEIGHT_LOW_OFFSET, 0); //height_low
         vao.attrI(buffer, 2, GL_UNSIGNED_BYTE, HEIGHTMAP_VERTEX_SIZE, HEIGHTMAP_VERTEX_POS_HIGH_OFFSET, 0); //pos_high
-        vao.attrI(buffer, 1, GL_UNSIGNED_INT, HEIGHTMAP_VERTEX_SIZE, HEIGHTMAP_VERTEX_HEIGHT_HIGH_OFFSET, 0); //height_high
+        vao.attrI(buffer, 1, GL_INT, HEIGHTMAP_VERTEX_SIZE, HEIGHTMAP_VERTEX_HEIGHT_HIGH_OFFSET, 0); //height_high
+        vao.attrI(buffer, 1, GL_INT, HEIGHTMAP_VERTEX_SIZE, HEIGHTMAP_VERTEX_HEIGHT_WATER_OFFSET, 0); //height_water
     }
 
     public void bakeForShaderDraw(@NonNull HeightmapPos dstPos, @NonNull HeightmapTile[] srcs, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
@@ -203,5 +205,7 @@ public class HeightmapBake {
 
             out.writeByte(x & ~1).writeByte(z & ~1).writeIntLE(highHeight);
         }
+
+        out.writeIntLE(data.waterHeight); //height_water
     }
 }

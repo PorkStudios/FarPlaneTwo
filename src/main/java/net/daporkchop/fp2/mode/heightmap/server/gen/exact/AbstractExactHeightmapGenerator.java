@@ -49,6 +49,7 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
         int tileZ = posIn.z();
 
         HeightmapData data = new HeightmapData();
+        data.waterHeight = this.seaLevel; //TODO: this should be calculated individually for each block
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         for (int x = 0; x < T_VOXELS; x++) {

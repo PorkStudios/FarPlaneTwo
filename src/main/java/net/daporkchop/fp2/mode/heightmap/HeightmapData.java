@@ -31,6 +31,7 @@ public class HeightmapData {
     public int light;
     public int biome;
 
+    public int waterHeight;
     public int waterLight;
     public int waterBiome;
 
@@ -44,6 +45,7 @@ public class HeightmapData {
         this.state = 0;
         this.light = 0;
         this.biome = 0;
+        this.waterHeight = 0;
         this.waterLight = 0;
         this.waterBiome = 0;
         return this;

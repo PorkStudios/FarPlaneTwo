@@ -62,6 +62,7 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
         int baseZ = posIn.blockZ();
 
         HeightmapData data = new HeightmapData();
+        data.waterHeight = this.seaLevel;
 
         CWGContext ctx = this.ctx.get();
         ctx.init(baseX, baseZ, level);

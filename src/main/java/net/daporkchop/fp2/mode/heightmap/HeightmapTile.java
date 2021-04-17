@@ -43,8 +43,9 @@ public class HeightmapTile implements IFarTile {
     //1: (light << 24) | state
     //2: (waterBiome << 16) | (waterLight << 8) | biome
     //   ^ top 8 bits are free
+    //3: waterHeight
 
-    public static final int ENTRY_SIZE = 3;
+    public static final int ENTRY_SIZE = 4;
     public static final int ENTRY_COUNT = T_VOXELS * T_VOXELS;
 
     public static final int TOTAL_SIZE = ENTRY_COUNT * ENTRY_SIZE;
@@ -59,18 +60,21 @@ public class HeightmapTile implements IFarTile {
         PUnsafe.putInt(base + 0L, data.height);
         PUnsafe.putInt(base + 4L, (data.light << 24) | data.state);
         PUnsafe.putInt(base + 8L, (data.waterBiome << 16) | (data.waterLight << 8) | data.biome);
+        PUnsafe.putInt(base + 12L, data.waterHeight);
     }
 
     static void readData(long base, HeightmapData data)    {
         int i0 = PUnsafe.getInt(base + 0L);
         int i1 = PUnsafe.getInt(base + 4L);
         int i2 = PUnsafe.getInt(base + 8L);
+        int i3 = PUnsafe.getInt(base + 12L);
 
         data.height = i0;
         data.state = i1 & 0x00FFFFFF;
         data.light = i1 >>> 24;
         data.biome = i2 & 0xFF;
 
+        data.waterHeight = i3;
         data.waterLight = (i2 >>> 8) & 0xFF;
         data.waterBiome = (i2 >>> 16) & 0xFF;
     }

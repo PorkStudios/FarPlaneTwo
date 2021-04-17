@@ -24,7 +24,6 @@
 //
 //
 
-uniform int seaLevel;
 uniform int in_state;
 
 //
@@ -37,9 +36,10 @@ layout(location = 4) in vec2 in_light;
 layout(location = 5) in vec3 in_color;
 
 layout(location = 6) in ivec2 in_pos_low;
+layout(location = 10) in int in_height_water;
 
 ivec3 getLowOffsetPre(int level) {
-    return ivec3(in_pos_low.x << level, seaLevel, in_pos_low.y << level);
+    return ivec3(in_pos_low.x << level, in_height_water, in_pos_low.y << level);
 }
 
 vec3 getLowOffsetPost() {

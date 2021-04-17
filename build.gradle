@@ -40,11 +40,13 @@ buildscript {
 
 apply plugin: "net.minecraftforge.gradle.forge"
 apply plugin: "org.spongepowered.mixin"
+apply plugin: "maven-publish"
 
 ext {
     //general things
     javaVersion = "1.8"
-    fp2Version = "0.0.1." + ('git rev-list --count HEAD'.execute().text.trim())
+    fp2VersionMajor = "0.0.1"
+    fp2Version = "$fp2VersionMajor." + ('git rev-list --count HEAD'.execute().text.trim())
 
     //minecraft things
     mcpmappingsVersion = "stable_39"
@@ -204,6 +206,50 @@ jar {
         )
     }
 }
+
+publishing {
+    repositories {
+        if (project.hasProperty("opencollabMavenUsername") && project.hasProperty("opencollabMavenPassword")) {
+            maven {
+                credentials {
+                    username = "$opencollabMavenUsername"
+                    password = "$opencollabMavenPassword"
+                }
+
+                name = "NukkitX"
+                url = version.endsWith("SNAPSHOT") ? "https://repo.opencollab.dev/snapshot/" : "https://repo.opencollab.dev/release/"
+            }
+        }
+        if (project.hasProperty("daporkchopMavenUsername") && project.hasProperty("daporkchopMavenPassword")) {
+            maven {
+                credentials {
+                    username = "$daporkchopMavenUsername"
+                    password = "$daporkchopMavenPassword"
+                }
+
+                name = "DaPorkchop_"
+                url = version.endsWith("SNAPSHOT") ? "https://maven.daporkchop.net/snapshot/" : "https://maven.daporkchop.net/release/"
+            }
+        }
+    }
+
+    publications {
+        maven(MavenPublication) {
+            groupId = "net.daporkchop"
+            artifactId = "fp2"
+            version = "$fp2VersionMajor-$minecraftVersion-SNAPSHOT"
+
+            from components.java
+
+            artifact sourceJar {
+                classifier "sources"
+            }
+        }
+    }
+}
+
+publish.dependsOn(publishToMavenLocal)
+build.dependsOn(publish)
 
 task preIntellijRuns {
     doFirst {

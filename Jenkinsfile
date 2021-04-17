@@ -64,7 +64,7 @@ pipeline {
         }
         stage("Build") {
             steps {
-                sh "./gradlew build -x test"
+                sh "./gradlew build -x test -x publish"
             }
             post {
                 success {
@@ -80,6 +80,14 @@ pipeline {
                 success {
                     junit "**/build/test-results/**/*.xml"
                 }
+            }
+        }
+        stage("Publish") {
+            when {
+                branch "master"
+            }
+            steps {
+                sh "./gradlew publish -x test -x publishToMavenLocal"
             }
         }
     }
