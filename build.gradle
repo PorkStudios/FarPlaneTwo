@@ -207,19 +207,12 @@ jar {
     }
 }
 
+task sourceJar2(type: Jar) {
+    from sourceSets.main.allSource
+}
+
 publishing {
     repositories {
-        if (project.hasProperty("opencollabMavenUsername") && project.hasProperty("opencollabMavenPassword")) {
-            maven {
-                credentials {
-                    username = "$opencollabMavenUsername"
-                    password = "$opencollabMavenPassword"
-                }
-
-                name = "NukkitX"
-                url = version.endsWith("SNAPSHOT") ? "https://repo.opencollab.dev/snapshot/" : "https://repo.opencollab.dev/release/"
-            }
-        }
         if (project.hasProperty("daporkchopMavenUsername") && project.hasProperty("daporkchopMavenPassword")) {
             maven {
                 credentials {
@@ -241,15 +234,16 @@ publishing {
 
             from components.java
 
-            artifact sourceJar {
+            artifacts.clear()
+            artifact jar {
+                classifier null
+            }
+            artifact sourceJar2 {
                 classifier "sources"
             }
         }
     }
 }
-
-publish.dependsOn(publishToMavenLocal)
-build.dependsOn(publish)
 
 task preIntellijRuns {
     doFirst {
