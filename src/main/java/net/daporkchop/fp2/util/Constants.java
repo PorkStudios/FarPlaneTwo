@@ -38,6 +38,8 @@ import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.compression.zstd.ZstdDeflater;
 import net.daporkchop.lib.compression.zstd.ZstdInflater;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
@@ -88,6 +90,8 @@ public class Constants {
 
     public static final Gson GSON = new Gson();
     public static final Gson GSON_PRETTY = new GsonBuilder().setPrettyPrinting().create();
+
+    public static final IBlockState STATE_AIR = Blocks.AIR.getDefaultState();
 
     public static final boolean CC = Loader.isModLoaded("cubicchunks");
     public static final boolean CWG = Loader.isModLoaded("cubicgen");

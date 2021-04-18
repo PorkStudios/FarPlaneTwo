@@ -33,6 +33,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
+import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -49,7 +50,6 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
         int tileZ = posIn.z();
 
         HeightmapData data = new HeightmapData();
-        data.waterHeight = this.seaLevel; //TODO: this should be calculated individually for each block
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         for (int x = 0; x < T_VOXELS; x++) {
@@ -63,15 +63,16 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
                     state = world.getBlockState(pos);
                 }
 
-                pos.setY(data.height = ++height);
-                data.state = Block.getStateId(state);
+                pos.setY(data.height_int = ++height);
+                data.state = state;
                 data.light = packCombinedLight(world.getCombinedLight(pos, 0));
-                data.biome = Biome.getIdForBiome(world.getBiome(pos));
-                pos.setY(this.seaLevel + 1);
-                data.waterLight = packCombinedLight(world.getCombinedLight(pos, 0));
-                data.waterBiome = Biome.getIdForBiome(world.getBiome(pos));
+                data.biome = world.getBiome(pos);
+                tile.setLayer(x, z, DEFAULT_LAYER, data);
 
-                tile.set(x, z, data);
+                /*pos.setY(this.seaLevel + 1);
+                data.waterLight = packCombinedLight(world.getCombinedLight(pos, 0));
+                data.waterBiome = world.getBiome(pos);
+                tile.setLayer(x, z, 1, data);*/
             }
         }
     }

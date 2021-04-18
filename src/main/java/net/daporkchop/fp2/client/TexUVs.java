@@ -22,6 +22,8 @@ package net.daporkchop.fp2.client;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import it.unimi.dsi.fastutil.objects.Reference2IntMap;
+import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -29,9 +31,7 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.math.vector.i.Vec2i;
-import net.daporkchop.lib.primitive.map.IntIntMap;
 import net.daporkchop.lib.primitive.map.ObjIntMap;
-import net.daporkchop.lib.primitive.map.open.IntIntOpenHashMap;
 import net.daporkchop.lib.primitive.map.open.ObjIntOpenHashMap;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.block.Block;
@@ -82,7 +82,7 @@ public class TexUVs {
         return null;
     };
 
-    public static IntIntMap STATEID_TO_INDEXID;
+    public static Reference2IntMap<IBlockState> STATEID_TO_INDEXID;
 
     public static void putReplacer(@NonNull Block block, @NonNull StateFaceReplacer replacer) {
         for (IBlockState state : block.getBlockState().getValidStates()) {
@@ -138,7 +138,7 @@ public class TexUVs {
         ObjIntMap<int[]> distinctIndicesToId = new IntArrayEqualsMap();
         List<int[]> distinctIndicesById = new ArrayList<>();
 
-        IntIntMap stateIdToIndexId = new IntIntOpenHashMap();
+        Reference2IntMap<IBlockState> stateIdToIndexId = new Reference2IntOpenHashMap<>();
 
         List<PackedBakedQuad> missingTextureQuads = new ArrayList<>();
         missingTextureQuads.add(new PackedBakedQuad(mc.getTextureMapBlocks().getMissingSprite(), -1));
@@ -170,7 +170,7 @@ public class TexUVs {
                     distinctIndicesById.add(faceIds);
                 }
 
-                stateIdToIndexId.put(Block.getStateId(state), id);
+                stateIdToIndexId.put(state, id);
             }
         }
 

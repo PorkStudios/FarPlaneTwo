@@ -23,9 +23,10 @@ package net.daporkchop.fp2.mode.voxel.server.scale;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
+import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.mode.voxel.VoxelData;
+import net.daporkchop.fp2.util.BlockType;
 import net.daporkchop.fp2.util.math.Vector3d;
 import net.daporkchop.fp2.util.math.qef.QefSolver;
 import net.minecraft.block.Block;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
+import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -134,7 +136,7 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelTile> 
                         int edges = 0;
                         for (int edge = 0; edge < 3; edge++) {
                             if (((data.edges >> (edge << 1)) & EDGE_DIR_MASK) != EDGE_DIR_NONE
-                                && (true || voxelType(Block.getStateById(data.states[edge])) == TYPE_OPAQUE)) {
+                                && (true || blockType(Block.getStateById(data.states[edge])) == BLOCK_TYPE_OPAQUE)) {
                                 edges |= (data.edges & (EDGE_DIR_MASK << (edge << 1)));
                                 srcStates[srcIndex(x, y, z, edge)] = data.states[edge];
                             }

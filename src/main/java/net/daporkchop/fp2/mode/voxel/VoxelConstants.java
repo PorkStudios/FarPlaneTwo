@@ -22,17 +22,13 @@ package net.daporkchop.fp2.mode.voxel;
 
 import io.netty.buffer.ByteBuf;
 import lombok.experimental.UtilityClass;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.init.Blocks;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-
-import java.util.Objects;
 
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
- * Constants and helpers to be used by voxel generators.
+ * Constants used throughout the voxel code.
  *
  * @author DaPorkchop_
  */
@@ -127,47 +123,6 @@ public class VoxelConstants {
     public static final int BAKE_HIGH_RADIUS_MIN = -1;
     public static final int BAKE_HIGH_RADIUS_MAX = 1;
     public static final int BAKE_HIGH_CNT = BAKE_HIGH_RADIUS_MAX - BAKE_HIGH_RADIUS_MIN + 1;
-
-    public static final int TYPE_AIR = 0;
-    public static final int TYPE_TRANSPARENT = 1;
-    public static final int TYPE_OPAQUE = 2;
-
-    @SideOnly(Side.CLIENT)
-    public static final int RENDER_TYPE_OPAQUE = 0;
-    @SideOnly(Side.CLIENT)
-    public static final int RENDER_TYPE_CUTOUT = 1;
-    @SideOnly(Side.CLIENT)
-    public static final int RENDER_TYPE_TRANSLUCENT = 2;
-    @SideOnly(Side.CLIENT)
-    public static final int RENDER_TYPES = 3;
-
-    public static int voxelType(IBlockState state) {
-        if (state.isOpaqueCube()) {
-            return TYPE_OPAQUE;
-        } else if (state.getMaterial().isSolid() || state.getMaterial().isLiquid()) {
-            return TYPE_TRANSPARENT;
-        } else {
-            return TYPE_AIR;
-        }
-    }
-
-    @SideOnly(Side.CLIENT)
-    public static int renderType(IBlockState state) {
-        //TODO: i need to do something about this: grass is rendered as CUTOUT_MIPPED, which makes it always render both faces
-        /*if (state.getBlock() == Blocks.GRASS) {
-            return RENDER_TYPE_OPAQUE;
-        }*/
-        switch (state.getBlock().getRenderLayer()) {
-            case SOLID:
-                return RENDER_TYPE_OPAQUE;
-            case TRANSLUCENT:
-                return RENDER_TYPE_TRANSLUCENT;
-            case CUTOUT:
-            case CUTOUT_MIPPED:
-                return RENDER_TYPE_CUTOUT;
-        }
-        throw new IllegalArgumentException(Objects.toString(state));
-    }
 
     /**
      * Emits the indices for drawing a quad.

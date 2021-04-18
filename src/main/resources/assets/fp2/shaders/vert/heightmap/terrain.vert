@@ -28,25 +28,28 @@ layout(location = 1) in int in_state;
 layout(location = 2) in vec2 in_light;
 layout(location = 3) in vec3 in_color;
 
-layout(location = 6) in ivec2 in_pos_low;
-layout(location = 7) in int in_height_low;
-layout(location = 8) in ivec2 in_pos_high;
-layout(location = 9) in int in_height_high;
+layout(location = 4) in ivec2 in_pos_low;
+layout(location = 5) in int in_height_int_low;
+layout(location = 6) in float in_height_frac_low;
+
+layout(location = 7) in ivec2 in_pos_high;
+layout(location = 8) in int in_height_int_high;
+layout(location = 9) in float in_height_frac_high;
 
 ivec3 getLowOffsetPre(int level) {
-    return ivec3(in_pos_low.x << level, in_height_low, in_pos_low.y << level);
+    return ivec3(in_pos_low.x << level, in_height_int_low, in_pos_low.y << level);
 }
 
 vec3 getLowOffsetPost() {
-    return vec3(0.);
+    return vec3(0., in_height_frac_low / 256., 0.);
 }
 
 #define USE_LOD
 
 ivec3 getHighOffsetPre(int level) {
-    return ivec3(in_pos_high.x << level, in_height_high, in_pos_high.y << level);
+    return ivec3(in_pos_high.x << level, in_height_int_high, in_pos_high.y << level);
 }
 
 vec3 getHighOffsetPost() {
-    return vec3(0.);
+    return vec3(0., in_height_frac_high / 256., 0.);
 }

@@ -36,11 +36,11 @@ public interface IShaderBasedMultipassHeightmapRenderStrategy extends IMultipass
 
     @Override
     default ShaderProgram blockShaderTransparent() {
-        return HeightmapShaders.WATER_SHADER;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     default ShaderProgram stencilShader() {
-        return HeightmapShaders.WATER_STENCIL_SHADER;
+        throw new UnsupportedOperationException();
     }
 }

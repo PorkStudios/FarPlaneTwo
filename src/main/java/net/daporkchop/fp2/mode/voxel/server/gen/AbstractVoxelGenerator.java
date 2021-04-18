@@ -22,8 +22,8 @@ package net.daporkchop.fp2.mode.voxel.server.gen;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
-import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
+import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.util.math.Vector3d;
 import net.daporkchop.fp2.util.math.qef.QefSolver;
 import net.daporkchop.lib.common.ref.Ref;
@@ -32,6 +32,7 @@ import net.minecraft.world.WorldServer;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
+import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
@@ -98,10 +99,10 @@ public abstract class AbstractVoxelGenerator<PARAM> extends AbstractFarGenerator
                 for (int z = DMAP_MIN; z < DMAP_MAX; z++, di++) {
                     int type = 0;
                     if (densityMap[0][di] < 0.0d) {
-                        type |= TYPE_TRANSPARENT;
+                        type |= BLOCK_TYPE_TRANSPARENT;
                     }
                     if (densityMap[1][di] < 0.0d) {
-                        type |= TYPE_OPAQUE;
+                        type |= BLOCK_TYPE_OPAQUE;
                     }
                     tMap[di] = type;
                 }

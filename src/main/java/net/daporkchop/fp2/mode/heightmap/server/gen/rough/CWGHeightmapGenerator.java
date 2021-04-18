@@ -22,20 +22,21 @@ package net.daporkchop.fp2.mode.heightmap.server.gen.rough;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.HeightmapData;
-import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.compat.cwg.CWGContext;
 import net.daporkchop.fp2.compat.cwg.CWGHelper;
+import net.daporkchop.fp2.mode.heightmap.HeightmapData;
+import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
-import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.biome.Biome;
 
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.compat.cwg.CWGContext.*;
+import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
@@ -62,10 +63,11 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
         int baseZ = posIn.blockZ();
 
         HeightmapData data = new HeightmapData();
-        data.waterHeight = this.seaLevel;
 
         CWGContext ctx = this.ctx.get();
         ctx.init(baseX, baseZ, level);
+
+        //TODO: we need more samples at higher levels
 
         int[] heights = new int[5 * 5];
         for (int x = 0; x < 5; x++) {
@@ -95,31 +97,38 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
 
                     for (int subZ = 0; subZ < GT_SIZE; subZ++) {
                         double fz = subZ * (1.0d / GT_SIZE);
-                        int height = floorI(lerp(hz, hZ, fz));
+                        double height = lerp(hz, hZ, fz);
 
                         int x = (tileX << GT_SHIFT) + subX;
                         int z = (tileZ << GT_SHIFT) + subZ;
-                        int blockX = baseX + (x << level);
-                        int blockZ = baseZ + (z << level);
 
-                        int biome = ctx.biomes[x * ctx.size + z];
-
-                        IBlockState state = Blocks.AIR.getDefaultState();
-                        for (IBiomeBlockReplacer replacer : ctx.replacersForBiome(biome)) {
-                            state = replacer.getReplacedBlock(state, blockX, height, blockZ, dx, dy, dz, density);
-                        }
-
-                        data.height = height;
-                        data.state = Block.getStateId(state);
-                        data.light = (15 - clamp(this.seaLevel - height, 0, 5) * 3) << 4;
-                        data.biome = biome;
-                        data.waterLight = packCombinedLight(15 << 20);
-                        data.waterBiome = biome;
-
-                        tile.set(x, z, data);
+                        this.processSample(ctx, data, tile, baseX + (x << level), baseZ + (z << level), x, z, height, dx, dy, dz, density);
                     }
                 }
             }
         }
+    }
+
+    protected void processSample(CWGContext ctx, HeightmapData data, HeightmapTile tile, int blockX, int blockZ, int x, int z, double height, double dx, double dy, double dz, double density) {
+        int heightI = floorI(height);
+        int heightF = clamp(floorI((height - heightI) * 255.0d), 0, 255);
+
+        int biome = ctx.biomes[x * ctx.size + z];
+
+        IBlockState state = Blocks.AIR.getDefaultState();
+        for (IBiomeBlockReplacer replacer : ctx.replacersForBiome(biome)) {
+            state = replacer.getReplacedBlock(state, blockX, heightI, blockZ, dx, dy, dz, density);
+        }
+
+        data.height_int = heightI;
+        data.height_frac = heightF;
+        data.state = state;
+        data.light = (15 - clamp(this.seaLevel - heightI, 0, 5) * 3) << 4;
+        data.biome = Biome.getBiomeForId(biome);
+        tile.setLayer(x, z, DEFAULT_LAYER, data);
+
+        /*data.waterLight = packCombinedLight(15 << 20);
+        data.waterBiome = biome;
+        tile.setLayer(x, z, 1, data);*/
     }
 }

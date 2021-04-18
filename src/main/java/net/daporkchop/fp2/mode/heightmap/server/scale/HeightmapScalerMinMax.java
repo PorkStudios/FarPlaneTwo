@@ -22,13 +22,14 @@ package net.daporkchop.fp2.mode.heightmap.server.scale;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
+import net.daporkchop.fp2.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
-import net.daporkchop.fp2.mode.heightmap.HeightmapData;
 
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -75,8 +76,11 @@ public class HeightmapScalerMinMax implements IFarScaler<HeightmapPos, Heightmap
                         int dstX = baseX + (x >> 1);
                         int dstZ = baseZ + (z >> 1);
 
-                        this.scaleSample(src, x, z, data);
-                        dst.set(dstX, dstZ, data);
+                        for (int layer = 0; layer < MAX_LAYERS; layer++) {
+                            if (this.scaleSample(src, x, z, layer, data)) {
+                                dst.setLayer(dstX, dstZ, layer, data);
+                            }
+                        }
                     }
                 }
             }
@@ -85,26 +89,51 @@ public class HeightmapScalerMinMax implements IFarScaler<HeightmapPos, Heightmap
         return 0L;
     }
 
-    protected void scaleSample(HeightmapTile src, int srcX, int srcZ, HeightmapData data) {
-        int height0 = src.height(srcX, srcZ);
-        int height1 = src.height(srcX, srcZ + 1);
-        int height2 = src.height(srcX + 1, srcZ);
-        int height3 = src.height(srcX + 1, srcZ + 1);
-        int avgHeight = (height0 + height1 + height2 + height3) >> 2;
+    protected boolean scaleSample(HeightmapTile src, int srcX, int srcZ, int layer, HeightmapData data) {
+        double height0 = src.getLayerOnlyHeight(srcX, srcZ, layer);
+        double height1 = src.getLayerOnlyHeight(srcX, srcZ + 1, layer);
+        double height2 = src.getLayerOnlyHeight(srcX + 1, srcZ, layer);
+        double height3 = src.getLayerOnlyHeight(srcX + 1, srcZ + 1, layer);
 
-        int d0 = abs(height0 - avgHeight);
-        int d1 = abs(height1 - avgHeight);
-        int d2 = abs(height2 - avgHeight);
-        int d3 = abs(height3 - avgHeight);
-
-        if (d0 > d1 && d0 > d2 && d0 > d3) {
-            src.get(srcX, srcZ, data);
-        } else if (d1 > d0 && d1 > d2 && d1 > d3) {
-            src.get(srcX, srcZ + 1, data);
-        } else if (d2 > d0 && d2 > d1 && d2 > d3) {
-            src.get(srcX + 1, srcZ, data);
-        } else {
-            src.get(srcX + 1, srcZ + 1, data);
+        double sum = 0.0d;
+        double cnt = 0.0d;
+        if (!Double.isNaN(height0)) {
+            sum += height0;
+            cnt++;
         }
+        if (!Double.isNaN(height1)) {
+            sum += height1;
+            cnt++;
+        }
+        if (!Double.isNaN(height2)) {
+            sum += height2;
+            cnt++;
+        }
+        if (!Double.isNaN(height3)) {
+            sum += height3;
+            cnt++;
+        }
+
+        if (cnt == 0.0d) { //no samples were valid
+            return false;
+        }
+
+        double avg = sum / cnt;
+
+        double d0 = Double.isNaN(height0) ? -Double.MAX_VALUE : abs(height0 - avg);
+        double d1 = Double.isNaN(height1) ? -Double.MAX_VALUE : abs(height1 - avg);
+        double d2 = Double.isNaN(height2) ? -Double.MAX_VALUE : abs(height2 - avg);
+        double d3 = Double.isNaN(height3) ? -Double.MAX_VALUE : abs(height3 - avg);
+
+        if (!Double.isNaN(height0) && d0 > d1 && d0 > d2 && d0 > d3) {
+            src.getLayer(srcX, srcZ, layer, data);
+        } else if (!Double.isNaN(height1) && d1 > d0 && d1 > d2 && d1 > d3) {
+            src.getLayer(srcX, srcZ + 1, layer, data);
+        } else if (!Double.isNaN(height1) && d2 > d0 && d2 > d1 && d2 > d3) {
+            src.getLayer(srcX + 1, srcZ, layer, data);
+        } else {
+            src.getLayer(srcX + 1, srcZ + 1, layer, data);
+        }
+        return true;
     }
 }

@@ -40,19 +40,19 @@ public class ShaderBasedIndexedMultidrawHeightmapRenderStrategy extends Abstract
     @Override
     public void render(@NonNull BlockRenderLayer layer, boolean pre) {
         if (layer == BlockRenderLayer.CUTOUT && !pre) {
-            try (ShaderProgram program = HeightmapShaders.WATER_STENCIL_SHADER.use()) { //TODO: make this cleaner (possibly by making these fields part of FP2's state UBO)
+            /*try (ShaderProgram program = HeightmapShaders.WATER_STENCIL_SHADER.use()) { //TODO: make this cleaner (possibly by making these fields part of FP2's state UBO)
                 glUniform1i(program.uniformLocation("seaLevel"), 63);
             }
             try (ShaderProgram program = HeightmapShaders.WATER_SHADER.use()) {
                 glUniform1i(program.uniformLocation("seaLevel"), 63);
                 glUniform1i(program.uniformLocation("in_state"), TexUVs.STATEID_TO_INDEXID.get(Block.getStateId(Blocks.WATER.getDefaultState())));
-            }
+            }*/
 
             ((AbstractTexture) mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE)).setBlurMipmapDirect(false, mc.gameSettings.mipmapLevels > 0);
 
             try (DrawMode mode = DrawMode.SHADER.begin()) {
                 this.renderSolid(this.passes[0]);
-                this.renderTransparent(this.passes[0]);
+                //this.renderTransparent(this.passes[0]);
             }
 
             mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();

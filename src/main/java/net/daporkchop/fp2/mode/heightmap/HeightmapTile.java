@@ -27,7 +27,11 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.block.Block;
+import net.minecraft.world.biome.Biome;
 
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -38,83 +42,150 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public class HeightmapTile implements IFarTile {
-    //layout (in ints):
-    //0: height
-    //1: (light << 24) | state
-    //2: (waterBiome << 16) | (waterLight << 8) | biome
-    //   ^ top 8 bits are free
-    //3: waterHeight
+    //index layout (in ints):
+    //0: layer_flags
+    //   ^ top 28 bits are free
 
-    public static final int ENTRY_SIZE = 4;
+    //layer layout (in ints):
+    //0: height_int
+    //1: (state << 8) | height_frac
+    //2: (secondary_connection << 16) | (light << 8) | biome
+    //   ^ top 8 bits are free
+
+    /*
+     * struct Entry {
+     *   index _index;
+     *   layer _layers[MAX_LAYERS];
+     * };
+     *
+     * struct HeightmapTile {
+     *   Entry _entries[ENTRY_COUNT];
+     * };
+     */
+
     public static final int ENTRY_COUNT = T_VOXELS * T_VOXELS;
 
-    public static final int TOTAL_SIZE = ENTRY_COUNT * ENTRY_SIZE;
-    public static final int TOTAL_SIZE_BYTES = TOTAL_SIZE * 4;
+    public static final int INDEX_SIZE = 1;
+    public static final int LAYER_SIZE = 3;
+    public static final int ENTRY_SIZE = INDEX_SIZE + LAYER_SIZE * MAX_LAYERS;
+    public static final int TILE_SIZE = ENTRY_SIZE * ENTRY_COUNT;
 
-    static int index(int x, int z) {
+    public static final int INDEX_SIZE_BYTES = INDEX_SIZE * INT_SIZE;
+    public static final int LAYER_SIZE_BYTES = LAYER_SIZE * INT_SIZE;
+    public static final int ENTRY_SIZE_BYTES = INDEX_SIZE_BYTES + LAYER_SIZE_BYTES * MAX_LAYERS;
+    public static final int TILE_SIZE_BYTES = ENTRY_SIZE_BYTES * ENTRY_COUNT;
+
+    public static int layerFlag(int layer) {
+        checkArg(layer >= 0 && layer < MAX_LAYERS, "layer index out of bounds (%d)", layer);
+        return 1 << layer;
+    }
+
+    static int entryOffset(int x, int z) {
         checkArg(x >= 0 && x < T_VOXELS && z >= 0 && z < T_VOXELS, "coordinates out of bounds (x=%d, z=%d)", x, z);
-        return (x * T_VOXELS + z) * ENTRY_SIZE;
+        return (x * T_VOXELS + z) * ENTRY_SIZE_BYTES;
     }
 
-    static void writeData(long base, HeightmapData data)    {
-        PUnsafe.putInt(base + 0L, data.height);
-        PUnsafe.putInt(base + 4L, (data.light << 24) | data.state);
-        PUnsafe.putInt(base + 8L, (data.waterBiome << 16) | (data.waterLight << 8) | data.biome);
-        PUnsafe.putInt(base + 12L, data.waterHeight);
+    static int layerOffset(int x, int z, int layer) {
+        return entryOffset(x, z) + INDEX_SIZE_BYTES + layer * LAYER_SIZE_BYTES;
     }
 
-    static void readData(long base, HeightmapData data)    {
+    static void writeLayer(long base, HeightmapData data) {
+        PUnsafe.putInt(base + 0L, data.height_int);
+        PUnsafe.putInt(base + 4L, (Block.getStateId(data.state) << 8) | data.height_frac);
+        PUnsafe.putInt(base + 8L, (data.light << 8) | Biome.getIdForBiome(data.biome));
+    }
+
+    static void readLayer(long base, HeightmapData data) {
         int i0 = PUnsafe.getInt(base + 0L);
         int i1 = PUnsafe.getInt(base + 4L);
         int i2 = PUnsafe.getInt(base + 8L);
-        int i3 = PUnsafe.getInt(base + 12L);
 
-        data.height = i0;
-        data.state = i1 & 0x00FFFFFF;
-        data.light = i1 >>> 24;
-        data.biome = i2 & 0xFF;
-
-        data.waterHeight = i3;
-        data.waterLight = (i2 >>> 8) & 0xFF;
-        data.waterBiome = (i2 >>> 16) & 0xFF;
+        data.height_int = i0;
+        data.height_frac = i1 & 0xFF;
+        data.state = Block.getStateById(i1 >>> 8);
+        data.light = (i2 >>> 8) & 0xFF;
+        data.biome = Biome.getBiomeForId(i2 & 0xFF);
     }
 
-    protected final long addr = PUnsafe.allocateMemory(this, TOTAL_SIZE_BYTES);
+    static double readLayerOnlyHeight(long base) {
+        int i0 = PUnsafe.getInt(base + 0L);
+        int i1 = PUnsafe.getInt(base + 4L);
+
+        return i0 + ((i1 & 0xFF) * (1.0d / 256.0d));
+    }
+
+    protected final long addr = PUnsafe.allocateMemory(this, TILE_SIZE_BYTES);
 
     public HeightmapTile() {
         this.reset();
     }
 
-    public void get(int x, int z, HeightmapData data) {
-        readData(this.addr + index(x, z) * 4L, data);
+    public boolean getLayer(int x, int z, int layer, @NonNull HeightmapData data) {
+        if ((PUnsafe.getInt(this.addr + entryOffset(x, z)) & layerFlag(layer)) != 0) {
+            //the layer is set, read it
+            this._getLayerUnchecked(x, z, layer, data);
+            return true;
+        } else {
+            //the layer is unset, don't read it
+            return false;
+        }
     }
 
-    public int height(int x, int z) {
-        return PUnsafe.getInt(this.addr + index(x, z) * 4L);
+    public double getLayerOnlyHeight(int x, int z, int layer) {
+        if ((PUnsafe.getInt(this.addr + entryOffset(x, z)) & layerFlag(layer)) != 0) {
+            //the layer is set, read it
+            return readLayerOnlyHeight(this.addr + layerOffset(x, z, layer));
+        } else {
+            //the layer is unset, don't read it
+            return Double.NaN;
+        }
     }
 
-    public void set(int x, int z, HeightmapData data)  {
-        writeData(this.addr + index(x, z) * 4L, data);
+    public int _getLayerFlags(int x, int z) {
+        return PUnsafe.getInt(this.addr + entryOffset(x, z));
     }
 
-    public void copyTo(@NonNull HeightmapTile dst) {
-        PUnsafe.copyMemory(this.addr, dst.addr, TOTAL_SIZE_BYTES);
+    public void _getLayerUnchecked(int x, int z, int layer, @NonNull HeightmapData data) {
+        readLayer(this.addr + layerOffset(x, z, layer), data);
+    }
+
+    public void setLayer(int x, int z, int layer, @NonNull HeightmapData data) {
+        //set layer flag
+        long entry = this.addr + entryOffset(x, z);
+        PUnsafe.putInt(entry, PUnsafe.getInt(entry) | layerFlag(layer));
+
+        //actually write data
+        writeLayer(this.addr + layerOffset(x, z, layer), data);
+    }
+
+    public void unsetLayer(int x, int z, int layer) {
+        long entry = this.addr + entryOffset(x, z);
+        int layer_flags = PUnsafe.getInt(entry);
+        int flag = layerFlag(layer);
+
+        if ((layer_flags & flag) != 0) { //the layer is set
+            //clear the flag for this layer
+            PUnsafe.putInt(entry, layer_flags & ~flag);
+
+            //clear the layer data
+            PUnsafe.setMemory(this.addr + layerOffset(x, z, layer), LAYER_SIZE_BYTES, (byte) 0);
+        }
     }
 
     @Override
     public void reset() {
-        PUnsafe.setMemory(this.addr, TOTAL_SIZE_BYTES, (byte) 0); //just clear it
+        PUnsafe.setMemory(this.addr, TILE_SIZE_BYTES, (byte) 0); //just clear it
     }
 
     @Override
     public void read(@NonNull ByteBuf src) {
         if (PlatformInfo.IS_LITTLE_ENDIAN) {
             //copy everything in one go
-            src.readBytes(Unpooled.wrappedBuffer(this.addr, TOTAL_SIZE_BYTES, false).writerIndex(0));
+            src.readBytes(Unpooled.wrappedBuffer(this.addr, TILE_SIZE_BYTES, false).writerIndex(0));
         } else {
             //read individual ints (reversing the byte order each time)
-            for (int i = 0; i < TOTAL_SIZE; i++) {
-                PUnsafe.putInt(this.addr + i * 4L, src.readIntLE());
+            for (long addr = this.addr, end = addr + TILE_SIZE_BYTES; addr != end; addr += INT_SIZE) {
+                PUnsafe.putInt(addr, src.readIntLE());
             }
         }
     }
@@ -123,12 +194,12 @@ public class HeightmapTile implements IFarTile {
     public boolean write(@NonNull ByteBuf dst) {
         if (PlatformInfo.IS_LITTLE_ENDIAN) {
             //copy everything in one go
-            dst.writeBytes(Unpooled.wrappedBuffer(this.addr, TOTAL_SIZE_BYTES, false));
+            dst.writeBytes(Unpooled.wrappedBuffer(this.addr, TILE_SIZE_BYTES, false));
         } else {
             //write individual ints (reversing the byte order each time)
-            dst.ensureWritable(TOTAL_SIZE_BYTES);
-            for (int i = 0; i < TOTAL_SIZE; i++) {
-                dst.writeIntLE(PUnsafe.getInt(this.addr + i * 4L));
+            dst.ensureWritable(TILE_SIZE_BYTES);
+            for (long addr = this.addr, end = addr + TILE_SIZE_BYTES; addr != end; addr += INT_SIZE) {
+                dst.writeIntLE(PUnsafe.getInt(addr));
             }
         }
         return false; //the heightmap renderer has no concept of an "empty" tile

@@ -21,13 +21,14 @@
 package net.daporkchop.fp2.mode.voxel.server.gen.exact;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
+import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.mode.voxel.VoxelData;
+import net.daporkchop.fp2.util.BlockType;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.block.Block;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
@@ -35,6 +36,7 @@ import net.minecraft.world.biome.Biome;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
+import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -64,7 +66,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator i
                         int x = baseX + dx + ((i >> 2) & 1);
                         int y = baseY + dy + ((i >> 1) & 1);
                         int z = baseZ + dz + (i & 1);
-                        corners |= voxelType(world.getBlockState(pos.setPos(x, y, z))) << (i << 1);
+                        corners |= blockType(world.getBlockState(pos.setPos(x, y, z))) << (i << 1);
                     }
 
                     if (corners == 0 || corners == 0x5555 || corners == 0xAAAA) { //if all corners are the same type, this voxel can be safely skipped
@@ -107,7 +109,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator i
                     if (edges == 0) { //this voxel is only present as a dummy placeholder for other voxels to connect to
                         //compute average light levels for the least opaque block type intersecting this voxel
 
-                        int type = TYPE_OPAQUE;
+                        int type = BLOCK_TYPE_OPAQUE;
                         for (int i = 0; i < 8; i++) {
                             type = min(type, (corners >> (i << 1)) & 3);
                         }

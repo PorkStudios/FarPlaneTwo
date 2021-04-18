@@ -23,9 +23,21 @@ package net.daporkchop.fp2.mode.heightmap;
 import lombok.experimental.UtilityClass;
 
 /**
+ * Constants used throughout the heightmap code.
+ *
  * @author DaPorkchop_
  */
 @UtilityClass
 public class HeightmapConstants {
-    public static final int STORAGE_VERSION = 9;
+    public static final int STORAGE_VERSION = 10;
+
+    /**
+     * The maximum number of layers allowed per block in a tile.
+     */
+    public static final int MAX_LAYERS = 4;
+
+    /**
+     * The default layer index.
+     */
+    public static final int DEFAULT_LAYER = 0;
 }
