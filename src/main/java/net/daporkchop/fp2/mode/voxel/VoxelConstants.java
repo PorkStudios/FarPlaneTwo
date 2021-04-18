@@ -20,10 +20,7 @@
 
 package net.daporkchop.fp2.mode.voxel;
 
-import io.netty.buffer.ByteBuf;
 import lombok.experimental.UtilityClass;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static net.daporkchop.fp2.util.Constants.*;
 
@@ -123,19 +120,4 @@ public class VoxelConstants {
     public static final int BAKE_HIGH_RADIUS_MIN = -1;
     public static final int BAKE_HIGH_RADIUS_MAX = 1;
     public static final int BAKE_HIGH_CNT = BAKE_HIGH_RADIUS_MAX - BAKE_HIGH_RADIUS_MIN + 1;
-
-    /**
-     * Emits the indices for drawing a quad.
-     *
-     * @param indices        the {@link ByteBuf} to write the indices to
-     * @param oppositeCorner the index of the vertex in the corner opposite the provoking vertex
-     * @param c0             the index of one of the edge vertices
-     * @param c1             the index of the other edge vertex
-     * @param provoking      the index of the provoking vertex
-     */
-    @SideOnly(Side.CLIENT)
-    public static void emitQuad(ByteBuf indices, int oppositeCorner, int c0, int c1, int provoking) {
-        indices.writeShortLE(oppositeCorner).writeShortLE(c0).writeShortLE(provoking); //first triangle
-        indices.writeShortLE(c1).writeShortLE(oppositeCorner).writeShortLE(provoking); //second triangle
-    }
 }

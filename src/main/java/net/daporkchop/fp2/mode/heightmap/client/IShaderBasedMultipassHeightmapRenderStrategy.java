@@ -31,16 +31,11 @@ import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 public interface IShaderBasedMultipassHeightmapRenderStrategy extends IMultipassHeightmapRenderStrategy, IShaderBasedMultipassRenderStrategy<HeightmapPos, HeightmapTile> {
     @Override
     default ShaderProgram blockShader() {
-        return HeightmapShaders.TERRAIN_SHADER;
-    }
-
-    @Override
-    default ShaderProgram blockShaderTransparent() {
-        throw new UnsupportedOperationException();
+        return HeightmapShaders.BLOCK_SHADER;
     }
 
     @Override
     default ShaderProgram stencilShader() {
-        throw new UnsupportedOperationException();
+        return HeightmapShaders.STENCIL_SHADER;
     }
 }

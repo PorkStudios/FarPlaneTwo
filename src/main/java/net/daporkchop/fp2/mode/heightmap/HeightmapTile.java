@@ -92,7 +92,7 @@ public class HeightmapTile implements IFarTile {
     static void writeLayer(long base, HeightmapData data) {
         PUnsafe.putInt(base + 0L, data.height_int);
         PUnsafe.putInt(base + 4L, (Block.getStateId(data.state) << 8) | data.height_frac);
-        PUnsafe.putInt(base + 8L, (data.light << 8) | Biome.getIdForBiome(data.biome));
+        PUnsafe.putInt(base + 8L, (data.secondaryConnection << 16) | (data.light << 8) | Biome.getIdForBiome(data.biome));
     }
 
     static void readLayer(long base, HeightmapData data) {
@@ -105,6 +105,7 @@ public class HeightmapTile implements IFarTile {
         data.state = Block.getStateById(i1 >>> 8);
         data.light = (i2 >>> 8) & 0xFF;
         data.biome = Biome.getBiomeForId(i2 & 0xFF);
+        data.secondaryConnection = i2 >>> 16;
     }
 
     static double readLayerOnlyHeight(long base) {

@@ -34,6 +34,8 @@ import net.minecraft.init.Blocks;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import static net.daporkchop.fp2.compat.cwg.CWGContext.*;
 import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -48,7 +50,7 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     public CWGHeightmapGenerator(@NonNull WorldServer world) {
         super(world);
 
-        this.ctx = ThreadRef.soft(() -> new CWGContext(world, T_VOXELS + 1, 2));
+        this.ctx = ThreadRef.soft(() -> new CWGContext(world, T_VOXELS + 1 + GT_SIZE, 2));
     }
 
     @Override
@@ -65,27 +67,38 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
         HeightmapData data = new HeightmapData();
 
         CWGContext ctx = this.ctx.get();
-        ctx.init(baseX, baseZ, level);
+        ctx.init(baseX - GT_SIZE, baseZ - GT_SIZE, level);
 
         //TODO: we need more samples at higher levels
 
-        int[] heights = new int[5 * 5];
-        for (int x = 0; x < 5; x++) {
-            for (int z = 0; z < 5; z++) {
+        int[] heights = new int[6 * 6];
+        for (int x = -1; x < 5; x++) {
+            for (int z = -1; z < 5; z++) {
                 int blockX = baseX + (x << (GT_SHIFT + level));
                 int blockZ = baseZ + (z << (GT_SHIFT + level));
-                heights[x * 5 + z] = CWGHelper.getHeight(ctx, blockX, blockZ);
+                heights[(x + 1) * 6 + (z + 1)] = CWGHelper.getHeight(ctx, blockX, blockZ);
             }
         }
 
         for (int tileX = 0; tileX < GT_COUNT; tileX++) {
             for (int tileZ = 0; tileZ < GT_COUNT; tileZ++) {
-                int hxz = heights[tileX * 5 + tileZ];
-                int hxZ = heights[tileX * 5 + (tileZ + 1)];
-                int hXz = heights[(tileX + 1) * 5 + tileZ];
-                int hXZ = heights[(tileX + 1) * 5 + (tileZ + 1)];
+                boolean addWater = false;
+                CHECK_ADD_WATER:
+                for (int dx = -1; dx <= 1; dx++) {
+                    for (int dz = -1; dz <= 1; dz++) {
+                        if (heights[(tileX + 1 + dx) * 6 + (tileZ + 1 + dz)] < this.seaLevel) {
+                            addWater = true;
+                            break CHECK_ADD_WATER;
+                        }
+                    }
+                }
 
-                double density = 0.5d;
+                int hxz = heights[(tileX + 1) * 6 + (tileZ + 1)];
+                int hxZ = heights[(tileX + 1) * 6 + (tileZ + 2)];
+                int hXz = heights[(tileX + 2) * 6 + (tileZ + 1)];
+                int hXZ = heights[(tileX + 2) * 6 + (tileZ + 2)];
+
+                double density = 0.5d; //TODO: these gradients aren't being computed properly
                 double dx = (hXz - hxz) * 0.25d;
                 double dy = -1.0d;
                 double dz = (hxZ - hxz) * 0.25d;
@@ -102,20 +115,20 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
                         int x = (tileX << GT_SHIFT) + subX;
                         int z = (tileZ << GT_SHIFT) + subZ;
 
-                        this.processSample(ctx, data, tile, baseX + (x << level), baseZ + (z << level), x, z, height, dx, dy, dz, density);
+                        this.processSample(ctx, data, tile, baseX + (x << level), baseZ + (z << level), x, z, height, dx, dy, dz, density, addWater);
                     }
                 }
             }
         }
     }
 
-    protected void processSample(CWGContext ctx, HeightmapData data, HeightmapTile tile, int blockX, int blockZ, int x, int z, double height, double dx, double dy, double dz, double density) {
+    protected void processSample(CWGContext ctx, HeightmapData data, HeightmapTile tile, int blockX, int blockZ, int x, int z, double height, double dx, double dy, double dz, double density, boolean addWater) {
         int heightI = floorI(height);
         int heightF = clamp(floorI((height - heightI) * 255.0d), 0, 255);
 
-        int biome = ctx.biomes[x * ctx.size + z];
+        int biome = ctx.getBiome(blockX, blockZ);
 
-        IBlockState state = Blocks.AIR.getDefaultState();
+        IBlockState state = STATE_AIR;
         for (IBiomeBlockReplacer replacer : ctx.replacersForBiome(biome)) {
             state = replacer.getReplacedBlock(state, blockX, heightI, blockZ, dx, dy, dz, density);
         }
@@ -127,8 +140,14 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
         data.biome = Biome.getBiomeForId(biome);
         tile.setLayer(x, z, DEFAULT_LAYER, data);
 
-        /*data.waterLight = packCombinedLight(15 << 20);
-        data.waterBiome = biome;
-        tile.setLayer(x, z, 1, data);*/
+        if (addWater) { //set water
+            data.height_int = this.seaLevel - 1;
+            data.height_frac = 224; //256 * 7/8
+            data.state = Blocks.WATER.getDefaultState();
+            data.light = packCombinedLight(15 << 20);
+            data.secondaryConnection = 1;
+            tile.setLayer(x, z, 1, data);
+            data.secondaryConnection = DEFAULT_LAYER;
+        }
     }
 }

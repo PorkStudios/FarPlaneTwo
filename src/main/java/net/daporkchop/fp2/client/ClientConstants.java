@@ -22,6 +22,7 @@ package net.daporkchop.fp2.client;
 
 import io.github.opencubicchunks.cubicchunks.core.CubicChunksConfig;
 import io.github.opencubicchunks.cubicchunks.core.client.CubeProviderClient;
+import io.netty.buffer.ByteBuf;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.config.FP2Config;
 import net.minecraft.client.Minecraft;
@@ -83,5 +84,20 @@ public class ClientConstants {
         } else {
             return provider.isChunkGeneratedAt(x, z);
         }
+    }
+
+    /**
+     * Emits the indices for drawing a quad.
+     *
+     * @param indices        the {@link ByteBuf} to write the indices to
+     * @param oppositeCorner the index of the vertex in the corner opposite the provoking vertex
+     * @param c0             the index of one of the edge vertices
+     * @param c1             the index of the other edge vertex
+     * @param provoking      the index of the provoking vertex
+     */
+    @SideOnly(Side.CLIENT)
+    public static void emitQuad(ByteBuf indices, int oppositeCorner, int c0, int c1, int provoking) {
+        indices.writeShortLE(oppositeCorner).writeShortLE(c0).writeShortLE(provoking); //first triangle
+        indices.writeShortLE(c1).writeShortLE(oppositeCorner).writeShortLE(provoking); //second triangle
     }
 }

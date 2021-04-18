@@ -22,6 +22,8 @@ package net.daporkchop.fp2.mode.heightmap;
 
 import lombok.experimental.UtilityClass;
 
+import static net.daporkchop.fp2.util.Constants.*;
+
 /**
  * Constants used throughout the heightmap code.
  *
@@ -40,4 +42,11 @@ public class HeightmapConstants {
      * The default layer index.
      */
     public static final int DEFAULT_LAYER = 0;
+
+    public static final int[] CONNECTION_INTERSECTION_AREAS = {
+            T_VOXELS, T_VOXELS,
+            T_VOXELS, 1,
+            1, T_VOXELS,
+            1, 1
+    };
 }

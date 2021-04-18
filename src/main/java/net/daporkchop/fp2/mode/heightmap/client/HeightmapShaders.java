@@ -29,8 +29,8 @@ import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
  */
 @UtilityClass
 public class HeightmapShaders {
-    public final ShaderProgram TERRAIN_SHADER = ShaderManager.get("heightmap/terrain");
-    //public final ShaderProgram WATER_STENCIL_SHADER = ShaderManager.get("heightmap/water_stencil");
-    //public final ShaderProgram WATER_SHADER = ShaderManager.get("heightmap/water");
-    //public final ShaderProgram XFB_TERRAIN_SHADER = ShaderManager.get("heightmap/xfb/terrain");
+    public static final ShaderProgram BLOCK_SHADER = ShaderManager.get("heightmap/block");
+    public final ShaderProgram BLOCK_SHADER_TRANSFORM_FEEDBACK = ShaderManager.get("heightmap/xfb/block");
+
+    public final ShaderProgram STENCIL_SHADER = ShaderManager.get("heightmap/stencil");
 }

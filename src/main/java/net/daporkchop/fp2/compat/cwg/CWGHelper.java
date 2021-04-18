@@ -23,6 +23,7 @@ package net.daporkchop.fp2.compat.cwg;
 import com.flowpowered.noise.Noise;
 import com.flowpowered.noise.Utils;
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
+import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.replacer.SwampWaterWithLilypadReplacer;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.BiomeSource;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.IBuilder;
 import lombok.NonNull;
@@ -56,7 +57,8 @@ public class CWGHelper {
     public static IBiomeBlockReplacer[][] blockReplacerMapToArray(@NonNull Map<Biome, List<IBiomeBlockReplacer>> replacerMap) {
         int maxBiomeId = replacerMap.keySet().stream().mapToInt(Biome::getIdForBiome).max().orElse(0);
         IBiomeBlockReplacer[][] biomeReplacers = new IBiomeBlockReplacer[maxBiomeId + 1][];
-        replacerMap.forEach((biome, list) -> biomeReplacers[Biome.getIdForBiome(biome)] = list.toArray(new IBiomeBlockReplacer[0]));
+        replacerMap.forEach((biome, list) -> biomeReplacers[Biome.getIdForBiome(biome)]
+                = list.stream().filter(r -> !(r instanceof SwampWaterWithLilypadReplacer)).toArray(IBiomeBlockReplacer[]::new));
         return biomeReplacers;
     }
 

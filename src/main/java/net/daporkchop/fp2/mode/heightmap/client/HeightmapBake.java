@@ -31,14 +31,15 @@ import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
-import net.minecraft.block.Block;
-import net.minecraft.init.Biomes;
-import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.biome.Biome;
+
+import java.util.Arrays;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
+import static net.daporkchop.fp2.mode.heightmap.HeightmapTile.*;
+import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -63,6 +64,10 @@ public class HeightmapBake {
     public static final int HEIGHTMAP_VERTEX_HEIGHT_FRAC_HIGH_OFFSET = HEIGHTMAP_VERTEX_HEIGHT_INT_HIGH_OFFSET + INT_SIZE;
 
     public static final int HEIGHTMAP_VERTEX_SIZE = HEIGHTMAP_VERTEX_HEIGHT_FRAC_HIGH_OFFSET + BYTE_SIZE + 1; // +1 to pad to 24 bytes
+
+    protected static int vertexMapIndex(int x, int z, int layer) {
+        return (x * T_VERTS + z) * MAX_LAYERS + layer;
+    }
 
     public void vertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao) {
         vao.attrI(buffer, 1, GL_UNSIGNED_INT, HEIGHTMAP_VERTEX_SIZE, HEIGHTMAP_VERTEX_STATE_OFFSET, 0); //state
@@ -91,77 +96,58 @@ public class HeightmapBake {
         final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
         final HeightmapData data = new HeightmapData();
 
-        for (int dx = 0; dx < T_VOXELS; dx++) {
-            for (int dz = 0; dz < T_VOXELS; dz++) {
-                writeVertex(baseX, baseZ, level, 0, srcs, dx, dz, 0, verts, pos, biomeAccess, data);
+        final int[] map = new int[T_VERTS * T_VERTS * MAX_LAYERS];
+        Arrays.fill(map, -1);
+
+        //write vertices and build index
+        for (int indexCounter = 0, i = 0; i < 4; i++) {
+            HeightmapTile src = srcs[i];
+            if (src == null) {
+                continue;
+            }
+
+            int maxX = CONNECTION_INTERSECTION_AREAS[i * 2 + 0];
+            int maxZ = CONNECTION_INTERSECTION_AREAS[i * 2 + 1];
+
+            for (int dx = 0; dx < maxX; dx++) {
+                for (int dz = 0; dz < maxZ; dz++) {
+                    for (int layerFlags = src._getLayerFlags(dx, dz), layer = 0; layer < MAX_LAYERS; layer++) {
+                        if ((layerFlags & layerFlag(layer)) == 0) { //layer is unset
+                            continue;
+                        }
+
+                        int x = dx + (((i >> 1) & 1) << T_SHIFT);
+                        int z = dz + ((i & 1) << T_SHIFT);
+
+                        writeVertex(baseX, baseZ, level, i, srcs, x, z, layer, verts, pos, biomeAccess, data);
+                        map[vertexMapIndex(x, z, layer)] = indexCounter++;
+                    }
+                }
             }
         }
 
-        int index = T_VOXELS * T_VOXELS;
-        int indexZ = -1;
-        if (srcs[1] != null) {
-            indexZ = index;
-            for (int dx = 0; dx < T_VOXELS; dx++) {
-                writeVertex(baseX, baseZ, level, 1, srcs, dx, T_VOXELS, 0, verts, pos, biomeAccess, data);
+        //write indices
+        for (int x = 0; x < T_VOXELS; x++) {
+            for (int z = 0; z < T_VOXELS; z++) {
+                for (int layerFlags = srcs[0]._getLayerFlags(x, z), layer = 0; layer < MAX_LAYERS; layer++) {
+                    if ((layerFlags & layerFlag(layer)) == 0) { //layer is unset
+                        continue;
+                    }
+                    srcs[0]._getLayerUnchecked(x, z, layer, data);
+
+                    int oppositeCorner, c0, c1, provoking;
+                    if ((provoking = map[vertexMapIndex(x, z, layer)]) < 0
+                        || ((c1 = map[vertexMapIndex(x, z + 1, layer)]) < 0 && (c1 = map[vertexMapIndex(x, z + 1, data.secondaryConnection)]) < 0)
+                        || ((c0 = map[vertexMapIndex(x + 1, z, layer)]) < 0 && (c0 = map[vertexMapIndex(x + 1, z, data.secondaryConnection)]) < 0)
+                        || ((oppositeCorner = map[vertexMapIndex(x + 1, z + 1, layer)]) < 0 && (oppositeCorner = map[vertexMapIndex(x + 1, z + 1, data.secondaryConnection)]) < 0)) {
+                        continue; //skip if any of the vertices are missing
+                    }
+
+                    ByteBuf buf = indices[renderType(data.state)];
+
+                    emitQuad(buf, oppositeCorner, c0, c1, provoking);
+                }
             }
-            index += T_VOXELS;
-        }
-
-        int indexX = -1;
-        if (srcs[2] != null) {
-            indexX = index;
-            for (int dz = 0; dz < T_VOXELS; dz++) {
-                writeVertex(baseX, baseZ, level, 2, srcs, T_VOXELS, dz, 0, verts, pos, biomeAccess, data);
-            }
-            index += T_VOXELS;
-        }
-
-        int indexXZ = -1;
-        if (srcs[1] != null && srcs[2] != null && srcs[3] != null) {
-            indexXZ = index++;
-            writeVertex(baseX, baseZ, level, 3, srcs, T_VOXELS, T_VOXELS, 0, verts, pos, biomeAccess, data);
-        }
-
-        for (int dx = 0; dx < T_VOXELS - 1; dx++) {
-            for (int dz = 0; dz < T_VOXELS - 1; dz++) {
-                indices[0].writeShortLE(dx * T_VOXELS + dz)
-                        .writeShortLE(dx * T_VOXELS + (dz + 1))
-                        .writeShortLE((dx + 1) * T_VOXELS + (dz + 1))
-                        .writeShortLE((dx + 1) * T_VOXELS + dz)
-                        .writeShortLE(dx * T_VOXELS + dz)
-                        .writeShortLE((dx + 1) * T_VOXELS + (dz + 1));
-            }
-        }
-
-        if (indexZ >= 0) {
-            for (int dx = 0; dx < T_VOXELS - 1; dx++) {
-                indices[0].writeShortLE(dx * T_VOXELS + (T_VOXELS - 1))
-                        .writeShortLE(indexZ + dx)
-                        .writeShortLE(indexZ + dx + 1)
-                        .writeShortLE((dx + 1) * T_VOXELS + (T_VOXELS - 1))
-                        .writeShortLE(dx * T_VOXELS + (T_VOXELS - 1))
-                        .writeShortLE(indexZ + dx + 1);
-            }
-        }
-
-        if (indexX >= 0) {
-            for (int dz = 0; dz < T_VOXELS - 1; dz++) {
-                indices[0].writeShortLE((T_VOXELS - 1) * T_VOXELS + dz)
-                        .writeShortLE((T_VOXELS - 1) * T_VOXELS + (dz + 1))
-                        .writeShortLE(indexX + dz + 1)
-                        .writeShortLE(indexX + dz)
-                        .writeShortLE((T_VOXELS - 1) * T_VOXELS + dz)
-                        .writeShortLE(indexX + dz + 1);
-            }
-        }
-
-        if (indexXZ >= 0) {
-            indices[0].writeShortLE((T_VOXELS - 1) * T_VOXELS + (T_VOXELS - 1))
-                    .writeShortLE(indexZ + (T_VOXELS - 1))
-                    .writeShortLE(indexXZ)
-                    .writeShortLE(indexX + (T_VOXELS - 1))
-                    .writeShortLE((T_VOXELS - 1) * T_VOXELS + (T_VOXELS - 1))
-                    .writeShortLE(indexXZ);
         }
     }
 

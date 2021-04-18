@@ -23,10 +23,11 @@ package net.daporkchop.fp2.mode.heightmap;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.world.biome.Biome;
 
+import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
- * Represents a single data layer contained in a heightmap tile.
+ * Represents a single data sample contained in a single layer heightmap tile.
  *
  * @author DaPorkchop_
  */
@@ -36,6 +37,7 @@ public class HeightmapData {
     public int height_int; //the 32-bit integer part of the layer's height
     public int height_frac; //the 8-bit fractional part of the layer's height
     public int light;
+    public int secondaryConnection = DEFAULT_LAYER; //the layer number that this sample should connect to if the neighboring sample on the same layer is absent
 
     /**
      * Resets this instance.
@@ -48,6 +50,7 @@ public class HeightmapData {
         this.height_int = 0;
         this.height_frac = 0;
         this.light = 0;
+        this.secondaryConnection = DEFAULT_LAYER;
         return this;
     }
 }
