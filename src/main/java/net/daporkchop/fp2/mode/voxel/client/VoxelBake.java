@@ -249,7 +249,7 @@ public class VoxelBake {
         pos.setPos(blockX, blockY, blockZ);
         biomeAccess.biome(Biome.getBiome(data.biome, Biomes.PLAINS));
 
-        vertices.writeIntLE(TexUVs.STATEID_TO_INDEXID.get(data.states[0])); //state
+        vertices.writeIntLE(TexUVs.STATEID_TO_INDEXID.get(Block.getStateById(data.states[0]))); //state
         vertices.writeShortLE(Constants.packedLightTo8BitVec2(data.light)); //light
         vertices.writeMediumLE(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.states[0]), biomeAccess, pos, 0))); //color
 
@@ -288,7 +288,7 @@ public class VoxelBake {
                 vertices.writeBytes(vertices, bufIndex - VOXEL_VERTEX_SIZE, VOXEL_VERTEX_SIZE);
             }
 
-            vertices.setIntLE(bufIndex, TexUVs.STATEID_TO_INDEXID.get(data.states[edge]));
+            vertices.setIntLE(bufIndex, TexUVs.STATEID_TO_INDEXID.get(Block.getStateById(data.states[edge])));
             vertices.setMediumLE(bufIndex + 6, Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.states[edge]), biomeAccess, pos, 0))); //color
             map[baseMapIndex + edge] = indexCounter++;
         }
