@@ -115,7 +115,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         this.children = this.tile_renderData + this.renderDataSize;
 
         this.nodeSize = this.children + ((long) LONG_SIZE << this.d);
-        LOGGER.info("{}D tree node size: {} bytes", this.d, this.nodeSize);
+        FP2_LOG.info("{}D tree node size: {} bytes", this.d, this.nodeSize);
 
         PUnsafe.setMemory(this.root = PUnsafe.allocateMemory(this.nodeSize), this.nodeSize, (byte) 0);
         PUnsafe.putInt(this.root + this.flags, 0);

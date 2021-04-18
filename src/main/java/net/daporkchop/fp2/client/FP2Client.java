@@ -58,11 +58,11 @@ public class FP2Client {
         }
 
         int size = glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
-        LOGGER.info(PStrings.fastFormat("Max SSBO size: %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
+        FP2_LOG.info(PStrings.fastFormat("Max SSBO size: %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
 
         if (!mc.getFramebuffer().isStencilEnabled()) {
             checkState(mc.getFramebuffer().enableStencil(), "unable to enable stencil buffer!");
-            LOGGER.info("Successfully enabled stencil buffer!");
+            FP2_LOG.info("Successfully enabled stencil buffer!");
         }
 
         MinecraftForge.EVENT_BUS.register(new ClientEvents());

@@ -54,7 +54,7 @@ public class FP2 {
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
-        LOGGER = event.getModLog();
+        FP2_LOG = event.getModLog();
 
         this.registerPackets();
 

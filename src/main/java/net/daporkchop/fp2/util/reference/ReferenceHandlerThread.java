@@ -43,7 +43,7 @@ public class ReferenceHandlerThread {
                 try {
                     ((Runnable) QUEUE.remove()).run();
                 } catch (Throwable t) {
-                    LOGGER.error("Unable to run reference callback", t);
+                    FP2_LOG.error("Unable to run reference callback", t);
                 }
             }
         }).start();

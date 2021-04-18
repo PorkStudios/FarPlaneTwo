@@ -78,14 +78,14 @@ public class ServerEvents {
 
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        Constants.LOGGER.debug("Handling login for player {}", event.player.getName());
+        Constants.FP2_LOG.debug("Handling login for player {}", event.player.getName());
         ServerThreadExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(new SPacketReady(), (EntityPlayerMP) event.player));
         event.player.sendMessage(new TextComponentString("§c§lFarPlaneTwo pre-pre-pre-alpha build: use at your own risk!"));
     }
 
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        Constants.LOGGER.debug("Handling logout for player {}", event.player.getName());
+        Constants.FP2_LOG.debug("Handling logout for player {}", event.player.getName());
         IFarRenderMode<?, ?> mode = ((IFarPlayer) event.player).activeMode();
         if (mode != null) {
             ((IFarWorldServer) event.player.world).contextFor(mode).world().tracker().playerRemove((EntityPlayerMP) event.player);

@@ -52,7 +52,7 @@ public class CPacketDropAllTiles implements IMessage {
             }
             IFarWorldServer world = (IFarWorldServer) ctx.getServerHandler().player.world;
             ServerThreadExecutor.INSTANCE.execute(() -> {
-                Constants.LOGGER.info("Dropping all tiles");
+                Constants.FP2_LOG.info("Dropping all tiles");
                 world.forEachContext(context -> context.world().tracker().debug_dropAllTiles());
             });
             return null;

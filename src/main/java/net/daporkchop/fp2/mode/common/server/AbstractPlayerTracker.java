@@ -69,7 +69,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
 
         checkState(this.trackingPositions.putIfAbsent(player, this.allocateSet()) == null, player);
 
-        LOGGER.debug("Added player {} to tracker in dimension {}", player.getName(), this.world.world().provider.getDimension());
+        FP2_LOG.debug("Added player {} to tracker in dimension {}", player.getName(), this.world.world().provider.getDimension());
     }
 
     @Override
@@ -86,7 +86,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
         trackingPositions.stream().map(this.entries::get).forEach(entry -> entry.removePlayer(player));
         this.releaseSet(trackingPositions);
 
-        LOGGER.debug("Removed player {} from tracker in dimension {}", player.getName(), this.world.world().provider.getDimension());
+        FP2_LOG.debug("Removed player {} from tracker in dimension {}", player.getName(), this.world.world().provider.getDimension());
     }
 
     @Override
@@ -148,10 +148,10 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
 
         if (this.world instanceof AbstractFarWorld) {
             if (((AbstractFarWorld) this.world).notDone.isEmpty()) {
-                LOGGER.info("Invalidating tile cache");
+                FP2_LOG.info("Invalidating tile cache");
                 ((AbstractFarWorld) this.world).tileCache.invalidateAll();
             } else {
-                LOGGER.info("Not invalidating tile cache because some tiles are still queued");
+                FP2_LOG.info("Not invalidating tile cache because some tiles are still queued");
             }
         }
     }

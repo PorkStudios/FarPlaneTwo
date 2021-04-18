@@ -22,7 +22,6 @@ package net.daporkchop.fp2.client.gl;
 
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.util.Constants;
-import org.lwjgl.LWJGLUtil;
 
 import java.util.StringTokenizer;
 
@@ -67,9 +66,9 @@ public class OpenGL {
     public static void checkGLError(String message) {
         if (FP2_DEBUG) {
             for (int error; (error = glGetError()) != GL_NO_ERROR; ) {
-                Constants.LOGGER.error("########## GL ERROR ##########");
-                Constants.LOGGER.error("@ {}", message);
-                Constants.LOGGER.error("{}: {}", error, gluErrorString(error));
+                Constants.FP2_LOG.error("########## GL ERROR ##########");
+                Constants.FP2_LOG.error("@ {}", message);
+                Constants.FP2_LOG.error("{}: {}", error, gluErrorString(error));
             }
         }
     }

@@ -62,7 +62,7 @@ public class RocksDirtyTracker<POS extends IFarPos> implements IFarDirtyTracker<
                 this.map.put(storage.mode.readPos(Unpooled.wrappedBuffer(key)), Unpooled.wrappedBuffer(value).readLong());
             }
         }
-        Constants.LOGGER.info("Restored {} dirty tiles", this.map.size());
+        Constants.FP2_LOG.info("Restored {} dirty tiles", this.map.size());
     }
 
     @Override

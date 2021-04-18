@@ -54,12 +54,12 @@ public class OFHelper {
             ofVersion = ofVersion.replace("_pre", "");
             ofVersion = ofVersion.substring(ofVersion.length() - 2);
 
-            Constants.LOGGER.info("Detected Optifine version: {}", ofVersion);
+            Constants.FP2_LOG.info("Detected Optifine version: {}", ofVersion);
         } catch (ClassNotFoundException e) {
-            Constants.LOGGER.info("No Optifine detected");
+            Constants.FP2_LOG.info("No Optifine detected");
         } catch (Exception e) {
             ofVersion = "E1";
-            Constants.LOGGER.error("Optifine detected, but could not detect version. It may not work. Assuming Optifine E1...", e);
+            Constants.FP2_LOG.error("Optifine detected, but could not detect version. It may not work. Assuming Optifine E1...", e);
         } finally {
             OF_VERSION = ofVersion;
             OF = ofVersion != null;

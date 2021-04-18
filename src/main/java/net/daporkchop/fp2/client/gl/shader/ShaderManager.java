@@ -25,15 +25,12 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.debug.FP2Debug;
 import net.daporkchop.fp2.debug.util.DebugUtils;
 import net.daporkchop.lib.binary.oio.StreamUtil;
 import net.daporkchop.lib.binary.oio.reader.UTF8FileReader;
 import net.daporkchop.lib.common.function.io.IOBiConsumer;
 import net.daporkchop.lib.common.function.io.IOFunction;
 import net.daporkchop.lib.common.misc.string.PStrings;
-import net.minecraft.client.Minecraft;
-import net.minecraft.util.text.TextComponentString;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -158,7 +155,7 @@ public class ShaderManager {
             });
             DebugUtils.clientMsg("§a" + shaderCount.get() + " shaders successfully reloaded.");
         } catch (Exception e) {
-            LOGGER.error("shader reload failed", e);
+            FP2_LOG.error("shader reload failed", e);
             DebugUtils.clientMsg("§cshaders reload failed (check console).");
         }
     }

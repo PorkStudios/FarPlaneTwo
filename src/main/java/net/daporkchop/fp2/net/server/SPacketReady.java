@@ -55,7 +55,7 @@ public class SPacketReady implements IMessage {
         public IMessage onMessage(SPacketReady message, MessageContext ctx) {
             GlobalEventExecutor.INSTANCE.schedule(() -> { //TODO: better workaround
                 ClientThreadExecutor.INSTANCE.execute(() -> {
-                    Constants.LOGGER.debug("Server notified us that we are ready to go!");
+                    Constants.FP2_LOG.debug("Server notified us that we are ready to go!");
                     NETWORK_WRAPPER.sendToServer(new CPacketRenderMode().mode(IFarRenderMode.REGISTRY.get(FP2Config.renderMode)));
                 });
             }, 1L, TimeUnit.SECONDS);

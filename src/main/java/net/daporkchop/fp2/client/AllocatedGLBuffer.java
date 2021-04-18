@@ -72,7 +72,7 @@ public interface AllocatedGLBuffer extends IGLBuffer, Allocator {
 
             @Override
             public void brk(long capacity) {
-                LOGGER.info(PStrings.fastFormat("setting %s buffer capacity to %d bytes (%.2f MiB)", this.name, capacity, capacity / (1024.0d * 1024.0d)));
+                FP2_LOG.info(PStrings.fastFormat("setting %s buffer capacity to %d bytes (%.2f MiB)", this.name, capacity, capacity / (1024.0d * 1024.0d)));
 
                 //simply set buffer capacity
                 this.capacity(capacity);
@@ -80,7 +80,7 @@ public interface AllocatedGLBuffer extends IGLBuffer, Allocator {
 
             @Override
             public void sbrk(long newCapacity) {
-                LOGGER.info(PStrings.fastFormat("growing %s buffer capacity to %d bytes (%.2f MiB)", this.name, newCapacity, newCapacity / (1024.0d * 1024.0d)));
+                FP2_LOG.info(PStrings.fastFormat("growing %s buffer capacity to %d bytes (%.2f MiB)", this.name, newCapacity, newCapacity / (1024.0d * 1024.0d)));
 
                 this.resize(newCapacity);
             }

@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.util.threading.keyed;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
@@ -181,7 +180,7 @@ public class DefaultKeyedTaskScheduler<K> extends AbstractReleasable implements 
                 } catch (InterruptedException e) {
                     //gracefully exit on interrupt
                 } catch (Exception e) {
-                    LOGGER.error(Thread.currentThread().getName(), e);
+                    FP2_LOG.error(Thread.currentThread().getName(), e);
                 } finally {
                     taskBuffer.clear();
                 }

@@ -203,7 +203,7 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
     public void updateTile(PriorityTask<POS> root, POS pos) {
         long newTimestamp = this.world.storage.dirtyTracker().dirtyTimestamp(pos);
         if (newTimestamp < 0L) {
-            LOGGER.warn("Duplicate update task scheduled for tile at {}!", pos);
+            FP2_LOG.warn("Duplicate update task scheduled for tile at {}!", pos);
             return;
         }
 

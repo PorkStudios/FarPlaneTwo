@@ -21,11 +21,9 @@
 package net.daporkchop.fp2.util.threading;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.threading.ConcurrentUnboundedPriorityBlockingQueue;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Collection;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -77,7 +75,7 @@ public class PriorityRecursiveExecutor<T extends Comparable<T> & Predicate<T>> i
             } catch (InterruptedException e) {
                 PUnsafe.throwException(e); //rethrow
             } catch (Exception e) {
-                LOGGER.error(Thread.currentThread().getName(), e);
+                FP2_LOG.error(Thread.currentThread().getName(), e);
             }
         }
     }
@@ -113,7 +111,7 @@ public class PriorityRecursiveExecutor<T extends Comparable<T> & Predicate<T>> i
                 //gracefully exit on interrupt
                 return;
             } catch (Exception e) {
-                LOGGER.error(Thread.currentThread().getName(), e);
+                FP2_LOG.error(Thread.currentThread().getName(), e);
             }
         }
     }

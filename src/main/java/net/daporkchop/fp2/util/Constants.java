@@ -79,7 +79,7 @@ public class Constants {
     public static final int T_VOXELS = 1 << T_SHIFT;
     public static final int T_VERTS = T_VOXELS + 1;
 
-    public static Logger LOGGER;
+    public static Logger FP2_LOG;
 
     public static final SimpleNetworkWrapper NETWORK_WRAPPER = NetworkRegistry.INSTANCE.newSimpleChannel(FP2.MODID);
 
@@ -94,14 +94,14 @@ public class Constants {
 
     public static void bigWarning(String format, Object... data) {
         StackTraceElement[] trace = Thread.currentThread().getStackTrace();
-        LOGGER.warn("****************************************");
+        FP2_LOG.warn("****************************************");
         for (String line : format.split("\n")) {
-            LOGGER.warn("* " + line, data);
+            FP2_LOG.warn("* " + line, data);
         }
         for (int i = 2; i < 8 && i < trace.length; i++) {
-            LOGGER.warn("*  at {}{}", trace[i].toString(), i == 7 ? "..." : "");
+            FP2_LOG.warn("*  at {}{}", trace[i].toString(), i == 7 ? "..." : "");
         }
-        LOGGER.warn("****************************************");
+        FP2_LOG.warn("****************************************");
     }
 
     /**

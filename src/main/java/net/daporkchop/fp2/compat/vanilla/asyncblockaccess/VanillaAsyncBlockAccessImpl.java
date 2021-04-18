@@ -47,7 +47,6 @@ import net.minecraft.world.chunk.storage.AnvilChunkLoader;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinTask;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -215,7 +214,7 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
                 try {
                     VanillaAsyncBlockAccessImpl.this.io.saveChunk(VanillaAsyncBlockAccessImpl.this.world, chunk);
                 } catch (IOException | MinecraftException e) {
-                    LOGGER.error("Unable to save chunk!", e);
+                    FP2_LOG.error("Unable to save chunk!", e);
                 }
             }, ServerThreadExecutor.INSTANCE).join();
         }

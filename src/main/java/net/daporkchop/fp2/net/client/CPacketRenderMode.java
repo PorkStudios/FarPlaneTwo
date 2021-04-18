@@ -61,7 +61,7 @@ public class CPacketRenderMode implements IMessage {
         public IMessage onMessage(CPacketRenderMode message, MessageContext ctx) {
             if (message.mode.equals(IFarRenderMode.REGISTRY.get(FP2Config.renderMode))) {
                 ServerThreadExecutor.INSTANCE.execute(() -> {
-                    LOGGER.debug("Player {} initiated FP2 session with render mode {}", ctx.getServerHandler().player.getName(), message.mode);
+                    FP2_LOG.debug("Player {} initiated FP2 session with render mode {}", ctx.getServerHandler().player.getName(), message.mode);
 
                     //send the packet here to ensure that it's sent before adding the player to the tracker
                     NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy().mode(IFarRenderMode.REGISTRY.get(FP2Config.renderMode)), ctx.getServerHandler().player);
