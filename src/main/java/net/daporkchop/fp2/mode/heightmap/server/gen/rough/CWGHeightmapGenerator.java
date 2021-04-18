@@ -34,8 +34,6 @@ import net.minecraft.init.Blocks;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
-import java.util.concurrent.ThreadLocalRandom;
-
 import static net.daporkchop.fp2.compat.cwg.CWGContext.*;
 import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;

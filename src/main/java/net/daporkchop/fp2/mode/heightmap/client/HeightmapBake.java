@@ -34,6 +34,7 @@ import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.Arrays;
+import java.util.BitSet;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
@@ -126,6 +127,8 @@ public class HeightmapBake {
             }
         }
 
+        final BitSet rendered = new BitSet(T_VERTS * T_VERTS * MAX_LAYERS);
+
         //write indices
         for (int x = 0; x < T_VOXELS; x++) {
             for (int z = 0; z < T_VOXELS; z++) {
@@ -137,15 +140,44 @@ public class HeightmapBake {
 
                     int oppositeCorner, c0, c1, provoking;
                     if ((provoking = map[vertexMapIndex(x, z, layer)]) < 0
-                        || ((c1 = map[vertexMapIndex(x, z + 1, layer)]) < 0 && (c1 = map[vertexMapIndex(x, z + 1, data.secondaryConnection)]) < 0)
-                        || ((c0 = map[vertexMapIndex(x + 1, z, layer)]) < 0 && (c0 = map[vertexMapIndex(x + 1, z, data.secondaryConnection)]) < 0)
+                        || ((c0 = map[vertexMapIndex(x, z + 1, layer)]) < 0 && (c0 = map[vertexMapIndex(x, z + 1, data.secondaryConnection)]) < 0)
+                        || ((c1 = map[vertexMapIndex(x + 1, z, layer)]) < 0 && (c1 = map[vertexMapIndex(x + 1, z, data.secondaryConnection)]) < 0)
                         || ((oppositeCorner = map[vertexMapIndex(x + 1, z + 1, layer)]) < 0 && (oppositeCorner = map[vertexMapIndex(x + 1, z + 1, data.secondaryConnection)]) < 0)) {
                         continue; //skip if any of the vertices are missing
                     }
 
-                    ByteBuf buf = indices[renderType(data.state)];
+                    emitQuad(indices[renderType(data.state)], oppositeCorner, c1, c0, provoking);
+                    rendered.set(vertexMapIndex(x, z, layer));
+                }
+            }
+        }
 
-                    emitQuad(buf, oppositeCorner, c0, c1, provoking);
+        //re-check behind each vertex to see if we need to render the back-face of a layer transition
+        //TODO: this doesn't work for some diagonals
+        for (int x = 1; x < T_VERTS; x++) {
+            for (int z = 1; z < T_VERTS; z++) {
+                HeightmapTile src = srcs[((x >> T_SHIFT) << 1) | (z >> T_SHIFT)];
+                if (src == null) {
+                    continue;
+                }
+
+                for (int layerFlags = src._getLayerFlags(x & T_MASK, z & T_MASK), layer = 0; layer < MAX_LAYERS; layer++) {
+                    if ((layerFlags & layerFlag(layer)) == 0 //layer is unset
+                        || rendered.get(vertexMapIndex(x - 1, z - 1, layer))) { //face behind was rendered correctly
+                        continue;
+                    }
+
+                    src._getLayerUnchecked(x & T_MASK, z & T_MASK, layer, data);
+
+                    int oppositeCorner, c0, c1, provoking;
+                    if ((provoking = map[vertexMapIndex(x, z, layer)]) < 0
+                        || ((c0 = map[vertexMapIndex(x, z - 1, layer)]) < 0 && (c0 = map[vertexMapIndex(x, z - 1, data.secondaryConnection)]) < 0)
+                        || ((c1 = map[vertexMapIndex(x - 1, z, layer)]) < 0 && (c1 = map[vertexMapIndex(x - 1, z, data.secondaryConnection)]) < 0)
+                        || ((oppositeCorner = map[vertexMapIndex(x - 1, z - 1, layer)]) < 0 && (oppositeCorner = map[vertexMapIndex(x - 1, z - 1, data.secondaryConnection)]) < 0)) {
+                        continue; //skip if any of the vertices are missing
+                    }
+
+                    emitQuad(indices[renderType(data.state)], oppositeCorner, c1, c0, provoking);
                 }
             }
         }
