@@ -34,11 +34,11 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(RenderGlobal.class)
 public abstract class MixinRenderGlobal {
     @Redirect(method = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;)V",
-    at = @At(value = "INVOKE",
-    target = "Lnet/minecraft/client/renderer/ChunkRenderContainer;renderChunkLayer(Lnet/minecraft/util/BlockRenderLayer;)V"),
-    allow = 1)
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/ChunkRenderContainer;renderChunkLayer(Lnet/minecraft/util/BlockRenderLayer;)V"),
+            allow = 1)
     private void fp2_debug_renderChunkLayer_skipVanilla(ChunkRenderContainer container, BlockRenderLayer layer) {
-        if (!FP2Config.debug.skipRenderWorld)   {
+        if (!FP2Config.debug.skipRenderWorld) {
             container.renderChunkLayer(layer);
         }
     }

@@ -89,7 +89,7 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
 
     public Compressed<POS, T> roughGetTile(PriorityTask<POS> root, POS pos) {
         //TODO: this is ugly
-        if (false && this.world.anyVanillaTerrainExistsAt(pos)) {
+        if (this.world.anyVanillaTerrainExistsAt(pos)) {
             //there's some terrain at the given position, let's try to generate something with it
             if (pos.level() == 0) {
                 //the position is at detail level 0, do exact generation
