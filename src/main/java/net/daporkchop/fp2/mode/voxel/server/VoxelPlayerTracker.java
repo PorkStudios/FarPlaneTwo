@@ -42,24 +42,28 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos> {
 
     @Override
     protected Stream<VoxelPos> getPositions(@NonNull EntityPlayerMP player) {
-        final int dist = FP2Config.renderDistance >> T_SHIFT; //TODO: make it based on render distance
-        final int baseX = floorI(player.posX) >> T_SHIFT;
-        final int baseY = floorI(player.posY) >> T_SHIFT;
-        final int baseZ = floorI(player.posZ) >> T_SHIFT;
+        final int dist = asrRound(FP2Config.renderDistance, T_SHIFT); //TODO: make it based on render distance
+        final int playerX = floorI(player.posX);
+        final int playerY = floorI(player.posY);
+        final int playerZ = floorI(player.posZ);
 
         final int levels = FP2Config.maxLevels;
-        final int d = (FP2Config.levelCutoffDistance >> T_SHIFT) + 3; //extra padding of 3 tiles to allow tiles to pre-load on the client when moving
+        final int d = asrRound(FP2Config.levelCutoffDistance, T_SHIFT) + 3; //extra padding of 3 tiles to allow tiles to pre-load on the client when moving
 
         VoxelPos[] positions = new VoxelPos[pow(d * 2 + 1, 3) * levels];
         int i = 0;
 
         for (int lvl = 0; lvl < levels; lvl++) {
-            int xMin = ((baseX >> lvl) - d);
-            int xMax = ((baseX >> lvl) + d);
-            int yMin = ((baseY >> lvl) - d);
-            int yMax = ((baseY >> lvl) + d);
-            int zMin = ((baseZ >> lvl) - d);
-            int zMax = ((baseZ >> lvl) + d);
+            final int baseX = asrRound(playerX, T_SHIFT + lvl);
+            final int baseY = asrRound(playerY, T_SHIFT + lvl);
+            final int baseZ = asrRound(playerZ, T_SHIFT + lvl);
+
+            int xMin = baseX - d;
+            int xMax = baseX + d + 1;
+            int yMin = baseY - d;
+            int yMax = baseY + d + 1;
+            int zMin = baseZ - d;
+            int zMax = baseZ + d + 1;
 
             for (int x = xMin; x <= xMax; x++) {
                 for (int y = yMin; y <= yMax; y++)  {

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,7 +23,6 @@ package net.daporkchop.fp2.util.math;
 import lombok.AllArgsConstructor;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.Vec3d;
 
 import static net.daporkchop.lib.common.math.PMath.*;
 
@@ -47,18 +46,9 @@ public class Cylinder implements Volume {
 
     @Override
     public boolean intersects(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
-        double dist = sq(this.radius);
-        if (this.x < minX) {
-            dist -= sq(this.x - minX);
-        } else if (this.x > maxX) {
-            dist -= sq(this.x - maxX);
-        }
-        if (this.z < minZ) {
-            dist -= sq(this.z - minZ);
-        } else if (this.x > maxZ) {
-            dist -= sq(this.z - maxZ);
-        }
-        return dist > 0.0d;
+        double dx = this.x - clamp(this.x, minX, maxX);
+        double dz = this.z - clamp(this.z, minZ, maxZ);
+        return dx * dx + dz * dz < sq(this.radius);
     }
 
     @Override

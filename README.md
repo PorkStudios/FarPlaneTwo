@@ -2,6 +2,7 @@
 
 [![Build Status](https://jenkins.daporkchop.net/job/PorkStudios/job/FarPlaneTwo/job/master/badge/icon)](https://jenkins.daporkchop.net/job/PorkStudios/job/FarPlaneTwo/)
 [![Discord](https://img.shields.io/discord/428813657816956929.svg)](https://discord.gg/FrBHHCk)
+[![patreon badge](https://img.shields.io/badge/dynamic/json?color=e64413&label=patreon&query=data.attributes.patron_count&suffix=%20patrons&url=https%3A%2F%2Fwww.patreon.com%2Fapi%2Fcampaigns%2F727078)](https://www.patreon.com/DaPorkchop_)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/PorkStudios/FarPlaneTwo)
 ![Lines of code](https://img.shields.io/tokei/lines/github/PorkStudios/FarPlaneTwo)
 

@@ -153,7 +153,6 @@ public class HeightmapBake {
         }
 
         //re-check behind each vertex to see if we need to render the back-face of a layer transition
-        //TODO: this doesn't work for some diagonals
         for (int x = 1; x < T_VERTS; x++) {
             for (int z = 1; z < T_VERTS; z++) {
                 HeightmapTile src = srcs[((x >> T_SHIFT) << 1) | (z >> T_SHIFT)];
@@ -162,22 +161,28 @@ public class HeightmapBake {
                 }
 
                 for (int layerFlags = src._getLayerFlags(x & T_MASK, z & T_MASK), layer = 0; layer < MAX_LAYERS; layer++) {
-                    if ((layerFlags & layerFlag(layer)) == 0 //layer is unset
-                        || rendered.get(vertexMapIndex(x - 1, z - 1, layer))) { //face behind was rendered correctly
+                    if ((layerFlags & layerFlag(layer)) == 0) {  //layer is unset
                         continue;
                     }
 
                     src._getLayerUnchecked(x & T_MASK, z & T_MASK, layer, data);
+                    int provoking = map[vertexMapIndex(x, z, layer)];
 
-                    int oppositeCorner, c0, c1, provoking;
-                    if ((provoking = map[vertexMapIndex(x, z, layer)]) < 0
-                        || ((c0 = map[vertexMapIndex(x, z - 1, layer)]) < 0 && (c0 = map[vertexMapIndex(x, z - 1, data.secondaryConnection)]) < 0)
-                        || ((c1 = map[vertexMapIndex(x - 1, z, layer)]) < 0 && (c1 = map[vertexMapIndex(x - 1, z, data.secondaryConnection)]) < 0)
-                        || ((oppositeCorner = map[vertexMapIndex(x - 1, z - 1, layer)]) < 0 && (oppositeCorner = map[vertexMapIndex(x - 1, z - 1, data.secondaryConnection)]) < 0)) {
-                        continue; //skip if any of the vertices are missing
+                    for (int dx = -1; dx <= 1; dx += 2) {
+                        for (int dz = -1; dz <= 1; dz += 2) {
+                            int oppositeCorner, c0, c1;
+                            if ((dx | dz) >= 0 //at least one offset must be negative - the +,+ quadrant is always handled properly by the first pass
+                                || x + dx == T_VERTS || z + dz == T_VERTS //avoid out of bounds (will never happen in negative direction)
+                                || rendered.get(vertexMapIndex(x + dx, z + dz, layer)) //face behind was rendered correctly
+                                || ((c0 = map[vertexMapIndex(x, z + dz, layer)]) < 0 && (c0 = map[vertexMapIndex(x, z + dz, data.secondaryConnection)]) < 0)
+                                || ((c1 = map[vertexMapIndex(x + dx, z, layer)]) < 0 && (c1 = map[vertexMapIndex(x + dx, z, data.secondaryConnection)]) < 0)
+                                || ((oppositeCorner = map[vertexMapIndex(x + dx, z + dz, layer)]) < 0 && (oppositeCorner = map[vertexMapIndex(x + dx, z + dz, data.secondaryConnection)]) < 0)) {
+                                continue; //skip if any of the vertices are missing
+                            }
+
+                            emitQuad(indices[renderType(data.state)], oppositeCorner, c1, c0, provoking);
+                        }
                     }
-
-                    emitQuad(indices[renderType(data.state)], oppositeCorner, c1, c0, provoking);
                 }
             }
         }

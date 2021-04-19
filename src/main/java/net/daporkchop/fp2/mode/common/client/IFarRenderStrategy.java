@@ -33,7 +33,7 @@ import java.util.stream.Stream;
  */
 public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile> extends Releasable {
     //
-    // POSITION ENCODING/DECODING/HELPER METHODS
+    // BAKE METHODS
     //
 
     /**

@@ -28,6 +28,7 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.lib.common.math.PMath.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL31.*;
 
@@ -63,11 +64,11 @@ public class ShaderFP2StateHelper {
             addr += INT_SIZE;
 
             //float transitionStart
-            PUnsafe.putFloat(addr, (float) FP2Config.client.levelTransitionStart);
+            PUnsafe.putFloat(addr, (float) lerp(0.5d, 1.0d, FP2Config.client.levelTransitionStart));
             addr += FLOAT_SIZE;
 
             //float transitionEnd
-            PUnsafe.putFloat(addr, (float) FP2Config.client.levelTransitionEnd);
+            PUnsafe.putFloat(addr, (float) lerp(0.5d, 1.0d, FP2Config.client.levelTransitionEnd));
             addr += FLOAT_SIZE;
         }
 

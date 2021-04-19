@@ -85,11 +85,7 @@ public abstract class MixinWorldServer extends World implements IFarWorldServer,
 
         ImmutableMap.Builder<IFarRenderMode, IFarServerContext> builder = ImmutableMap.builder();
 
-        IFarRenderMode mode = IFarRenderMode.REGISTRY.get(FP2Config.renderMode);
-        builder.put(mode, mode.serverContext(uncheckedCast(this)));
-
-        //TODO:
-        // IFarRenderMode.REGISTRY.forEachEntry((name, mode) -> builder.put(mode, mode.serverContext(uncheckedCast(this))));
+        IFarRenderMode.REGISTRY.forEachEntry((name, mode) -> builder.put(mode, mode.serverContext(uncheckedCast(this))));
 
         this.contextsByMode = builder.build();
         this.contexts = this.contextsByMode.values().toArray(new IFarServerContext[0]);

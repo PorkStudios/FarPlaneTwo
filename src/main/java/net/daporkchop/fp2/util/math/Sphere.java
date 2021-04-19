@@ -63,13 +63,13 @@ public class Sphere extends Vec3d implements Volume {
     @Override
     public boolean contains(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
         return this.contains(minX, minY, minZ)
-                && this.contains(minX, minY, maxZ)
-                && this.contains(minX, maxY, minZ)
-                && this.contains(minX, maxY, maxZ)
-                && this.contains(maxX, minY, minZ)
-                && this.contains(maxX, minY, maxZ)
-                && this.contains(maxX, maxY, minZ)
-                && this.contains(maxX, maxY, maxZ);
+               && this.contains(minX, minY, maxZ)
+               && this.contains(minX, maxY, minZ)
+               && this.contains(minX, maxY, maxZ)
+               && this.contains(maxX, minY, minZ)
+               && this.contains(maxX, minY, maxZ)
+               && this.contains(maxX, maxY, minZ)
+               && this.contains(maxX, maxY, maxZ);
     }
 
     @Override

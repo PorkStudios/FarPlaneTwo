@@ -18,6 +18,8 @@
  *
  */
 
+//#define DEBUG_DISTANCES
+
 void main() {
     //convert position to vec3 afterwards to minimize precision loss
     ivec3 relative_tile_position = (tile_position.xyz << tile_position.w << T_SHIFT) - glState.camera.position_floor;
@@ -33,7 +35,17 @@ void main() {
     float end = cutoff_scale * fp2_state.view.transitionEnd;
 
     vec3 relativePos_high = vec3(relative_tile_position + getHighOffsetPre(tile_position.w)) + getHighOffsetPost() - glState.camera.position_fract;
-    relativePos = mix(relativePos_high, relativePos, clamp((end - depth) * (1. / (end - start)), 0., 1.));
+    relativePos = mix(relativePos_high, relativePos, clamp((end - depth) / (end - start), 0., 1.));
+
+#ifdef DEBUG_DISTANCES
+    if (depth < start) {
+        vs_out.color = vec3(0., 1., 0.);
+    } else if (depth > end) {
+        vs_out.color = vec3(1., 0., 0.);
+    } else {
+        vs_out.color = vec3(1., 1., 0.);
+    }
+#endif
 #endif
 
     //set fog depth based on vertex distance to camera
@@ -48,5 +60,7 @@ void main() {
     //copy trivial attributes
     vs_out.light = in_light;
     vs_out.state = in_state;
+#ifndef DEBUG_DISTANCES
     vs_out.color = in_color;
+#endif
 }

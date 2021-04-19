@@ -63,6 +63,12 @@ public class CPacketRenderMode implements IMessage {
                 ServerThreadExecutor.INSTANCE.execute(() -> {
                     FP2_LOG.debug("Player {} initiated FP2 session with render mode {}", ctx.getServerHandler().player.getName(), message.mode);
 
+                    IFarRenderMode<?, ?> oldMode = ((IFarPlayer) ctx.getServerHandler().player).activeMode();
+                    ((IFarPlayer) ctx.getServerHandler().player).activeMode(null);
+                    if (oldMode != null) {
+                        ((IFarWorldServer) ctx.getServerHandler().player.world).contextFor(oldMode).world().tracker().playerRemove(ctx.getServerHandler().player);
+                    }
+
                     //send the packet here to ensure that it's sent before adding the player to the tracker
                     NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy().mode(IFarRenderMode.REGISTRY.get(FP2Config.renderMode)), ctx.getServerHandler().player);
 

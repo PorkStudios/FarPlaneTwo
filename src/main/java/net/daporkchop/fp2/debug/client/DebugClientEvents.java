@@ -24,11 +24,17 @@ import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.debug.util.DebugUtils;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.net.client.CPacketDropAllTiles;
+import net.daporkchop.fp2.net.client.CPacketRenderMode;
+import net.daporkchop.lib.common.util.PArrays;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+
+import java.util.Map;
+import java.util.stream.IntStream;
 
 import static net.daporkchop.fp2.util.Constants.*;
 
@@ -57,6 +63,13 @@ public class DebugClientEvents {
         if (DebugKeyBindings.REBUILD_UVS.isPressed()) {
             TexUVs.reloadUVs();
             DebugUtils.clientMsg("§aRebuilt texture UVs.");
+        }
+        if (DebugKeyBindings.TOGGLE_RENDER_MODE.isPressed()) {
+            String[] opts = IFarRenderMode.REGISTRY.stream().map(Map.Entry::getKey).toArray(String[]::new);
+            int i = IntStream.range(0, opts.length).filter(j -> FP2Config.renderMode.equals(opts[j])).findFirst().getAsInt();
+            FP2Config.renderMode = opts[(i + 1) % opts.length];
+            NETWORK_WRAPPER.sendToServer(new CPacketRenderMode().mode(IFarRenderMode.REGISTRY.get(FP2Config.renderMode)));
+            DebugUtils.clientMsg("§aSwitched render mode to §7" + FP2Config.renderMode);
         }
     }
 }

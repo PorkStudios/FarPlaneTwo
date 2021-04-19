@@ -22,15 +22,17 @@ package net.daporkchop.fp2.mode.common.client;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.mode.heightmap.client.HeightmapRenderer;
 import net.daporkchop.fp2.util.datastructure.DirectLongStack;
+import net.daporkchop.fp2.util.math.Cylinder;
 import net.daporkchop.fp2.util.math.Sphere;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
@@ -106,21 +108,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
         checkGLError("post fp2 render");
     }
 
-    //TODO: use cylinders for heightmap and spheres for voxel
-    protected Volume[] createVolumesForSelection(float partialTicks, Minecraft mc) {
-        Volume[] ranges = new Volume[this.maxLevel + 1];
-        Entity entity = mc.getRenderViewEntity();
-        double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
-        double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks;
-        double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
-        for (int i = 0; i < ranges.length; i++) {
-            //TODO: remove * 3 and fix transition seams in FarRenderTree
-            ranges[i] = new Sphere(x, y, z, (FP2Config.levelCutoffDistance + (T_VOXELS * 3)) << i);
-            //ranges[i] = new Cube(x, y, z, FP2Config.levelCutoffDistance + T_VOXELS << i);
-            //ranges[i] = new Cylinder(x, z, (FP2Config.levelCutoffDistance + T_VOXELS << i) + T_VOXELS * 4);
-        }
-        return ranges;
-    }
+    protected abstract Volume[] createVolumesForSelection(float partialTicks, Minecraft mc);
 
     @Override
     protected void doRelease() {

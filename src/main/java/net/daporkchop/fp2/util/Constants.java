@@ -421,6 +421,10 @@ public class Constants {
         return val;
     }
 
+    public static int asrRound(int val, int shift) {
+        return (val >> shift) + ((val >> (shift - 1)) & 1);
+    }
+
     public static void unsupported(String msg) {
         bigWarning(msg + "\nRequired by FarPlaneTwo.");
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
