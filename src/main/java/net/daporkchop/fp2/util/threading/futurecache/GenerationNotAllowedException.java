@@ -46,7 +46,9 @@ public final class GenerationNotAllowedException extends Exception {
         @Override
         @SneakyThrows(GenerationNotAllowedException.class)
         public void accept(Object o) {
-            throw get();
+            if (o == null) {
+                throw get();
+            }
         }
     };
 

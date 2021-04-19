@@ -181,7 +181,7 @@ reobf.jar {
 }
 
 jar {
-    archiveName "fp2-v$fp2Version-$minecraftVersion" + ".jar"
+    archiveName "fp2-$fp2Version-$minecraftVersion" + ".jar"
 
     from {
         configurations.shade.collect {
