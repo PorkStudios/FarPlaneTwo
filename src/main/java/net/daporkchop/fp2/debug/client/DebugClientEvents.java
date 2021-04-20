@@ -20,6 +20,8 @@
 
 package net.daporkchop.fp2.debug.client;
 
+import net.daporkchop.fp2.asm.client.gui.IGuiScreen;
+import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
@@ -27,7 +29,11 @@ import net.daporkchop.fp2.debug.util.DebugUtils;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.net.client.CPacketDropAllTiles;
 import net.daporkchop.fp2.net.client.CPacketRenderMode;
-import net.daporkchop.lib.common.util.PArrays;
+import net.minecraft.client.gui.GuiIngameMenu;
+import net.minecraft.client.gui.GuiMainMenu;
+import net.minecraft.client.gui.GuiScreen;
+import net.minecraftforge.client.event.GuiScreenEvent;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.relauncher.Side;
@@ -70,6 +76,16 @@ public class DebugClientEvents {
             FP2Config.renderMode = opts[(i + 1) % opts.length];
             NETWORK_WRAPPER.sendToServer(new CPacketRenderMode().mode(IFarRenderMode.REGISTRY.get(FP2Config.renderMode)));
             DebugUtils.clientMsg("§aSwitched render mode to §7" + FP2Config.renderMode);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOW)
+    public void initGuiEvent(GuiScreenEvent.InitGuiEvent.Post event) {
+        GuiScreen gui = event.getGui();
+        if (gui instanceof GuiMainMenu) {
+            ((IGuiScreen) gui).getButtonList().add(new GuiButtonFP2Options(0xBEEF, gui.width / 2 + 104, gui.height / 4 + 48, gui));
+        } else if (gui instanceof GuiIngameMenu) {
+            ((IGuiScreen) gui).getButtonList().add(new GuiButtonFP2Options(0xBEEF, gui.width / 2 + 104, gui.height / 4 + 8, gui));
         }
     }
 }

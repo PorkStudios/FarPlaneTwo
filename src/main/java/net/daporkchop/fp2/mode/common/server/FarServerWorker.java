@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.common.server;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -36,6 +37,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -88,7 +90,7 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
     //
 
     public Compressed<POS, T> roughGetTile(PriorityTask<POS> root, POS pos) {
-        if (this.world.anyVanillaTerrainExistsAt(pos)) {
+        if (!(FP2_DEBUG && FP2Config.debug.disableExactGeneration) && this.world.anyVanillaTerrainExistsAt(pos)) {
             //there's some terrain at the given position, let's try to generate something with it
             if (pos.level() == 0) {
                 //the position is at detail level 0, do exact generation
@@ -206,10 +208,16 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
             return;
         }
 
-        this.updateTile(root, pos, newTimestamp);
+        try {
+            if (FP2_DEBUG && FP2Config.debug.disableExactGeneration) { //updates will always use the exact generator, so don't use them
+                return;
+            }
 
-        //remove tile from tracker again
-        this.world.storage.dirtyTracker().clearDirty(pos, newTimestamp);
+            this.updateTile(root, pos, newTimestamp);
+        } finally {
+            //remove tile from tracker again
+            this.world.storage.dirtyTracker().clearDirty(pos, newTimestamp);
+        }
     }
 
     public Compressed<POS, T> updateTile(PriorityTask<POS> root, POS pos, long newTimestamp) {

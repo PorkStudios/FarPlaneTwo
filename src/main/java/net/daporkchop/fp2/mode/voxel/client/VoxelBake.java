@@ -52,7 +52,6 @@ import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.math.PMath.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL33.*;
 
@@ -112,94 +111,61 @@ public class VoxelBake {
         final int blockY = dstPos.blockY();
         final int blockZ = dstPos.blockZ();
 
-        final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
-        final VoxelData data = new VoxelData();
-
         final int[] map = MAP_RECYCLER.get().allocate();
 
         try {
-            //step 1: build octree
-            PointOctree3I octree = buildHighPointOctree(srcs, data, dstPos);
+            //step 1: build octrees
+            PointOctree3I lowOctree = buildLowPointOctree(srcs);
+            PointOctree3I highOctree = buildHighPointOctree(srcs, dstPos);
 
             //step 2: write vertices for all source tiles, and assign indices
-            int indexCounter = 0;
-            for (int i = 0; i < 8; i++) {
-                VoxelTile src = srcs[i];
-                if (src == null) {
-                    continue;
-                }
-
-                int maxDx = CONNECTION_INTERSECTION_VOLUMES[i * 3 + 0];
-                int maxDy = CONNECTION_INTERSECTION_VOLUMES[i * 3 + 1];
-                int maxDz = CONNECTION_INTERSECTION_VOLUMES[i * 3 + 2];
-                for (int dx = 0; dx < maxDx; dx++) {
-                    for (int dy = 0; dy < maxDy; dy++) {
-                        for (int dz = 0; dz < maxDz; dz++) {
-                            if (!src.get(dx, dy, dz, data)) {
-                                continue;
-                            }
-
-                            indexCounter = vertex(blockX, blockY, blockZ, level, dx + (((i >> 2) & 1) << T_SHIFT), dy + (((i >> 1) & 1) << T_SHIFT), dz + ((i & 1) << T_SHIFT), data, verts, pos, biomeAccess, map, indexCounter, octree);
-                        }
-                    }
-                }
-            }
+            writeVertices(srcs, blockX, blockY, blockZ, level, lowOctree, highOctree, map, verts);
 
             //step 3: write indices to actually connect the vertices and build the mesh
-            for (int j = 0; j < srcs[0].count(); j++) {
-                int voxelPos = srcs[0].get(j, data);
-                int dx = (voxelPos >> (T_SHIFT << 1)) & T_MASK;
-                int dy = (voxelPos >> T_SHIFT) & T_MASK;
-                int dz = voxelPos & T_MASK;
-
-                int edges = data.edges;
-                if ((((edges >> 2) ^ (edges >> 3)) & 1) != 0) { //for some reason y is backwards... let's invert it
-                    edges ^= EDGE_DIR_MASK << 2;
-                }
-                for (int edge = 0; edge < EDGE_COUNT; edge++) {
-                    if ((edges & (EDGE_DIR_MASK << (edge << 1))) == EDGE_DIR_NONE) {
-                        continue;
-                    }
-
-                    int base = edge * CONNECTION_INDEX_COUNT;
-                    int oppositeCorner, c0, c1, provoking;
-                    if ((provoking = map[vertexMapIndex(dx, dy, dz, base, edge)]) < 0
-                        || (c0 = map[vertexMapIndex(dx, dy, dz, base + 1, edge)]) < 0
-                        || (c1 = map[vertexMapIndex(dx, dy, dz, base + 2, edge)]) < 0
-                        || (oppositeCorner = map[vertexMapIndex(dx, dy, dz, base + 3, edge)]) < 0) {
-                        continue; //skip if any of the vertices are missing
-                    }
-
-                    IBlockState state = Block.getStateById(data.states[edge]);
-                    ByteBuf buf = indices[renderType(state)];
-
-                    boolean water = state.getBlock() == Blocks.WATER;
-                    if (water) {
-                        edges |= EDGE_DIR_BOTH << (edge << 1);
-                    }
-
-                    if ((edges & (EDGE_DIR_NEGATIVE << (edge << 1))) != 0) { //the face has the negative bit set
-                        if ((edges & (EDGE_DIR_POSITIVE << (edge << 1))) != 0) { //the positive bit is set as well, output the face once before flipping
-                            emitQuad(buf, oppositeCorner, c0, c1, provoking);
-                        }
-
-                        //flip the face around
-                        int i = c0;
-                        c0 = c1;
-                        c1 = i;
-                    }
-
-                    emitQuad(buf, oppositeCorner, c0, c1, provoking);
-                }
-            }
+            writeIndices(srcs[0], map, indices, lowOctree);
         } finally {
             MAP_RECYCLER.get().release(map);
         }
     }
 
-    protected PointOctree3I buildHighPointOctree(VoxelTile[] srcs, VoxelData data, VoxelPos pos) {
-        IntList highPoints = new IntArrayList();
+    protected PointOctree3I buildLowPointOctree(VoxelTile[] srcs) {
+        final VoxelData data = new VoxelData();
+        final IntList highPoints = new IntArrayList();
+
+        for (int i = 0, tx = 0; tx <= 1; tx++) {
+            for (int ty = 0; ty <= 1; ty++) {
+                for (int tz = 0; tz <= 1; tz++) {
+                    VoxelTile tile = srcs[i++];
+                    if (tile == null) {
+                        continue;
+                    }
+
+                    for (int j = 0; j < tile.count(); j++) {
+                        int voxelPos = tile.getOnlyPos(j, data);
+                        int dx = (voxelPos >> (T_SHIFT << 1)) & T_MASK;
+                        int dy = (voxelPos >> T_SHIFT) & T_MASK;
+                        int dz = voxelPos & T_MASK;
+
+                        int px = (tx << (T_SHIFT + POS_FRACT_SHIFT)) + (dx << POS_FRACT_SHIFT) + data.x;
+                        int py = (ty << (T_SHIFT + POS_FRACT_SHIFT)) + (dy << POS_FRACT_SHIFT) + data.y;
+                        int pz = (tz << (T_SHIFT + POS_FRACT_SHIFT)) + (dz << POS_FRACT_SHIFT) + data.z;
+
+                        if (px >= Int2_10_10_10_Rev.MIN_AXIS_VALUE && px <= Int2_10_10_10_Rev.MAX_AXIS_VALUE
+                            && py >= Int2_10_10_10_Rev.MIN_AXIS_VALUE && py <= Int2_10_10_10_Rev.MAX_AXIS_VALUE
+                            && pz >= Int2_10_10_10_Rev.MIN_AXIS_VALUE && pz <= Int2_10_10_10_Rev.MAX_AXIS_VALUE) { //this will only discard a very small minority of vertices
+                            highPoints.add(Int2_10_10_10_Rev.packCoords(px, py, pz));
+                        }
+                    }
+                }
+            }
+        }
+
+        return new PointOctree3I(highPoints.toIntArray());
+    }
+
+    protected PointOctree3I buildHighPointOctree(VoxelTile[] srcs, VoxelPos pos) {
+        final VoxelData data = new VoxelData();
+        final IntList highPoints = new IntArrayList();
 
         int offX = -(pos.x() & 1) << (T_SHIFT + POS_FRACT_SHIFT);
         int offY = -(pos.y() & 1) << (T_SHIFT + POS_FRACT_SHIFT);
@@ -236,7 +202,36 @@ public class VoxelBake {
         return new PointOctree3I(highPoints.toIntArray());
     }
 
-    protected int vertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, VoxelData data, ByteBuf vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, int[] map, int indexCounter, PointOctree3I octree) {
+    protected void writeVertices(VoxelTile[] srcs, int blockX, int blockY, int blockZ, int level, PointOctree3I lowOctree, PointOctree3I highOctree, int[] map, ByteBuf verts) {
+        final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
+        final VoxelData data = new VoxelData();
+
+        int indexCounter = 0;
+        for (int i = 0; i < 8; i++) {
+            VoxelTile src = srcs[i];
+            if (src == null) {
+                continue;
+            }
+
+            int maxDx = CONNECTION_INTERSECTION_VOLUMES[i * 3 + 0];
+            int maxDy = CONNECTION_INTERSECTION_VOLUMES[i * 3 + 1];
+            int maxDz = CONNECTION_INTERSECTION_VOLUMES[i * 3 + 2];
+            for (int dx = 0; dx < maxDx; dx++) {
+                for (int dy = 0; dy < maxDy; dy++) {
+                    for (int dz = 0; dz < maxDz; dz++) {
+                        if (!src.get(dx, dy, dz, data)) {
+                            continue;
+                        }
+
+                        indexCounter = writeVertex(blockX, blockY, blockZ, level, dx + (((i >> 2) & 1) << T_SHIFT), dy + (((i >> 1) & 1) << T_SHIFT), dz + ((i & 1) << T_SHIFT), data, verts, pos, biomeAccess, map, indexCounter, highOctree);
+                    }
+                }
+            }
+        }
+    }
+
+    protected int writeVertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, VoxelData data, ByteBuf vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, int[] map, int indexCounter, PointOctree3I octree) {
         baseX += (x & T_VOXELS) << level;
         baseY += (y & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
@@ -294,5 +289,56 @@ public class VoxelBake {
             map[baseMapIndex + edge] = indexCounter++;
         }
         return indexCounter;
+    }
+
+    protected void writeIndices(VoxelTile src, int[] map, ByteBuf[] indices, PointOctree3I lowOctree) {
+        final VoxelData data = new VoxelData();
+
+        for (int j = 0; j < src.count(); j++) {
+            int voxelPos = src.get(j, data);
+            int dx = (voxelPos >> (T_SHIFT << 1)) & T_MASK;
+            int dy = (voxelPos >> T_SHIFT) & T_MASK;
+            int dz = voxelPos & T_MASK;
+
+            int edges = data.edges;
+            if ((((edges >> 2) ^ (edges >> 3)) & 1) != 0) { //for some reason y is backwards... let's invert it
+                edges ^= EDGE_DIR_MASK << 2;
+            }
+            for (int edge = 0; edge < EDGE_COUNT; edge++) {
+                if ((edges & (EDGE_DIR_MASK << (edge << 1))) == EDGE_DIR_NONE) {
+                    continue;
+                }
+
+                int base = edge * CONNECTION_INDEX_COUNT;
+                int oppositeCorner, c0, c1, provoking;
+                if ((provoking = map[vertexMapIndex(dx, dy, dz, base, edge)]) < 0
+                    || (c0 = map[vertexMapIndex(dx, dy, dz, base + 1, edge)]) < 0
+                    || (c1 = map[vertexMapIndex(dx, dy, dz, base + 2, edge)]) < 0
+                    || (oppositeCorner = map[vertexMapIndex(dx, dy, dz, base + 3, edge)]) < 0) {
+                    continue; //skip if any of the vertices are missing
+                }
+
+                IBlockState state = Block.getStateById(data.states[edge]);
+                ByteBuf buf = indices[renderType(state)];
+
+                boolean water = state.getBlock() == Blocks.WATER;
+                if (water) {
+                    edges |= EDGE_DIR_BOTH << (edge << 1);
+                }
+
+                if ((edges & (EDGE_DIR_NEGATIVE << (edge << 1))) != 0) { //the face has the negative bit set
+                    if ((edges & (EDGE_DIR_POSITIVE << (edge << 1))) != 0) { //the positive bit is set as well, output the face once before flipping
+                        emitQuad(buf, oppositeCorner, c0, c1, provoking);
+                    }
+
+                    //flip the face around
+                    int i = c0;
+                    c0 = c1;
+                    c1 = i;
+                }
+
+                emitQuad(buf, oppositeCorner, c0, c1, provoking);
+            }
+        }
     }
 }

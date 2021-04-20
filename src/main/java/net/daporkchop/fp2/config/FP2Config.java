@@ -228,5 +228,11 @@ public class FP2Config {
         })
         @Config.LangKey("config.fp2.debug.skipRenderWorld")
         public boolean skipRenderWorld = false;
+
+        @Config.Comment({
+                "If true, exact generators will never be used."
+        })
+        @Config.LangKey("config.fp2.debug.disableExactGeneration")
+        public boolean disableExactGeneration = false;
     }
 }

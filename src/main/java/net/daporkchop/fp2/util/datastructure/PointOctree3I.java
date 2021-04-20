@@ -24,9 +24,9 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.client.gl.type.Int2_10_10_10_Rev;
 import net.daporkchop.fp2.util.math.Sphere;
 import net.daporkchop.fp2.util.math.Volume;
-import net.daporkchop.fp2.client.gl.type.Int2_10_10_10_Rev;
 import net.daporkchop.lib.common.util.PArrays;
 import net.minecraft.util.math.AxisAlignedBB;
 
@@ -68,6 +68,28 @@ public final class PointOctree3I {
         }
 
         NearestNeighborQuery query = new NearestNeighborQuery(x, y, z);
+        this.root.nearestNeighbor(query);
+        return query.bestNeighbor;
+    }
+
+    /**
+     * Finds the point in the octree which has the shortest distance to the given point.
+     *
+     * @param x the point's X coordinate
+     * @param y the point's Y coordinate
+     * @param z the point's Z coordinate
+     * @return the closest point to the given point, or {@code -1} if no points match
+     */
+    public int nearestNeighborInBounds(int x, int y, int z, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        Int2_10_10_10_Rev.checkAxis(x, "x");
+        Int2_10_10_10_Rev.checkAxis(y, "y");
+        Int2_10_10_10_Rev.checkAxis(z, "z");
+
+        if (this.root == null) { //octree is empty! no points match
+            return -1;
+        }
+
+        BoundedNearestNeighborQuery query = new BoundedNearestNeighborQuery(x, y, z, minX, minY, minZ, maxX, maxY, maxZ);
         this.root.nearestNeighbor(query);
         return query.bestNeighbor;
     }
@@ -143,7 +165,7 @@ public final class PointOctree3I {
 
             if (this.isLeaf()) { //this is a leaf node: do a brute-force search against every point
                 for (int point : this.points) {
-                    query.update(point);
+                    query.update(point, Int2_10_10_10_Rev.unpackX(point), Int2_10_10_10_Rev.unpackY(point), Int2_10_10_10_Rev.unpackZ(point));
                 }
                 return;
             }
@@ -180,10 +202,10 @@ public final class PointOctree3I {
         protected int bestNeighbor;
         protected int bestNeighborDistSq = Integer.MAX_VALUE;
 
-        public void update(int point) {
-            int dx = this.x - Int2_10_10_10_Rev.unpackX(point);
-            int dy = this.y - Int2_10_10_10_Rev.unpackY(point);
-            int dz = this.z - Int2_10_10_10_Rev.unpackZ(point);
+        public void update(int point, int x, int y, int z) {
+            int dx = this.x - x;
+            int dy = this.y - y;
+            int dz = this.z - z;
             int distanceSq = dx * dx + dy * dy + dz * dz;
             if (distanceSq < this.bestNeighborDistSq) {
                 this.bestNeighborDistSq = distanceSq;
@@ -193,6 +215,35 @@ public final class PointOctree3I {
 
         public Volume boundingVolume() {
             return new Sphere(this.x, this.y, this.z, sqrt(this.bestNeighborDistSq));
+        }
+    }
+
+    protected static class BoundedNearestNeighborQuery extends NearestNeighborQuery {
+        protected final int minX;
+        protected final int maxX;
+        protected final int minY;
+        protected final int maxY;
+        protected final int minZ;
+        protected final int maxZ;
+
+        public BoundedNearestNeighborQuery(int x, int y, int z, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+            super(x, y, z);
+
+            this.minX = minX;
+            this.minY = minY;
+            this.minZ = minZ;
+            this.maxX = maxX;
+            this.maxY = maxY;
+            this.maxZ = maxZ;
+        }
+
+        @Override
+        public void update(int point, int x, int y, int z) {
+            if (x >= this.minX && x <= this.maxX
+                && y >= this.minY && y <= this.maxY
+                && z >= this.minZ && z <= this.maxZ) {
+                super.update(point, x, y, z);
+            }
         }
     }
 }
