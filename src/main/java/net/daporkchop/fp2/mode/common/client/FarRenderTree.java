@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.common.client;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
@@ -37,6 +38,7 @@ import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import java.util.function.LongConsumer;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -404,6 +406,10 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
             }
 
             //all of the children were able to be added, so there's no reason for this node to be added
+            return true;
+        }
+
+        if (FP2_DEBUG && FP2Config.debug.skipLevel0 && level == 0) {
             return true;
         }
 

@@ -94,6 +94,28 @@ public final class PointOctree3I {
         return query.bestNeighbor;
     }
 
+    /**
+     * Finds the point in the octree which has the shortest distance to the given point.
+     *
+     * @param x the point's X coordinate
+     * @param y the point's Y coordinate
+     * @param z the point's Z coordinate
+     * @return the closest point to the given point, or {@code -1} if no points match
+     */
+    public int nearestNeighborOutsideBounds(int x, int y, int z, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        Int2_10_10_10_Rev.checkAxis(x, "x");
+        Int2_10_10_10_Rev.checkAxis(y, "y");
+        Int2_10_10_10_Rev.checkAxis(z, "z");
+
+        if (this.root == null) { //octree is empty! no points match
+            return -1;
+        }
+
+        ExclusiveBoundedNearestNeighborQuery query = new ExclusiveBoundedNearestNeighborQuery(x, y, z, minX, minY, minZ, maxX, maxY, maxZ);
+        this.root.nearestNeighbor(query);
+        return query.bestNeighbor;
+    }
+
     protected static class Node {
         protected final Node[] children;
         protected final int[] points;
@@ -242,6 +264,35 @@ public final class PointOctree3I {
             if (x >= this.minX && x <= this.maxX
                 && y >= this.minY && y <= this.maxY
                 && z >= this.minZ && z <= this.maxZ) {
+                super.update(point, x, y, z);
+            }
+        }
+    }
+
+    protected static class ExclusiveBoundedNearestNeighborQuery extends NearestNeighborQuery {
+        protected final int minX;
+        protected final int maxX;
+        protected final int minY;
+        protected final int maxY;
+        protected final int minZ;
+        protected final int maxZ;
+
+        public ExclusiveBoundedNearestNeighborQuery(int x, int y, int z, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+            super(x, y, z);
+
+            this.minX = minX;
+            this.minY = minY;
+            this.minZ = minZ;
+            this.maxX = maxX;
+            this.maxY = maxY;
+            this.maxZ = maxZ;
+        }
+
+        @Override
+        public void update(int point, int x, int y, int z) {
+            if (!(x >= this.minX && x <= this.maxX
+                  && y >= this.minY && y <= this.maxY
+                  && z >= this.minZ && z <= this.maxZ)) {
                 super.update(point, x, y, z);
             }
         }

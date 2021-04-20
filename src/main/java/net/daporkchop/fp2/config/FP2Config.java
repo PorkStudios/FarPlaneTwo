@@ -234,5 +234,11 @@ public class FP2Config {
         })
         @Config.LangKey("config.fp2.debug.disableExactGeneration")
         public boolean disableExactGeneration = false;
+
+        @Config.Comment({
+                "If true, level 0 tiles will not be rendered."
+        })
+        @Config.LangKey("config.fp2.debug.skipLevel0")
+        public boolean skipLevel0 = false;
     }
 }

@@ -34,6 +34,7 @@ import net.minecraft.init.Blocks;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.compat.cwg.CWGContext.*;
 import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -67,51 +68,56 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
         CWGContext ctx = this.ctx.get();
         ctx.init(baseX - GT_SIZE, baseZ - GT_SIZE, level);
 
-        //TODO: we need more samples at higher levels
+        int shift = min(level, GT_SHIFT);
+        int scale = shift + GT_SHIFT;
 
-        int[] heights = new int[6 * 6];
-        for (int x = -1; x < 5; x++) {
-            for (int z = -1; z < 5; z++) {
-                int blockX = baseX + (x << (GT_SHIFT + level));
-                int blockZ = baseZ + (z << (GT_SHIFT + level));
-                heights[(x + 1) * 6 + (z + 1)] = CWGHelper.getHeight(ctx, blockX, blockZ);
+        int hMax = (1 << scale) + 1;
+        int hSize = hMax + 1;
+        int[] heights = new int[hSize * hSize];
+        for (int x = -1; x < hMax; x++) {
+            for (int z = -1; z < hMax; z++) {
+                int blockX = baseX + (x << (level - shift + GT_SHIFT));
+                int blockZ = baseZ + (z << (level - shift + GT_SHIFT));
+                heights[(x + 1) * hSize + (z + 1)] = CWGHelper.getHeight(ctx, blockX, blockZ);
             }
         }
 
-        for (int tileX = 0; tileX < GT_COUNT; tileX++) {
-            for (int tileZ = 0; tileZ < GT_COUNT; tileZ++) {
+        int tileSize = GT_SIZE >> shift;
+        double f = 1.0d / tileSize;
+        for (int tileX = 0; tileX < hMax - 1; tileX++) {
+            for (int tileZ = 0; tileZ < hMax - 1; tileZ++) {
                 boolean addWater = false;
                 CHECK_ADD_WATER:
                 for (int dx = -1; dx <= 1; dx++) {
                     for (int dz = -1; dz <= 1; dz++) {
-                        if (heights[(tileX + 1 + dx) * 6 + (tileZ + 1 + dz)] < this.seaLevel) {
+                        if (heights[(tileX + 1 + dx) * hSize + (tileZ + 1 + dz)] < this.seaLevel) {
                             addWater = true;
                             break CHECK_ADD_WATER;
                         }
                     }
                 }
 
-                int hxz = heights[(tileX + 1) * 6 + (tileZ + 1)];
-                int hxZ = heights[(tileX + 1) * 6 + (tileZ + 2)];
-                int hXz = heights[(tileX + 2) * 6 + (tileZ + 1)];
-                int hXZ = heights[(tileX + 2) * 6 + (tileZ + 2)];
+                int hxz = heights[(tileX + 1) * hSize + (tileZ + 1)];
+                int hxZ = heights[(tileX + 1) * hSize + (tileZ + 2)];
+                int hXz = heights[(tileX + 2) * hSize + (tileZ + 1)];
+                int hXZ = heights[(tileX + 2) * hSize + (tileZ + 2)];
 
                 double density = 0.5d; //TODO: these gradients aren't being computed properly
-                double dx = (hXz - hxz) * 0.25d;
+                double dx = (hXz - hxz) * f;
                 double dy = -1.0d;
-                double dz = (hxZ - hxz) * 0.25d;
+                double dz = (hxZ - hxz) * f;
 
-                for (int subX = 0; subX < GT_SIZE; subX++) {
-                    double fx = subX * (1.0d / GT_SIZE);
+                for (int subX = 0; subX < tileSize; subX++) {
+                    double fx = subX * f;
                     double hz = lerp(hxz, hXz, fx);
                     double hZ = lerp(hxZ, hXZ, fx);
 
-                    for (int subZ = 0; subZ < GT_SIZE; subZ++) {
-                        double fz = subZ * (1.0d / GT_SIZE);
+                    for (int subZ = 0; subZ < tileSize; subZ++) {
+                        double fz = subZ * f;
                         double height = lerp(hz, hZ, fz);
 
-                        int x = (tileX << GT_SHIFT) + subX;
-                        int z = (tileZ << GT_SHIFT) + subZ;
+                        int x = (tileX * tileSize) + subX;
+                        int z = (tileZ * tileSize) + subZ;
 
                         this.processSample(ctx, data, tile, baseX + (x << level), baseZ + (z << level), x, z, height, dx, dy, dz, density, addWater);
                     }

@@ -56,19 +56,19 @@ public class DebugClientEvents {
         }
         if (DebugKeyBindings.DROP_TILES.isPressed()) {
             NETWORK_WRAPPER.sendToServer(new CPacketDropAllTiles());
-            DebugUtils.clientMsg("§aReloading all tiles.");
+            DebugUtils.clientMsg("§aReloading all tiles");
         }
         if (DebugKeyBindings.TOGGLE_REVERSED_Z.isPressed()) {
             FP2Config.compatibility.reversedZ ^= true;
-            DebugUtils.clientMsg((FP2Config.compatibility.reversedZ ? "§aEnabled" : "§cDisabled") + " reversed-Z projection.");
+            DebugUtils.clientMsg((FP2Config.compatibility.reversedZ ? "§aEnabled" : "§cDisabled") + " reversed-Z projection");
         }
         if (DebugKeyBindings.TOGGLE_VANILLA_RENDER.isPressed()) {
             FP2Config.debug.skipRenderWorld ^= true;
-            DebugUtils.clientMsg((FP2Config.debug.skipRenderWorld ? "§cDisabled" : "§aEnabled") + " vanilla terrain.");
+            DebugUtils.clientMsg((FP2Config.debug.skipRenderWorld ? "§cDisabled" : "§aEnabled") + " vanilla terrain");
         }
         if (DebugKeyBindings.REBUILD_UVS.isPressed()) {
             TexUVs.reloadUVs();
-            DebugUtils.clientMsg("§aRebuilt texture UVs.");
+            DebugUtils.clientMsg("§aRebuilt texture UVs");
         }
         if (DebugKeyBindings.TOGGLE_RENDER_MODE.isPressed()) {
             String[] opts = IFarRenderMode.REGISTRY.stream().map(Map.Entry::getKey).toArray(String[]::new);
@@ -76,6 +76,10 @@ public class DebugClientEvents {
             FP2Config.renderMode = opts[(i + 1) % opts.length];
             NETWORK_WRAPPER.sendToServer(new CPacketRenderMode().mode(IFarRenderMode.REGISTRY.get(FP2Config.renderMode)));
             DebugUtils.clientMsg("§aSwitched render mode to §7" + FP2Config.renderMode);
+        }
+        if (DebugKeyBindings.TOGGLE_LEVEL_0.isPressed()) {
+            FP2Config.debug.skipLevel0 ^= true;
+            DebugUtils.clientMsg((FP2Config.debug.skipLevel0 ? "§cDisabled" : "§aEnabled") + " level 0 rendering.");
         }
     }
 
