@@ -28,6 +28,7 @@ import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.util.DirectAABB;
 import net.daporkchop.fp2.util.datastructure.DirectLongStack;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
@@ -52,6 +53,8 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * PLEASE FOR THE LOVE OF ALL THAT IS GOOD AND HOLY HURRY UP AND FINISH PROJECT VALHALLA AAAAAAAAAA
  * Sincerely,
  * Everyone
+ * <p>
+ * (update: i've since learned that even with value types i STILL won't be able to implement this the way i want to, so... fuck.)
  *
  * @author DaPorkchop_
  */
@@ -67,6 +70,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      *   int flags; //TODO: make this field smaller
      *   - 0x00: data //whether or not this node has been rendered and contains data
      *   - 0x01: empty //whether or not this node has been rendered, but contains no data
+     *   AxisAlignedBB aabb; //see DirectAABB
      *   Tile tile;
      *   Node* children[1 << D];
      * };
@@ -83,10 +87,11 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
     // begin field offsets
 
     protected final long flags = 0L;
-    protected final long tile = 4L;
+    protected final long aabb = 4L;
+    protected final long tile = 4L + DirectAABB.AABB_SIZE;
     protected final long children;
 
-    protected final long tile_pos = 4L; // this.tile + 0L
+    protected final long tile_pos = 4L + DirectAABB.AABB_SIZE; // this.tile + 0L
     protected final long tile_renderData;
 
     // end field offsets
@@ -189,6 +194,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
 
     /**
      * Checks whether or not the given node has any children.
+     *
      * @param node the node
      * @return whether or not the given node has any children
      */
@@ -247,19 +253,22 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
 
             this.putRenderData0(level - 1, child, pos, output);
         } else { //current node is the target node
-            this.setRenderData(node, output);
+            this.setRenderData(node, pos, output);
         }
     }
 
-    protected void setRenderData(long node, BakeOutput output) {
+    protected void setRenderData(long node, POS pos, BakeOutput output) {
         //release exiting data if necessary
         this.deleteRenderData(node);
 
         if (output != null) { //new render data is non-empty
+            DirectAABB.store(output, node + this.aabb);
             PUnsafe.copyMemory(output.renderData, node + this.tile_renderData, output.size);
 
             this.setFlags(node, FLAG_DATA);
         } else { //new render data is empty
+            DirectAABB.store(pos.paddedBounds(), node + this.aabb);
+
             this.setFlags(node, FLAG_EMPTY);
         }
     }
@@ -269,6 +278,8 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
 
         long node = PUnsafe.allocateMemory(this.nodeSize);
         PUnsafe.setMemory(node, this.nodeSize, (byte) 0);
+
+        DirectAABB.store(pos.paddedBounds(), node + this.aabb);
         this.directPosAccess.storePos(pos, node + this.tile_pos);
 
         return node;
@@ -352,12 +363,12 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
             //this tile is baked and empty, so we can be sure that none of its children will be non-empty and there's no reason to recurse any further
             return true;
         } else if (level < this.maxLevel //don't do range checking for the top level, as it will cause a bunch of tiles to be loaded but never rendered
-                   && !this.directPosAccess.intersects(node + this.tile_pos, ranges[level])) {
+                   && !DirectAABB.intersects(node + this.aabb, ranges[level])) {
             //the view range for this level doesn't intersect this tile's bounding box,
             // so we can be certain that neither this tile nor any of its children would be contained
             return false;
         } else if (level < DEPTH //don't do frustum culling on the root node, as it doesn't have a valid position because it's not really "there"
-                   && !this.directPosAccess.inFrustum(node + this.tile_pos, frustum)) {
+                   && !DirectAABB.inFrustum(node + this.aabb, frustum)) {
             //the frustum doesn't contain this tile's bounding box, so we can be certain that neither
             // this tile nor any of its children would be visible
             return true; //return true to prevent parent node from skipping all high-res tiles if some of them were outside of the frustum
@@ -378,7 +389,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         //at this point we know that the tile has some data and is selectable
 
         CHILDREN:
-        if (level != 0 && this.hasAnyChildren(node) && this.directPosAccess.containedBy(node + this.tile_pos, ranges[level - 1])) {
+        if (level != 0 && this.hasAnyChildren(node) && DirectAABB.containedBy(node + this.aabb, ranges[level - 1])) {
             //this tile is entirely within the view distance of the lower zoom level for tiles below it, so let's consider selecting them as well
             //if all children are selectable, select all of them
             //otherwise (if only some/none of the children are selectable) we ignore all of the children and only output the current tile. the better

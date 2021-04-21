@@ -88,6 +88,14 @@ public interface IFarPos extends Comparable<IFarPos> {
     AxisAlignedBB bounds();
 
     /**
+     * @return the maximum volume that the tile at this position could possibly occupy, with an additional padding of 1 unit in the positive direction
+     */
+    default AxisAlignedBB paddedBounds() {
+        double padding = 1 << this.level();
+        return this.bounds().expand(padding, padding, padding);
+    }
+
+    /**
      * Compares two positions in some arbitrary manner.
      * <p>
      * The function may be implemented in any way, but must be consistent and must only return {@code 0} for positions that are also considered

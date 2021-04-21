@@ -23,24 +23,30 @@ package net.daporkchop.fp2.mode.common.client;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.AllocatedGLBuffer;
+import net.daporkchop.fp2.util.UpdatableAABB;
 import net.daporkchop.lib.primitive.lambda.LongLongConsumer;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.util.math.AxisAlignedBB;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static java.lang.Math.*;
 
 /**
  * A command buffer containing tasks to be executed on the client thread in order to finish baking a tile.
  *
  * @author DaPorkchop_
  */
-public final class BakeOutput {
+public final class BakeOutput extends AxisAlignedBB implements UpdatableAABB {
     public final long renderData;
     public final long size;
 
     protected final List<Task> tasks = new ArrayList<>();
 
     public BakeOutput(long renderDataSize) {
+        super(0.0d, 0.0d, 0.0d, 0.0d, 0.0d, 0.0d);
+
         this.renderData = PUnsafe.allocateMemory(this, this.size = renderDataSize);
     }
 
@@ -77,6 +83,26 @@ public final class BakeOutput {
         } finally {
             this.tasks.clear();
         }
+    }
+
+    @Override
+    public void union(double x, double y, double z) {
+        this.minX = min(this.minX, x);
+        this.maxX = max(this.maxX, x);
+        this.minY = min(this.minY, y);
+        this.maxY = max(this.maxY, y);
+        this.minZ = min(this.minZ, z);
+        this.maxZ = max(this.maxZ, z);
+    }
+
+    @Override
+    public void add(double dx, double dy, double dz) {
+        this.minX += dx;
+        this.maxX += dx;
+        this.minY += dy;
+        this.maxY += dy;
+        this.minZ += dz;
+        this.maxZ += dz;
     }
 
     @FunctionalInterface

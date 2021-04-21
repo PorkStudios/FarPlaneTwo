@@ -31,6 +31,7 @@ import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
+import net.daporkchop.fp2.util.UpdatableAABB;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.Arrays;
@@ -84,14 +85,14 @@ public class HeightmapBake {
         vao.attrF(buffer, 1, GL_UNSIGNED_BYTE, false, HEIGHTMAP_VERTEX_SIZE, HEIGHTMAP_VERTEX_HEIGHT_FRAC_HIGH_OFFSET, 0); //height_frac_high
     }
 
-    public void bakeForShaderDraw(@NonNull HeightmapPos dstPos, @NonNull HeightmapTile[] srcs, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
+    public void bakeForShaderDraw(@NonNull HeightmapPos dstPos, @NonNull HeightmapTile[] srcs, @NonNull UpdatableAABB bounds, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
         if (srcs[0] == null) {
             return;
         }
 
         final int level = dstPos.level();
-        final int baseX = dstPos.blockX();
-        final int baseZ = dstPos.blockZ();
+        final int blockX = dstPos.blockX();
+        final int blockZ = dstPos.blockZ();
 
         final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
@@ -120,12 +121,13 @@ public class HeightmapBake {
                         int x = dx + (((i >> 1) & 1) << T_SHIFT);
                         int z = dz + ((i & 1) << T_SHIFT);
 
-                        writeVertex(baseX, baseZ, level, i, srcs, x, z, layer, verts, pos, biomeAccess, data);
+                        writeVertex(blockX, blockZ, level, i, srcs, x, z, layer, verts, pos, biomeAccess, data, bounds);
                         map[vertexMapIndex(x, z, layer)] = indexCounter++;
                     }
                 }
             }
         }
+        bounds.add(blockX, 0.0d, blockZ);
 
         final BitSet rendered = new BitSet(T_VERTS * T_VERTS * MAX_LAYERS);
 
@@ -188,7 +190,7 @@ public class HeightmapBake {
         }
     }
 
-    private void writeVertex(int baseX, int baseZ, int level, int i, HeightmapTile[] srcs, int x, int z, int layer, ByteBuf out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, HeightmapData data) {
+    private void writeVertex(int baseX, int baseZ, int level, int i, HeightmapTile[] srcs, int x, int z, int layer, ByteBuf out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, HeightmapData data, UpdatableAABB bounds) {
         baseX += (x & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
 
@@ -210,6 +212,8 @@ public class HeightmapBake {
         //pos_low
         out.writeByte(x).writeByte(z).writeIntLE(data.height_int).writeByte(data.height_frac);
 
+        bounds.union(x << level, data.height_int + data.height_frac * (1.0d / 256.0d), z << level);
+
         //pos_high
         int baseTileX = (baseX >> (level + T_SHIFT)) - (i >> 1);
         int baseTileZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
@@ -221,8 +225,10 @@ public class HeightmapBake {
             out.writeByte(x).writeByte(z).writeIntLE(data.height_int).writeByte(data.height_frac);
         } else {
             int heightI = floorI(highHeight);
-            int heightF = clamp(floorI((highHeight - heightI) * 255.0d), 0, 255);
+            int heightF = clamp(floorI((highHeight - heightI) * 256.0d), 0, 255);
             out.writeByte(x & ~1).writeByte(z & ~1).writeIntLE(heightI).writeByte(heightF);
+
+            bounds.union((x & ~1) << level, heightI + heightF * (1.0d / 256.0d), (z & ~1) << level);
         }
 
         out.writeByte(0); //pad to 24 bytes
