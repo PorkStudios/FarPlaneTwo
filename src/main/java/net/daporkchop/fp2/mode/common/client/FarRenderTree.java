@@ -421,8 +421,6 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
 
             if (!shouldRenderSelf //unless explicitly requested, we shouldn't be rendering ourself over a high-res tile
                 || this.directPosAccess.containedBy(node + this.tile_pos, ranges[level - 1].shrink(T_VOXELS << level))) {
-                //TODO: use this implementation which doesn't cause any allocations
-                //|| this.directPosAccess.distanceSq(node + this.tile_pos, ranges[level - 1]) >= -(T_VOXELS << level) * (T_VOXELS << level)) {
                 return true;
             }
         }

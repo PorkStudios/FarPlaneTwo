@@ -95,15 +95,6 @@ public interface IFarDirectPosAccess<POS extends IFarPos> {
     boolean containedBy(long addr, @NonNull Volume volume);
 
     /**
-     * Gets the minimum distance between the tile at the given position and the given volume.
-     *
-     * @param addr   the memory address of the off-heap position
-     * @param volume the volume
-     * @return the minimum distance between the tile at the given position and the given volume
-     */
-    double distanceSq(long addr, @NonNull Volume volume);
-
-    /**
      * Checks whether or not the tile at the given position is in the given frustum.
      *
      * @param addr    the memory address of the off-heap position

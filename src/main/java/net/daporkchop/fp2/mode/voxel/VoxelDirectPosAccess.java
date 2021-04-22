@@ -156,17 +156,6 @@ public class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos> {
         return volume.contains(x * f, y * f, z * f, (x + 1.0d) * f + d, (y + 1.0d) * f + d, (z + 1.0d) * f + d);
     }
 
-    @Override
-    public double distanceSq(long addr, @NonNull Volume volume) {
-        double x = _x(addr);
-        double y = _y(addr);
-        double z = _z(addr);
-
-        double d = 1 << _level(addr);
-        double f = d * T_VOXELS;
-        return volume.distanceSq(x * f, y * f, z * f, (x + 1.0d) * f + d, (y + 1.0d) * f + d, (z + 1.0d) * f + d);
-    }
-
     @SideOnly(Side.CLIENT)
     @Override
     public boolean inFrustum(long addr, @NonNull IFrustum frustum) {

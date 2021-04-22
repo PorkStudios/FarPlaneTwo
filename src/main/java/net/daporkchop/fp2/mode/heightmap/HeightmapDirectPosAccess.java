@@ -140,16 +140,6 @@ public class HeightmapDirectPosAccess implements IFarDirectPosAccess<HeightmapPo
         return volume.contains(x * f, Integer.MIN_VALUE, z * f, (x + 1.0d) * f + d, Integer.MAX_VALUE, (z + 1.0d) * f + d);
     }
 
-    @Override
-    public double distanceSq(long addr, @NonNull Volume volume) {
-        double x = _x(addr);
-        double z = _z(addr);
-
-        double d = 1 << _level(addr);
-        double f = d * T_VOXELS;
-        return volume.distanceSq(x * f, Integer.MIN_VALUE, z * f, (x + 1.0d) * f + d, Integer.MAX_VALUE, (z + 1.0d) * f + d);
-    }
-
     @SideOnly(Side.CLIENT)
     @Override
     public boolean inFrustum(long addr, @NonNull IFrustum frustum) {

@@ -67,19 +67,6 @@ public class Sphere extends Vec3d implements Volume {
     }
 
     @Override
-    public double distanceSq(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
-        double dx = this.x - clamp(this.x, minX, maxX);
-        double dy = this.y - clamp(this.y, minY, maxY);
-        double dz = this.z - clamp(this.z, minZ, maxZ);
-        return sq(dx) + sq(dy) + sq(dz) - sq(this.radius);
-    }
-
-    @Override
-    public double distanceSq(double x, double y, double z) {
-        return sq(this.x - x) + sq(this.y - y) + sq(this.z - z) - sq(this.radius);
-    }
-
-    @Override
     public Sphere shrink(double d) {
         return new Sphere(this.x, this.y, this.z, this.radius - d);
     }

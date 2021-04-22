@@ -18,7 +18,7 @@
  *
  */
 
-#define DEBUG_DISTANCES
+//#define DEBUG_DISTANCES
 
 #ifdef DEBUG_DISTANCES
 const vec3[][3] DEBUG_DISTANCE_COLORS = vec3[][](

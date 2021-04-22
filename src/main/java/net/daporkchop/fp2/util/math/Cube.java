@@ -68,13 +68,8 @@ public class Cube extends Vec3d implements Volume {
     }
 
     @Override
-    public double distanceSq(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
-        throw new UnsupportedOperationException(); //meh, Cube isn't even used anywhere anymore...
-    }
-
-    @Override
-    public double distanceSq(double x, double y, double z) {
-        throw new UnsupportedOperationException();
+    public Cube shrink(double d) {
+        return new Cube(this.x, this.y, this.z, this.size - d);
     }
 
     @Override

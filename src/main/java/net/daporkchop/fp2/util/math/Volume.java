@@ -56,23 +56,7 @@ public interface Volume {
     boolean contains(double x, double y, double z);
 
     /**
-     * @return the minimum distance between this volume and the given bounding box
+     * @return this volume after having been shrunken by the given amount
      */
-    default double distanceSq(AxisAlignedBB bb) {
-        return this.distanceSq(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
-    }
-
-    /**
-     * @return the minimum distance between this volume and the given bounding box
-     */
-    double distanceSq(double minX, double minY, double minZ, double maxX, double maxY, double maxZ);
-
-    /**
-     * @return the minimum distance between this volume and the given point
-     */
-    double distanceSq(double x, double y, double z);
-
-    default Volume shrink(double d) {
-        throw new UnsupportedOperationException();
-    }
+    Volume shrink(double d);
 }

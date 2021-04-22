@@ -59,15 +59,8 @@ public class Cylinder implements Volume {
     }
 
     @Override
-    public double distanceSq(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
-        double dx = this.x - clamp(this.x, minX, maxX);
-        double dz = this.z - clamp(this.z, minZ, maxZ);
-        return sq(dx) + sq(dz) - sq(this.radius);
-    }
-
-    @Override
-    public double distanceSq(double x, double y, double z) {
-        return sq(this.x - x) + sq(this.z - z) - sq(this.radius);
+    public Cylinder shrink(double d) {
+        return new Cylinder(this.x, this.z, this.radius - d);
     }
 
     @Override
