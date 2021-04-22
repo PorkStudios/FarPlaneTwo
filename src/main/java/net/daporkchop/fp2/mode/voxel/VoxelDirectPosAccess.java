@@ -136,30 +136,47 @@ public class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos> {
 
     @Override
     public boolean intersects(long addr, @NonNull Volume volume) {
-        int x = _x(addr);
-        int y = _y(addr);
-        int z = _z(addr);
-        int shift = _level(addr) + T_SHIFT;
-        return volume.intersects(x << shift, y << shift, z << shift, (x + 1) << shift, (y + 1) << shift, (z + 1) << shift);
+        double x = _x(addr);
+        double y = _y(addr);
+        double z = _z(addr);
+
+        double d = 1 << _level(addr);
+        double f = d * T_VOXELS;
+        return volume.intersects(x * f, y * f, z * f, (x + 1.0d) * f + d, (y + 1.0d) * f + d, (z + 1.0d) * f + d);
     }
 
     @Override
     public boolean containedBy(long addr, @NonNull Volume volume) {
-        int x = _x(addr);
-        int y = _y(addr);
-        int z = _z(addr);
-        int shift = _level(addr) + T_SHIFT;
-        return volume.contains(x << shift, y << shift, z << shift, (x + 1) << shift, (y + 1) << shift, (z + 1) << shift);
+        double x = _x(addr);
+        double y = _y(addr);
+        double z = _z(addr);
+
+        double d = 1 << _level(addr);
+        double f = d * T_VOXELS;
+        return volume.contains(x * f, y * f, z * f, (x + 1.0d) * f + d, (y + 1.0d) * f + d, (z + 1.0d) * f + d);
+    }
+
+    @Override
+    public double distanceSq(long addr, @NonNull Volume volume) {
+        double x = _x(addr);
+        double y = _y(addr);
+        double z = _z(addr);
+
+        double d = 1 << _level(addr);
+        double f = d * T_VOXELS;
+        return volume.distanceSq(x * f, y * f, z * f, (x + 1.0d) * f + d, (y + 1.0d) * f + d, (z + 1.0d) * f + d);
     }
 
     @SideOnly(Side.CLIENT)
     @Override
     public boolean inFrustum(long addr, @NonNull IFrustum frustum) {
-        int x = _x(addr);
-        int y = _y(addr);
-        int z = _z(addr);
-        int shift = _level(addr) + T_SHIFT;
-        return frustum.intersectsBB(x << shift, y << shift, z << shift, (x + 1) << shift, (y + 1) << shift, (z + 1) << shift);
+        double x = _x(addr);
+        double y = _y(addr);
+        double z = _z(addr);
+
+        double d = 1 << _level(addr);
+        double f = d * T_VOXELS;
+        return frustum.intersectsBB(x * f, y * f, z * f, (x + 1.0d) * f + d, (y + 1.0d) * f + d, (z + 1.0d) * f + d);
     }
 
     @SideOnly(Side.CLIENT)

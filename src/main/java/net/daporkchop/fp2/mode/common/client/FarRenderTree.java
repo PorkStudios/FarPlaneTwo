@@ -28,7 +28,6 @@ import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.util.DirectAABB;
 import net.daporkchop.fp2.util.datastructure.DirectLongStack;
 import net.daporkchop.fp2.util.math.Volume;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
@@ -70,7 +69,6 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      *   int flags; //TODO: make this field smaller
      *   - 0x00: data //whether or not this node has been rendered and contains data
      *   - 0x01: empty //whether or not this node has been rendered, but contains no data
-     *   AxisAlignedBB aabb; //see DirectAABB
      *   Tile tile;
      *   Node* children[1 << D];
      * };
@@ -83,15 +81,15 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
 
     public static final int FLAG_DATA = 1 << 0;
     public static final int FLAG_EMPTY = 1 << 1;
+    public static final int FLAG_RENDER_PARENT = 1 << 2;
 
     // begin field offsets
 
     protected final long flags = 0L;
-    protected final long aabb = 4L;
-    protected final long tile = 4L + DirectAABB.AABB_SIZE;
+    protected final long tile = 4L;
     protected final long children;
 
-    protected final long tile_pos = 4L + DirectAABB.AABB_SIZE; // this.tile + 0L
+    protected final long tile_pos = 4L; // this.tile + 0L
     protected final long tile_renderData;
 
     // end field offsets
@@ -262,13 +260,14 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         this.deleteRenderData(node);
 
         if (output != null) { //new render data is non-empty
-            DirectAABB.store(output, node + this.aabb);
             PUnsafe.copyMemory(output.renderData, node + this.tile_renderData, output.size);
 
             this.setFlags(node, FLAG_DATA);
-        } else { //new render data is empty
-            DirectAABB.store(pos.paddedBounds(), node + this.aabb);
 
+            if (output.forceRenderParent) {
+                this.setFlags(node, FLAG_RENDER_PARENT);
+            }
+        } else { //new render data is empty
             this.setFlags(node, FLAG_EMPTY);
         }
     }
@@ -278,8 +277,6 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
 
         long node = PUnsafe.allocateMemory(this.nodeSize);
         PUnsafe.setMemory(node, this.nodeSize, (byte) 0);
-
-        DirectAABB.store(pos.paddedBounds(), node + this.aabb);
         this.directPosAccess.storePos(pos, node + this.tile_pos);
 
         return node;
@@ -332,8 +329,8 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
             PUnsafe.setMemory(node + this.tile_renderData, this.renderDataSize, (byte) 0);
         }
 
-        //mark the node as not being rendered
-        this.clearFlags(node, FLAG_DATA | FLAG_EMPTY);
+        //clear all flags
+        this.clearFlags(node, 0xFFFFFFFF);
     }
 
     protected long findChildStep(int level, long node, POS pos) {
@@ -363,12 +360,12 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
             //this tile is baked and empty, so we can be sure that none of its children will be non-empty and there's no reason to recurse any further
             return true;
         } else if (level < this.maxLevel //don't do range checking for the top level, as it will cause a bunch of tiles to be loaded but never rendered
-                   && !DirectAABB.intersects(node + this.aabb, ranges[level])) {
+                   && !this.directPosAccess.intersects(node + this.tile_pos, ranges[level])) {
             //the view range for this level doesn't intersect this tile's bounding box,
             // so we can be certain that neither this tile nor any of its children would be contained
             return false;
         } else if (level < DEPTH //don't do frustum culling on the root node, as it doesn't have a valid position because it's not really "there"
-                   && !DirectAABB.inFrustum(node + this.aabb, frustum)) {
+                   && !this.directPosAccess.inFrustum(node + this.tile_pos, frustum)) {
             //the frustum doesn't contain this tile's bounding box, so we can be certain that neither
             // this tile nor any of its children would be visible
             return true; //return true to prevent parent node from skipping all high-res tiles if some of them were outside of the frustum
@@ -389,7 +386,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         //at this point we know that the tile has some data and is selectable
 
         CHILDREN:
-        if (level != 0 && this.hasAnyChildren(node) && DirectAABB.containedBy(node + this.aabb, ranges[level - 1])) {
+        if (level != 0 && this.hasAnyChildren(node) && this.directPosAccess.containedBy(node + this.tile_pos, ranges[level - 1])) {
             //this tile is entirely within the view distance of the lower zoom level for tiles below it, so let's consider selecting them as well
             //if all children are selectable, select all of them
             //otherwise (if only some/none of the children are selectable) we ignore all of the children and only output the current tile. the better
@@ -406,6 +403,8 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
                 }
             }
 
+            boolean shouldRenderSelf = false;
+
             int mark = index.mark();
             for (long addr = firstChildAddr; addr != lastChildAddr; addr += LONG_SIZE) {
                 long child = PUnsafe.getLong(addr);
@@ -414,10 +413,18 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
                     index.restore(mark);
                     break CHILDREN;
                 }
+
+                shouldRenderSelf |= this.checkFlagsOR(child, FLAG_RENDER_PARENT);
             }
 
-            //all of the children were able to be added, so there's no reason for this node to be added
-            return true;
+            //all of the children were able to be added
+
+            if (!shouldRenderSelf //unless explicitly requested, we shouldn't be rendering ourself over a high-res tile
+                || this.directPosAccess.containedBy(node + this.tile_pos, ranges[level - 1].shrink(T_VOXELS << level))) {
+                //TODO: use this implementation which doesn't cause any allocations
+                //|| this.directPosAccess.distanceSq(node + this.tile_pos, ranges[level - 1]) >= -(T_VOXELS << level) * (T_VOXELS << level)) {
+                return true;
+            }
         }
 
         if (FP2_DEBUG && FP2Config.debug.skipLevel0 && level == 0) {

@@ -35,7 +35,6 @@ import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
-import net.daporkchop.fp2.util.UpdatableAABB;
 import net.daporkchop.fp2.util.datastructure.PointOctree3I;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
@@ -102,7 +101,7 @@ public class VoxelBake {
         return ((ddx * T_VERTS + ddy) * T_VERTS + ddz) * 3 + edge;
     }
 
-    public void bakeForShaderDraw(@NonNull VoxelPos dstPos, @NonNull VoxelTile[] srcs, @NonNull UpdatableAABB bounds, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
+    public void bakeForShaderDraw(@NonNull VoxelPos dstPos, @NonNull VoxelTile[] srcs, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
         if (srcs[0] == null) {
             return;
         }
@@ -120,15 +119,13 @@ public class VoxelBake {
             PointOctree3I highOctree = buildHighPointOctree(srcs, dstPos);
 
             //step 2: write vertices for all source tiles, and assign indices
-            writeVertices(srcs, blockX, blockY, blockZ, level, lowOctree, highOctree, map, verts, bounds);
+            writeVertices(srcs, blockX, blockY, blockZ, level, lowOctree, highOctree, map, verts);
 
             //step 3: write indices to actually connect the vertices and build the mesh
             writeIndices(srcs[0], map, indices, lowOctree);
         } finally {
             MAP_RECYCLER.get().release(map);
         }
-
-        bounds.add(blockX, blockY, blockZ);
     }
 
     protected PointOctree3I buildLowPointOctree(VoxelTile[] srcs) {
@@ -205,7 +202,7 @@ public class VoxelBake {
         return new PointOctree3I(highPoints.toIntArray());
     }
 
-    protected void writeVertices(VoxelTile[] srcs, int blockX, int blockY, int blockZ, int level, PointOctree3I lowOctree, PointOctree3I highOctree, int[] map, ByteBuf verts, UpdatableAABB bounds) {
+    protected void writeVertices(VoxelTile[] srcs, int blockX, int blockY, int blockZ, int level, PointOctree3I lowOctree, PointOctree3I highOctree, int[] map, ByteBuf verts) {
         final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
         final VoxelData data = new VoxelData();
@@ -227,14 +224,14 @@ public class VoxelBake {
                             continue;
                         }
 
-                        indexCounter = writeVertex(blockX, blockY, blockZ, level, dx + (((i >> 2) & 1) << T_SHIFT), dy + (((i >> 1) & 1) << T_SHIFT), dz + ((i & 1) << T_SHIFT), data, verts, pos, biomeAccess, map, indexCounter, highOctree, bounds);
+                        indexCounter = writeVertex(blockX, blockY, blockZ, level, dx + (((i >> 2) & 1) << T_SHIFT), dy + (((i >> 1) & 1) << T_SHIFT), dz + ((i & 1) << T_SHIFT), data, verts, pos, biomeAccess, map, indexCounter, highOctree);
                     }
                 }
             }
         }
     }
 
-    protected int writeVertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, VoxelData data, ByteBuf vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, int[] map, int indexCounter, PointOctree3I octree, UpdatableAABB bounds) {
+    protected int writeVertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, VoxelData data, ByteBuf vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, int[] map, int indexCounter, PointOctree3I octree) {
         baseX += (x & T_VOXELS) << level;
         baseY += (y & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
@@ -267,9 +264,6 @@ public class VoxelBake {
             highY = Int2_10_10_10_Rev.unpackY(closestHighPoint);
             highZ = Int2_10_10_10_Rev.unpackZ(closestHighPoint);
         }
-
-        bounds.union((lowX << level) * 0.125d, (lowY << level) * 0.125d, (lowZ << level) * 0.125d);
-        bounds.union((highX << level) * 0.125d, (highY << level) * 0.125d, (highZ << level) * 0.125d);
 
         vertices.writeByte(lowX).writeByte(lowY).writeByte(lowZ); //pos_low
         vertices.writeIntLE(Int2_10_10_10_Rev.packCoords(highX, highY, highZ)); //pos_high

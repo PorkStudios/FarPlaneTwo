@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -29,7 +29,9 @@ public interface Volume {
     /**
      * @return whether or not this volume intersects the given bounding box
      */
-    boolean intersects(AxisAlignedBB bb);
+    default boolean intersects(AxisAlignedBB bb) {
+        return this.intersects(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
+    }
 
     /**
      * @return whether or not this volume intersects the given bounding box
@@ -39,7 +41,9 @@ public interface Volume {
     /**
      * @return whether or not this volume contains the entire bounding box
      */
-    boolean contains(AxisAlignedBB bb);
+    default boolean contains(AxisAlignedBB bb){
+        return this.contains(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
+    }
 
     /**
      * @return whether or not this volume contains the entire bounding box
@@ -50,4 +54,25 @@ public interface Volume {
      * @return whether or not this volume contains the given point
      */
     boolean contains(double x, double y, double z);
+
+    /**
+     * @return the minimum distance between this volume and the given bounding box
+     */
+    default double distanceSq(AxisAlignedBB bb) {
+        return this.distanceSq(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
+    }
+
+    /**
+     * @return the minimum distance between this volume and the given bounding box
+     */
+    double distanceSq(double minX, double minY, double minZ, double maxX, double maxY, double maxZ);
+
+    /**
+     * @return the minimum distance between this volume and the given point
+     */
+    double distanceSq(double x, double y, double z);
+
+    default Volume shrink(double d) {
+        throw new UnsupportedOperationException();
+    }
 }

@@ -122,27 +122,43 @@ public class HeightmapDirectPosAccess implements IFarDirectPosAccess<HeightmapPo
 
     @Override
     public boolean intersects(long addr, @NonNull Volume volume) {
-        int x = _x(addr);
-        int z = _z(addr);
-        int shift = _level(addr) + T_SHIFT;
-        return volume.intersects(x << shift, Integer.MIN_VALUE, z << shift, (x + 1) << shift, Integer.MAX_VALUE, (z + 1) << shift);
+        double x = _x(addr);
+        double z = _z(addr);
+
+        double d = 1 << _level(addr);
+        double f = d * T_VOXELS;
+        return volume.intersects(x * f, Integer.MIN_VALUE, z * f, (x + 1.0d) * f + d, Integer.MAX_VALUE, (z + 1.0d) * f + d);
     }
 
     @Override
     public boolean containedBy(long addr, @NonNull Volume volume) {
-        int x = _x(addr);
-        int z = _z(addr);
-        int shift = _level(addr) + T_SHIFT;
-        return volume.contains(x << shift, Integer.MIN_VALUE, z << shift, (x + 1) << shift, Integer.MAX_VALUE, (z + 1) << shift);
+        double x = _x(addr);
+        double z = _z(addr);
+
+        double d = 1 << _level(addr);
+        double f = d * T_VOXELS;
+        return volume.contains(x * f, Integer.MIN_VALUE, z * f, (x + 1.0d) * f + d, Integer.MAX_VALUE, (z + 1.0d) * f + d);
+    }
+
+    @Override
+    public double distanceSq(long addr, @NonNull Volume volume) {
+        double x = _x(addr);
+        double z = _z(addr);
+
+        double d = 1 << _level(addr);
+        double f = d * T_VOXELS;
+        return volume.distanceSq(x * f, Integer.MIN_VALUE, z * f, (x + 1.0d) * f + d, Integer.MAX_VALUE, (z + 1.0d) * f + d);
     }
 
     @SideOnly(Side.CLIENT)
     @Override
     public boolean inFrustum(long addr, @NonNull IFrustum frustum) {
-        int x = _x(addr);
-        int z = _z(addr);
-        int shift = _level(addr) + T_SHIFT;
-        return frustum.intersectsBB(x << shift, Integer.MIN_VALUE, z << shift, (x + 1) << shift, Integer.MAX_VALUE, (z + 1) << shift);
+        double x = _x(addr);
+        double z = _z(addr);
+
+        double d = 1 << _level(addr);
+        double f = d * T_VOXELS;
+        return frustum.intersectsBB(x * f, Integer.MIN_VALUE, z * f, (x + 1.0d) * f + d, Integer.MAX_VALUE, (z + 1.0d) * f + d);
     }
 
     @SideOnly(Side.CLIENT)

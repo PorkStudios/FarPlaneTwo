@@ -18,7 +18,15 @@
  *
  */
 
-//#define DEBUG_DISTANCES
+#define DEBUG_DISTANCES
+
+#ifdef DEBUG_DISTANCES
+const vec3[][3] DEBUG_DISTANCE_COLORS = vec3[][](
+vec3[3](vec3(0., 1., 0.), vec3(1., 1., 0.), vec3(1., 0., 0.)),
+vec3[3](vec3(0., 0., 1.), vec3(1., 0., 1.), vec3(0., 1., 1.)),
+vec3[3](vec3(0.), vec3(.5), vec3(1.))
+);
+#endif
 
 //
 //
@@ -53,16 +61,16 @@ void main() {
 
 #ifdef DEBUG_DISTANCES
     if (depth < start) {
-        vs_out.color = vec3(0., 1., 0.);
+        vs_out.color = DEBUG_DISTANCE_COLORS[tile_position.w][0];
     } else if (depth > end) {
-        vs_out.color = vec3(1., 0., 0.);
+        vs_out.color = DEBUG_DISTANCE_COLORS[tile_position.w][2];
     } else {
-        vs_out.color = vec3(1., 1., 0.);
+        vs_out.color = DEBUG_DISTANCE_COLORS[tile_position.w][1];
     }
 #endif
 
     //vertex position is detail mixed
-    gl_Position = cameraTransform(relativePos) + glState.camera.anti_flicker_offset;
+    gl_Position = cameraTransform(relativePos) + glState.camera.anti_flicker_offset * vec4(31. - float(tile_position.w));
 
     //pass relative position to fragment shader (used to compute face normal)
     vs_out.pos = vs_out.base_pos = vec3(relativePos);

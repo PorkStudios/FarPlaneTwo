@@ -48,7 +48,9 @@ public abstract class AbstractIndexedMultidrawVoxelRenderStrategy extends Indexe
 
     @Override
     protected void bakeVertsAndIndices(@NonNull VoxelPos pos, @NonNull VoxelTile[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
-        VoxelBake.bakeForShaderDraw(pos, srcs, output, verts, indices);
+        VoxelBake.bakeForShaderDraw(pos, srcs, verts, indices);
+
+        output.forceRenderParent = true;
     }
 
     @Override

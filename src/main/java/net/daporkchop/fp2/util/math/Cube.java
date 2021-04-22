@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,10 +20,11 @@
 
 package net.daporkchop.fp2.util.math;
 
-import net.minecraft.util.math.AxisAlignedBB;
+import net.daporkchop.lib.common.misc.string.PStrings;
 import net.minecraft.util.math.Vec3d;
 
 import static java.lang.Math.*;
+import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
  * @author DaPorkchop_
@@ -38,11 +39,6 @@ public class Cube extends Vec3d implements Volume {
     }
 
     @Override
-    public boolean intersects(AxisAlignedBB bb) {
-        return this.intersects(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
-    }
-
-    @Override
     public boolean intersects(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
         return this.x - this.size < minX
                && this.x + this.size > maxX
@@ -50,11 +46,6 @@ public class Cube extends Vec3d implements Volume {
                && this.y + this.size > maxY
                && this.z - this.size < minZ
                && this.z + this.size > maxZ;
-    }
-
-    @Override
-    public boolean contains(AxisAlignedBB bb) {
-        return this.contains(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
     }
 
     @Override
@@ -74,5 +65,37 @@ public class Cube extends Vec3d implements Volume {
         return abs(x - this.x) < this.size
                && abs(y - this.y) < this.size
                && abs(z - this.z) < this.size;
+    }
+
+    @Override
+    public double distanceSq(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+        throw new UnsupportedOperationException(); //meh, Cube isn't even used anywhere anymore...
+    }
+
+    @Override
+    public double distanceSq(double x, double y, double z) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        } else if (obj instanceof Cube) {
+            Cube c = (Cube) obj;
+            return Double.compare(this.x, c.x) == 0 && Double.compare(this.y, c.y) == 0 && Double.compare(this.z, c.z) == 0 && Double.compare(this.size, c.size) == 0;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return mix32(mix64(mix64(mix64(Double.doubleToLongBits(this.x)) + Double.doubleToLongBits(this.y)) + Double.doubleToLongBits(this.z)) + Double.doubleToLongBits(this.size));
+    }
+
+    @Override
+    public String toString() {
+        return PStrings.fastFormat("cube[x=%f,y=%f,z=%f,size=%f]", this.x, this.y, this.z, this.size);
     }
 }

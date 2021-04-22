@@ -48,7 +48,7 @@ public abstract class AbstractIndexedMultidrawHeightmapRenderStrategy extends In
 
     @Override
     protected void bakeVertsAndIndices(@NonNull HeightmapPos pos, @NonNull HeightmapTile[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
-        HeightmapBake.bakeForShaderDraw(pos, srcs, output, verts, indices);
+        HeightmapBake.bakeForShaderDraw(pos, srcs, verts, indices);
     }
 
     @Override

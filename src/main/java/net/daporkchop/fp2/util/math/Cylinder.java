@@ -22,7 +22,6 @@ package net.daporkchop.fp2.util.math;
 
 import lombok.AllArgsConstructor;
 import net.daporkchop.lib.common.misc.string.PStrings;
-import net.minecraft.util.math.AxisAlignedBB;
 
 import static net.daporkchop.lib.common.math.PMath.*;
 
@@ -40,20 +39,10 @@ public class Cylinder implements Volume {
     public final double radius;
 
     @Override
-    public boolean intersects(AxisAlignedBB bb) {
-        return this.intersects(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
-    }
-
-    @Override
     public boolean intersects(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
         double dx = this.x - clamp(this.x, minX, maxX);
         double dz = this.z - clamp(this.z, minZ, maxZ);
-        return dx * dx + dz * dz < sq(this.radius);
-    }
-
-    @Override
-    public boolean contains(AxisAlignedBB bb) {
-        return this.contains(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
+        return sq(dx) + sq(dz) <= sq(this.radius);
     }
 
     @Override
@@ -67,6 +56,18 @@ public class Cylinder implements Volume {
     @Override
     public boolean contains(double x, double y, double z) {
         return sq(this.x - x) + sq(this.z - z) < sq(this.radius);
+    }
+
+    @Override
+    public double distanceSq(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+        double dx = this.x - clamp(this.x, minX, maxX);
+        double dz = this.z - clamp(this.z, minZ, maxZ);
+        return sq(dx) + sq(dz) - sq(this.radius);
+    }
+
+    @Override
+    public double distanceSq(double x, double y, double z) {
+        return sq(this.x - x) + sq(this.z - z) - sq(this.radius);
     }
 
     @Override
