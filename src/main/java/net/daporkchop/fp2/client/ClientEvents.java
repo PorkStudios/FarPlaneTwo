@@ -42,13 +42,6 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public class ClientEvents {
     @SubscribeEvent
-    public void worldLoad(WorldEvent.Load event) {
-        if (event.getWorld().isRemote) {
-            TexUVs.reloadUVs(); //TODO: figure out how the resource listener thing works
-        }
-    }
-
-    @SubscribeEvent
     public void worldUnload(WorldEvent.Unload event) {
         if (event.getWorld().isRemote) {
             ((IFarWorldClient) event.getWorld()).close();

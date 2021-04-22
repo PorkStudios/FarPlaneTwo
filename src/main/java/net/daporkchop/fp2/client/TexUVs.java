@@ -129,9 +129,16 @@ public class TexUVs {
             }
             return DEFAULT_RENDERER.render(state, face, model);
         });
+
+        //reload texture UVs for the first time
+        reloadUVs();
     }
 
     public static void reloadUVs() {
+        if (mc.getTextureMapBlocks() == null) { //texture map hasn't been initialized yet, meaning the game is still starting
+            return;
+        }
+
         ObjIntMap<List<PackedBakedQuad>> distinctQuadsToId = new ObjIntOpenHashMap<>();
         List<List<PackedBakedQuad>> distinctQuadsById = new ArrayList<>();
 

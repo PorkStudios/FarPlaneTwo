@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,27 +22,23 @@ package net.daporkchop.fp2.client;
 
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.IResourceManagerReloadListener;
+import net.minecraftforge.client.resource.IResourceType;
+import net.minecraftforge.client.resource.ISelectiveResourceReloadListener;
+import net.minecraftforge.client.resource.VanillaResourceType;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+
+import java.util.function.Predicate;
 
 /**
  * @author DaPorkchop_
  */
-//TODO: possibly delete this, or at least make it work correctly
 @SideOnly(Side.CLIENT)
-@SuppressWarnings("deprecation")
-public class FP2ResourceReloadListener implements IResourceManagerReloadListener {
+public class FP2ResourceReloadListener implements ISelectiveResourceReloadListener {
     @Override
-    public void onResourceManagerReload(IResourceManager resourceManager) {
-        /*try (ShaderStorageBuffer globalInfo = GLOBAL_INFO.bind()) {
-            IntBuffer buffer = Constants.createIntBuffer(COLORMAP_FOLIAGE_SIZE >> 2);
-            buffer.put(TextureUtil.readImageData(resourceManager, new ResourceLocation("textures/colormap/foliage.png"))).clear();
-            glBufferSubData(GL_SHADER_STORAGE_BUFFER, COLORMAP_FOLIAGE_OFFSET, buffer);
-
-            buffer = Constants.createIntBuffer(COLORMAP_GRASS_SIZE >> 2);
-            buffer.put(TextureUtil.readImageData(resourceManager, new ResourceLocation("textures/colormap/grass.png"))).clear();
-            glBufferSubData(GL_SHADER_STORAGE_BUFFER, COLORMAP_GRASS_OFFSET, buffer);
-        } catch (IOException e) {
-        }*/
+    public void onResourceManagerReload(IResourceManager resourceManager, Predicate<IResourceType> resourcePredicate) {
+        if (resourcePredicate.test(VanillaResourceType.TEXTURES)) {
+            TexUVs.reloadUVs();
+        }
     }
 }
