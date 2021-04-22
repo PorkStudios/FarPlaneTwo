@@ -308,7 +308,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
                 //remove reference to child from children array
                 PUnsafe.putLong(node + this.children + this.childIndex(level, pos) * 8L, 0L);
 
-                if (!this.checkFlagsAND(node, FLAG_DATA)) { //node itself has no data
+                if (!this.checkFlagsOR(node, FLAG_DATA | FLAG_EMPTY)) { //node itself has no data
                     //if the node has no children, we return true, indicating that this node is now empty and should be deleted
                     return !this.hasAnyChildren(node);
                 }
