@@ -53,7 +53,6 @@ public abstract class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos
         double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
         double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
         for (int i = 0; i < ranges.length; i++) {
-            //TODO: remove * 3 and fix transition seams in FarRenderTree
             ranges[i] = new Cylinder(x, z, (FP2Config.levelCutoffDistance + (T_VOXELS * 3)) << i);
         }
         return ranges;

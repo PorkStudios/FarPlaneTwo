@@ -29,7 +29,7 @@ import net.minecraft.util.BlockRenderLayer;
 /**
  * @author DaPorkchop_
  */
-public class TransformFeedbackVoxelRenderStrategy extends AbstractIndexedMultidrawVoxelRenderStrategy implements IVanillaMultipassVoxelRenderStrategy {
+public class TransformFeedbackVoxelRenderStrategy extends AbstractIndexedMultidrawVoxelRenderStrategy {
     @Override
     public IDrawCommandBuffer createCommandBuffer() {
         return new VanillaTransformFeedbackCommandBuffer(super.createCommandBuffer(), VoxelShaders.BLOCK_SHADER_TRANSFORM_FEEDBACK);

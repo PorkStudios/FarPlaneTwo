@@ -38,7 +38,7 @@ public final class BakeOutput {
     public final long renderData;
     public final long size;
 
-    public boolean forceRenderParent; //TODO: this needs a more descriptive name
+    public boolean forceRenderParent;
 
     protected final List<Task> tasks = new ArrayList<>();
 

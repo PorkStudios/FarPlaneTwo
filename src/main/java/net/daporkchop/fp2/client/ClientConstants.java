@@ -27,8 +27,6 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.config.FP2Config;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ChunkProviderClient;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -36,8 +34,6 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
-import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author DaPorkchop_
@@ -59,6 +55,25 @@ public class ClientConstants {
         CURRENT_RENDER_BB = new AxisAlignedBB(
                 x - sizeHorizontal, y - sizeVertical, z - sizeHorizontal,
                 x + sizeHorizontal, y + sizeVertical, z + sizeHorizontal);
+    }
+
+    /**
+     * Checks whether the column at the given chunk coordinates can be rendered by vanilla.
+     *
+     * @param x the X coordinate of the column
+     * @param z the Z coordinate of the column
+     * @return whether the column at the given chunk coordinates can be rendered by vanilla
+     */
+    public boolean isVanillaRenderable(int x, int z) {
+        if (FP2_DEBUG && FP2Config.debug.skipRenderWorld) {
+            return false;
+        }
+
+        if (!CURRENT_RENDER_BB.intersects(x << 4, Integer.MIN_VALUE, z << 4, (x + 1) << 4, Integer.MAX_VALUE, (z + 1) << 4)) {
+            return false;
+        }
+
+        return mc.world.getChunkProvider().isChunkGeneratedAt(x, z);
     }
 
     /**

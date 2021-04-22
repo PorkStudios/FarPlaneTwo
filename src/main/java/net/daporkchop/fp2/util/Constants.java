@@ -308,20 +308,6 @@ public class Constants {
         return d0 / (d0 - d1);
     }
 
-    public static int normalToFaceIndex(double x, double y, double z) {
-        //TODO: make this branchless
-        double nx = abs(x);
-        double ny = abs(x);
-        double nz = abs(x);
-        if (ny > nx && ny > nz) {
-            return ny < 0.0d ? 0 : 1;
-        } else if (nz > nx && nz > ny) {
-            return nz < 0.0d ? 2 : 3;
-        } else {
-            return nx < 0.0d ? 4 : 5;
-        }
-    }
-
     //buffer I/O
     public static void writeVarInt(@NonNull ByteBuf dst, int value) {
         try (Handle<byte[]> handle = PorkUtil.TINY_BUFFER_POOL.get()) {

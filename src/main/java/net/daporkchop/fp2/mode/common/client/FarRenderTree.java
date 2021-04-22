@@ -66,9 +66,10 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      * - D: number of dimensions
      *
      * struct Node {
-     *   int flags; //TODO: make this field smaller
+     *   byte flags;
      *   - 0x00: data //whether or not this node has been rendered and contains data
      *   - 0x01: empty //whether or not this node has been rendered, but contains no data
+     *   - 0x02: render_parent //whether or not the parent tile may be rendered on top of this one
      *   Tile tile;
      *   Node* children[1 << D];
      * };
@@ -86,10 +87,10 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
     // begin field offsets
 
     protected final long flags = 0L;
-    protected final long tile = 4L;
+    protected final long tile = 1L;
     protected final long children;
 
-    protected final long tile_pos = 4L; // this.tile + 0L
+    protected final long tile_pos = 1L; // this.tile + 0L
     protected final long tile_renderData;
 
     // end field offsets
@@ -123,7 +124,6 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         FP2_LOG.info("{}D tree node size: {} bytes", this.d, this.nodeSize);
 
         PUnsafe.setMemory(this.root = PUnsafe.allocateMemory(this.nodeSize), this.nodeSize, (byte) 0);
-        PUnsafe.putInt(this.root + this.flags, 0);
 
         this.cleaner = PCleaner.cleaner(this, new ReleaseFunction<>(this.root, this.flags, this.children, this.tile_renderData, this.d, this.strategy));
     }
@@ -154,7 +154,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      * @return whether or not the given node has all of the given flags set
      */
     public boolean checkFlagsAND(long node, int flags) {
-        return (PUnsafe.getInt(node + this.flags) & flags) == flags;
+        return (PUnsafe.getByte(node + this.flags) & flags) == flags;
     }
 
     /**
@@ -165,7 +165,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      * @return whether or not the given node has any of the given flags set
      */
     public boolean checkFlagsOR(long node, int flags) {
-        return (PUnsafe.getInt(node + this.flags) & flags) != 0;
+        return (PUnsafe.getByte(node + this.flags) & flags) != 0;
     }
 
     /**
@@ -176,7 +176,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      */
     public void setFlags(long node, int flags) {
         long addr = node + this.flags;
-        PUnsafe.putInt(addr, PUnsafe.getInt(addr) | flags);
+        PUnsafe.putByte(addr, (byte) (PUnsafe.getByte(addr) | flags));
     }
 
     /**
@@ -187,7 +187,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      */
     public void clearFlags(long node, int flags) {
         long addr = node + this.flags;
-        PUnsafe.putInt(addr, PUnsafe.getInt(addr) & ~flags);
+        PUnsafe.putByte(addr, (byte) (PUnsafe.getByte(addr) & ~flags));
     }
 
     /**
@@ -468,7 +468,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
             }
 
             //release render data
-            if ((PUnsafe.getInt(node + this.flags) & FLAG_DATA) != 0) {
+            if ((PUnsafe.getByte(node + this.flags) & FLAG_DATA) != 0) {
                 this.strategy.deleteRenderData(node + this.tile_renderData);
             }
 

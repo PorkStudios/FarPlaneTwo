@@ -205,8 +205,6 @@ public class HeightmapBake {
         out.writeShortLE(Constants.packedLightTo8BitVec2(data.light)); //light
         out.writeMediumLE(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(data.state, biomeAccess, pos, 0))); //color
 
-        //TODO: redo writing
-        //TODO: figure out what the above TODO was referring to
         //pos_low
         out.writeByte(x).writeByte(z).writeIntLE(data.height_int).writeByte(data.height_frac);
 

@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.heightmap;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.util.math.Volume;
@@ -154,6 +155,6 @@ public class HeightmapDirectPosAccess implements IFarDirectPosAccess<HeightmapPo
     @SideOnly(Side.CLIENT)
     @Override
     public boolean isVanillaRenderable(long addr) {
-        return false; //TODO
+        return ClientConstants.isVanillaRenderable(_x(addr), _z(addr));
     }
 }

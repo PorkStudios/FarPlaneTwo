@@ -45,7 +45,6 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-//TODO: this is currently only generating the mesh using perlin noise
 public class CWGVoxelGenerator extends AbstractVoxelGenerator<CWGContext> implements IFarGeneratorRough<VoxelPos, VoxelTile> {
     public static final int LOWRES_MIN = DMAP_MIN >> GT_SHIFT;
     public static final int LOWRES_MAX = (DMAP_MAX >> GT_SHIFT) + 2;
