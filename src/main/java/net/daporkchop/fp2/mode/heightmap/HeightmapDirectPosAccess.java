@@ -26,7 +26,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
-import net.daporkchop.fp2.util.math.Volume;
+import net.daporkchop.fp2.util.math.geometry.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;

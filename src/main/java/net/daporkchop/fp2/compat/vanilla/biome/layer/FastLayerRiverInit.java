@@ -20,10 +20,15 @@
 
 package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.minecraft.world.gen.layer.GenLayerRiverInit;
+
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
+ * @see GenLayerRiverInit
  */
 public class FastLayerRiverInit extends FastLayer {
     public FastLayerRiverInit(long seed) {
@@ -31,7 +36,7 @@ public class FastLayerRiverInit extends FastLayer {
     }
 
     @Override
-    public int getSingle(int x, int z) {
-        return this.parent.getSingle(x, z) > 0 ? nextInt(start(this.seed, x, z), 299999) + 2 : 0;
+    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+        return this.parent.getSingle(alloc, x, z) > 0 ? nextInt(start(this.seed, x, z), 299999) + 2 : 0;
     }
 }

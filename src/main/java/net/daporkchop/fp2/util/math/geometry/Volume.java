@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.util.math;
+package net.daporkchop.fp2.util.math.geometry;
 
 import net.minecraft.util.math.AxisAlignedBB;
 

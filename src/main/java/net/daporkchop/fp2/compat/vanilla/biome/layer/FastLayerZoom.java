@@ -20,10 +20,15 @@
 
 package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.minecraft.world.gen.layer.GenLayerZoom;
+
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
+ * @see GenLayerZoom
  */
 public class FastLayerZoom extends FastLayer {
     public FastLayerZoom(long seed) {
@@ -31,54 +36,62 @@ public class FastLayerZoom extends FastLayer {
     }
 
     @Override
-    public int getSingle(int x, int z) {
+    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
         int lowX = x >> 1;
         int lowZ = z >> 1;
 
         if ((x & 1) == 0) {
             if ((z & 1) == 0) {
-                return this.parent.getSingle(lowX, lowZ);
+                return this.parent.getSingle(alloc, lowX, lowZ);
             } else {
                 long state = start(this.seed, lowX << 1, lowZ << 1);
-                return nextInt(state, 2) == 0 ? this.parent.getSingle(lowX, lowZ) : this.parent.getSingle(lowX, lowZ + 1);
+                return this.parent.getSingle(alloc, lowX, lowZ + nextInt(state, 2));
             }
         } else {
             if ((z & 1) == 0) {
                 long state = start(this.seed, lowX << 1, lowZ << 1);
                 state = update(state, this.seed);
-                return nextInt(state, 2) == 0 ? this.parent.getSingle(lowX, lowZ) : this.parent.getSingle(lowX + 1, lowZ);
+                return this.parent.getSingle(alloc, lowX + nextInt(state, 2), lowZ);
             } else {
-                return this.sampleXZLast(lowX, lowZ);
+                return this.sampleXZLast(alloc, lowX, lowZ);
             }
         }
     }
 
-    protected int sampleXZLast(int lowX, int lowZ) {
-        int xz = this.parent.getSingle(lowX, lowZ);
-        int Xz = this.parent.getSingle(lowX, lowZ + 1);
-        int xZ = this.parent.getSingle(lowX + 1, lowZ);
-        int XZ = this.parent.getSingle(lowX + 1, lowZ + 1);
+    protected int sampleXZLast(IntArrayAllocator alloc, int lowX, int lowZ) {
+        int xz, xZ, Xz, XZ;
 
-        if (xZ == Xz && Xz == XZ) {
-            return xZ;
-        } else if (xz == xZ && xz == Xz) {
-            return xz;
-        } else if (xz == xZ && xz == XZ) {
+        int[] arr = this.parent.getGrid(alloc, lowX, lowZ, 2, 2);
+        try {
+            xz = arr[0];
+            xZ = arr[1];
+            Xz = arr[2];
+            XZ = arr[3];
+        } finally {
+            alloc.release(arr);
+        }
+
+        //here be branch predictor hell
+        if (Xz == xZ && xZ == XZ) {
+            return Xz;
+        } else if (xz == Xz && xz == xZ) {
             return xz;
         } else if (xz == Xz && xz == XZ) {
             return xz;
-        } else if (xz == xZ && Xz != XZ) {
+        } else if (xz == xZ && xz == XZ) {
             return xz;
         } else if (xz == Xz && xZ != XZ) {
             return xz;
-        } else if (xz == XZ && xZ != Xz) {
+        } else if (xz == xZ && Xz != XZ) {
             return xz;
-        } else if (xZ == Xz && xz != XZ) {
-            return xZ;
-        } else if (xZ == XZ && xz != Xz) {
-            return xZ;
+        } else if (xz == XZ && Xz != xZ) {
+            return xz;
+        } else if (Xz == xZ && xz != XZ) {
+            return Xz;
         } else if (Xz == XZ && xz != xZ) {
             return Xz;
+        } else if (xZ == XZ && xz != Xz) {
+            return xZ;
         } else {
             //random
             long state = start(this.seed, lowX << 1, lowZ << 1);
@@ -88,9 +101,9 @@ public class FastLayerZoom extends FastLayer {
                 case 0:
                     return xz;
                 case 1:
-                    return xZ;
-                case 2:
                     return Xz;
+                case 2:
+                    return xZ;
                 case 3:
                     return XZ;
             }

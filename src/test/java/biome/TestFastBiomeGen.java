@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,6 +21,7 @@
 package biome;
 
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.init.Bootstrap;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.gen.ChunkGeneratorSettings;
@@ -197,12 +198,19 @@ public class TestFastBiomeGen {
         int[] reference = vanilla.getInts(areaX, areaZ, sizeX, sizeZ);
         IntCache.resetIntCache();
 
-        for (int dx = 0; dx < sizeX; dx++) {
-            for (int dz = 0; dz < sizeZ; dz++) {
-                int referenceValue = reference[dz * sizeX + dx];
-                int fastValue = fast.getSingle(areaX + dx, areaZ + dz);
-                checkState(referenceValue == fastValue, "at (%d, %d): fast: %d != expected: %d", areaX + dx, areaZ + dz, fastValue, referenceValue);
+        IntArrayAllocator alloc = IntArrayAllocator.DEFAULT.get();
+        int[] fastGrid = fast.getGrid(alloc, areaX, areaZ, sizeX, sizeZ);
+
+        try {
+            for (int i = 0, dx = 0; dx < sizeX; dx++) {
+                for (int dz = 0; dz < sizeZ; dz++, i++) {
+                    int referenceValue = reference[dz * sizeX + dx];
+                    int fastValue = fastGrid[i];
+                    checkState(referenceValue == fastValue, "at (%d, %d): fast: %d != expected: %d", areaX + dx, areaZ + dz, fastValue, referenceValue);
+                }
             }
+        } finally {
+            alloc.release(fastGrid);
         }
     }
 }

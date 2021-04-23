@@ -30,18 +30,13 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.mode.heightmap.client.HeightmapRenderer;
 import net.daporkchop.fp2.util.datastructure.DirectLongStack;
-import net.daporkchop.fp2.util.math.Cylinder;
-import net.daporkchop.fp2.util.math.Sphere;
-import net.daporkchop.fp2.util.math.Volume;
+import net.daporkchop.fp2.util.math.geometry.Volume;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.Entity;
 import net.minecraft.util.BlockRenderLayer;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL15.*;
 
 /**

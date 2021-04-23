@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.util.alloc;
+package net.daporkchop.fp2.util.alloc.generic;
 
 import lombok.NonNull;
 

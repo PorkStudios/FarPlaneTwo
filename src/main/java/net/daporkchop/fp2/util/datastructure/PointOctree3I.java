@@ -25,8 +25,8 @@ import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.client.gl.type.Int2_10_10_10_Rev;
-import net.daporkchop.fp2.util.math.Sphere;
-import net.daporkchop.fp2.util.math.Volume;
+import net.daporkchop.fp2.util.math.geometry.Sphere;
+import net.daporkchop.fp2.util.math.geometry.Volume;
 import net.daporkchop.lib.common.util.PArrays;
 import net.minecraft.util.math.AxisAlignedBB;
 

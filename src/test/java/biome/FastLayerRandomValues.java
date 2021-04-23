@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,6 +22,7 @@ package biome;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -43,12 +44,23 @@ public class FastLayerRandomValues extends FastLayer {
     }
 
     @Override
-    public int getSingle(int x, int z) {
+    public void init(@NonNull FastLayer[] children) {
+        //no-op
+    }
+
+    @Override
+    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
         return nextInt(start(this.seed, x, z), this.limit);
     }
 
     @Override
-    public void init(@NonNull FastLayer[] children) {
-        //no-op
+    public int[] getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ) {
+        int[] out = alloc.get(sizeX * sizeZ);
+        for (int i = 0, dx = 0; dx < sizeX; dx++) {
+            for (int dz = 0; dz < sizeZ; dz++) {
+                out[i++] = nextInt(start(this.seed, x + dx, z + dz), this.limit);
+            }
+        }
+        return out;
     }
 }

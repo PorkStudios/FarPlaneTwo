@@ -18,58 +18,66 @@
  *
  */
 
-package net.daporkchop.fp2.util.math;
+package net.daporkchop.fp2.util.math.geometry;
 
-import lombok.AllArgsConstructor;
 import net.daporkchop.lib.common.misc.string.PStrings;
+import net.minecraft.util.math.Vec3d;
 
 import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-public class Cylinder implements Volume {
+public class Sphere extends Vec3d implements Volume {
     private static double sq(double d) {
         return d * d;
     }
 
-    public final double x;
-    public final double z;
     public final double radius;
+
+    public Sphere(double xIn, double yIn, double zIn, double radius) {
+        super(xIn, yIn, zIn);
+
+        this.radius = radius;
+    }
 
     @Override
     public boolean intersects(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
         double dx = this.x - clamp(this.x, minX, maxX);
+        double dy = this.y - clamp(this.y, minY, maxY);
         double dz = this.z - clamp(this.z, minZ, maxZ);
-        return sq(dx) + sq(dz) <= sq(this.radius);
+        return sq(dx) + sq(dy) + sq(dz) <= sq(this.radius);
     }
 
     @Override
     public boolean contains(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
-        return this.contains(minX, 0.0d, minZ)
-               && this.contains(minX, 0.0d, maxZ)
-               && this.contains(minX, 0.0d, minZ)
-               && this.contains(minX, 0.0d, maxZ);
+        return this.contains(minX, minY, minZ)
+               && this.contains(minX, minY, maxZ)
+               && this.contains(minX, maxY, minZ)
+               && this.contains(minX, maxY, maxZ)
+               && this.contains(maxX, minY, minZ)
+               && this.contains(maxX, minY, maxZ)
+               && this.contains(maxX, maxY, minZ)
+               && this.contains(maxX, maxY, maxZ);
     }
 
     @Override
     public boolean contains(double x, double y, double z) {
-        return sq(this.x - x) + sq(this.z - z) < sq(this.radius);
+        return sq(this.x - x) + sq(this.y - y) + sq(this.z - z) < sq(this.radius);
     }
 
     @Override
-    public Cylinder shrink(double d) {
-        return new Cylinder(this.x, this.z, this.radius - d);
+    public Sphere shrink(double d) {
+        return new Sphere(this.x, this.y, this.z, this.radius - d);
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;
-        } else if (obj instanceof Cylinder) {
-            Cylinder s = (Cylinder) obj;
-            return Double.compare(this.x, s.x) == 0 && Double.compare(this.z, s.z) == 0 && Double.compare(this.radius, s.radius) == 0;
+        } else if (obj instanceof Sphere) {
+            Sphere s = (Sphere) obj;
+            return Double.compare(this.x, s.x) == 0 && Double.compare(this.y, s.y) == 0 && Double.compare(this.z, s.z) == 0 && Double.compare(this.radius, s.radius) == 0;
         } else {
             return false;
         }
@@ -77,11 +85,11 @@ public class Cylinder implements Volume {
 
     @Override
     public int hashCode() {
-        return mix32(mix64(mix64(Double.doubleToLongBits(this.x)) + Double.doubleToLongBits(this.z)) + Double.doubleToLongBits(this.radius));
+        return mix32(mix64(mix64(mix64(Double.doubleToLongBits(this.x)) + Double.doubleToLongBits(this.y)) + Double.doubleToLongBits(this.z)) + Double.doubleToLongBits(this.radius));
     }
 
     @Override
     public String toString() {
-        return PStrings.fastFormat("cylinder[x=%f,z=%f,r=%f]", this.x, this.z, this.radius);
+        return PStrings.fastFormat("sphere[x=%f,y=%f,z=%f,r=%f]", this.x, this.y, this.z, this.radius);
     }
 }

@@ -22,6 +22,7 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 /**
@@ -38,5 +39,33 @@ public abstract class FastLayer {
         PUnsafe.putObject(this, PARENT_OFFSET, children[0]);
     }
 
-    public abstract int getSingle(int x, int z);
+    /**
+     * Gets a single value at the given coordinates.
+     *
+     * @param alloc an {@link IntArrayAllocator} to use for allocating {@code int[]}s
+     * @param x     the X coordinate of the value to get
+     * @param z     the Z coordinate of the value to get
+     * @return the value
+     */
+    public abstract int getSingle(@NonNull IntArrayAllocator alloc, int x, int z);
+
+    /**
+     * Gets a grid of the given size at the given coordinates.
+     *
+     * @param alloc an {@link IntArrayAllocator} to use for allocating {@code int[]}s
+     * @param x     the grid's base X coordinate
+     * @param z     the grid's base Z coordinate
+     * @param sizeX the size of the grid along the X axis
+     * @param sizeZ the size of the grid along the Z axis
+     * @return an {@code int[]} of values, allocated using the given {@link IntArrayAllocator}, and indexed in XZ coordinate order
+     */
+    public int[] getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ) {
+        int[] out = alloc.get(sizeX * sizeZ);
+        for (int i = 0, dx = 0; dx < sizeX; dx++) {
+            for (int dz = 0; dz < sizeZ; dz++) {
+                out[i++] = this.getSingle(alloc, x + dx, z + dz);
+            }
+        }
+        return out;
+    }
 }

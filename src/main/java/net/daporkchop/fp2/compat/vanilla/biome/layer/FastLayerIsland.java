@@ -21,11 +21,14 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.minecraft.world.gen.layer.GenLayerIsland;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
+ * @see GenLayerIsland
  */
 public class FastLayerIsland extends FastLayer {
     public FastLayerIsland(long seed) {
@@ -38,7 +41,7 @@ public class FastLayerIsland extends FastLayer {
     }
 
     @Override
-    public int getSingle(int x, int z) {
+    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
         return (x | z) == 0 || nextInt(start(this.seed, x, z), 10) == 0 ? 1 : 0;
     }
 }

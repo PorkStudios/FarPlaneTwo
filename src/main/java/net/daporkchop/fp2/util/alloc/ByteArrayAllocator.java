@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.util;
+package net.daporkchop.fp2.util.alloc;
 
 import com.google.common.base.Preconditions;
 import lombok.NonNull;
@@ -39,13 +39,13 @@ import java.util.Deque;
  *
  * @author DaPorkchop_
  */
-public class IntArrayAllocator {
-    public static final Ref<IntArrayAllocator> DEFAULT = ThreadRef.soft(() -> new IntArrayAllocator(8));
+public class ByteArrayAllocator {
+    public static final Ref<ByteArrayAllocator> DEFAULT = ThreadRef.soft(() -> new ByteArrayAllocator(8));
 
     protected final Deque<byte[]>[] arenas;
     protected final int maxArenaSize;
 
-    public IntArrayAllocator(int maxArenaSize) {
+    public ByteArrayAllocator(int maxArenaSize) {
         this.maxArenaSize = PValidation.positive(maxArenaSize);
         this.arenas = PorkUtil.uncheckedCast(PArrays.filled(32, Deque[]::new, () -> new ArrayDeque(maxArenaSize)));
     }

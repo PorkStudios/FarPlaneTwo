@@ -20,10 +20,15 @@
 
 package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.minecraft.world.gen.layer.GenLayerSmooth;
+
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
+ * @see GenLayerSmooth
  */
 public class FastLayerSmooth extends FastLayer {
     public FastLayerSmooth(long seed) {
@@ -31,20 +36,25 @@ public class FastLayerSmooth extends FastLayer {
     }
 
     @Override
-    public int getSingle(int x, int z) {
-        int v0 = this.parent.getSingle(x - 1, z);
-        int v1 = this.parent.getSingle(x, z - 1);
-        int v2 = this.parent.getSingle(x + 1, z);
-        int v3 = this.parent.getSingle(x, z + 1);
+    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+        int[] arr = this.parent.getGrid(alloc, x - 1, z - 1, 3, 3);
+        try {
+            int v0 = arr[1];
+            int v1 = arr[3];
+            int v2 = arr[7];
+            int v3 = arr[5];
 
-        if (v0 == v2 && v1 == v3) {
-            return nextInt(start(this.seed, x, z), 2) == 0 ? v0 : v1;
-        } else if (v0 == v2) {
-            return v0;
-        } else if (v1 == v3) {
-            return v1;
-        } else {
-            return this.parent.getSingle(x, z);
+            if (v0 == v2 && v1 == v3) {
+                return nextInt(start(this.seed, x, z), 2) == 0 ? v0 : v1;
+            } else if (v0 == v2) {
+                return v0;
+            } else if (v1 == v3) {
+                return v1;
+            } else {
+                return arr[4];
+            }
+        } finally {
+            alloc.release(arr);
         }
     }
 }

@@ -20,10 +20,13 @@
 
 package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import lombok.NonNull;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.minecraft.world.gen.layer.GenLayerRemoveTooMuchOcean;
 
 /**
  * @author DaPorkchop_
+ * @see GenLayerRemoveTooMuchOcean
  */
 public class FastLayerRemoveTooMuchOcean extends FastLayer {
     public FastLayerRemoveTooMuchOcean(long seed) {
@@ -31,18 +34,16 @@ public class FastLayerRemoveTooMuchOcean extends FastLayer {
     }
 
     @Override
-    public int getSingle(int x, int z) {
-        int center = this.parent.getSingle(x, z);
-
-        if (center == 0
-            && this.parent.getSingle(x - 1, z) == 0
-            && this.parent.getSingle(x, z - 1) == 0
-            && this.parent.getSingle(x + 1, z) == 0
-            && this.parent.getSingle(x, z + 1) == 0
-            && nextInt(start(this.seed, x, z), 2) == 0) {
-            return 1;
-        } else {
-            return center;
+    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+        int[] arr = this.parent.getGrid(alloc, x - 1, z - 1, 3, 3);
+        try {
+            if (arr[1] == 0 && arr[3] == 0 && arr[4] == 0 && arr[5] == 0 && arr[7] == 0) {
+                return 1;
+            } else {
+                return arr[4];
+            }
+        } finally {
+            alloc.release(arr);
         }
     }
 }

@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.util.alloc;
+package net.daporkchop.fp2.util.alloc.generic;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectRBTreeMap;

@@ -21,12 +21,15 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.world.gen.layer.GenLayerRiverMix;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
+ * @see GenLayerRiverMix
  */
 public class FastLayerRiverMix extends FastLayer {
     protected static final long RIVERPARENT_OFFSET = PUnsafe.pork_getOffset(FastLayerRiverMix.class, "riverParent");
@@ -44,10 +47,10 @@ public class FastLayerRiverMix extends FastLayer {
     }
 
     @Override
-    public int getSingle(int x, int z) {
-        int biome = this.parent.getSingle(x, z);
+    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+        int biome = this.parent.getSingle(alloc, x, z);
         if (biome != ID_OCEAN && biome != ID_DEEP_OCEAN) {
-            int river = this.riverParent.getSingle(x, z);
+            int river = this.riverParent.getSingle(alloc, x, z);
             if (river == ID_RIVER) {
                 if (biome == ID_ICE_PLAINS) {
                     return ID_FROZEN_RIVER;

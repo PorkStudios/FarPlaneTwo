@@ -20,8 +20,13 @@
 
 package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.minecraft.world.gen.layer.GenLayerBiomeEdge;
+
 /**
  * @author DaPorkchop_
+ * @see GenLayerBiomeEdge
  */
 public class FastLayerBiomeEdge extends FastLayer {
     public FastLayerBiomeEdge(long seed) {
@@ -29,7 +34,7 @@ public class FastLayerBiomeEdge extends FastLayer {
     }
 
     @Override
-    public int getSingle(int x, int z) {
+    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
         return 0; //TODO
     }
 }

@@ -20,10 +20,14 @@
 
 package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.minecraft.world.gen.layer.GenLayerFuzzyZoom;
+
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
+ * @see GenLayerFuzzyZoom
  */
 public class FastLayerFuzzyZoom extends FastLayerZoom {
     public FastLayerFuzzyZoom(long seed) {
@@ -31,21 +35,13 @@ public class FastLayerFuzzyZoom extends FastLayerZoom {
     }
 
     @Override
-    protected int sampleXZLast(int lowX, int lowZ) {
+    protected int sampleXZLast(IntArrayAllocator alloc, int lowX, int lowZ) {
         //random
         long state = start(this.seed, lowX << 1, lowZ << 1);
         state = update(state, this.seed);
         state = update(state, this.seed);
-        switch (nextInt(state, 4)) {
-            case 0:
-                return this.parent.getSingle(lowX, lowZ);
-            case 1:
-                return this.parent.getSingle(lowX + 1, lowZ);
-            case 2:
-                return this.parent.getSingle(lowX, lowZ + 1);
-            case 3:
-                return this.parent.getSingle(lowX + 1, lowZ + 1);
-        }
-        throw new IllegalStateException();
+
+        int r = nextInt(state, 4);
+        return this.parent.getSingle(alloc, lowX + (r & 1), lowZ + ((r >> 1) & 1));
     }
 }

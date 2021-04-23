@@ -27,8 +27,8 @@ import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.util.math.Sphere;
-import net.daporkchop.fp2.util.math.Volume;
+import net.daporkchop.fp2.util.math.geometry.Sphere;
+import net.daporkchop.fp2.util.math.geometry.Volume;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 

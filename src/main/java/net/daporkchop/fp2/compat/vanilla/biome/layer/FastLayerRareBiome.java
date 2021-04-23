@@ -20,10 +20,15 @@
 
 package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.minecraft.world.gen.layer.GenLayerRareBiome;
+
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
+ * @see GenLayerRareBiome
  */
 public class FastLayerRareBiome extends FastLayer {
     public FastLayerRareBiome(long seed) {
@@ -31,8 +36,8 @@ public class FastLayerRareBiome extends FastLayer {
     }
 
     @Override
-    public int getSingle(int x, int z) {
-        int v = this.parent.getSingle(x, z);
+    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+        int v = this.parent.getSingle(alloc, x, z);
         return v == ID_PLAINS && nextInt(start(this.seed, x, z), 57) == 0 ? ID_MUTATED_PLAINS : v;
     }
 }
