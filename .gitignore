@@ -12,6 +12,8 @@ run/
 # misc.
 *.class
 *.log
+*.so
+*.dll
 /logs/
 
 classes/

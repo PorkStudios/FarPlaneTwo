@@ -14,3 +14,6 @@
 *.settings text=auto eol=lf
 *.properties text=auto eol=lf
 *.config text=auto eol=lf
+*.mk text=auto eol=lf
+*.cmake text=auto eol=lf
+*.cpp text=auto eol=lf
