@@ -11,6 +11,8 @@ export LIBS_DIR		:=	$(NATIVE_DIR)/lib
 export COMPILE_DIR  :=  $(ROOT_DIR)/build/native
 export OUTPUT_DIR   :=  $(ROOT_DIR)/src/main/resources/net/daporkchop/fp2
 
+export HEADERFILES	:=	$(wildcard $(NATIVE_DIR)/*.h) $(wildcard $(NATIVE_DIR)/fp2/*.h) $(wildcard $(NATIVE_DIR)/fp2/**/*.h)
+
 export CFLAGS		:=	-shared -Ofast -ffast-math -fPIC -ffunction-sections -fdata-sections -fvisibility=hidden
 export CXXFLAGS		:=	$(CFLAGS)
 export LDFLAGS		:=	$(CFLAGS) -Wl,--gc-sections
@@ -27,7 +29,6 @@ $(info natives: building for $(BUILD_TYPE))
 export INCLUDES		:=	$(NATIVE_DIR) $(JAVA_HOME)include $(JAVA_HOME)include/linux
 
 export ARCHS		:=	aarch64-linux-gnu x86_64-linux-gnu x86_64-w64-mingw32
-#TODO: export ARCHS		:=	aarch64-linux-gnu arm-linux-gnueabihf x86_64-linux-gnu x86_64-w64-mingw32
 #export ARCHS		:=	$(foreach arch,$(ARCHS),$(if $(shell which $(arch)-gcc),$(arch)))
 #export ARCHS		:=	$(foreach arch,$(ARCHS),$(if $(shell which $(arch)-g++),$(arch)))
 export ARCH_TASKS	:=	$(foreach arch,$(ARCHS),build.$(arch))
@@ -41,7 +42,6 @@ export LIB_TASKS	:=  $(addprefix $(LIBS_DIR)/,$(addsuffix .dl,$(LIBS)))
 .PHONY: build clean .FORCE
 
 build: $(ARCH_TASKS) $(LIB_TASKS)
-build: $(LIB_TASKS)
 
 build.%: .FORCE $(foreach module,$(MODULES),%,$(module).lib)
 	@echo built libraries for $(shell echo '$@' | perl -n -e '/build\.(.+)/ && print $$1')!

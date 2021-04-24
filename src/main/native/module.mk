@@ -1,5 +1,8 @@
 include $(TOOLCHAIN_DIR)/$(ARCH).mk
 
+CXXFLAGS        :=  $(CXXFLAGS) -DFP2_MODULE=$(subst /,_,$(MODULE))
+
+HEADERFILES	    :=	$(HEADERFILES) $(wildcard $(MODULE)/*.h) $(wildcard $(MODULE)/**/*.h)
 SRCFILES		:=	$(wildcard $(MODULE)/*.cpp) $(wildcard $(MODULE)/**/*.cpp)
 OFILES			:=	$(addprefix $(COMPILE_DIR)/$(ARCH)/,$(addsuffix .o,$(SRCFILES)))
 
@@ -17,7 +20,7 @@ $(OUTPUT_FILE): $(OFILES)
 	@echo "stripping $(OUTPUT_FILE)"
 	@$(STRIP) $(OUTPUT_FILE)
 
-$(COMPILE_DIR)/$(ARCH)/%.cpp.o: %.cpp
+$(COMPILE_DIR)/$(ARCH)/%.cpp.o: %.cpp $(HEADERFILES)
 	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	@echo "building $@"
 	@$(CXX) $(CXXFLAGS) $(INCLUDE) -c $*.cpp -o $@
