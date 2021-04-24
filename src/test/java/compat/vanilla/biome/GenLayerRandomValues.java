@@ -18,49 +18,38 @@
  *
  */
 
-package biome;
+package compat.vanilla.biome;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.minecraft.world.gen.layer.GenLayer;
+import net.minecraft.world.gen.layer.IntCache;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-public class FastLayerRandomValues extends FastLayer {
+public class GenLayerRandomValues extends GenLayer {
     protected final int limit;
 
-    public FastLayerRandomValues(long seed, int limit) {
+    public GenLayerRandomValues(long seed, int limit) {
         super(seed);
 
         this.limit = positive(limit, "limit");
     }
 
-    public FastLayerRandomValues(long seed) {
+    public GenLayerRandomValues(long seed) {
         this(seed, 256);
     }
 
     @Override
-    public void init(@NonNull FastLayer[] children) {
-        //no-op
-    }
-
-    @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        return nextInt(start(this.seed, x, z), this.limit);
-    }
-
-    @Override
-    public int[] getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ) {
-        int[] out = alloc.get(sizeX * sizeZ);
-        for (int i = 0, dx = 0; dx < sizeX; dx++) {
-            for (int dz = 0; dz < sizeZ; dz++) {
-                out[i++] = nextInt(start(this.seed, x + dx, z + dz), this.limit);
+    public int[] getInts(int areaX, int areaY, int areaWidth, int areaHeight) {
+        int[] arr = IntCache.getIntCache(areaWidth * areaHeight);
+        for (int dy = 0; dy < areaHeight; ++dy) {
+            for (int dx = 0; dx < areaWidth; ++dx) {
+                this.initChunkSeed(areaX + dx, areaY + dy);
+                arr[dy * areaWidth + dx] = this.nextInt(this.limit);
             }
         }
-        return out;
+        return arr;
     }
 }

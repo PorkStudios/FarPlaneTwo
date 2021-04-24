@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,38 +18,49 @@
  *
  */
 
-package biome;
+package compat.vanilla.biome;
 
-import net.minecraft.world.gen.layer.GenLayer;
-import net.minecraft.world.gen.layer.IntCache;
+import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-public class GenLayerRandomValues extends GenLayer {
+public class FastLayerRandomValues extends FastLayer {
     protected final int limit;
 
-    public GenLayerRandomValues(long seed, int limit) {
+    public FastLayerRandomValues(long seed, int limit) {
         super(seed);
 
         this.limit = positive(limit, "limit");
     }
 
-    public GenLayerRandomValues(long seed) {
+    public FastLayerRandomValues(long seed) {
         this(seed, 256);
     }
 
     @Override
-    public int[] getInts(int areaX, int areaY, int areaWidth, int areaHeight) {
-        int[] arr = IntCache.getIntCache(areaWidth * areaHeight);
-        for (int dy = 0; dy < areaHeight; ++dy) {
-            for (int dx = 0; dx < areaWidth; ++dx) {
-                this.initChunkSeed(areaX + dx, areaY + dy);
-                arr[dy * areaWidth + dx] = this.nextInt(this.limit);
+    public void init(@NonNull FastLayer[] children) {
+        //no-op
+    }
+
+    @Override
+    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+        return nextInt(start(this.seed, x, z), this.limit);
+    }
+
+    @Override
+    public int[] getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ) {
+        int[] out = alloc.get(sizeX * sizeZ);
+        for (int i = 0, dx = 0; dx < sizeX; dx++) {
+            for (int dz = 0; dz < sizeZ; dz++) {
+                out[i++] = nextInt(start(this.seed, x + dx, z + dz), this.limit);
             }
         }
-        return arr;
+        return out;
     }
 }
