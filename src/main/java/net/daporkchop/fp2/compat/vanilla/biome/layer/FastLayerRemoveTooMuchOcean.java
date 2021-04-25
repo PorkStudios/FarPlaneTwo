@@ -35,8 +35,10 @@ public class FastLayerRemoveTooMuchOcean extends FastLayer {
 
     @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int[] arr = this.parent.getGrid(alloc, x - 1, z - 1, 3, 3);
+        int[] arr = alloc.get(3 * 3);
         try {
+            this.parent.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
+
             if (arr[1] == 0 && arr[3] == 0 && arr[4] == 0 && arr[5] == 0 && arr[7] == 0) {
                 return 1;
             } else {

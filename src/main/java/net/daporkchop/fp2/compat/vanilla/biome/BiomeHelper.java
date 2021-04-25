@@ -41,6 +41,7 @@ import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerShore;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerSmooth;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerVoronoiZoom;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerZoom;
+import net.daporkchop.fp2.compat.vanilla.biome.nativelayer.NativeFastLayerIsland;
 import net.minecraft.init.Biomes;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
@@ -189,7 +190,7 @@ public class BiomeHelper {
         FAST_MAPPERS.put(GenLayerEdge.class, layer -> new FastLayerBiomeEdge(layer.worldGenSeed));
         FAST_MAPPERS.put(GenLayerFuzzyZoom.class, layer -> new FastLayerFuzzyZoom(layer.worldGenSeed));
         FAST_MAPPERS.put(GenLayerHills.class, layer -> new FastLayerHills(layer.worldGenSeed));
-        FAST_MAPPERS.put(GenLayerIsland.class, layer -> new FastLayerIsland(layer.worldGenSeed));
+        FAST_MAPPERS.put(GenLayerIsland.class, layer -> new NativeFastLayerIsland(layer.worldGenSeed));
         FAST_MAPPERS.put(GenLayerRareBiome.class, layer -> new FastLayerRareBiome(layer.worldGenSeed));
         FAST_MAPPERS.put(GenLayerRemoveTooMuchOcean.class, layer -> new FastLayerRemoveTooMuchOcean(layer.worldGenSeed));
         FAST_MAPPERS.put(GenLayerRiver.class, layer -> new FastLayerRiver(layer.worldGenSeed));

@@ -37,8 +37,10 @@ public class FastLayerDeepOcean extends FastLayer {
 
     @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int[] arr = this.parent.getGrid(alloc, x - 1, z - 1, 3, 3);
+        int[] arr = alloc.get(3 * 3);
         try {
+            this.parent.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
+
             if (arr[1] == ID_OCEAN && arr[3] == ID_OCEAN && arr[4] == ID_OCEAN && arr[5] == ID_OCEAN && arr[7] == ID_OCEAN) {
                 return ID_DEEP_OCEAN;
             } else {

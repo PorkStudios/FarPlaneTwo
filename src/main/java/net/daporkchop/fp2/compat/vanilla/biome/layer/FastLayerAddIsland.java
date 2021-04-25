@@ -39,8 +39,10 @@ public class FastLayerAddIsland extends FastLayer {
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
         int center, v0, v1, v2, v3;
 
-        int[] arr = this.parent.getGrid(alloc, x - 1, z - 1, 3, 3);
+        int[] arr = alloc.get(3 * 3);
         try {
+            this.parent.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
+
             v0 = arr[0];
             v2 = arr[2];
             center = arr[4];

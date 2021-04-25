@@ -24,8 +24,8 @@ buildscript {
     repositories {
         jcenter()
         maven {
-            name = "MinecraftForge"
-            url = "https://files.minecraftforge.net/maven"
+            name = "DaPorkchop_"
+            url = "https://maven.daporkchop.net/"
         }
         maven {
             name = "SpongePowered"

@@ -37,8 +37,10 @@ public class FastLayerSmooth extends FastLayer {
 
     @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int[] arr = this.parent.getGrid(alloc, x - 1, z - 1, 3, 3);
+        int[] arr = alloc.get(3 * 3);
         try {
+            this.parent.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
+
             int v0 = arr[1];
             int v1 = arr[3];
             int v2 = arr[7];

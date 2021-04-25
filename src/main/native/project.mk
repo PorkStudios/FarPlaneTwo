@@ -13,9 +13,9 @@ export OUTPUT_DIR   :=  $(ROOT_DIR)/src/main/resources/net/daporkchop/fp2
 
 export HEADERFILES	:=	$(wildcard $(NATIVE_DIR)/*.h) $(wildcard $(NATIVE_DIR)/fp2/*.h) $(wildcard $(NATIVE_DIR)/fp2/**/*.h)
 
-export CFLAGS		:=	-shared -Ofast -ffast-math -fPIC -ffunction-sections -fdata-sections -fvisibility=hidden
-export CXXFLAGS		:=	$(CFLAGS)
-export LDFLAGS		:=	$(CFLAGS) -Wl,--gc-sections
+export CFLAGS		:=	-O2 -ffast-math -fPIC -ffunction-sections -fdata-sections -fvisibility=hidden
+export CXXFLAGS		:=	$(CFLAGS) -std=c++17
+export LDFLAGS		:=	$(CFLAGS) -shared -Wl,--gc-sections
 
 ifndef FP2_NATIVES_DEBUG
 export CFLAGS		:=	$(CFLAGS)

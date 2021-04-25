@@ -23,7 +23,6 @@
 
 #include <fp2/fastmod.h>
 
-#include <bits/stdc++.h>
 #include <jni.h>
 
 #ifndef FP2_MODULE
@@ -36,39 +35,79 @@
 #define FP2_JNI_EVALUATOR(RETURN_TYPE, MODULE, CLASS, METHOD_NAME) FP2_JNI_PASTER(RETURN_TYPE, MODULE, CLASS, METHOD_NAME)
 #define FP2_JNI(RETURN_TYPE, CLASS, METHOD_NAME) FP2_JNI_EVALUATOR(RETURN_TYPE, FP2_MODULE, CLASS, METHOD_NAME)
 
-//"throw exception from jni" helper methods
 namespace fp2 {
-    static jint throwException(JNIEnv* env, const char* msg)  {
-        jclass clazz = env->FindClass("net/daporkchop/lib/natives/NativeException");
+    static inline JNIEnv* ENV;
 
-        return env->Throw((jthrowable) env->NewObject(
-            clazz,
-            env->GetMethodID(clazz, "<init>", "(Ljava/lang/String;)V"),
-            env->NewStringUTF(msg)
-        ));
+    inline void init(JNIEnv* env) {
+        fp2::ENV = env;
     }
 
-    static jint throwException(JNIEnv* env, const char* msg, jint err)  {
-        jclass clazz = env->FindClass("net/daporkchop/lib/natives/NativeException");
+    //
+    //"throw exception from jni" helper methods
+    //
 
-        return env->Throw((jthrowable) env->NewObject(
+    inline void throwException(const char* msg)  {
+        jclass clazz = ENV->FindClass("net/daporkchop/lib/natives/NativeException");
+
+        ENV->Throw((jthrowable) ENV->NewObject(
             clazz,
-            env->GetMethodID(clazz, "<init>", "(Ljava/lang/String;I)V"),
-            env->NewStringUTF(msg),
+            ENV->GetMethodID(clazz, "<init>", "(Ljava/lang/String;)V"),
+            ENV->NewStringUTF(msg)
+        ));
+        throw 0;
+    }
+
+    inline void throwException(const char* msg, jint err)  {
+        jclass clazz = ENV->FindClass("net/daporkchop/lib/natives/NativeException");
+
+        ENV->Throw((jthrowable) ENV->NewObject(
+            clazz,
+            ENV->GetMethodID(clazz, "<init>", "(Ljava/lang/String;I)V"),
+            ENV->NewStringUTF(msg),
             err
         ));
+        throw 0;
     }
 
-    static jint throwException(JNIEnv* env, const char* msg, jlong err)  {
-        jclass clazz = env->FindClass("net/daporkchop/lib/natives/NativeException");
+    inline void throwException(const char* msg, jlong err)  {
+        jclass clazz = ENV->FindClass("net/daporkchop/lib/natives/NativeException");
 
-        return env->Throw((jthrowable) env->NewObject(
+        ENV->Throw((jthrowable) ENV->NewObject(
             clazz,
-            env->GetMethodID(clazz, "<init>", "(Ljava/lang/String;J)V"),
-            env->NewStringUTF(msg),
+            ENV->GetMethodID(clazz, "<init>", "(Ljava/lang/String;J)V"),
+            ENV->NewStringUTF(msg),
             err
         ));
+        throw 0;
     }
+
+    /**
+     * Fancy helper class for JNI array pinning.
+     *
+     * @author DaPorkchop_
+     */
+    template<typename JAVA, typename T> class pinned_array {
+    private:
+        T* _ptr;
+        const JAVA& _java;
+
+    public:
+        pinned_array(const JAVA& java): _java(java) {
+            if (!(_ptr = (T*) ENV->GetPrimitiveArrayCritical(_java, nullptr))) {
+                throwException("unable to pin array!");
+            }
+        }
+
+        ~pinned_array() {
+            ENV->ReleasePrimitiveArrayCritical(_java, _ptr, 0);
+        }
+
+        T& operator[](const std::size_t idx) {
+            return _ptr[idx];
+        }
+    };
+
+    using pinned_int_array = pinned_array<jintArray, jint>;
 }
 
 #endif //FP2_H

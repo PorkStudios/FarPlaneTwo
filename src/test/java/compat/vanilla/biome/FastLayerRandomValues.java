@@ -54,13 +54,11 @@ public class FastLayerRandomValues extends FastLayer {
     }
 
     @Override
-    public int[] getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ) {
-        int[] out = alloc.get(sizeX * sizeZ);
+    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
         for (int i = 0, dx = 0; dx < sizeX; dx++) {
             for (int dz = 0; dz < sizeZ; dz++) {
                 out[i++] = nextInt(start(this.seed, x + dx, z + dz), this.limit);
             }
         }
-        return out;
     }
 }

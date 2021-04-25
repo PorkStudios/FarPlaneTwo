@@ -61,8 +61,9 @@ public class FastLayerZoom extends FastLayer {
     protected int sampleXZLast(IntArrayAllocator alloc, int lowX, int lowZ) {
         int xz, xZ, Xz, XZ;
 
-        int[] arr = this.parent.getGrid(alloc, lowX, lowZ, 2, 2);
+        int[] arr = alloc.get(2 * 2);
         try {
+            this.parent.getGrid(alloc, lowX, lowZ, 2, 2, arr);
             xz = arr[0];
             xZ = arr[1];
             Xz = arr[2];

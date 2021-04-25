@@ -18,41 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer;
+#include <fp2.h>
+#include "NativeFastLayer.h"
 
-import lombok.NonNull;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerRiver;
+#include <unistd.h>
 
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+FP2_JNI(void, nativelayer_NativeFastLayerIsland, init0) (JNIEnv* env, jclass cla) {
+    fp2::init(env);
+}
 
-/**
- * @author DaPorkchop_
- * @see GenLayerRiver
- */
-public class FastLayerRiver extends FastLayer {
-    private static int riverFilter(int i) {
-        return i >= 2 ? 2 + (i & 1) : i;
-    }
+FP2_JNI(void, nativelayer_NativeFastLayerIsland, getGrid0) (JNIEnv* env, jobject obj,
+        jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out) {
+    fp2::pinned_int_array out(_out);
 
-    public FastLayerRiver(long seed) {
-        super(seed);
-    }
-
-    @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int[] arr = alloc.get(3 * 3);
-        try {
-            this.parent.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
-
-            int center = riverFilter(arr[4]);
-            if (center == riverFilter(arr[1]) && center == riverFilter(arr[3]) && center == riverFilter(arr[5]) && center == riverFilter(arr[7])) {
-                return -1;
-            } else {
-                return ID_RIVER;
-            }
-        } finally {
-            alloc.release(arr);
+    for (int i = 0, dx = 0; dx < sizeX; dx++) {
+        for (int dz = 0; dz < sizeZ; dz++, i++) {
+            fp2::biome::fastlayer::rng rng(seed, x + dx, z + dz);
+            out[i] = rng.nextInt<10>() == 0;
         }
     }
 }

@@ -1,4 +1,4 @@
-ifndef LDB_NATIVES_DEBUG
+ifndef FP2_NATIVES_DEBUG
 # release mode
 export CFLAGS		:=	$(CFLAGS) -flto=$(NPROC) -fno-fat-lto-objects
 export CXXFLAGS		:=	$(CXXFLAGS) -flto=$(NPROC) -fno-fat-lto-objects

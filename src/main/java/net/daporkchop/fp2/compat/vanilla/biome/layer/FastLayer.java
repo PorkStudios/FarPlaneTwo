@@ -57,15 +57,13 @@ public abstract class FastLayer {
      * @param z     the grid's base Z coordinate
      * @param sizeX the size of the grid along the X axis
      * @param sizeZ the size of the grid along the Z axis
-     * @return an {@code int[]} of values, allocated using the given {@link IntArrayAllocator}, and indexed in XZ coordinate order
+     * @param out   the {@code int[]} to write to
      */
-    public int[] getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ) {
-        int[] out = alloc.get(sizeX * sizeZ);
+    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
         for (int i = 0, dx = 0; dx < sizeX; dx++) {
             for (int dz = 0; dz < sizeZ; dz++) {
                 out[i++] = this.getSingle(alloc, x + dx, z + dz);
             }
         }
-        return out;
     }
 }

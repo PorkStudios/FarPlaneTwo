@@ -18,41 +18,40 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer;
+package net.daporkchop.fp2.compat.vanilla.biome.nativelayer;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerIsland;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerRiver;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerRiver
  */
-public class FastLayerRiver extends FastLayer {
-    private static int riverFilter(int i) {
-        return i >= 2 ? 2 + (i & 1) : i;
+public class NativeFastLayerIsland extends FastLayerIsland {
+    static {
+        System.load("/media/daporkchop/PortableIDE/Minecraft/FarPlaneTwo/src/main/resources/net/daporkchop/fp2/compat/vanilla/biome/x86_64-linux-gnu.so");
+
+        init0();
     }
 
-    public FastLayerRiver(long seed) {
+    private static native void init0();
+
+    public NativeFastLayerIsland(long seed) {
         super(seed);
     }
 
     @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int[] arr = alloc.get(3 * 3);
-        try {
-            this.parent.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
+    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+        checkIndex(out.length >= sizeX * sizeZ);
 
-            int center = riverFilter(arr[4]);
-            if (center == riverFilter(arr[1]) && center == riverFilter(arr[3]) && center == riverFilter(arr[5]) && center == riverFilter(arr[7])) {
-                return -1;
-            } else {
-                return ID_RIVER;
-            }
-        } finally {
-            alloc.release(arr);
+        this.getGrid0(this.seed, x, z, sizeX, sizeZ, out);
+
+        if (x <= 0 && z <= 0 && x + sizeX >= 0 && z + sizeZ >= 0) { //(0,0) is always set to 1
+            out[-x * sizeZ - z] = 1;
         }
     }
+
+    protected native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out);
 }

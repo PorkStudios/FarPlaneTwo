@@ -19,14 +19,3 @@
  */
 
 #include <fp2.h>
-
-FP2_JNI(void, BiomeHelper, init0) (JNIEnv* env) {
-    fp2::fastmod_u32 fm(2395);
-
-    uint32_t a = 23465873 / fm;
-}
-
-FP2_JNI(jlong, BiomeHelper, modU) (JNIEnv* env, jclass cla, jlong a, jlong b) {
-    jlong l = a % fp2::fastmod_s64(b);
-    return l + ((l >> 63) & b);
-}
