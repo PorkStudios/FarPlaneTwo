@@ -18,30 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer;
+package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerFuzzyZoom;
-
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import net.minecraft.world.gen.layer.GenLayerBiomeEdge;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerFuzzyZoom
+ * @see GenLayerBiomeEdge
  */
-public class FastLayerFuzzyZoom extends FastLayerZoom {
-    public FastLayerFuzzyZoom(long seed) {
+public class FastLayerBiomeEdge extends FastLayer {
+    public FastLayerBiomeEdge(long seed) {
         super(seed);
     }
 
     @Override
-    protected int sampleXZLast(IntArrayAllocator alloc, int lowX, int lowZ) {
-        //random
-        long state = start(this.seed, lowX << 1, lowZ << 1);
-        state = update(state, this.seed);
-        state = update(state, this.seed);
-
-        int r = nextInt(state, 4);
-        return this.parent.getSingle(alloc, lowX + (r & 1), lowZ + ((r >> 1) & 1));
+    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+        return 0; //TODO
     }
 }

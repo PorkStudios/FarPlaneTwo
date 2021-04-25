@@ -18,9 +18,10 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer;
+package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerZoom;
 

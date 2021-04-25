@@ -33,7 +33,7 @@ export ARCHS		:=	aarch64-linux-gnu x86_64-linux-gnu x86_64-w64-mingw32
 #export ARCHS		:=	$(foreach arch,$(ARCHS),$(if $(shell which $(arch)-g++),$(arch)))
 export ARCH_TASKS	:=	$(foreach arch,$(ARCHS),build.$(arch))
 
-export MODULES		:=  compat/vanilla/biome
+export MODULES		:=  compat/vanilla/biome/layer/c
 
 export LIB_URL_BASE	:=	https://cloud.daporkchop.net/programs/source
 export LIBS			:=  vectorclass-2.01.03

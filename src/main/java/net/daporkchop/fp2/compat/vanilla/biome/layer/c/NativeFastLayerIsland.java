@@ -18,26 +18,32 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer;
+package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerIsland;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerRareBiome;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerRareBiome
  */
-public class FastLayerRareBiome extends FastLayer {
-    public FastLayerRareBiome(long seed) {
+public class NativeFastLayerIsland extends FastLayerIsland {
+    public NativeFastLayerIsland(long seed) {
         super(seed);
     }
 
     @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int v = this.parent.getSingle(alloc, x, z);
-        return v == ID_PLAINS && nextInt(start(this.seed, x, z), 57) == 0 ? ID_MUTATED_PLAINS : v;
+    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+        checkIndex(out.length >= sizeX * sizeZ);
+
+        this.getGrid0(this.seed, x, z, sizeX, sizeZ, out);
+
+        if (x <= 0 && z <= 0 && x + sizeX >= 0 && z + sizeZ >= 0) { //(0,0) is always set to 1
+            out[-x * sizeZ - z] = 1;
+        }
     }
+
+    protected native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out);
 }

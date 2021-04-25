@@ -18,23 +18,35 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer;
+package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerVoronoiZoom;
+import net.minecraft.world.gen.layer.GenLayerRemoveTooMuchOcean;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerVoronoiZoom
+ * @see GenLayerRemoveTooMuchOcean
  */
-public class FastLayerVoronoiZoom extends FastLayer {
-    public FastLayerVoronoiZoom(long seed) {
+public class FastLayerRemoveTooMuchOcean extends FastLayer {
+    public FastLayerRemoveTooMuchOcean(long seed) {
         super(seed);
     }
 
     @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        return 0; //TODO
+        int[] arr = alloc.get(3 * 3);
+        try {
+            this.parent.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
+
+            if (arr[1] == 0 && arr[3] == 0 && arr[4] == 0 && arr[5] == 0 && arr[7] == 0) {
+                return 1;
+            } else {
+                return arr[4];
+            }
+        } finally {
+            alloc.release(arr);
+        }
     }
 }

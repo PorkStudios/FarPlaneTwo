@@ -18,43 +18,30 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome;
+package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProviderContainer;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeProvider;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.minecraft.world.gen.layer.GenLayerFuzzyZoom;
+
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
+ * @see GenLayerFuzzyZoom
  */
-public class FastThreadSafeBiomeProvider implements IBiomeProvider {
-    public FastThreadSafeBiomeProvider(@NonNull BiomeProvider provider) {
-        FastLayer[] fastLayers = FastLayerProviderContainer.INSTANCE.makeFast(provider.genBiomes, provider.biomeIndexLayer);
-    }
-
-    //TODO: implement everything
-
-    @Override
-    public Biome biome(int blockX, int blockZ) {
-        return null;
+public class FastLayerFuzzyZoom extends FastLayerZoom {
+    public FastLayerFuzzyZoom(long seed) {
+        super(seed);
     }
 
     @Override
-    public int biomeId(int blockX, int blockZ) {
-        return 0;
-    }
+    protected int sampleXZLast(IntArrayAllocator alloc, int lowX, int lowZ) {
+        //random
+        long state = start(this.seed, lowX << 1, lowZ << 1);
+        state = update(state, this.seed);
+        state = update(state, this.seed);
 
-    @Override
-    public void biomes(@NonNull Biome[] arr, int blockX, int blockZ, int sizeX, int sizeZ) {
-    }
-
-    @Override
-    public void biomeIds(@NonNull byte[] arr, int blockX, int blockZ, int sizeX, int sizeZ) {
-    }
-
-    @Override
-    public void biomeIdsForGeneration(@NonNull int[] arr, int x, int z, int sizeX, int sizeZ) {
+        int r = nextInt(state, 4);
+        return this.parent.getSingle(alloc, lowX + (r & 1), lowZ + ((r >> 1) & 1));
     }
 }

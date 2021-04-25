@@ -18,30 +18,38 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer;
+package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerIsland;
+import net.minecraft.world.gen.layer.GenLayerAddSnow;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerIsland
+ * @see GenLayerAddSnow
  */
-public class FastLayerIsland extends FastLayer {
-    public FastLayerIsland(long seed) {
+public class FastLayerAddSnow extends FastLayer {
+    public FastLayerAddSnow(long seed) {
         super(seed);
     }
 
     @Override
-    public void init(@NonNull FastLayer[] children) {
-        //no-op
-    }
-
-    @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        return (x | z) == 0 || nextInt(start(this.seed, x, z), 10) == 0 ? 1 : 0;
+        int v = this.parent.getSingle(alloc, x, z);
+        if (v == 0) {
+            return 0;
+        }
+
+        int r = nextInt(start(this.seed, x, z), 6);
+        if (r == 0) {
+            return 4;
+        } else if (r == 1) {
+            return 3;
+        } else {
+            return 1;
+        }
     }
 }

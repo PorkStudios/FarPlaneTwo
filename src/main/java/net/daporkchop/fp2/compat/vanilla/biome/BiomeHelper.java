@@ -22,26 +22,28 @@ package net.daporkchop.fp2.compat.vanilla.biome;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerAddIsland;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerAddMushroomIsland;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerAddSnow;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerBiome;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerBiomeEdge;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerDeepOcean;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerFuzzyZoom;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerHills;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerIsland;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerRareBiome;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerRemoveTooMuchOcean;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerRiver;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerRiverInit;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerRiverMix;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerShore;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerSmooth;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerVoronoiZoom;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerZoom;
-import net.daporkchop.fp2.compat.vanilla.biome.nativelayer.NativeFastLayerIsland;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProvider;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerAddIsland;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerAddMushroomIsland;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerAddSnow;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerBiome;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerBiomeEdge;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerDeepOcean;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerFuzzyZoom;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerHills;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerIsland;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRareBiome;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRemoveTooMuchOcean;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRiver;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRiverInit;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRiverMix;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerShore;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerSmooth;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerVoronoiZoom;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerZoom;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.c.NativeFastLayerIsland;
 import net.minecraft.init.Biomes;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
@@ -65,8 +67,8 @@ import net.minecraft.world.gen.layer.GenLayerShore;
 import net.minecraft.world.gen.layer.GenLayerSmooth;
 import net.minecraft.world.gen.layer.GenLayerVoronoiZoom;
 import net.minecraft.world.gen.layer.GenLayerZoom;
+import net.minecraftforge.fml.common.Mod;
 
-import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -80,6 +82,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @UtilityClass
+@Mod.EventBusSubscriber(modid = FP2.MODID)
 public class BiomeHelper {
     public static final int BIOME_COUNT = 256;
 
@@ -148,58 +151,58 @@ public class BiomeHelper {
     public static final int ID_MUTATED_MESA_CLEAR_ROCK = Biome.getIdForBiome(Biomes.MUTATED_MESA_CLEAR_ROCK);
 
     //gets all direct children of a GenLayer
-    public static final Map<Class<? extends GenLayer>, Function<GenLayer, GenLayer[]>> GET_CHILDREN = new IdentityHashMap<>();
-    public static final Map<Class<? extends GenLayer>, Function<GenLayer, FastLayer>> FAST_MAPPERS = new IdentityHashMap<>();
+    public static final Map<Class<? extends GenLayer>, Function<GenLayer, GenLayer[]>> GET_PARENTS = new IdentityHashMap<>();
+    public static final Map<Class<? extends GenLayer>, Function<GenLayer, FastLayer>> LAYER_CONVERTERS = new IdentityHashMap<>();
     public static final double[] BIOME_HEIGHTS = new double[BIOME_COUNT];
     public static final double[] BIOME_VARIATIONS = new double[BIOME_COUNT];
 
     static {
         Function<GenLayer, GenLayer[]> parent = genLayer -> new GenLayer[]{ genLayer.parent };
 
-        GET_CHILDREN.put(GenLayerAddIsland.class, parent);
-        GET_CHILDREN.put(GenLayerAddMushroomIsland.class, parent);
-        GET_CHILDREN.put(GenLayerAddSnow.class, parent);
-        GET_CHILDREN.put(GenLayerBiome.class, parent);
-        GET_CHILDREN.put(GenLayerBiomeEdge.class, parent);
-        GET_CHILDREN.put(GenLayerDeepOcean.class, parent);
-        GET_CHILDREN.put(GenLayerEdge.class, parent);
-        GET_CHILDREN.put(GenLayerFuzzyZoom.class, parent);
-        GET_CHILDREN.put(GenLayerHills.class, genLayer -> new GenLayer[]{ genLayer.parent, ((GenLayerHills) genLayer).riverLayer });
-        GET_CHILDREN.put(GenLayerIsland.class, genLayer -> new GenLayer[0]);
-        GET_CHILDREN.put(GenLayerRareBiome.class, parent);
-        GET_CHILDREN.put(GenLayerRemoveTooMuchOcean.class, parent);
-        GET_CHILDREN.put(GenLayerRiver.class, parent);
-        GET_CHILDREN.put(GenLayerRiverInit.class, parent);
-        GET_CHILDREN.put(GenLayerRiverMix.class, genLayer -> {
+        GET_PARENTS.put(GenLayerAddIsland.class, parent);
+        GET_PARENTS.put(GenLayerAddMushroomIsland.class, parent);
+        GET_PARENTS.put(GenLayerAddSnow.class, parent);
+        GET_PARENTS.put(GenLayerBiome.class, parent);
+        GET_PARENTS.put(GenLayerBiomeEdge.class, parent);
+        GET_PARENTS.put(GenLayerDeepOcean.class, parent);
+        GET_PARENTS.put(GenLayerEdge.class, parent);
+        GET_PARENTS.put(GenLayerFuzzyZoom.class, parent);
+        GET_PARENTS.put(GenLayerHills.class, genLayer -> new GenLayer[]{ genLayer.parent, ((GenLayerHills) genLayer).riverLayer });
+        GET_PARENTS.put(GenLayerIsland.class, genLayer -> new GenLayer[0]);
+        GET_PARENTS.put(GenLayerRareBiome.class, parent);
+        GET_PARENTS.put(GenLayerRemoveTooMuchOcean.class, parent);
+        GET_PARENTS.put(GenLayerRiver.class, parent);
+        GET_PARENTS.put(GenLayerRiverInit.class, parent);
+        GET_PARENTS.put(GenLayerRiverMix.class, genLayer -> {
             GenLayerRiverMix l = (GenLayerRiverMix) genLayer;
             return new GenLayer[]{ l.biomePatternGeneratorChain, l.riverPatternGeneratorChain };
         });
-        GET_CHILDREN.put(GenLayerShore.class, parent);
-        GET_CHILDREN.put(GenLayerSmooth.class, parent);
-        GET_CHILDREN.put(GenLayerVoronoiZoom.class, parent);
-        GET_CHILDREN.put(GenLayerZoom.class, parent);
+        GET_PARENTS.put(GenLayerShore.class, parent);
+        GET_PARENTS.put(GenLayerSmooth.class, parent);
+        GET_PARENTS.put(GenLayerVoronoiZoom.class, parent);
+        GET_PARENTS.put(GenLayerZoom.class, parent);
     }
 
     static {
-        FAST_MAPPERS.put(GenLayerAddIsland.class, layer -> new FastLayerAddIsland(layer.worldGenSeed));
-        FAST_MAPPERS.put(GenLayerAddMushroomIsland.class, layer -> new FastLayerAddMushroomIsland(layer.worldGenSeed));
-        FAST_MAPPERS.put(GenLayerAddSnow.class, layer -> new FastLayerAddSnow(layer.worldGenSeed));
-        FAST_MAPPERS.put(GenLayerBiome.class, layer -> new FastLayerBiome(layer.worldGenSeed));
-        FAST_MAPPERS.put(GenLayerBiomeEdge.class, layer -> new FastLayerBiomeEdge(layer.worldGenSeed));
-        FAST_MAPPERS.put(GenLayerDeepOcean.class, layer -> new FastLayerDeepOcean(layer.worldGenSeed));
-        FAST_MAPPERS.put(GenLayerEdge.class, layer -> new FastLayerBiomeEdge(layer.worldGenSeed));
-        FAST_MAPPERS.put(GenLayerFuzzyZoom.class, layer -> new FastLayerFuzzyZoom(layer.worldGenSeed));
-        FAST_MAPPERS.put(GenLayerHills.class, layer -> new FastLayerHills(layer.worldGenSeed));
-        FAST_MAPPERS.put(GenLayerIsland.class, layer -> new NativeFastLayerIsland(layer.worldGenSeed));
-        FAST_MAPPERS.put(GenLayerRareBiome.class, layer -> new FastLayerRareBiome(layer.worldGenSeed));
-        FAST_MAPPERS.put(GenLayerRemoveTooMuchOcean.class, layer -> new FastLayerRemoveTooMuchOcean(layer.worldGenSeed));
-        FAST_MAPPERS.put(GenLayerRiver.class, layer -> new FastLayerRiver(layer.worldGenSeed));
-        FAST_MAPPERS.put(GenLayerRiverInit.class, layer -> new FastLayerRiverInit(layer.worldGenSeed));
-        FAST_MAPPERS.put(GenLayerRiverMix.class, layer -> new FastLayerRiverMix(layer.worldGenSeed));
-        FAST_MAPPERS.put(GenLayerShore.class, layer -> new FastLayerShore(layer.worldGenSeed));
-        FAST_MAPPERS.put(GenLayerSmooth.class, layer -> new FastLayerSmooth(layer.worldGenSeed));
-        FAST_MAPPERS.put(GenLayerVoronoiZoom.class, layer -> new FastLayerVoronoiZoom(layer.worldGenSeed));
-        FAST_MAPPERS.put(GenLayerZoom.class, layer -> new FastLayerZoom(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerAddIsland.class, layer -> new FastLayerAddIsland(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerAddMushroomIsland.class, layer -> new FastLayerAddMushroomIsland(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerAddSnow.class, layer -> new FastLayerAddSnow(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerBiome.class, layer -> new FastLayerBiome(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerBiomeEdge.class, layer -> new FastLayerBiomeEdge(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerDeepOcean.class, layer -> new FastLayerDeepOcean(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerEdge.class, layer -> new FastLayerBiomeEdge(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerFuzzyZoom.class, layer -> new FastLayerFuzzyZoom(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerHills.class, layer -> new FastLayerHills(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerIsland.class, layer -> new FastLayerIsland(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerRareBiome.class, layer -> new FastLayerRareBiome(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerRemoveTooMuchOcean.class, layer -> new FastLayerRemoveTooMuchOcean(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerRiver.class, layer -> new FastLayerRiver(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerRiverInit.class, layer -> new FastLayerRiverInit(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerRiverMix.class, layer -> new FastLayerRiverMix(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerShore.class, layer -> new FastLayerShore(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerSmooth.class, layer -> new FastLayerSmooth(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerVoronoiZoom.class, layer -> new FastLayerVoronoiZoom(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerZoom.class, layer -> new FastLayerZoom(layer.worldGenSeed));
     }
 
     static {
@@ -222,44 +225,31 @@ public class BiomeHelper {
         return heightVariation * 2.4d + (4.0d / 15.0d);
     }
 
-    private static void addAllLayers(Map<GenLayer, GenLayer[]> childrenMap, GenLayer layer) {
-        if (childrenMap.containsKey(layer)) {
-            return; //don't re-add the same layer twice
-        }
-
-        Function<GenLayer, GenLayer[]> getChildren = GET_CHILDREN.get(layer.getClass());
-        checkArg(getChildren != null, "invalid GenLayer class: %s", layer.getClass().getCanonicalName());
-        GenLayer[] children = getChildren.apply(layer);
-        childrenMap.put(layer, children);
-
-        //add children recursively
-        for (GenLayer child : children) {
-            addAllLayers(childrenMap, child);
-        }
+    /**
+     * Gets all the parent layers of the given {@link GenLayer}.
+     *
+     * @param layer the {@link GenLayer}
+     * @return the {@link GenLayer}'s parents
+     */
+    public GenLayer[] getParents(@NonNull GenLayer layer) {
+        Function<GenLayer, GenLayer[]> getParents = GET_PARENTS.get(layer.getClass());
+        checkArg(getParents != null, "invalid GenLayer class: %s", layer.getClass().getCanonicalName());
+        return getParents.apply(layer);
     }
 
-    public FastLayer[] makeFast(@NonNull GenLayer... inputs) {
-        //initial add all layers and find their children
-        Map<GenLayer, GenLayer[]> children = new IdentityHashMap<>();
-        for (GenLayer layer : inputs) {
-            addAllLayers(children, layer);
-        }
-
-        //map vanilla layers to fast layers
-        Map<GenLayer, FastLayer> fastLayers = new IdentityHashMap<>();
-        children.keySet().forEach(layer -> {
-            Function<GenLayer, FastLayer> fastMapper = FAST_MAPPERS.get(layer.getClass());
-            checkArg(fastMapper != null, "invalid GenLayer class: %s", layer.getClass().getCanonicalName());
-            fastLayers.put(layer, fastMapper.apply(layer));
-        });
-
-        //init fast layers with their children
-        fastLayers.forEach((vanilla, fast) -> {
-            FastLayer[] fastChildren = Arrays.stream(children.get(vanilla)).map(fastLayers::get).toArray(FastLayer[]::new);
-            fast.init(fastChildren);
-        });
-
-        return Arrays.stream(inputs).map(fastLayers::get).toArray(FastLayer[]::new);
+    /**
+     * Converts the given {@link GenLayer} to an uninitialized {@link FastLayer}.
+     *
+     * This is an internal method, you probably shouldn't touch this.
+     *
+     * @param layer the {@link GenLayer}
+     * @return the {@link FastLayer}
+     * @see FastLayerProvider#makeFast(GenLayer...)
+     */
+    public FastLayer convertLayer(@NonNull GenLayer layer) {
+        Function<GenLayer, FastLayer> converter = LAYER_CONVERTERS.get(layer.getClass());
+        checkArg(converter != null, "invalid GenLayer class: %s", layer.getClass().getCanonicalName());
+        return converter.apply(layer);
     }
 
     /**

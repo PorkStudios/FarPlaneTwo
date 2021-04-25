@@ -17,6 +17,8 @@ $(OUTPUT_FILE): $(OFILES)
 	@[ -d $(dir $(OUTPUT_FILE)) ] || mkdir -p $(dir $(OUTPUT_FILE))
 	@echo "linking $(OUTPUT_FILE)"
 	@$(LD) $(LDFLAGS) $(INCLUDE) -o $(OUTPUT_FILE) $(OFILES)
+	@echo "stripping $(OUTPUT_FILE)"
+	@$(STRIP) $(OUTPUT_FILE)
 
 $(COMPILE_DIR)/$(ARCH)/%.cpp.o: %.cpp $(HEADERFILES)
 	@[ -d $(dir $@) ] || mkdir -p $(dir $@)

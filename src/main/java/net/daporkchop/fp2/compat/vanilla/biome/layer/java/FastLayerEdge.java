@@ -18,18 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer;
+package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerShore;
+import net.minecraft.world.gen.layer.GenLayerEdge;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerShore
+ * @see GenLayerEdge
  */
-public class FastLayerShore extends FastLayer {
-    public FastLayerShore(long seed) {
+public class FastLayerEdge extends FastLayer {
+    public FastLayerEdge(long seed) {
         super(seed);
     }
 

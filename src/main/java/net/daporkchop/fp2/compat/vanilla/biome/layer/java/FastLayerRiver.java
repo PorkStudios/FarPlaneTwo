@@ -18,25 +18,42 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer;
+package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerRiverInit;
+import net.minecraft.world.gen.layer.GenLayerRiver;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerRiverInit
+ * @see GenLayerRiver
  */
-public class FastLayerRiverInit extends FastLayer {
-    public FastLayerRiverInit(long seed) {
+public class FastLayerRiver extends FastLayer {
+    private static int riverFilter(int i) {
+        return i >= 2 ? 2 + (i & 1) : i;
+    }
+
+    public FastLayerRiver(long seed) {
         super(seed);
     }
 
     @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        return this.parent.getSingle(alloc, x, z) > 0 ? nextInt(start(this.seed, x, z), 299999) + 2 : 0;
+        int[] arr = alloc.get(3 * 3);
+        try {
+            this.parent.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
+
+            int center = riverFilter(arr[4]);
+            if (center == riverFilter(arr[1]) && center == riverFilter(arr[3]) && center == riverFilter(arr[5]) && center == riverFilter(arr[7])) {
+                return -1;
+            } else {
+                return ID_RIVER;
+            }
+        } finally {
+            alloc.release(arr);
+        }
     }
 }

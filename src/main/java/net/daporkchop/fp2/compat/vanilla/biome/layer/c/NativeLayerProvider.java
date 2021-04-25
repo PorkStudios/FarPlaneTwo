@@ -18,43 +18,29 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome;
+package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProviderContainer;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeProvider;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.c.NativeFastLayerIsland;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaLayerProvider;
+import net.minecraft.world.gen.layer.GenLayerIsland;
 
 /**
+ * Extension of {@link JavaLayerProvider} which replaces a number of the layer types with native C++ implementations.
+ *
  * @author DaPorkchop_
  */
-public class FastThreadSafeBiomeProvider implements IBiomeProvider {
-    public FastThreadSafeBiomeProvider(@NonNull BiomeProvider provider) {
-        FastLayer[] fastLayers = FastLayerProviderContainer.INSTANCE.makeFast(provider.genBiomes, provider.biomeIndexLayer);
-    }
+public class NativeLayerProvider extends JavaLayerProvider {
+    private static native void init0();
 
-    //TODO: implement everything
+    protected NativeLayerProvider() {
+        System.load("/media/daporkchop/PortableIDE/Minecraft/FarPlaneTwo/src/main/resources/net/daporkchop/fp2/compat/vanilla/biome/layer/c/x86_64-linux-gnu.so");
+        init0(); //ensure JNI libs are initialized
 
-    @Override
-    public Biome biome(int blockX, int blockZ) {
-        return null;
-    }
-
-    @Override
-    public int biomeId(int blockX, int blockZ) {
-        return 0;
+        this.fastMapperOverrides.put(GenLayerIsland.class, layer -> new NativeFastLayerIsland(layer.worldGenSeed));
     }
 
     @Override
-    public void biomes(@NonNull Biome[] arr, int blockX, int blockZ, int sizeX, int sizeZ) {
-    }
-
-    @Override
-    public void biomeIds(@NonNull byte[] arr, int blockX, int blockZ, int sizeX, int sizeZ) {
-    }
-
-    @Override
-    public void biomeIdsForGeneration(@NonNull int[] arr, int x, int z, int sizeX, int sizeZ) {
+    public boolean isNative() {
+        return true;
     }
 }

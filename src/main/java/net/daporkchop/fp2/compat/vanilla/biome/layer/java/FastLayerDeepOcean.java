@@ -18,43 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome;
+package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProviderContainer;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeProvider;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.minecraft.world.gen.layer.GenLayerDeepOcean;
+
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
+ * @see GenLayerDeepOcean
  */
-public class FastThreadSafeBiomeProvider implements IBiomeProvider {
-    public FastThreadSafeBiomeProvider(@NonNull BiomeProvider provider) {
-        FastLayer[] fastLayers = FastLayerProviderContainer.INSTANCE.makeFast(provider.genBiomes, provider.biomeIndexLayer);
-    }
-
-    //TODO: implement everything
-
-    @Override
-    public Biome biome(int blockX, int blockZ) {
-        return null;
+public class FastLayerDeepOcean extends FastLayer {
+    public FastLayerDeepOcean(long seed) {
+        super(seed);
     }
 
     @Override
-    public int biomeId(int blockX, int blockZ) {
-        return 0;
-    }
+    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+        int[] arr = alloc.get(3 * 3);
+        try {
+            this.parent.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
 
-    @Override
-    public void biomes(@NonNull Biome[] arr, int blockX, int blockZ, int sizeX, int sizeZ) {
-    }
-
-    @Override
-    public void biomeIds(@NonNull byte[] arr, int blockX, int blockZ, int sizeX, int sizeZ) {
-    }
-
-    @Override
-    public void biomeIdsForGeneration(@NonNull int[] arr, int x, int z, int sizeX, int sizeZ) {
+            if (arr[1] == ID_OCEAN && arr[3] == ID_OCEAN && arr[4] == ID_OCEAN && arr[5] == ID_OCEAN && arr[7] == ID_OCEAN) {
+                return ID_DEEP_OCEAN;
+            } else {
+                return arr[4];
+            }
+        } finally {
+            alloc.release(arr);
+        }
     }
 }

@@ -18,49 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer;
+package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.daporkchop.lib.unsafe.PUnsafe;
-import net.minecraft.world.gen.layer.GenLayerRiverMix;
-
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import net.minecraft.world.gen.layer.GenLayerHills;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerRiverMix
+ * @see GenLayerHills
  */
-public class FastLayerRiverMix extends FastLayer {
-    protected static final long RIVERPARENT_OFFSET = PUnsafe.pork_getOffset(FastLayerRiverMix.class, "riverParent");
-
-    protected final FastLayer riverParent = null;
-
-    public FastLayerRiverMix(long seed) {
+public class FastLayerHills extends FastLayer {
+    public FastLayerHills(long seed) {
         super(seed);
     }
 
     @Override
-    public void init(@NonNull FastLayer[] children) {
-        super.init(children);
-        PUnsafe.putObject(this, RIVERPARENT_OFFSET, children[1]);
-    }
-
-    @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int biome = this.parent.getSingle(alloc, x, z);
-        if (biome != ID_OCEAN && biome != ID_DEEP_OCEAN) {
-            int river = this.riverParent.getSingle(alloc, x, z);
-            if (river == ID_RIVER) {
-                if (biome == ID_ICE_PLAINS) {
-                    return ID_FROZEN_RIVER;
-                } else if (biome != ID_MUSHROOM_ISLAND && biome != ID_MUSHROOM_ISLAND_SHORE) {
-                    return biome;
-                } else {
-                    return ID_MUSHROOM_ISLAND_SHORE;
-                }
-            }
-        }
-        return biome;
+        return 0; //TODO
     }
 }

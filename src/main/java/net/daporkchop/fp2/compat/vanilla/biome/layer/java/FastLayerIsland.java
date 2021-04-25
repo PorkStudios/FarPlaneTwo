@@ -18,23 +18,31 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer;
+package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerBiomeEdge;
+import net.minecraft.world.gen.layer.GenLayerIsland;
+
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerBiomeEdge
+ * @see GenLayerIsland
  */
-public class FastLayerBiomeEdge extends FastLayer {
-    public FastLayerBiomeEdge(long seed) {
+public class FastLayerIsland extends FastLayer {
+    public FastLayerIsland(long seed) {
         super(seed);
     }
 
     @Override
+    public void init(@NonNull FastLayer[] children) {
+        //no-op
+    }
+
+    @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        return 0; //TODO
+        return (x | z) == 0 || nextInt(start(this.seed, x, z), 10) == 0 ? 1 : 0;
     }
 }

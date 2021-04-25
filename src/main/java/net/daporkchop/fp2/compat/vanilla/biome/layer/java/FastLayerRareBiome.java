@@ -18,37 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer;
+package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerAddSnow;
+import net.minecraft.world.gen.layer.GenLayerRareBiome;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerAddSnow
+ * @see GenLayerRareBiome
  */
-public class FastLayerAddSnow extends FastLayer {
-    public FastLayerAddSnow(long seed) {
+public class FastLayerRareBiome extends FastLayer {
+    public FastLayerRareBiome(long seed) {
         super(seed);
     }
 
     @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
         int v = this.parent.getSingle(alloc, x, z);
-        if (v == 0) {
-            return 0;
-        }
-
-        int r = nextInt(start(this.seed, x, z), 6);
-        if (r == 0) {
-            return 4;
-        } else if (r == 1) {
-            return 3;
-        } else {
-            return 1;
-        }
+        return v == ID_PLAINS && nextInt(start(this.seed, x, z), 57) == 0 ? ID_MUTATED_PLAINS : v;
     }
 }

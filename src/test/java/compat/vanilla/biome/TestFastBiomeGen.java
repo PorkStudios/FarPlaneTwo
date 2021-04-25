@@ -21,8 +21,7 @@
 package compat.vanilla.biome;
 
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerIsland;
-import net.daporkchop.fp2.compat.vanilla.biome.nativelayer.NativeFastLayerIsland;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProviderContainer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.init.Bootstrap;
 import net.minecraft.world.gen.layer.GenLayer;
@@ -41,8 +40,6 @@ import net.minecraft.world.gen.layer.IntCache;
 import org.junit.Test;
 
 import java.util.SplittableRandom;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.LongFunction;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -56,9 +53,9 @@ public class TestFastBiomeGen {
             Bootstrap.register();
         }
 
-        GET_CHILDREN.put(GenLayerRandomValues.class, layer -> new GenLayer[0]);
+        GET_PARENTS.put(GenLayerRandomValues.class, layer -> new GenLayer[0]);
 
-        FAST_MAPPERS.put(GenLayerRandomValues.class, layer -> new FastLayerRandomValues(layer.worldGenSeed, ((GenLayerRandomValues) layer).limit));
+        LAYER_CONVERTERS.put(GenLayerRandomValues.class, layer -> new FastLayerRandomValues(layer.worldGenSeed, ((GenLayerRandomValues) layer).limit));
     }
 
     @Test
@@ -129,11 +126,6 @@ public class TestFastBiomeGen {
     }
 
     @Test
-    public void testIslandNative() {
-        this.testFastLayers(FastLayerIsland::new, NativeFastLayerIsland::new);
-    }
-
-    @Test
     public void testRareBiome() {
         this.testLayers(new GenLayerRareBiome(1L, new GenLayerRandomValues(0L)));
     }
@@ -179,14 +171,14 @@ public class TestFastBiomeGen {
     }
 
     private void testLayers(GenLayer vanilla) {
-        if (true || !(vanilla instanceof GenLayerIsland)) { //TODO: remove this
+        if (!(vanilla instanceof GenLayerIsland)) { //TODO: remove this
             return;
         }
 
         SplittableRandom r = new SplittableRandom(12345L);
 
         vanilla.initWorldGenSeed(r.nextLong());
-        FastLayer fast = makeFast(vanilla)[0];
+        FastLayer fast = FastLayerProviderContainer.INSTANCE.makeFast(vanilla)[0];
 
         this.testAreas(vanilla, fast, 0, 0, 2, 2);
         this.testAreas(vanilla, fast, -1, -1, 2, 2);
@@ -215,45 +207,6 @@ public class TestFastBiomeGen {
             }
         } finally {
             alloc.release(fastGrid);
-        }
-    }
-
-    private void testFastLayers(LongFunction<FastLayer> fs0, LongFunction<FastLayer> fs1) {
-        SplittableRandom r = new SplittableRandom(12345L);
-
-        long seed = r.nextLong();
-        FastLayer f0 = fs0.apply(seed);
-        FastLayer f1 = fs1.apply(seed);
-
-        this.testAreas(f0, f1, 0, 0, 2, 2);
-        this.testAreas(f0, f1, -1, -1, 2, 2);
-        this.testAreas(f0, f1, 0, 0, 20, 10);
-        this.testAreas(f0, f1, 10, 10, 21, 21);
-        this.testAreas(f0, f1, -10, -10, 21, 21);
-
-        for (int i = 0; i < 256; i++) {
-            this.testAreas(f0, f1, r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(256) + 1, r.nextInt(256) + 1);
-        }
-    }
-
-    private void testAreas(FastLayer f0, FastLayer f1, int areaX, int areaZ, int sizeX, int sizeZ) {
-        IntArrayAllocator alloc = IntArrayAllocator.DEFAULT.get();
-        int[] g0 = alloc.get(sizeX * sizeZ);
-        int[] g1 = alloc.get(sizeX * sizeZ);
-        try {
-            f0.getGrid(alloc, areaX, areaZ, sizeX, sizeZ, g0);
-            f1.getGrid(alloc, areaX, areaZ, sizeX, sizeZ, g1);
-
-            for (int i = 0, dx = 0; dx < sizeX; dx++) {
-                for (int dz = 0; dz < sizeZ; dz++, i++) {
-                    int referenceValue = g0[i];
-                    int fastValue = g1[i];
-                    checkState(referenceValue == fastValue, "at (%d, %d): fast: %d != expected: %d", areaX + dx, areaZ + dz, fastValue, referenceValue);
-                }
-            }
-        } finally {
-            alloc.release(g1);
-            alloc.release(g0);
         }
     }
 }

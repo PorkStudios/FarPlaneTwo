@@ -18,43 +18,50 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome;
+package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProviderContainer;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeProvider;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.world.gen.layer.GenLayerRiverMix;
+
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
+ * @see GenLayerRiverMix
  */
-public class FastThreadSafeBiomeProvider implements IBiomeProvider {
-    public FastThreadSafeBiomeProvider(@NonNull BiomeProvider provider) {
-        FastLayer[] fastLayers = FastLayerProviderContainer.INSTANCE.makeFast(provider.genBiomes, provider.biomeIndexLayer);
-    }
+public class FastLayerRiverMix extends FastLayer {
+    protected static final long RIVERPARENT_OFFSET = PUnsafe.pork_getOffset(FastLayerRiverMix.class, "riverParent");
 
-    //TODO: implement everything
+    protected final FastLayer riverParent = null;
 
-    @Override
-    public Biome biome(int blockX, int blockZ) {
-        return null;
+    public FastLayerRiverMix(long seed) {
+        super(seed);
     }
 
     @Override
-    public int biomeId(int blockX, int blockZ) {
-        return 0;
+    public void init(@NonNull FastLayer[] children) {
+        super.init(children);
+        PUnsafe.putObject(this, RIVERPARENT_OFFSET, children[1]);
     }
 
     @Override
-    public void biomes(@NonNull Biome[] arr, int blockX, int blockZ, int sizeX, int sizeZ) {
-    }
-
-    @Override
-    public void biomeIds(@NonNull byte[] arr, int blockX, int blockZ, int sizeX, int sizeZ) {
-    }
-
-    @Override
-    public void biomeIdsForGeneration(@NonNull int[] arr, int x, int z, int sizeX, int sizeZ) {
+    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+        int biome = this.parent.getSingle(alloc, x, z);
+        if (biome != ID_OCEAN && biome != ID_DEEP_OCEAN) {
+            int river = this.riverParent.getSingle(alloc, x, z);
+            if (river == ID_RIVER) {
+                if (biome == ID_ICE_PLAINS) {
+                    return ID_FROZEN_RIVER;
+                } else if (biome != ID_MUSHROOM_ISLAND && biome != ID_MUSHROOM_ISLAND_SHORE) {
+                    return biome;
+                } else {
+                    return ID_MUSHROOM_ISLAND_SHORE;
+                }
+            }
+        }
+        return biome;
     }
 }

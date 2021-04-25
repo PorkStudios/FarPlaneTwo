@@ -18,40 +18,22 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.nativelayer;
+#include <fp2.h>
+#include "NativeFastLayer.h"
 
-import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerIsland;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+/*FP2_JNI(void, NativeLayerProvider, init0) (JNIEnv* env, jclass cla) {
+    fp2::init(env);
+    std::cout << "init0 done!" << std::endl;
+}*/
 
-import static net.daporkchop.lib.common.util.PValidation.*;
+FP2_JNI(void, NativeFastLayerIsland, getGrid0) (JNIEnv* env, jobject obj,
+        jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out) {
+    fp2::pinned_int_array out(_out);
 
-/**
- * @author DaPorkchop_
- */
-public class NativeFastLayerIsland extends FastLayerIsland {
-    static {
-        System.load("/media/daporkchop/PortableIDE/Minecraft/FarPlaneTwo/src/main/resources/net/daporkchop/fp2/compat/vanilla/biome/x86_64-linux-gnu.so");
-
-        init0();
-    }
-
-    private static native void init0();
-
-    public NativeFastLayerIsland(long seed) {
-        super(seed);
-    }
-
-    @Override
-    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
-        checkIndex(out.length >= sizeX * sizeZ);
-
-        this.getGrid0(this.seed, x, z, sizeX, sizeZ, out);
-
-        if (x <= 0 && z <= 0 && x + sizeX >= 0 && z + sizeZ >= 0) { //(0,0) is always set to 1
-            out[-x * sizeZ - z] = 1;
+    for (int i = 0, dx = 0; dx < sizeX; dx++) {
+        for (int dz = 0; dz < sizeZ; dz++, i++) {
+            fp2::biome::fastlayer::rng rng(seed, x + dx, z + dz);
+            out[i] = rng.nextInt<10>() == 0;
         }
     }
-
-    protected native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out);
 }

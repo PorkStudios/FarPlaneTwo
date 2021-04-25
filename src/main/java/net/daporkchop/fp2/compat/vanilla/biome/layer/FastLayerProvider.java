@@ -21,38 +21,25 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerRiver;
-
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import net.daporkchop.lib.natives.Feature;
+import net.daporkchop.lib.natives.FeatureBuilder;
+import net.minecraft.world.gen.layer.GenLayer;
 
 /**
+ * Provides faster alternatives to the standard Minecraft {@link GenLayer}s.
+ *
  * @author DaPorkchop_
- * @see GenLayerRiver
  */
-public class FastLayerRiver extends FastLayer {
-    private static int riverFilter(int i) {
-        return i >= 2 ? 2 + (i & 1) : i;
-    }
+public interface FastLayerProvider extends Feature<FastLayerProvider> {
 
-    public FastLayerRiver(long seed) {
-        super(seed);
-    }
-
-    @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int[] arr = alloc.get(3 * 3);
-        try {
-            this.parent.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
-
-            int center = riverFilter(arr[4]);
-            if (center == riverFilter(arr[1]) && center == riverFilter(arr[3]) && center == riverFilter(arr[5]) && center == riverFilter(arr[7])) {
-                return -1;
-            } else {
-                return ID_RIVER;
-            }
-        } finally {
-            alloc.release(arr);
-        }
-    }
+    /**
+     * Converts the given {@link GenLayer}s to their {@link FastLayer} equivalents.
+     * <p>
+     * Note that if you have multiple {@link GenLayer}s to convert, you should convert them all at once with a single invocation of this method, rather than
+     * converting them each individually. Doing so may provide a not insignificant performance boost.
+     *
+     * @param inputs the {@link GenLayer}s
+     * @return the converted {@link FastLayer}s, in the same order as the inputs were provided in
+     */
+    FastLayer[] makeFast(@NonNull GenLayer... inputs);
 }

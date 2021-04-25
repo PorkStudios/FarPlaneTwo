@@ -18,18 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer;
+package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerHills;
+import net.minecraft.world.gen.layer.GenLayerVoronoiZoom;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerHills
+ * @see GenLayerVoronoiZoom
  */
-public class FastLayerHills extends FastLayer {
-    public FastLayerHills(long seed) {
+public class FastLayerVoronoiZoom extends FastLayer {
+    public FastLayerVoronoiZoom(long seed) {
         super(seed);
     }
 

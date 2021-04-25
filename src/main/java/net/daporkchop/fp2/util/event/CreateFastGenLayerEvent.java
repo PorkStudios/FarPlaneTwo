@@ -18,23 +18,30 @@
  *
  */
 
-#include <fp2.h>
-#include "NativeFastLayer.h"
+package net.daporkchop.fp2.util.event;
 
-#include <unistd.h>
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
+import net.minecraft.world.gen.layer.GenLayer;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.eventhandler.Event;
 
-FP2_JNI(void, nativelayer_NativeFastLayerIsland, init0) (JNIEnv* env, jclass cla) {
-    fp2::init(env);
-}
+/**
+ * Allows mod developers to create their own {@link FastLayer} implementation for non-vanilla {@link GenLayer}s.
+ * <p>
+ * Fired on {@link MinecraftForge#EVENT_BUS}.
+ *
+ * @author DaPorkchop_
+ */
+@RequiredArgsConstructor
+@Getter
+@Setter
+public final class CreateFastGenLayerEvent extends Event {
+    @NonNull
+    protected final GenLayer originalLayer;
 
-FP2_JNI(void, nativelayer_NativeFastLayerIsland, getGrid0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out) {
-    fp2::pinned_int_array out(_out);
-
-    for (int i = 0, dx = 0; dx < sizeX; dx++) {
-        for (int dz = 0; dz < sizeZ; dz++, i++) {
-            fp2::biome::fastlayer::rng rng(seed, x + dx, z + dz);
-            out[i] = rng.nextInt<10>() == 0;
-        }
-    }
+    protected FastLayer fastLayer;
 }
