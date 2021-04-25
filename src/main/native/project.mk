@@ -2,8 +2,6 @@ export SHELL		:=	/bin/bash
 
 export NPROC		:=	$(shell nproc)
 
-export TARGET		:=	$(shell basename $(CURDIR))
-
 export ROOT_DIR		:=	$(CURDIR)
 export NATIVE_DIR   :=  $(ROOT_DIR)/src/main/native
 export TOOLCHAIN_DIR	:=	$(NATIVE_DIR)/toolchain
@@ -11,37 +9,22 @@ export LIBS_DIR		:=	$(NATIVE_DIR)/lib
 export COMPILE_DIR  :=  $(ROOT_DIR)/build/native
 export OUTPUT_DIR   :=  $(ROOT_DIR)/src/main/resources/net/daporkchop/fp2
 
-export HEADERFILES	:=	$(wildcard $(NATIVE_DIR)/*.h) $(wildcard $(NATIVE_DIR)/fp2/*.h) $(wildcard $(NATIVE_DIR)/fp2/**/*.h)
-
 export CFLAGS		:=	-O2 -ffast-math -fPIC -ffunction-sections -fdata-sections -fvisibility=hidden
 export CXXFLAGS		:=	$(CFLAGS) -std=c++17
 export LDFLAGS		:=	$(CFLAGS) -shared -Wl,--gc-sections
 
-ifndef FP2_NATIVES_DEBUG
-export CFLAGS		:=	$(CFLAGS)
-export BUILD_TYPE	:=	release
-else
-export CFLAGS		:=	$(CFLAGS) -DFP2_NATIVES_DEBUG
-export BUILD_TYPE	:=	debug
-endif
-$(info natives: building for $(BUILD_TYPE))
-
+export HEADERFILES	:=	$(wildcard $(NATIVE_DIR)/*.h) $(wildcard $(NATIVE_DIR)/fp2/*.h) $(wildcard $(NATIVE_DIR)/fp2/**/*.h)
 export INCLUDES		:=	$(NATIVE_DIR) $(JAVA_HOME)include $(JAVA_HOME)include/linux
 
 export ARCHS		:=	aarch64-linux-gnu x86_64-linux-gnu x86_64-w64-mingw32
-#export ARCHS		:=	$(foreach arch,$(ARCHS),$(if $(shell which $(arch)-gcc),$(arch)))
-#export ARCHS		:=	$(foreach arch,$(ARCHS),$(if $(shell which $(arch)-g++),$(arch)))
-export ARCH_TASKS	:=	$(foreach arch,$(ARCHS),build.$(arch))
-
 export MODULES		:=  compat/vanilla/biome/layer/c
 
-export LIB_URL_BASE	:=	https://cloud.daporkchop.net/programs/source
 export LIBS			:=  vectorclass-2.01.03
 export LIB_TASKS	:=  $(addprefix $(LIBS_DIR)/,$(addsuffix .dl,$(LIBS)))
 
 .PHONY: build clean .FORCE
 
-build: $(ARCH_TASKS) $(LIB_TASKS)
+build: $(foreach arch,$(ARCHS),build.$(arch)) $(LIB_TASKS)
 
 build.%: .FORCE $(foreach module,$(MODULES),%,$(module).lib)
 	@echo built libraries for $(shell echo '$@' | perl -n -e '/build\.(.+)/ && print $$1')!
@@ -58,7 +41,7 @@ clean:
 %.dl:
 	@[ -d $(LIBS_DIR) ] || mkdir -p $(LIBS_DIR)
 	@echo "downloading source for $(basename $(notdir $@))"
-	@curl -o - $(LIB_URL_BASE)/$(basename $(notdir $@)).tar.gz | tar zxf -
+	@curl -o - https://cloud.daporkchop.net/programs/source/$(basename $(notdir $@)).tar.gz | tar zxf -
 	@mv $(basename $(notdir $@))/ $(LIBS_DIR)
 	@touch $@
 

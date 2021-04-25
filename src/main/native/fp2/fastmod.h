@@ -5,7 +5,7 @@
 #ifndef FASTMOD_H
 #define FASTMOD_H
 
-#include <bits/stdc++.h>
+#include <cstdint>
 
 namespace fp2 {
     namespace _fastmod {
