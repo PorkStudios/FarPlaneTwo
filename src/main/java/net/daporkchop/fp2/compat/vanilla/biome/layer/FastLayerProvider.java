@@ -31,6 +31,10 @@ import net.minecraft.world.gen.layer.GenLayer;
  * @author DaPorkchop_
  */
 public interface FastLayerProvider extends Feature<FastLayerProvider> {
+    FastLayerProvider INSTANCE = FeatureBuilder.<FastLayerProvider>create(FastLayerProvider.class)
+            .addNative("net.daporkchop.fp2.compat.vanilla.biome.layer.c.NativeLayerProvider")
+            .addJava("net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaLayerProvider")
+            .build(true);
 
     /**
      * Converts the given {@link GenLayer}s to their {@link FastLayer} equivalents.

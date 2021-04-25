@@ -36,10 +36,10 @@
 #define FP2_JNI(RETURN_TYPE, CLASS, METHOD_NAME) FP2_JNI_EVALUATOR(RETURN_TYPE, FP2_MODULE, CLASS, METHOD_NAME)
 
 namespace fp2 {
-    static inline JNIEnv* ENV;
+    inline JNIEnv* ENV;
 
     inline void init(JNIEnv* env) {
-        fp2::ENV = env;
+        ENV = env;
     }
 
     //

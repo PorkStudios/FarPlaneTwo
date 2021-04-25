@@ -22,7 +22,7 @@ package net.daporkchop.fp2.compat.vanilla.biome;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProviderContainer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
 
@@ -31,7 +31,7 @@ import net.minecraft.world.biome.BiomeProvider;
  */
 public class FastThreadSafeBiomeProvider implements IBiomeProvider {
     public FastThreadSafeBiomeProvider(@NonNull BiomeProvider provider) {
-        FastLayer[] fastLayers = FastLayerProviderContainer.INSTANCE.makeFast(provider.genBiomes, provider.biomeIndexLayer);
+        FastLayer[] fastLayers = FastLayerProvider.INSTANCE.makeFast(provider.genBiomes, provider.biomeIndexLayer);
     }
 
     //TODO: implement everything

@@ -21,7 +21,7 @@
 package compat.vanilla.biome;
 
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProviderContainer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.init.Bootstrap;
 import net.minecraft.world.gen.layer.GenLayer;
@@ -178,7 +178,7 @@ public class TestFastBiomeGen {
         SplittableRandom r = new SplittableRandom(12345L);
 
         vanilla.initWorldGenSeed(r.nextLong());
-        FastLayer fast = FastLayerProviderContainer.INSTANCE.makeFast(vanilla)[0];
+        FastLayer fast = FastLayerProvider.INSTANCE.makeFast(vanilla)[0];
 
         this.testAreas(vanilla, fast, 0, 0, 2, 2);
         this.testAreas(vanilla, fast, -1, -1, 2, 2);

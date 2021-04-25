@@ -167,7 +167,6 @@ processResources {
     from(sourceSets.main.resources.srcDirs) {
         exclude "mcmod.info"
     }
-    rename '(.+_at.cfg)', 'META-INF/$1'
 }
 
 mixin {

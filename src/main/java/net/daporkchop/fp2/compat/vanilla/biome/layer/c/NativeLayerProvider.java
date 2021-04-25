@@ -20,7 +20,6 @@
 
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
-import net.daporkchop.fp2.compat.vanilla.biome.layer.c.NativeFastLayerIsland;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaLayerProvider;
 import net.minecraft.world.gen.layer.GenLayerIsland;
 
@@ -33,7 +32,6 @@ public class NativeLayerProvider extends JavaLayerProvider {
     private static native void init0();
 
     protected NativeLayerProvider() {
-        System.load("/media/daporkchop/PortableIDE/Minecraft/FarPlaneTwo/src/main/resources/net/daporkchop/fp2/compat/vanilla/biome/layer/c/x86_64-linux-gnu.so");
         init0(); //ensure JNI libs are initialized
 
         this.fastMapperOverrides.put(GenLayerIsland.class, layer -> new NativeFastLayerIsland(layer.worldGenSeed));

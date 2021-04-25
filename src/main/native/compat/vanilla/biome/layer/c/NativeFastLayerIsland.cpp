@@ -21,11 +21,6 @@
 #include <fp2.h>
 #include "NativeFastLayer.h"
 
-/*FP2_JNI(void, NativeLayerProvider, init0) (JNIEnv* env, jclass cla) {
-    fp2::init(env);
-    std::cout << "init0 done!" << std::endl;
-}*/
-
 FP2_JNI(void, NativeFastLayerIsland, getGrid0) (JNIEnv* env, jobject obj,
         jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out) {
     fp2::pinned_int_array out(_out);

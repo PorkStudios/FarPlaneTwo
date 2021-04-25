@@ -19,3 +19,7 @@
  */
 
 #include <fp2.h>
+
+FP2_JNI(void, NativeLayerProvider, init0) (JNIEnv* env, jclass cla) {
+    fp2::init(env);
+}
