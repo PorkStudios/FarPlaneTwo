@@ -18,38 +18,27 @@
  *
  */
 
-package compat.vanilla.biome;
+#include <fp2.h>
+#include "NativeFastLayer.h"
 
-import net.minecraft.world.gen.layer.GenLayer;
-import net.minecraft.world.gen.layer.IntCache;
+#include <lib/vectorclass-2.01.03/vectorclass.h>
 
-import static net.daporkchop.lib.common.util.PValidation.*;
+FP2_JNI(void, NativeFastLayerRemoveTooMuchOcean, getGrid0) (JNIEnv* env, jobject obj,
+        jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out, jintArray _in) {
+    fp2::pinned_int_array out(env, _out);
+    fp2::pinned_int_array in(env, _in);
 
-/**
- * @author DaPorkchop_
- */
-public class GenLayerRandomValues extends GenLayer {
-    protected final int limit;
+    const Vec4i neighbor_offsets(-1 * (sizeZ + 2) + 0, 0 * (sizeZ + 2) + -1, 0 * (sizeZ + 2) + 1, 1 * (sizeZ + 2) + 0);
 
-    public GenLayerRandomValues(long seed, int limit) {
-        super(seed);
+    for (int32_t outIdx = 0, dx = 0; dx < sizeX; dx++) {
+        for (int32_t inIdx = (dx + 1) * (sizeZ + 2) + 1, dz = 0; dz < sizeZ; inIdx++, dz++, outIdx++) {
+            auto center = in[inIdx];
 
-        this.limit = positive(limit, "limit");
-    }
-
-    public GenLayerRandomValues(long seed) {
-        this(seed, 256);
-    }
-
-    @Override
-    public int[] getInts(int areaX, int areaY, int areaWidth, int areaHeight) {
-        int[] arr = IntCache.getIntCache(areaWidth * areaHeight);
-        for (int dy = 0; dy < areaHeight; ++dy) {
-            for (int dx = 0; dx < areaWidth; ++dx) {
-                this.initChunkSeed(areaX + dx, areaY + dy);
-                arr[dy * areaWidth + dx] = this.nextInt(this.limit);
-            }
+            out[outIdx] = center == 0
+                        && horizontal_or(lookup<(1 << 30)>(inIdx + neighbor_offsets, &in[0])) == 0
+                        && fp2::biome::fastlayer::rng(seed, x + dx, z + dz).nextInt<2>() == 0
+                    ? 1
+                    : center;
         }
-        return arr;
     }
 }

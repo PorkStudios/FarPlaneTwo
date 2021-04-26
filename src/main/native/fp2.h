@@ -36,46 +36,40 @@
 #define FP2_JNI(RETURN_TYPE, CLASS, METHOD_NAME) FP2_JNI_EVALUATOR(RETURN_TYPE, FP2_MODULE, CLASS, METHOD_NAME)
 
 namespace fp2 {
-    inline JNIEnv* ENV;
-
-    inline void init(JNIEnv* env) {
-        ENV = env;
-    }
-
     //
     //"throw exception from jni" helper methods
     //
 
-    inline void throwException(const char* msg)  {
-        jclass clazz = ENV->FindClass("net/daporkchop/lib/natives/NativeException");
+    inline void throwException(JNIEnv* env, const char* msg)  {
+        jclass clazz = env->FindClass("net/daporkchop/lib/natives/NativeException");
 
-        ENV->Throw((jthrowable) ENV->NewObject(
+        env->Throw((jthrowable) env->NewObject(
             clazz,
-            ENV->GetMethodID(clazz, "<init>", "(Ljava/lang/String;)V"),
-            ENV->NewStringUTF(msg)
+            env->GetMethodID(clazz, "<init>", "(Ljava/lang/String;)V"),
+            env->NewStringUTF(msg)
         ));
         throw 0;
     }
 
-    inline void throwException(const char* msg, jint err)  {
-        jclass clazz = ENV->FindClass("net/daporkchop/lib/natives/NativeException");
+    inline void throwException(JNIEnv* env, const char* msg, jint err)  {
+        jclass clazz = env->FindClass("net/daporkchop/lib/natives/NativeException");
 
-        ENV->Throw((jthrowable) ENV->NewObject(
+        env->Throw((jthrowable) env->NewObject(
             clazz,
-            ENV->GetMethodID(clazz, "<init>", "(Ljava/lang/String;I)V"),
-            ENV->NewStringUTF(msg),
+            env->GetMethodID(clazz, "<init>", "(Ljava/lang/String;I)V"),
+            env->NewStringUTF(msg),
             err
         ));
         throw 0;
     }
 
-    inline void throwException(const char* msg, jlong err)  {
-        jclass clazz = ENV->FindClass("net/daporkchop/lib/natives/NativeException");
+    inline void throwException(JNIEnv* env, const char* msg, jlong err)  {
+        jclass clazz = env->FindClass("net/daporkchop/lib/natives/NativeException");
 
-        ENV->Throw((jthrowable) ENV->NewObject(
+        env->Throw((jthrowable) env->NewObject(
             clazz,
-            ENV->GetMethodID(clazz, "<init>", "(Ljava/lang/String;J)V"),
-            ENV->NewStringUTF(msg),
+            env->GetMethodID(clazz, "<init>", "(Ljava/lang/String;J)V"),
+            env->NewStringUTF(msg),
             err
         ));
         throw 0;
@@ -90,16 +84,17 @@ namespace fp2 {
     private:
         T* _ptr;
         const JAVA& _java;
+        JNIEnv* _env;
 
     public:
-        pinned_array(const JAVA& java): _java(java) {
-            if (!(_ptr = (T*) ENV->GetPrimitiveArrayCritical(_java, nullptr))) {
-                throwException("unable to pin array!");
+        pinned_array(JNIEnv* env, const JAVA& java): _java(java), _env(env) {
+            if (!(_ptr = (T*) _env->GetPrimitiveArrayCritical(_java, nullptr))) {
+                throwException(_env, "unable to pin array!");
             }
         }
 
         ~pinned_array() {
-            ENV->ReleasePrimitiveArrayCritical(_java, _ptr, 0);
+            _env->ReleasePrimitiveArrayCritical(_java, _ptr, 0);
         }
 
         T& operator[](const std::size_t idx) {

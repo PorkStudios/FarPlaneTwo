@@ -34,6 +34,7 @@ import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerDeepOcean;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerFuzzyZoom;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerHills;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerIsland;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRandomValues;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRareBiome;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRemoveTooMuchOcean;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRiver;
@@ -44,6 +45,7 @@ import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerSmooth;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerVoronoiZoom;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerZoom;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.c.NativeFastLayerIsland;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
 import net.minecraft.init.Biomes;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
@@ -158,6 +160,7 @@ public class BiomeHelper {
 
     static {
         Function<GenLayer, GenLayer[]> parent = genLayer -> new GenLayer[]{ genLayer.parent };
+        Function<GenLayer, GenLayer[]> none = genLayer -> new GenLayer[0];
 
         GET_PARENTS.put(GenLayerAddIsland.class, parent);
         GET_PARENTS.put(GenLayerAddMushroomIsland.class, parent);
@@ -168,7 +171,7 @@ public class BiomeHelper {
         GET_PARENTS.put(GenLayerEdge.class, parent);
         GET_PARENTS.put(GenLayerFuzzyZoom.class, parent);
         GET_PARENTS.put(GenLayerHills.class, genLayer -> new GenLayer[]{ genLayer.parent, ((GenLayerHills) genLayer).riverLayer });
-        GET_PARENTS.put(GenLayerIsland.class, genLayer -> new GenLayer[0]);
+        GET_PARENTS.put(GenLayerIsland.class, none);
         GET_PARENTS.put(GenLayerRareBiome.class, parent);
         GET_PARENTS.put(GenLayerRemoveTooMuchOcean.class, parent);
         GET_PARENTS.put(GenLayerRiver.class, parent);
@@ -181,6 +184,8 @@ public class BiomeHelper {
         GET_PARENTS.put(GenLayerSmooth.class, parent);
         GET_PARENTS.put(GenLayerVoronoiZoom.class, parent);
         GET_PARENTS.put(GenLayerZoom.class, parent);
+
+        GET_PARENTS.put(GenLayerRandomValues.class, none);
     }
 
     static {
@@ -203,6 +208,8 @@ public class BiomeHelper {
         LAYER_CONVERTERS.put(GenLayerSmooth.class, layer -> new FastLayerSmooth(layer.worldGenSeed));
         LAYER_CONVERTERS.put(GenLayerVoronoiZoom.class, layer -> new FastLayerVoronoiZoom(layer.worldGenSeed));
         LAYER_CONVERTERS.put(GenLayerZoom.class, layer -> new FastLayerZoom(layer.worldGenSeed));
+
+        LAYER_CONVERTERS.put(GenLayerRandomValues.class, layer -> new FastLayerRandomValues(layer.worldGenSeed, ((GenLayerRandomValues) layer).limit()));
     }
 
     static {

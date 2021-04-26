@@ -18,17 +18,42 @@
  *
  */
 
-#include <fp2.h>
-#include "NativeFastLayer.h"
+package net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla;
 
-FP2_JNI(void, NativeFastLayerIsland, getGrid0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out) {
-    fp2::pinned_int_array out(env, _out);
+import lombok.Getter;
+import net.minecraft.world.gen.layer.GenLayer;
+import net.minecraft.world.gen.layer.IntCache;
 
-    for (int32_t outIdx = 0, dx = 0; dx < sizeX; dx++) {
-        for (int32_t dz = 0; dz < sizeZ; dz++, outIdx++) {
-            fp2::biome::fastlayer::rng rng(seed, x + dx, z + dz);
-            out[outIdx] = rng.nextInt<10>() == 0;
+import static net.daporkchop.lib.common.util.PValidation.*;
+
+/**
+ * {@link GenLayer} implementation which generates psuedorandom values between {@code 0} and a given maximum bound (exclusive).
+ *
+ * @author DaPorkchop_
+ */
+@Getter
+public class GenLayerRandomValues extends GenLayer {
+    protected final int limit;
+
+    public GenLayerRandomValues(long seed, int limit) {
+        super(seed);
+
+        this.limit = positive(limit, "limit");
+    }
+
+    public GenLayerRandomValues(long seed) {
+        this(seed, 256);
+    }
+
+    @Override
+    public int[] getInts(int areaX, int areaY, int areaWidth, int areaHeight) {
+        int[] arr = IntCache.getIntCache(areaWidth * areaHeight);
+        for (int dy = 0; dy < areaHeight; ++dy) {
+            for (int dx = 0; dx < areaWidth; ++dx) {
+                this.initChunkSeed(areaX + dx, areaY + dy);
+                arr[dy * areaWidth + dx] = this.nextInt(this.limit);
+            }
         }
+        return arr;
     }
 }

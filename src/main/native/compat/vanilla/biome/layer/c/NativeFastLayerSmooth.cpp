@@ -21,14 +21,29 @@
 #include <fp2.h>
 #include "NativeFastLayer.h"
 
-FP2_JNI(void, NativeFastLayerIsland, getGrid0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out) {
+#include <lib/vectorclass-2.01.03/vectorclass.h>
+
+FP2_JNI(void, NativeFastLayerSmooth, getGrid0) (JNIEnv* env, jobject obj,
+        jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out, jintArray _in) {
     fp2::pinned_int_array out(env, _out);
+    fp2::pinned_int_array in(env, _in);
+
+    const Vec4i neighbor_offsets(-1 * (sizeZ + 2) + 0, 0 * (sizeZ + 2) + -1, 1 * (sizeZ + 2) + 0, 0 * (sizeZ + 2) + 1);
 
     for (int32_t outIdx = 0, dx = 0; dx < sizeX; dx++) {
-        for (int32_t dz = 0; dz < sizeZ; dz++, outIdx++) {
-            fp2::biome::fastlayer::rng rng(seed, x + dx, z + dz);
-            out[outIdx] = rng.nextInt<10>() == 0;
+        for (int32_t inIdx = (dx + 1) * (sizeZ + 2) + 1, dz = 0; dz < sizeZ; inIdx++, dz++, outIdx++) {
+            int v[4]; //load values with single instruction using SSE
+            lookup<(1 << 30)>(inIdx + neighbor_offsets, &in[0]).store(v);
+
+            if (v[0] == v[2] && v[1] == v[3]) {
+                out[outIdx] = fp2::biome::fastlayer::rng(seed, x + dx, z + dz).nextInt<2>() == 0 ? v[0] : v[1];
+            } else if (v[0] == v[2]) {
+                out[outIdx] = v[0];
+            } else if (v[1] == v[3]) {
+                out[outIdx] = v[1];
+            } else {
+                out[outIdx] = in[inIdx];
+            }
         }
     }
 }

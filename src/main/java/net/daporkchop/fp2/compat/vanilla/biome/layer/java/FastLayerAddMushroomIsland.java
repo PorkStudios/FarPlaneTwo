@@ -32,7 +32,6 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @see GenLayerAddMushroomIsland
  */
 public class FastLayerAddMushroomIsland extends FastLayer {
-
     public FastLayerAddMushroomIsland(long seed) {
         super(seed);
     }

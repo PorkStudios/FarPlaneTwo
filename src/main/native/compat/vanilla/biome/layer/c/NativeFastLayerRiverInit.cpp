@@ -18,47 +18,18 @@
  *
  */
 
-package compat.vanilla.biome;
+#include <fp2.h>
+#include "NativeFastLayer.h"
 
-import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+FP2_JNI(void, NativeFastLayerRiverInit, getGrid0) (JNIEnv* env, jobject obj,
+        jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out) {
+    fp2::pinned_int_array out(env, _out);
 
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
-
-/**
- * @author DaPorkchop_
- */
-public class FastLayerRandomValues extends FastLayer {
-    protected final int limit;
-
-    public FastLayerRandomValues(long seed, int limit) {
-        super(seed);
-
-        this.limit = positive(limit, "limit");
-    }
-
-    public FastLayerRandomValues(long seed) {
-        this(seed, 256);
-    }
-
-    @Override
-    public void init(@NonNull FastLayer[] children) {
-        //no-op
-    }
-
-    @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        return nextInt(start(this.seed, x, z), this.limit);
-    }
-
-    @Override
-    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
-        for (int i = 0, dx = 0; dx < sizeX; dx++) {
-            for (int dz = 0; dz < sizeZ; dz++) {
-                out[i++] = nextInt(start(this.seed, x + dx, z + dz), this.limit);
-            }
+    for (int32_t outIdx = 0, dx = 0; dx < sizeX; dx++) {
+        for (int32_t dz = 0; dz < sizeZ; dz++, outIdx++) {
+            out[outIdx] = out[outIdx] > 0
+                    ? fp2::biome::fastlayer::rng(seed, x + dx, z + dz).nextInt<299999>() + 2
+                    : 0;
         }
     }
 }

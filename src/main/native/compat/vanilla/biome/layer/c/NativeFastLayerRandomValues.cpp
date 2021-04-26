@@ -21,14 +21,16 @@
 #include <fp2.h>
 #include "NativeFastLayer.h"
 
-FP2_JNI(void, NativeFastLayerIsland, getGrid0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out) {
+FP2_JNI(void, NativeFastLayerRandomValues, getGrid0) (JNIEnv* env, jobject obj,
+        jlong seed, jint limit, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out) {
+    fp2::fastmod_s64 fm(limit); //prepare for fast modulo computation for large number of values
+
     fp2::pinned_int_array out(env, _out);
 
     for (int32_t outIdx = 0, dx = 0; dx < sizeX; dx++) {
         for (int32_t dz = 0; dz < sizeZ; dz++, outIdx++) {
             fp2::biome::fastlayer::rng rng(seed, x + dx, z + dz);
-            out[outIdx] = rng.nextInt<10>() == 0;
+            out[outIdx] = rng.nextInt_fast(fm, limit);
         }
     }
 }

@@ -40,6 +40,8 @@ import java.util.function.Function;
  */
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class JavaLayerProvider implements FastLayerProvider {
+    public static final JavaLayerProvider INSTANCE = new JavaLayerProvider();
+
     private static void addAllLayers(Map<GenLayer, GenLayer[]> childrenMap, GenLayer layer) {
         if (childrenMap.containsKey(layer)) {
             return; //don't re-add the same layer twice

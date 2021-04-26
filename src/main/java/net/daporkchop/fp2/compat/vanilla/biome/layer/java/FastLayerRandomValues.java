@@ -18,8 +18,40 @@
  *
  */
 
-#include <fp2.h>
+package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
-FP2_JNI(void, NativeLayerProvider, init0) (JNIEnv* env, jclass cla) {
-    fp2::init(env);
+import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
+
+/**
+ * @author DaPorkchop_
+ * @see GenLayerRandomValues
+ */
+public class FastLayerRandomValues extends FastLayer {
+    protected final int limit;
+
+    public FastLayerRandomValues(long seed, int limit) {
+        super(seed);
+
+        this.limit = positive(limit, "limit");
+    }
+
+    public FastLayerRandomValues(long seed) {
+        this(seed, 256);
+    }
+
+    @Override
+    public void init(@NonNull FastLayer[] children) {
+        //no-op
+    }
+
+    @Override
+    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+        return nextInt(start(this.seed, x, z), this.limit);
+    }
 }

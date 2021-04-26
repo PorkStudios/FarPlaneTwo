@@ -18,17 +18,30 @@
  *
  */
 
-#include <fp2.h>
-#include "NativeFastLayer.h"
+package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
-FP2_JNI(void, NativeFastLayerIsland, getGrid0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out) {
-    fp2::pinned_int_array out(env, _out);
+import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerIsland;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRiverInit;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
-    for (int32_t outIdx = 0, dx = 0; dx < sizeX; dx++) {
-        for (int32_t dz = 0; dz < sizeZ; dz++, outIdx++) {
-            fp2::biome::fastlayer::rng rng(seed, x + dx, z + dz);
-            out[outIdx] = rng.nextInt<10>() == 0;
-        }
+import static net.daporkchop.lib.common.util.PValidation.*;
+
+/**
+ * @author DaPorkchop_
+ */
+public class NativeFastLayerRiverInit extends FastLayerRiverInit {
+    public NativeFastLayerRiverInit(long seed) {
+        super(seed);
     }
+
+    @Override
+    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+        //needed parent area is same size as requested area, so we can have the parent write into the output array and then update it ourselves
+        this.parent.getGrid(alloc, x, z, sizeX, sizeZ, out);
+
+        this.getGrid0(this.seed, x, z, sizeX, sizeZ, out);
+    }
+
+    protected native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out);
 }

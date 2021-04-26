@@ -61,6 +61,24 @@ namespace fp2::biome::fastlayer {
             _state = update(_state, _seed);
             return i;
         }
+
+        inline int32_t nextInt_fast(const fp2::fastmod_s64& fm, const int32_t max) {
+            int32_t i = (int32_t) ((_state >> 24) % fm);
+            i += (i >> 31) & max; //equivalent to if (i < 0) { i += max; }
+
+            //update PRNG state
+            _state = update(_state, _seed);
+            return i;
+        }
+
+        inline int32_t nextInt(const int32_t max) {
+            int32_t i = (int32_t) ((_state >> 24) % max);
+            i += (i >> 31) & max; //equivalent to if (i < 0) { i += max; }
+
+            //update PRNG state
+            _state = update(_state, _seed);
+            return i;
+        }
     };
 }
 

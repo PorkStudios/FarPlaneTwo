@@ -21,14 +21,20 @@
 #include <fp2.h>
 #include "NativeFastLayer.h"
 
-FP2_JNI(void, NativeFastLayerIsland, getGrid0) (JNIEnv* env, jobject obj,
+constexpr uint32_t LOOKUP_TABLE[] = { //use a lookup table to make the inner loop branchless
+    4, 3, 1, 1, 1, 1
+};
+
+FP2_JNI(void, NativeFastLayerAddSnow, getGrid0) (JNIEnv* env, jobject obj,
         jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out) {
+    //this implementation updates the output array in-place
     fp2::pinned_int_array out(env, _out);
 
     for (int32_t outIdx = 0, dx = 0; dx < sizeX; dx++) {
         for (int32_t dz = 0; dz < sizeZ; dz++, outIdx++) {
-            fp2::biome::fastlayer::rng rng(seed, x + dx, z + dz);
-            out[outIdx] = rng.nextInt<10>() == 0;
+            if (out[outIdx] != 0) {
+                out[outIdx] = LOOKUP_TABLE[fp2::biome::fastlayer::rng(seed, x + dx, z + dz).nextInt<6>()];
+            }
         }
     }
 }

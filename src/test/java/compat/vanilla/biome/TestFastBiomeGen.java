@@ -22,40 +22,39 @@ package compat.vanilla.biome;
 
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProvider;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaLayerProvider;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.fp2.util.threading.fj.ThreadSafeForkJoinSupplier;
 import net.minecraft.init.Bootstrap;
 import net.minecraft.world.gen.layer.GenLayer;
 import net.minecraft.world.gen.layer.GenLayerAddIsland;
-import net.minecraft.world.gen.layer.GenLayerAddMushroomIsland;
 import net.minecraft.world.gen.layer.GenLayerAddSnow;
-import net.minecraft.world.gen.layer.GenLayerDeepOcean;
-import net.minecraft.world.gen.layer.GenLayerFuzzyZoom;
 import net.minecraft.world.gen.layer.GenLayerIsland;
-import net.minecraft.world.gen.layer.GenLayerRareBiome;
-import net.minecraft.world.gen.layer.GenLayerRiver;
+import net.minecraft.world.gen.layer.GenLayerRemoveTooMuchOcean;
 import net.minecraft.world.gen.layer.GenLayerRiverInit;
 import net.minecraft.world.gen.layer.GenLayerSmooth;
-import net.minecraft.world.gen.layer.GenLayerZoom;
 import net.minecraft.world.gen.layer.IntCache;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.SplittableRandom;
+import java.util.concurrent.ForkJoinTask;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
 public class TestFastBiomeGen {
-    static {
-        if (!Bootstrap.isRegistered()) {
-            Bootstrap.register();
-        }
+    @BeforeClass
+    public static void registerBootstrap() {
+        Bootstrap.register();
+    }
 
-        GET_PARENTS.put(GenLayerRandomValues.class, layer -> new GenLayer[0]);
-
-        LAYER_CONVERTERS.put(GenLayerRandomValues.class, layer -> new FastLayerRandomValues(layer.worldGenSeed, ((GenLayerRandomValues) layer).limit));
+    @BeforeClass
+    public static void ensureNativeBiomeGenIsAvailable() {
+        checkState(FastLayerProvider.INSTANCE.isNative(), "native biome generation must be available for testing!");
     }
 
     @Test
@@ -72,7 +71,7 @@ public class TestFastBiomeGen {
 
     @Test
     public void testAddMushroomIsland() {
-        this.testLayers(new GenLayerAddMushroomIsland(1L, new GenLayerRandomValues(0L)));
+        //this.testLayers(new GenLayerAddMushroomIsland(1L, new GenLayerRandomValues(0L)));
     }
 
     @Test
@@ -80,45 +79,45 @@ public class TestFastBiomeGen {
         this.testLayers(new GenLayerAddSnow(1L, new GenLayerRandomValues(0L)));
     }
 
-    @Test
+    /*@Test
     public void testBiome() {
-        //this.testLayers(new GenLayerBiome(1L, new GenLayerRandomValues(0L), null, null));
-    }
+        this.testLayers(new GenLayerBiome(1L, new GenLayerRandomValues(0L), null, null));
+    }*/
 
-    @Test
+    /*@Test
     public void testBiomeEdge() {
-        //this.testLayers(new GenLayerBiomeEdge(1L, new GenLayerRandomValues(0L)));
-    }
+        this.testLayers(new GenLayerBiomeEdge(1L, new GenLayerRandomValues(0L)));
+    }*/
 
     @Test
     public void testDeepOcean() {
-        this.testLayers(new GenLayerDeepOcean(1L, new GenLayerRandomValues(0L, 2)));
+        //this.testLayers(new GenLayerDeepOcean(1L, new GenLayerRandomValues(0L, 2)));
     }
 
-    @Test
+    /*@Test
     public void testEdgeCoolWarm() {
-        //this.testLayers(new GenLayerEdge(1L, new GenLayerRandomValues(0L), GenLayerEdge.Mode.COOL_WARM));
-    }
+        this.testLayers(new GenLayerEdge(1L, new GenLayerRandomValues(0L), GenLayerEdge.Mode.COOL_WARM));
+    }*/
 
-    @Test
+    /*@Test
     public void testEdgeHeatIce() {
-        //this.testLayers(new GenLayerEdge(1L, new GenLayerRandomValues(0L), GenLayerEdge.Mode.HEAT_ICE));
-    }
+        this.testLayers(new GenLayerEdge(1L, new GenLayerRandomValues(0L), GenLayerEdge.Mode.HEAT_ICE));
+    }*/
 
-    @Test
+    /*@Test
     public void testEdgeSpecial() {
-        //this.testLayers(new GenLayerEdge(1L, new GenLayerRandomValues(0L), GenLayerEdge.Mode.SPECIAL));
-    }
+        this.testLayers(new GenLayerEdge(1L, new GenLayerRandomValues(0L), GenLayerEdge.Mode.SPECIAL));
+    }*/
 
     @Test
     public void testFuzzyZoom() {
-        this.testLayers(new GenLayerFuzzyZoom(1L, new GenLayerRandomValues(0L)));
+        //this.testLayers(new GenLayerFuzzyZoom(1L, new GenLayerRandomValues(0L)));
     }
 
-    @Test
+    /*@Test
     public void testHills() {
-        //this.testLayers(new GenLayerHills(1L, new GenLayerRandomValues(0L), new GenLayerRandomValues(1L)));
-    }
+        this.testLayers(new GenLayerHills(1L, new GenLayerRandomValues(0L), new GenLayerRandomValues(1L)));
+    }*/
 
     @Test
     public void testIsland() {
@@ -127,17 +126,17 @@ public class TestFastBiomeGen {
 
     @Test
     public void testRareBiome() {
-        this.testLayers(new GenLayerRareBiome(1L, new GenLayerRandomValues(0L)));
+        //this.testLayers(new GenLayerRareBiome(1L, new GenLayerRandomValues(0L)));
     }
 
     @Test
     public void testRemoveTooMuchOcean() {
-        this.testLayers(new GenLayerFuzzyZoom(1L, new GenLayerRandomValues(0L, 2)));
+        this.testLayers(new GenLayerRemoveTooMuchOcean(1L, new GenLayerRandomValues(0L, 2)));
     }
 
     @Test
     public void testRiver() {
-        this.testLayers(new GenLayerRiver(1L, new GenLayerRandomValues(0L)));
+        //this.testLayers(new GenLayerRiver(1L, new GenLayerRandomValues(0L)));
     }
 
     @Test
@@ -145,68 +144,150 @@ public class TestFastBiomeGen {
         this.testLayers(new GenLayerRiverInit(1L, new GenLayerRandomValues(0L)));
     }
 
-    @Test
+    /*@Test
     public void testRiverMix() {
-        //this.testLayers(new GenLayerRiverMix(1L, new GenLayerRandomValues(0L), new GenLayerRandomValues(1L)));
-    }
+        this.testLayers(new GenLayerRiverMix(1L, new GenLayerRandomValues(0L), new GenLayerRandomValues(1L)));
+    }*/
 
-    @Test
+    /*@Test
     public void testShore() {
-        //this.testLayers(new GenLayerShore(1L, new GenLayerRandomValues(0L)));
-    }
+        this.testLayers(new GenLayerShore(1L, new GenLayerRandomValues(0L)));
+    }*/
 
     @Test
     public void testSmooth() {
         this.testLayers(new GenLayerSmooth(1L, new GenLayerRandomValues(0L)));
     }
 
-    @Test
+    /*@Test
     public void testVoronoiZoom() {
-        //this.testLayers(new GenLayerVoronoiZoom(1L, new GenLayerRandomValues(0L)));
-    }
+        this.testLayers(new GenLayerVoronoiZoom(1L, new GenLayerRandomValues(0L)));
+    }*/
 
     @Test
     public void testZoom() {
-        this.testLayers(new GenLayerZoom(1L, new GenLayerRandomValues(0L)));
+        //this.testLayers(new GenLayerZoom(1L, new GenLayerRandomValues(0L)));
     }
 
     private void testLayers(GenLayer vanilla) {
-        if (!(vanilla instanceof GenLayerIsland)) { //TODO: remove this
-            return;
-        }
-
         SplittableRandom r = new SplittableRandom(12345L);
 
         vanilla.initWorldGenSeed(r.nextLong());
-        FastLayer fast = FastLayerProvider.INSTANCE.makeFast(vanilla)[0];
+        FastLayer nativeFast = FastLayerProvider.INSTANCE.makeFast(vanilla)[0];
+        FastLayer javaFast = JavaLayerProvider.INSTANCE.makeFast(vanilla)[0];
 
-        this.testAreas(vanilla, fast, 0, 0, 2, 2);
-        this.testAreas(vanilla, fast, -1, -1, 2, 2);
-        this.testAreas(vanilla, fast, -10, -10, 21, 21);
+        if (javaFast.getClass() == nativeFast.getClass()) {
+            System.err.printf("warning: no native layer implementation found for %s (fast: %s)\n", vanilla.getClass(), javaFast.getClass());
 
-        for (int i = 0; i < 256; i++) {
-            this.testAreas(vanilla, fast, r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(256) + 1, r.nextInt(256) + 1);
+            this.testAreas(vanilla, javaFast, 0, 0, 2, 2);
+            this.testAreas(vanilla, javaFast, -1, -1, 2, 2);
+            this.testAreas(vanilla, javaFast, -10, -10, 21, 21);
+
+            for (int i = 0; i < 256; i++) {
+                this.testAreas(vanilla, javaFast, r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(256) + 1, r.nextInt(256) + 1);
+            }
+        } else {
+            this.testAreasAndNative(vanilla, javaFast, nativeFast, 0, 0, 2, 2);
+            this.testAreasAndNative(vanilla, javaFast, nativeFast, -1, -1, 2, 2);
+            this.testAreasAndNative(vanilla, javaFast, nativeFast, -10, -10, 21, 21);
+
+            for (int i = 0; i < 256; i++) {
+                this.testAreasAndNative(vanilla, javaFast, nativeFast, r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(256) + 1, r.nextInt(256) + 1);
+            }
         }
     }
 
-    private void testAreas(GenLayer vanilla, FastLayer fast, int areaX, int areaZ, int sizeX, int sizeZ) {
-        int[] reference = vanilla.getInts(areaX, areaZ, sizeX, sizeZ);
-        IntCache.resetIntCache();
+    private void testAreas(GenLayer vanilla, FastLayer javaFast, int areaX, int areaZ, int sizeX, int sizeZ) {
+        ForkJoinTask<int[]> futureReference = new ThreadSafeForkJoinSupplier<int[]>() {
+            @Override
+            protected int[] compute() {
+                int[] reference = vanilla.getInts(areaX, areaZ, sizeX, sizeZ);
+                IntCache.resetIntCache();
+                return reference;
+            }
+        }.fork();
 
-        IntArrayAllocator alloc = IntArrayAllocator.DEFAULT.get();
-        int[] fastGrid = alloc.get(sizeX * sizeZ);
-        try {
-            fast.getGrid(alloc, areaX, areaZ, sizeX, sizeZ, fastGrid);
-
-            for (int i = 0, dx = 0; dx < sizeX; dx++) {
-                for (int dz = 0; dz < sizeZ; dz++, i++) {
-                    int referenceValue = reference[dz * sizeX + dx];
-                    int fastValue = fastGrid[i];
-                    checkState(referenceValue == fastValue, "at (%d, %d): fast: %d != expected: %d", areaX + dx, areaZ + dz, fastValue, referenceValue);
+        //this is technically unsafe, but there's guaranteed to be nobody using biome code other than us since this is a unit test
+        ForkJoinTask<int[]> futureJava = new ThreadSafeForkJoinSupplier<int[]>() {
+            @Override
+            protected int[] compute() {
+                IntArrayAllocator alloc = IntArrayAllocator.DEFAULT.get();
+                int[] fastGrid = alloc.get(sizeX * sizeZ);
+                try {
+                    javaFast.getGrid(alloc, areaX, areaZ, sizeX, sizeZ, fastGrid);
+                    return fastGrid;
+                } finally {
+                    alloc.release(fastGrid);
                 }
             }
-        } finally {
-            alloc.release(fastGrid);
+        }.fork();
+
+        int[] reference = futureReference.join();
+        int[] fastGrid = futureJava.join();
+        for (int i = 0, dx = 0; dx < sizeX; dx++) {
+            for (int dz = 0; dz < sizeZ; dz++, i++) {
+                int referenceValue = reference[dz * sizeX + dx];
+                int fastValue = fastGrid[i];
+                checkState(referenceValue == fastValue, "at (%d, %d): fast: %d != expected: %d", areaX + dx, areaZ + dz, fastValue, referenceValue);
+            }
+        }
+    }
+
+    private void testAreasAndNative(GenLayer vanilla, FastLayer javaFast, FastLayer nativeFast, int areaX, int areaZ, int sizeX, int sizeZ) {
+        ForkJoinTask<int[]> futureReference = new ThreadSafeForkJoinSupplier<int[]>() {
+            @Override
+            protected int[] compute() {
+                int[] reference = vanilla.getInts(areaX, areaZ, sizeX, sizeZ);
+                IntCache.resetIntCache();
+                return reference;
+            }
+        }.fork();
+
+        ForkJoinTask<int[]> futureJava = new ThreadSafeForkJoinSupplier<int[]>() {
+            @Override
+            protected int[] compute() {
+                IntArrayAllocator alloc = IntArrayAllocator.DEFAULT.get();
+                int[] fastGrid = alloc.get(sizeX * sizeZ);
+                try {
+                    javaFast.getGrid(alloc, areaX, areaZ, sizeX, sizeZ, fastGrid);
+                    return fastGrid.clone();
+                } finally {
+                    alloc.release(fastGrid);
+                }
+            }
+        }.fork();
+
+        ForkJoinTask<int[]> futureNative = new ThreadSafeForkJoinSupplier<int[]>() {
+            @Override
+            protected int[] compute() {
+                IntArrayAllocator alloc = IntArrayAllocator.DEFAULT.get();
+                int[] fastGrid = alloc.get(sizeX * sizeZ);
+                try {
+                    nativeFast.getGrid(alloc, areaX, areaZ, sizeX, sizeZ, fastGrid);
+                    return fastGrid.clone();
+                } finally {
+                    alloc.release(fastGrid);
+                }
+            }
+        }.fork();
+
+        int[] reference = futureReference.join();
+        int[] fastGrid = futureJava.join();
+        for (int i = 0, dx = 0; dx < sizeX; dx++) {
+            for (int dz = 0; dz < sizeZ; dz++, i++) {
+                int referenceValue = reference[dz * sizeX + dx];
+                int fastValue = fastGrid[i];
+                checkState(referenceValue == fastValue, "at (%d, %d): fast (java): %d != expected: %d", areaX + dx, areaZ + dz, fastValue, referenceValue);
+            }
+        }
+
+        fastGrid = futureNative.join();
+        for (int i = 0, dx = 0; dx < sizeX; dx++) {
+            for (int dz = 0; dz < sizeZ; dz++, i++) {
+                int referenceValue = reference[dz * sizeX + dx];
+                int fastValue = fastGrid[i];
+                checkState(referenceValue == fastValue, "at (%d, %d): fast (native): %d != expected: %d", areaX + dx, areaZ + dz, fastValue, referenceValue);
+            }
         }
     }
 }

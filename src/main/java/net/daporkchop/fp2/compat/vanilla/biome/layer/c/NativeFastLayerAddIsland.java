@@ -18,17 +18,31 @@
  *
  */
 
-#include <fp2.h>
-#include "NativeFastLayer.h"
+package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
-FP2_JNI(void, NativeFastLayerIsland, getGrid0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out) {
-    fp2::pinned_int_array out(env, _out);
+import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerAddIsland;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
-    for (int32_t outIdx = 0, dx = 0; dx < sizeX; dx++) {
-        for (int32_t dz = 0; dz < sizeZ; dz++, outIdx++) {
-            fp2::biome::fastlayer::rng rng(seed, x + dx, z + dz);
-            out[outIdx] = rng.nextInt<10>() == 0;
+/**
+ * @author DaPorkchop_
+ */
+public class NativeFastLayerAddIsland extends FastLayerAddIsland {
+    public NativeFastLayerAddIsland(long seed) {
+        super(seed);
+    }
+
+    @Override
+    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+        int[] in = alloc.get((sizeX + 2) * (sizeZ + 2));
+        try {
+            this.parent.getGrid(alloc, x - 1, z - 1, sizeX + 2, sizeZ + 2, in);
+
+            this.getGrid0(this.seed, x, z, sizeX, sizeZ, out, in);
+        } finally {
+            alloc.release(in);
         }
     }
+
+    protected native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
 }

@@ -21,7 +21,13 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaLayerProvider;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
+import net.minecraft.world.gen.layer.GenLayerAddIsland;
+import net.minecraft.world.gen.layer.GenLayerAddSnow;
 import net.minecraft.world.gen.layer.GenLayerIsland;
+import net.minecraft.world.gen.layer.GenLayerRemoveTooMuchOcean;
+import net.minecraft.world.gen.layer.GenLayerRiverInit;
+import net.minecraft.world.gen.layer.GenLayerSmooth;
 
 /**
  * Extension of {@link JavaLayerProvider} which replaces a number of the layer types with native C++ implementations.
@@ -29,12 +35,15 @@ import net.minecraft.world.gen.layer.GenLayerIsland;
  * @author DaPorkchop_
  */
 public class NativeLayerProvider extends JavaLayerProvider {
-    private static native void init0();
-
     protected NativeLayerProvider() {
-        init0(); //ensure JNI libs are initialized
-
+        this.fastMapperOverrides.put(GenLayerAddIsland.class, layer -> new NativeFastLayerAddIsland(layer.worldGenSeed));
+        this.fastMapperOverrides.put(GenLayerAddSnow.class, layer -> new NativeFastLayerAddSnow(layer.worldGenSeed));
         this.fastMapperOverrides.put(GenLayerIsland.class, layer -> new NativeFastLayerIsland(layer.worldGenSeed));
+        this.fastMapperOverrides.put(GenLayerRemoveTooMuchOcean.class, layer -> new NativeFastLayerRemoveTooMuchOcean(layer.worldGenSeed));
+        this.fastMapperOverrides.put(GenLayerRiverInit.class, layer -> new NativeFastLayerRiverInit(layer.worldGenSeed));
+        this.fastMapperOverrides.put(GenLayerSmooth.class, layer -> new NativeFastLayerSmooth(layer.worldGenSeed));
+
+        this.fastMapperOverrides.put(GenLayerRandomValues.class, layer -> new NativeFastLayerRandomValues(layer.worldGenSeed, ((GenLayerRandomValues) layer).limit()));
     }
 
     @Override

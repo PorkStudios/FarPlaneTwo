@@ -24,8 +24,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerIsland;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
-import static net.daporkchop.lib.common.util.PValidation.*;
-
 /**
  * @author DaPorkchop_
  */
@@ -36,8 +34,6 @@ public class NativeFastLayerIsland extends FastLayerIsland {
 
     @Override
     public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
-        checkIndex(out.length >= sizeX * sizeZ);
-
         this.getGrid0(this.seed, x, z, sizeX, sizeZ, out);
 
         if (x <= 0 && z <= 0 && x + sizeX >= 0 && z + sizeZ >= 0) { //(0,0) is always set to 1

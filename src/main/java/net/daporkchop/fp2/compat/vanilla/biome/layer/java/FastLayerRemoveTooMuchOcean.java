@@ -25,6 +25,8 @@ import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerRemoveTooMuchOcean;
 
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+
 /**
  * @author DaPorkchop_
  * @see GenLayerRemoveTooMuchOcean
@@ -40,7 +42,7 @@ public class FastLayerRemoveTooMuchOcean extends FastLayer {
         try {
             this.parent.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
 
-            if (arr[1] == 0 && arr[3] == 0 && arr[4] == 0 && arr[5] == 0 && arr[7] == 0) {
+            if (arr[1] == 0 && arr[3] == 0 && arr[4] == 0 && arr[5] == 0 && arr[7] == 0 && nextInt(start(this.seed, x, z), 2) == 0) {
                 return 1;
             } else {
                 return arr[4];
