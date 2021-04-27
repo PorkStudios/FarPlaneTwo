@@ -18,32 +18,35 @@
  *
  */
 
-#include <fp2.h>
-#include "NativeFastLayer.h"
+#include "NativeFastLayerZoom.h"
 
-#include <lib/vectorclass-2.01.03/vectorclass.h>
-
-FP2_JNI(void, NativeFastLayerSmooth, getGrid0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out, jintArray _in) {
-    fp2::pinned_int_array out(env, _out);
-    fp2::pinned_int_array in(env, _in);
-
-    const Vec4i neighbor_offsets(-1 * (sizeZ + 2) + 0, 0 * (sizeZ + 2) + -1, 1 * (sizeZ + 2) + 0, 0 * (sizeZ + 2) + 1);
-
-    for (int32_t outIdx = 0, dx = 0; dx < sizeX; dx++) {
-        for (int32_t inIdx = (dx + 1) * (sizeZ + 2) + 1, dz = 0; dz < sizeZ; inIdx++, dz++, outIdx++) {
-            int32_t v[4]; //load values with single instruction using SSE
-            lookup<(1 << 30)>(inIdx + neighbor_offsets, &in[0]).store(v);
-
-            if (v[0] == v[2] && v[1] == v[3]) {
-                out[outIdx] = fp2::biome::fastlayer::rng(seed, x + dx, z + dz).nextInt<2>() == 0 ? v[0] : v[1];
-            } else if (v[0] == v[2]) {
-                out[outIdx] = v[0];
-            } else if (v[1] == v[3]) {
-                out[outIdx] = v[1];
-            } else {
-                out[outIdx] = in[inIdx];
-            }
-        }
+inline int32_t select_mode_or_random(fp2::biome::fastlayer::rng& rng, fp2::biome::fastlayer::int4& v) {
+    if (v[1] == v[2] && v[2] == v[3]) {
+        return v[1];
+    } else if (v[0] == v[1] && v[0] == v[2]) {
+        return v[0];
+    } else if (v[0] == v[1] && v[0] == v[3]) {
+        return v[0];
+    } else if (v[0] == v[2] && v[0] == v[3]) {
+        return v[0];
+    } else if (v[0] == v[1] && v[2] != v[3]) {
+        return v[0];
+    } else if (v[0] == v[2] && v[1] != v[3]) {
+        return v[0];
+    } else if (v[0] == v[3] && v[1] != v[2]) {
+        return v[0];
+    } else if (v[1] == v[2] && v[0] != v[3]) {
+        return v[1];
+    } else if (v[1] == v[3] && v[0] != v[2]) {
+        return v[1];
+    } else if (v[2] == v[3] && v[0] != v[1]) {
+        return v[2];
+    } else {
+        return v[rng.nextInt<4>()];
     }
+}
+
+FP2_JNI(void, NativeFastLayerZoom, getGrid0) (JNIEnv* env, jobject obj,
+        jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out, jintArray _in) {
+    fp2::biome::fastlayer::zoom<select_mode_or_random>(env, seed, x, z, sizeX, sizeZ, _out, _in);
 }

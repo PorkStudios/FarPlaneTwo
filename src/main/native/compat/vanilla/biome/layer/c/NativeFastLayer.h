@@ -52,10 +52,22 @@ namespace fp2::biome::fastlayer {
             _seed(seed),
             _state(start(seed, x, z)) {}
 
+        template<size_t COUNT = 1> inline void update() {
+            for (size_t i = 0; i < COUNT; i++) {
+                _state = update(_state, _seed);
+            }
+        }
+
         template<int32_t MAX> inline int32_t nextInt() {
-            constexpr fp2::fastmod_s64 fm(MAX);
-            int32_t i = (int32_t) ((_state >> 24) % fm);
-            i += (i >> 31) & MAX; //equivalent to if (i < 0) { i += MAX; }
+            int32_t i;
+            if constexpr ((MAX & (MAX - 1)) == 0) { //MAX is a power of two
+                constexpr auto MASK = MAX - 1;
+                i = (int32_t) ((_state >> 24) & MASK);
+            } else {
+                constexpr fp2::fastmod_s64 fm(MAX);
+                i = (int32_t) ((_state >> 24) % fm);
+                i += (i >> 31) & MAX; //equivalent to if (i < 0) { i += MAX; }
+            }
 
             //update PRNG state
             _state = update(_state, _seed);

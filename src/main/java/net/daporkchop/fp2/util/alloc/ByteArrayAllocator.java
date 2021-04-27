@@ -20,7 +20,6 @@
 
 package net.daporkchop.fp2.util.alloc;
 
-import com.google.common.base.Preconditions;
 import lombok.NonNull;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.ref.Ref;
@@ -31,6 +30,8 @@ import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * A simple pooling allocator for {@code byte[]}s.
@@ -51,16 +52,14 @@ public class ByteArrayAllocator {
     }
 
     public byte[] get(int minSize) {
-        Preconditions.checkArgument(minSize > 0);
-
-        int minRequiredBits = 32 - Integer.numberOfLeadingZeros(minSize - 1);
+        int minRequiredBits = 32 - Integer.numberOfLeadingZeros(positive(minSize, "minSize") - 1);
         byte[] arr = this.arenas[minRequiredBits].pollLast();
         return arr != null ? arr : new byte[1 << minRequiredBits];
     }
 
     public void release(@NonNull byte[] arr) {
         int length = arr.length;
-        Preconditions.checkArgument(length != 0 && BinMath.isPow2(length));
+        checkArg(length != 0 && BinMath.isPow2(length), "invalid array length: %s", length);
 
         int minRequiredBits = 32 - Integer.numberOfLeadingZeros(length - 1);
         Deque<byte[]> arena = this.arenas[minRequiredBits];

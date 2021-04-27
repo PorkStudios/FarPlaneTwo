@@ -18,32 +18,36 @@
  *
  */
 
-#include <fp2.h>
-#include "NativeFastLayer.h"
+package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
-#include <lib/vectorclass-2.01.03/vectorclass.h>
+import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerAddIsland;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerZoom;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
-FP2_JNI(void, NativeFastLayerSmooth, getGrid0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out, jintArray _in) {
-    fp2::pinned_int_array out(env, _out);
-    fp2::pinned_int_array in(env, _in);
+/**
+ * @author DaPorkchop_
+ */
+public class NativeFastLayerZoom extends FastLayerZoom {
+    public NativeFastLayerZoom(long seed) {
+        super(seed);
+    }
 
-    const Vec4i neighbor_offsets(-1 * (sizeZ + 2) + 0, 0 * (sizeZ + 2) + -1, 1 * (sizeZ + 2) + 0, 0 * (sizeZ + 2) + 1);
+    @Override
+    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+        int padding = isAligned(x, z, sizeX, sizeZ) ? 1 : 2;
+        int lowSizeX = (sizeX >> 1) + padding;
+        int lowSizeZ = (sizeZ >> 1) + padding;
 
-    for (int32_t outIdx = 0, dx = 0; dx < sizeX; dx++) {
-        for (int32_t inIdx = (dx + 1) * (sizeZ + 2) + 1, dz = 0; dz < sizeZ; inIdx++, dz++, outIdx++) {
-            int32_t v[4]; //load values with single instruction using SSE
-            lookup<(1 << 30)>(inIdx + neighbor_offsets, &in[0]).store(v);
+        int[] in = alloc.get(lowSizeX * lowSizeZ);
+        try {
+            this.parent.getGrid(alloc, x >> 1, z >> 1, lowSizeX, lowSizeZ, in);
 
-            if (v[0] == v[2] && v[1] == v[3]) {
-                out[outIdx] = fp2::biome::fastlayer::rng(seed, x + dx, z + dz).nextInt<2>() == 0 ? v[0] : v[1];
-            } else if (v[0] == v[2]) {
-                out[outIdx] = v[0];
-            } else if (v[1] == v[3]) {
-                out[outIdx] = v[1];
-            } else {
-                out[outIdx] = in[inIdx];
-            }
+            this.getGrid0(this.seed, x, z, sizeX, sizeZ, out, in);
+        } finally {
+            alloc.release(in);
         }
     }
+
+    protected native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
 }

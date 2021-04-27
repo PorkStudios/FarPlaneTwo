@@ -32,6 +32,13 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @see GenLayerZoom
  */
 public class FastLayerZoom extends FastLayer {
+    /**
+     * @return whether or not the given grid request is properly grid-aligned, and therefore doesn't need to be padded
+     */
+    protected static boolean isAligned(int x, int z, int sizeX, int sizeZ) {
+        return ((x | z | sizeX | sizeZ) & 1) == 0;
+    }
+
     public FastLayerZoom(long seed) {
         super(seed);
     }
