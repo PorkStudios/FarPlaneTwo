@@ -35,11 +35,14 @@ public class NativeFastLayerIsland extends FastLayerIsland {
     @Override
     public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
         this.getGrid0(this.seed, x, z, sizeX, sizeZ, out);
-
-        if (x <= 0 && z <= 0 && x + sizeX >= 0 && z + sizeZ >= 0) { //(0,0) is always set to 1
-            out[-x * sizeZ - z] = 1;
-        }
     }
 
     protected native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out);
+
+    @Override
+    public void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int count, @NonNull int[] out) {
+        this.multiGetGrids0(this.seed, x, z, size, dist, count, out);
+    }
+
+    protected native void multiGetGrids0(long seed, int x, int z, int size, int dist, int count, @NonNull int[] out);
 }

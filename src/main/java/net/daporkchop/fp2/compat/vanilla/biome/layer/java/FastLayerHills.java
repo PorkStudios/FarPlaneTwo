@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerHills;
 
@@ -29,7 +29,7 @@ import net.minecraft.world.gen.layer.GenLayerHills;
  * @author DaPorkchop_
  * @see GenLayerHills
  */
-public class FastLayerHills extends FastLayer {
+public class FastLayerHills extends AbstractFastLayer {
     public FastLayerHills(long seed) {
         super(seed);
     }

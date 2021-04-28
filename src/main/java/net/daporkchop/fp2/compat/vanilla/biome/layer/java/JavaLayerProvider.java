@@ -24,8 +24,8 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProvider;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.minecraft.world.gen.layer.GenLayer;
 
 import java.util.Arrays;
@@ -56,14 +56,14 @@ public class JavaLayerProvider implements FastLayerProvider {
         }
     }
 
-    protected final Map<Class<? extends GenLayer>, Function<GenLayer, FastLayer>> fastMapperOverrides = new IdentityHashMap<>();
+    protected final Map<Class<? extends GenLayer>, Function<GenLayer, IFastLayer>> fastMapperOverrides = new IdentityHashMap<>();
 
-    protected FastLayer convertLayer(@NonNull GenLayer layer) {
+    protected IFastLayer convertLayer(@NonNull GenLayer layer) {
         return this.fastMapperOverrides.getOrDefault(layer.getClass(), BiomeHelper::convertLayer).apply(layer);
     }
 
     @Override
-    public FastLayer[] makeFast(@NonNull GenLayer... inputs) {
+    public IFastLayer[] makeFast(@NonNull GenLayer... inputs) {
         //initial add all layers and find their children
         Map<GenLayer, GenLayer[]> children = new IdentityHashMap<>();
         for (GenLayer layer : inputs) {
@@ -71,16 +71,16 @@ public class JavaLayerProvider implements FastLayerProvider {
         }
 
         //map vanilla layers to fast layers
-        Map<GenLayer, FastLayer> fastLayers = new IdentityHashMap<>();
+        Map<GenLayer, IFastLayer> fastLayers = new IdentityHashMap<>();
         children.keySet().forEach(layer -> fastLayers.put(layer, this.convertLayer(layer)));
 
         //init fast layers with their children
         fastLayers.forEach((vanilla, fast) -> {
-            FastLayer[] fastChildren = Arrays.stream(children.get(vanilla)).map(fastLayers::get).toArray(FastLayer[]::new);
+            IFastLayer[] fastChildren = Arrays.stream(children.get(vanilla)).map(fastLayers::get).toArray(IFastLayer[]::new);
             fast.init(fastChildren);
         });
 
-        return Arrays.stream(inputs).map(fastLayers::get).toArray(FastLayer[]::new);
+        return Arrays.stream(inputs).map(fastLayers::get).toArray(IFastLayer[]::new);
     }
 
     @Override

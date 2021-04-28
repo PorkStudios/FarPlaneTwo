@@ -21,13 +21,13 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerAddIsland;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerSmooth;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerSmooth extends FastLayerAddIsland {
+public class NativeFastLayerSmooth extends FastLayerSmooth {
     public NativeFastLayerSmooth(long seed) {
         super(seed);
     }
@@ -36,7 +36,7 @@ public class NativeFastLayerSmooth extends FastLayerAddIsland {
     public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
         int[] in = alloc.get((sizeX + 2) * (sizeZ + 2));
         try {
-            this.parent.getGrid(alloc, x - 1, z - 1, sizeX + 2, sizeZ + 2, in);
+            this.child.getGrid(alloc, x - 1, z - 1, sizeX + 2, sizeZ + 2, in);
 
             this.getGrid0(this.seed, x, z, sizeX, sizeZ, out, in);
         } finally {

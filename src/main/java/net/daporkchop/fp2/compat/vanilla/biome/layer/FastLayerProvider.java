@@ -37,13 +37,13 @@ public interface FastLayerProvider extends Feature<FastLayerProvider> {
             .build(true);
 
     /**
-     * Converts the given {@link GenLayer}s to their {@link FastLayer} equivalents.
+     * Converts the given {@link GenLayer}s to their {@link IFastLayer} equivalents.
      * <p>
      * Note that if you have multiple {@link GenLayer}s to convert, you should convert them all at once with a single invocation of this method, rather than
      * converting them each individually. Doing so may provide a not insignificant performance boost.
      *
      * @param inputs the {@link GenLayer}s
-     * @return the converted {@link FastLayer}s, in the same order as the inputs were provided in
+     * @return the converted {@link IFastLayer}s, in the same order as the inputs were provided in
      */
-    FastLayer[] makeFast(@NonNull GenLayer... inputs);
+    IFastLayer[] makeFast(@NonNull GenLayer... inputs);
 }

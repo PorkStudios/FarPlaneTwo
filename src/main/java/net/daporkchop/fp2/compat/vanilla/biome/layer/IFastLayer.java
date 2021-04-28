@@ -21,23 +21,23 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.world.gen.layer.GenLayer;
 
 /**
+ * Base interface for a faster alternative to {@link GenLayer}.
+ * <p>
+ * Once initialized, instances of this class are expected to be safely usable from multiple threads.
+ *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public abstract class FastLayer {
-    public static final long PARENT_OFFSET = PUnsafe.pork_getOffset(FastLayer.class, "parent");
-
-    protected final long seed;
-    protected final FastLayer parent = null;
-
-    public void init(@NonNull FastLayer[] children) {
-        PUnsafe.putObject(this, PARENT_OFFSET, children[0]);
-    }
+public interface IFastLayer {
+    /**
+     * Initializes this layer.
+     *
+     * @param children the child layers that this layer should be initialized with
+     */
+    void init(@NonNull IFastLayer[] children);
 
     /**
      * Gets a single value at the given coordinates.
@@ -47,7 +47,7 @@ public abstract class FastLayer {
      * @param z     the Z coordinate of the value to get
      * @return the value
      */
-    public abstract int getSingle(@NonNull IntArrayAllocator alloc, int x, int z);
+    int getSingle(@NonNull IntArrayAllocator alloc, int x, int z);
 
     /**
      * Gets a grid of the given size at the given coordinates.
@@ -59,7 +59,7 @@ public abstract class FastLayer {
      * @param sizeZ the size of the grid along the Z axis
      * @param out   the {@code int[]} to write to
      */
-    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+    default void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
         for (int i = 0, dx = 0; dx < sizeX; dx++) {
             for (int dz = 0; dz < sizeZ; dz++) {
                 out[i++] = this.getSingle(alloc, x + dx, z + dz);
@@ -68,28 +68,30 @@ public abstract class FastLayer {
     }
 
     /**
-     * Gets a grid of multiple grids with the given spacing between each other.
+     * Gets a square grid of multiple square grids with the given spacing between each other.
      *
-     * @param alloc  an {@link IntArrayAllocator} to use for allocating {@code int[]}s
-     * @param x      the grid's base X coordinate
-     * @param z      the grid's base Z coordinate
-     * @param sizeX  the size of each small grid along the X axis
-     * @param sizeZ  the size of each small grid along the Z axis
-     * @param spaceX the distance between the origin of each small grid along the X axis
-     * @param spaceZ the distance between the origin of each small grid along the Z axis
-     * @param countX the number of smaller grids to generate along the X axis
-     * @param countZ the number of smaller grids to generate along the Z axis
-     * @param out    the {@code int[]} to write to
+     * @param alloc an {@link IntArrayAllocator} to use for allocating {@code int[]}s
+     * @param x     the grid's base X coordinate
+     * @param z     the grid's base Z coordinate
+     * @param size  the size of each small grid
+     * @param dist  the distance between the origin of each small grid
+     * @param count the number of smaller grids to generate
+     * @param out   the {@code int[]} to write to
      */
-    public void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, int spaceX, int spaceZ, int countX, int countZ, @NonNull int[] out) {
-        for (int i = 0, gridX = 0; gridX < countX; gridX++) {
-            for (int gridZ = 0; gridZ < countZ; gridZ++) {
-                for (int dx = 0; dx < sizeX; dx++) {
-                    for (int dz = 0; dz < sizeZ; dz++) {
-                        out[i++] = this.getSingle(alloc, x + gridX * spaceX + dx, z + gridZ * spaceZ + dz);
-                    }
+    default void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int count, @NonNull int[] out) {
+        int[] tmp = alloc.get(size * size);
+        try {
+            for (int i = 0, gridX = 0; gridX < count; gridX++) {
+                for (int gridZ = 0; gridZ < count; gridZ++, i += size * size) {
+                    //get size*size grid (getGrid may have optimized implementation)
+                    this.getGrid(alloc, x + gridX * dist, z + gridZ * dist, size, size, tmp);
+
+                    //copy grid to output array
+                    System.arraycopy(tmp, 0, out, i, size * size);
                 }
             }
+        } finally {
+            alloc.release(tmp);
         }
     }
 }

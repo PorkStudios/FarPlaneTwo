@@ -22,7 +22,7 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.init.Biomes;
 import net.minecraft.util.WeightedRandom;
@@ -39,7 +39,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  * @see GenLayerBiome
  */
-public class FastLayerBiome extends FastLayer {
+public class FastLayerBiome extends AbstractFastLayer {
     protected static final List<BiomeManager.BiomeEntry>[] ENTRIES;
     protected static final int[] WEIGHTS;
 
@@ -68,7 +68,7 @@ public class FastLayerBiome extends FastLayer {
 
     @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int k = this.parent.getSingle(alloc, x, z);
+        int k = this.child.getSingle(alloc, x, z);
         int l = (k & 0xF00) >> 8;
         k = k & ~0xF00;
         //TODO

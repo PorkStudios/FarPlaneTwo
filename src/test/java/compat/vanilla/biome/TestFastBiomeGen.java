@@ -20,12 +20,15 @@
 
 package compat.vanilla.biome;
 
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProvider;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaLayerProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.daporkchop.fp2.util.threading.fj.ThreadSafeForkJoinSupplier;
+import net.daporkchop.lib.common.misc.string.PStrings;
 import net.minecraft.init.Bootstrap;
 import net.minecraft.world.gen.layer.GenLayer;
 import net.minecraft.world.gen.layer.GenLayerAddIsland;
@@ -41,8 +44,13 @@ import net.minecraft.world.gen.layer.IntCache;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.SplittableRandom;
 import java.util.concurrent.ForkJoinTask;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -176,42 +184,39 @@ public class TestFastBiomeGen {
         SplittableRandom r = new SplittableRandom(12345L);
 
         vanilla.initWorldGenSeed(r.nextLong());
-        FastLayer nativeFast = FastLayerProvider.INSTANCE.makeFast(vanilla)[0];
-        FastLayer javaFast = JavaLayerProvider.INSTANCE.makeFast(vanilla)[0];
+        IFastLayer nativeFast = FastLayerProvider.INSTANCE.makeFast(vanilla)[0];
+        IFastLayer javaFast = JavaLayerProvider.INSTANCE.makeFast(vanilla)[0];
 
+        NamedLayer[] layers = {
+                new NamedLayer(javaFast, "java"),
+                new NamedLayer(nativeFast, "native")
+        };
         if (javaFast.getClass() == nativeFast.getClass()) {
             System.err.printf("warning: no native layer implementation found for %s (fast: %s)\n", vanilla.getClass(), javaFast.getClass());
-
-            this.testAreas(vanilla, javaFast, 0, 0, 2, 2);
-            this.testAreas(vanilla, javaFast, -1, -1, 2, 2);
-            this.testAreas(vanilla, javaFast, -10, -10, 21, 21);
-
-            for (int i = 0; i < 256; i++) {
-                this.testAreas(vanilla, javaFast, r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000),
-                        //workaround for a vanilla bug in GenLayerVoronoiZoom
-                        vanilla instanceof GenLayerVoronoiZoom ? 16 : r.nextInt(256) + 1, vanilla instanceof GenLayerVoronoiZoom ? 16 : r.nextInt(256) + 1);
-            }
-        } else {
-            this.testAreasAndNative(vanilla, javaFast, nativeFast, 0, 0, 2, 2);
-            this.testAreasAndNative(vanilla, javaFast, nativeFast, -1, -1, 2, 2);
-            this.testAreasAndNative(vanilla, javaFast, nativeFast, -10, -10, 21, 21);
-
-            for (int i = 0; i < 256; i++) {
-                this.testAreasAndNative(vanilla, javaFast, nativeFast, r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000),
-                        //workaround for a vanilla bug in GenLayerVoronoiZoom
-                        vanilla instanceof GenLayerVoronoiZoom ? 16 : r.nextInt(256) + 1, vanilla instanceof GenLayerVoronoiZoom ? 16 : r.nextInt(256) + 1);
-            }
+            layers = Arrays.copyOf(layers, 1);
         }
+
+        this.testLayers(0, 0, 2, 2, vanilla, layers);
+        this.testLayers(-1, -1, 2, 2, vanilla, layers);
+        this.testLayers(-10, -10, 21, 21, vanilla, layers);
+
+        for (int i = 0; i < 256; i++) {
+            this.testLayers(r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), vanilla instanceof GenLayerVoronoiZoom ? 16 : r.nextInt(256) + 1, vanilla instanceof GenLayerVoronoiZoom ? 16 : r.nextInt(256) + 1, vanilla,
+                    //workaround for a vanilla bug in GenLayerVoronoiZoom
+                    layers);
+        }
+
+        this.testLayersMultiGrid(vanilla, layers);
     }
 
-    private void testAreas(GenLayer vanilla, FastLayer javaFast, int areaX, int areaZ, int sizeX, int sizeZ) {
+    private void testLayers(int x, int z, int sizeX, int sizeZ, GenLayer vanilla, @NonNull NamedLayer... layers) {
         ForkJoinTask<int[]> futureReference = new ThreadSafeForkJoinSupplier<int[]>() {
             @Override
             protected int[] compute() {
-                int[] reference = vanilla.getInts(areaX, areaZ, sizeX, sizeZ);
+                int[] reference = vanilla.getInts(x, z, sizeX, sizeZ);
                 IntCache.resetIntCache();
 
-                int[] swapped = reference.clone();
+                int[] swapped = new int[sizeX * sizeZ];
                 for (int i = 0, x = 0; x < sizeX; x++) {
                     for (int z = 0; z < sizeZ; z++) {
                         swapped[i++] = reference[z * sizeX + x];
@@ -221,94 +226,122 @@ public class TestFastBiomeGen {
             }
         }.fork();
 
-        //this is technically unsafe, but there's guaranteed to be nobody using biome code other than us since this is a unit test
-        ForkJoinTask<int[]> futureJava = new ThreadSafeForkJoinSupplier<int[]>() {
+        List<ForkJoinTask<int[]>> gridFutures = Stream.of(layers).map(layer -> new ThreadSafeForkJoinSupplier<int[]>() {
             @Override
             protected int[] compute() {
-                IntArrayAllocator alloc = IntArrayAllocator.DEFAULT.get();
-                int[] fastGrid = alloc.get(sizeX * sizeZ);
-                try {
-                    javaFast.getGrid(alloc, areaX, areaZ, sizeX, sizeZ, fastGrid);
-                    return fastGrid;
-                } finally {
-                    alloc.release(fastGrid);
-                }
+                int[] grid = new int[sizeX * sizeZ];
+                layer.layer.getGrid(IntArrayAllocator.DEFAULT.get(), x, z, sizeX, sizeZ, grid);
+                return grid;
             }
-        }.fork();
+        }.fork()).collect(Collectors.toList());
+
+        List<ForkJoinTask<int[]>> singleFutures = Stream.of(layers).map(layer -> new ThreadSafeForkJoinSupplier<int[]>() {
+            @Override
+            protected int[] compute() {
+                int[] grid = new int[sizeX * sizeZ];
+                IntStream.range(0, sizeX).parallel().forEach(dx -> {
+                    IntArrayAllocator alloc1 = IntArrayAllocator.DEFAULT.get();
+                    for (int i = dx * sizeZ, dz = 0; dz < sizeZ; dz++) {
+                        grid[i++] = layer.layer.getSingle(alloc1, x + dx, z + dz);
+                    }
+                });
+                return grid;
+            }
+        }.fork()).collect(Collectors.toList());
 
         int[] reference = futureReference.join();
-        int[] fastGrid = futureJava.join();
-        for (int i = 0, dx = 0; dx < sizeX; dx++) {
-            for (int dz = 0; dz < sizeZ; dz++, i++) {
-                int referenceValue = reference[i];
-                int fastValue = fastGrid[i];
-                checkState(referenceValue == fastValue, "at (%d, %d): fast: %d != expected: %d", areaX + dx, areaZ + dz, fastValue, referenceValue);
+        for (int j = 0; j < layers.length; j++) {
+            String name = layers[j].name;
+
+            int[] grid = gridFutures.get(j).join();
+            for (int i = 0, dx = 0; dx < sizeX; dx++) {
+                for (int dz = 0; dz < sizeZ; dz++, i++) {
+                    int referenceValue = reference[i];
+                    int fastValue = grid[i];
+                    if (referenceValue != fastValue) {
+                        throw new IllegalStateException(PStrings.fastFormat("grid: at (%d, %d): fast (%s): %d != expected: %d", x + dx, z + dz, name, fastValue, referenceValue));
+                    }
+                }
+            }
+        }
+        for (int j = 0; j < layers.length; j++) {
+            String name = layers[j].name;
+
+            int[] grid = singleFutures.get(j).join();
+            for (int i = 0, dx = 0; dx < sizeX; dx++) {
+                for (int dz = 0; dz < sizeZ; dz++, i++) {
+                    int referenceValue = reference[i];
+                    int fastValue = grid[i];
+                    if (referenceValue != fastValue) {
+                        throw new IllegalStateException(PStrings.fastFormat("single: at (%d, %d): fast (%s): %d != expected: %d", x + dx, z + dz, name, fastValue, referenceValue));
+                    }
+                }
             }
         }
     }
 
-    private void testAreasAndNative(GenLayer vanilla, FastLayer javaFast, FastLayer nativeFast, int areaX, int areaZ, int sizeX, int sizeZ) {
+    private void testLayersMultiGrid(GenLayer vanilla, @NonNull NamedLayer... layers) {
+        int x = -3;
+        int z = -3;
+        int size = 5;
+        int dist = 16;
+        int count = 16;
+
         ForkJoinTask<int[]> futureReference = new ThreadSafeForkJoinSupplier<int[]>() {
             @Override
             protected int[] compute() {
-                int[] reference = vanilla.getInts(areaX, areaZ, sizeX, sizeZ);
-                IntCache.resetIntCache();
+                int[] out = new int[count * count * size * size];
+                for (int i = 0, tileX = 0; tileX < count; tileX++) {
+                    for (int tileZ = 0; tileZ < count; tileZ++) {
+                        int[] reference = vanilla.getInts(x + tileX * dist, z + tileZ * dist, size, size);
+                        IntCache.resetIntCache();
 
-                int[] swapped = reference.clone();
-                for (int i = 0, x = 0; x < sizeX; x++) {
-                    for (int z = 0; z < sizeZ; z++) {
-                        swapped[i++] = reference[z * sizeX + x];
+                        for (int dx = 0; dx < size; dx++) {
+                            for (int dz = 0; dz < size; dz++) {
+                                out[i++] = reference[dz * size + dx];
+                            }
+                        }
                     }
                 }
-                return swapped;
+                return out;
             }
         }.fork();
 
-        ForkJoinTask<int[]> futureJava = new ThreadSafeForkJoinSupplier<int[]>() {
+        List<ForkJoinTask<int[]>> fastFutures = Stream.of(layers).map(layer -> new ThreadSafeForkJoinSupplier<int[]>() {
             @Override
             protected int[] compute() {
-                IntArrayAllocator alloc = IntArrayAllocator.DEFAULT.get();
-                int[] fastGrid = alloc.get(sizeX * sizeZ);
-                try {
-                    javaFast.getGrid(alloc, areaX, areaZ, sizeX, sizeZ, fastGrid);
-                    return fastGrid.clone();
-                } finally {
-                    alloc.release(fastGrid);
-                }
+                int[] grids = new int[count * count * size * size];
+                layer.layer.multiGetGrids(IntArrayAllocator.DEFAULT.get(), x, z, size, dist, count, grids);
+                return grids;
             }
-        }.fork();
-
-        ForkJoinTask<int[]> futureNative = new ThreadSafeForkJoinSupplier<int[]>() {
-            @Override
-            protected int[] compute() {
-                IntArrayAllocator alloc = IntArrayAllocator.DEFAULT.get();
-                int[] fastGrid = alloc.get(sizeX * sizeZ);
-                try {
-                    nativeFast.getGrid(alloc, areaX, areaZ, sizeX, sizeZ, fastGrid);
-                    return fastGrid.clone();
-                } finally {
-                    alloc.release(fastGrid);
-                }
-            }
-        }.fork();
+        }.fork()).collect(Collectors.toList());
 
         int[] reference = futureReference.join();
-        int[] fastGrid = futureJava.join();
-        for (int i = 0, dx = 0; dx < sizeX; dx++) {
-            for (int dz = 0; dz < sizeZ; dz++, i++) {
-                int referenceValue = reference[i];
-                int fastValue = fastGrid[i];
-                checkState(referenceValue == fastValue, "at (%d, %d): fast (java): %d != expected: %d", areaX + dx, areaZ + dz, fastValue, referenceValue);
-            }
-        }
+        for (int j = 0; j < layers.length; j++) {
+            String name = layers[j].name;
 
-        fastGrid = futureNative.join();
-        for (int i = 0, dx = 0; dx < sizeX; dx++) {
-            for (int dz = 0; dz < sizeZ; dz++, i++) {
-                int referenceValue = reference[i];
-                int fastValue = fastGrid[i];
-                checkState(referenceValue == fastValue, "at (%d, %d): fast (native): %d != expected: %d", areaX + dx, areaZ + dz, fastValue, referenceValue);
+            int[] grids = fastFutures.get(j).join();
+            for (int i = 0, tileX = 0; tileX < count; tileX++) {
+                for (int tileZ = 0; tileZ < count; tileZ++) {
+                    for (int dx = 0; dx < size; dx++) {
+                        for (int dz = 0; dz < size; dz++, i++) {
+                            int referenceValue = reference[i];
+                            int fastValue = grids[i];
+                            if (referenceValue != fastValue) {
+                                throw new IllegalStateException(PStrings.fastFormat("multigrid: at (%d, %d): fast (%s): %d != expected: %d", x + tileX * dist + dx, z + tileZ * dist + dz, name, fastValue, referenceValue));
+                            }
+                        }
+                    }
+                }
             }
         }
+    }
+
+    @RequiredArgsConstructor
+    protected static class NamedLayer {
+        @NonNull
+        protected final IFastLayer layer;
+        @NonNull
+        protected final String name;
     }
 }

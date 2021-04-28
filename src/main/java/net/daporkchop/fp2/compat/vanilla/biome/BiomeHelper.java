@@ -23,8 +23,8 @@ package net.daporkchop.fp2.compat.vanilla.biome;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProvider;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerAddIsland;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerAddMushroomIsland;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerAddSnow;
@@ -153,7 +153,7 @@ public class BiomeHelper {
 
     //gets all direct children of a GenLayer
     public static final Map<Class<? extends GenLayer>, Function<GenLayer, GenLayer[]>> GET_PARENTS = new IdentityHashMap<>();
-    public static final Map<Class<? extends GenLayer>, Function<GenLayer, FastLayer>> LAYER_CONVERTERS = new IdentityHashMap<>();
+    public static final Map<Class<? extends GenLayer>, Function<GenLayer, IFastLayer>> LAYER_CONVERTERS = new IdentityHashMap<>();
     public static final double[] BIOME_HEIGHTS = new double[BIOME_COUNT];
     public static final double[] BIOME_VARIATIONS = new double[BIOME_COUNT];
 
@@ -244,16 +244,16 @@ public class BiomeHelper {
     }
 
     /**
-     * Converts the given {@link GenLayer} to an uninitialized {@link FastLayer}.
+     * Converts the given {@link GenLayer} to an uninitialized {@link IFastLayer}.
      * <p>
      * This is an internal method, you probably shouldn't touch this.
      *
      * @param layer the {@link GenLayer}
-     * @return the {@link FastLayer}
+     * @return the {@link IFastLayer}
      * @see FastLayerProvider#makeFast(GenLayer...)
      */
-    public FastLayer convertLayer(@NonNull GenLayer layer) {
-        Function<GenLayer, FastLayer> converter = LAYER_CONVERTERS.get(layer.getClass());
+    public IFastLayer convertLayer(@NonNull GenLayer layer) {
+        Function<GenLayer, IFastLayer> converter = LAYER_CONVERTERS.get(layer.getClass());
         checkArg(converter != null, "invalid GenLayer class: %s", layer.getClass().getCanonicalName());
         return converter.apply(layer);
     }

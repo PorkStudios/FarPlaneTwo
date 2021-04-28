@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerRiver;
 
@@ -31,7 +31,7 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerRiver
  */
-public class FastLayerRiver extends FastLayer {
+public class FastLayerRiver extends AbstractFastLayer {
     private static int riverFilter(int i) {
         return i >= 2 ? 2 + (i & 1) : i;
     }
@@ -44,7 +44,7 @@ public class FastLayerRiver extends FastLayer {
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
         int[] arr = alloc.get(3 * 3);
         try {
-            this.parent.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
+            this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
 
             int center = riverFilter(arr[4]);
             if (center == riverFilter(arr[1]) && center == riverFilter(arr[3]) && center == riverFilter(arr[5]) && center == riverFilter(arr[7])) {

@@ -18,31 +18,26 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
+package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRemoveTooMuchOcean;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 /**
+ * Base implementation of {@link IFastLayer}.
+ *
  * @author DaPorkchop_
  */
-public class NativeFastLayerRemoveTooMuchOcean extends FastLayerRemoveTooMuchOcean {
-    public NativeFastLayerRemoveTooMuchOcean(long seed) {
-        super(seed);
-    }
+@RequiredArgsConstructor
+public abstract class AbstractFastLayer implements IFastLayer {
+    public static final long CHILD_OFFSET = PUnsafe.pork_getOffset(AbstractFastLayer.class, "child");
+
+    protected final long seed;
+    protected final IFastLayer child = null;
 
     @Override
-    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
-        int[] in = alloc.get((sizeX + 2) * (sizeZ + 2));
-        try {
-            this.child.getGrid(alloc, x - 1, z - 1, sizeX + 2, sizeZ + 2, in);
-
-            this.getGrid0(this.seed, x, z, sizeX, sizeZ, out, in);
-        } finally {
-            alloc.release(in);
-        }
+    public void init(@NonNull IFastLayer[] children) {
+        PUnsafe.putObject(this, CHILD_OFFSET, children[0]);
     }
-
-    protected native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
 }

@@ -21,11 +21,8 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerIsland;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRiverInit;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -38,7 +35,7 @@ public class NativeFastLayerRiverInit extends FastLayerRiverInit {
     @Override
     public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
         //needed parent area is same size as requested area, so we can have the parent write into the output array and then update it ourselves
-        this.parent.getGrid(alloc, x, z, sizeX, sizeZ, out);
+        this.child.getGrid(alloc, x, z, sizeX, sizeZ, out);
 
         this.getGrid0(this.seed, x, z, sizeX, sizeZ, out);
     }

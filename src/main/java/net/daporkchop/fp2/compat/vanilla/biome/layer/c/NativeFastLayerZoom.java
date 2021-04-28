@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerAddIsland;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerZoom;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
@@ -41,7 +40,7 @@ public class NativeFastLayerZoom extends FastLayerZoom {
 
         int[] in = alloc.get(lowSizeX * lowSizeZ);
         try {
-            this.parent.getGrid(alloc, x >> 1, z >> 1, lowSizeX, lowSizeZ, in);
+            this.child.getGrid(alloc, x >> 1, z >> 1, lowSizeX, lowSizeZ, in);
 
             this.getGrid0(this.seed, x, z, sizeX, sizeZ, out, in);
         } finally {

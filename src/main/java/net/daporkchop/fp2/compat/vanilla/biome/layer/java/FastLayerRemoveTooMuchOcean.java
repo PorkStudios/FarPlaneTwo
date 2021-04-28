@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerRemoveTooMuchOcean;
 
@@ -31,7 +31,7 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerRemoveTooMuchOcean
  */
-public class FastLayerRemoveTooMuchOcean extends FastLayer {
+public class FastLayerRemoveTooMuchOcean extends AbstractFastLayer {
     public FastLayerRemoveTooMuchOcean(long seed) {
         super(seed);
     }
@@ -40,7 +40,7 @@ public class FastLayerRemoveTooMuchOcean extends FastLayer {
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
         int[] arr = alloc.get(3 * 3);
         try {
-            this.parent.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
+            this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
 
             if (arr[1] == 0 && arr[3] == 0 && arr[4] == 0 && arr[5] == 0 && arr[7] == 0 && nextInt(start(this.seed, x, z), 2) == 0) {
                 return 1;

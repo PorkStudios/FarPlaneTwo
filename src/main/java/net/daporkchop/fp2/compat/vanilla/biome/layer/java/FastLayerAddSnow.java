@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerAddSnow;
 
@@ -31,14 +31,14 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerAddSnow
  */
-public class FastLayerAddSnow extends FastLayer {
+public class FastLayerAddSnow extends AbstractFastLayer {
     public FastLayerAddSnow(long seed) {
         super(seed);
     }
 
     @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int v = this.parent.getSingle(alloc, x, z);
+        int v = this.child.getSingle(alloc, x, z);
         if (v == 0) {
             return 0;
         }

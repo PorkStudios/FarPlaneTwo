@@ -21,7 +21,8 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
@@ -32,7 +33,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  * @see GenLayerRandomValues
  */
-public class FastLayerRandomValues extends FastLayer {
+public class FastLayerRandomValues extends AbstractFastLayer {
     protected final int limit;
 
     public FastLayerRandomValues(long seed, int limit) {
@@ -46,7 +47,7 @@ public class FastLayerRandomValues extends FastLayer {
     }
 
     @Override
-    public void init(@NonNull FastLayer[] children) {
+    public void init(@NonNull IFastLayer[] children) {
         //no-op
     }
 

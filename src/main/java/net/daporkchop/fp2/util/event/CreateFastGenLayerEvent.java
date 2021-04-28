@@ -24,13 +24,13 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.minecraft.world.gen.layer.GenLayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.eventhandler.Event;
 
 /**
- * Allows mod developers to create their own {@link FastLayer} implementation for non-vanilla {@link GenLayer}s.
+ * Allows mod developers to create their own {@link IFastLayer} implementation for non-vanilla {@link GenLayer}s.
  * <p>
  * Fired on {@link MinecraftForge#EVENT_BUS}.
  *
@@ -43,5 +43,5 @@ public final class CreateFastGenLayerEvent extends Event {
     @NonNull
     protected final GenLayer originalLayer;
 
-    protected FastLayer fastLayer;
+    protected IFastLayer fastLayer;
 }

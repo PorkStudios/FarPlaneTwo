@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerVoronoiZoom;
 
@@ -31,7 +31,7 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerVoronoiZoom
  */
-public class FastLayerVoronoiZoom extends FastLayer {
+public class FastLayerVoronoiZoom extends AbstractFastLayer {
     protected static final float DIV_1024 = 1.0f / 1024.0f;
 
     /**
@@ -78,13 +78,13 @@ public class FastLayerVoronoiZoom extends FastLayer {
         float dXZ = (ddz - rXZ1) * (ddz - rXZ1) + (ddx - rXZ0) * (ddx - rXZ0);
 
         if (dxz < dXz && dxz < dxZ && dxz < dXZ) {
-            return this.parent.getSingle(alloc, (x >> 2), (z >> 2));
+            return this.child.getSingle(alloc, (x >> 2), (z >> 2));
         } else if (dXz < dxz && dXz < dxZ && dXz < dXZ) {
-            return this.parent.getSingle(alloc, (x >> 2) + 1, (z >> 2));
+            return this.child.getSingle(alloc, (x >> 2) + 1, (z >> 2));
         } else if (dxZ < dxz && dxZ < dXz && dxZ < dXZ) {
-            return this.parent.getSingle(alloc, (x >> 2), (z >> 2) + 1);
+            return this.child.getSingle(alloc, (x >> 2), (z >> 2) + 1);
         } else {
-            return this.parent.getSingle(alloc, (x >> 2) + 1, (z >> 2) + 1);
+            return this.child.getSingle(alloc, (x >> 2) + 1, (z >> 2) + 1);
         }
     }
 }

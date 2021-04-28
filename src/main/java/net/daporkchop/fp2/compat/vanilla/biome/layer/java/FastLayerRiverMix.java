@@ -21,7 +21,8 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.gen.layer.GenLayerRiverMix;
@@ -32,24 +33,24 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerRiverMix
  */
-public class FastLayerRiverMix extends FastLayer {
+public class FastLayerRiverMix extends AbstractFastLayer {
     protected static final long RIVERPARENT_OFFSET = PUnsafe.pork_getOffset(FastLayerRiverMix.class, "riverParent");
 
-    protected final FastLayer riverParent = null;
+    protected final IFastLayer riverParent = null;
 
     public FastLayerRiverMix(long seed) {
         super(seed);
     }
 
     @Override
-    public void init(@NonNull FastLayer[] children) {
+    public void init(@NonNull IFastLayer[] children) {
         super.init(children);
         PUnsafe.putObject(this, RIVERPARENT_OFFSET, children[1]);
     }
 
     @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int biome = this.parent.getSingle(alloc, x, z);
+        int biome = this.child.getSingle(alloc, x, z);
         if (biome != ID_OCEAN && biome != ID_DEEP_OCEAN) {
             int river = this.riverParent.getSingle(alloc, x, z);
             if (river == ID_RIVER) {

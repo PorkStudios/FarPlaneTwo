@@ -36,7 +36,7 @@ public class NativeFastLayerAddIsland extends FastLayerAddIsland {
     public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
         int[] in = alloc.get((sizeX + 2) * (sizeZ + 2));
         try {
-            this.parent.getGrid(alloc, x - 1, z - 1, sizeX + 2, sizeZ + 2, in);
+            this.child.getGrid(alloc, x - 1, z - 1, sizeX + 2, sizeZ + 2, in);
 
             this.getGrid0(this.seed, x, z, sizeX, sizeZ, out, in);
         } finally {

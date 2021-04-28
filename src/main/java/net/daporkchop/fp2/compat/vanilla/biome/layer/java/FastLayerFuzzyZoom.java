@@ -42,6 +42,6 @@ public class FastLayerFuzzyZoom extends FastLayerZoom {
         state = update(state, this.seed);
 
         int r = nextInt(state, 4);
-        return this.parent.getSingle(alloc, lowX + (r & 1), lowZ + ((r >> 1) & 1));
+        return this.child.getSingle(alloc, lowX + (r & 1), lowZ + ((r >> 1) & 1));
     }
 }

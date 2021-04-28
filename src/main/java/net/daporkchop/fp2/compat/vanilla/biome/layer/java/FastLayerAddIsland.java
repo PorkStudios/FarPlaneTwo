@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerAddIsland;
 
@@ -31,7 +31,7 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerAddIsland
  */
-public class FastLayerAddIsland extends FastLayer {
+public class FastLayerAddIsland extends AbstractFastLayer {
     public FastLayerAddIsland(long seed) {
         super(seed);
     }
@@ -42,7 +42,7 @@ public class FastLayerAddIsland extends FastLayer {
 
         int[] arr = alloc.get(3 * 3);
         try {
-            this.parent.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
+            this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
 
             v0 = arr[0];
             v2 = arr[2];

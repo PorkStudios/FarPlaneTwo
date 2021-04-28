@@ -22,7 +22,6 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerVoronoiZoom;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerZoom;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
 /**
@@ -40,7 +39,7 @@ public class NativeFastLayerVoronoiZoom extends FastLayerVoronoiZoom {
 
         int[] in = alloc.get(2 * 2);
         try {
-            this.parent.getGrid(alloc, x >> 2, z >> 2, 2, 2, in);
+            this.child.getGrid(alloc, x >> 2, z >> 2, 2, 2, in);
 
             return this.getSingle0(this.seed, x, z, in);
         } finally {
@@ -61,7 +60,7 @@ public class NativeFastLayerVoronoiZoom extends FastLayerVoronoiZoom {
 
         int[] in = alloc.get(lowSizeX * lowSizeZ);
         try {
-            this.parent.getGrid(alloc, x >> 2, z >> 2, lowSizeX, lowSizeZ, in);
+            this.child.getGrid(alloc, x >> 2, z >> 2, lowSizeX, lowSizeZ, in);
 
             this.getGrid0(this.seed, x, z, sizeX, sizeZ, out, in);
         } finally {

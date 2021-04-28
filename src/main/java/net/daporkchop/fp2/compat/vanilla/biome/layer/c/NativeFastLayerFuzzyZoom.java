@@ -40,7 +40,7 @@ public class NativeFastLayerFuzzyZoom extends FastLayerFuzzyZoom {
 
         int[] in = alloc.get(lowSizeX * lowSizeZ);
         try {
-            this.parent.getGrid(alloc, x >> 1, z >> 1, lowSizeX, lowSizeZ, in);
+            this.child.getGrid(alloc, x >> 1, z >> 1, lowSizeX, lowSizeZ, in);
 
             this.getGrid0(this.seed, x, z, sizeX, sizeZ, out, in);
         } finally {

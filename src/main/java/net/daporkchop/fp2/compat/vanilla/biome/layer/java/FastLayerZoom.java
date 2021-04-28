@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerZoom;
 
@@ -31,7 +31,7 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerZoom
  */
-public class FastLayerZoom extends FastLayer {
+public class FastLayerZoom extends AbstractFastLayer {
     /**
      * @return whether or not the given grid request is properly grid-aligned, and therefore doesn't need to be padded
      */
@@ -50,16 +50,16 @@ public class FastLayerZoom extends FastLayer {
 
         if ((x & 1) == 0) {
             if ((z & 1) == 0) {
-                return this.parent.getSingle(alloc, lowX, lowZ);
+                return this.child.getSingle(alloc, lowX, lowZ);
             } else {
                 long state = start(this.seed, lowX << 1, lowZ << 1);
-                return this.parent.getSingle(alloc, lowX, lowZ + nextInt(state, 2));
+                return this.child.getSingle(alloc, lowX, lowZ + nextInt(state, 2));
             }
         } else {
             if ((z & 1) == 0) {
                 long state = start(this.seed, lowX << 1, lowZ << 1);
                 state = update(state, this.seed);
-                return this.parent.getSingle(alloc, lowX + nextInt(state, 2), lowZ);
+                return this.child.getSingle(alloc, lowX + nextInt(state, 2), lowZ);
             } else {
                 return this.sampleXZLast(alloc, lowX, lowZ);
             }
@@ -71,7 +71,7 @@ public class FastLayerZoom extends FastLayer {
 
         int[] arr = alloc.get(2 * 2);
         try {
-            this.parent.getGrid(alloc, lowX, lowZ, 2, 2, arr);
+            this.child.getGrid(alloc, lowX, lowZ, 2, 2, arr);
             xz = arr[0];
             xZ = arr[1];
             Xz = arr[2];

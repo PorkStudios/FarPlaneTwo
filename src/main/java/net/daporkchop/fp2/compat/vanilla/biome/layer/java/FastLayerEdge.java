@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerEdge;
 
@@ -29,7 +29,7 @@ import net.minecraft.world.gen.layer.GenLayerEdge;
  * @author DaPorkchop_
  * @see GenLayerEdge
  */
-public class FastLayerEdge extends FastLayer {
+public class FastLayerEdge extends AbstractFastLayer {
     public FastLayerEdge(long seed) {
         super(seed);
     }

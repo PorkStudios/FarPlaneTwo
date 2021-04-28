@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerSmooth;
 
@@ -31,7 +31,7 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerSmooth
  */
-public class FastLayerSmooth extends FastLayer {
+public class FastLayerSmooth extends AbstractFastLayer {
     public FastLayerSmooth(long seed) {
         super(seed);
     }
@@ -40,7 +40,7 @@ public class FastLayerSmooth extends FastLayer {
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
         int[] arr = alloc.get(3 * 3);
         try {
-            this.parent.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
+            this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
 
             int v0 = arr[1];
             int v1 = arr[3];
