@@ -29,26 +29,26 @@ namespace fp2::biome::fastlayer {
      *
      * @author DaPorkchop_
      */
-    class rng {
+    template<typename T_64, typename T_32, T_32 (CAST_DOWN)(T_64), T_64 (CAST_UP)(T_32)> class base_rng {
     private:
-        constexpr int64_t update(const int64_t state, const int64_t seed) {
+        constexpr T_64 update(const T_64 state, const T_64 seed) {
             return state * (state * 6364136223846793005LL + 1442695040888963407LL) + seed;
         }
 
-        constexpr int64_t start(const int64_t seed, const int32_t x, const int32_t z) {
-            int64_t state = seed;
-            state = update(state, x);
-            state = update(state, z);
-            state = update(state, x);
-            state = update(state, z);
+        constexpr T_64 start(const T_64 seed, const T_32 x, const T_32 z) {
+            T_64 state = seed;
+            state = update(state, CAST_UP(x));
+            state = update(state, CAST_UP(z));
+            state = update(state, CAST_UP(x));
+            state = update(state, CAST_UP(z));
             return state;
         }
 
-        const int64_t _seed;
-        int64_t _state;
+        const T_64 _seed;
+        T_64 _state;
 
     public:
-        rng(const int64_t seed, const int32_t x, const int32_t z):
+        base_rng(const T_64 seed, const T_32 x, const T_32 z):
             _seed(seed),
             _state(start(seed, x, z)) {}
 
@@ -58,40 +58,39 @@ namespace fp2::biome::fastlayer {
             }
         }
 
-        template<int32_t MAX> inline int32_t nextInt() {
-            int32_t i;
+        template<int32_t MAX> inline T_32 nextInt() {
+            T_32 i;
             if constexpr ((MAX & (MAX - 1)) == 0) { //MAX is a power of two
-                constexpr auto MASK = MAX - 1;
-                i = (int32_t) ((_state >> 24) & MASK);
+                constexpr int32_t MASK = MAX - 1;
+                i = CAST_DOWN((_state >> 24) & MASK);
             } else {
                 constexpr fp2::fastmod_s64 fm(MAX);
-                i = (int32_t) ((_state >> 24) % fm);
+                i = CAST_DOWN((_state >> 24) % fm);
                 i += (i >> 31) & MAX; //equivalent to if (i < 0) { i += MAX; }
             }
 
-            //update PRNG state
-            _state = update(_state, _seed);
+            update(); //update PRNG state
             return i;
         }
 
-        inline int32_t nextInt_fast(const fp2::fastmod_s64& fm, const int32_t max) {
-            int32_t i = (int32_t) ((_state >> 24) % fm);
+        inline T_32 nextInt_fast(const fp2::fastmod_s64& fm, const T_32 max) {
+            T_32 i = (T_32) ((_state >> 24) % fm);
             i += (i >> 31) & max; //equivalent to if (i < 0) { i += max; }
 
-            //update PRNG state
-            _state = update(_state, _seed);
+            update(); //update PRNG state
             return i;
         }
 
-        inline int32_t nextInt(const int32_t max) {
-            int32_t i = (int32_t) ((_state >> 24) % max);
+        inline T_32 nextInt(const T_32 max) {
+            T_32 i = (T_32) ((_state >> 24) % max);
             i += (i >> 31) & max; //equivalent to if (i < 0) { i += max; }
 
-            //update PRNG state
-            _state = update(_state, _seed);
+            update(); //update PRNG state
             return i;
         }
     };
+
+    using rng = base_rng<int64_t, int32_t, cast, cast>;
 }
 
 #endif //NATIVELAYER_NATIVEFASTLAYER_H

@@ -44,7 +44,6 @@ import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerShore;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerSmooth;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerVoronoiZoom;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerZoom;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.c.NativeFastLayerIsland;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
 import net.minecraft.init.Biomes;
 import net.minecraft.world.biome.Biome;
@@ -246,7 +245,7 @@ public class BiomeHelper {
 
     /**
      * Converts the given {@link GenLayer} to an uninitialized {@link FastLayer}.
-     *
+     * <p>
      * This is an internal method, you probably shouldn't touch this.
      *
      * @param layer the {@link GenLayer}
@@ -291,9 +290,13 @@ public class BiomeHelper {
     }
 
     public static int nextInt(long state, int max) {
-        int i = (int) ((state >> 24) % max);
-        //equivalent to if (i < 0) { i += max; }
-        i += (i >> 31) & max;
-        return i;
+        if ((max & (max - 1)) == 0) { //max is a power of two
+            return (int) (state >> 24L) & (max - 1);
+        } else { //max is NOT a power of two, fall back to slow implementation using modulo
+            int i = (int) ((state >> 24L) % max);
+            //equivalent to if (i < 0) { i += max; }
+            i += (i >> 31) & max;
+            return i;
+        }
     }
 }

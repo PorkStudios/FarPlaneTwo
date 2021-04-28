@@ -103,6 +103,13 @@ namespace fp2 {
     };
 
     using pinned_int_array = pinned_array<jintArray, jint>;
+
+    /**
+     * stupid helper method which simply casts one type to another (for use as a template parameter)
+     */
+    template <typename A, typename B> B cast(const A a) {
+        return (B) a;
+    }
 }
 
 #endif //FP2_H

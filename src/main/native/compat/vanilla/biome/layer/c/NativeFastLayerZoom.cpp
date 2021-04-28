@@ -21,6 +21,7 @@
 #include "NativeFastLayerZoom.h"
 
 inline int32_t select_mode_or_random(fp2::biome::fastlayer::rng& rng, fp2::biome::fastlayer::int4& v) {
+    //here be branch predictor hell
     if (v[1] == v[2] && v[2] == v[3]) {
         return v[1];
     } else if (v[0] == v[1] && v[0] == v[2]) {

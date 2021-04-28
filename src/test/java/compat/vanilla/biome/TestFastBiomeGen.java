@@ -35,6 +35,7 @@ import net.minecraft.world.gen.layer.GenLayerIsland;
 import net.minecraft.world.gen.layer.GenLayerRemoveTooMuchOcean;
 import net.minecraft.world.gen.layer.GenLayerRiverInit;
 import net.minecraft.world.gen.layer.GenLayerSmooth;
+import net.minecraft.world.gen.layer.GenLayerVoronoiZoom;
 import net.minecraft.world.gen.layer.GenLayerZoom;
 import net.minecraft.world.gen.layer.IntCache;
 import org.junit.BeforeClass;
@@ -161,10 +162,10 @@ public class TestFastBiomeGen {
         this.testLayers(new GenLayerSmooth(1L, new GenLayerRandomValues(0L)));
     }
 
-    /*@Test
+    @Test
     public void testVoronoiZoom() {
         this.testLayers(new GenLayerVoronoiZoom(1L, new GenLayerRandomValues(0L)));
-    }*/
+    }
 
     @Test
     public void testZoom() {
@@ -186,7 +187,9 @@ public class TestFastBiomeGen {
             this.testAreas(vanilla, javaFast, -10, -10, 21, 21);
 
             for (int i = 0; i < 256; i++) {
-                this.testAreas(vanilla, javaFast, r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(256) + 1, r.nextInt(256) + 1);
+                this.testAreas(vanilla, javaFast, r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000),
+                        //workaround for a vanilla bug in GenLayerVoronoiZoom
+                        vanilla instanceof GenLayerVoronoiZoom ? 16 : r.nextInt(256) + 1, vanilla instanceof GenLayerVoronoiZoom ? 16 : r.nextInt(256) + 1);
             }
         } else {
             this.testAreasAndNative(vanilla, javaFast, nativeFast, 0, 0, 2, 2);
@@ -194,7 +197,9 @@ public class TestFastBiomeGen {
             this.testAreasAndNative(vanilla, javaFast, nativeFast, -10, -10, 21, 21);
 
             for (int i = 0; i < 256; i++) {
-                this.testAreasAndNative(vanilla, javaFast, nativeFast, r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(256) + 1, r.nextInt(256) + 1);
+                this.testAreasAndNative(vanilla, javaFast, nativeFast, r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000),
+                        //workaround for a vanilla bug in GenLayerVoronoiZoom
+                        vanilla instanceof GenLayerVoronoiZoom ? 16 : r.nextInt(256) + 1, vanilla instanceof GenLayerVoronoiZoom ? 16 : r.nextInt(256) + 1);
             }
         }
     }
@@ -205,7 +210,14 @@ public class TestFastBiomeGen {
             protected int[] compute() {
                 int[] reference = vanilla.getInts(areaX, areaZ, sizeX, sizeZ);
                 IntCache.resetIntCache();
-                return reference;
+
+                int[] swapped = reference.clone();
+                for (int i = 0, x = 0; x < sizeX; x++) {
+                    for (int z = 0; z < sizeZ; z++) {
+                        swapped[i++] = reference[z * sizeX + x];
+                    }
+                }
+                return swapped;
             }
         }.fork();
 
@@ -228,7 +240,7 @@ public class TestFastBiomeGen {
         int[] fastGrid = futureJava.join();
         for (int i = 0, dx = 0; dx < sizeX; dx++) {
             for (int dz = 0; dz < sizeZ; dz++, i++) {
-                int referenceValue = reference[dz * sizeX + dx];
+                int referenceValue = reference[i];
                 int fastValue = fastGrid[i];
                 checkState(referenceValue == fastValue, "at (%d, %d): fast: %d != expected: %d", areaX + dx, areaZ + dz, fastValue, referenceValue);
             }
@@ -241,7 +253,14 @@ public class TestFastBiomeGen {
             protected int[] compute() {
                 int[] reference = vanilla.getInts(areaX, areaZ, sizeX, sizeZ);
                 IntCache.resetIntCache();
-                return reference;
+
+                int[] swapped = reference.clone();
+                for (int i = 0, x = 0; x < sizeX; x++) {
+                    for (int z = 0; z < sizeZ; z++) {
+                        swapped[i++] = reference[z * sizeX + x];
+                    }
+                }
+                return swapped;
             }
         }.fork();
 
@@ -277,7 +296,7 @@ public class TestFastBiomeGen {
         int[] fastGrid = futureJava.join();
         for (int i = 0, dx = 0; dx < sizeX; dx++) {
             for (int dz = 0; dz < sizeZ; dz++, i++) {
-                int referenceValue = reference[dz * sizeX + dx];
+                int referenceValue = reference[i];
                 int fastValue = fastGrid[i];
                 checkState(referenceValue == fastValue, "at (%d, %d): fast (java): %d != expected: %d", areaX + dx, areaZ + dz, fastValue, referenceValue);
             }
@@ -286,7 +305,7 @@ public class TestFastBiomeGen {
         fastGrid = futureNative.join();
         for (int i = 0, dx = 0; dx < sizeX; dx++) {
             for (int dz = 0; dz < sizeZ; dz++, i++) {
-                int referenceValue = reference[dz * sizeX + dx];
+                int referenceValue = reference[i];
                 int fastValue = fastGrid[i];
                 checkState(referenceValue == fastValue, "at (%d, %d): fast (native): %d != expected: %d", areaX + dx, areaZ + dz, fastValue, referenceValue);
             }

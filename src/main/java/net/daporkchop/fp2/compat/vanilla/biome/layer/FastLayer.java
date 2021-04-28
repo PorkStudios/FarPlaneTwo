@@ -66,4 +66,30 @@ public abstract class FastLayer {
             }
         }
     }
+
+    /**
+     * Gets a grid of multiple grids with the given spacing between each other.
+     *
+     * @param alloc  an {@link IntArrayAllocator} to use for allocating {@code int[]}s
+     * @param x      the grid's base X coordinate
+     * @param z      the grid's base Z coordinate
+     * @param sizeX  the size of each small grid along the X axis
+     * @param sizeZ  the size of each small grid along the Z axis
+     * @param spaceX the distance between the origin of each small grid along the X axis
+     * @param spaceZ the distance between the origin of each small grid along the Z axis
+     * @param countX the number of smaller grids to generate along the X axis
+     * @param countZ the number of smaller grids to generate along the Z axis
+     * @param out    the {@code int[]} to write to
+     */
+    public void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, int spaceX, int spaceZ, int countX, int countZ, @NonNull int[] out) {
+        for (int i = 0, gridX = 0; gridX < countX; gridX++) {
+            for (int gridZ = 0; gridZ < countZ; gridZ++) {
+                for (int dx = 0; dx < sizeX; dx++) {
+                    for (int dz = 0; dz < sizeZ; dz++) {
+                        out[i++] = this.getSingle(alloc, x + gridX * spaceX + dx, z + gridZ * spaceZ + dz);
+                    }
+                }
+            }
+        }
+    }
 }

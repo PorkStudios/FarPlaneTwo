@@ -29,8 +29,6 @@
 #include <cstring>
 #include <vector>
 
-#include <iostream>
-
 namespace fp2::biome::fastlayer {
     using int4 = int32_t[4];
 
