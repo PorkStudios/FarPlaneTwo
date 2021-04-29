@@ -25,6 +25,8 @@
 
 #include <lib/vectorclass-2.01.03/vectorclass.h>
 
+#include <iostream>
+
 namespace fp2::biome::fastlayer {
     /**
      * Faster re-implementation of the PRNG used in GenLayer.
@@ -98,6 +100,24 @@ namespace fp2::biome::fastlayer {
 
     using rng = base_rng<int64_t, int32_t, cast, cast>;
 
+    template<typename T> constexpr T asrRound(T val, T shift) {
+        return shift == 0
+                ? val
+                : (val >> shift);// + ((val >> (shift - 1)) & 1);
+
+        return (val >> shift) + ((val >> (shift - 1)) & 1);
+
+        if (shift == 0) return val;
+        long mask = (1L << shift) - 1L;
+        return (val >> shift) + (((val >> (shift - 1)) & 1) != 0 && (val & (mask >> 1)) != 0 ? 1 : 0);
+
+        return val >> shift;
+    }
+
+    constexpr int32_t mulAddShift(int32_t a, int32_t b, int32_t c, int32_t shift) {
+        return (int32_t) (((int64_t) a * (int64_t) b + (int64_t) c) >> shift);
+    }
+
     enum padded_layer_mode {
         corners,
         sides,
@@ -113,9 +133,9 @@ namespace fp2::biome::fastlayer {
      */
     template<int32_t(EVAL)(rng&, int32_t, Vec4i), padded_layer_mode MODE> class padded_layer {
         static const inline Vec4i OFFSETS_X = MODE == padded_layer_mode::corners
-                ? Vec4i(-1, -1, 1, 1) : MODE == padded_layer_mode::sides ? Vec4i(-1, 0, 0, 1) : Vec4i(-1, 0, 1, 0);
+                ? Vec4i(-1, 1, -1, 1) : MODE == padded_layer_mode::sides ? Vec4i(-1, 0, 0, 1) : Vec4i(-1, 0, 1, 0);
         static const inline Vec4i OFFSETS_Z = MODE == padded_layer_mode::corners
-                ? Vec4i(-1, 1, -1, 1) : MODE == padded_layer_mode::sides ? Vec4i(0, -1, 1, 0) : Vec4i(0, -1, 0, 1);
+                ? Vec4i(-1, -1, 1, 1) : MODE == padded_layer_mode::sides ? Vec4i(0, -1, 1, 0) : Vec4i(0, -1, 0, 1);
 
     public:
         inline void grid(JNIEnv* env,
@@ -142,8 +162,8 @@ namespace fp2::biome::fastlayer {
         }
 
         inline void grid_multi_combined(JNIEnv* env,
-                int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t count, jintArray _out, jintArray _in) {
-            const int32_t inSize = (dist * count) + 2;
+                int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t depth, int32_t count, jintArray _out, jintArray _in) {
+            const int32_t inSize = (((dist >> depth) + 1) * count) + 2;
 
             const Vec4i neighbor_offsets = OFFSETS_X * inSize + OFFSETS_Z;
 
@@ -154,11 +174,11 @@ namespace fp2::biome::fastlayer {
                 for (int32_t gridZ = 0; gridZ < count; gridZ++) {
                     for (int32_t dx = 0; dx < size; dx++) {
                         for (int32_t dz = 0; dz < size; dz++, outIdx++) {
-                            const int32_t inIdx = (gridX * dist + dx + 1) * inSize + (gridZ * dist + dz + 1);
+                            const int32_t inIdx = (mulAddShift(gridX, dist, 0, depth) + dx + 1) * inSize + (mulAddShift(gridZ, dist, 0, depth) + dz + 1);
                             const Vec4i neighbors = lookup<(1 << 30)>(inIdx + neighbor_offsets, &in[0]);
                             const int32_t center = in[inIdx];
 
-                            fp2::biome::fastlayer::rng rng(seed, x + gridX * dist + dx, z + gridZ * dist + dz);
+                            fp2::biome::fastlayer::rng rng(seed, mulAddShift(gridX, dist, x, depth) + dx, mulAddShift(gridZ, dist, z, depth) + dz);
 
                             out[outIdx] = EVAL(rng, center, neighbors);
                         }
@@ -168,7 +188,7 @@ namespace fp2::biome::fastlayer {
         }
 
         inline void grid_multi_individual(JNIEnv* env,
-                int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t count, jintArray _out, jintArray _in) {
+                int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t depth, int32_t count, jintArray _out, jintArray _in) {
             const int32_t inSize = size + 2;
 
             const Vec4i neighbor_offsets = OFFSETS_X * inSize + OFFSETS_Z;
@@ -178,16 +198,13 @@ namespace fp2::biome::fastlayer {
 
             for (int32_t outIdx = 0, inBase = 0, gridX = 0; gridX < count; gridX++) {
                 for (int32_t gridZ = 0; gridZ < count; gridZ++, inBase += inSize * inSize) {
-                    const int32_t baseX = x + gridX * dist;
-                    const int32_t baseZ = z + gridZ * dist;
-
                     for (int32_t dx = 0; dx < size; dx++) {
                         for (int32_t dz = 0; dz < size; dz++, outIdx++) {
                             const int32_t inIdx = inBase + (dx + 1) * inSize + (dz + 1);
                             const Vec4i neighbors = lookup<(1 << 30)>(inIdx + neighbor_offsets, &in[0]);
                             const int32_t center = in[inIdx];
 
-                            fp2::biome::fastlayer::rng rng(seed, baseX + dx, baseZ + dz);
+                            fp2::biome::fastlayer::rng rng(seed, mulAddShift(gridX, dist, x, depth) + dx, mulAddShift(gridZ, dist, z, depth) + dz);
 
                             out[outIdx] = EVAL(rng, center, neighbors);
                         }
@@ -219,17 +236,14 @@ namespace fp2::biome::fastlayer {
         }
 
         inline void grid_multi(JNIEnv* env,
-                int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t count, jintArray _inout) {
+                int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t depth, int32_t count, jintArray _inout) {
             fp2::pinned_int_array inout(env, _inout);
 
             for (int32_t i = 0, gridX = 0; gridX < count; gridX++) {
                 for (int32_t gridZ = 0; gridZ < count; gridZ++) {
-                    const int32_t baseX = x + gridX * dist;
-                    const int32_t baseZ = z + gridZ * dist;
-
                     for (int32_t dx = 0; dx < size; dx++) {
                         for (int32_t dz = 0; dz < size; dz++, i++) {
-                            fp2::biome::fastlayer::rng rng(seed, baseX + dx, baseZ + dz);
+                            fp2::biome::fastlayer::rng rng(seed, mulAddShift(gridX, dist, x, depth) + dx, mulAddShift(gridZ, dist, z, depth) + dz);
 
                             inout[i] = EVAL(rng, inout[i]);
                         }
@@ -261,19 +275,18 @@ namespace fp2::biome::fastlayer {
         }
 
         inline void grid_multi(JNIEnv* env,
-                int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t count, jintArray _out) {
+                int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t depth, int32_t count, jintArray _out) {
             fp2::pinned_int_array out(env, _out);
 
             for (int32_t i = 0, gridX = 0; gridX < count; gridX++) {
                 for (int32_t gridZ = 0; gridZ < count; gridZ++) {
-                    const int32_t baseX = x + gridX * dist;
-                    const int32_t baseZ = z + gridZ * dist;
-
                     for (int32_t dx = 0; dx < size; dx++) {
                         for (int32_t dz = 0; dz < size; dz++, i++) {
-                            fp2::biome::fastlayer::rng rng(seed, baseX + dx, baseZ + dz);
+                            const int32_t realX = mulAddShift(gridX, dist, x, depth) + dx;
+                            const int32_t realZ = mulAddShift(gridZ, dist, z, depth) + dz;
+                            fp2::biome::fastlayer::rng rng(seed, realX, realZ);
 
-                            out[i] = EVAL(rng, baseX + dx, baseZ + dz);
+                            out[i] = EVAL(rng, realX, realZ);
                         }
                     }
                 }

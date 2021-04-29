@@ -56,32 +56,32 @@ public interface INativePaddedLayer extends IPaddedLayer {
     void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
 
     @Override
-    default void multiGetGridsCombined(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int count, @NonNull int[] out) {
-        int lowSize = (dist * count) + 2;
+    default void multiGetGridsCombined(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+        int lowSize = (((dist >> depth) + 1) * count) + 2;
         int[] in = alloc.get(lowSize * lowSize);
         try {
-            this.child().getGrid(alloc, x - 1, z - 1, lowSize, lowSize, in);
+            this.child().getGrid(alloc, (x >> depth) - 1, (z >> depth) - 1, lowSize, lowSize, in);
 
-            this.multiGetGridsCombined0(this.seed(), x, z, size, dist, count, out, in);
+            this.multiGetGridsCombined0(this.seed(), x, z, size, dist, depth, count, out, in);
         } finally {
             alloc.release(in);
         }
     }
 
-    void multiGetGridsCombined0(long seed, int x, int z, int size, int dist, int count, @NonNull int[] out, @NonNull int[] in);
+    void multiGetGridsCombined0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 
     @Override
-    default void multiGetGridsIndividual(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int count, @NonNull int[] out) {
+    default void multiGetGridsIndividual(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         int lowSize = size + 2;
         int[] in = alloc.get(count * count * lowSize * lowSize);
         try {
-            this.child().multiGetGrids(alloc, x - 1, z - 1, lowSize, dist, count, in);
+            this.child().multiGetGrids(alloc, x - (1 << depth), z - (1 << depth), lowSize, dist, depth, count, in);
 
-            this.multiGetGridsIndividual0(this.seed(), x, z, size, dist, count, out, in);
+            this.multiGetGridsIndividual0(this.seed(), x, z, size, dist, depth, count, out, in);
         } finally {
             alloc.release(in);
         }
     }
 
-    void multiGetGridsIndividual0(long seed, int x, int z, int size, int dist, int count, @NonNull int[] out, @NonNull int[] in);
+    void multiGetGridsIndividual0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 }

@@ -34,11 +34,11 @@ FP2_JNI(void, NativeFastLayerRemoveTooMuchOcean, getGrid0) (JNIEnv* env, jobject
 }
 
 FP2_JNI(void, NativeFastLayerRemoveTooMuchOcean, multiGetGridsCombined0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint size, jint dist, jint count, jintArray _out, jintArray _in) {
-    layer{}.grid_multi_combined(env, seed, x, z, size, dist, count, _out, _in);
+        jlong seed, jint x, jint z, jint size, jint dist, jint depth, jint count, jintArray _out, jintArray _in) {
+    layer{}.grid_multi_combined(env, seed, x, z, size, dist, depth, count, _out, _in);
 }
 
 FP2_JNI(void, NativeFastLayerRemoveTooMuchOcean, multiGetGridsIndividual0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint size, jint dist, jint count, jintArray _out, jintArray _in) {
-    layer{}.grid_multi_individual(env, seed, x, z, size, dist, count, _out, _in);
+        jlong seed, jint x, jint z, jint size, jint dist, jint depth, jint count, jintArray _out, jintArray _in) {
+    layer{}.grid_multi_individual(env, seed, x, z, size, dist, depth, count, _out, _in);
 }

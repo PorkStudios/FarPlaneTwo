@@ -57,17 +57,17 @@ public class NativeFastLayerFuzzyZoom extends FastLayerFuzzyZoom implements IZoo
     }
 
     @Override
-    public void multiGetGridsIndividual(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int count, @NonNull int[] out) {
+    public void multiGetGridsIndividual(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         int lowSize = (size >> 1) + 2;
         int[] in = alloc.get(count * count * lowSize * lowSize);
         try {
-            this.child.multiGetGrids(alloc, x >> 1, z >> 1, lowSize, dist >> 1, count, in);
+            this.child.multiGetGrids(alloc, x >> 1, z >> 1, lowSize, dist, depth + 1, count, in);
 
-            this.multiGetGridsIndividual0(this.seed, x, z, size, dist, count, out, in);
+            this.multiGetGridsIndividual0(this.seed, x, z, size, dist, depth, count, out, in);
         } finally {
             alloc.release(in);
         }
     }
 
-    protected native void multiGetGridsIndividual0(long seed, int x, int z, int size, int dist, int count, @NonNull int[] out, @NonNull int[] in);
+    protected native void multiGetGridsIndividual0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 }

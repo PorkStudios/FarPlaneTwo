@@ -18,36 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
+package net.daporkchop.fp2.util;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.ISourceLayer;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.ITranslationLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import lombok.experimental.UtilityClass;
 
 /**
- * Extension of {@link ISourceLayer} for native implementations.
+ * Various math helper functions.
  *
  * @author DaPorkchop_
  */
-public interface INativeSourceLayer extends ISourceLayer {
-    /**
-     * @return the seed used by this layer for random number generation
-     */
-    long seed();
-
-    @Override
-    default void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
-        this.getGrid0(this.seed(), x, z, sizeX, sizeZ, out);
+@UtilityClass
+public class MathUtil {
+    public static int asrRound(int val, int shift) {
+        return shift == 0
+                ? val
+                : (val >> shift) + ((val >> (shift - 1)) & 1);
     }
 
-    void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out);
-
-    @Override
-    default void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
-        this.multiGetGrids0(this.seed(), x, z, size, dist, depth, count, out);
+    public static int mulAddShift(int a, int b, int c, int shift) {
+        return (int) (((long) a * (long) b + c) >> shift);
     }
-
-    void multiGetGrids0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] inout);
 }

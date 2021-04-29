@@ -56,7 +56,7 @@ namespace fp2::biome::fastlayer {
     }
 
     template<int32_t(SELECT_CORNER)(rng&, int4&)> inline void zoom_unaligned(JNIEnv* env,
-        int64_t seed, int32_t x, int32_t z, int32_t sizeX, int32_t sizeZ, jintArray _out, jintArray _in) {
+            int64_t seed, int32_t x, int32_t z, int32_t sizeX, int32_t sizeZ, jintArray _out, jintArray _in) {
         const int32_t lowX = x >> 1;
         const int32_t lowZ = z >> 1;
         const int32_t lowSizeX = (sizeX >> 1) + 2;
@@ -95,6 +95,7 @@ namespace fp2::biome::fastlayer {
 
     template<int32_t(SELECT_CORNER)(rng&, int4&)> inline void zoom(JNIEnv* env,
             int64_t seed, int32_t x, int32_t z, int32_t sizeX, int32_t sizeZ, jintArray _out, jintArray _in) {
+                    //std::cout << '(' << x << ',' << z << ") " << std::endl;
         if (!((x | z | sizeX | sizeZ) & 1)) {
             zoom_aligned<SELECT_CORNER>(env, seed, x, z, sizeX, sizeZ, _out, _in);
         } else {
@@ -103,7 +104,7 @@ namespace fp2::biome::fastlayer {
     }
 
     template<int32_t(SELECT_CORNER)(rng&, int4&)> inline void zoom_multi_individual(JNIEnv* env,
-            int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t count, jintArray _out, jintArray _in) {
+            int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t depth, int32_t count, jintArray _out, jintArray _in) {
         const int32_t lowSize = (size >> 1) + 2;
         const int32_t tempSize = (lowSize - 1) << 1;
 
@@ -115,13 +116,15 @@ namespace fp2::biome::fastlayer {
 
             for (int32_t inIdx = 0, tempIdx = 0, gridX = 0; gridX < count; gridX++) {
                 for (int32_t gridZ = 0; gridZ < count; gridZ++, inIdx += lowSize * lowSize, tempIdx += tempSize * tempSize) {
-                    const int32_t lowX = (x + gridX * dist) >> 1;
-                    const int32_t lowZ = (z + gridZ * dist) >> 1;
+                    const int32_t baseX = mulAddShift(gridX, dist, x, depth);
+                    const int32_t baseZ = mulAddShift(gridZ, dist, z, depth);
+                    const int32_t lowX = baseX >> 1;
+                    const int32_t lowZ = baseZ >> 1;
 
                     for (int32_t tileX = 0; tileX < lowSize - 1; tileX++) {
                         for (int32_t tileZ = 0; tileZ < lowSize - 1; tileZ++) {
                             int4 v; //load values with single instruction using SSE
-                            lookup<(1 << 30)>((inIdx + tileX * lowSize + tileZ) + in_offsets, &in[0]).store(v);
+                            lookup<(1 << 30)>((tileX * lowSize + tileZ) + in_offsets, &in[inIdx]).store(v);
 
                             fp2::biome::fastlayer::rng rng(seed, (lowX + tileX) << 1, (lowZ + tileZ) << 1);
                             temp[tempIdx + ((tileX << 1) + 0) * tempSize + ((tileZ << 1) + 0)] = v[0];
@@ -138,14 +141,17 @@ namespace fp2::biome::fastlayer {
             fp2::pinned_int_array out(env, _out);
 
             for (int32_t outIdx = 0, tempIdx = 0, gridX = 0; gridX < count; gridX++) {
+                //std::cout << depth << ' ';
                 for (int32_t gridZ = 0; gridZ < count; gridZ++, outIdx += size * size, tempIdx += tempSize * tempSize) {
-                    const int32_t realX = x + gridX * dist;
-                    const int32_t realZ = z + gridZ * dist;
+                    const int32_t realX = mulAddShift(gridX, dist, x, depth);
+                    const int32_t realZ = mulAddShift(gridZ, dist, z, depth);
+                    //std::cout << '(' << realX << ',' << realZ << ") ";
 
                     for (int32_t dx = 0; dx < size; dx++) {
                         memcpy(&out[outIdx + dx * size], &temp[tempIdx + (dx + (realX & 1)) * tempSize + (realZ & 1)], size * sizeof(int32_t));
                     }
                 }
+                //std::cout << std::endl;
             }
         }
     }

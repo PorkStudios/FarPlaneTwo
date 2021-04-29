@@ -35,5 +35,5 @@ public class NativeFastLayerIsland extends FastLayerIsland implements INativeSou
     public native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out);
 
     @Override
-    public native void multiGetGrids0(long seed, int x, int z, int size, int dist, int count, @NonNull int[] out);
+    public native void multiGetGrids0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out);
 }

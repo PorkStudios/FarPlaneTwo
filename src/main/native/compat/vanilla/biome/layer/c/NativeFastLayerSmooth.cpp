@@ -43,11 +43,11 @@ FP2_JNI(void, NativeFastLayerSmooth, getGrid0) (JNIEnv* env, jobject obj,
 }
 
 FP2_JNI(void, NativeFastLayerSmooth, multiGetGridsCombined0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint size, jint dist, jint count, jintArray _out, jintArray _in) {
-    layer{}.grid_multi_combined(env, seed, x, z, size, dist, count, _out, _in);
+        jlong seed, jint x, jint z, jint size, jint dist, jint depth, jint count, jintArray _out, jintArray _in) {
+    layer{}.grid_multi_combined(env, seed, x, z, size, dist, depth, count, _out, _in);
 }
 
 FP2_JNI(void, NativeFastLayerSmooth, multiGetGridsIndividual0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint size, jint dist, jint count, jintArray _out, jintArray _in) {
-    layer{}.grid_multi_individual(env, seed, x, z, size, dist, count, _out, _in);
+        jlong seed, jint x, jint z, jint size, jint dist, jint depth, jint count, jintArray _out, jintArray _in) {
+    layer{}.grid_multi_individual(env, seed, x, z, size, dist, depth, count, _out, _in);
 }

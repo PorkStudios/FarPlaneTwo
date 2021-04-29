@@ -32,6 +32,6 @@ FP2_JNI(void, NativeFastLayerIsland, getGrid0) (JNIEnv* env, jobject obj,
 }
 
 FP2_JNI(void, NativeFastLayerIsland, multiGetGrids0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint size, jint dist, jint count, jintArray _inout) {
-    layer{}.grid_multi(env, seed, x, z, size, dist, count, _inout);
+        jlong seed, jint x, jint z, jint size, jint dist, jint depth, jint count, jintArray _inout) {
+    layer{}.grid_multi(env, seed, x, z, size, dist, depth, count, _inout);
 }

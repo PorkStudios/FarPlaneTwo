@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.util.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
@@ -66,7 +67,7 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos> {
             int zMax = baseZ + d + 1;
 
             for (int x = xMin; x <= xMax; x++) {
-                for (int y = yMin; y <= yMax; y++)  {
+                for (int y = yMin; y <= yMax; y++) {
                     for (int z = zMin; z <= zMax; z++) {
                         positions[i++] = new VoxelPos(lvl, x, y, z);
                     }

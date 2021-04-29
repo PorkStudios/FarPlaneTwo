@@ -23,10 +23,12 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer;
 import lombok.NonNull;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
+import static net.daporkchop.fp2.util.MathUtil.*;
+
 /**
  * A {@link IFastLayer} which zooms in.
  * <p>
- * Implementors should always override {@link #multiGetGridsIndividual(IntArrayAllocator, int, int, int, int, int, int[])}, and override {@link #multiGetGridsCombined(IntArrayAllocator, int, int, int, int, int, int[])}
+ * Implementors should always override {@link #multiGetGridsIndividual(IntArrayAllocator, int, int, int, int, int, int, int[])}, and override {@link #multiGetGridsCombined(IntArrayAllocator, int, int, int, int, int, int, int[])}
  * whenever possible.
  *
  * @author DaPorkchop_
@@ -38,22 +40,25 @@ public interface IZoomingLayer extends IFastLayer {
     int shift();
 
     @Override
-    default void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int count, @NonNull int[] out) {
+    default void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+        if (depth == 0) {
+            IFastLayer.super.multiGetGrids(alloc, x, z, size, dist, depth, count, out);
+        }
+
         int shift = this.shift();
-        if (((size >> shift) + 2) < (dist >> shift)) { //if each small grid is smaller than the space between each grid, we should continue getting
+        if (((size >> shift) + 2) < (dist >> (depth + shift))) { //if each small grid is smaller than the space between each grid, we should continue getting
             // multiple grids rather than merging the requests
-            this.multiGetGridsIndividual(alloc, x, z, size, dist, count, out);
+            this.multiGetGridsIndividual(alloc, x, z, size, dist, depth, count, out);
         } else { //the requests can be combined into a single one
-            this.multiGetGridsCombined(alloc, x, z, size, dist, count, out);
+            this.multiGetGridsCombined(alloc, x, z, size, dist, depth, count, out);
         }
     }
 
-    default void multiGetGridsCombined(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int count, @NonNull int[] out) {
-        IFastLayer.super.multiGetGrids(alloc, x, z, size, dist, count, out); //fall back to slow implementation
-        //this.multiGetGridsIndividual(alloc, x, z, size, dist, count, out); //this method is less critical to achieving good performance
+    default void multiGetGridsCombined(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+        this.multiGetGridsIndividual(alloc, x, z, size, dist, depth, count, out); //this method is less critical to achieving good performance
     }
 
-    default void multiGetGridsIndividual(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int count, @NonNull int[] out) {
-        IFastLayer.super.multiGetGrids(alloc, x, z, size, dist, count, out); //fall back to slow implementation
+    default void multiGetGridsIndividual(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+        IFastLayer.super.multiGetGrids(alloc, x, z, size, dist, depth, count, out); //fall back to slow implementation
     }
 }

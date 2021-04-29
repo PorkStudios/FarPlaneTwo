@@ -24,6 +24,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayer;
 
+import static net.daporkchop.fp2.util.MathUtil.*;
+
 /**
  * Base interface for a faster alternative to {@link GenLayer}.
  * <p>
@@ -75,16 +77,17 @@ public interface IFastLayer {
      * @param z     the grid's base Z coordinate
      * @param size  the size of each small grid
      * @param dist  the distance between the origin of each small grid
+     * @param depth the recursion depth. Unless you are an {@link IFastLayer}, this should always be set to {@code 0}
      * @param count the number of smaller grids to generate
      * @param out   the {@code int[]} to write to
      */
-    default void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int count, @NonNull int[] out) {
+    default void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         int[] tmp = alloc.get(size * size);
         try {
             for (int i = 0, gridX = 0; gridX < count; gridX++) {
                 for (int gridZ = 0; gridZ < count; gridZ++, i += size * size) {
                     //get size*size grid (getGrid may have optimized implementation)
-                    this.getGrid(alloc, x + gridX * dist, z + gridZ * dist, size, size, tmp);
+                    this.getGrid(alloc, mulAddShift(gridX, dist, x, depth), mulAddShift(gridZ, dist, z, depth), size, size, tmp);
 
                     //copy grid to output array
                     System.arraycopy(tmp, 0, out, i, size * size);

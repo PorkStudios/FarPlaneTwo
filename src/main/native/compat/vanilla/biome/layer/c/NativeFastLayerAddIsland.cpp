@@ -29,7 +29,7 @@ constexpr fp2::fastmod_s64 MODULOS[] = {
 
 inline int32_t eval(fp2::biome::fastlayer::rng& rng, int32_t center, Vec4i neighbors) {
     if (center != 0) {
-        return horizontal_or(neighbors == 0) && !rng.nextInt<5>()
+        return horizontal_or(neighbors == 0) && rng.nextInt<5>() == 0
             ? center == 4 ? 4 : 0
             : center;
     } else if (horizontal_and(neighbors == 0)) {
@@ -60,11 +60,11 @@ FP2_JNI(void, NativeFastLayerAddIsland, getGrid0) (JNIEnv* env, jobject obj,
 }
 
 FP2_JNI(void, NativeFastLayerAddIsland, multiGetGridsCombined0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint size, jint dist, jint count, jintArray _out, jintArray _in) {
-    layer{}.grid_multi_combined(env, seed, x, z, size, dist, count, _out, _in);
+        jlong seed, jint x, jint z, jint size, jint dist, jint depth, jint count, jintArray _out, jintArray _in) {
+    layer{}.grid_multi_combined(env, seed, x, z, size, dist, depth, count, _out, _in);
 }
 
 FP2_JNI(void, NativeFastLayerAddIsland, multiGetGridsIndividual0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint size, jint dist, jint count, jintArray _out, jintArray _in) {
-    layer{}.grid_multi_individual(env, seed, x, z, size, dist, count, _out, _in);
+        jlong seed, jint x, jint z, jint size, jint dist, jint depth, jint count, jintArray _out, jintArray _in) {
+    layer{}.grid_multi_individual(env, seed, x, z, size, dist, depth, count, _out, _in);
 }
