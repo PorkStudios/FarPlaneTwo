@@ -18,27 +18,27 @@
  *
  */
 
-#include <fp2.h>
 #include "NativeFastLayer.h"
 
-#include <lib/vectorclass-2.01.03/vectorclass.h>
+inline int32_t eval(fp2::biome::fastlayer::rng& rng, int32_t center, Vec4i neighbors) {
+    return center == 0 && horizontal_or(neighbors) == 0 && rng.nextInt<2>() == 0
+            ? 1
+            : center;
+}
+
+using layer = fp2::biome::fastlayer::padded_layer<eval, fp2::biome::fastlayer::padded_layer_mode::sides>;
 
 FP2_JNI(void, NativeFastLayerRemoveTooMuchOcean, getGrid0) (JNIEnv* env, jobject obj,
         jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out, jintArray _in) {
-    fp2::pinned_int_array out(env, _out);
-    fp2::pinned_int_array in(env, _in);
+    layer{}.grid(env, seed, x, z, sizeX, sizeZ, _out, _in);
+}
 
-    const Vec4i neighbor_offsets(-1 * (sizeZ + 2) + 0, 0 * (sizeZ + 2) + -1, 0 * (sizeZ + 2) + 1, 1 * (sizeZ + 2) + 0);
+FP2_JNI(void, NativeFastLayerRemoveTooMuchOcean, multiGetGridsCombined0) (JNIEnv* env, jobject obj,
+        jlong seed, jint x, jint z, jint size, jint dist, jint count, jintArray _out, jintArray _in) {
+    layer{}.grid_multi_combined(env, seed, x, z, size, dist, count, _out, _in);
+}
 
-    for (int32_t outIdx = 0, dx = 0; dx < sizeX; dx++) {
-        for (int32_t inIdx = (dx + 1) * (sizeZ + 2) + 1, dz = 0; dz < sizeZ; inIdx++, dz++, outIdx++) {
-            auto center = in[inIdx];
-
-            out[outIdx] = center == 0
-                        && horizontal_or(lookup<(1 << 30)>(inIdx + neighbor_offsets, &in[0])) == 0
-                        && fp2::biome::fastlayer::rng(seed, x + dx, z + dz).nextInt<2>() == 0
-                    ? 1
-                    : center;
-        }
-    }
+FP2_JNI(void, NativeFastLayerRemoveTooMuchOcean, multiGetGridsIndividual0) (JNIEnv* env, jobject obj,
+        jlong seed, jint x, jint z, jint size, jint dist, jint count, jintArray _out, jintArray _in) {
+    layer{}.grid_multi_individual(env, seed, x, z, size, dist, count, _out, _in);
 }

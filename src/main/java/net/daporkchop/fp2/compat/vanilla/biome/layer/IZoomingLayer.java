@@ -26,8 +26,8 @@ import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 /**
  * A {@link IFastLayer} which zooms in.
  * <p>
- * Implementors are advised to override {@link #multiGetGridsCombined(IntArrayAllocator, int, int, int, int, int, int[])} and
- * {@link #multiGetGridsIndividual(IntArrayAllocator, int, int, int, int, int, int[])}.
+ * Implementors should always override {@link #multiGetGridsIndividual(IntArrayAllocator, int, int, int, int, int, int[])}, and override {@link #multiGetGridsCombined(IntArrayAllocator, int, int, int, int, int, int[])}
+ * whenever possible.
  *
  * @author DaPorkchop_
  */
@@ -50,6 +50,7 @@ public interface IZoomingLayer extends IFastLayer {
 
     default void multiGetGridsCombined(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int count, @NonNull int[] out) {
         IFastLayer.super.multiGetGrids(alloc, x, z, size, dist, count, out); //fall back to slow implementation
+        //this.multiGetGridsIndividual(alloc, x, z, size, dist, count, out); //this method is less critical to achieving good performance
     }
 
     default void multiGetGridsIndividual(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int count, @NonNull int[] out) {

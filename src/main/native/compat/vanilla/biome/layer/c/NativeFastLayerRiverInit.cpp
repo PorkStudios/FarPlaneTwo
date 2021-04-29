@@ -18,18 +18,22 @@
  *
  */
 
-#include <fp2.h>
 #include "NativeFastLayer.h"
 
-FP2_JNI(void, NativeFastLayerRiverInit, getGrid0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out) {
-    fp2::pinned_int_array out(env, _out);
+inline int32_t eval(fp2::biome::fastlayer::rng& rng, int32_t val) {
+    return val > 0
+            ? rng.nextInt<299999>() + 2
+            : 0;
+}
 
-    for (int32_t outIdx = 0, dx = 0; dx < sizeX; dx++) {
-        for (int32_t dz = 0; dz < sizeZ; dz++, outIdx++) {
-            out[outIdx] = out[outIdx] > 0
-                    ? fp2::biome::fastlayer::rng(seed, x + dx, z + dz).nextInt<299999>() + 2
-                    : 0;
-        }
-    }
+using layer = fp2::biome::fastlayer::translation_layer<eval>;
+
+FP2_JNI(void, NativeFastLayerRiverInit, getGrid0) (JNIEnv* env, jobject obj,
+        jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _inout) {
+    layer{}.grid(env, seed, x, z, sizeX, sizeZ, _inout);
+}
+
+FP2_JNI(void, NativeFastLayerRiverInit, multiGetGrids0) (JNIEnv* env, jobject obj,
+        jlong seed, jint x, jint z, jint size, jint dist, jint count, jintArray _inout) {
+    layer{}.grid_multi(env, seed, x, z, size, dist, count, _inout);
 }

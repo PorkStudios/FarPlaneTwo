@@ -19,6 +19,7 @@
     "entity.player.MixinEntityPlayerMP",
     "world.MixinWorldServer",
     "world.chunk.storage.MixinRegionFileCache",
+    "world.gen.layer.MixinGenLayer",
     "world.gen.layer.MixinIntCache"
   ]
 }

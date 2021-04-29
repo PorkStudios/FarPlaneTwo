@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -30,6 +31,7 @@ import net.daporkchop.lib.unsafe.PUnsafe;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
+@Getter
 public abstract class AbstractFastLayer implements IFastLayer {
     public static final long CHILD_OFFSET = PUnsafe.pork_getOffset(AbstractFastLayer.class, "child");
 

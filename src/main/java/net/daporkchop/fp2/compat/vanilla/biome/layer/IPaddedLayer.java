@@ -26,25 +26,15 @@ import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 /**
  * A {@link IFastLayer} whose child requests are larger than the initial input request.
  * <p>
- * Implementors are advised to override {@link #multiGetGridsCombined(IntArrayAllocator, int, int, int, int, int, int[])} and
- * {@link #multiGetGridsIndividual(IntArrayAllocator, int, int, int, int, int, int[])}.
+ * Implementors should always override {@link #multiGetGridsIndividual(IntArrayAllocator, int, int, int, int, int, int[])}, and override {@link #multiGetGridsCombined(IntArrayAllocator, int, int, int, int, int, int[])}
+ * whenever possible.
  *
  * @author DaPorkchop_
  */
 public interface IPaddedLayer extends IFastLayer {
-    /**
-     * @return the amount of padding to apply toward negative coordinates
-     */
-    int paddingRadiusNegative();
-
-    /**
-     * @return the amount of padding to apply toward positive coordinates
-     */
-    int paddingRadiusPositive();
-
     @Override
     default void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int count, @NonNull int[] out) {
-        if (size + this.paddingRadiusNegative() + this.paddingRadiusPositive() < dist) { //if the padded request bounds don't intersect, we should continue issuing multiget requests rather than combining
+        if (size + 2 < dist) { //if the padded request bounds don't intersect, we should continue issuing multiget requests rather than combining
             this.multiGetGridsIndividual(alloc, x, z, size, dist, count, out);
         } else { //the requests can be combined into a single one
             this.multiGetGridsCombined(alloc, x, z, size, dist, count, out);
@@ -52,7 +42,7 @@ public interface IPaddedLayer extends IFastLayer {
     }
 
     default void multiGetGridsCombined(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int count, @NonNull int[] out) {
-        IFastLayer.super.multiGetGrids(alloc, x, z, size, dist, count, out); //fall back to slow implementation
+        this.multiGetGridsIndividual(alloc, x, z, size, dist, count, out); //this method is less critical to achieving good performance
     }
 
     default void multiGetGridsIndividual(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int count, @NonNull int[] out) {

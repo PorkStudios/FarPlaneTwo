@@ -18,7 +18,6 @@
  *
  */
 
-#include <fp2.h>
 #include "NativeFastLayer.h"
 
 FP2_JNI(void, NativeFastLayerRandomValues, getGrid0) (JNIEnv* env, jobject obj,

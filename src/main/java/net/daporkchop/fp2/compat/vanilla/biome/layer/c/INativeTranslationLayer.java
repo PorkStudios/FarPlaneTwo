@@ -21,22 +21,41 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRemoveTooMuchOcean;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.ITranslationLayer;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
 /**
+ * Extension of {@link ITranslationLayer} for native implementations.
+ *
  * @author DaPorkchop_
  */
-public class NativeFastLayerRemoveTooMuchOcean extends FastLayerRemoveTooMuchOcean implements INativePaddedLayer {
-    public NativeFastLayerRemoveTooMuchOcean(long seed) {
-        super(seed);
+public interface INativeTranslationLayer extends ITranslationLayer {
+    /**
+     * @return the seed used by this layer for random number generation
+     */
+    long seed();
+
+    /**
+     * @return the next layer in the generation chain
+     */
+    IFastLayer child();
+
+    @Override
+    default void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+        this.child().getGrid(alloc, x, z, sizeX, sizeZ, out);
+
+        this.getGrid0(this.seed(), x, z, sizeX, sizeZ, out);
     }
 
-    @Override
-    public native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
+    void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] inout);
 
     @Override
-    public native void multiGetGridsCombined0(long seed, int x, int z, int size, int dist, int count, @NonNull int[] out, @NonNull int[] in);
+    default void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int count, @NonNull int[] out) {
+        this.child().multiGetGrids(alloc, x, z, size, dist, count, out);
 
-    @Override
-    public native void multiGetGridsIndividual0(long seed, int x, int z, int size, int dist, int count, @NonNull int[] out, @NonNull int[] in);
+        this.multiGetGrids0(this.seed(), x, z, size, dist, count, out);
+    }
+
+    void multiGetGrids0(long seed, int x, int z, int size, int dist, int count, @NonNull int[] inout);
 }

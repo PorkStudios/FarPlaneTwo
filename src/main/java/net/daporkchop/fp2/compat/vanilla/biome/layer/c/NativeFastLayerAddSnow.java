@@ -27,18 +27,14 @@ import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerAddSnow extends FastLayerAddSnow {
+public class NativeFastLayerAddSnow extends FastLayerAddSnow implements INativeTranslationLayer {
     public NativeFastLayerAddSnow(long seed) {
         super(seed);
     }
 
     @Override
-    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
-        //needed parent area is same size as requested area, so we can have the parent write into the output array and then update it ourselves
-        this.child.getGrid(alloc, x, z, sizeX, sizeZ, out);
+    public native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] inout);
 
-        this.getGrid0(this.seed, x, z, sizeX, sizeZ, out);
-    }
-
-    protected native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out);
+    @Override
+    public native void multiGetGrids0(long seed, int x, int z, int size, int dist, int count, @NonNull int[] inout);
 }

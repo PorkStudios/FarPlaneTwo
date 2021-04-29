@@ -18,25 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRemoveTooMuchOcean;
+package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
 /**
+ * A {@link IFastLayer} which issues no child requests.
+ *
  * @author DaPorkchop_
  */
-public class NativeFastLayerRemoveTooMuchOcean extends FastLayerRemoveTooMuchOcean implements INativePaddedLayer {
-    public NativeFastLayerRemoveTooMuchOcean(long seed) {
-        super(seed);
-    }
-
-    @Override
-    public native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
-
-    @Override
-    public native void multiGetGridsCombined0(long seed, int x, int z, int size, int dist, int count, @NonNull int[] out, @NonNull int[] in);
-
-    @Override
-    public native void multiGetGridsIndividual0(long seed, int x, int z, int size, int dist, int count, @NonNull int[] out, @NonNull int[] in);
+public interface ISourceLayer extends IFastLayer {
 }

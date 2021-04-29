@@ -51,3 +51,8 @@ FP2_JNI(void, NativeFastLayerZoom, getGrid0) (JNIEnv* env, jobject obj,
         jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out, jintArray _in) {
     fp2::biome::fastlayer::zoom<select_mode_or_random>(env, seed, x, z, sizeX, sizeZ, _out, _in);
 }
+
+FP2_JNI(void, NativeFastLayerZoom, multiGetGridsIndividual0) (JNIEnv* env, jobject obj,
+        jlong seed, jint x, jint z, jint size, jint dist, jint count, jintArray _out, jintArray _in) {
+    fp2::biome::fastlayer::zoom_multi_individual<select_mode_or_random>(env, seed, x, z, size, dist, count, _out, _in);
+}

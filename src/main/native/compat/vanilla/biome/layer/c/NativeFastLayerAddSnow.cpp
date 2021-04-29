@@ -18,23 +18,26 @@
  *
  */
 
-#include <fp2.h>
 #include "NativeFastLayer.h"
 
-constexpr uint32_t LOOKUP_TABLE[] = { //use a lookup table to make the inner loop branchless
-    4, 3, 1, 1, 1, 1
-};
+inline int32_t eval(fp2::biome::fastlayer::rng& rng, int32_t val) {
+    constexpr uint32_t LOOKUP_TABLE[] = { //use a lookup table to make this branchless
+        4, 3, 1, 1, 1, 1
+    };
+
+    return val != 0
+            ? LOOKUP_TABLE[rng.nextInt<6>()]
+            : val;
+}
+
+using layer = fp2::biome::fastlayer::translation_layer<eval>;
 
 FP2_JNI(void, NativeFastLayerAddSnow, getGrid0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out) {
-    //this implementation updates the output array in-place
-    fp2::pinned_int_array out(env, _out);
+        jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _inout) {
+    layer{}.grid(env, seed, x, z, sizeX, sizeZ, _inout);
+}
 
-    for (int32_t outIdx = 0, dx = 0; dx < sizeX; dx++) {
-        for (int32_t dz = 0; dz < sizeZ; dz++, outIdx++) {
-            if (out[outIdx] != 0) {
-                out[outIdx] = LOOKUP_TABLE[fp2::biome::fastlayer::rng(seed, x + dx, z + dz).nextInt<6>()];
-            }
-        }
-    }
+FP2_JNI(void, NativeFastLayerAddSnow, multiGetGrids0) (JNIEnv* env, jobject obj,
+        jlong seed, jint x, jint z, jint size, jint dist, jint count, jintArray _inout) {
+    layer{}.grid_multi(env, seed, x, z, size, dist, count, _inout);
 }

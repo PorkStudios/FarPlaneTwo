@@ -21,13 +21,14 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.IZoomingLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerZoom;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerZoom extends FastLayerZoom {
+public class NativeFastLayerZoom extends FastLayerZoom implements IZoomingLayer {
     public NativeFastLayerZoom(long seed) {
         super(seed);
     }
@@ -49,4 +50,24 @@ public class NativeFastLayerZoom extends FastLayerZoom {
     }
 
     protected native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
+
+    @Override
+    public int shift() {
+        return 1;
+    }
+
+    @Override
+    public void multiGetGridsIndividual(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int count, @NonNull int[] out) {
+        int lowSize = (size >> 1) + 2;
+        int[] in = alloc.get(count * count * lowSize * lowSize);
+        try {
+            this.child.multiGetGrids(alloc, x >> 1, z >> 1, lowSize, dist >> 1, count, in);
+
+            this.multiGetGridsIndividual0(this.seed, x, z, size, dist, count, out, in);
+        } finally {
+            alloc.release(in);
+        }
+    }
+
+    protected native void multiGetGridsIndividual0(long seed, int x, int z, int size, int dist, int count, @NonNull int[] out, @NonNull int[] in);
 }

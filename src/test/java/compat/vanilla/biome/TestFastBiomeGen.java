@@ -24,6 +24,8 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.IPaddedLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.IZoomingLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaLayerProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
@@ -180,6 +182,11 @@ public class TestFastBiomeGen {
         this.testLayers(new GenLayerZoom(1L, new GenLayerRandomValues(0L)));
     }
 
+    /*@Test
+    public void testMultipleZooms() {
+        this.testLayers(new GenLayerZoom(1L, new GenLayerZoom(1L, new GenLayerZoom(1L, new GenLayerRandomValues(0L)))));
+    }*/
+
     private void testLayers(GenLayer vanilla) {
         SplittableRandom r = new SplittableRandom(12345L);
 
@@ -206,7 +213,16 @@ public class TestFastBiomeGen {
                     layers);
         }
 
-        this.testLayersMultiGrid(vanilla, layers);
+        this.testLayersMultiGrid(-3, -3, 5, 16, 16, vanilla, layers);
+
+        NamedLayer[] paddedLayers = Stream.of(layers).filter(l -> l.layer instanceof IPaddedLayer).toArray(NamedLayer[]::new);
+        NamedLayer[] zoomingLayers = Stream.of(layers).filter(l -> l.layer instanceof IZoomingLayer).toArray(NamedLayer[]::new);
+        if (paddedLayers.length > 0) { //multigrid for padded layers
+            this.testLayersMultiGrid(-3, -3, 5, 7, 16, vanilla, paddedLayers);
+        } else if (zoomingLayers.length > 0) { //multigrid for zooming layers
+            int shift = Stream.of(zoomingLayers).mapToInt(l -> ((IZoomingLayer) l.layer).shift()).findAny().getAsInt();
+            this.testLayersMultiGrid(-3, -3, 5, 5 + 2 + (1 << shift), 16, vanilla, zoomingLayers);
+        }
     }
 
     private void testLayers(int x, int z, int sizeX, int sizeZ, GenLayer vanilla, @NonNull NamedLayer... layers) {
@@ -280,13 +296,7 @@ public class TestFastBiomeGen {
         }
     }
 
-    private void testLayersMultiGrid(GenLayer vanilla, @NonNull NamedLayer... layers) {
-        int x = -3;
-        int z = -3;
-        int size = 5;
-        int dist = 16;
-        int count = 16;
-
+    private void testLayersMultiGrid(int x, int z, int size, int dist, int count, GenLayer vanilla, @NonNull NamedLayer... layers) {
         ForkJoinTask<int[]> futureReference = new ThreadSafeForkJoinSupplier<int[]>() {
             @Override
             protected int[] compute() {

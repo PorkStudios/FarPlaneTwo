@@ -22,27 +22,21 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerSmooth;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerSmooth extends FastLayerSmooth {
+public class NativeFastLayerSmooth extends FastLayerSmooth implements INativePaddedLayer {
     public NativeFastLayerSmooth(long seed) {
         super(seed);
     }
 
     @Override
-    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
-        int[] in = alloc.get((sizeX + 2) * (sizeZ + 2));
-        try {
-            this.child.getGrid(alloc, x - 1, z - 1, sizeX + 2, sizeZ + 2, in);
+    public native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
 
-            this.getGrid0(this.seed, x, z, sizeX, sizeZ, out, in);
-        } finally {
-            alloc.release(in);
-        }
-    }
+    @Override
+    public native void multiGetGridsCombined0(long seed, int x, int z, int size, int dist, int count, @NonNull int[] out, @NonNull int[] in);
 
-    protected native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
+    @Override
+    public native void multiGetGridsIndividual0(long seed, int x, int z, int size, int dist, int count, @NonNull int[] out, @NonNull int[] in);
 }

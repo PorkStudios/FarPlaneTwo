@@ -18,32 +18,36 @@
  *
  */
 
-#include <fp2.h>
 #include "NativeFastLayer.h"
 
-#include <lib/vectorclass-2.01.03/vectorclass.h>
+inline int32_t eval(fp2::biome::fastlayer::rng& rng, int32_t center, Vec4i neighbors) {
+    int32_t v[4]; //load values with single instruction using SSE
+    neighbors.store(v);
+
+    if (v[0] == v[2] && v[1] == v[3]) {
+        return v[rng.nextInt<2>()];
+    } else if (v[0] == v[2]) {
+        return v[0];
+    } else if (v[1] == v[3]) {
+        return v[1];
+    } else {
+        return center;
+    }
+}
+
+using layer = fp2::biome::fastlayer::padded_layer<eval, fp2::biome::fastlayer::padded_layer_mode::sides_final_two_reversed>;
 
 FP2_JNI(void, NativeFastLayerSmooth, getGrid0) (JNIEnv* env, jobject obj,
         jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out, jintArray _in) {
-    fp2::pinned_int_array out(env, _out);
-    fp2::pinned_int_array in(env, _in);
+    layer{}.grid(env, seed, x, z, sizeX, sizeZ, _out, _in);
+}
 
-    const Vec4i neighbor_offsets(-1 * (sizeZ + 2) + 0, 0 * (sizeZ + 2) + -1, 1 * (sizeZ + 2) + 0, 0 * (sizeZ + 2) + 1);
+FP2_JNI(void, NativeFastLayerSmooth, multiGetGridsCombined0) (JNIEnv* env, jobject obj,
+        jlong seed, jint x, jint z, jint size, jint dist, jint count, jintArray _out, jintArray _in) {
+    layer{}.grid_multi_combined(env, seed, x, z, size, dist, count, _out, _in);
+}
 
-    for (int32_t outIdx = 0, dx = 0; dx < sizeX; dx++) {
-        for (int32_t inIdx = (dx + 1) * (sizeZ + 2) + 1, dz = 0; dz < sizeZ; inIdx++, dz++, outIdx++) {
-            int32_t v[4]; //load values with single instruction using SSE
-            lookup<(1 << 30)>(inIdx + neighbor_offsets, &in[0]).store(v);
-
-            if (v[0] == v[2] && v[1] == v[3]) {
-                out[outIdx] = fp2::biome::fastlayer::rng(seed, x + dx, z + dz).nextInt<2>() == 0 ? v[0] : v[1];
-            } else if (v[0] == v[2]) {
-                out[outIdx] = v[0];
-            } else if (v[1] == v[3]) {
-                out[outIdx] = v[1];
-            } else {
-                out[outIdx] = in[inIdx];
-            }
-        }
-    }
+FP2_JNI(void, NativeFastLayerSmooth, multiGetGridsIndividual0) (JNIEnv* env, jobject obj,
+        jlong seed, jint x, jint z, jint size, jint dist, jint count, jintArray _out, jintArray _in) {
+    layer{}.grid_multi_individual(env, seed, x, z, size, dist, count, _out, _in);
 }

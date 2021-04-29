@@ -22,27 +22,18 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerIsland;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerIsland extends FastLayerIsland {
+public class NativeFastLayerIsland extends FastLayerIsland implements INativeSourceLayer {
     public NativeFastLayerIsland(long seed) {
         super(seed);
     }
 
     @Override
-    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
-        this.getGrid0(this.seed, x, z, sizeX, sizeZ, out);
-    }
-
-    protected native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out);
+    public native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out);
 
     @Override
-    public void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int count, @NonNull int[] out) {
-        this.multiGetGrids0(this.seed, x, z, size, dist, count, out);
-    }
-
-    protected native void multiGetGrids0(long seed, int x, int z, int size, int dist, int count, @NonNull int[] out);
+    public native void multiGetGrids0(long seed, int x, int z, int size, int dist, int count, @NonNull int[] out);
 }

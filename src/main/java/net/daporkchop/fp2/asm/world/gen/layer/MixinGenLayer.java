@@ -18,25 +18,42 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
+package net.daporkchop.fp2.asm.world.gen.layer;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRemoveTooMuchOcean;
+import net.minecraft.world.gen.layer.GenLayer;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Shadow;
 
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerRemoveTooMuchOcean extends FastLayerRemoveTooMuchOcean implements INativePaddedLayer {
-    public NativeFastLayerRemoveTooMuchOcean(long seed) {
-        super(seed);
+@Mixin(GenLayer.class)
+public abstract class MixinGenLayer {
+    @Shadow
+    public long chunkSeed;
+
+    @Shadow
+    public long worldGenSeed;
+
+    /**
+     * Major optimization to {@link #nextInt(int)} when {@code max} is a power of two.
+     *
+     * @author DaPorkchop_
+     */
+    @Overwrite
+    protected int nextInt(int max) {
+        int i;
+        if ((max & (max - 1)) == 0) { //max is a power of two
+            i = (int) (this.chunkSeed >> 24L) & (max - 1);
+        } else { //max is NOT a power of two, fall back to slow implementation using modulo
+            i = (int) ((this.chunkSeed >> 24L) % max);
+            //equivalent to if (i < 0) { i += max; }
+            i += (i >> 31) & max;
+        }
+
+        this.chunkSeed *= this.chunkSeed * 6364136223846793005L + 1442695040888963407L;
+        this.chunkSeed += this.worldGenSeed;
+        return i;
     }
-
-    @Override
-    public native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
-
-    @Override
-    public native void multiGetGridsCombined0(long seed, int x, int z, int size, int dist, int count, @NonNull int[] out, @NonNull int[] in);
-
-    @Override
-    public native void multiGetGridsIndividual0(long seed, int x, int z, int size, int dist, int count, @NonNull int[] out, @NonNull int[] in);
 }
