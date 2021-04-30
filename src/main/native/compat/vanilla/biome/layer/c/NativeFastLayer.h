@@ -384,7 +384,57 @@ namespace fp2::biome::fastlayer {
 
         inline void grid_multi_combined(JNIEnv* env,
                 int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t depth, int32_t count, jintArray _out, jintArray _in) {
+            const int32_t inSize = ((((dist >> depth) + 1) * count) >> ZOOM) + 2;
+            const int32_t tempSize = (inSize - 1) << ZOOM;
 
+            std::vector<int32_t> temp(count * count * tempSize * tempSize);
+
+            const Vec4i in_offsets = OFFSETS_X * inSize + OFFSETS_Z;
+
+            fp2::pinned_int_array out(env, _out);
+            fp2::pinned_int_array in(env, _in);
+
+            {
+                const Vec4i in_offsets = OFFSETS_X * inSize + OFFSETS_Z;
+                fp2::pinned_int_array in(env, _in);
+
+                for (int32_t inIdx = 0, tempIdx = 0, gridX = 0; gridX < count; gridX++) {
+                    for (int32_t gridZ = 0; gridZ < count; gridZ++, inIdx += inSize * inSize, tempIdx += tempSize * tempSize) {
+                        const int32_t inX = mulAddShift(gridX, dist, x, depth) >> ZOOM;
+                        const int32_t inZ = mulAddShift(gridZ, dist, z, depth) >> ZOOM;
+                        const int32_t offsetX = mulAddShift(gridX, dist, gridX & MASK, depth) >> ZOOM;
+                        const int32_t offsetZ = mulAddShift(gridZ, dist, gridZ & MASK, depth) >> ZOOM;
+
+                        for (int32_t tileX = 0; tileX < inSize - 1; tileX++) {
+                            for (int32_t tileZ = 0; tileZ < inSize - 1; tileZ++) {
+                                Vec4i values = lookup<(1 << 30)>(((offsetX + tileX) * inSize + (offsetZ + tileZ)) + in_offsets, &in[0]);
+
+                                int32_t* pointers[SIZE];
+                                for (int32_t i = 0; i < SIZE; i++) {
+                                    pointers[i] = &temp[tempIdx + ((tileX << ZOOM) + i) * tempSize + (tileZ << ZOOM)];
+                                }
+
+                                EVAL(seed, (inX + tileX) << ZOOM, (inZ + tileZ) << ZOOM, values, pointers);
+                            }
+                        }
+                    }
+                }
+            }
+
+            {
+                fp2::pinned_int_array out(env, _out);
+
+                for (int32_t outIdx = 0, tempIdx = 0, gridX = 0; gridX < count; gridX++) {
+                    for (int32_t gridZ = 0; gridZ < count; gridZ++, outIdx += size * size, tempIdx += tempSize * tempSize) {
+                        const int32_t realX = mulAddShift(gridX, dist, x, depth);
+                        const int32_t realZ = mulAddShift(gridZ, dist, z, depth);
+
+                        for (int32_t dx = 0; dx < size; dx++) {
+                            memcpy(&out[outIdx + dx * size], &temp[tempIdx + (dx + (realX & MASK)) * tempSize + (realZ & MASK)], size * sizeof(int32_t));
+                        }
+                    }
+                }
+            }
         }
 
         inline void grid_multi_individual(JNIEnv* env,

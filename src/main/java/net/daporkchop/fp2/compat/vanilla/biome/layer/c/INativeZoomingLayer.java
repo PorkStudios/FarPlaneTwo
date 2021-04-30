@@ -60,19 +60,19 @@ public interface INativeZoomingLayer extends IZoomingLayer {
 
     void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
 
-    /*@Override
+    @Override
     default void multiGetGridsCombined(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         int shift = this.shift();
-        int lowSize = (((dist >> depth) + 1) * count) + 2;
+        int lowSize = ((((dist >> depth) + 1) * count) >> shift) + 2;
         int[] in = alloc.get(lowSize * lowSize);
         try {
-            this.child().getGrid(alloc, (x >> depth) - 1, (z >> depth) - 1, lowSize, lowSize, in);
+            this.child().getGrid(alloc, x >> (depth + shift), z >> (depth + shift), lowSize, lowSize, in);
 
             this.multiGetGridsCombined0(this.seed(), x, z, size, dist, depth, count, out, in);
         } finally {
             alloc.release(in);
         }
-    }*/
+    }
 
     void multiGetGridsCombined0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 
