@@ -34,10 +34,14 @@ import net.daporkchop.lib.common.misc.string.PStrings;
 import net.minecraft.init.Bootstrap;
 import net.minecraft.world.gen.layer.GenLayer;
 import net.minecraft.world.gen.layer.GenLayerAddIsland;
+import net.minecraft.world.gen.layer.GenLayerAddMushroomIsland;
 import net.minecraft.world.gen.layer.GenLayerAddSnow;
+import net.minecraft.world.gen.layer.GenLayerDeepOcean;
 import net.minecraft.world.gen.layer.GenLayerFuzzyZoom;
 import net.minecraft.world.gen.layer.GenLayerIsland;
+import net.minecraft.world.gen.layer.GenLayerRareBiome;
 import net.minecraft.world.gen.layer.GenLayerRemoveTooMuchOcean;
+import net.minecraft.world.gen.layer.GenLayerRiver;
 import net.minecraft.world.gen.layer.GenLayerRiverInit;
 import net.minecraft.world.gen.layer.GenLayerSmooth;
 import net.minecraft.world.gen.layer.GenLayerVoronoiZoom;
@@ -84,7 +88,7 @@ public class TestFastBiomeGen {
 
     @Test
     public void testAddMushroomIsland() {
-        //this.testLayers(new GenLayerAddMushroomIsland(1L, new GenLayerRandomValues(0L)));
+        this.testLayers(new GenLayerAddMushroomIsland(1L, new GenLayerRandomValues(0L)));
     }
 
     @Test
@@ -104,7 +108,7 @@ public class TestFastBiomeGen {
 
     @Test
     public void testDeepOcean() {
-        //this.testLayers(new GenLayerDeepOcean(1L, new GenLayerRandomValues(0L, 2)));
+        this.testLayers(new GenLayerDeepOcean(1L, new GenLayerRandomValues(0L, 2)));
     }
 
     /*@Test
@@ -139,7 +143,7 @@ public class TestFastBiomeGen {
 
     @Test
     public void testRareBiome() {
-        //this.testLayers(new GenLayerRareBiome(1L, new GenLayerRandomValues(0L)));
+        this.testLayers(new GenLayerRareBiome(1L, new GenLayerRandomValues(0L)));
     }
 
     @Test
@@ -149,7 +153,7 @@ public class TestFastBiomeGen {
 
     @Test
     public void testRiver() {
-        //this.testLayers(new GenLayerRiver(1L, new GenLayerRandomValues(0L)));
+        this.testLayers(new GenLayerRiver(1L, new GenLayerRandomValues(0L)));
     }
 
     @Test

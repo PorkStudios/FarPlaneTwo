@@ -52,7 +52,7 @@ inline int32_t eval(fp2::biome::fastlayer::rng& rng, int32_t center, Vec4i neigh
     }
 }
 
-using layer = fp2::biome::fastlayer::padded_layer<eval, fp2::biome::fastlayer::padded_layer_mode::corners>;
+using layer = fp2::biome::fastlayer::padded_layer<>::impl<eval, fp2::biome::fastlayer::padded_layer_mode::corners>;
 
 FP2_JNI(void, NativeFastLayerAddIsland, getGrid0) (JNIEnv* env, jobject obj,
         jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out, jintArray _in) {

@@ -35,7 +35,7 @@ inline int32_t eval(fp2::biome::fastlayer::rng& rng, int32_t center, Vec4i neigh
     }
 }
 
-using layer = fp2::biome::fastlayer::padded_layer<eval, fp2::biome::fastlayer::padded_layer_mode::sides_final_two_reversed>;
+using layer = fp2::biome::fastlayer::padded_layer<>::impl<eval, fp2::biome::fastlayer::padded_layer_mode::sides_final_two_reversed>;
 
 FP2_JNI(void, NativeFastLayerSmooth, getGrid0) (JNIEnv* env, jobject obj,
         jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out, jintArray _in) {
