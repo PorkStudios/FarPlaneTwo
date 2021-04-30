@@ -18,18 +18,32 @@
  *
  */
 
-#include "NativeFastLayerZoom.h"
+#include "NativeFastLayer.h"
 
-inline int32_t select_random(fp2::biome::fastlayer::rng& rng, fp2::biome::fastlayer::int4& v) {
-    return v[rng.nextInt<4>()];
+inline void eval(int64_t seed, int32_t x, int32_t z, Vec4i _v, int32_t** out) {
+    int32_t v[4];
+    _v.store(v);
+
+    fp2::biome::fastlayer::rng rng(seed, x, z);
+    out[0][0] = v[0];
+    out[0][1] = v[rng.nextInt<2>() << 1];
+    out[1][0] = v[rng.nextInt<2>()];
+    out[1][1] = v[rng.nextInt<4>()];
 }
+
+using layer = fp2::biome::fastlayer::zooming_layer<eval, 1>;
 
 FP2_JNI(void, NativeFastLayerFuzzyZoom, getGrid0) (JNIEnv* env, jobject obj,
         jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out, jintArray _in) {
-    fp2::biome::fastlayer::zoom<select_random>(env, seed, x, z, sizeX, sizeZ, _out, _in);
+    layer{}.grid(env, seed, x, z, sizeX, sizeZ, _out, _in);
+}
+
+FP2_JNI(void, NativeFastLayerFuzzyZoom, multiGetGridsCombined0) (JNIEnv* env, jobject obj,
+        jlong seed, jint x, jint z, jint size, jint dist, jint depth, jint count, jintArray _out, jintArray _in) {
+    layer{}.grid_multi_combined(env, seed, x, z, size, dist, depth, count, _out, _in);
 }
 
 FP2_JNI(void, NativeFastLayerFuzzyZoom, multiGetGridsIndividual0) (JNIEnv* env, jobject obj,
         jlong seed, jint x, jint z, jint size, jint dist, jint depth, jint count, jintArray _out, jintArray _in) {
-    fp2::biome::fastlayer::zoom_multi_individual<select_random>(env, seed, x, z, size, dist, depth, count, _out, _in);
+    layer{}.grid_multi_individual(env, seed, x, z, size, dist, depth, count, _out, _in);
 }

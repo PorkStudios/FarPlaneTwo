@@ -28,8 +28,8 @@ import static net.daporkchop.fp2.util.MathUtil.*;
 /**
  * A {@link IFastLayer} whose child requests are larger than the initial input request.
  * <p>
- * Implementors should always override {@link #multiGetGridsIndividual(IntArrayAllocator, int, int, int, int, int, int, int[])}, and override {@link #multiGetGridsCombined(IntArrayAllocator, int, int, int, int, int, int, int[])}
- * whenever possible.
+ * Implementors should always override {@link #multiGetGridsIndividual(IntArrayAllocator, int, int, int, int, int, int, int[])}, and override
+ * {@link #multiGetGridsCombined(IntArrayAllocator, int, int, int, int, int, int, int[])} whenever possible.
  *
  * @author DaPorkchop_
  */

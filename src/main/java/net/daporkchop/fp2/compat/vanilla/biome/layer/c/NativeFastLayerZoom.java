@@ -21,35 +21,15 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.IZoomingLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerZoom;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerZoom extends FastLayerZoom implements IZoomingLayer {
+public class NativeFastLayerZoom extends FastLayerZoom implements INativeZoomingLayer {
     public NativeFastLayerZoom(long seed) {
         super(seed);
     }
-
-    @Override
-    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
-        int padding = isAligned(x, z, sizeX, sizeZ) ? 1 : 2;
-        int lowSizeX = (sizeX >> 1) + padding;
-        int lowSizeZ = (sizeZ >> 1) + padding;
-
-        int[] in = alloc.get(lowSizeX * lowSizeZ);
-        try {
-            this.child.getGrid(alloc, x >> 1, z >> 1, lowSizeX, lowSizeZ, in);
-
-            this.getGrid0(this.seed, x, z, sizeX, sizeZ, out, in);
-        } finally {
-            alloc.release(in);
-        }
-    }
-
-    protected native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
 
     @Override
     public int shift() {
@@ -57,17 +37,11 @@ public class NativeFastLayerZoom extends FastLayerZoom implements IZoomingLayer 
     }
 
     @Override
-    public void multiGetGridsIndividual(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
-        int lowSize = (size >> 1) + 2;
-        int[] in = alloc.get(count * count * lowSize * lowSize);
-        try {
-            this.child.multiGetGrids(alloc, x, z, lowSize, dist, depth + 1, count, in);
+    public native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
 
-            this.multiGetGridsIndividual0(this.seed, x, z, size, dist, depth, count, out, in);
-        } finally {
-            alloc.release(in);
-        }
-    }
+    @Override
+    public native void multiGetGridsCombined0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 
-    protected native void multiGetGridsIndividual0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
+    @Override
+    public native void multiGetGridsIndividual0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 }

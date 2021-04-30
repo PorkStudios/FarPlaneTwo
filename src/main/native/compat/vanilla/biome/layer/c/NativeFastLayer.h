@@ -25,6 +25,9 @@
 
 #include <lib/vectorclass-2.01.03/vectorclass.h>
 
+#include <cstring>
+#include <vector>
+
 namespace fp2::biome::fastlayer {
     /**
      * Faster re-implementation of the PRNG used in GenLayer.
@@ -280,6 +283,154 @@ namespace fp2::biome::fastlayer {
                             fp2::biome::fastlayer::rng rng(seed, realX, realZ);
 
                             out[i] = EVAL(rng, realX, realZ);
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    /**
+     * Base implementation of a layer which zooms in by a power of two.
+     *
+     * @param EVAL a function which determines the output values for an entire zoomed-in tile based on the input values at the corner points
+     * @param ZOOM the number of bits to shift zoomed coordinates by
+     * @author DaPorkchop_
+     */
+    template<void(EVAL)(int64_t, int32_t, int32_t, Vec4i, int32_t**), uint32_t ZOOM, bool INVERT = false> class zooming_layer {
+        static const inline Vec4i OFFSETS_X = INVERT ? Vec4i(0, 0, 1, 1) : Vec4i(0, 1, 0, 1);
+        static const inline Vec4i OFFSETS_Z = INVERT ? Vec4i(0, 1, 0, 1) : Vec4i(0, 0, 1, 1);
+
+        static constexpr uint32_t SIZE = 1 << ZOOM;
+        static constexpr uint32_t MASK = SIZE - 1;
+
+        constexpr bool is_aligned(int32_t x, int32_t z, int32_t sizeX, int32_t sizeZ) {
+            return ((x | z | sizeX | sizeZ) & MASK) == 0;
+        }
+
+        inline void grid_aligned(JNIEnv* env,
+                int64_t seed, int32_t x, int32_t z, int32_t sizeX, int32_t sizeZ, jintArray _out, jintArray _in) {
+            const int32_t inX = x >> ZOOM;
+            const int32_t inZ = z >> ZOOM;
+            const int32_t inSizeX = (sizeX >> ZOOM) + 1;
+            const int32_t inSizeZ = (sizeZ >> ZOOM) + 1;
+
+            const Vec4i in_offsets = OFFSETS_X * inSizeZ + OFFSETS_Z;
+
+            fp2::pinned_int_array out(env, _out);
+            fp2::pinned_int_array in(env, _in);
+
+            for (int32_t tileX = 0; tileX < inSizeX - 1; tileX++) {
+                for (int32_t tileZ = 0; tileZ < inSizeZ - 1; tileZ++) {
+                    Vec4i values = lookup<(1 << 30)>((tileX * inSizeZ + tileZ) + in_offsets, &in[0]);
+
+                    int32_t* pointers[SIZE];
+                    for (int32_t i = 0; i < SIZE; i++) {
+                        pointers[i] = &out[((tileX << ZOOM) + i) * sizeZ + (tileZ << ZOOM)];
+                    }
+
+                    EVAL(seed, (inX + tileX) << ZOOM, (inZ + tileZ) << ZOOM, values, pointers);
+                }
+            }
+        }
+
+        inline void grid_unaligned(JNIEnv* env,
+                int64_t seed, int32_t x, int32_t z, int32_t sizeX, int32_t sizeZ, jintArray _out, jintArray _in) {
+            const int32_t inX = x >> ZOOM;
+            const int32_t inZ = z >> ZOOM;
+            const int32_t inSizeX = (sizeX >> ZOOM) + 2;
+            const int32_t inSizeZ = (sizeZ >> ZOOM) + 2;
+            const int32_t tempSizeX = (inSizeX - 1) << ZOOM;
+            const int32_t tempSizeZ = (inSizeZ - 1) << ZOOM;
+    
+            std::vector<int32_t> temp(tempSizeX * tempSizeZ);
+
+            {
+                const Vec4i in_offsets = OFFSETS_X * inSizeZ + OFFSETS_Z;
+                fp2::pinned_int_array in(env, _in);
+    
+                for (int32_t tileX = 0; tileX < inSizeX - 1; tileX++) {
+                    for (int32_t tileZ = 0; tileZ < inSizeZ - 1; tileZ++) {
+                        Vec4i values = lookup<(1 << 30)>((tileX * inSizeZ + tileZ) + in_offsets, &in[0]);
+
+                        int32_t* pointers[SIZE];
+                        for (int32_t i = 0; i < SIZE; i++) {
+                            pointers[i] = &temp[((tileX << ZOOM) + i) * tempSizeZ + (tileZ << ZOOM)];
+                        }
+
+                        EVAL(seed, (inX + tileX) << ZOOM, (inZ + tileZ) << ZOOM, values, pointers);
+                    }
+                }
+            }
+
+            {
+                fp2::pinned_int_array out(env, _out);
+    
+                for (int32_t dx = 0; dx < sizeX; dx++) {
+                    memcpy(&out[dx * sizeZ], &temp[(dx + (x & MASK)) * tempSizeZ + (z & MASK)], sizeZ * sizeof(int32_t));
+                }
+            }
+        }
+
+    public:
+        inline void grid(JNIEnv* env,
+                int64_t seed, int32_t x, int32_t z, int32_t sizeX, int32_t sizeZ, jintArray _out, jintArray _in) {
+            if (is_aligned(x, z, sizeX, sizeZ)) {
+                grid_aligned(env, seed, x, z, sizeX, sizeZ, _out, _in);
+            } else {
+                grid_unaligned(env, seed, x, z, sizeX, sizeZ, _out, _in);
+            }
+        }
+
+        inline void grid_multi_combined(JNIEnv* env,
+                int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t depth, int32_t count, jintArray _out, jintArray _in) {
+
+        }
+
+        inline void grid_multi_individual(JNIEnv* env,
+                int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t depth, int32_t count, jintArray _out, jintArray _in) {
+            const int32_t inSize = (size >> ZOOM) + 2;
+            const int32_t tempSize = (inSize - 1) << ZOOM;
+    
+            std::vector<int32_t> temp(count * count * tempSize * tempSize);
+    
+            {
+                const Vec4i in_offsets = OFFSETS_X * inSize + OFFSETS_Z;
+                fp2::pinned_int_array in(env, _in);
+    
+                for (int32_t inIdx = 0, tempIdx = 0, gridX = 0; gridX < count; gridX++) {
+                    for (int32_t gridZ = 0; gridZ < count; gridZ++, inIdx += inSize * inSize, tempIdx += tempSize * tempSize) {
+                        const int32_t baseX = mulAddShift(gridX, dist, x, depth);
+                        const int32_t baseZ = mulAddShift(gridZ, dist, z, depth);
+                        const int32_t inX = baseX >> ZOOM;
+                        const int32_t inZ = baseZ >> ZOOM;
+    
+                        for (int32_t tileX = 0; tileX < inSize - 1; tileX++) {
+                            for (int32_t tileZ = 0; tileZ < inSize - 1; tileZ++) {
+                                Vec4i values = lookup<(1 << 30)>((tileX * inSize + tileZ) + in_offsets, &in[inIdx]);
+    
+                                int32_t* pointers[SIZE];
+                                for (int32_t i = 0; i < SIZE; i++) {
+                                    pointers[i] = &temp[tempIdx + ((tileX << ZOOM) + i) * tempSize + (tileZ << ZOOM)];
+                                }
+
+                                EVAL(seed, (inX + tileX) << ZOOM, (inZ + tileZ) << ZOOM, values, pointers);
+                            }
+                        }
+                    }
+                }
+            }
+
+            {
+                fp2::pinned_int_array out(env, _out);
+    
+                for (int32_t outIdx = 0, tempIdx = 0, gridX = 0; gridX < count; gridX++) {
+                    for (int32_t gridZ = 0; gridZ < count; gridZ++, outIdx += size * size, tempIdx += tempSize * tempSize) {
+                        const int32_t realX = mulAddShift(gridX, dist, x, depth);
+                        const int32_t realZ = mulAddShift(gridZ, dist, z, depth);
+    
+                        for (int32_t dx = 0; dx < size; dx++) {
+                            memcpy(&out[outIdx + dx * size], &temp[tempIdx + (dx + (realX & MASK)) * tempSize + (realZ & MASK)], size * sizeof(int32_t));
                         }
                     }
                 }

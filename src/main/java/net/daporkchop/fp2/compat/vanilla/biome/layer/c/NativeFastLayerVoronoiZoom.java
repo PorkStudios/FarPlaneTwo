@@ -27,46 +27,32 @@ import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerVoronoiZoom extends FastLayerVoronoiZoom {
+public class NativeFastLayerVoronoiZoom extends FastLayerVoronoiZoom implements INativeZoomingLayer {
     public NativeFastLayerVoronoiZoom(long seed) {
         super(seed);
     }
 
     @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        x -= 2;
-        z -= 2;
-
-        int[] in = alloc.get(2 * 2);
-        try {
-            this.child.getGrid(alloc, x >> 2, z >> 2, 2, 2, in);
-
-            return this.getSingle0(this.seed, x, z, in);
-        } finally {
-            alloc.release(in);
-        }
+    public int shift() {
+        return 2;
     }
-
-    protected native int getSingle0(long seed, int x, int z, @NonNull int[] in);
 
     @Override
     public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
-        x -= 2;
-        z -= 2;
-
-        int padding = isAligned(x, z, sizeX, sizeZ) ? 1 : 2;
-        int lowSizeX = (sizeX >> 2) + padding;
-        int lowSizeZ = (sizeZ >> 2) + padding;
-
-        int[] in = alloc.get(lowSizeX * lowSizeZ);
-        try {
-            this.child.getGrid(alloc, x >> 2, z >> 2, lowSizeX, lowSizeZ, in);
-
-            this.getGrid0(this.seed, x, z, sizeX, sizeZ, out, in);
-        } finally {
-            alloc.release(in);
-        }
+        INativeZoomingLayer.super.getGrid(alloc, x - 2, z - 2, sizeX, sizeZ, out);
     }
 
-    protected native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
+    @Override
+    public native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
+
+    @Override
+    public void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+        INativeZoomingLayer.super.multiGetGrids(alloc, x - (2 << depth), z - (2 << depth), size, dist, depth, count, out);
+    }
+
+    @Override
+    public native void multiGetGridsCombined0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
+
+    @Override
+    public native void multiGetGridsIndividual0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 }
