@@ -88,7 +88,7 @@ public class TestFastBiomeGen {
 
     @Test
     public void testAddMushroomIsland() {
-        this.testLayers(new GenLayerAddMushroomIsland(1L, new GenLayerRandomValues(0L)));
+        this.testLayers(new GenLayerAddMushroomIsland(1L, new GenLayerRandomValues(0L, 2)));
     }
 
     @Test

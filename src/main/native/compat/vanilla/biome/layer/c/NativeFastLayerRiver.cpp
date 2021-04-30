@@ -21,33 +21,27 @@
 #include "NativeFastLayer.h"
 
 inline int32_t eval(fp2::biome::fastlayer::rng& rng, int32_t center, Vec4i neighbors) {
-    int32_t v[4];
-    neighbors.store(v);
+    center = center >= 2 ? 2 + (center & 1) : center;
+    neighbors = select(neighbors >= 2, 2 + (neighbors & 1), neighbors);
 
-    if (v[0] == v[2] && v[1] == v[3]) {
-        return v[rng.nextInt<2>()];
-    } else if (v[0] == v[2]) {
-        return v[0];
-    } else if (v[1] == v[3]) {
-        return v[1];
-    } else {
-        return center;
-    }
+    return horizontal_and(neighbors == center)
+            ? -1
+            : biomes.RIVER;
 }
 
-using layer = fp2::biome::fastlayer::padded_layer<>::impl<eval, fp2::biome::fastlayer::padded_layer_mode::sides_final_two_reversed>;
+using layer = fp2::biome::fastlayer::padded_layer<>::impl<eval, fp2::biome::fastlayer::padded_layer_mode::sides>;
 
-FP2_JNI(void, NativeFastLayerSmooth, getGrid0) (JNIEnv* env, jobject obj,
+FP2_JNI(void, NativeFastLayerRiver, getGrid0) (JNIEnv* env, jobject obj,
         jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out, jintArray _in) {
     layer{}.grid(env, seed, x, z, sizeX, sizeZ, _out, _in);
 }
 
-FP2_JNI(void, NativeFastLayerSmooth, multiGetGridsCombined0) (JNIEnv* env, jobject obj,
+FP2_JNI(void, NativeFastLayerRiver, multiGetGridsCombined0) (JNIEnv* env, jobject obj,
         jlong seed, jint x, jint z, jint size, jint dist, jint depth, jint count, jintArray _out, jintArray _in) {
     layer{}.grid_multi_combined(env, seed, x, z, size, dist, depth, count, _out, _in);
 }
 
-FP2_JNI(void, NativeFastLayerSmooth, multiGetGridsIndividual0) (JNIEnv* env, jobject obj,
+FP2_JNI(void, NativeFastLayerRiver, multiGetGridsIndividual0) (JNIEnv* env, jobject obj,
         jlong seed, jint x, jint z, jint size, jint dist, jint depth, jint count, jintArray _out, jintArray _in) {
     layer{}.grid_multi_individual(env, seed, x, z, size, dist, depth, count, _out, _in);
 }

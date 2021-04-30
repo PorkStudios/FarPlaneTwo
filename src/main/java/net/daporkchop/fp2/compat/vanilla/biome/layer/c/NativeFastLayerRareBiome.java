@@ -18,45 +18,22 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
+package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerAddMushroomIsland;
-
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRareBiome;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerAddMushroomIsland
  */
-public class FastLayerAddMushroomIsland extends AbstractFastLayer {
-    public FastLayerAddMushroomIsland(long seed) {
+public class NativeFastLayerRareBiome extends FastLayerRareBiome implements INativeTranslationLayer {
+    public NativeFastLayerRareBiome(long seed) {
         super(seed);
     }
 
     @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int center, v0, v1, v2, v3;
+    public native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] inout);
 
-        int[] arr = alloc.get(3 * 3);
-        try {
-            this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
-
-            v0 = arr[0];
-            v2 = arr[2];
-            center = arr[4];
-            v1 = arr[6];
-            v3 = arr[8];
-        } finally {
-            alloc.release(arr);
-        }
-
-        if ((center | v0 | v1 | v2 | v3) == 0 && nextInt(start(this.seed, x, z), 100) == 0) {
-            return ID_MUSHROOM_ISLAND;
-        } else {
-            return center;
-        }
-    }
+    @Override
+    public native void multiGetGrids0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] inout);
 }

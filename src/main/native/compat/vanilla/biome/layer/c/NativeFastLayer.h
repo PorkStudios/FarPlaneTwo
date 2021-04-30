@@ -489,7 +489,7 @@ namespace fp2::biome::fastlayer {
         }
     };
 
-    static inline struct {
+    struct biomes_t {
         int32_t OCEAN;
         int32_t DEFAULT;
         int32_t PLAINS;
@@ -553,7 +553,11 @@ namespace fp2::biome::fastlayer {
         int32_t MUTATED_MESA;
         int32_t MUTATED_MESA_ROCK;
         int32_t MUTATED_MESA_CLEAR_ROCK;
-    } biomes;
+    };
+
+    inline biomes_t biomes;
 }
+
+using fp2::biome::fastlayer::biomes;
 
 #endif //NATIVELAYER_NATIVEFASTLAYER_H
