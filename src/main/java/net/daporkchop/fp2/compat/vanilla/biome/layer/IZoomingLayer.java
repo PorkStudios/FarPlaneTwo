@@ -23,8 +23,6 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer;
 import lombok.NonNull;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
-import static net.daporkchop.fp2.util.MathUtil.*;
-
 /**
  * A {@link IFastLayer} which zooms in.
  * <p>
@@ -41,10 +39,6 @@ public interface IZoomingLayer extends IFastLayer {
 
     @Override
     default void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
-        if (depth == 0) {
-            IFastLayer.super.multiGetGrids(alloc, x, z, size, dist, depth, count, out);
-        }
-
         int shift = this.shift();
         if (((size >> shift) + 2) < (dist >> (depth + shift))) { //if each small grid is smaller than the space between each grid, we should continue getting
             // multiple grids rather than merging the requests

@@ -75,7 +75,6 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**

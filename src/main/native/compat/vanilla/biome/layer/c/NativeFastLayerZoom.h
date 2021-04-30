@@ -141,17 +141,14 @@ namespace fp2::biome::fastlayer {
             fp2::pinned_int_array out(env, _out);
 
             for (int32_t outIdx = 0, tempIdx = 0, gridX = 0; gridX < count; gridX++) {
-                //std::cout << depth << ' ';
                 for (int32_t gridZ = 0; gridZ < count; gridZ++, outIdx += size * size, tempIdx += tempSize * tempSize) {
                     const int32_t realX = mulAddShift(gridX, dist, x, depth);
                     const int32_t realZ = mulAddShift(gridZ, dist, z, depth);
-                    //std::cout << '(' << realX << ',' << realZ << ") ";
 
                     for (int32_t dx = 0; dx < size; dx++) {
                         memcpy(&out[outIdx + dx * size], &temp[tempIdx + (dx + (realX & 1)) * tempSize + (realZ & 1)], size * sizeof(int32_t));
                     }
                 }
-                //std::cout << std::endl;
             }
         }
     }

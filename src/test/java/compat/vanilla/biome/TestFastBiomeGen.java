@@ -35,6 +35,7 @@ import net.minecraft.init.Bootstrap;
 import net.minecraft.world.gen.layer.GenLayer;
 import net.minecraft.world.gen.layer.GenLayerAddIsland;
 import net.minecraft.world.gen.layer.GenLayerAddSnow;
+import net.minecraft.world.gen.layer.GenLayerFuzzyZoom;
 import net.minecraft.world.gen.layer.GenLayerIsland;
 import net.minecraft.world.gen.layer.GenLayerRemoveTooMuchOcean;
 import net.minecraft.world.gen.layer.GenLayerRiverInit;
@@ -123,7 +124,7 @@ public class TestFastBiomeGen {
 
     @Test
     public void testFuzzyZoom() {
-        //this.testLayers(new GenLayerFuzzyZoom(1L, new GenLayerRandomValues(0L)));
+        this.testLayers(new GenLayerFuzzyZoom(1L, new GenLayerRandomValues(0L)));
     }
 
     /*@Test
@@ -178,20 +179,15 @@ public class TestFastBiomeGen {
 
     @Test
     public void testZoom() {
-        //this.testLayers(new GenLayerZoom(1L, new GenLayerRandomValues(0L)));
+        this.testLayers(new GenLayerZoom(1L, new GenLayerRandomValues(0L)));
     }
 
     @Test
     public void testMultipleZooms() {
-        //this.testLayers(new GenLayerZoom(1L, new GenLayerZoom(1L, new GenLayerZoom(1L, new GenLayerRandomValues(0L)))));
-        this.testLayers(new GenLayerZoom(1L, new GenLayerZoom(1L, new GenLayerSmooth(1L, new GenLayerZoom(1L, new GenLayerRandomValues(0L))))));
+        this.testLayers(new GenLayerZoom(1L, new GenLayerZoom(1L, new GenLayerZoom(1L, new GenLayerRandomValues(0L)))));
     }
 
     private void testLayers(GenLayer vanilla) {
-        if (vanilla.getClass() != GenLayerZoom.class) {
-            return;
-        }
-
         SplittableRandom r = new SplittableRandom(12345L);
 
         vanilla.initWorldGenSeed(r.nextLong());
@@ -207,7 +203,7 @@ public class TestFastBiomeGen {
             layers = Arrays.copyOf(layers, 1);
         }
 
-        /*this.testLayers(0, 0, 2, 2, vanilla, layers);
+        this.testLayers(0, 0, 2, 2, vanilla, layers);
         this.testLayers(-1, -1, 2, 2, vanilla, layers);
         this.testLayers(-10, -10, 21, 21, vanilla, layers);
 
@@ -216,9 +212,9 @@ public class TestFastBiomeGen {
                     //workaround for a vanilla bug in GenLayerVoronoiZoom
                     vanilla instanceof GenLayerVoronoiZoom ? 16 : r.nextInt(256) + 1, vanilla instanceof GenLayerVoronoiZoom ? 16 : r.nextInt(256) + 1,
                     vanilla, layers);
-        }*/
+        }
 
-        //this.testLayersMultiGrid(-3, -3, 5, 16, 16, vanilla, layers);
+        this.testLayersMultiGrid(-3, -3, 5, 16, 16, vanilla, layers);
 
         NamedLayer[] paddedLayers = Stream.of(layers).filter(l -> l.layer instanceof IPaddedLayer).toArray(NamedLayer[]::new);
         NamedLayer[] zoomingLayers = Stream.of(layers).filter(l -> l.layer instanceof IZoomingLayer).toArray(NamedLayer[]::new);
@@ -331,43 +327,11 @@ public class TestFastBiomeGen {
             }
         }.fork()).collect(Collectors.toList());
 
-
-        for (int j = 0; j < layers.length; j++) {
-            fastFutures.get(j).join();
-        }
-
         int[] reference = futureReference.join();
-        System.out.println("reference:");
-        for (int tileZ = 0; tileZ < count; tileZ++) {
-            for (int dz = 0; dz < size; dz++) {
-                for (int tileX = 0; tileX < count; tileX++) {
-                    for (int dx = 0; dx < size; dx++) {
-                        System.out.printf("%03d ", reference[((tileX * count + tileZ) * size + dx) * size + dz]);
-                    }
-                    System.out.print("  ");
-                }
-                System.out.println();
-            }
-            System.out.println();
-        }
-
         for (int j = 0; j < layers.length; j++) {
             String name = layers[j].name;
 
             int[] grids = fastFutures.get(j).join();
-            System.out.println(name + ":");
-            for (int tileZ = 0; tileZ < count; tileZ++) {
-                for (int dz = 0; dz < size; dz++) {
-                    for (int tileX = 0; tileX < count; tileX++) {
-                        for (int dx = 0; dx < size; dx++) {
-                            System.out.printf("%03d ", grids[((tileX * count + tileZ) * size + dx) * size + dz]);
-                        }
-                        System.out.print("  ");
-                    }
-                    System.out.println();
-                }
-                System.out.println();
-            }
             for (int i = 0, tileX = 0; tileX < count; tileX++) {
                 for (int tileZ = 0; tileZ < count; tileZ++) {
                     for (int dx = 0; dx < size; dx++) {

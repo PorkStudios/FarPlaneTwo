@@ -23,6 +23,8 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer;
 import lombok.NonNull;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
+import static net.daporkchop.fp2.util.MathUtil.*;
+
 /**
  * A {@link IFastLayer} whose child requests are larger than the initial input request.
  * <p>
@@ -34,7 +36,7 @@ import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 public interface IPaddedLayer extends IFastLayer {
     @Override
     default void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
-        if (size + 2 < (dist >> depth) + 1) { //if the padded request bounds don't intersect, we should continue issuing multiget requests rather than combining
+        if (size + 2 < asrRound(dist, depth)) { //if the padded request bounds don't intersect, we should continue issuing multiget requests rather than combining
             this.multiGetGridsIndividual(alloc, x, z, size, dist, depth, count, out);
         } else { //the requests can be combined into a single one
             this.multiGetGridsCombined(alloc, x, z, size, dist, depth, count, out);
