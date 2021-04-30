@@ -487,6 +487,72 @@ namespace fp2::biome::fastlayer {
             }
         }
     };
+
+    static inline struct {
+        int32_t OCEAN;
+        int32_t DEFAULT;
+        int32_t PLAINS;
+        int32_t DESERT;
+        int32_t EXTREME_HILLS;
+        int32_t FOREST;
+        int32_t TAIGA;
+        int32_t SWAMPLAND;
+        int32_t RIVER;
+        int32_t HELL;
+        int32_t SKY;
+        int32_t FROZEN_OCEAN;
+        int32_t FROZEN_RIVER;
+        int32_t ICE_PLAINS;
+        int32_t ICE_MOUNTAINS;
+        int32_t MUSHROOM_ISLAND;
+        int32_t MUSHROOM_ISLAND_SHORE;
+        int32_t BEACH;
+        int32_t DESERT_HILLS;
+        int32_t FOREST_HILLS;
+        int32_t TAIGA_HILLS;
+        int32_t EXTREME_HILLS_EDGE;
+        int32_t JUNGLE;
+        int32_t JUNGLE_HILLS;
+        int32_t JUNGLE_EDGE;
+        int32_t DEEP_OCEAN;
+        int32_t STONE_BEACH;
+        int32_t COLD_BEACH;
+        int32_t BIRCH_FOREST;
+        int32_t BIRCH_FOREST_HILLS;
+        int32_t ROOFED_FOREST;
+        int32_t COLD_TAIGA;
+        int32_t COLD_TAIGA_HILLS;
+        int32_t REDWOOD_TAIGA;
+        int32_t REDWOOD_TAIGA_HILLS;
+        int32_t EXTREME_HILLS_WITH_TREES;
+        int32_t SAVANNA;
+        int32_t SAVANNA_PLATEAU;
+        int32_t MESA;
+        int32_t MESA_ROCK;
+        int32_t MESA_CLEAR_ROCK;
+        int32_t VOID;
+        int32_t MUTATED_PLAINS;
+        int32_t MUTATED_DESERT;
+        int32_t MUTATED_EXTREME_HILLS;
+        int32_t MUTATED_FOREST;
+        int32_t MUTATED_TAIGA;
+        int32_t MUTATED_SWAMPLAND;
+        int32_t MUTATED_ICE_FLATS;
+        int32_t MUTATED_JUNGLE;
+        int32_t MUTATED_JUNGLE_EDGE;
+        int32_t MUTATED_BIRCH_FOREST;
+        int32_t MUTATED_BIRCH_FOREST_HILLS;
+        int32_t MUTATED_ROOFED_FOREST;
+        int32_t MUTATED_TAIGA_COLD;
+        int32_t MUTATED_REDWOOD_TAIGA;
+        int32_t MUTATED_REDWOOD_TAIGA_HILLS;
+        int32_t MUTATED_EXTREME_HILLS_WITH_TREES;
+        int32_t MUTATED_SAVANNA;
+        int32_t MUTATED_SAVANNA_ROCK;
+        int32_t MUTATED_MESA;
+        int32_t MUTATED_MESA_ROCK;
+        int32_t MUTATED_MESA_CLEAR_ROCK;
+    } biomes;
 }
 
 #endif //NATIVELAYER_NATIVEFASTLAYER_H

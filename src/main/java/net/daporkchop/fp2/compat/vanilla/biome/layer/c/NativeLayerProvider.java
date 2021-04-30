@@ -20,8 +20,13 @@
 
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaLayerProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
+import net.minecraft.init.Biomes;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.gen.layer.GenLayer;
 import net.minecraft.world.gen.layer.GenLayerAddIsland;
 import net.minecraft.world.gen.layer.GenLayerAddSnow;
 import net.minecraft.world.gen.layer.GenLayerFuzzyZoom;
@@ -38,6 +43,77 @@ import net.minecraft.world.gen.layer.GenLayerZoom;
  * @author DaPorkchop_
  */
 public class NativeLayerProvider extends JavaLayerProvider {
+    protected synchronized static void initBiomeIds() {
+        int[] ids = new int[63];
+        int i = 0;
+        ids[i++] = Biome.getIdForBiome(Biomes.OCEAN);
+        ids[i++] = Biome.getIdForBiome(Biomes.DEFAULT);
+        ids[i++] = Biome.getIdForBiome(Biomes.PLAINS);
+        ids[i++] = Biome.getIdForBiome(Biomes.DESERT);
+        ids[i++] = Biome.getIdForBiome(Biomes.EXTREME_HILLS);
+        ids[i++] = Biome.getIdForBiome(Biomes.FOREST);
+        ids[i++] = Biome.getIdForBiome(Biomes.TAIGA);
+        ids[i++] = Biome.getIdForBiome(Biomes.SWAMPLAND);
+        ids[i++] = Biome.getIdForBiome(Biomes.RIVER);
+        ids[i++] = Biome.getIdForBiome(Biomes.HELL);
+        ids[i++] = Biome.getIdForBiome(Biomes.SKY);
+        ids[i++] = Biome.getIdForBiome(Biomes.FROZEN_OCEAN);
+        ids[i++] = Biome.getIdForBiome(Biomes.FROZEN_RIVER);
+        ids[i++] = Biome.getIdForBiome(Biomes.ICE_PLAINS);
+        ids[i++] = Biome.getIdForBiome(Biomes.ICE_MOUNTAINS);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUSHROOM_ISLAND);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUSHROOM_ISLAND_SHORE);
+        ids[i++] = Biome.getIdForBiome(Biomes.BEACH);
+        ids[i++] = Biome.getIdForBiome(Biomes.DESERT_HILLS);
+        ids[i++] = Biome.getIdForBiome(Biomes.FOREST_HILLS);
+        ids[i++] = Biome.getIdForBiome(Biomes.TAIGA_HILLS);
+        ids[i++] = Biome.getIdForBiome(Biomes.EXTREME_HILLS_EDGE);
+        ids[i++] = Biome.getIdForBiome(Biomes.JUNGLE);
+        ids[i++] = Biome.getIdForBiome(Biomes.JUNGLE_HILLS);
+        ids[i++] = Biome.getIdForBiome(Biomes.JUNGLE_EDGE);
+        ids[i++] = Biome.getIdForBiome(Biomes.DEEP_OCEAN);
+        ids[i++] = Biome.getIdForBiome(Biomes.STONE_BEACH);
+        ids[i++] = Biome.getIdForBiome(Biomes.COLD_BEACH);
+        ids[i++] = Biome.getIdForBiome(Biomes.BIRCH_FOREST);
+        ids[i++] = Biome.getIdForBiome(Biomes.BIRCH_FOREST_HILLS);
+        ids[i++] = Biome.getIdForBiome(Biomes.ROOFED_FOREST);
+        ids[i++] = Biome.getIdForBiome(Biomes.COLD_TAIGA);
+        ids[i++] = Biome.getIdForBiome(Biomes.COLD_TAIGA_HILLS);
+        ids[i++] = Biome.getIdForBiome(Biomes.REDWOOD_TAIGA);
+        ids[i++] = Biome.getIdForBiome(Biomes.REDWOOD_TAIGA_HILLS);
+        ids[i++] = Biome.getIdForBiome(Biomes.EXTREME_HILLS_WITH_TREES);
+        ids[i++] = Biome.getIdForBiome(Biomes.SAVANNA);
+        ids[i++] = Biome.getIdForBiome(Biomes.SAVANNA_PLATEAU);
+        ids[i++] = Biome.getIdForBiome(Biomes.MESA);
+        ids[i++] = Biome.getIdForBiome(Biomes.MESA_ROCK);
+        ids[i++] = Biome.getIdForBiome(Biomes.MESA_CLEAR_ROCK);
+        ids[i++] = Biome.getIdForBiome(Biomes.VOID);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_PLAINS);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_DESERT);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_EXTREME_HILLS);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_FOREST);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_TAIGA);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_SWAMPLAND);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_ICE_FLATS);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_JUNGLE);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_JUNGLE_EDGE);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_BIRCH_FOREST);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_BIRCH_FOREST_HILLS);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_ROOFED_FOREST);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_TAIGA_COLD);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_REDWOOD_TAIGA);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_REDWOOD_TAIGA_HILLS);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_EXTREME_HILLS_WITH_TREES);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_SAVANNA);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_SAVANNA_ROCK);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_MESA);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_MESA_ROCK);
+        ids[i++] = Biome.getIdForBiome(Biomes.MUTATED_MESA_CLEAR_ROCK);
+        initBiomeIds0(ids);
+    }
+
+    protected static native void initBiomeIds0(@NonNull int[] ids);
+
     protected NativeLayerProvider() {
         this.fastMapperOverrides.put(GenLayerAddIsland.class, layer -> new NativeFastLayerAddIsland(layer.worldGenSeed));
         this.fastMapperOverrides.put(GenLayerAddSnow.class, layer -> new NativeFastLayerAddSnow(layer.worldGenSeed));
@@ -55,5 +131,11 @@ public class NativeLayerProvider extends JavaLayerProvider {
     @Override
     public boolean isNative() {
         return true;
+    }
+
+    @Override
+    public IFastLayer[] makeFast(@NonNull GenLayer... inputs) {
+        initBiomeIds();
+        return super.makeFast(inputs);
     }
 }
