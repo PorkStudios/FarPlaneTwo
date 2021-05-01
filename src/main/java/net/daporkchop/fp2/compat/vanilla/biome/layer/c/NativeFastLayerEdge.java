@@ -18,23 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
+package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerEdge;
 import net.minecraft.world.gen.layer.GenLayerEdge;
-
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerEdge
  */
 @UtilityClass
-public class FastLayerEdge {
+public class NativeFastLayerEdge {
     public static IFastLayer makeFast(@NonNull GenLayerEdge vanilla) {
         switch (vanilla.mode) {
             case COOL_WARM:
@@ -44,7 +40,7 @@ public class FastLayerEdge {
             case SPECIAL:
                 return new Special(vanilla.worldGenSeed);
             default:
-                throw new IllegalStateException(vanilla.mode.toString());
+                return FastLayerEdge.makeFast(vanilla);
         }
     }
 
@@ -52,88 +48,53 @@ public class FastLayerEdge {
      * @author DaPorkchop_
      * @see GenLayerEdge.Mode#COOL_WARM
      */
-    public static class CoolWarm extends AbstractFastLayer {
+    public static class CoolWarm extends FastLayerEdge.CoolWarm implements INativePaddedLayer {
         public CoolWarm(long seed) {
             super(seed);
         }
 
         @Override
-        public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-            int center, v0, v1, v2, v3;
+        public native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
 
-            int[] arr = alloc.get(3 * 3);
-            try {
-                this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
+        @Override
+        public native void multiGetGridsCombined0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 
-                v0 = arr[1];
-                v2 = arr[3];
-                center = arr[4];
-                v1 = arr[5];
-                v3 = arr[7];
-            } finally {
-                alloc.release(arr);
-            }
-
-            return center == 1 && (v0 == 3 || v0 == 4 || v1 == 3 || v1 == 4 || v2 == 3 || v2 == 4 || v3 == 3 || v3 == 4)
-                    ? 2
-                    : center;
-        }
+        @Override
+        public native void multiGetGridsIndividual0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
     }
 
     /**
      * @author DaPorkchop_
      * @see GenLayerEdge.Mode#HEAT_ICE
      */
-    public static class HeatIce extends AbstractFastLayer {
+    public static class HeatIce extends FastLayerEdge.HeatIce implements INativePaddedLayer {
         public HeatIce(long seed) {
             super(seed);
         }
 
         @Override
-        public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-            int center, v0, v1, v2, v3;
+        public native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
 
-            int[] arr = alloc.get(3 * 3);
-            try {
-                this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
+        @Override
+        public native void multiGetGridsCombined0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 
-                v0 = arr[1];
-                v2 = arr[3];
-                center = arr[4];
-                v1 = arr[5];
-                v3 = arr[7];
-            } finally {
-                alloc.release(arr);
-            }
-
-            return center == 4 && (v0 == 1 || v0 == 2 || v1 == 1 || v1 == 2 || v2 == 1 || v2 == 2 || v3 == 1 || v3 == 2)
-                    ? 3
-                    : center;
-        }
+        @Override
+        public native void multiGetGridsIndividual0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
     }
 
     /**
      * @author DaPorkchop_
      * @see GenLayerEdge.Mode#SPECIAL
      */
-    public static class Special extends AbstractFastLayer {
+    public static class Special extends FastLayerEdge.Special implements INativeTranslationLayer {
         public Special(long seed) {
             super(seed);
         }
 
         @Override
-        public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-            int v = this.child.getSingle(alloc, x, z);
+        public native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] inout);
 
-            if (v != 0) {
-                long state = start(this.seed, x, z);
-                if (nextInt(state, 13) == 0) {
-                    state = update(state, this.seed);
-                    v |= (nextInt(state, 15) + 1) << 8;
-                }
-            }
-
-            return v;
-        }
+        @Override
+        public native void multiGetGrids0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] inout);
     }
 }

@@ -39,6 +39,7 @@ import net.minecraft.world.gen.layer.GenLayerAddSnow;
 import net.minecraft.world.gen.layer.GenLayerBiome;
 import net.minecraft.world.gen.layer.GenLayerBiomeEdge;
 import net.minecraft.world.gen.layer.GenLayerDeepOcean;
+import net.minecraft.world.gen.layer.GenLayerEdge;
 import net.minecraft.world.gen.layer.GenLayerFuzzyZoom;
 import net.minecraft.world.gen.layer.GenLayerHills;
 import net.minecraft.world.gen.layer.GenLayerIsland;
@@ -116,20 +117,20 @@ public class TestFastBiomeGen {
         this.testLayers(new GenLayerDeepOcean(1L, new GenLayerRandomValues(0L, 2)));
     }
 
-    /*@Test
+    @Test
     public void testEdgeCoolWarm() {
-        this.testLayers(new GenLayerEdge(1L, new GenLayerRandomValues(0L), GenLayerEdge.Mode.COOL_WARM));
-    }*/
+        this.testLayers(new GenLayerEdge(1L, new GenLayerRandomValues(0L, 4), GenLayerEdge.Mode.COOL_WARM));
+    }
 
-    /*@Test
+    @Test
     public void testEdgeHeatIce() {
         this.testLayers(new GenLayerEdge(1L, new GenLayerRandomValues(0L), GenLayerEdge.Mode.HEAT_ICE));
-    }*/
+    }
 
-    /*@Test
+    @Test
     public void testEdgeSpecial() {
         this.testLayers(new GenLayerEdge(1L, new GenLayerRandomValues(0L), GenLayerEdge.Mode.SPECIAL));
-    }*/
+    }
 
     @Test
     public void testFuzzyZoom() {

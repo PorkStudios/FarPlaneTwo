@@ -55,4 +55,13 @@ public class FastLayerRandomValues extends AbstractFastLayer {
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
         return nextInt(start(this.seed, x, z), this.limit);
     }
+
+    @Override
+    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+        for (int i = 0, dx = 0; dx < sizeX; dx++) {
+            for (int dz = 0; dz < sizeZ; dz++, i++) {
+                out[i] = nextInt(start(this.seed, x + dx, z + dz), this.limit);
+            }
+        }
+    }
 }

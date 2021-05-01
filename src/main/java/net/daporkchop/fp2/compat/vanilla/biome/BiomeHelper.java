@@ -31,6 +31,7 @@ import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerAddSnow;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerBiome;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerBiomeEdge;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerDeepOcean;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerEdge;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerFixedBiome;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerFuzzyZoom;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerHills;
@@ -200,7 +201,7 @@ public class BiomeHelper {
                 : new FastLayerBiome((GenLayerBiome) layer));
         LAYER_CONVERTERS.put(GenLayerBiomeEdge.class, layer -> new FastLayerBiomeEdge(layer.worldGenSeed));
         LAYER_CONVERTERS.put(GenLayerDeepOcean.class, layer -> new FastLayerDeepOcean(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerEdge.class, layer -> new FastLayerBiomeEdge(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerEdge.class, layer -> FastLayerEdge.makeFast((GenLayerEdge) layer));
         LAYER_CONVERTERS.put(GenLayerFuzzyZoom.class, layer -> new FastLayerFuzzyZoom(layer.worldGenSeed));
         LAYER_CONVERTERS.put(GenLayerHills.class, layer -> new FastLayerHills(layer.worldGenSeed));
         LAYER_CONVERTERS.put(GenLayerIsland.class, layer -> new FastLayerIsland(layer.worldGenSeed));

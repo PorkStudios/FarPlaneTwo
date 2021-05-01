@@ -31,6 +31,7 @@ import net.minecraft.world.gen.layer.GenLayerAddIsland;
 import net.minecraft.world.gen.layer.GenLayerAddMushroomIsland;
 import net.minecraft.world.gen.layer.GenLayerAddSnow;
 import net.minecraft.world.gen.layer.GenLayerDeepOcean;
+import net.minecraft.world.gen.layer.GenLayerEdge;
 import net.minecraft.world.gen.layer.GenLayerFuzzyZoom;
 import net.minecraft.world.gen.layer.GenLayerIsland;
 import net.minecraft.world.gen.layer.GenLayerRareBiome;
@@ -123,6 +124,7 @@ public class NativeLayerProvider extends JavaLayerProvider {
         this.fastMapperOverrides.put(GenLayerAddMushroomIsland.class, layer -> new NativeFastLayerAddMushroomIsland(layer.worldGenSeed));
         this.fastMapperOverrides.put(GenLayerAddSnow.class, layer -> new NativeFastLayerAddSnow(layer.worldGenSeed));
         this.fastMapperOverrides.put(GenLayerDeepOcean.class, layer -> new NativeFastLayerDeepOcean(layer.worldGenSeed));
+        this.fastMapperOverrides.put(GenLayerEdge.class, layer -> NativeFastLayerEdge.makeFast((GenLayerEdge) layer));
         this.fastMapperOverrides.put(GenLayerFuzzyZoom.class, layer -> new NativeFastLayerFuzzyZoom(layer.worldGenSeed));
         this.fastMapperOverrides.put(GenLayerIsland.class, layer -> new NativeFastLayerIsland(layer.worldGenSeed));
         this.fastMapperOverrides.put(GenLayerRareBiome.class, layer -> new NativeFastLayerRareBiome(layer.worldGenSeed));
