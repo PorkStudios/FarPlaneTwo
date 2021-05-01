@@ -20,64 +20,105 @@
 
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
-import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.init.Biomes;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.util.WeightedRandom;
+import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.layer.GenLayerBiome;
 import net.minecraftforge.common.BiomeManager;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
-import static net.daporkchop.lib.common.util.PorkUtil.*;
+import static java.lang.Math.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  * @see GenLayerBiome
  */
 public class FastLayerBiome extends AbstractFastLayer {
-    protected static final List<BiomeManager.BiomeEntry>[] ENTRIES;
-    protected static final int[] WEIGHTS;
+    protected static final long GENLAYERBIOME_BIOMES_OFFSET = PUnsafe.pork_getOffset(GenLayerBiome.class, "biomes"); //i can't use an access transformer for this since the field is added by Forge
 
-    static {
-        BiomeManager.BiomeType[] types = BiomeManager.BiomeType.values();
-        ENTRIES = uncheckedCast(Arrays.stream(types).map(type -> {
-            ImmutableList<BiomeManager.BiomeEntry> forgeEntries = BiomeManager.getBiomes(type);
-            return forgeEntries != null ? new ArrayList<>(forgeEntries) : new ArrayList<>();
-        }).toArray(List[]::new));
-
-        List<BiomeManager.BiomeEntry> desert = ENTRIES[BiomeManager.BiomeType.DESERT.ordinal()];
-        desert.add(new BiomeManager.BiomeEntry(Biomes.DESERT, 30));
-        desert.add(new BiomeManager.BiomeEntry(Biomes.SAVANNA, 20));
-        desert.add(new BiomeManager.BiomeEntry(Biomes.PLAINS, 10));
-
-        WEIGHTS = Arrays.stream(types).mapToInt(type -> {
-            int totalWeight = WeightedRandom.getTotalWeight(ENTRIES[type.ordinal()]);
-            boolean modded = BiomeManager.isTypeListModded(type);
-            return modded ? (1 << 31) | (totalWeight / 10) : totalWeight;
-        }).toArray();
+    public static boolean isConstant(@NonNull GenLayerBiome vanilla) {
+        return vanilla.settings != null && vanilla.settings.fixedBiome >= 0;
     }
 
-    public FastLayerBiome(long seed) {
-        super(seed);
+    /*
+     * struct type {
+     *   int rng_max; //the value to pass as the "max" parameter to the RNG's nextInt function
+     *   int values[...]; //the values
+     * };
+     */
+
+    protected static int selectWeightedRandom(long state, int[] type) {
+        return type[nextInt(state, type[0]) + 1];
+    }
+
+    protected final int[][] types;
+
+    public FastLayerBiome(@NonNull GenLayerBiome vanilla) {
+        super(vanilla.worldGenSeed);
+        checkArg(!isConstant(vanilla), "cannot construct FastLayerBiome with fixed biome output!");
+
+        BiomeManager.BiomeType[] types = BiomeManager.BiomeType.values();
+        List<BiomeManager.BiomeEntry>[] typeBiomes = PUnsafe.getObject(vanilla, GENLAYERBIOME_BIOMES_OFFSET);
+        checkState(types.length == typeBiomes.length, "biome types (%d) != typeBiomes (%d)", types.length, typeBiomes.length);
+
+        this.types = Stream.of(types).map(type -> {
+            List<BiomeManager.BiomeEntry> biomes = typeBiomes[type.ordinal()];
+
+            boolean modded = BiomeManager.isTypeListModded(type);
+            int totalWeight = WeightedRandom.getTotalWeight(biomes);
+
+            return IntStream.concat(
+                    IntStream.of(modded ? totalWeight : totalWeight / 10),
+                    biomes.stream().flatMapToInt(entry -> {
+                        int biomeId = Biome.getIdForBiome(entry.biome);
+                        return IntStream.range(0, modded ? entry.itemWeight : entry.itemWeight / 10).map(i -> biomeId);
+                    }))
+                    .toArray();
+        }).toArray(int[][]::new);
     }
 
     @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int k = this.child.getSingle(alloc, x, z);
-        int l = (k & 0xF00) >> 8;
-        k = k & ~0xF00;
-        //TODO
+        int rawValue = this.child.getSingle(alloc, x, z);
+        int value = rawValue & 0xFF;
+        int extra = (rawValue & 0xF00) >> 8;
 
-        /*if (this.settings != null && this.settings.fixedBiome >= 0)
-                {
-                    aint1[j + i * areaWidth] = this.settings.fixedBiome;
+        if (isBiomeOceanic(value) || value == ID_MUSHROOM_ISLAND) {
+            return value;
+        }
+
+        long state = start(this.seed, x, z);
+        switch (value) {
+            case 1:
+                if (extra != 0) {
+                    return nextInt(state, 3) == 0 ? ID_MESA_CLEAR_ROCK : ID_MESA_ROCK;
+                } else {
+                    return selectWeightedRandom(state, this.types[value - 1]);
                 }
-                else */
-        return 0;
+            case 2:
+                if (extra != 0) {
+                    return ID_JUNGLE;
+                } else {
+                    return selectWeightedRandom(state, this.types[value - 1]);
+                }
+            case 3:
+                if (extra != 0) {
+                    return ID_REDWOOD_TAIGA;
+                } else {
+                    return selectWeightedRandom(state, this.types[value - 1]);
+                }
+            case 4:
+                return selectWeightedRandom(state, this.types[value - 1]);
+            default:
+                return ID_MUSHROOM_ISLAND;
+        }
     }
 }

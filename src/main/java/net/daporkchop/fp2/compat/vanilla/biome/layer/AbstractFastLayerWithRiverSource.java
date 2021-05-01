@@ -18,40 +18,28 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
+package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayerWithRiverSource;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerRiverMix;
-
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 /**
+ * Base implementation of {@link IFastLayer} which has an additional source layer for rivers.
+ *
  * @author DaPorkchop_
- * @see GenLayerRiverMix
  */
-public class FastLayerRiverMix extends AbstractFastLayerWithRiverSource {
-    public FastLayerRiverMix(long seed) {
+public abstract class AbstractFastLayerWithRiverSource extends AbstractFastLayer {
+    protected static final long CHILDRIVER_OFFSET = PUnsafe.pork_getOffset(AbstractFastLayerWithRiverSource.class, "childRiver");
+
+    protected final IFastLayer childRiver = null;
+
+    public AbstractFastLayerWithRiverSource(long seed) {
         super(seed);
     }
 
     @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int biome = this.child.getSingle(alloc, x, z);
-        if (biome != ID_OCEAN && biome != ID_DEEP_OCEAN) {
-            int river = this.childRiver.getSingle(alloc, x, z);
-
-            if (river == ID_RIVER) {
-                if (biome == ID_ICE_PLAINS) {
-                    return ID_FROZEN_RIVER;
-                } else if (biome != ID_MUSHROOM_ISLAND && biome != ID_MUSHROOM_ISLAND_SHORE) {
-                    return river & 0xFF;
-                } else {
-                    return ID_MUSHROOM_ISLAND_SHORE;
-                }
-            }
-        }
-        return biome;
+    public void init(@NonNull IFastLayer[] children) {
+        super.init(children);
+        PUnsafe.putObject(this, CHILDRIVER_OFFSET, children[1]);
     }
 }

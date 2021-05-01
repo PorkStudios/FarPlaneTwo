@@ -63,6 +63,8 @@ namespace fp2::biome::fastlayer {
             }
         }
 
+        //TODO: i can do vectorized fast modulo by constant using https://www.felixcloutier.com/x86/pmulld:pmullq (needs AVX512)
+
         template<int32_t MAX> inline T_32 nextInt() {
             T_32 i;
             if constexpr ((MAX & (MAX - 1)) == 0) { //MAX is a power of two

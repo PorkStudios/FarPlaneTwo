@@ -38,4 +38,15 @@ public class MathUtil {
     public static int mulAddShift(int a, int b, int c, int shift) {
         return (int) (((long) a * (long) b + c) >> shift);
     }
+
+    public static int gcd(int a, int b) {
+        while (a != b) {
+            if (a > b) {
+                a -= b;
+            } else {
+                b -= a;
+            }
+        }
+        return a;
+    }
 }

@@ -36,13 +36,18 @@ import net.minecraft.world.gen.layer.GenLayer;
 import net.minecraft.world.gen.layer.GenLayerAddIsland;
 import net.minecraft.world.gen.layer.GenLayerAddMushroomIsland;
 import net.minecraft.world.gen.layer.GenLayerAddSnow;
+import net.minecraft.world.gen.layer.GenLayerBiome;
+import net.minecraft.world.gen.layer.GenLayerBiomeEdge;
 import net.minecraft.world.gen.layer.GenLayerDeepOcean;
 import net.minecraft.world.gen.layer.GenLayerFuzzyZoom;
+import net.minecraft.world.gen.layer.GenLayerHills;
 import net.minecraft.world.gen.layer.GenLayerIsland;
 import net.minecraft.world.gen.layer.GenLayerRareBiome;
 import net.minecraft.world.gen.layer.GenLayerRemoveTooMuchOcean;
 import net.minecraft.world.gen.layer.GenLayerRiver;
 import net.minecraft.world.gen.layer.GenLayerRiverInit;
+import net.minecraft.world.gen.layer.GenLayerRiverMix;
+import net.minecraft.world.gen.layer.GenLayerShore;
 import net.minecraft.world.gen.layer.GenLayerSmooth;
 import net.minecraft.world.gen.layer.GenLayerVoronoiZoom;
 import net.minecraft.world.gen.layer.GenLayerZoom;
@@ -96,15 +101,15 @@ public class TestFastBiomeGen {
         this.testLayers(new GenLayerAddSnow(1L, new GenLayerRandomValues(0L)));
     }
 
-    /*@Test
+    @Test
     public void testBiome() {
         this.testLayers(new GenLayerBiome(1L, new GenLayerRandomValues(0L), null, null));
-    }*/
+    }
 
-    /*@Test
+    @Test
     public void testBiomeEdge() {
-        this.testLayers(new GenLayerBiomeEdge(1L, new GenLayerRandomValues(0L)));
-    }*/
+        this.testLayers(new GenLayerBiomeEdge(1L, new GenLayerFuzzyZoom(1L, new GenLayerRandomValues(0L))));
+    }
 
     @Test
     public void testDeepOcean() {
@@ -131,10 +136,10 @@ public class TestFastBiomeGen {
         this.testLayers(new GenLayerFuzzyZoom(1L, new GenLayerRandomValues(0L)));
     }
 
-    /*@Test
+    @Test
     public void testHills() {
-        this.testLayers(new GenLayerHills(1L, new GenLayerRandomValues(0L), new GenLayerRandomValues(1L)));
-    }*/
+        this.testLayers(new GenLayerHills(1L, new GenLayerFuzzyZoom(1L, new GenLayerRandomValues(0L)), new GenLayerRandomValues(1L)));
+    }
 
     @Test
     public void testIsland() {
@@ -161,15 +166,15 @@ public class TestFastBiomeGen {
         this.testLayers(new GenLayerRiverInit(1L, new GenLayerRandomValues(0L)));
     }
 
-    /*@Test
+    @Test
     public void testRiverMix() {
         this.testLayers(new GenLayerRiverMix(1L, new GenLayerRandomValues(0L), new GenLayerRandomValues(1L)));
-    }*/
+    }
 
-    /*@Test
+    @Test
     public void testShore() {
         this.testLayers(new GenLayerShore(1L, new GenLayerRandomValues(0L)));
-    }*/
+    }
 
     @Test
     public void testSmooth() {

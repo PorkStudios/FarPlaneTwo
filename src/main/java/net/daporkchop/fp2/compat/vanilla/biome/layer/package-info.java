@@ -18,40 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayerWithRiverSource;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerRiverMix;
-
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
-
 /**
+ * A full re-implementation of the vanilla biome generation pipeline.
+ * <p>
+ * This is heavily optimized for the case where it's not a contiguous grid being generated, but rather a number of smaller grids spaced apart from each other.
+ *
  * @author DaPorkchop_
- * @see GenLayerRiverMix
+ * @see <a href="https://gist.github.com/DaMatrix/6b1852f831b1e152150852f41c3ab462">flow chart of vanilla biome gen</a>
  */
-public class FastLayerRiverMix extends AbstractFastLayerWithRiverSource {
-    public FastLayerRiverMix(long seed) {
-        super(seed);
-    }
-
-    @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int biome = this.child.getSingle(alloc, x, z);
-        if (biome != ID_OCEAN && biome != ID_DEEP_OCEAN) {
-            int river = this.childRiver.getSingle(alloc, x, z);
-
-            if (river == ID_RIVER) {
-                if (biome == ID_ICE_PLAINS) {
-                    return ID_FROZEN_RIVER;
-                } else if (biome != ID_MUSHROOM_ISLAND && biome != ID_MUSHROOM_ISLAND_SHORE) {
-                    return river & 0xFF;
-                } else {
-                    return ID_MUSHROOM_ISLAND_SHORE;
-                }
-            }
-        }
-        return biome;
-    }
-}
+package net.daporkchop.fp2.compat.vanilla.biome.layer;

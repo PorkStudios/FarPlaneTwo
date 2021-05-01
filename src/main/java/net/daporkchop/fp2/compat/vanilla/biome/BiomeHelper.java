@@ -31,6 +31,7 @@ import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerAddSnow;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerBiome;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerBiomeEdge;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerDeepOcean;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerFixedBiome;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerFuzzyZoom;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerHills;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerIsland;
@@ -47,6 +48,8 @@ import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerZoom;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
 import net.minecraft.init.Biomes;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.BiomeJungle;
+import net.minecraft.world.biome.BiomeMesa;
 import net.minecraft.world.biome.BiomeProvider;
 import net.minecraft.world.gen.layer.GenLayer;
 import net.minecraft.world.gen.layer.GenLayerAddIsland;
@@ -68,6 +71,7 @@ import net.minecraft.world.gen.layer.GenLayerShore;
 import net.minecraft.world.gen.layer.GenLayerSmooth;
 import net.minecraft.world.gen.layer.GenLayerVoronoiZoom;
 import net.minecraft.world.gen.layer.GenLayerZoom;
+import net.minecraftforge.common.BiomeManager;
 import net.minecraftforge.fml.common.Mod;
 
 import java.util.IdentityHashMap;
@@ -191,7 +195,9 @@ public class BiomeHelper {
         LAYER_CONVERTERS.put(GenLayerAddIsland.class, layer -> new FastLayerAddIsland(layer.worldGenSeed));
         LAYER_CONVERTERS.put(GenLayerAddMushroomIsland.class, layer -> new FastLayerAddMushroomIsland(layer.worldGenSeed));
         LAYER_CONVERTERS.put(GenLayerAddSnow.class, layer -> new FastLayerAddSnow(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerBiome.class, layer -> new FastLayerBiome(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerBiome.class, layer -> FastLayerBiome.isConstant((GenLayerBiome) layer)
+                ? new FastLayerFixedBiome(((GenLayerBiome) layer).settings.fixedBiome)
+                : new FastLayerBiome((GenLayerBiome) layer));
         LAYER_CONVERTERS.put(GenLayerBiomeEdge.class, layer -> new FastLayerBiomeEdge(layer.worldGenSeed));
         LAYER_CONVERTERS.put(GenLayerDeepOcean.class, layer -> new FastLayerDeepOcean(layer.worldGenSeed));
         LAYER_CONVERTERS.put(GenLayerEdge.class, layer -> new FastLayerBiomeEdge(layer.worldGenSeed));
@@ -297,6 +303,65 @@ public class BiomeHelper {
             //equivalent to if (i < 0) { i += max; }
             i += (i >> 31) & max;
             return i;
+        }
+    }
+
+    //various compatibility functions which are required in order to emulate vanilla GenLayer as closely as possible
+
+    public static boolean isJungleCompatible(int id) {
+        Biome biome = Biome.getBiome(id);
+        if (biome != null && biome.getBiomeClass() == BiomeJungle.class) {
+            return true;
+        } else {
+            return id == ID_JUNGLE || id == ID_JUNGLE_EDGE || id == ID_JUNGLE_HILLS || id == ID_FOREST || id == ID_TAIGA || BiomeManager.oceanBiomes.contains(biome);
+        }
+    }
+
+    public static boolean isBiomeOceanic(int id) {
+        return isBiomeOceanic(Biome.getBiome(id));
+    }
+
+    public static boolean isBiomeOceanic(Biome biome) {
+        return BiomeManager.oceanBiomes.contains(biome);
+    }
+
+    public static boolean isMesa(int id) {
+        return Biome.getBiome(id) instanceof BiomeMesa;
+    }
+
+    public static boolean isMutation(Biome biome) {
+        return biome != null && biome.isMutation();
+    }
+
+    public static boolean biomesEqualOrMesaPlateau(int idA, int idB) {
+        if (idA == idB) {
+            return true;
+        }
+
+        Biome a = Biome.getBiome(idA);
+        Biome b = Biome.getBiome(idB);
+        if (a != null && b != null) {
+            return a != Biomes.MESA_ROCK && a != Biomes.MESA_CLEAR_ROCK
+                    ? a == b || a.getBiomeClass() == b.getBiomeClass()
+                    : b == Biomes.MESA_ROCK || b == Biomes.MESA_CLEAR_ROCK;
+        } else {
+            return false;
+        }
+    }
+
+    public static boolean canBiomesBeNeighbors(int idA, int idB)  {
+        if (biomesEqualOrMesaPlateau(idA, idB)) {
+            return true;
+        }
+
+        Biome a = Biome.getBiome(idA);
+        Biome b = Biome.getBiome(idB);
+        if (a != null && b != null) {
+            Biome.TempCategory ta = a.getTempCategory();
+            Biome.TempCategory tb = b.getTempCategory();
+            return ta == tb || ta == Biome.TempCategory.MEDIUM || tb == Biome.TempCategory.MEDIUM;
+        } else {
+            return false;
         }
     }
 }

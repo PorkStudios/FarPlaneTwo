@@ -25,17 +25,78 @@ import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerBiomeEdge;
 
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+
 /**
  * @author DaPorkchop_
  * @see GenLayerBiomeEdge
  */
 public class FastLayerBiomeEdge extends AbstractFastLayer {
+    public static int replaceBiomeEdgeIfNecessary(int center, int v0, int v1, int v2, int v3, int replace, int with) {
+        if (!biomesEqualOrMesaPlateau(center, replace)) {
+            return -1;
+        }
+
+        return canBiomesBeNeighbors(v0, replace) && canBiomesBeNeighbors(v1, replace) && canBiomesBeNeighbors(v2, replace) && canBiomesBeNeighbors(v3, replace)
+                ? center
+                : with;
+    }
+
+    public static int replaceBiomeEdge(int center, int v0, int v1, int v2, int v3, int replace, int with) {
+        if (center != replace) {
+            return -1;
+        }
+
+        return biomesEqualOrMesaPlateau(v0, replace) && biomesEqualOrMesaPlateau(v1, replace) && biomesEqualOrMesaPlateau(v2, replace) && biomesEqualOrMesaPlateau(v3, replace)
+                ? center
+                : with;
+    }
+
+    public static boolean areNoneEqual(int v0, int v1, int v2, int v3, int check) {
+        return v0 != check && v1 != check && v2 != check && v3 != check;
+    }
+
     public FastLayerBiomeEdge(long seed) {
         super(seed);
     }
 
     @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        return 0; //TODO
+        int center, v0, v1, v2, v3;
+
+        int[] arr = alloc.get(3 * 3);
+        try {
+            this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
+
+            v0 = arr[1];
+            v2 = arr[3];
+            center = arr[4];
+            v1 = arr[5];
+            v3 = arr[7];
+        } finally {
+            alloc.release(arr);
+        }
+
+        int out;
+        if ((out = replaceBiomeEdgeIfNecessary(center, v0, v1, v2, v3, ID_EXTREME_HILLS, ID_EXTREME_HILLS_EDGE)) >= 0
+            || (out = replaceBiomeEdge(center, v0, v1, v2, v3, ID_MESA_ROCK, ID_MESA)) >= 0
+            || (out = replaceBiomeEdge(center, v0, v1, v2, v3, ID_MESA_CLEAR_ROCK, ID_MESA)) >= 0
+            || (out = replaceBiomeEdge(center, v0, v1, v2, v3, ID_REDWOOD_TAIGA, ID_TAIGA)) >= 0) {
+            return out;
+        } else if (center == ID_DESERT) {
+            return areNoneEqual(v0, v1, v2, v3, ID_ICE_PLAINS)
+                    ? center
+                    : ID_EXTREME_HILLS_WITH_TREES;
+        } else if (center == ID_SWAMPLAND) {
+            if (areNoneEqual(v0, v1, v2, v3, ID_DESERT) && areNoneEqual(v0, v1, v2, v3, ID_COLD_TAIGA) && areNoneEqual(v0, v1, v2, v3, ID_ICE_PLAINS)) {
+                return areNoneEqual(v0, v1, v2, v3, ID_JUNGLE)
+                        ? center
+                        : ID_JUNGLE_EDGE;
+            } else {
+                return ID_PLAINS;
+            }
+        } else {
+            return center;
+        }
     }
 }
