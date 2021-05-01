@@ -20,7 +20,7 @@
 
 #include "NativeFastLayer.h"
 
-inline int32_t eval(fp2::biome::fastlayer::rng& rng, int32_t center, Vec4i neighbors) {
+inline int32_t eval(int64_t seed, int32_t x, int32_t z, int32_t center, Vec4i neighbors) {
     return center == biomes.OCEAN && horizontal_and(neighbors == biomes.OCEAN)
             ? biomes.DEEP_OCEAN
             : center;

@@ -27,7 +27,8 @@ constexpr fp2::fastmod_s64 MODULOS[] = {
     fp2::fastmod_s64(4)
 };
 
-inline int32_t eval(fp2::biome::fastlayer::rng& rng, int32_t center, Vec4i neighbors) {
+inline int32_t eval(int64_t seed, int32_t x, int32_t z, int32_t center, Vec4i neighbors) {
+    fp2::biome::fastlayer::rng rng(seed, x, z);
     if (center != 0) {
         return horizontal_or(neighbors == 0) && rng.nextInt<5>() == 0
             ? center == 4 ? 4 : 0

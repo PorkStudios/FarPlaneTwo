@@ -20,25 +20,39 @@
 
 #include "NativeFastLayer.h"
 
-inline int32_t eval(int64_t seed, int32_t x, int32_t z, int32_t center, Vec4i neighbors) {
-    return center == 4 && horizontal_or((neighbors == 1) | (neighbors == 2))
-            ? 3
-            : center;
-}
+FP2_JNI(void, NativeFastLayerRiverMix, mix0) (JNIEnv* env, jobject obj,
+        jint count, jintArray _biome, jintArray _river) {
+    fp2::pinned_int_array biome(env, _biome);
+    fp2::pinned_int_array river(env, _river);
 
-using layer = fp2::biome::fastlayer::padded_layer<>::impl<eval, fp2::biome::fastlayer::padded_layer_mode::sides>;
+    int32_t i = 0;
+    for (Vec4i b, r; i < count & ~3; i += 4) {
+        b.load(&biome[i]);
+        r.load(&river[i]);
 
-FP2_JNI(void, NativeFastLayerEdge_00024HeatIce, getGrid0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out, jintArray _in) {
-    layer{}.grid(env, seed, x, z, sizeX, sizeZ, _out, _in);
-}
+        Vec4i riverOut = biomes.MUSHROOM_ISLAND_SHORE;
+        riverOut = select((b != biomes.MUSHROOM_ISLAND) & (b != biomes.MUSHROOM_ISLAND_SHORE), r & 0xFF, riverOut);
+        riverOut = select(b == biomes.ICE_PLAINS, biomes.FROZEN_RIVER, riverOut);
+        
+        b = select((b != biomes.OCEAN) & (b != biomes.DEEP_OCEAN) & (r == biomes.RIVER), riverOut, b);
+        b.store(&biome[i]);
+    }
 
-FP2_JNI(void, NativeFastLayerEdge_00024HeatIce, multiGetGridsCombined0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint size, jint dist, jint depth, jint count, jintArray _out, jintArray _in) {
-    layer{}.grid_multi_combined(env, seed, x, z, size, dist, depth, count, _out, _in);
-}
+    for (; i < count; i++) {
+        int32_t b = biome[i];
+        if (b != biomes.OCEAN && b != biomes.DEEP_OCEAN) {
+            int32_t r = river[i];
 
-FP2_JNI(void, NativeFastLayerEdge_00024HeatIce, multiGetGridsIndividual0) (JNIEnv* env, jobject obj,
-        jlong seed, jint x, jint z, jint size, jint dist, jint depth, jint count, jintArray _out, jintArray _in) {
-    layer{}.grid_multi_individual(env, seed, x, z, size, dist, depth, count, _out, _in);
+            if (r == biomes.RIVER) {
+                if (b == biomes.ICE_PLAINS) {
+                    b = biomes.FROZEN_RIVER;
+                } else if (b != biomes.MUSHROOM_ISLAND && b != biomes.MUSHROOM_ISLAND_SHORE) {
+                    b = r & 0xFF;
+                } else {
+                    b = biomes.MUSHROOM_ISLAND_SHORE;
+                }
+                biome[i] = b;
+            }
+        }
+    }
 }

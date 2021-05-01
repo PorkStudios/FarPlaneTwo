@@ -38,6 +38,7 @@ import net.minecraft.world.gen.layer.GenLayerRareBiome;
 import net.minecraft.world.gen.layer.GenLayerRemoveTooMuchOcean;
 import net.minecraft.world.gen.layer.GenLayerRiver;
 import net.minecraft.world.gen.layer.GenLayerRiverInit;
+import net.minecraft.world.gen.layer.GenLayerRiverMix;
 import net.minecraft.world.gen.layer.GenLayerSmooth;
 import net.minecraft.world.gen.layer.GenLayerVoronoiZoom;
 import net.minecraft.world.gen.layer.GenLayerZoom;
@@ -131,6 +132,7 @@ public class NativeLayerProvider extends JavaLayerProvider {
         this.fastMapperOverrides.put(GenLayerRemoveTooMuchOcean.class, layer -> new NativeFastLayerRemoveTooMuchOcean(layer.worldGenSeed));
         this.fastMapperOverrides.put(GenLayerRiver.class, layer -> new NativeFastLayerRiver(layer.worldGenSeed));
         this.fastMapperOverrides.put(GenLayerRiverInit.class, layer -> new NativeFastLayerRiverInit(layer.worldGenSeed));
+        this.fastMapperOverrides.put(GenLayerRiverMix.class, layer -> new NativeFastLayerRiverMix(layer.worldGenSeed));
         this.fastMapperOverrides.put(GenLayerSmooth.class, layer -> new NativeFastLayerSmooth(layer.worldGenSeed));
         this.fastMapperOverrides.put(GenLayerVoronoiZoom.class, layer -> new NativeFastLayerVoronoiZoom(layer.worldGenSeed));
         this.fastMapperOverrides.put(GenLayerZoom.class, layer -> new NativeFastLayerZoom(layer.worldGenSeed));

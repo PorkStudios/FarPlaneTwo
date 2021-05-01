@@ -20,7 +20,7 @@
 
 #include "NativeFastLayer.h"
 
-inline int32_t eval(fp2::biome::fastlayer::rng& rng, int32_t center, Vec4i neighbors) {
+inline int32_t eval(int64_t seed, int32_t x, int32_t z, int32_t center, Vec4i neighbors) {
     center = center >= 2 ? 2 + (center & 1) : center;
     neighbors = select(neighbors >= 2, 2 + (neighbors & 1), neighbors);
 

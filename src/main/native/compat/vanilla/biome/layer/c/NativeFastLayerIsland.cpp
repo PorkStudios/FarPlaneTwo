@@ -20,8 +20,8 @@
 
 #include "NativeFastLayer.h"
 
-inline int32_t eval(fp2::biome::fastlayer::rng& rng, int32_t x, int32_t z) {
-    return (x | z) == 0 || rng.nextInt<10>() == 0;
+inline int32_t eval(int64_t seed, int32_t x, int32_t z) {
+    return (x | z) == 0 || fp2::biome::fastlayer::rng(seed, x, z).nextInt<10>() == 0;
 }
 
 using layer = fp2::biome::fastlayer::source_layer<eval>;

@@ -198,6 +198,10 @@ public class TestFastBiomeGen {
     }
 
     private void testLayers(GenLayer vanilla) {
+        /*if (!(vanilla instanceof GenLayerRiverMix)) {
+            return;
+        }*/
+
         SplittableRandom r = new SplittableRandom(12345L);
 
         vanilla.initWorldGenSeed(r.nextLong());

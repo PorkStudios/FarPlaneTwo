@@ -20,13 +20,13 @@
 
 #include "NativeFastLayer.h"
 
-inline int32_t eval(fp2::biome::fastlayer::rng& rng, int32_t val) {
+inline int32_t eval(int64_t seed, int32_t x, int32_t z, int32_t val) {
     constexpr uint32_t LOOKUP_TABLE[] = { //use a lookup table to make this branchless
         4, 3, 1, 1, 1, 1
     };
 
     return val != 0
-            ? LOOKUP_TABLE[rng.nextInt<6>()]
+            ? LOOKUP_TABLE[fp2::biome::fastlayer::rng(seed, x, z).nextInt<6>()]
             : val;
 }
 

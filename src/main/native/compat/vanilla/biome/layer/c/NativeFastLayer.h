@@ -121,7 +121,7 @@ namespace fp2::biome::fastlayer {
      * @author DaPorkchop_
      */
     template<typename... ARGS> class padded_layer {
-    template<int32_t(EVAL)(rng&, int32_t, Vec4i, ARGS...), padded_layer_mode MODE> class impl {
+    template<int32_t(EVAL)(int64_t, int32_t, int32_t, int32_t, Vec4i, ARGS...), padded_layer_mode MODE> class impl {
         static const inline Vec4i OFFSETS_X = MODE == padded_layer_mode::corners
                 ? Vec4i(-1, 1, -1, 1) : MODE == padded_layer_mode::sides ? Vec4i(-1, 0, 0, 1) : Vec4i(-1, 0, 1, 0);
         static const inline Vec4i OFFSETS_Z = MODE == padded_layer_mode::corners
@@ -144,9 +144,7 @@ namespace fp2::biome::fastlayer {
                     const Vec4i neighbors = lookup<(1 << 30)>(inIdx + neighbor_offsets, &in[0]);
                     const int32_t center = in[inIdx];
 
-                    fp2::biome::fastlayer::rng rng(seed, x + dx, z + dz);
-
-                    out[outIdx] = EVAL(rng, center, neighbors, args...);
+                    out[outIdx] = EVAL(seed, x + dx, z + dz, center, neighbors, args...);
                 }
             }
         }
@@ -174,9 +172,7 @@ namespace fp2::biome::fastlayer {
                             const Vec4i neighbors = lookup<(1 << 30)>(inIdx + neighbor_offsets, &in[0]);
                             const int32_t center = in[inIdx];
 
-                            fp2::biome::fastlayer::rng rng(seed, baseX + dx, baseZ + dz);
-
-                            out[outIdx] = EVAL(rng, center, neighbors, args...);
+                            out[outIdx] = EVAL(seed, baseX + dx, baseZ + dz, center, neighbors, args...);
                         }
                     }
                 }
@@ -203,9 +199,7 @@ namespace fp2::biome::fastlayer {
                             const Vec4i neighbors = lookup<(1 << 30)>(inIdx + neighbor_offsets, &in[0]);
                             const int32_t center = in[inIdx];
 
-                            fp2::biome::fastlayer::rng rng(seed, baseX + dx, baseZ + dz);
-
-                            out[outIdx] = EVAL(rng, center, neighbors, args...);
+                            out[outIdx] = EVAL(seed, baseX + dx, baseZ + dz, center, neighbors, args...);
                         }
                     }
                 }
@@ -219,7 +213,7 @@ namespace fp2::biome::fastlayer {
      * @param EVAL a function which determines the output value based on the input value
      * @author DaPorkchop_
      */
-    template<int32_t(EVAL)(rng&, int32_t)> class translation_layer {
+    template<int32_t(EVAL)(int64_t, int32_t, int32_t, int32_t)> class translation_layer {
     public:
         inline void grid(JNIEnv* env,
                 int64_t seed, int32_t x, int32_t z, int32_t sizeX, int32_t sizeZ, jintArray _inout) {
@@ -227,9 +221,7 @@ namespace fp2::biome::fastlayer {
 
             for (int32_t i = 0, dx = 0; dx < sizeX; dx++) {
                 for (int32_t dz = 0; dz < sizeZ; dz++, i++) {
-                    fp2::biome::fastlayer::rng rng(seed, x + dx, z + dz);
-
-                    inout[i] = EVAL(rng, inout[i]);
+                    inout[i] = EVAL(seed, x + dx, z + dz, inout[i]);
                 }
             }
         }
@@ -242,9 +234,7 @@ namespace fp2::biome::fastlayer {
                 for (int32_t gridZ = 0; gridZ < count; gridZ++) {
                     for (int32_t dx = 0; dx < size; dx++) {
                         for (int32_t dz = 0; dz < size; dz++, i++) {
-                            fp2::biome::fastlayer::rng rng(seed, mulAddShift(gridX, dist, x, depth) + dx, mulAddShift(gridZ, dist, z, depth) + dz);
-
-                            inout[i] = EVAL(rng, inout[i]);
+                            inout[i] = EVAL(seed, mulAddShift(gridX, dist, x, depth) + dx, mulAddShift(gridZ, dist, z, depth) + dz, inout[i]);
                         }
                     }
                 }
@@ -258,7 +248,7 @@ namespace fp2::biome::fastlayer {
      * @param EVAL a function which determines the output value
      * @author DaPorkchop_
      */
-    template<int32_t(EVAL)(rng&, int32_t, int32_t)> class source_layer {
+    template<int32_t(EVAL)(int64_t, int32_t, int32_t)> class source_layer {
     public:
         inline void grid(JNIEnv* env,
                 int64_t seed, int32_t x, int32_t z, int32_t sizeX, int32_t sizeZ, jintArray _out) {
@@ -266,9 +256,7 @@ namespace fp2::biome::fastlayer {
 
             for (int32_t i = 0, dx = 0; dx < sizeX; dx++) {
                 for (int32_t dz = 0; dz < sizeZ; dz++, i++) {
-                    fp2::biome::fastlayer::rng rng(seed, x + dx, z + dz);
-
-                    out[i] = EVAL(rng, x + dx, z + dz);
+                    out[i] = EVAL(seed, x + dx, z + dz);
                 }
             }
         }
@@ -281,11 +269,7 @@ namespace fp2::biome::fastlayer {
                 for (int32_t gridZ = 0; gridZ < count; gridZ++) {
                     for (int32_t dx = 0; dx < size; dx++) {
                         for (int32_t dz = 0; dz < size; dz++, i++) {
-                            const int32_t realX = mulAddShift(gridX, dist, x, depth) + dx;
-                            const int32_t realZ = mulAddShift(gridZ, dist, z, depth) + dz;
-                            fp2::biome::fastlayer::rng rng(seed, realX, realZ);
-
-                            out[i] = EVAL(rng, realX, realZ);
+                            out[i] = EVAL(seed, mulAddShift(gridX, dist, x, depth) + dx, mulAddShift(gridZ, dist, z, depth) + dz);
                         }
                     }
                 }

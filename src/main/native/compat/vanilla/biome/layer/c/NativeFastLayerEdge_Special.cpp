@@ -20,7 +20,8 @@
 
 #include "NativeFastLayer.h"
 
-inline int32_t eval(fp2::biome::fastlayer::rng& rng, int32_t val) {
+inline int32_t eval(int64_t seed, int32_t x, int32_t z, int32_t val) {
+    fp2::biome::fastlayer::rng rng(seed, x, z);
     if (val != 0 && rng.nextInt<13>() == 0) {
         val |= (rng.nextInt<15>() + 1) << 8;
     }

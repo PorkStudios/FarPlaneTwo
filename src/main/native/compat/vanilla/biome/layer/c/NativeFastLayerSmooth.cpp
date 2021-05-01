@@ -20,12 +20,12 @@
 
 #include "NativeFastLayer.h"
 
-inline int32_t eval(fp2::biome::fastlayer::rng& rng, int32_t center, Vec4i neighbors) {
+inline int32_t eval(int64_t seed, int32_t x, int32_t z, int32_t center, Vec4i neighbors) {
     int32_t v[4];
     neighbors.store(v);
 
     if (v[0] == v[2] && v[1] == v[3]) {
-        return v[rng.nextInt<2>()];
+        return v[fp2::biome::fastlayer::rng(seed, x, z).nextInt<2>()];
     } else if (v[0] == v[2]) {
         return v[0];
     } else if (v[1] == v[3]) {
