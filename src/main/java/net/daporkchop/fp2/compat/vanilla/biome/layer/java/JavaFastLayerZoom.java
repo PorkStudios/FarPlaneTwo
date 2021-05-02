@@ -31,7 +31,7 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerZoom
  */
-public class JavaFastLayerZoom extends AbstractFastLayer {
+public class JavaFastLayerZoom extends AbstractFastLayer implements IJavaZoomingLayer {
     public JavaFastLayerZoom(long seed) {
         super(seed);
     }
@@ -110,6 +110,49 @@ public class JavaFastLayerZoom extends AbstractFastLayer {
                     return XZ;
             }
             throw new IllegalStateException();
+        }
+    }
+
+    @Override
+    public int shift() {
+        return 1;
+    }
+
+    @Override
+    public void zoomTile0(int x, int z, @NonNull int[] v, @NonNull int[] out, int off, int size) {
+        out[off + 0 * size + 0] = v[0];
+        long state = start(this.seed, x, z);
+        out[off + 0 * size + 1] = v[nextInt(state, 2) << 1];
+        state = update(state, this.seed);
+        out[off + 1 * size + 0] = v[nextInt(state, 2)];
+        state = update(state, this.seed);
+        out[off + 1 * size + 1] = this.sampleXZLast(state, v);
+    }
+
+    protected int sampleXZLast(long state, @NonNull int[] v) {
+        //here be branch predictor hell
+        if (v[2] == v[1] && v[1] == v[3]) {
+            return v[2];
+        } else if (v[0] == v[2] && v[0] == v[1]) {
+            return v[0];
+        } else if (v[0] == v[2] && v[0] == v[3]) {
+            return v[0];
+        } else if (v[0] == v[1] && v[0] == v[3]) {
+            return v[0];
+        } else if (v[0] == v[2] && v[1] != v[3]) {
+            return v[0];
+        } else if (v[0] == v[1] && v[2] != v[3]) {
+            return v[0];
+        } else if (v[0] == v[3] && v[2] != v[1]) {
+            return v[0];
+        } else if (v[2] == v[1] && v[0] != v[3]) {
+            return v[2];
+        } else if (v[2] == v[3] && v[0] != v[1]) {
+            return v[2];
+        } else if (v[1] == v[3] && v[0] != v[2]) {
+            return v[1];
+        } else {
+            return v[nextInt(state, 4)];
         }
     }
 }

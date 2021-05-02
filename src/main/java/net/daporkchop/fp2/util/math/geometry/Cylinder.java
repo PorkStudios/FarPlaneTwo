@@ -23,6 +23,7 @@ package net.daporkchop.fp2.util.math.geometry;
 import lombok.AllArgsConstructor;
 import net.daporkchop.lib.common.misc.string.PStrings;
 
+import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
@@ -30,10 +31,6 @@ import static net.daporkchop.lib.common.math.PMath.*;
  */
 @AllArgsConstructor
 public class Cylinder implements Volume {
-    private static double sq(double d) {
-        return d * d;
-    }
-
     public final double x;
     public final double z;
     public final double radius;

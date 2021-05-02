@@ -21,16 +21,15 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.ITranslationLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.IJavaTranslationLayer;
 
 /**
  * Extension of {@link ITranslationLayer} for native implementations.
  *
  * @author DaPorkchop_
  */
-public interface INativeTranslationLayer extends ITranslationLayer {
+public interface INativeTranslationLayer extends IJavaTranslationLayer {
     /**
      * @return the seed used by this layer for random number generation
      */

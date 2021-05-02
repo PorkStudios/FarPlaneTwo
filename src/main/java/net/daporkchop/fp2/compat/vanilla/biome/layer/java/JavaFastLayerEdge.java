@@ -24,7 +24,6 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerEdge;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
@@ -52,29 +51,19 @@ public class JavaFastLayerEdge {
      * @author DaPorkchop_
      * @see GenLayerEdge.Mode#COOL_WARM
      */
-    public static class CoolWarm extends AbstractFastLayer {
+    public static class CoolWarm extends AbstractFastLayer implements IJavaPaddedLayer {
         public CoolWarm(long seed) {
             super(seed);
         }
 
         @Override
-        public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-            int center, v0, v1, v2, v3;
+        public int[] offsets(int inSizeX, int inSizeZ) {
+            return IJavaPaddedLayer.offsetsSides(inSizeX, inSizeZ);
+        }
 
-            int[] arr = alloc.get(3 * 3);
-            try {
-                this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
-
-                v0 = arr[1];
-                v2 = arr[3];
-                center = arr[4];
-                v1 = arr[5];
-                v3 = arr[7];
-            } finally {
-                alloc.release(arr);
-            }
-
-            return center == 1 && (v0 == 3 || v0 == 4 || v1 == 3 || v1 == 4 || v2 == 3 || v2 == 4 || v3 == 3 || v3 == 4)
+        @Override
+        public int eval0(int x, int z, int center, @NonNull int[] v) {
+            return center == 1 && (v[0] == 3 || v[0] == 4 || v[1] == 3 || v[1] == 4 || v[2] == 3 || v[2] == 4 || v[3] == 3 || v[3] == 4)
                     ? 2
                     : center;
         }
@@ -84,29 +73,19 @@ public class JavaFastLayerEdge {
      * @author DaPorkchop_
      * @see GenLayerEdge.Mode#HEAT_ICE
      */
-    public static class HeatIce extends AbstractFastLayer {
+    public static class HeatIce extends AbstractFastLayer implements IJavaPaddedLayer {
         public HeatIce(long seed) {
             super(seed);
         }
 
         @Override
-        public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-            int center, v0, v1, v2, v3;
+        public int[] offsets(int inSizeX, int inSizeZ) {
+            return IJavaPaddedLayer.offsetsSides(inSizeX, inSizeZ);
+        }
 
-            int[] arr = alloc.get(3 * 3);
-            try {
-                this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
-
-                v0 = arr[1];
-                v2 = arr[3];
-                center = arr[4];
-                v1 = arr[5];
-                v3 = arr[7];
-            } finally {
-                alloc.release(arr);
-            }
-
-            return center == 4 && (v0 == 1 || v0 == 2 || v1 == 1 || v1 == 2 || v2 == 1 || v2 == 2 || v3 == 1 || v3 == 2)
+        @Override
+        public int eval0(int x, int z, int center, @NonNull int[] v) {
+            return center == 4 && (v[0] == 1 || v[0] == 2 || v[1] == 1 || v[1] == 2 || v[2] == 1 || v[2] == 2 || v[3] == 1 || v[3] == 2)
                     ? 3
                     : center;
         }
@@ -116,24 +95,22 @@ public class JavaFastLayerEdge {
      * @author DaPorkchop_
      * @see GenLayerEdge.Mode#SPECIAL
      */
-    public static class Special extends AbstractFastLayer {
+    public static class Special extends AbstractFastLayer implements IJavaTranslationLayer {
         public Special(long seed) {
             super(seed);
         }
 
         @Override
-        public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-            int v = this.child.getSingle(alloc, x, z);
-
-            if (v != 0) {
+        public int translate0(int x, int z, int value) {
+            if (value != 0) {
                 long state = start(this.seed, x, z);
                 if (nextInt(state, 13) == 0) {
                     state = update(state, this.seed);
-                    v |= (nextInt(state, 15) + 1) << 8;
+                    value |= (nextInt(state, 15) + 1) << 8;
                 }
             }
 
-            return v;
+            return value;
         }
     }
 }

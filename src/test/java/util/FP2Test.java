@@ -18,38 +18,26 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
-import net.minecraft.world.gen.layer.GenLayerSmooth;
-
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+package util;import lombok.experimental.UtilityClass;
+import net.minecraft.init.Bootstrap;
 
 /**
+ * Helper methods used by all FP2 unit tests.
+ *
  * @author DaPorkchop_
- * @see GenLayerSmooth
  */
-public class JavaFastLayerSmooth extends AbstractFastLayer implements IJavaPaddedLayer {
-    public JavaFastLayerSmooth(long seed) {
-        super(seed);
+@UtilityClass
+public class FP2Test {
+    static {
+        System.setProperty("fp2.test", "true");
+
+        Bootstrap.register();
     }
 
-    @Override
-    public int[] offsets(int inSizeX, int inSizeZ) {
-        return IJavaPaddedLayer.offsetsSidesFinalTwoReversed(inSizeX, inSizeZ);
-    }
-
-    @Override
-    public int eval0(int x, int z, int center, @NonNull int[] v) {
-        if (v[0] == v[2] && v[1] == v[3]) {
-            return nextInt(start(this.seed, x, z), 2) == 0 ? v[0] : v[1];
-        } else if (v[0] == v[2]) {
-            return v[0];
-        } else if (v[1] == v[3]) {
-            return v[1];
-        } else {
-            return center;
-        }
+    /**
+     * Sets up the environment for running unit tests.
+     */
+    public static void init() {
+        //this method does nothing, but calling it will force this class to be loaded and initialized!
     }
 }

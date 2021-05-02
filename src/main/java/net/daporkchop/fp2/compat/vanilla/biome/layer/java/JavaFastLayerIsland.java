@@ -23,7 +23,6 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerIsland;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
@@ -32,7 +31,7 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerIsland
  */
-public class JavaFastLayerIsland extends AbstractFastLayer {
+public class JavaFastLayerIsland extends AbstractFastLayer implements IJavaSourceLayer {
     public JavaFastLayerIsland(long seed) {
         super(seed);
     }
@@ -43,7 +42,7 @@ public class JavaFastLayerIsland extends AbstractFastLayer {
     }
 
     @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+    public int get0(int x, int z) {
         return (x | z) == 0 || nextInt(start(this.seed, x, z), 10) == 0 ? 1 : 0;
     }
 }

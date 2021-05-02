@@ -22,7 +22,6 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerRiverMix;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
 /**
  * @author DaPorkchop_
@@ -33,32 +32,5 @@ public class NativeFastLayerRiverMix extends JavaFastLayerRiverMix {
     }
 
     @Override
-    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
-        this.child.getGrid(alloc, x, z, sizeX, sizeZ, out);
-
-        int[] river = alloc.get(sizeX * sizeZ);
-        try {
-            this.childRiver.getGrid(alloc, x, z, sizeX, sizeZ, river);
-
-            this.mix0(sizeX * sizeZ, out, river);
-        } finally {
-            alloc.release(river);
-        }
-    }
-
-    @Override
-    public void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
-        this.child.multiGetGrids(alloc, x, z, size, dist, depth, count, out);
-
-        int[] river = alloc.get(count * count * size * size);
-        try {
-            this.childRiver.multiGetGrids(alloc, x, z, size, dist, depth, count, river);
-
-            this.mix0(count * count * size * size, out, river);
-        } finally {
-            alloc.release(river);
-        }
-    }
-
     protected native void mix0(int count, @NonNull int[] biome, @NonNull int[] river);
 }

@@ -22,7 +22,6 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeJungle;
 import net.minecraft.world.gen.layer.GenLayerShore;
@@ -33,7 +32,7 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerShore
  */
-public class JavaFastLayerShore extends AbstractFastLayer {
+public class JavaFastLayerShore extends AbstractFastLayer implements IJavaPaddedLayer {
     //AAAAAAAAAAAAA dear god i hate vanilla why is none of this consistent
     //that said, i can't actually *change* anything for fear of causing some super obscure compatibility bug...
 
@@ -42,32 +41,22 @@ public class JavaFastLayerShore extends AbstractFastLayer {
     }
 
     @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int center, v0, v1, v2, v3;
+    public int[] offsets(int inSizeX, int inSizeZ) {
+        return IJavaPaddedLayer.offsetsSides(inSizeX, inSizeZ);
+    }
 
-        int[] arr = alloc.get(3 * 3);
-        try {
-            this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
-
-            v0 = arr[1];
-            v2 = arr[3];
-            center = arr[4];
-            v1 = arr[5];
-            v3 = arr[7];
-        } finally {
-            alloc.release(arr);
-        }
-
+    @Override
+    public int eval0(int x, int z, int center, @NonNull int[] v) {
         if (center == ID_MUSHROOM_ISLAND) {
-            return v0 != ID_OCEAN && v1 != ID_OCEAN && v2 != ID_OCEAN && v3 != ID_OCEAN
+            return v[0] != ID_OCEAN && v[1] != ID_OCEAN && v[2] != ID_OCEAN && v[3] != ID_OCEAN
                     ? center
                     : ID_MUSHROOM_ISLAND_SHORE;
         }
 
         Biome centerBiome = Biome.getBiome(center);
         if (centerBiome != null && centerBiome.getBiomeClass() == BiomeJungle.class) {
-            if (isJungleCompatible(v0) && isJungleCompatible(v1) && isJungleCompatible(v2) && isJungleCompatible(v3)) {
-                return !isBiomeOceanic(v0) && !isBiomeOceanic(v1) && !isBiomeOceanic(v2) && !isBiomeOceanic(v3)
+            if (isJungleCompatible(v[0]) && isJungleCompatible(v[1]) && isJungleCompatible(v[2]) && isJungleCompatible(v[3])) {
+                return !isBiomeOceanic(v[0]) && !isBiomeOceanic(v[1]) && !isBiomeOceanic(v[2]) && !isBiomeOceanic(v[3])
                         ? center
                         : ID_BEACH;
             } else {
@@ -77,7 +66,7 @@ public class JavaFastLayerShore extends AbstractFastLayer {
             if (isBiomeOceanic(centerBiome)) { //replaceIfNeighborOcean
                 return center;
             } else {
-                return !isBiomeOceanic(v0) && !isBiomeOceanic(v1) && !isBiomeOceanic(v2) && !isBiomeOceanic(v3)
+                return !isBiomeOceanic(v[0]) && !isBiomeOceanic(v[1]) && !isBiomeOceanic(v[2]) && !isBiomeOceanic(v[3])
                         ? center
                         : ID_STONE_BEACH;
             }
@@ -85,13 +74,13 @@ public class JavaFastLayerShore extends AbstractFastLayer {
             if (isBiomeOceanic(centerBiome)) { //replaceIfNeighborOcean
                 return center;
             } else {
-                return !isBiomeOceanic(v0) && !isBiomeOceanic(v1) && !isBiomeOceanic(v2) && !isBiomeOceanic(v3)
+                return !isBiomeOceanic(v[0]) && !isBiomeOceanic(v[1]) && !isBiomeOceanic(v[2]) && !isBiomeOceanic(v[3])
                         ? center
                         : ID_COLD_BEACH;
             }
         } else if (center == ID_MESA || center == ID_MESA_ROCK) {
-            if (!isBiomeOceanic(v0) && !isBiomeOceanic(v1) && !isBiomeOceanic(v2) && !isBiomeOceanic(v3)) {
-                return isMesa(v0) && isMesa(v1) && isMesa(v2) && isMesa(v3)
+            if (!isBiomeOceanic(v[0]) && !isBiomeOceanic(v[1]) && !isBiomeOceanic(v[2]) && !isBiomeOceanic(v[3])) {
+                return isMesa(v[0]) && isMesa(v[1]) && isMesa(v[2]) && isMesa(v[3])
                         ? center
                         : ID_DESERT;
             } else {
@@ -100,7 +89,7 @@ public class JavaFastLayerShore extends AbstractFastLayer {
         } else if (center == ID_OCEAN || center == ID_DEEP_OCEAN || center == ID_RIVER || center == ID_SWAMPLAND) {
             return center;
         } else {
-            return !isBiomeOceanic(v0) && !isBiomeOceanic(v1) && !isBiomeOceanic(v2) && !isBiomeOceanic(v3)
+            return !isBiomeOceanic(v[0]) && !isBiomeOceanic(v[1]) && !isBiomeOceanic(v[2]) && !isBiomeOceanic(v[3])
                     ? center
                     : ID_BEACH;
         }

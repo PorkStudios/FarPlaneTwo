@@ -32,11 +32,6 @@ public class NativeFastLayerFuzzyZoom extends JavaFastLayerFuzzyZoom implements 
     }
 
     @Override
-    public int shift() {
-        return 1;
-    }
-
-    @Override
     public native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
 
     @Override

@@ -22,7 +22,6 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerRemoveTooMuchOcean;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
@@ -31,24 +30,22 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerRemoveTooMuchOcean
  */
-public class JavaFastLayerRemoveTooMuchOcean extends AbstractFastLayer {
+public class JavaFastLayerRemoveTooMuchOcean extends AbstractFastLayer implements IJavaPaddedLayer {
     public JavaFastLayerRemoveTooMuchOcean(long seed) {
         super(seed);
     }
 
     @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int[] arr = alloc.get(3 * 3);
-        try {
-            this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
+    public int[] offsets(int inSizeX, int inSizeZ) {
+        return IJavaPaddedLayer.offsetsSides(inSizeX, inSizeZ);
+    }
 
-            if (arr[1] == 0 && arr[3] == 0 && arr[4] == 0 && arr[5] == 0 && arr[7] == 0 && nextInt(start(this.seed, x, z), 2) == 0) {
-                return 1;
-            } else {
-                return arr[4];
-            }
-        } finally {
-            alloc.release(arr);
+    @Override
+    public int eval0(int x, int z, int center, @NonNull int[] v) {
+        if (center == 0 && v[0] == 0 && v[1] == 0 && v[2] == 0 && v[3] == 0 && nextInt(start(this.seed, x, z), 2) == 0) {
+            return 1;
+        } else {
+            return center;
         }
     }
 }

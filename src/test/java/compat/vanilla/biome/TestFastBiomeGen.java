@@ -31,7 +31,6 @@ import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValue
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.daporkchop.fp2.util.threading.fj.ThreadSafeForkJoinSupplier;
 import net.daporkchop.lib.common.misc.string.PStrings;
-import net.minecraft.init.Bootstrap;
 import net.minecraft.world.gen.layer.GenLayer;
 import net.minecraft.world.gen.layer.GenLayerAddIsland;
 import net.minecraft.world.gen.layer.GenLayerAddMushroomIsland;
@@ -55,6 +54,7 @@ import net.minecraft.world.gen.layer.GenLayerZoom;
 import net.minecraft.world.gen.layer.IntCache;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import util.FP2Test;
 
 import java.util.Arrays;
 import java.util.List;
@@ -71,8 +71,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 public class TestFastBiomeGen {
     @BeforeClass
-    public static void registerBootstrap() {
-        Bootstrap.register();
+    public static void init() {
+        FP2Test.init();
     }
 
     @BeforeClass
@@ -198,9 +198,9 @@ public class TestFastBiomeGen {
     }
 
     private void testLayers(GenLayer vanilla) {
-        /*if (!(vanilla instanceof GenLayerRiverMix)) {
-            return;
-        }*/
+        if (!(vanilla instanceof GenLayerVoronoiZoom)) {
+            //return;
+        }
 
         SplittableRandom r = new SplittableRandom(12345L);
 

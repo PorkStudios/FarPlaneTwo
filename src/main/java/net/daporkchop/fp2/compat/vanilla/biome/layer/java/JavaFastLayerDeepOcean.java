@@ -22,7 +22,6 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerDeepOcean;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
@@ -31,24 +30,22 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerDeepOcean
  */
-public class JavaFastLayerDeepOcean extends AbstractFastLayer {
+public class JavaFastLayerDeepOcean extends AbstractFastLayer implements IJavaPaddedLayer {
     public JavaFastLayerDeepOcean(long seed) {
         super(seed);
     }
 
     @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int[] arr = alloc.get(3 * 3);
-        try {
-            this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
+    public int[] offsets(int inSizeX, int inSizeZ) {
+        return IJavaPaddedLayer.offsetsSides(inSizeX, inSizeZ);
+    }
 
-            if (arr[1] == ID_OCEAN && arr[3] == ID_OCEAN && arr[4] == ID_OCEAN && arr[5] == ID_OCEAN && arr[7] == ID_OCEAN) {
-                return ID_DEEP_OCEAN;
-            } else {
-                return arr[4];
-            }
-        } finally {
-            alloc.release(arr);
+    @Override
+    public int eval0(int x, int z, int center, @NonNull int[] v) {
+        if (center == ID_OCEAN && v[0] == ID_OCEAN && v[1] == ID_OCEAN && v[2] == ID_OCEAN && v[3] == ID_OCEAN) {
+            return ID_DEEP_OCEAN;
+        } else {
+            return center;
         }
     }
 }

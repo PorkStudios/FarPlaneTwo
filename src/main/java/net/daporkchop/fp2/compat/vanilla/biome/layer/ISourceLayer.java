@@ -41,5 +41,5 @@ public interface ISourceLayer extends IFastLayer {
         this.multiGetGrids0(x, z, size, dist, depth, count, out);
     }
 
-    void multiGetGrids0( int x, int z, int size, int dist, int depth, int count, @NonNull int[] inout);
+    void multiGetGrids0( int x, int z, int size, int dist, int depth, int count, @NonNull int[] out);
 }

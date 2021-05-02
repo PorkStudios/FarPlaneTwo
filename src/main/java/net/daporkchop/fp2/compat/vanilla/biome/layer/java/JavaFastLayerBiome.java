@@ -22,7 +22,6 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.util.WeightedRandom;
 import net.minecraft.world.biome.Biome;
@@ -33,7 +32,6 @@ import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static java.lang.Math.*;
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -41,7 +39,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  * @see GenLayerBiome
  */
-public class JavaFastLayerBiome extends AbstractFastLayer {
+public class JavaFastLayerBiome extends AbstractFastLayer implements IJavaTranslationLayer {
     protected static final long GENLAYERBIOME_BIOMES_OFFSET = PUnsafe.pork_getOffset(GenLayerBiome.class, "biomes"); //i can't use an access transformer for this since the field is added by Forge
 
     public static boolean isConstant(@NonNull GenLayerBiome vanilla) {
@@ -86,8 +84,7 @@ public class JavaFastLayerBiome extends AbstractFastLayer {
     }
 
     @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int rawValue = this.child.getSingle(alloc, x, z);
+    public int translate0(int x, int z, int rawValue) {
         int value = rawValue & 0xFF;
         int extra = (rawValue & 0xF00) >> 8;
 

@@ -48,7 +48,10 @@ import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.simple.SimpleLogger;
+import org.apache.logging.log4j.util.PropertiesUtil;
 
 import javax.swing.JOptionPane;
 import java.lang.invoke.MethodHandle;
@@ -81,9 +84,11 @@ public class Constants {
     public static final int T_VOXELS = 1 << T_SHIFT;
     public static final int T_VERTS = T_VOXELS + 1;
 
-    public static Logger FP2_LOG;
+    public static final boolean FP2_TEST = Boolean.parseBoolean(System.getProperty("fp2.test", "false"));
 
-    public static final SimpleNetworkWrapper NETWORK_WRAPPER = NetworkRegistry.INSTANCE.newSimpleChannel(FP2.MODID);
+    public static Logger FP2_LOG = new SimpleLogger("[fp2 bootstrap]", Level.INFO, true, false, true, false, "[yyyy/MM/dd HH:mm:ss:SSS]", null, new PropertiesUtil("log4j2.simplelog.properties"), System.out);
+
+    public static final SimpleNetworkWrapper NETWORK_WRAPPER = FP2_TEST ? null : NetworkRegistry.INSTANCE.newSimpleChannel(FP2.MODID);
 
     public static final Ref<ZstdDeflater> ZSTD_DEF = ThreadRef.soft(() -> Zstd.PROVIDER.deflater(Zstd.PROVIDER.deflateOptions()));
     public static final Ref<ZstdInflater> ZSTD_INF = ThreadRef.soft(() -> Zstd.PROVIDER.inflater(Zstd.PROVIDER.inflateOptions()));
@@ -93,8 +98,8 @@ public class Constants {
 
     public static final IBlockState STATE_AIR = Blocks.AIR.getDefaultState();
 
-    public static final boolean CC = Loader.isModLoaded("cubicchunks");
-    public static final boolean CWG = Loader.isModLoaded("cubicgen");
+    public static final boolean CC = !FP2_TEST && Loader.isModLoaded("cubicchunks");
+    public static final boolean CWG = !FP2_TEST && Loader.isModLoaded("cubicgen");
 
     public static void bigWarning(String format, Object... data) {
         StackTraceElement[] trace = Thread.currentThread().getStackTrace();

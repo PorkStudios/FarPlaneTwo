@@ -24,7 +24,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -33,7 +32,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  * @see GenLayerRandomValues
  */
-public class JavaFastLayerRandomValues extends AbstractFastLayer {
+public class JavaFastLayerRandomValues extends AbstractFastLayer implements IJavaSourceLayer {
     protected final int limit;
 
     public JavaFastLayerRandomValues(long seed, int limit) {
@@ -52,16 +51,7 @@ public class JavaFastLayerRandomValues extends AbstractFastLayer {
     }
 
     @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+    public int get0(int x, int z) {
         return nextInt(start(this.seed, x, z), this.limit);
-    }
-
-    @Override
-    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
-        for (int i = 0, dx = 0; dx < sizeX; dx++) {
-            for (int dz = 0; dz < sizeZ; dz++, i++) {
-                out[i] = nextInt(start(this.seed, x + dx, z + dz), this.limit);
-            }
-        }
     }
 }

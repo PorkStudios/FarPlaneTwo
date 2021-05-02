@@ -22,40 +22,28 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayerWithRiverSource;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.IPaddedLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.init.Biomes;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.layer.GenLayerHills;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import static net.daporkchop.fp2.util.math.MathUtil.*;
 
 /**
  * @author DaPorkchop_
  * @see GenLayerHills
  */
-public class JavaFastLayerHills extends AbstractFastLayerWithRiverSource {
+public class JavaFastLayerHills extends AbstractFastLayerWithRiverSource implements IPaddedLayer {
+    //this class contains a weird hybrid implementation of IJavaPaddedLayer and IJavaTranslationLayer all mixed together.
+    // i decided not to bother abstracting it away since this is the only layer that merges two different source layers while being weird about it
+
     public JavaFastLayerHills(long seed) {
         super(seed);
     }
 
-    @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int center, v0, v1, v2, v3;
-
-        int[] arr = alloc.get(3 * 3);
-        try {
-            this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
-
-            v0 = arr[1];
-            v2 = arr[3];
-            center = arr[4];
-            v1 = arr[5];
-            v3 = arr[7];
-        } finally {
-            alloc.release(arr);
-        }
-
-        int river = this.childRiver.getSingle(alloc, x, z);
+    protected int eval0(int x, int z, int center, @NonNull int[] v, int river) {
         int riverSubMod = (river - 2) % 29;
 
         Biome centerBiome = Biome.getBiome(center);
@@ -125,19 +113,131 @@ public class JavaFastLayerHills extends AbstractFastLayerWithRiverSource {
             return center;
         } else {
             int count = 0; //count the number of neighboring biomes which are the same
-            if (biomesEqualOrMesaPlateau(v0, center)) {
+            if (biomesEqualOrMesaPlateau(v[0], center)) {
                 count++;
             }
-            if (biomesEqualOrMesaPlateau(v1, center)) {
+            if (biomesEqualOrMesaPlateau(v[1], center)) {
                 count++;
             }
-            if (biomesEqualOrMesaPlateau(v2, center)) {
+            if (biomesEqualOrMesaPlateau(v[2], center)) {
                 count++;
             }
-            if (biomesEqualOrMesaPlateau(v3, center)) {
+            if (biomesEqualOrMesaPlateau(v[3], center)) {
                 count++;
             }
             return count >= 3 ? mutation : center;
+        }
+    }
+
+    @Override
+    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+        final int inSizeX = 3;
+        final int inSizeZ = 3;
+
+        int[] in = alloc.get(inSizeX * inSizeZ);
+        int[] v = alloc.get(4);
+        try {
+            this.child().getGrid(alloc, x - 1, z - 1, inSizeX, inSizeZ, in);
+
+            int[] offsets = IJavaPaddedLayer.offsetsSides(inSizeX, inSizeZ);
+            final int inIdx = 1 * inSizeZ + 1;
+            for (int i = 0; i < 4; i++) {
+                v[i] = in[offsets[i] + inIdx];
+            }
+
+            return this.eval0(x, z, in[inIdx], v, this.childRiver.getSingle(alloc, x, z));
+        } finally {
+            alloc.release(v);
+            alloc.release(in);
+        }
+    }
+
+    @Override
+    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+        this.childRiver.getGrid(alloc, x, z, sizeX, sizeZ, out);
+
+        IPaddedLayer.super.getGrid(alloc, x, z, sizeX, sizeZ, out);
+    }
+
+    @Override
+    public void getGrid0(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in) {
+        final int inSizeX = sizeX + 2;
+        final int inSizeZ = sizeZ + 2;
+
+        int[] offsets = IJavaPaddedLayer.offsetsSides(inSizeX, inSizeZ);
+        int[] v = new int[4];
+
+        for (int outIdx = 0, dx = 0; dx < sizeX; dx++) {
+            for (int dz = 0; dz < sizeZ; dz++, outIdx++) {
+                final int inIdx = (dx + 1) * inSizeZ + (dz + 1);
+                for (int i = 0; i < 4; i++) {
+                    v[i] = in[offsets[i] + inIdx];
+                }
+
+                out[outIdx] = this.eval0(x + dx, z + dz, in[inIdx], v, out[outIdx]);
+            }
+        }
+    }
+
+    @Override
+    public void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+        this.childRiver.multiGetGrids(alloc, x, z, size, dist, depth, count, out);
+
+        IPaddedLayer.super.multiGetGrids(alloc, x, z, size, dist, depth, count, out);
+    }
+
+    @Override
+    public void multiGetGridsCombined0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
+        final int inSize = (((dist >> depth) + 1) * count) + 2;
+        final int mask = (depth != 0) ? 1 : 0;
+
+        int[] offsets = IJavaPaddedLayer.offsetsSides(inSize, inSize);
+        int[] v = new int[4];
+
+        for (int outIdx = 0, gridX = 0; gridX < count; gridX++) {
+            for (int gridZ = 0; gridZ < count; gridZ++) {
+                final int baseX = mulAddShift(gridX, dist, x, depth);
+                final int baseZ = mulAddShift(gridZ, dist, z, depth);
+                final int offsetX = mulAddShift(gridX, dist, gridX & mask, depth);
+                final int offsetZ = mulAddShift(gridZ, dist, gridZ & mask, depth);
+
+                for (int dx = 0; dx < size; dx++) {
+                    for (int dz = 0; dz < size; dz++, outIdx++) {
+                        final int inIdx = (offsetX + dx + 1) * inSize + (offsetZ + dz + 1);
+                        for (int i = 0; i < 4; i++) {
+                            v[i] = in[offsets[i] + inIdx];
+                        }
+
+                        out[outIdx] = this.eval0(baseX + dx, baseZ + dz, in[inIdx], v, out[outIdx]);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void multiGetGridsIndividual0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
+        final int inSize = size + 2;
+
+        int[] offsets = IJavaPaddedLayer.offsetsSides(inSize, inSize);
+        int[] v = new int[4];
+
+        for (int outIdx = 0, inBase = 0, gridX = 0; gridX < count; gridX++) {
+            for (int gridZ = 0; gridZ < count; gridZ++, inBase += inSize * inSize) {
+                final int baseX = mulAddShift(gridX, dist, x, depth);
+                final int baseZ = mulAddShift(gridZ, dist, z, depth);
+
+                for (int dx = 0; dx < size; dx++) {
+                    for (int dz = 0; dz < size; dz++, outIdx++) {
+                        final int inIdx = inBase + (dx + 1) * inSize + (dz + 1);
+                        for (int i = 0; i < 4; i++) {
+                            v[i] = in[offsets[i] + inIdx];
+                        }
+
+                        out[outIdx] = this.eval0(baseX + dx, baseZ + dz, in[inIdx], v, out[outIdx]);
+                    }
+                }
+            }
         }
     }
 }

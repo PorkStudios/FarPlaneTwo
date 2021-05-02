@@ -20,9 +20,7 @@
 
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
-import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerRiverInit;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
@@ -31,13 +29,13 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerRiverInit
  */
-public class JavaFastLayerRiverInit extends AbstractFastLayer {
+public class JavaFastLayerRiverInit extends AbstractFastLayer implements IJavaTranslationLayer {
     public JavaFastLayerRiverInit(long seed) {
         super(seed);
     }
 
     @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        return this.child.getSingle(alloc, x, z) > 0 ? nextInt(start(this.seed, x, z), 299999) + 2 : 0;
+    public int translate0(int x, int z, int value) {
+        return value > 0 ? nextInt(start(this.seed, x, z), 299999) + 2 : 0;
     }
 }

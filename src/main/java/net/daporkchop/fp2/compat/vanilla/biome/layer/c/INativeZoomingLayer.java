@@ -22,34 +22,36 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IZoomingLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.IJavaZoomingLayer;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
 /**
  * Extension of {@link IZoomingLayer} for native implementations.
  *
  * @author DaPorkchop_
  */
-public interface INativeZoomingLayer extends IZoomingLayer {
+public interface INativeZoomingLayer extends IJavaZoomingLayer {
     /**
      * @return the seed used by this layer for random number generation
      */
     long seed();
 
     @Override
-    default void getGrid0(int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in) {
+    default void getGrid0(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in) {
         this.getGrid0(this.seed(), x, z, sizeX, sizeZ, out, in);
     }
 
     void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
 
     @Override
-    default void multiGetGridsCombined0(int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
+    default void multiGetGridsCombined0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
         this.multiGetGridsCombined0(this.seed(), x, z, size, dist, depth, count, out, in);
     }
 
     void multiGetGridsCombined0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 
     @Override
-    default void multiGetGridsIndividual0(int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
+    default void multiGetGridsIndividual0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
         this.multiGetGridsIndividual0(this.seed(), x, z, size, dist, depth, count, out, in);
     }
 

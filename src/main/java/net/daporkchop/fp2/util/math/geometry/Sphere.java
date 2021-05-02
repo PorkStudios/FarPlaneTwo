@@ -23,15 +23,13 @@ package net.daporkchop.fp2.util.math.geometry;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.minecraft.util.math.Vec3d;
 
+import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
  * @author DaPorkchop_
  */
 public class Sphere extends Vec3d implements Volume {
-    private static double sq(double d) {
-        return d * d;
-    }
 
     public final double radius;
 

@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerFuzzyZoom;
 
@@ -43,5 +44,10 @@ public class JavaFastLayerFuzzyZoom extends JavaFastLayerZoom {
 
         int r = nextInt(state, 4);
         return this.child.getSingle(alloc, lowX + (r & 1), lowZ + ((r >> 1) & 1));
+    }
+
+    @Override
+    protected int sampleXZLast(long state, @NonNull int[] v) {
+        return v[nextInt(state, 4)];
     }
 }

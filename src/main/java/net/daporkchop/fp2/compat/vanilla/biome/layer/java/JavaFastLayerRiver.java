@@ -22,7 +22,6 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerRiver;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
@@ -31,7 +30,7 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerRiver
  */
-public class JavaFastLayerRiver extends AbstractFastLayer {
+public class JavaFastLayerRiver extends AbstractFastLayer implements IJavaPaddedLayer {
     private static int riverFilter(int i) {
         return i >= 2 ? 2 + (i & 1) : i;
     }
@@ -41,19 +40,17 @@ public class JavaFastLayerRiver extends AbstractFastLayer {
     }
 
     @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int[] arr = alloc.get(3 * 3);
-        try {
-            this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
+    public int[] offsets(int inSizeX, int inSizeZ) {
+        return IJavaPaddedLayer.offsetsSides(inSizeX, inSizeZ);
+    }
 
-            int center = riverFilter(arr[4]);
-            if (center == riverFilter(arr[1]) && center == riverFilter(arr[3]) && center == riverFilter(arr[5]) && center == riverFilter(arr[7])) {
-                return -1;
-            } else {
-                return ID_RIVER;
-            }
-        } finally {
-            alloc.release(arr);
+    @Override
+    public int eval0(int x, int z, int center, @NonNull int[] v) {
+        center = riverFilter(center);
+        if (center == riverFilter(v[0]) && center == riverFilter(v[1]) && center == riverFilter(v[2]) && center == riverFilter(v[3])) {
+            return -1;
+        } else {
+            return ID_RIVER;
         }
     }
 }

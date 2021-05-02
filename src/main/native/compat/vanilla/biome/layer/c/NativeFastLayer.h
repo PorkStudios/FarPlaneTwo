@@ -284,9 +284,9 @@ namespace fp2::biome::fastlayer {
      * @param ZOOM the number of bits to shift zoomed coordinates by
      * @author DaPorkchop_
      */
-    template<void(EVAL)(int64_t, int32_t, int32_t, Vec4i, int32_t**), uint32_t ZOOM, bool INVERT = false> class zooming_layer {
-        static const inline Vec4i OFFSETS_X = INVERT ? Vec4i(0, 0, 1, 1) : Vec4i(0, 1, 0, 1);
-        static const inline Vec4i OFFSETS_Z = INVERT ? Vec4i(0, 1, 0, 1) : Vec4i(0, 0, 1, 1);
+    template<void(EVAL)(int64_t, int32_t, int32_t, Vec4i, int32_t**), uint32_t ZOOM> class zooming_layer {
+        static const inline Vec4i OFFSETS_X = Vec4i(0, 1, 0, 1);
+        static const inline Vec4i OFFSETS_Z = Vec4i(0, 0, 1, 1);
 
         static constexpr uint32_t SIZE = 1 << ZOOM;
         static constexpr uint32_t MASK = SIZE - 1;
@@ -371,29 +371,25 @@ namespace fp2::biome::fastlayer {
 
         inline void grid_multi_combined(JNIEnv* env,
                 int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t depth, int32_t count, jintArray _out, jintArray _in) {
-            const int32_t inSize = ((((dist >> depth) + 1) * count) >> ZOOM) + 2;
-            const int32_t tempSize = (inSize - 1) << ZOOM;
+            const int32_t scaledSize = (dist >> depth) + 1;
+            const int32_t inSize = ((scaledSize * count) >> ZOOM) + 2;
+            const int32_t tempSize = (((scaledSize >> ZOOM) + 2) - 1) << ZOOM;
 
             std::vector<int32_t> temp(count * count * tempSize * tempSize);
-
-            const Vec4i in_offsets = OFFSETS_X * inSize + OFFSETS_Z;
-
-            fp2::pinned_int_array out(env, _out);
-            fp2::pinned_int_array in(env, _in);
 
             {
                 const Vec4i in_offsets = OFFSETS_X * inSize + OFFSETS_Z;
                 fp2::pinned_int_array in(env, _in);
 
-                for (int32_t inIdx = 0, tempIdx = 0, gridX = 0; gridX < count; gridX++) {
-                    for (int32_t gridZ = 0; gridZ < count; gridZ++, inIdx += inSize * inSize, tempIdx += tempSize * tempSize) {
+                for (int32_t tempIdx = 0, gridX = 0; gridX < count; gridX++) {
+                    for (int32_t gridZ = 0; gridZ < count; gridZ++, tempIdx += tempSize * tempSize) {
                         const int32_t inX = mulAddShift(gridX, dist, x, depth) >> ZOOM;
                         const int32_t inZ = mulAddShift(gridZ, dist, z, depth) >> ZOOM;
                         const int32_t offsetX = mulAddShift(gridX, dist, gridX & MASK, depth) >> ZOOM;
                         const int32_t offsetZ = mulAddShift(gridZ, dist, gridZ & MASK, depth) >> ZOOM;
 
-                        for (int32_t tileX = 0; tileX < inSize - 1; tileX++) {
-                            for (int32_t tileZ = 0; tileZ < inSize - 1; tileZ++) {
+                        for (int32_t tileX = 0; tileX < size - 1; tileX++) {
+                            for (int32_t tileZ = 0; tileZ < size - 1; tileZ++) {
                                 Vec4i values = lookup<(1 << 30)>(((offsetX + tileX) * inSize + (offsetZ + tileZ)) + in_offsets, &in[0]);
 
                                 int32_t* pointers[SIZE];

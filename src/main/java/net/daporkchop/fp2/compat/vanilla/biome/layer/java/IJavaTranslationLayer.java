@@ -21,35 +21,43 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
-import net.minecraft.world.gen.layer.GenLayerSmooth;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.ITranslationLayer;
+import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import static net.daporkchop.fp2.util.math.MathUtil.*;
 
 /**
+ * Extension of {@link ITranslationLayer} for Java implementations.
+ *
  * @author DaPorkchop_
- * @see GenLayerSmooth
  */
-public class JavaFastLayerSmooth extends AbstractFastLayer implements IJavaPaddedLayer {
-    public JavaFastLayerSmooth(long seed) {
-        super(seed);
+public interface IJavaTranslationLayer extends ITranslationLayer {
+    int translate0(int x, int z, int value);
+
+    @Override
+    default int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+        return this.translate0(x, z, this.child().getSingle(alloc, x, z));
     }
 
     @Override
-    public int[] offsets(int inSizeX, int inSizeZ) {
-        return IJavaPaddedLayer.offsetsSidesFinalTwoReversed(inSizeX, inSizeZ);
+    default void getGrid0(int x, int z, int sizeX, int sizeZ, @NonNull int[] inout) {
+        for (int i = 0, dx = 0; dx < sizeX; dx++) {
+            for (int dz = 0; dz < sizeZ; dz++, i++) {
+                inout[i] = this.translate0(x + dx, z + dz, inout[i]);
+            }
+        }
     }
 
     @Override
-    public int eval0(int x, int z, int center, @NonNull int[] v) {
-        if (v[0] == v[2] && v[1] == v[3]) {
-            return nextInt(start(this.seed, x, z), 2) == 0 ? v[0] : v[1];
-        } else if (v[0] == v[2]) {
-            return v[0];
-        } else if (v[1] == v[3]) {
-            return v[1];
-        } else {
-            return center;
+    default void multiGetGrids0(int x, int z, int size, int dist, int depth, int count, @NonNull int[] inout) {
+        for (int i = 0, gridX = 0; gridX < count; gridX++) {
+            for (int gridZ = 0; gridZ < count; gridZ++) {
+                for (int dx = 0; dx < size; dx++) {
+                    for (int dz = 0; dz < size; dz++, i++) {
+                        inout[i] = this.translate0(mulAddShift(gridX, dist, x, depth) + dx, mulAddShift(gridZ, dist, z, depth) + dz, inout[i]);
+                    }
+                }
+            }
         }
     }
 }

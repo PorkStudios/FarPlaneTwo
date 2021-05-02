@@ -60,13 +60,13 @@ public interface IZoomingLayer extends IFastLayer {
         try {
             this.child().getGrid(alloc, x >> shift, z >> shift, lowSizeX, lowSizeZ, in);
 
-            this.getGrid0(x, z, sizeX, sizeZ, out, in);
+            this.getGrid0(alloc, x, z, sizeX, sizeZ, out, in);
         } finally {
             alloc.release(in);
         }
     }
 
-    void getGrid0(int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
+    void getGrid0(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
 
     @Override
     default void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
@@ -86,13 +86,13 @@ public interface IZoomingLayer extends IFastLayer {
         try {
             this.child().getGrid(alloc, x >> (depth + shift), z >> (depth + shift), lowSize, lowSize, in);
 
-            this.multiGetGridsCombined0(x, z, size, dist, depth, count, out, in);
+            this.multiGetGridsCombined0(alloc, x, z, size, dist, depth, count, out, in);
         } finally {
             alloc.release(in);
         }
     }
 
-    void multiGetGridsCombined0(int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
+    void multiGetGridsCombined0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 
     default void multiGetGridsIndividual(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         int shift = this.shift();
@@ -102,11 +102,11 @@ public interface IZoomingLayer extends IFastLayer {
         try {
             this.child().multiGetGrids(alloc, x, z, lowSize, dist, depth + shift, count, in);
 
-            this.multiGetGridsIndividual0(x, z, size, dist, depth, count, out, in);
+            this.multiGetGridsIndividual0(alloc, x, z, size, dist, depth, count, out, in);
         } finally {
             alloc.release(in);
         }
     }
 
-    void multiGetGridsIndividual0(int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
+    void multiGetGridsIndividual0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 }

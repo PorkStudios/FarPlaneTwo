@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.util;
+package net.daporkchop.fp2.util.math;
 
 import lombok.experimental.UtilityClass;
 
@@ -48,5 +48,13 @@ public class MathUtil {
             }
         }
         return a;
+    }
+
+    public static float sq(float d) {
+        return d * d;
+    }
+
+    public static double sq(double d) {
+        return d * d;
     }
 }

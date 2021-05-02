@@ -38,18 +38,51 @@ public class JavaFastLayerRiverMix extends AbstractFastLayerWithRiverSource {
 
     @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int biome = this.child.getSingle(alloc, x, z);
-        if (biome != ID_OCEAN && biome != ID_DEEP_OCEAN) {
-            int river = this.childRiver.getSingle(alloc, x, z);
+        return this.mix0(this.child.getSingle(alloc, x, z), this.childRiver.getSingle(alloc, x, z));
+    }
 
-            if (river == ID_RIVER) {
-                if (biome == ID_ICE_PLAINS) {
-                    return ID_FROZEN_RIVER;
-                } else if (biome != ID_MUSHROOM_ISLAND && biome != ID_MUSHROOM_ISLAND_SHORE) {
-                    return river & 0xFF;
-                } else {
-                    return ID_MUSHROOM_ISLAND_SHORE;
-                }
+    @Override
+    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+        this.child.getGrid(alloc, x, z, sizeX, sizeZ, out);
+
+        int[] river = alloc.get(sizeX * sizeZ);
+        try {
+            this.childRiver.getGrid(alloc, x, z, sizeX, sizeZ, river);
+
+            this.mix0(sizeX * sizeZ, out, river);
+        } finally {
+            alloc.release(river);
+        }
+    }
+
+    @Override
+    public void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+        this.child.multiGetGrids(alloc, x, z, size, dist, depth, count, out);
+
+        int[] river = alloc.get(count * count * size * size);
+        try {
+            this.childRiver.multiGetGrids(alloc, x, z, size, dist, depth, count, river);
+
+            this.mix0(count * count * size * size, out, river);
+        } finally {
+            alloc.release(river);
+        }
+    }
+
+    protected void mix0(int count, @NonNull int[] biome, @NonNull int[] river) {
+        for (int i = 0; i < count; i++) {
+            biome[i] = this.mix0(biome[i], river[i]);
+        }
+    }
+
+    protected int mix0(int biome, int river) {
+        if (biome != ID_OCEAN && biome != ID_DEEP_OCEAN && river == ID_RIVER) {
+            if (biome == ID_ICE_PLAINS) {
+                return ID_FROZEN_RIVER;
+            } else if (biome != ID_MUSHROOM_ISLAND && biome != ID_MUSHROOM_ISLAND_SHORE) {
+                return river & 0xFF;
+            } else {
+                return ID_MUSHROOM_ISLAND_SHORE;
             }
         }
         return biome;

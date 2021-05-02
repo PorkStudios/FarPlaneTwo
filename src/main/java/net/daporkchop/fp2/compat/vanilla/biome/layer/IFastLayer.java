@@ -24,7 +24,11 @@ import lombok.NonNull;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayer;
 
-import static net.daporkchop.fp2.util.MathUtil.*;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.util.math.MathUtil.*;
 
 /**
  * Base interface for a faster alternative to {@link GenLayer}.
@@ -34,6 +38,9 @@ import static net.daporkchop.fp2.util.MathUtil.*;
  * @author DaPorkchop_
  */
 public interface IFastLayer {
+    Set<Class<? extends IFastLayer>> __HAS_LOGGED_GRID_WARNING = ConcurrentHashMap.newKeySet();
+    Set<Class<? extends IFastLayer>> __HAS_LOGGED_MULTIGRID_WARNING = ConcurrentHashMap.newKeySet();
+
     /**
      * Initializes this layer.
      *
@@ -62,6 +69,10 @@ public interface IFastLayer {
      * @param out   the {@code int[]} to write to
      */
     default void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+        if (__HAS_LOGGED_GRID_WARNING.add(this.getClass())) {
+            FP2_LOG.warn("{} does not override getGrid(), falling back to slow implementation...", this.getClass().getCanonicalName());
+        }
+
         for (int i = 0, dx = 0; dx < sizeX; dx++) {
             for (int dz = 0; dz < sizeZ; dz++) {
                 out[i++] = this.getSingle(alloc, x + dx, z + dz);
@@ -82,6 +93,10 @@ public interface IFastLayer {
      * @param out   the {@code int[]} to write to
      */
     default void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+        if (__HAS_LOGGED_MULTIGRID_WARNING.add(this.getClass())) {
+            FP2_LOG.warn("{} does not override multiGetGrids(), falling back to slow implementation...", this.getClass().getCanonicalName());
+        }
+
         int[] tmp = alloc.get(size * size);
         try {
             for (int i = 0, gridX = 0; gridX < count; gridX++) {

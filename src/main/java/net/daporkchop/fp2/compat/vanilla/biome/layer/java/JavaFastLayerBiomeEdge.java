@@ -22,7 +22,6 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerBiomeEdge;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
@@ -31,7 +30,7 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerBiomeEdge
  */
-public class JavaFastLayerBiomeEdge extends AbstractFastLayer {
+public class JavaFastLayerBiomeEdge extends AbstractFastLayer implements IJavaPaddedLayer {
     public static int replaceBiomeEdgeIfNecessary(int center, int v0, int v1, int v2, int v3, int replace, int with) {
         if (!biomesEqualOrMesaPlateau(center, replace)) {
             return -1;
@@ -61,35 +60,25 @@ public class JavaFastLayerBiomeEdge extends AbstractFastLayer {
     }
 
     @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int center, v0, v1, v2, v3;
+    public int[] offsets(int inSizeX, int inSizeZ) {
+        return IJavaPaddedLayer.offsetsSides(inSizeX, inSizeZ);
+    }
 
-        int[] arr = alloc.get(3 * 3);
-        try {
-            this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
-
-            v0 = arr[1];
-            v2 = arr[3];
-            center = arr[4];
-            v1 = arr[5];
-            v3 = arr[7];
-        } finally {
-            alloc.release(arr);
-        }
-
+    @Override
+    public int eval0(int x, int z, int center, @NonNull int[] v) {
         int out;
-        if ((out = replaceBiomeEdgeIfNecessary(center, v0, v1, v2, v3, ID_EXTREME_HILLS, ID_EXTREME_HILLS_EDGE)) >= 0
-            || (out = replaceBiomeEdge(center, v0, v1, v2, v3, ID_MESA_ROCK, ID_MESA)) >= 0
-            || (out = replaceBiomeEdge(center, v0, v1, v2, v3, ID_MESA_CLEAR_ROCK, ID_MESA)) >= 0
-            || (out = replaceBiomeEdge(center, v0, v1, v2, v3, ID_REDWOOD_TAIGA, ID_TAIGA)) >= 0) {
+        if ((out = replaceBiomeEdgeIfNecessary(center, v[0], v[1], v[2], v[3], ID_EXTREME_HILLS, ID_EXTREME_HILLS_EDGE)) >= 0
+            || (out = replaceBiomeEdge(center, v[0], v[1], v[2], v[3], ID_MESA_ROCK, ID_MESA)) >= 0
+            || (out = replaceBiomeEdge(center, v[0], v[1], v[2], v[3], ID_MESA_CLEAR_ROCK, ID_MESA)) >= 0
+            || (out = replaceBiomeEdge(center, v[0], v[1], v[2], v[3], ID_REDWOOD_TAIGA, ID_TAIGA)) >= 0) {
             return out;
         } else if (center == ID_DESERT) {
-            return areNoneEqual(v0, v1, v2, v3, ID_ICE_PLAINS)
+            return areNoneEqual(v[0], v[1], v[2], v[3], ID_ICE_PLAINS)
                     ? center
                     : ID_EXTREME_HILLS_WITH_TREES;
         } else if (center == ID_SWAMPLAND) {
-            if (areNoneEqual(v0, v1, v2, v3, ID_DESERT) && areNoneEqual(v0, v1, v2, v3, ID_COLD_TAIGA) && areNoneEqual(v0, v1, v2, v3, ID_ICE_PLAINS)) {
-                return areNoneEqual(v0, v1, v2, v3, ID_JUNGLE)
+            if (areNoneEqual(v[0], v[1], v[2], v[3], ID_DESERT) && areNoneEqual(v[0], v[1], v[2], v[3], ID_COLD_TAIGA) && areNoneEqual(v[0], v[1], v[2], v[3], ID_ICE_PLAINS)) {
+                return areNoneEqual(v[0], v[1], v[2], v[3], ID_JUNGLE)
                         ? center
                         : ID_JUNGLE_EDGE;
             } else {

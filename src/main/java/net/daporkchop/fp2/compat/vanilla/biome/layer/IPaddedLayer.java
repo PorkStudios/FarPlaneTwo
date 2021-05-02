@@ -23,7 +23,7 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer;
 import lombok.NonNull;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
-import static net.daporkchop.fp2.util.MathUtil.*;
+import static net.daporkchop.fp2.util.math.MathUtil.*;
 
 /**
  * A {@link IFastLayer} whose child requests are larger than the initial input request.
@@ -45,13 +45,13 @@ public interface IPaddedLayer extends IFastLayer {
         try {
             this.child().getGrid(alloc, x - 1, z - 1, sizeX + 2, sizeZ + 2, in);
 
-            this.getGrid0(x, z, sizeX, sizeZ, out, in);
+            this.getGrid0(alloc, x, z, sizeX, sizeZ, out, in);
         } finally {
             alloc.release(in);
         }
     }
 
-    void getGrid0(int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
+    void getGrid0(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
 
     @Override
     default void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
@@ -68,13 +68,13 @@ public interface IPaddedLayer extends IFastLayer {
         try {
             this.child().getGrid(alloc, (x >> depth) - 1, (z >> depth) - 1, lowSize, lowSize, in);
 
-            this.multiGetGridsCombined0(x, z, size, dist, depth, count, out, in);
+            this.multiGetGridsCombined0(alloc, x, z, size, dist, depth, count, out, in);
         } finally {
             alloc.release(in);
         }
     }
 
-    void multiGetGridsCombined0(int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
+    void multiGetGridsCombined0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 
     default void multiGetGridsIndividual(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         int lowSize = size + 2;
@@ -82,11 +82,11 @@ public interface IPaddedLayer extends IFastLayer {
         try {
             this.child().multiGetGrids(alloc, x - (1 << depth), z - (1 << depth), lowSize, dist, depth, count, in);
 
-            this.multiGetGridsIndividual0(x, z, size, dist, depth, count, out, in);
+            this.multiGetGridsIndividual0(alloc, x, z, size, dist, depth, count, out, in);
         } finally {
             alloc.release(in);
         }
     }
 
-    void multiGetGridsIndividual0(int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
+    void multiGetGridsIndividual0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 }

@@ -22,7 +22,6 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerVoronoiZoom;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
 /**
  * @author DaPorkchop_
@@ -33,22 +32,7 @@ public class NativeFastLayerVoronoiZoom extends JavaFastLayerVoronoiZoom impleme
     }
 
     @Override
-    public int shift() {
-        return 2;
-    }
-
-    @Override
-    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
-        INativeZoomingLayer.super.getGrid(alloc, x - 2, z - 2, sizeX, sizeZ, out);
-    }
-
-    @Override
     public native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
-
-    @Override
-    public void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
-        INativeZoomingLayer.super.multiGetGrids(alloc, x - (2 << depth), z - (2 << depth), size, dist, depth, count, out);
-    }
 
     @Override
     public native void multiGetGridsCombined0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);

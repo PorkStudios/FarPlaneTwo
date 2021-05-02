@@ -30,7 +30,7 @@ import java.util.Arrays;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.fp2.util.MathUtil.*;
+import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
