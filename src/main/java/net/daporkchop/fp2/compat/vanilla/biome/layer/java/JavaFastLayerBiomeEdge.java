@@ -24,7 +24,9 @@ import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.minecraft.world.gen.layer.GenLayerBiomeEdge;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.biomesEqualOrMesaPlateau;
+import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.canBiomesBeNeighbors;
 
 /**
  * @author DaPorkchop_

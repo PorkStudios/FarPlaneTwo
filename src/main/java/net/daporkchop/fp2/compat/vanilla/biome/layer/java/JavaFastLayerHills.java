@@ -24,11 +24,11 @@ import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayerWithRiverSource;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IPaddedLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.init.Biomes;
-import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.layer.GenLayerHills;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.isMutation;
+import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 
 /**
@@ -46,11 +46,9 @@ public class JavaFastLayerHills extends AbstractFastLayerWithRiverSource impleme
     protected int eval0(int x, int z, int center, @NonNull int[] v, int river) {
         int riverSubMod = (river - 2) % 29;
 
-        Biome centerBiome = Biome.getBiome(center);
-
-        if (center != 0 && river >= 2 && riverSubMod == 1 && !isMutation(centerBiome)) {
-            Biome mutation = Biome.getMutationForBiome(centerBiome);
-            return mutation != null ? Biome.getIdForBiome(mutation) : center;
+        if (center != 0 && river >= 2 && riverSubMod == 1 && !isMutation(center)) {
+            int mutation = getMutationForBiome(center);
+            return mutation < 0 ? center : mutation;
         }
 
         long state = start(this.seed, x, z);
@@ -60,53 +58,54 @@ public class JavaFastLayerHills extends AbstractFastLayerWithRiverSource impleme
         }
         state = update(state, this.seed);
 
-        Biome mutationBiome = centerBiome;
+        int mutation = center;
         if (center == ID_DESERT) {
-            mutationBiome = Biomes.DESERT_HILLS;
+            mutation = ID_DESERT_HILLS;
         } else if (center == ID_FOREST) {
-            mutationBiome = Biomes.FOREST_HILLS;
+            mutation = ID_FOREST_HILLS;
         } else if (center == ID_BIRCH_FOREST) {
-            mutationBiome = Biomes.BIRCH_FOREST_HILLS;
+            mutation = ID_BIRCH_FOREST_HILLS;
         } else if (center == ID_ROOFED_FOREST) {
-            mutationBiome = Biomes.PLAINS;
+            mutation = ID_PLAINS;
         } else if (center == ID_TAIGA) {
-            mutationBiome = Biomes.TAIGA_HILLS;
+            mutation = ID_TAIGA_HILLS;
         } else if (center == ID_REDWOOD_TAIGA) {
-            mutationBiome = Biomes.REDWOOD_TAIGA_HILLS;
+            mutation = ID_REDWOOD_TAIGA_HILLS;
         } else if (center == ID_COLD_TAIGA) {
-            mutationBiome = Biomes.COLD_TAIGA_HILLS;
+            mutation = ID_COLD_TAIGA_HILLS;
         } else if (center == ID_PLAINS) {
             if (nextInt(state, 3) == 0) {
-                mutationBiome = Biomes.FOREST_HILLS;
+                mutation = ID_FOREST_HILLS;
             } else {
-                mutationBiome = Biomes.FOREST;
+                mutation = ID_FOREST;
             }
         } else if (center == ID_ICE_PLAINS) {
-            mutationBiome = Biomes.ICE_MOUNTAINS;
+            mutation = ID_ICE_MOUNTAINS;
         } else if (center == ID_JUNGLE) {
-            mutationBiome = Biomes.JUNGLE_HILLS;
+            mutation = ID_JUNGLE_HILLS;
         } else if (center == ID_OCEAN) {
-            mutationBiome = Biomes.DEEP_OCEAN;
+            mutation = ID_DEEP_OCEAN;
         } else if (center == ID_EXTREME_HILLS) {
-            mutationBiome = Biomes.EXTREME_HILLS_WITH_TREES;
+            mutation = ID_EXTREME_HILLS_WITH_TREES;
         } else if (center == ID_SAVANNA) {
-            mutationBiome = Biomes.SAVANNA_PLATEAU;
+            mutation = ID_SAVANNA_PLATEAU;
         } else if (biomesEqualOrMesaPlateau(center, ID_MESA_ROCK)) {
-            mutationBiome = Biomes.MESA;
+            mutation = ID_MESA;
         } else if (center == ID_DEEP_OCEAN && nextInt(state, 3) == 0) {
             state = update(state, this.seed);
             if (nextInt(state, 2) == 0) {
-                mutationBiome = Biomes.PLAINS;
+                mutation = ID_PLAINS;
             } else {
-                mutationBiome = Biomes.FOREST;
+                mutation = ID_FOREST;
             }
         }
 
-        int mutation = Biome.getIdForBiome(mutationBiome);
+        if (!isValid(mutation)) {
+            mutation = -1;
+        }
 
-        if (riverSubMod == 0 && mutation != center) {
-            Biome mutatedMutationBiome = Biome.getMutationForBiome(mutationBiome);
-            mutation = mutatedMutationBiome == null ? center : Biome.getIdForBiome(mutatedMutationBiome);
+        if (riverSubMod == 0 && mutation != center && (mutation = getMutationForBiome(mutation)) < 0) {
+            mutation = center;
         }
 
         if (mutation == center) {

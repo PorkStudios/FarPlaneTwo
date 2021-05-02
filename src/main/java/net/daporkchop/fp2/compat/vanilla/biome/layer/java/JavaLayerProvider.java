@@ -23,7 +23,7 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelper;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.minecraft.world.gen.layer.GenLayer;

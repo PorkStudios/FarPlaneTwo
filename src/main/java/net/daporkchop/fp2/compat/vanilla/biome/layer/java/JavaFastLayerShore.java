@@ -22,11 +22,13 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeJungle;
 import net.minecraft.world.gen.layer.GenLayerShore;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.isBiomeOceanic;
+import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.isJungleCompatible;
+import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.isMesa;
+import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.*;
 
 /**
  * @author DaPorkchop_
@@ -53,8 +55,7 @@ public class JavaFastLayerShore extends AbstractFastLayer implements IJavaPadded
                     : ID_MUSHROOM_ISLAND_SHORE;
         }
 
-        Biome centerBiome = Biome.getBiome(center);
-        if (centerBiome != null && centerBiome.getBiomeClass() == BiomeJungle.class) {
+        if (isJungle(center)) {
             if (isJungleCompatible(v[0]) && isJungleCompatible(v[1]) && isJungleCompatible(v[2]) && isJungleCompatible(v[3])) {
                 return !isBiomeOceanic(v[0]) && !isBiomeOceanic(v[1]) && !isBiomeOceanic(v[2]) && !isBiomeOceanic(v[3])
                         ? center
@@ -63,15 +64,15 @@ public class JavaFastLayerShore extends AbstractFastLayer implements IJavaPadded
                 return ID_JUNGLE_EDGE;
             }
         } else if (center == ID_EXTREME_HILLS || center == ID_EXTREME_HILLS_WITH_TREES || center == ID_EXTREME_HILLS_EDGE) {
-            if (isBiomeOceanic(centerBiome)) { //replaceIfNeighborOcean
+            if (isBiomeOceanic(center)) { //replaceIfNeighborOcean
                 return center;
             } else {
                 return !isBiomeOceanic(v[0]) && !isBiomeOceanic(v[1]) && !isBiomeOceanic(v[2]) && !isBiomeOceanic(v[3])
                         ? center
                         : ID_STONE_BEACH;
             }
-        } else if (centerBiome != null && centerBiome.isSnowyBiome()) {
-            if (isBiomeOceanic(centerBiome)) { //replaceIfNeighborOcean
+        } else if (isSnowyBiome(center)) {
+            if (isBiomeOceanic(center)) { //replaceIfNeighborOcean
                 return center;
             } else {
                 return !isBiomeOceanic(v[0]) && !isBiomeOceanic(v[1]) && !isBiomeOceanic(v[2]) && !isBiomeOceanic(v[3])

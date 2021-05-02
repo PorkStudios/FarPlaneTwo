@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.compat.vanilla.biome.weight;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelper.*;
 
 /**
  * Extension of {@link VanillaBiomeWeightHelper} which accounts for the adjustment in biome heights and variations in amplified worlds.

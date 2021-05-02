@@ -18,11 +18,14 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome;
+package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2;
+import net.daporkchop.fp2.compat.vanilla.biome.FastThreadSafeBiomeProvider;
+import net.daporkchop.fp2.compat.vanilla.biome.FixedBiomeProvider;
+import net.daporkchop.fp2.compat.vanilla.biome.IBiomeProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerAddIsland;
@@ -309,32 +312,28 @@ public class BiomeHelper {
 
     //various compatibility functions which are required in order to emulate vanilla GenLayer as closely as possible
 
-    public static boolean isJungleCompatible(int id) {
-        Biome biome = Biome.getBiome(id);
+    public static boolean isJungleCompatible(Biome biome) {
         if (biome != null && biome.getBiomeClass() == BiomeJungle.class) {
             return true;
         } else {
+            int id = Biome.getIdForBiome(biome);
             return id == ID_JUNGLE || id == ID_JUNGLE_EDGE || id == ID_JUNGLE_HILLS || id == ID_FOREST || id == ID_TAIGA || BiomeManager.oceanBiomes.contains(biome);
         }
-    }
-
-    public static boolean isBiomeOceanic(int id) {
-        return isBiomeOceanic(Biome.getBiome(id));
     }
 
     public static boolean isBiomeOceanic(Biome biome) {
         return BiomeManager.oceanBiomes.contains(biome);
     }
 
-    public static boolean isMesa(int id) {
-        return Biome.getBiome(id) instanceof BiomeMesa;
+    public static boolean isMesa(Biome biome) {
+        return biome instanceof BiomeMesa;
     }
 
     public static boolean isMutation(Biome biome) {
         return biome != null && biome.isMutation();
     }
 
-    public static boolean biomesEqualOrMesaPlateau(int idA, int idB) {
+    public static boolean biomesEqualOrMesaPlateau0(int idA, int idB) {
         if (idA == idB) {
             return true;
         }
@@ -350,8 +349,8 @@ public class BiomeHelper {
         }
     }
 
-    public static boolean canBiomesBeNeighbors(int idA, int idB)  {
-        if (biomesEqualOrMesaPlateau(idA, idB)) {
+    public static boolean canBiomesBeNeighbors0(int idA, int idB)  {
+        if (biomesEqualOrMesaPlateau0(idA, idB)) {
             return true;
         }
 

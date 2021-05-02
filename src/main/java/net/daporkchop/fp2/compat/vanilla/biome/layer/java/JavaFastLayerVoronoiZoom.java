@@ -25,7 +25,7 @@ import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerVoronoiZoom;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelper.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 
 /**

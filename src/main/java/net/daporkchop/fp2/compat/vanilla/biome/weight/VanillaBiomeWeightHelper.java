@@ -25,7 +25,7 @@ import lombok.NonNull;
 import net.minecraft.world.gen.layer.GenLayer;
 import net.minecraft.world.gen.layer.IntCache;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelper.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
