@@ -23,20 +23,16 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerRiver;
+import net.minecraft.world.gen.layer.GenLayerDeepOcean;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerRiver
+ * @see GenLayerDeepOcean
  */
-public class FastLayerRiver extends AbstractFastLayer {
-    private static int riverFilter(int i) {
-        return i >= 2 ? 2 + (i & 1) : i;
-    }
-
-    public FastLayerRiver(long seed) {
+public class JavaFastLayerDeepOcean extends AbstractFastLayer {
+    public JavaFastLayerDeepOcean(long seed) {
         super(seed);
     }
 
@@ -46,11 +42,10 @@ public class FastLayerRiver extends AbstractFastLayer {
         try {
             this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
 
-            int center = riverFilter(arr[4]);
-            if (center == riverFilter(arr[1]) && center == riverFilter(arr[3]) && center == riverFilter(arr[5]) && center == riverFilter(arr[7])) {
-                return -1;
+            if (arr[1] == ID_OCEAN && arr[3] == ID_OCEAN && arr[4] == ID_OCEAN && arr[5] == ID_OCEAN && arr[7] == ID_OCEAN) {
+                return ID_DEEP_OCEAN;
             } else {
-                return ID_RIVER;
+                return arr[4];
             }
         } finally {
             alloc.release(arr);

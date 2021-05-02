@@ -23,16 +23,16 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerAddIsland;
+import net.minecraft.world.gen.layer.GenLayerAddMushroomIsland;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerAddIsland
+ * @see GenLayerAddMushroomIsland
  */
-public class FastLayerAddIsland extends AbstractFastLayer {
-    public FastLayerAddIsland(long seed) {
+public class JavaFastLayerAddMushroomIsland extends AbstractFastLayer {
+    public JavaFastLayerAddMushroomIsland(long seed) {
         super(seed);
     }
 
@@ -53,49 +53,10 @@ public class FastLayerAddIsland extends AbstractFastLayer {
             alloc.release(arr);
         }
 
-        if (center != 0 || (v0 | v1 | v2 | v3) == 0) {
-            if (center != 0 && (v0 == 0 || v1 == 0 || v2 == 0 || v3 == 0)) {
-                long state = start(this.seed, x, z);
-                if (nextInt(state, 5) == 0) {
-                    return center == 4 ? 4 : 0;
-                }
-            }
-            return center;
+        if ((center | v0 | v1 | v2 | v3) == 0 && nextInt(start(this.seed, x, z), 100) == 0) {
+            return ID_MUSHROOM_ISLAND;
         } else {
-            long state = start(this.seed, x, z);
-            int limit = 1;
-            int next = 1;
-
-            if (v0 != 0) {
-                if (nextInt(state, limit++) == 0) {
-                    next = v0;
-                }
-                state = update(state, this.seed);
-            }
-            if (v1 != 0) {
-                if (nextInt(state, limit++) == 0) {
-                    next = v1;
-                }
-                state = update(state, this.seed);
-            }
-            if (v2 != 0) {
-                if (nextInt(state, limit++) == 0) {
-                    next = v2;
-                }
-                state = update(state, this.seed);
-            }
-            if (v3 != 0) {
-                if (nextInt(state, limit) == 0) {
-                    next = v3;
-                }
-                state = update(state, this.seed);
-            }
-
-            if (nextInt(state, 3) == 0) {
-                return next;
-            } else {
-                return next == 4 ? 4 : 0;
-            }
+            return center;
         }
     }
 }

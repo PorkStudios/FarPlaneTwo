@@ -21,9 +21,7 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IPaddedLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
 /**
  * Extension of {@link IPaddedLayer} for native implementations.
@@ -36,51 +34,23 @@ public interface INativePaddedLayer extends IPaddedLayer {
      */
     long seed();
 
-    /**
-     * @return the next layer in the generation chain
-     */
-    IFastLayer child();
-
     @Override
-    default void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
-        int[] in = alloc.get((sizeX + 2) * (sizeZ + 2));
-        try {
-            this.child().getGrid(alloc, x - 1, z - 1, sizeX + 2, sizeZ + 2, in);
-
-            this.getGrid0(this.seed(), x, z, sizeX, sizeZ, out, in);
-        } finally {
-            alloc.release(in);
-        }
+    default void getGrid0(int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in) {
+        this.getGrid0(this.seed(), x, z, sizeX, sizeZ, out, in);
     }
 
     void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
 
     @Override
-    default void multiGetGridsCombined(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
-        int lowSize = (((dist >> depth) + 1) * count) + 2;
-        int[] in = alloc.get(lowSize * lowSize);
-        try {
-            this.child().getGrid(alloc, (x >> depth) - 1, (z >> depth) - 1, lowSize, lowSize, in);
-
-            this.multiGetGridsCombined0(this.seed(), x, z, size, dist, depth, count, out, in);
-        } finally {
-            alloc.release(in);
-        }
+    default void multiGetGridsCombined0(int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
+        this.multiGetGridsCombined0(this.seed(), x, z, size, dist, depth, count, out, in);
     }
 
     void multiGetGridsCombined0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 
     @Override
-    default void multiGetGridsIndividual(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
-        int lowSize = size + 2;
-        int[] in = alloc.get(count * count * lowSize * lowSize);
-        try {
-            this.child().multiGetGrids(alloc, x - (1 << depth), z - (1 << depth), lowSize, dist, depth, count, in);
-
-            this.multiGetGridsIndividual0(this.seed(), x, z, size, dist, depth, count, out, in);
-        } finally {
-            alloc.release(in);
-        }
+    default void multiGetGridsIndividual0(int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
+        this.multiGetGridsIndividual0(this.seed(), x, z, size, dist, depth, count, out, in);
     }
 
     void multiGetGridsIndividual0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);

@@ -21,13 +21,13 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerVoronoiZoom;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerVoronoiZoom;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerVoronoiZoom extends FastLayerVoronoiZoom implements INativeZoomingLayer {
+public class NativeFastLayerVoronoiZoom extends JavaFastLayerVoronoiZoom implements INativeZoomingLayer {
     public NativeFastLayerVoronoiZoom(long seed) {
         super(seed);
     }

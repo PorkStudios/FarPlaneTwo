@@ -25,27 +25,27 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerAddIsland;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerAddMushroomIsland;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerAddSnow;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerBiome;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerBiomeEdge;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerDeepOcean;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerEdge;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerFixedBiome;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerFuzzyZoom;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerHills;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerIsland;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRandomValues;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRareBiome;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRemoveTooMuchOcean;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRiver;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRiverInit;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRiverMix;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerShore;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerSmooth;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerVoronoiZoom;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerZoom;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerAddIsland;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerAddMushroomIsland;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerAddSnow;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerBiome;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerBiomeEdge;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerDeepOcean;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerEdge;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerFixedBiome;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerFuzzyZoom;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerHills;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerIsland;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerRandomValues;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerRareBiome;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerRemoveTooMuchOcean;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerRiver;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerRiverInit;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerRiverMix;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerShore;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerSmooth;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerVoronoiZoom;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerZoom;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
 import net.minecraft.init.Biomes;
 import net.minecraft.world.biome.Biome;
@@ -193,29 +193,29 @@ public class BiomeHelper {
     }
 
     static {
-        LAYER_CONVERTERS.put(GenLayerAddIsland.class, layer -> new FastLayerAddIsland(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerAddMushroomIsland.class, layer -> new FastLayerAddMushroomIsland(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerAddSnow.class, layer -> new FastLayerAddSnow(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerBiome.class, layer -> FastLayerBiome.isConstant((GenLayerBiome) layer)
-                ? new FastLayerFixedBiome(((GenLayerBiome) layer).settings.fixedBiome)
-                : new FastLayerBiome((GenLayerBiome) layer));
-        LAYER_CONVERTERS.put(GenLayerBiomeEdge.class, layer -> new FastLayerBiomeEdge(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerDeepOcean.class, layer -> new FastLayerDeepOcean(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerEdge.class, layer -> FastLayerEdge.makeFast((GenLayerEdge) layer));
-        LAYER_CONVERTERS.put(GenLayerFuzzyZoom.class, layer -> new FastLayerFuzzyZoom(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerHills.class, layer -> new FastLayerHills(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerIsland.class, layer -> new FastLayerIsland(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerRareBiome.class, layer -> new FastLayerRareBiome(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerRemoveTooMuchOcean.class, layer -> new FastLayerRemoveTooMuchOcean(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerRiver.class, layer -> new FastLayerRiver(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerRiverInit.class, layer -> new FastLayerRiverInit(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerRiverMix.class, layer -> new FastLayerRiverMix(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerShore.class, layer -> new FastLayerShore(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerSmooth.class, layer -> new FastLayerSmooth(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerVoronoiZoom.class, layer -> new FastLayerVoronoiZoom(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerZoom.class, layer -> new FastLayerZoom(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerAddIsland.class, layer -> new JavaFastLayerAddIsland(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerAddMushroomIsland.class, layer -> new JavaFastLayerAddMushroomIsland(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerAddSnow.class, layer -> new JavaFastLayerAddSnow(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerBiome.class, layer -> JavaFastLayerBiome.isConstant((GenLayerBiome) layer)
+                ? new JavaFastLayerFixedBiome(((GenLayerBiome) layer).settings.fixedBiome)
+                : new JavaFastLayerBiome((GenLayerBiome) layer));
+        LAYER_CONVERTERS.put(GenLayerBiomeEdge.class, layer -> new JavaFastLayerBiomeEdge(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerDeepOcean.class, layer -> new JavaFastLayerDeepOcean(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerEdge.class, layer -> JavaFastLayerEdge.makeFast((GenLayerEdge) layer));
+        LAYER_CONVERTERS.put(GenLayerFuzzyZoom.class, layer -> new JavaFastLayerFuzzyZoom(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerHills.class, layer -> new JavaFastLayerHills(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerIsland.class, layer -> new JavaFastLayerIsland(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerRareBiome.class, layer -> new JavaFastLayerRareBiome(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerRemoveTooMuchOcean.class, layer -> new JavaFastLayerRemoveTooMuchOcean(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerRiver.class, layer -> new JavaFastLayerRiver(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerRiverInit.class, layer -> new JavaFastLayerRiverInit(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerRiverMix.class, layer -> new JavaFastLayerRiverMix(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerShore.class, layer -> new JavaFastLayerShore(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerSmooth.class, layer -> new JavaFastLayerSmooth(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerVoronoiZoom.class, layer -> new JavaFastLayerVoronoiZoom(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerZoom.class, layer -> new JavaFastLayerZoom(layer.worldGenSeed));
 
-        LAYER_CONVERTERS.put(GenLayerRandomValues.class, layer -> new FastLayerRandomValues(layer.worldGenSeed, ((GenLayerRandomValues) layer).limit()));
+        LAYER_CONVERTERS.put(GenLayerRandomValues.class, layer -> new JavaFastLayerRandomValues(layer.worldGenSeed, ((GenLayerRandomValues) layer).limit()));
     }
 
     static {

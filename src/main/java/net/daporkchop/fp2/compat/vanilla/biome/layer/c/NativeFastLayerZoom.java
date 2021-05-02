@@ -21,12 +21,12 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerZoom;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerZoom;
 
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerZoom extends FastLayerZoom implements INativeZoomingLayer {
+public class NativeFastLayerZoom extends JavaFastLayerZoom implements INativeZoomingLayer {
     public NativeFastLayerZoom(long seed) {
         super(seed);
     }

@@ -23,22 +23,41 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerRareBiome;
+import net.minecraft.world.gen.layer.GenLayerSmooth;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerRareBiome
+ * @see GenLayerSmooth
  */
-public class FastLayerRareBiome extends AbstractFastLayer {
-    public FastLayerRareBiome(long seed) {
+public class JavaFastLayerSmooth extends AbstractFastLayer {
+    public JavaFastLayerSmooth(long seed) {
         super(seed);
     }
 
     @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int v = this.child.getSingle(alloc, x, z);
-        return v == ID_PLAINS && nextInt(start(this.seed, x, z), 57) == 0 ? ID_MUTATED_PLAINS : v;
+        int[] arr = alloc.get(3 * 3);
+        try {
+            this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
+
+            int v0 = arr[1];
+            int v1 = arr[3];
+            int v2 = arr[7];
+            int v3 = arr[5];
+
+            if (v0 == v2 && v1 == v3) {
+                return nextInt(start(this.seed, x, z), 2) == 0 ? v0 : v1;
+            } else if (v0 == v2) {
+                return v0;
+            } else if (v1 == v3) {
+                return v1;
+            } else {
+                return arr[4];
+            }
+        } finally {
+            alloc.release(arr);
+        }
     }
 }

@@ -20,28 +20,40 @@
 
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerFuzzyZoom;
+import net.minecraft.world.gen.layer.GenLayerRiver;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerFuzzyZoom
+ * @see GenLayerRiver
  */
-public class FastLayerFuzzyZoom extends FastLayerZoom {
-    public FastLayerFuzzyZoom(long seed) {
+public class JavaFastLayerRiver extends AbstractFastLayer {
+    private static int riverFilter(int i) {
+        return i >= 2 ? 2 + (i & 1) : i;
+    }
+
+    public JavaFastLayerRiver(long seed) {
         super(seed);
     }
 
     @Override
-    protected int sampleXZLast(IntArrayAllocator alloc, int lowX, int lowZ) {
-        //random
-        long state = start(this.seed, lowX << 1, lowZ << 1);
-        state = update(state, this.seed);
-        state = update(state, this.seed);
+    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+        int[] arr = alloc.get(3 * 3);
+        try {
+            this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
 
-        int r = nextInt(state, 4);
-        return this.child.getSingle(alloc, lowX + (r & 1), lowZ + ((r >> 1) & 1));
+            int center = riverFilter(arr[4]);
+            if (center == riverFilter(arr[1]) && center == riverFilter(arr[3]) && center == riverFilter(arr[5]) && center == riverFilter(arr[7])) {
+                return -1;
+            } else {
+                return ID_RIVER;
+            }
+        } finally {
+            alloc.release(arr);
+        }
     }
 }

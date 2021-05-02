@@ -21,14 +21,12 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.IPaddedLayer;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerAddIsland;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerAddIsland;
 
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerAddIsland extends FastLayerAddIsland implements INativePaddedLayer {
+public class NativeFastLayerAddIsland extends JavaFastLayerAddIsland implements INativePaddedLayer {
     public NativeFastLayerAddIsland(long seed) {
         super(seed);
     }

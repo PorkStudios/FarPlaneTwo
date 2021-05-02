@@ -21,12 +21,12 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerSmooth;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerSmooth;
 
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerSmooth extends FastLayerSmooth implements INativePaddedLayer {
+public class NativeFastLayerSmooth extends JavaFastLayerSmooth implements INativePaddedLayer {
     public NativeFastLayerSmooth(long seed) {
         super(seed);
     }

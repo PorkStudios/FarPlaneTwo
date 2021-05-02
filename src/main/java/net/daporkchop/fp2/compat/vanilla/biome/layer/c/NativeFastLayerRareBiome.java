@@ -21,12 +21,12 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRareBiome;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerRareBiome;
 
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerRareBiome extends FastLayerRareBiome implements INativeTranslationLayer {
+public class NativeFastLayerRareBiome extends JavaFastLayerRareBiome implements INativeTranslationLayer {
     public NativeFastLayerRareBiome(long seed) {
         super(seed);
     }

@@ -21,13 +21,12 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerAddSnow;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerAddSnow;
 
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerAddSnow extends FastLayerAddSnow implements INativeTranslationLayer {
+public class NativeFastLayerAddSnow extends JavaFastLayerAddSnow implements INativeTranslationLayer {
     public NativeFastLayerAddSnow(long seed) {
         super(seed);
     }

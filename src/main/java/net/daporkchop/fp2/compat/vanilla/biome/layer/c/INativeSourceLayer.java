@@ -38,14 +38,14 @@ public interface INativeSourceLayer extends ISourceLayer {
     long seed();
 
     @Override
-    default void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+    default void getGrid0(int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
         this.getGrid0(this.seed(), x, z, sizeX, sizeZ, out);
     }
 
     void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out);
 
     @Override
-    default void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+    default void multiGetGrids0(int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         this.multiGetGrids0(this.seed(), x, z, size, dist, depth, count, out);
     }
 

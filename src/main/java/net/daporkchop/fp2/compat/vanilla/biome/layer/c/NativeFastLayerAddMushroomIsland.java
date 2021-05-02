@@ -21,12 +21,12 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerAddMushroomIsland;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerAddMushroomIsland;
 
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerAddMushroomIsland extends FastLayerAddMushroomIsland implements INativePaddedLayer {
+public class NativeFastLayerAddMushroomIsland extends JavaFastLayerAddMushroomIsland implements INativePaddedLayer {
     public NativeFastLayerAddMushroomIsland(long seed) {
         super(seed);
     }

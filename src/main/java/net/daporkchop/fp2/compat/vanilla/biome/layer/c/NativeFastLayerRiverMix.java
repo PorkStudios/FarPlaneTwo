@@ -21,14 +21,13 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRandomValues;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRiverMix;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerRiverMix;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerRiverMix extends FastLayerRiverMix {
+public class NativeFastLayerRiverMix extends JavaFastLayerRiverMix {
     public NativeFastLayerRiverMix(long seed) {
         super(seed);
     }

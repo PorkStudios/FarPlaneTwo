@@ -21,12 +21,12 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRemoveTooMuchOcean;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerRemoveTooMuchOcean;
 
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerRemoveTooMuchOcean extends FastLayerRemoveTooMuchOcean implements INativePaddedLayer {
+public class NativeFastLayerRemoveTooMuchOcean extends JavaFastLayerRemoveTooMuchOcean implements INativePaddedLayer {
     public NativeFastLayerRemoveTooMuchOcean(long seed) {
         super(seed);
     }

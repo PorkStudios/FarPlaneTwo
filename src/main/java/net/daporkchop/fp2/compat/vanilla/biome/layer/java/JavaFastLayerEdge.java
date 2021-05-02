@@ -34,7 +34,7 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @see GenLayerEdge
  */
 @UtilityClass
-public class FastLayerEdge {
+public class JavaFastLayerEdge {
     public static IFastLayer makeFast(@NonNull GenLayerEdge vanilla) {
         switch (vanilla.mode) {
             case COOL_WARM:

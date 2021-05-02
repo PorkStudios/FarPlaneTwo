@@ -21,13 +21,13 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRandomValues;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerRandomValues;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerRandomValues extends FastLayerRandomValues {
+public class NativeFastLayerRandomValues extends JavaFastLayerRandomValues {
     public NativeFastLayerRandomValues(long seed, int limit) {
         super(seed, limit);
     }

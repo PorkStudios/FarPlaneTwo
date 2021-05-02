@@ -33,11 +33,11 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerShore
  */
-public class FastLayerShore extends AbstractFastLayer {
+public class JavaFastLayerShore extends AbstractFastLayer {
     //AAAAAAAAAAAAA dear god i hate vanilla why is none of this consistent
     //that said, i can't actually *change* anything for fear of causing some super obscure compatibility bug...
 
-    public FastLayerShore(long seed) {
+    public JavaFastLayerShore(long seed) {
         super(seed);
     }
 

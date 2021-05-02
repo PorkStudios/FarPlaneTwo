@@ -33,8 +33,8 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerHills
  */
-public class FastLayerHills extends AbstractFastLayerWithRiverSource {
-    public FastLayerHills(long seed) {
+public class JavaFastLayerHills extends AbstractFastLayerWithRiverSource {
+    public JavaFastLayerHills(long seed) {
         super(seed);
     }
 

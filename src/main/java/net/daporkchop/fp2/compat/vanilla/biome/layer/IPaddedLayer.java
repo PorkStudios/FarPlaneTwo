@@ -34,6 +34,25 @@ import static net.daporkchop.fp2.util.MathUtil.*;
  * @author DaPorkchop_
  */
 public interface IPaddedLayer extends IFastLayer {
+    /**
+     * @return the next layer in the generation chain
+     */
+    IFastLayer child();
+
+    @Override
+    default void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+        int[] in = alloc.get((sizeX + 2) * (sizeZ + 2));
+        try {
+            this.child().getGrid(alloc, x - 1, z - 1, sizeX + 2, sizeZ + 2, in);
+
+            this.getGrid0(x, z, sizeX, sizeZ, out, in);
+        } finally {
+            alloc.release(in);
+        }
+    }
+
+    void getGrid0(int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
+
     @Override
     default void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         if (size + 2 < asrRound(dist, depth)) { //if the padded request bounds don't intersect, we should continue issuing multiget requests rather than combining
@@ -44,10 +63,30 @@ public interface IPaddedLayer extends IFastLayer {
     }
 
     default void multiGetGridsCombined(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
-        this.multiGetGridsIndividual(alloc, x, z, size, dist, depth, count, out); //this method is less critical to achieving good performance
+        int lowSize = (((dist >> depth) + 1) * count) + 2;
+        int[] in = alloc.get(lowSize * lowSize);
+        try {
+            this.child().getGrid(alloc, (x >> depth) - 1, (z >> depth) - 1, lowSize, lowSize, in);
+
+            this.multiGetGridsCombined0(x, z, size, dist, depth, count, out, in);
+        } finally {
+            alloc.release(in);
+        }
     }
 
+    void multiGetGridsCombined0(int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
+
     default void multiGetGridsIndividual(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
-        IFastLayer.super.multiGetGrids(alloc, x, z, size, dist, depth, count, out); //fall back to slow implementation
+        int lowSize = size + 2;
+        int[] in = alloc.get(count * count * lowSize * lowSize);
+        try {
+            this.child().multiGetGrids(alloc, x - (1 << depth), z - (1 << depth), lowSize, dist, depth, count, in);
+
+            this.multiGetGridsIndividual0(x, z, size, dist, depth, count, out, in);
+        } finally {
+            alloc.release(in);
+        }
     }
+
+    void multiGetGridsIndividual0(int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 }

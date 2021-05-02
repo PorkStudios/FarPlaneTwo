@@ -23,32 +23,79 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerRemoveTooMuchOcean;
+import net.minecraft.world.gen.layer.GenLayerAddIsland;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerRemoveTooMuchOcean
+ * @see GenLayerAddIsland
  */
-public class FastLayerRemoveTooMuchOcean extends AbstractFastLayer {
-    public FastLayerRemoveTooMuchOcean(long seed) {
+public class JavaFastLayerAddIsland extends AbstractFastLayer {
+    public JavaFastLayerAddIsland(long seed) {
         super(seed);
     }
 
     @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+        int center, v0, v1, v2, v3;
+
         int[] arr = alloc.get(3 * 3);
         try {
             this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
 
-            if (arr[1] == 0 && arr[3] == 0 && arr[4] == 0 && arr[5] == 0 && arr[7] == 0 && nextInt(start(this.seed, x, z), 2) == 0) {
-                return 1;
-            } else {
-                return arr[4];
-            }
+            v0 = arr[0];
+            v2 = arr[2];
+            center = arr[4];
+            v1 = arr[6];
+            v3 = arr[8];
         } finally {
             alloc.release(arr);
+        }
+
+        if (center != 0 || (v0 | v1 | v2 | v3) == 0) {
+            if (center != 0 && (v0 == 0 || v1 == 0 || v2 == 0 || v3 == 0)) {
+                long state = start(this.seed, x, z);
+                if (nextInt(state, 5) == 0) {
+                    return center == 4 ? 4 : 0;
+                }
+            }
+            return center;
+        } else {
+            long state = start(this.seed, x, z);
+            int limit = 1;
+            int next = 1;
+
+            if (v0 != 0) {
+                if (nextInt(state, limit++) == 0) {
+                    next = v0;
+                }
+                state = update(state, this.seed);
+            }
+            if (v1 != 0) {
+                if (nextInt(state, limit++) == 0) {
+                    next = v1;
+                }
+                state = update(state, this.seed);
+            }
+            if (v2 != 0) {
+                if (nextInt(state, limit++) == 0) {
+                    next = v2;
+                }
+                state = update(state, this.seed);
+            }
+            if (v3 != 0) {
+                if (nextInt(state, limit) == 0) {
+                    next = v3;
+                }
+                state = update(state, this.seed);
+            }
+
+            if (nextInt(state, 3) == 0) {
+                return next;
+            } else {
+                return next == 4 ? 4 : 0;
+            }
         }
     }
 }

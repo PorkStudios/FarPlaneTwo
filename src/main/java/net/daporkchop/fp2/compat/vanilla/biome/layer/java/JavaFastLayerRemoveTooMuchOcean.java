@@ -23,16 +23,16 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerSmooth;
+import net.minecraft.world.gen.layer.GenLayerRemoveTooMuchOcean;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerSmooth
+ * @see GenLayerRemoveTooMuchOcean
  */
-public class FastLayerSmooth extends AbstractFastLayer {
-    public FastLayerSmooth(long seed) {
+public class JavaFastLayerRemoveTooMuchOcean extends AbstractFastLayer {
+    public JavaFastLayerRemoveTooMuchOcean(long seed) {
         super(seed);
     }
 
@@ -42,17 +42,8 @@ public class FastLayerSmooth extends AbstractFastLayer {
         try {
             this.child.getGrid(alloc, x - 1, z - 1, 3, 3, arr);
 
-            int v0 = arr[1];
-            int v1 = arr[3];
-            int v2 = arr[7];
-            int v3 = arr[5];
-
-            if (v0 == v2 && v1 == v3) {
-                return nextInt(start(this.seed, x, z), 2) == 0 ? v0 : v1;
-            } else if (v0 == v2) {
-                return v0;
-            } else if (v1 == v3) {
-                return v1;
+            if (arr[1] == 0 && arr[3] == 0 && arr[4] == 0 && arr[5] == 0 && arr[7] == 0 && nextInt(start(this.seed, x, z), 2) == 0) {
+                return 1;
             } else {
                 return arr[4];
             }

@@ -22,46 +22,34 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.minecraft.world.gen.layer.GenLayerAddSnow;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerRandomValues
+ * @see GenLayerAddSnow
  */
-public class FastLayerRandomValues extends AbstractFastLayer {
-    protected final int limit;
-
-    public FastLayerRandomValues(long seed, int limit) {
+public class JavaFastLayerAddSnow extends AbstractFastLayer {
+    public JavaFastLayerAddSnow(long seed) {
         super(seed);
-
-        this.limit = positive(limit, "limit");
-    }
-
-    public FastLayerRandomValues(long seed) {
-        this(seed, 256);
-    }
-
-    @Override
-    public void init(@NonNull IFastLayer[] children) {
-        //no-op
     }
 
     @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        return nextInt(start(this.seed, x, z), this.limit);
-    }
+        int v = this.child.getSingle(alloc, x, z);
+        if (v == 0) {
+            return 0;
+        }
 
-    @Override
-    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
-        for (int i = 0, dx = 0; dx < sizeX; dx++) {
-            for (int dz = 0; dz < sizeZ; dz++, i++) {
-                out[i] = nextInt(start(this.seed, x + dx, z + dz), this.limit);
-            }
+        int r = nextInt(start(this.seed, x, z), 6);
+        if (r == 0) {
+            return 4;
+        } else if (r == 1) {
+            return 3;
+        } else {
+            return 1;
         }
     }
 }

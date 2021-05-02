@@ -23,21 +23,22 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerRiverInit;
+import net.minecraft.world.gen.layer.GenLayerRareBiome;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerRiverInit
+ * @see GenLayerRareBiome
  */
-public class FastLayerRiverInit extends AbstractFastLayer {
-    public FastLayerRiverInit(long seed) {
+public class JavaFastLayerRareBiome extends AbstractFastLayer {
+    public JavaFastLayerRareBiome(long seed) {
         super(seed);
     }
 
     @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        return this.child.getSingle(alloc, x, z) > 0 ? nextInt(start(this.seed, x, z), 299999) + 2 : 0;
+        int v = this.child.getSingle(alloc, x, z);
+        return v == ID_PLAINS && nextInt(start(this.seed, x, z), 57) == 0 ? ID_MUTATED_PLAINS : v;
     }
 }

@@ -20,30 +20,28 @@
 
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerIsland;
+import net.minecraft.world.gen.layer.GenLayerFuzzyZoom;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerIsland
+ * @see GenLayerFuzzyZoom
  */
-public class FastLayerIsland extends AbstractFastLayer {
-    public FastLayerIsland(long seed) {
+public class JavaFastLayerFuzzyZoom extends JavaFastLayerZoom {
+    public JavaFastLayerFuzzyZoom(long seed) {
         super(seed);
     }
 
     @Override
-    public void init(@NonNull IFastLayer[] children) {
-        //no-op
-    }
+    protected int sampleXZLast(IntArrayAllocator alloc, int lowX, int lowZ) {
+        //random
+        long state = start(this.seed, lowX << 1, lowZ << 1);
+        state = update(state, this.seed);
+        state = update(state, this.seed);
 
-    @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        return (x | z) == 0 || nextInt(start(this.seed, x, z), 10) == 0 ? 1 : 0;
+        int r = nextInt(state, 4);
+        return this.child.getSingle(alloc, lowX + (r & 1), lowZ + ((r >> 1) & 1));
     }
 }

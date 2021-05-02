@@ -31,8 +31,8 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerZoom
  */
-public class FastLayerZoom extends AbstractFastLayer {
-    public FastLayerZoom(long seed) {
+public class JavaFastLayerZoom extends AbstractFastLayer {
+    public JavaFastLayerZoom(long seed) {
         super(seed);
     }
 

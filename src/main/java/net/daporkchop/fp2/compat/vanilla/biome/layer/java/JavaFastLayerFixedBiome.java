@@ -21,35 +21,38 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerAddSnow;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import java.util.Arrays;
 
 /**
+ * A simple {@link IFastLayer} implementation which always returns a constant value.
+ *
  * @author DaPorkchop_
- * @see GenLayerAddSnow
  */
-public class FastLayerAddSnow extends AbstractFastLayer {
-    public FastLayerAddSnow(long seed) {
-        super(seed);
+@RequiredArgsConstructor
+public final class JavaFastLayerFixedBiome implements IFastLayer {
+    protected final int biome;
+
+    @Override
+    public void init(@NonNull IFastLayer[] children) {
+        //no-op
     }
 
     @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int v = this.child.getSingle(alloc, x, z);
-        if (v == 0) {
-            return 0;
-        }
+        return this.biome;
+    }
 
-        int r = nextInt(start(this.seed, x, z), 6);
-        if (r == 0) {
-            return 4;
-        } else if (r == 1) {
-            return 3;
-        } else {
-            return 1;
-        }
+    @Override
+    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+        Arrays.fill(out, 0, sizeX * sizeZ, this.biome);
+    }
+
+    @Override
+    public void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+        Arrays.fill(out, 0, count * count * size * size, this.biome);
     }
 }

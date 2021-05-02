@@ -21,12 +21,12 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerRiver;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerRiver;
 
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerRiver extends FastLayerRiver implements INativePaddedLayer {
+public class NativeFastLayerRiver extends JavaFastLayerRiver implements INativePaddedLayer {
     public NativeFastLayerRiver(long seed) {
         super(seed);
     }

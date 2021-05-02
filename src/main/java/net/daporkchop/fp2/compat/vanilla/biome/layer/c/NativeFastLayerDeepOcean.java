@@ -21,12 +21,12 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerDeepOcean;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerDeepOcean;
 
 /**
  * @author DaPorkchop_
  */
-public class NativeFastLayerDeepOcean extends FastLayerDeepOcean implements INativePaddedLayer {
+public class NativeFastLayerDeepOcean extends JavaFastLayerDeepOcean implements INativePaddedLayer {
     public NativeFastLayerDeepOcean(long seed) {
         super(seed);
     }

@@ -31,7 +31,7 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerBiomeEdge
  */
-public class FastLayerBiomeEdge extends AbstractFastLayer {
+public class JavaFastLayerBiomeEdge extends AbstractFastLayer {
     public static int replaceBiomeEdgeIfNecessary(int center, int v0, int v1, int v2, int v3, int replace, int with) {
         if (!biomesEqualOrMesaPlateau(center, replace)) {
             return -1;
@@ -56,7 +56,7 @@ public class FastLayerBiomeEdge extends AbstractFastLayer {
         return v0 != check && v1 != check && v2 != check && v3 != check;
     }
 
-    public FastLayerBiomeEdge(long seed) {
+    public JavaFastLayerBiomeEdge(long seed) {
         super(seed);
     }
 

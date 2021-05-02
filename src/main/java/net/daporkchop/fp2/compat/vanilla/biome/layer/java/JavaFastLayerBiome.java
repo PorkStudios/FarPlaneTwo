@@ -41,7 +41,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  * @see GenLayerBiome
  */
-public class FastLayerBiome extends AbstractFastLayer {
+public class JavaFastLayerBiome extends AbstractFastLayer {
     protected static final long GENLAYERBIOME_BIOMES_OFFSET = PUnsafe.pork_getOffset(GenLayerBiome.class, "biomes"); //i can't use an access transformer for this since the field is added by Forge
 
     public static boolean isConstant(@NonNull GenLayerBiome vanilla) {
@@ -61,7 +61,7 @@ public class FastLayerBiome extends AbstractFastLayer {
 
     protected final int[][] types;
 
-    public FastLayerBiome(@NonNull GenLayerBiome vanilla) {
+    public JavaFastLayerBiome(@NonNull GenLayerBiome vanilla) {
         super(vanilla.worldGenSeed);
         checkArg(!isConstant(vanilla), "cannot construct FastLayerBiome with fixed biome output!");
 

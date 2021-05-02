@@ -21,38 +21,37 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayerWithRiverSource;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.minecraft.world.gen.layer.GenLayerRiverMix;
 
-import java.util.Arrays;
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
- * A simple {@link IFastLayer} implementation which always returns a constant value.
- *
  * @author DaPorkchop_
+ * @see GenLayerRiverMix
  */
-@RequiredArgsConstructor
-public final class FastLayerFixedBiome implements IFastLayer {
-    protected final int biome;
-
-    @Override
-    public void init(@NonNull IFastLayer[] children) {
-        //no-op
+public class JavaFastLayerRiverMix extends AbstractFastLayerWithRiverSource {
+    public JavaFastLayerRiverMix(long seed) {
+        super(seed);
     }
 
     @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        return this.biome;
-    }
+        int biome = this.child.getSingle(alloc, x, z);
+        if (biome != ID_OCEAN && biome != ID_DEEP_OCEAN) {
+            int river = this.childRiver.getSingle(alloc, x, z);
 
-    @Override
-    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
-        Arrays.fill(out, 0, sizeX * sizeZ, this.biome);
-    }
-
-    @Override
-    public void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
-        Arrays.fill(out, 0, count * count * size * size, this.biome);
+            if (river == ID_RIVER) {
+                if (biome == ID_ICE_PLAINS) {
+                    return ID_FROZEN_RIVER;
+                } else if (biome != ID_MUSHROOM_ISLAND && biome != ID_MUSHROOM_ISLAND_SHORE) {
+                    return river & 0xFF;
+                } else {
+                    return ID_MUSHROOM_ISLAND_SHORE;
+                }
+            }
+        }
+        return biome;
     }
 }

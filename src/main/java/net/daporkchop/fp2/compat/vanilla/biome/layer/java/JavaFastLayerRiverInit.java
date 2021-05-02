@@ -21,37 +21,23 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayerWithRiverSource;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.minecraft.world.gen.layer.GenLayerRiverMix;
+import net.minecraft.world.gen.layer.GenLayerRiverInit;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_
- * @see GenLayerRiverMix
+ * @see GenLayerRiverInit
  */
-public class FastLayerRiverMix extends AbstractFastLayerWithRiverSource {
-    public FastLayerRiverMix(long seed) {
+public class JavaFastLayerRiverInit extends AbstractFastLayer {
+    public JavaFastLayerRiverInit(long seed) {
         super(seed);
     }
 
     @Override
     public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
-        int biome = this.child.getSingle(alloc, x, z);
-        if (biome != ID_OCEAN && biome != ID_DEEP_OCEAN) {
-            int river = this.childRiver.getSingle(alloc, x, z);
-
-            if (river == ID_RIVER) {
-                if (biome == ID_ICE_PLAINS) {
-                    return ID_FROZEN_RIVER;
-                } else if (biome != ID_MUSHROOM_ISLAND && biome != ID_MUSHROOM_ISLAND_SHORE) {
-                    return river & 0xFF;
-                } else {
-                    return ID_MUSHROOM_ISLAND_SHORE;
-                }
-            }
-        }
-        return biome;
+        return this.child.getSingle(alloc, x, z) > 0 ? nextInt(start(this.seed, x, z), 299999) + 2 : 0;
     }
 }

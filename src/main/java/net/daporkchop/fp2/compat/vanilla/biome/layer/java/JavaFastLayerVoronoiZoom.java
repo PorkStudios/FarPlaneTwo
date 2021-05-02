@@ -31,7 +31,7 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
  * @author DaPorkchop_
  * @see GenLayerVoronoiZoom
  */
-public class FastLayerVoronoiZoom extends AbstractFastLayer {
+public class JavaFastLayerVoronoiZoom extends AbstractFastLayer {
     protected static final float DIV_1024 = 1.0f / 1024.0f;
 
     /**
@@ -41,7 +41,7 @@ public class FastLayerVoronoiZoom extends AbstractFastLayer {
         return ((x | z | sizeX | sizeZ) & 3) == 0;
     }
 
-    public FastLayerVoronoiZoom(long seed) {
+    public JavaFastLayerVoronoiZoom(long seed) {
         super(seed);
     }
 

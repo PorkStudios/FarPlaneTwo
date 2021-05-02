@@ -23,7 +23,7 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.FastLayerEdge;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerEdge;
 import net.minecraft.world.gen.layer.GenLayerEdge;
 
 /**
@@ -40,7 +40,7 @@ public class NativeFastLayerEdge {
             case SPECIAL:
                 return new Special(vanilla.worldGenSeed);
             default:
-                return FastLayerEdge.makeFast(vanilla);
+                return JavaFastLayerEdge.makeFast(vanilla);
         }
     }
 
@@ -48,7 +48,7 @@ public class NativeFastLayerEdge {
      * @author DaPorkchop_
      * @see GenLayerEdge.Mode#COOL_WARM
      */
-    public static class CoolWarm extends FastLayerEdge.CoolWarm implements INativePaddedLayer {
+    public static class CoolWarm extends JavaFastLayerEdge.CoolWarm implements INativePaddedLayer {
         public CoolWarm(long seed) {
             super(seed);
         }
@@ -67,7 +67,7 @@ public class NativeFastLayerEdge {
      * @author DaPorkchop_
      * @see GenLayerEdge.Mode#HEAT_ICE
      */
-    public static class HeatIce extends FastLayerEdge.HeatIce implements INativePaddedLayer {
+    public static class HeatIce extends JavaFastLayerEdge.HeatIce implements INativePaddedLayer {
         public HeatIce(long seed) {
             super(seed);
         }
@@ -86,7 +86,7 @@ public class NativeFastLayerEdge {
      * @author DaPorkchop_
      * @see GenLayerEdge.Mode#SPECIAL
      */
-    public static class Special extends FastLayerEdge.Special implements INativeTranslationLayer {
+    public static class Special extends JavaFastLayerEdge.Special implements INativeTranslationLayer {
         public Special(long seed) {
             super(seed);
         }
