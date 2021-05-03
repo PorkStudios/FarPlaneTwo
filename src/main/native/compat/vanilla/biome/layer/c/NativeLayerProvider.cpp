@@ -20,13 +20,15 @@
 
 #include "NativeFastLayer.h"
 
-FP2_JNI(void, NativeLayerProvider, initBiomeIds0) (JNIEnv* env, jobject obj,
-        jintArray in) {
-    int32_t length = env->GetArrayLength(in);
-    if (length * sizeof(int32_t) != sizeof(fp2::biome::fastlayer::biomes)) {
-        fp2::throwException(env, "invalid array length", length);
+FP2_JNI(void, NativeLayerProvider, reload0) (JNIEnv* env, jobject obj,
+        jint count, jintArray ids, jbyteArray flags, jbyteArray equals, jintArray mutations) {
+    int32_t ids_length = env->GetArrayLength(ids);
+    if (ids_length * sizeof(int32_t) != sizeof(fp2::biome::fastlayer::biome_ids)) {
+        fp2::throwException(env, "invalid array length", ids_length);
         return;
     }
 
-    env->GetIntArrayRegion(in, 0, length, (jint*) &fp2::biome::fastlayer::biomes);
+    env->GetIntArrayRegion(ids, 0, ids_length, (jint*) &fp2::biome::fastlayer::biome_ids);
+
+    fp2::biome::fastlayer::biomes.reload(env, count, flags, equals, mutations);
 }

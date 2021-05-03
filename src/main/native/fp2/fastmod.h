@@ -32,11 +32,10 @@ namespace fp2 {
     }
 
     class fastmod_u32 {
-    private:
-        const uint64_t _m;
-        const uint32_t _d;
-
     public:
+        uint64_t _m;
+        uint32_t _d;
+
         constexpr fastmod_u32(const uint32_t d):
             _m(((uint64_t) -1) / d + 1),
             _d(d) {}
@@ -51,12 +50,11 @@ namespace fp2 {
     };
 
     class fastmod_s32 {
-    private:
-        const uint64_t _m;
-        const int32_t _d;
-        const int32_t _positive_d;
-
     public:
+        uint64_t _m;
+        int32_t _d;
+        int32_t _positive_d;
+
         constexpr fastmod_s32(const int32_t d):
             _m(((uint64_t) -1) / _fastmod::abs_constexpr(d) + 1 + !(_fastmod::abs_constexpr(d) & (_fastmod::abs_constexpr(d) - 1))),
             _d(d),
@@ -73,11 +71,10 @@ namespace fp2 {
     };
 
     class fastmod_u64 {
-    private:
-        const __uint128_t _m;
-        const uint64_t _d;
-
     public:
+        __uint128_t _m;
+        uint64_t _d;
+
         constexpr fastmod_u64(const uint64_t d):
             _m(((__uint128_t) -1) / d + 1),
             _d(d) {}
@@ -92,12 +89,11 @@ namespace fp2 {
     };
 
     class fastmod_s64 {
-    private:
-        const __uint128_t _m;
-        const int64_t _d;
-        const int64_t _positive_d;
-
     public:
+        __uint128_t _m;
+        int64_t _d;
+        int64_t _positive_d;
+
         constexpr fastmod_s64(const int64_t d):
             _m(((__uint128_t) -1) / _fastmod::abs_constexpr(d) + 1 + !(_fastmod::abs_constexpr(d) & (_fastmod::abs_constexpr(d) - 1))),
             _d(d),

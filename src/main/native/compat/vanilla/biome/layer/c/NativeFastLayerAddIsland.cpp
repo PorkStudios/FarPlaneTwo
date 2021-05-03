@@ -42,7 +42,7 @@ inline int32_t eval(int64_t seed, int32_t x, int32_t z, int32_t center, Vec4i ne
         neighbors.store(neighbor_values);
 
         for (int32_t limit = 0, i = 0; i < 4; i++) {
-            if (neighbor_values[i] != 0 && rng.nextInt_fast(MODULOS[limit++], limit) == 0) {
+            if (neighbor_values[i] != 0 && rng.nextInt(MODULOS[limit++]) == 0) {
                 next = neighbor_values[i];
             }
         }

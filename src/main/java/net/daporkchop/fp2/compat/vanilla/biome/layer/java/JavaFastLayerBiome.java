@@ -33,7 +33,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelper.*;
-import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.isBiomeOceanic;
+import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -47,15 +47,8 @@ public class JavaFastLayerBiome extends AbstractFastLayer implements IJavaTransl
         return vanilla.settings != null && vanilla.settings.fixedBiome >= 0;
     }
 
-    /*
-     * struct type {
-     *   int rng_max; //the value to pass as the "max" parameter to the RNG's nextInt function
-     *   int values[...]; //the values
-     * };
-     */
-
     protected static int selectWeightedRandom(long state, int[] type) {
-        return type[nextInt(state, type[0]) + 1];
+        return type[nextInt(state, type.length)];
     }
 
     protected final int[][] types;
@@ -70,16 +63,12 @@ public class JavaFastLayerBiome extends AbstractFastLayer implements IJavaTransl
 
         this.types = Stream.of(types).map(type -> {
             List<BiomeManager.BiomeEntry> biomes = typeBiomes[type.ordinal()];
-
             boolean modded = BiomeManager.isTypeListModded(type);
-            int totalWeight = WeightedRandom.getTotalWeight(biomes);
 
-            return IntStream.concat(
-                    IntStream.of(modded ? totalWeight : totalWeight / 10),
-                    biomes.stream().flatMapToInt(entry -> {
+            return biomes.stream().flatMapToInt(entry -> {
                         int biomeId = Biome.getIdForBiome(entry.biome);
                         return IntStream.range(0, modded ? entry.itemWeight : entry.itemWeight / 10).map(i -> biomeId);
-                    }))
+                    })
                     .toArray();
         }).toArray(int[][]::new);
     }

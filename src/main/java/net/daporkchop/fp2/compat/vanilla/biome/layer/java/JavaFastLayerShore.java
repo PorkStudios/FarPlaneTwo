@@ -25,9 +25,6 @@ import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.minecraft.world.gen.layer.GenLayerShore;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelper.*;
-import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.isBiomeOceanic;
-import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.isJungleCompatible;
-import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.isMesa;
 import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.*;
 
 /**

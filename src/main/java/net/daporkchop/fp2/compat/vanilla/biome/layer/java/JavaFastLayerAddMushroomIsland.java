@@ -25,6 +25,7 @@ import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.minecraft.world.gen.layer.GenLayerAddMushroomIsland;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.*;
 
 /**
  * @author DaPorkchop_

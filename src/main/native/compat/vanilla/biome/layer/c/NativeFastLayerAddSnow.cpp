@@ -30,7 +30,7 @@ inline int32_t eval(int64_t seed, int32_t x, int32_t z, int32_t val) {
             : val;
 }
 
-using layer = fp2::biome::fastlayer::translation_layer<eval>;
+using layer = fp2::biome::fastlayer::translation_layer<>::impl<eval>;
 
 FP2_JNI(void, NativeFastLayerAddSnow, getGrid0) (JNIEnv* env, jobject obj,
         jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _inout) {

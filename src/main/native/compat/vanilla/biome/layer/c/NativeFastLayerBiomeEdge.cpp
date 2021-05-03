@@ -20,25 +20,63 @@
 
 #include "NativeFastLayer.h"
 
+inline int32_t replaceBiomeEdgeIfNecessary(int32_t center, Vec4i neighbors, int32_t replace, int32_t with) {
+    if (!biomes.biomesEqualOrMesaPlateau(center, replace)) {
+        return -1;
+    }
+
+    return horizontal_and(biomes.canBiomesBeNeighbors(neighbors, replace))
+            ? center
+            : with;
+}
+
+inline int32_t replaceBiomeEdge(int32_t center, Vec4i neighbors, int32_t replace, int32_t with) {
+    if (center != replace) {
+        return -1;
+    }
+
+    return horizontal_and(biomes.biomesEqualOrMesaPlateau(neighbors, replace))
+            ? center
+            : with;
+}
+
 inline int32_t eval(int64_t seed, int32_t x, int32_t z, int32_t center, Vec4i neighbors) {
-    return center == biome_ids.OCEAN && horizontal_and(neighbors == biome_ids.OCEAN)
-            ? biome_ids.DEEP_OCEAN
-            : center;
+    int32_t out;
+    if ((out = replaceBiomeEdgeIfNecessary(center, neighbors, biome_ids.EXTREME_HILLS, biome_ids.EXTREME_HILLS_EDGE)) >= 0
+            || (out = replaceBiomeEdge(center, neighbors, biome_ids.MESA_ROCK, biome_ids.MESA)) >= 0
+            || (out = replaceBiomeEdge(center, neighbors, biome_ids.MESA_CLEAR_ROCK, biome_ids.MESA)) >= 0
+            || (out = replaceBiomeEdge(center, neighbors, biome_ids.REDWOOD_TAIGA, biome_ids.TAIGA)) >= 0) {
+        return out;
+    } else if (center == biome_ids.DESERT) {
+        return horizontal_and(neighbors != biome_ids.ICE_PLAINS)
+                ? center
+                : biome_ids.EXTREME_HILLS_WITH_TREES;
+    } else if (center == biome_ids.SWAMPLAND) {
+        if (horizontal_and((neighbors != biome_ids.DESERT) & (neighbors != biome_ids.COLD_TAIGA) & (neighbors != biome_ids.ICE_PLAINS))) {
+            return horizontal_and(neighbors != biome_ids.JUNGLE)
+                    ? center
+                    : biome_ids.JUNGLE_EDGE;
+        } else {
+            return biome_ids.PLAINS;
+        }
+    } else {
+        return center;
+    }
 }
 
 using layer = fp2::biome::fastlayer::padded_layer<>::impl<eval, fp2::biome::fastlayer::padded_layer_mode::sides>;
 
-FP2_JNI(void, NativeFastLayerDeepOcean, getGrid0) (JNIEnv* env, jobject obj,
+FP2_JNI(void, NativeFastLayerBiomeEdge, getGrid0) (JNIEnv* env, jobject obj,
         jlong seed, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out, jintArray _in) {
     layer{}.grid(env, seed, x, z, sizeX, sizeZ, _out, _in);
 }
 
-FP2_JNI(void, NativeFastLayerDeepOcean, multiGetGridsCombined0) (JNIEnv* env, jobject obj,
+FP2_JNI(void, NativeFastLayerBiomeEdge, multiGetGridsCombined0) (JNIEnv* env, jobject obj,
         jlong seed, jint x, jint z, jint size, jint dist, jint depth, jint count, jintArray _out, jintArray _in) {
     layer{}.grid_multi_combined(env, seed, x, z, size, dist, depth, count, _out, _in);
 }
 
-FP2_JNI(void, NativeFastLayerDeepOcean, multiGetGridsIndividual0) (JNIEnv* env, jobject obj,
+FP2_JNI(void, NativeFastLayerBiomeEdge, multiGetGridsIndividual0) (JNIEnv* env, jobject obj,
         jlong seed, jint x, jint z, jint size, jint dist, jint depth, jint count, jintArray _out, jintArray _in) {
     layer{}.grid_multi_individual(env, seed, x, z, size, dist, depth, count, _out, _in);
 }

@@ -83,6 +83,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -94,70 +95,6 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Mod.EventBusSubscriber(modid = FP2.MODID)
 public class BiomeHelper {
     public static final int BIOME_COUNT = 256;
-
-    public static final int ID_OCEAN = Biome.getIdForBiome(Biomes.OCEAN);
-    public static final int ID_DEFAULT = Biome.getIdForBiome(Biomes.DEFAULT);
-    public static final int ID_PLAINS = Biome.getIdForBiome(Biomes.PLAINS);
-    public static final int ID_DESERT = Biome.getIdForBiome(Biomes.DESERT);
-    public static final int ID_EXTREME_HILLS = Biome.getIdForBiome(Biomes.EXTREME_HILLS);
-    public static final int ID_FOREST = Biome.getIdForBiome(Biomes.FOREST);
-    public static final int ID_TAIGA = Biome.getIdForBiome(Biomes.TAIGA);
-    public static final int ID_SWAMPLAND = Biome.getIdForBiome(Biomes.SWAMPLAND);
-    public static final int ID_RIVER = Biome.getIdForBiome(Biomes.RIVER);
-    public static final int ID_HELL = Biome.getIdForBiome(Biomes.HELL);
-    public static final int ID_SKY = Biome.getIdForBiome(Biomes.SKY);
-    public static final int ID_FROZEN_OCEAN = Biome.getIdForBiome(Biomes.FROZEN_OCEAN);
-    public static final int ID_FROZEN_RIVER = Biome.getIdForBiome(Biomes.FROZEN_RIVER);
-    public static final int ID_ICE_PLAINS = Biome.getIdForBiome(Biomes.ICE_PLAINS);
-    public static final int ID_ICE_MOUNTAINS = Biome.getIdForBiome(Biomes.ICE_MOUNTAINS);
-    public static final int ID_MUSHROOM_ISLAND = Biome.getIdForBiome(Biomes.MUSHROOM_ISLAND);
-    public static final int ID_MUSHROOM_ISLAND_SHORE = Biome.getIdForBiome(Biomes.MUSHROOM_ISLAND_SHORE);
-    public static final int ID_BEACH = Biome.getIdForBiome(Biomes.BEACH);
-    public static final int ID_DESERT_HILLS = Biome.getIdForBiome(Biomes.DESERT_HILLS);
-    public static final int ID_FOREST_HILLS = Biome.getIdForBiome(Biomes.FOREST_HILLS);
-    public static final int ID_TAIGA_HILLS = Biome.getIdForBiome(Biomes.TAIGA_HILLS);
-    public static final int ID_EXTREME_HILLS_EDGE = Biome.getIdForBiome(Biomes.EXTREME_HILLS_EDGE);
-    public static final int ID_JUNGLE = Biome.getIdForBiome(Biomes.JUNGLE);
-    public static final int ID_JUNGLE_HILLS = Biome.getIdForBiome(Biomes.JUNGLE_HILLS);
-    public static final int ID_JUNGLE_EDGE = Biome.getIdForBiome(Biomes.JUNGLE_EDGE);
-    public static final int ID_DEEP_OCEAN = Biome.getIdForBiome(Biomes.DEEP_OCEAN);
-    public static final int ID_STONE_BEACH = Biome.getIdForBiome(Biomes.STONE_BEACH);
-    public static final int ID_COLD_BEACH = Biome.getIdForBiome(Biomes.COLD_BEACH);
-    public static final int ID_BIRCH_FOREST = Biome.getIdForBiome(Biomes.BIRCH_FOREST);
-    public static final int ID_BIRCH_FOREST_HILLS = Biome.getIdForBiome(Biomes.BIRCH_FOREST_HILLS);
-    public static final int ID_ROOFED_FOREST = Biome.getIdForBiome(Biomes.ROOFED_FOREST);
-    public static final int ID_COLD_TAIGA = Biome.getIdForBiome(Biomes.COLD_TAIGA);
-    public static final int ID_COLD_TAIGA_HILLS = Biome.getIdForBiome(Biomes.COLD_TAIGA_HILLS);
-    public static final int ID_REDWOOD_TAIGA = Biome.getIdForBiome(Biomes.REDWOOD_TAIGA);
-    public static final int ID_REDWOOD_TAIGA_HILLS = Biome.getIdForBiome(Biomes.REDWOOD_TAIGA_HILLS);
-    public static final int ID_EXTREME_HILLS_WITH_TREES = Biome.getIdForBiome(Biomes.EXTREME_HILLS_WITH_TREES);
-    public static final int ID_SAVANNA = Biome.getIdForBiome(Biomes.SAVANNA);
-    public static final int ID_SAVANNA_PLATEAU = Biome.getIdForBiome(Biomes.SAVANNA_PLATEAU);
-    public static final int ID_MESA = Biome.getIdForBiome(Biomes.MESA);
-    public static final int ID_MESA_ROCK = Biome.getIdForBiome(Biomes.MESA_ROCK);
-    public static final int ID_MESA_CLEAR_ROCK = Biome.getIdForBiome(Biomes.MESA_CLEAR_ROCK);
-    public static final int ID_VOID = Biome.getIdForBiome(Biomes.VOID);
-    public static final int ID_MUTATED_PLAINS = Biome.getIdForBiome(Biomes.MUTATED_PLAINS);
-    public static final int ID_MUTATED_DESERT = Biome.getIdForBiome(Biomes.MUTATED_DESERT);
-    public static final int ID_MUTATED_EXTREME_HILLS = Biome.getIdForBiome(Biomes.MUTATED_EXTREME_HILLS);
-    public static final int ID_MUTATED_FOREST = Biome.getIdForBiome(Biomes.MUTATED_FOREST);
-    public static final int ID_MUTATED_TAIGA = Biome.getIdForBiome(Biomes.MUTATED_TAIGA);
-    public static final int ID_MUTATED_SWAMPLAND = Biome.getIdForBiome(Biomes.MUTATED_SWAMPLAND);
-    public static final int ID_MUTATED_ICE_FLATS = Biome.getIdForBiome(Biomes.MUTATED_ICE_FLATS);
-    public static final int ID_MUTATED_JUNGLE = Biome.getIdForBiome(Biomes.MUTATED_JUNGLE);
-    public static final int ID_MUTATED_JUNGLE_EDGE = Biome.getIdForBiome(Biomes.MUTATED_JUNGLE_EDGE);
-    public static final int ID_MUTATED_BIRCH_FOREST = Biome.getIdForBiome(Biomes.MUTATED_BIRCH_FOREST);
-    public static final int ID_MUTATED_BIRCH_FOREST_HILLS = Biome.getIdForBiome(Biomes.MUTATED_BIRCH_FOREST_HILLS);
-    public static final int ID_MUTATED_ROOFED_FOREST = Biome.getIdForBiome(Biomes.MUTATED_ROOFED_FOREST);
-    public static final int ID_MUTATED_TAIGA_COLD = Biome.getIdForBiome(Biomes.MUTATED_TAIGA_COLD);
-    public static final int ID_MUTATED_REDWOOD_TAIGA = Biome.getIdForBiome(Biomes.MUTATED_REDWOOD_TAIGA);
-    public static final int ID_MUTATED_REDWOOD_TAIGA_HILLS = Biome.getIdForBiome(Biomes.MUTATED_REDWOOD_TAIGA_HILLS);
-    public static final int ID_MUTATED_EXTREME_HILLS_WITH_TREES = Biome.getIdForBiome(Biomes.MUTATED_EXTREME_HILLS_WITH_TREES);
-    public static final int ID_MUTATED_SAVANNA = Biome.getIdForBiome(Biomes.MUTATED_SAVANNA);
-    public static final int ID_MUTATED_SAVANNA_ROCK = Biome.getIdForBiome(Biomes.MUTATED_SAVANNA_ROCK);
-    public static final int ID_MUTATED_MESA = Biome.getIdForBiome(Biomes.MUTATED_MESA);
-    public static final int ID_MUTATED_MESA_ROCK = Biome.getIdForBiome(Biomes.MUTATED_MESA_ROCK);
-    public static final int ID_MUTATED_MESA_CLEAR_ROCK = Biome.getIdForBiome(Biomes.MUTATED_MESA_CLEAR_ROCK);
 
     //gets all direct children of a GenLayer
     public static final Map<Class<? extends GenLayer>, Function<GenLayer, GenLayer[]>> GET_PARENTS = new IdentityHashMap<>();
@@ -310,9 +247,10 @@ public class BiomeHelper {
         }
     }
 
-    //various compatibility functions which are required in order to emulate vanilla GenLayer as closely as possible
+    //various compatibility functions which are required in order to emulate vanilla GenLayer as closely as possible.
+    // these functions are actually only called by BiomeHelperCached#reload()
 
-    public static boolean isJungleCompatible(Biome biome) {
+    public static boolean isJungleCompatible0(Biome biome) {
         if (biome != null && biome.getBiomeClass() == BiomeJungle.class) {
             return true;
         } else {
@@ -321,15 +259,15 @@ public class BiomeHelper {
         }
     }
 
-    public static boolean isBiomeOceanic(Biome biome) {
+    public static boolean isBiomeOceanic0(Biome biome) {
         return BiomeManager.oceanBiomes.contains(biome);
     }
 
-    public static boolean isMesa(Biome biome) {
+    public static boolean isMesa0(Biome biome) {
         return biome instanceof BiomeMesa;
     }
 
-    public static boolean isMutation(Biome biome) {
+    public static boolean isMutation0(Biome biome) {
         return biome != null && biome.isMutation();
     }
 

@@ -26,7 +26,7 @@ inline int32_t eval(int64_t seed, int32_t x, int32_t z, int32_t center, Vec4i ne
 
     return horizontal_and(neighbors == center)
             ? -1
-            : biomes.RIVER;
+            : biome_ids.RIVER;
 }
 
 using layer = fp2::biome::fastlayer::padded_layer<>::impl<eval, fp2::biome::fastlayer::padded_layer_mode::sides>;

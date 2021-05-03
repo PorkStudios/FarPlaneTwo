@@ -18,18 +18,25 @@
  *
  */
 
-#include "NativeFastLayer.h"
+package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
-FP2_JNI(void, NativeFastLayerRandomValues, getGrid0) (JNIEnv* env, jobject obj,
-        jlong seed, jint limit, jint x, jint z, jint sizeX, jint sizeZ, jintArray _out) {
-    fp2::fastmod_s64 fm(limit); //prepare for fast modulo computation for large number of values
+import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerShore;
 
-    fp2::pinned_int_array out(env, _out);
-
-    for (int32_t outIdx = 0, dx = 0; dx < sizeX; dx++) {
-        for (int32_t dz = 0; dz < sizeZ; dz++, outIdx++) {
-            fp2::biome::fastlayer::rng rng(seed, x + dx, z + dz);
-            out[outIdx] = rng.nextInt(fm);
-        }
+/**
+ * @author DaPorkchop_
+ */
+public class NativeFastLayerShore extends JavaFastLayerShore implements INativePaddedLayer {
+    public NativeFastLayerShore(long seed) {
+        super(seed);
     }
+
+    @Override
+    public native void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
+
+    @Override
+    public native void multiGetGridsCombined0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
+
+    @Override
+    public native void multiGetGridsIndividual0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 }

@@ -22,7 +22,7 @@
 
 inline int32_t eval(int64_t seed, int32_t x, int32_t z, int32_t center, Vec4i neighbors) {
     return center == 0 && horizontal_or(neighbors) == 0 && fp2::biome::fastlayer::rng(seed, x, z).nextInt<100>() == 0
-            ? biomes.MUSHROOM_ISLAND
+            ? biome_ids.MUSHROOM_ISLAND
             : center;
 }
 

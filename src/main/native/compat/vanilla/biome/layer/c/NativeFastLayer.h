@@ -79,9 +79,15 @@ namespace fp2::biome::fastlayer {
             return i;
         }
 
-        inline T_32 nextInt_fast(const fp2::fastmod_s64& fm, const T_32 max) {
-            T_32 i = (T_32) ((_state >> 24) % fm);
-            i += (i >> 31) & max; //equivalent to if (i < 0) { i += max; }
+        inline T_32 nextInt(const fp2::fastmod_s64& fm) {
+            const int32_t max = fm._d;
+            T_32 i;
+            if (!(max & (max - 1))) {
+                i = (T_32) (_state >> 24) & (max - 1);
+            } else {
+                i = (T_32) ((_state >> 24) % fm);
+                i += (i >> 31) & max; //equivalent to if (i < 0) { i += max; }
+            }
 
             update(); //update PRNG state
             return i;
@@ -213,34 +219,35 @@ namespace fp2::biome::fastlayer {
      * @param EVAL a function which determines the output value based on the input value
      * @author DaPorkchop_
      */
-    template<int32_t(EVAL)(int64_t, int32_t, int32_t, int32_t)> class translation_layer {
+    template<typename... ARGS> class translation_layer {
+    template<int32_t(EVAL)(int64_t, int32_t, int32_t, int32_t, ARGS...)> class impl {
     public:
         inline void grid(JNIEnv* env,
-                int64_t seed, int32_t x, int32_t z, int32_t sizeX, int32_t sizeZ, jintArray _inout) {
+                int64_t seed, int32_t x, int32_t z, int32_t sizeX, int32_t sizeZ, jintArray _inout, ARGS... args) {
             fp2::pinned_int_array inout(env, _inout);
 
             for (int32_t i = 0, dx = 0; dx < sizeX; dx++) {
                 for (int32_t dz = 0; dz < sizeZ; dz++, i++) {
-                    inout[i] = EVAL(seed, x + dx, z + dz, inout[i]);
+                    inout[i] = EVAL(seed, x + dx, z + dz, inout[i], args...);
                 }
             }
         }
 
         inline void grid_multi(JNIEnv* env,
-                int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t depth, int32_t count, jintArray _inout) {
+                int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t depth, int32_t count, jintArray _inout, ARGS... args) {
             fp2::pinned_int_array inout(env, _inout);
 
             for (int32_t i = 0, gridX = 0; gridX < count; gridX++) {
                 for (int32_t gridZ = 0; gridZ < count; gridZ++) {
                     for (int32_t dx = 0; dx < size; dx++) {
                         for (int32_t dz = 0; dz < size; dz++, i++) {
-                            inout[i] = EVAL(seed, mulAddShift(gridX, dist, x, depth) + dx, mulAddShift(gridZ, dist, z, depth) + dz, inout[i]);
+                            inout[i] = EVAL(seed, mulAddShift(gridX, dist, x, depth) + dx, mulAddShift(gridZ, dist, z, depth) + dz, inout[i], args...);
                         }
                     }
                 }
             }
         }
-    };
+    }; };
 
     /**
      * Base implementation of a layer which has no inputs.
@@ -471,7 +478,7 @@ namespace fp2::biome::fastlayer {
         }
     };
 
-    struct biomes_t {
+    struct biome_ids_t {
         int32_t OCEAN;
         int32_t DEFAULT;
         int32_t PLAINS;
@@ -537,9 +544,129 @@ namespace fp2::biome::fastlayer {
         int32_t MUTATED_MESA_CLEAR_ROCK;
     };
 
-    inline biomes_t biomes;
+    inline biome_ids_t biome_ids;
+
+    template<size_t BIOME_COUNT> struct biomes_t {
+    private:
+        uint8_t _flags[BIOME_COUNT];
+        int32_t _mutations[BIOME_COUNT];
+        uint8_t _equals[BIOME_COUNT * BIOME_COUNT];
+
+        uint32_t _flags_simd[BIOME_COUNT];
+        uint32_t _equals_simd[BIOME_COUNT * BIOME_COUNT];
+        
+        static constexpr uint8_t FLAG_VALID = 1 << 0;
+        static constexpr uint8_t FLAG_IS_JUNGLE_COMPATIBLE = 1 << 1;
+        static constexpr uint8_t FLAG_IS_BIOME_OCEANIC = 1 << 2;
+        static constexpr uint8_t FLAG_IS_MESA = 1 << 3;
+        static constexpr uint8_t FLAG_IS_MUTATION = 1 << 4;
+        static constexpr uint8_t FLAG_IS_JUNGLE = 1 << 5;
+        static constexpr uint8_t FLAG_IS_SNOWY_BIOME = 1 << 6;
+        
+        static constexpr uint8_t EQUALS_BIOMES_EQUAL_OR_MESA_PLATEAU = 1 << 0;
+        static constexpr uint8_t EQUALS_CAN_BIOMES_BE_NEIGHBORS = 1 << 1;
+
+    public:
+        inline void reload(JNIEnv* env, jint count, jbyteArray flags, jbyteArray equals, jintArray mutations) {
+            if (count != BIOME_COUNT) {
+                throwException(env, "invalid BIOME_COUNT", count);
+                return;
+            }
+
+            env->GetByteArrayRegion(flags, 0, BIOME_COUNT, (jbyte*) &_flags);
+            env->GetIntArrayRegion(mutations, 0, BIOME_COUNT, (jint*) &_mutations);
+            env->GetByteArrayRegion(equals, 0, BIOME_COUNT * BIOME_COUNT, (jbyte*) &_equals);
+
+            //unpack _flags and _equals to 32-bit (less cache-friendly, but allows checks to be vectorized)
+            for (size_t i = 0; i < BIOME_COUNT; i++) {
+                _flags_simd[i] = _flags[i];
+            }
+            for (size_t i = 0; i < BIOME_COUNT * BIOME_COUNT; i++) {
+                _equals_simd[i] = _equals[i];
+            }
+        }
+
+        inline bool isValid(int32_t id) {
+            return id >= 0 && (_flags[id] & FLAG_VALID);
+        }
+
+        inline Vec4ib isValid(Vec4i id) {
+            return (id >= 0) & ((lookup<BIOME_COUNT>(max(id, 0), &_flags_simd) & FLAG_VALID) != 0);
+        }
+
+        inline bool isJungleCompatible(int32_t id) {
+            return id >= 0 && (_flags[id] & FLAG_IS_JUNGLE_COMPATIBLE);
+        }
+
+        inline Vec4ib isJungleCompatible(Vec4i id) {
+            return (id >= 0) & ((lookup<BIOME_COUNT>(max(id, 0), &_flags_simd) & FLAG_IS_JUNGLE_COMPATIBLE) != 0);
+        }
+
+        inline bool isBiomeOceanic(int32_t id) {
+            return id >= 0 && (_flags[id] & FLAG_IS_BIOME_OCEANIC);
+        }
+
+        inline Vec4ib isBiomeOceanic(Vec4i id) {
+            return (id >= 0) & ((lookup<BIOME_COUNT>(max(id, 0), &_flags_simd) & FLAG_IS_BIOME_OCEANIC) != 0);
+        }
+
+        inline bool isMesa(int32_t id) {
+            return id >= 0 && (_flags[id] & FLAG_IS_MESA);
+        }
+
+        inline Vec4ib isMesa(Vec4i id) {
+            return (id >= 0) & ((lookup<BIOME_COUNT>(max(id, 0), &_flags_simd) & FLAG_IS_MESA) != 0);
+        }
+
+        inline bool isMutation(int32_t id) {
+            return id >= 0 && (_flags[id] & FLAG_IS_MUTATION);
+        }
+
+        inline Vec4ib isMutation(Vec4i id) {
+            return (id >= 0) & ((lookup<BIOME_COUNT>(max(id, 0), &_flags_simd) & FLAG_IS_MUTATION) != 0);
+        }
+
+        inline bool isJungle(int32_t id) {
+            return id >= 0 && (_flags[id] & FLAG_IS_JUNGLE);
+        }
+
+        inline Vec4ib isJungle(Vec4i id) {
+            return (id >= 0) & ((lookup<BIOME_COUNT>(max(id, 0), &_flags_simd) & FLAG_IS_JUNGLE) != 0);
+        }
+
+        inline bool isSnowyBiome(int32_t id) {
+            return id >= 0 && (_flags[id] & FLAG_IS_SNOWY_BIOME);
+        }
+
+        inline Vec4ib isSnowyBiome(Vec4i id) {
+            return (id >= 0) & ((lookup<BIOME_COUNT>(max(id, 0), &_flags_simd) & FLAG_IS_SNOWY_BIOME) != 0);
+        }
+
+        inline bool biomesEqualOrMesaPlateau(int32_t a, int32_t b) {
+            return a >= 0 && b >= 0 && (_equals[b * BIOME_COUNT + a] & EQUALS_BIOMES_EQUAL_OR_MESA_PLATEAU);
+        }
+
+        inline Vec4ib biomesEqualOrMesaPlateau(Vec4i a, int32_t b) {
+            return b >= 0 && ((a >= 0) & ((lookup<BIOME_COUNT>(max(a, 0), &_equals_simd[b * BIOME_COUNT]) & EQUALS_BIOMES_EQUAL_OR_MESA_PLATEAU) != 0));
+        }
+
+        inline bool canBiomesBeNeighbors(int32_t a, int32_t b) {
+            return a >= 0 && b >= 0 && (_equals[b * BIOME_COUNT + a] & EQUALS_CAN_BIOMES_BE_NEIGHBORS);
+        }
+
+        inline Vec4ib canBiomesBeNeighbors(Vec4i a, int32_t b) {
+            return b >= 0 && ((a >= 0) & ((lookup<BIOME_COUNT>(max(a, 0), &_equals_simd[b * BIOME_COUNT]) & EQUALS_CAN_BIOMES_BE_NEIGHBORS) != 0));
+        }
+
+        inline int32_t getMutationForBiome(int32_t id) {
+            return id >= 0 ? _mutations[id] : id;
+        }
+    };
+
+    inline biomes_t<256> biomes;
 }
 
+using fp2::biome::fastlayer::biome_ids;
 using fp2::biome::fastlayer::biomes;
 
 #endif //NATIVELAYER_NATIVEFASTLAYER_H

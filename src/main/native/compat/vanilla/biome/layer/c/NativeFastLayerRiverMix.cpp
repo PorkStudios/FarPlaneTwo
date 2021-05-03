@@ -30,26 +30,26 @@ FP2_JNI(void, NativeFastLayerRiverMix, mix0) (JNIEnv* env, jobject obj,
         b.load(&biome[i]);
         r.load(&river[i]);
 
-        Vec4i riverOut = biomes.MUSHROOM_ISLAND_SHORE;
-        riverOut = select((b != biomes.MUSHROOM_ISLAND) & (b != biomes.MUSHROOM_ISLAND_SHORE), r & 0xFF, riverOut);
-        riverOut = select(b == biomes.ICE_PLAINS, biomes.FROZEN_RIVER, riverOut);
+        Vec4i riverOut = biome_ids.MUSHROOM_ISLAND_SHORE;
+        riverOut = select((b != biome_ids.MUSHROOM_ISLAND) & (b != biome_ids.MUSHROOM_ISLAND_SHORE), r & 0xFF, riverOut);
+        riverOut = select(b == biome_ids.ICE_PLAINS, biome_ids.FROZEN_RIVER, riverOut);
         
-        b = select((b != biomes.OCEAN) & (b != biomes.DEEP_OCEAN) & (r == biomes.RIVER), riverOut, b);
+        b = select((b != biome_ids.OCEAN) & (b != biome_ids.DEEP_OCEAN) & (r == biome_ids.RIVER), riverOut, b);
         b.store(&biome[i]);
     }
 
     for (; i < count; i++) {
         int32_t b = biome[i];
-        if (b != biomes.OCEAN && b != biomes.DEEP_OCEAN) {
+        if (b != biome_ids.OCEAN && b != biome_ids.DEEP_OCEAN) {
             int32_t r = river[i];
 
-            if (r == biomes.RIVER) {
-                if (b == biomes.ICE_PLAINS) {
-                    b = biomes.FROZEN_RIVER;
-                } else if (b != biomes.MUSHROOM_ISLAND && b != biomes.MUSHROOM_ISLAND_SHORE) {
+            if (r == biome_ids.RIVER) {
+                if (b == biome_ids.ICE_PLAINS) {
+                    b = biome_ids.FROZEN_RIVER;
+                } else if (b != biome_ids.MUSHROOM_ISLAND && b != biome_ids.MUSHROOM_ISLAND_SHORE) {
                     b = r & 0xFF;
                 } else {
-                    b = biomes.MUSHROOM_ISLAND_SHORE;
+                    b = biome_ids.MUSHROOM_ISLAND_SHORE;
                 }
                 biome[i] = b;
             }

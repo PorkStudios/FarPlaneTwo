@@ -25,7 +25,7 @@ import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayerWithRiverS
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerRiverMix;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.*;
 
 /**
  * @author DaPorkchop_
