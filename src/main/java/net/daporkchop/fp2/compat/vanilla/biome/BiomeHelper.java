@@ -18,14 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer;
+package net.daporkchop.fp2.compat.vanilla.biome;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2;
-import net.daporkchop.fp2.compat.vanilla.biome.FastThreadSafeBiomeProvider;
-import net.daporkchop.fp2.compat.vanilla.biome.FixedBiomeProvider;
-import net.daporkchop.fp2.compat.vanilla.biome.IBiomeProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerAddIsland;
@@ -83,7 +80,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelperCached.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -99,8 +96,6 @@ public class BiomeHelper {
     //gets all direct children of a GenLayer
     public static final Map<Class<? extends GenLayer>, Function<GenLayer, GenLayer[]>> GET_PARENTS = new IdentityHashMap<>();
     public static final Map<Class<? extends GenLayer>, Function<GenLayer, IFastLayer>> LAYER_CONVERTERS = new IdentityHashMap<>();
-    public static final double[] BIOME_HEIGHTS = new double[BIOME_COUNT];
-    public static final double[] BIOME_VARIATIONS = new double[BIOME_COUNT];
 
     static {
         Function<GenLayer, GenLayer[]> parent = genLayer -> new GenLayer[]{ genLayer.parent };
@@ -156,14 +151,6 @@ public class BiomeHelper {
         LAYER_CONVERTERS.put(GenLayerZoom.class, layer -> new JavaFastLayerZoom(layer.worldGenSeed));
 
         LAYER_CONVERTERS.put(GenLayerRandomValues.class, layer -> new JavaFastLayerRandomValues(layer.worldGenSeed, ((GenLayerRandomValues) layer).limit()));
-    }
-
-    static {
-        for (int id = 0; id < BIOME_COUNT; id++) {
-            Biome biome = Biome.getBiome(id, Biomes.PLAINS);
-            BIOME_HEIGHTS[id] = biome.getBaseHeight();
-            BIOME_VARIATIONS[id] = biome.getHeightVariation();
-        }
     }
 
     public static double weightFactor(double baseHeight) {
@@ -287,7 +274,7 @@ public class BiomeHelper {
         }
     }
 
-    public static boolean canBiomesBeNeighbors0(int idA, int idB)  {
+    public static boolean canBiomesBeNeighbors0(int idA, int idB) {
         if (biomesEqualOrMesaPlateau0(idA, idB)) {
             return true;
         }

@@ -23,7 +23,6 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.lib.unsafe.PUnsafe;
-import net.minecraft.util.WeightedRandom;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.layer.GenLayerBiome;
 import net.minecraftforge.common.BiomeManager;
@@ -32,8 +31,8 @@ import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelper.*;
-import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelperCached.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**

@@ -22,10 +22,9 @@ package net.daporkchop.fp2.compat.vanilla.biome.weight;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.minecraft.world.gen.layer.GenLayer;
-import net.minecraft.world.gen.layer.IntCache;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelperCached.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -46,9 +45,9 @@ public class VanillaBiomeWeightHelper implements BiomeWeightHelper {
         this.smoothRadius = notNegative(smoothRadius, "smoothRadius");
         this.smoothDiameter = smoothRadius * 2 + 1;
         this.smoothWeights = new double[this.smoothDiameter * this.smoothDiameter];
-        for (int i = 0, z = -this.smoothRadius; z <= this.smoothRadius; z++) {
-            for (int x = -this.smoothRadius; x <= this.smoothRadius; x++) {
-                this.smoothWeights[i++] = 10.0d / Math.sqrt(x * x + z * z + 0.2d);
+        for (int i = 0, x = -this.smoothRadius; x <= this.smoothRadius; x++) {
+            for (int z = -this.smoothRadius; z <= this.smoothRadius; z++) {
+                this.smoothWeights[i++] = 10.0d / Math.sqrt(z * z + x * x + 0.2d);
             }
         }
 
@@ -57,46 +56,39 @@ public class VanillaBiomeWeightHelper implements BiomeWeightHelper {
         this.weightFactors = new double[BIOME_COUNT];
 
         for (int id = 0; id < BIOME_COUNT; id++) {
-            this.weightFactors[id] = weightFactor(this.heights[id] = BIOME_HEIGHTS[id] * depthFactor + depthOffset);
-            this.variations[id] = BIOME_VARIATIONS[id] * scaleFactor + scaleOffset;
+            this.weightFactors[id] = weightFactor(this.heights[id] = getBiomeBaseHeight(id) * depthFactor + depthOffset);
+            this.variations[id] = getBiomeHeightVariation(id) * scaleFactor + scaleOffset;
         }
     }
 
     @Override
-    public void compute(@NonNull GenLayer layer, int baseX, int baseZ, int level, int gSize, double[] heights, double[] variations) {
+    public void compute(@NonNull int[] biomesIn, int inOffset, int inScaleX, @NonNull double[] heightsOut, @NonNull double[] variationsOut, int outIdx) {
         final int smoothRadius = this.smoothRadius;
         final int smoothDiameter = this.smoothDiameter;
 
-        for (int i = 0, x = 0; x < gSize; x++) {
-            for (int z = 0; z < gSize; z++, i++) {
-                IntCache.resetIntCache();
-                int[] biomeIds = layer.getInts(baseX + (x << level), baseZ + (z << level), smoothDiameter, smoothDiameter);
+        final double centerBiomeRawHeight = getBiomeBaseHeight(biomesIn[inOffset + smoothRadius * smoothDiameter + smoothRadius]);
 
-                final double centerBiomeRawHeight = BIOME_HEIGHTS[biomeIds[smoothRadius * smoothDiameter + smoothRadius]];
+        double smoothHeight = 0.0d;
+        double smoothVariation = 0.0d;
+        double biomeWeightSum = 0.0d;
 
-                double smoothHeight = 0.0d;
-                double smoothVariation = 0.0d;
-                double biomeWeightSum = 0.0d;
+        for (int i = 0, dx = -smoothRadius; dx <= smoothRadius; dx++) {
+            for (int j = inOffset + (dx + smoothRadius) * inScaleX, dz = -smoothRadius; dz <= smoothRadius; dz++, i++, j++) {
+                int id = biomesIn[j];
 
-                for (int j = 0, dz = -smoothRadius; dz <= smoothRadius; dz++) {
-                    for (int dx = -smoothRadius; dx <= smoothRadius; dx++, j++) {
-                        int id = biomeIds[j];
-
-                        double weight = this.smoothWeights[j] * this.weightFactors[id];
-                        if (BIOME_HEIGHTS[id] > centerBiomeRawHeight) {
-                            weight *= 0.5d;
-                        }
-
-                        smoothHeight += this.heights[id] * weight;
-                        smoothVariation += this.variations[id] * weight;
-                        biomeWeightSum += weight;
-                    }
+                double weight = this.smoothWeights[i] * this.weightFactors[id];
+                if (getBiomeBaseHeight(id) > centerBiomeRawHeight) {
+                    weight *= 0.5d;
                 }
 
-                double f = 1.0d / biomeWeightSum;
-                heights[i] = smoothHeight * f;
-                variations[i] = smoothVariation * f;
+                smoothHeight += this.heights[id] * weight;
+                smoothVariation += this.variations[id] * weight;
+                biomeWeightSum += weight;
             }
         }
+
+        double f = 1.0d / biomeWeightSum;
+        heightsOut[outIdx] = smoothHeight * f;
+        variationsOut[outIdx] = smoothVariation * f;
     }
 }

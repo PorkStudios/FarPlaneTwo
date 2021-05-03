@@ -21,6 +21,8 @@
 #ifndef FP2_H
 #define FP2_H
 
+#define _GLIBCXX_DEBUG
+
 #include <fp2/fastmod.h>
 
 #include <jni.h>

@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.compat.vanilla.biome;
 
 import lombok.NonNull;
-import net.minecraft.world.biome.Biome;
+import net.daporkchop.fp2.compat.vanilla.biome.weight.BiomeWeightHelper;
 import net.minecraft.world.biome.BiomeProvider;
 
 /**
@@ -33,56 +33,27 @@ import net.minecraft.world.biome.BiomeProvider;
  */
 public interface IBiomeProvider {
     /**
-     * Generates the biome at the given position.
-     *
-     * @param blockX the X coordinate of the biome to generate
-     * @param blockZ the Z coordinate of the biome to generate
-     * @return the generated biome
-     */
-    Biome biome(int blockX, int blockZ);
-
-    /**
-     * Generates the ID of the biome at the given position.
-     *
-     * @param blockX the X coordinate of the biome to generate
-     * @param blockZ the Z coordinate of the biome to generate
-     * @return the generated biome's ID
-     */
-    int biomeId(int blockX, int blockZ);
-
-    /**
-     * Generates the biomes in the given region.
-     *
-     * @param arr    the array to store the generated biomes in
-     * @param blockX the X coordinate of the region to generate
-     * @param blockZ the Z coordinate of the region to generate
-     * @param sizeX  the size of the region along the X axis
-     * @param sizeZ  the size of the region along the Z axis
-     * @throws IllegalArgumentException if the given array is too small to fit the region
-     */
-    void biomes(@NonNull Biome[] arr, int blockX, int blockZ, int sizeX, int sizeZ);
-
-    /**
      * Generates the IDs of the biomes in the given region.
      *
-     * @param arr    the array to store the generated biomes' IDs in
-     * @param blockX the X coordinate of the region to generate
-     * @param blockZ the Z coordinate of the region to generate
-     * @param sizeX  the size of the region along the X axis
-     * @param sizeZ  the size of the region along the Z axis
-     * @throws IllegalArgumentException if the given array is too small to fit the region
+     * @param x      the X coordinate of the region to generate (in blocks)
+     * @param z      the Z coordinate of the region to generate (in blocks)
+     * @param level  the current zoom level
+     * @param size   the size of the region along the X+Z axes (in samples)
+     * @param biomes the array to write biomes to
      */
-    void biomeIds(@NonNull byte[] arr, int blockX, int blockZ, int sizeX, int sizeZ);
+    void generateBiomes(int x, int z, int level, int size, @NonNull int[] biomes);
 
     /**
-     * Generates the IDs of the generation (low-resolution) biomes in the given region.
+     * Generates the IDs of the biomes in the given region, as well as computing their weighted heights and height variations.
      *
-     * @param arr   the array to store the generated biomes' IDs in
-     * @param x     the X coordinate of the region to generate
-     * @param z     the Z coordinate of the region to generate
-     * @param sizeX the size of the region along the X axis
-     * @param sizeZ the size of the region along the Z axis
-     * @throws IllegalArgumentException if the given array is too small to fit the region
+     * @param x            the X coordinate of the region to generate (in blocks)
+     * @param z            the Z coordinate of the region to generate (in blocks)
+     * @param level        the current zoom level
+     * @param size         the size of the region along the X+Z axes (in samples)
+     * @param biomes       the array to write biomes to
+     * @param heights      the array to write weighted biome heights to
+     * @param variations   the array to write weighted biome height variations to
+     * @param weightHelper an {@link BiomeWeightHelper} to use for computing weighted biome height (variations)
      */
-    void biomeIdsForGeneration(@NonNull int[] arr, int x, int z, int sizeX, int sizeZ);
+    void generateBiomesAndWeightedHeightsVariations(int x, int z, int level, int size, @NonNull int[] biomes, @NonNull double[] heights, @NonNull double[] variations, @NonNull BiomeWeightHelper weightHelper);
 }

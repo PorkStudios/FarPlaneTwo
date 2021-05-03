@@ -50,6 +50,10 @@ public class MathUtil {
         return a;
     }
 
+    public static int sq(int d) {
+        return d * d;
+    }
+
     public static float sq(float d) {
         return d * d;
     }

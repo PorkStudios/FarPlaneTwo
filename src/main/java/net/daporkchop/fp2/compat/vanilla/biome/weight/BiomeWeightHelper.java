@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.compat.vanilla.biome.weight;
 
 import lombok.NonNull;
-import net.minecraft.world.gen.layer.GenLayer;
 
 /**
  * Utility class for helping with the computation of biome base height and height variation, which uses a relatively complex
@@ -34,5 +33,5 @@ public interface BiomeWeightHelper {
 
     int smoothDiameter();
 
-    void compute(@NonNull GenLayer layer, int baseX, int baseZ, int level, int gSize, double[] heights, double[] variations);
+    void compute(@NonNull int[] biomesIn, int inOffset, int inScaleX, @NonNull double[] heightsOut, @NonNull double[] variationsOut, int outIdx);
 }

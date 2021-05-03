@@ -65,24 +65,24 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
 
         HeightmapData data = new HeightmapData();
 
+        int shift = max(level, GT_SHIFT);
+        int scale = min(level, GT_SHIFT);
+
         CWGContext ctx = this.ctx.get();
-        ctx.init(baseX - GT_SIZE, baseZ - GT_SIZE, level);
+        ctx.init(baseX - (1 << shift), baseZ - (1 << shift), level);
 
-        int shift = min(level, GT_SHIFT);
-        int scale = shift + GT_SHIFT;
-
-        int hMax = (1 << scale) + 1;
+        int hMax = (1 << (scale + (T_SHIFT - GT_SHIFT))) + 1;
         int hSize = hMax + 1;
         int[] heights = new int[hSize * hSize];
         for (int x = -1; x < hMax; x++) {
             for (int z = -1; z < hMax; z++) {
-                int blockX = baseX + (x << (level - shift + GT_SHIFT));
-                int blockZ = baseZ + (z << (level - shift + GT_SHIFT));
+                int blockX = baseX + (x << shift);
+                int blockZ = baseZ + (z << shift);
                 heights[(x + 1) * hSize + (z + 1)] = CWGHelper.getHeight(ctx, blockX, blockZ);
             }
         }
 
-        int tileSize = GT_SIZE >> shift;
+        int tileSize = GT_SIZE >> scale;
         double f = 1.0d / tileSize;
         for (int tileX = 0; tileX < hMax - 1; tileX++) {
             for (int tileZ = 0; tileZ < hMax - 1; tileZ++) {

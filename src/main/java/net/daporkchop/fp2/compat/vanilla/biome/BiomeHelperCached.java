@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer;
+package net.daporkchop.fp2.compat.vanilla.biome;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
@@ -30,7 +30,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.IntStream;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -118,6 +118,8 @@ public class BiomeHelperCached {
     public static byte[] EQUALS;
 
     public static int[] MUTATIONS;
+
+    public static double[] HEIGHTS_VARIATIONS;
 
     private static final Set<ReloadListener> RELOAD_LISTENERS = new CopyOnWriteArraySet<>();
 
@@ -247,6 +249,15 @@ public class BiomeHelperCached {
             return mutation == null ? -1 : Biome.getIdForBiome(mutation);
         }).toArray();
 
+        //get biome heights and variations
+        double[] heightsVariations = new double[BIOME_COUNT << 1];
+        for (int id = 0; id < BIOME_COUNT; id++) {
+            Biome biome = Biome.getBiome(id, Biomes.PLAINS);
+            heightsVariations[id << 1] = biome.getBaseHeight();
+            heightsVariations[(id << 1) + 1] = biome.getHeightVariation();
+        }
+        HEIGHTS_VARIATIONS = heightsVariations;
+
         //notify reload listeners
         RELOAD_LISTENERS.forEach(ReloadListener::onBiomeHelperCachedReload);
     }
@@ -331,6 +342,20 @@ public class BiomeHelperCached {
      */
     public static int getMutationForBiome(int id) {
         return id >= 0 ? MUTATIONS[id] : id;
+    }
+
+    /**
+     * @see Biome#getBaseHeight()
+     */
+    public static double getBiomeBaseHeight(int id) {
+        return HEIGHTS_VARIATIONS[id << 1];
+    }
+
+    /**
+     * @see Biome#getHeightVariation()
+     */
+    public static double getBiomeHeightVariation(int id) {
+        return HEIGHTS_VARIATIONS[(id << 1) + 1];
     }
 
     /**

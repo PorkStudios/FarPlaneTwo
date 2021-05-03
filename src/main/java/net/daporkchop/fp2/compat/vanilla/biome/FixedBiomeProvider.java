@@ -22,12 +22,10 @@ package net.daporkchop.fp2.compat.vanilla.biome;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.lib.unsafe.PUnsafe;
+import net.daporkchop.fp2.compat.vanilla.biome.weight.BiomeWeightHelper;
 import net.minecraft.world.biome.Biome;
 
 import java.util.Arrays;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Implementation of {@link IBiomeProvider} which uses a constant, fixed biome.
@@ -36,39 +34,27 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public class FixedBiomeProvider implements IBiomeProvider {
-    protected final Biome biome;
     protected final int biomeId;
 
     public FixedBiomeProvider(@NonNull Biome biome) {
-        this.biome = biome;
         this.biomeId = Biome.getIdForBiome(biome);
     }
 
     @Override
-    public Biome biome(int blockX, int blockZ) {
-        return this.biome;
+    public void generateBiomes(int x, int z, int level, int size, @NonNull int[] biomes) {
+        Arrays.fill(biomes, 0, size * size, this.biomeId);
     }
 
     @Override
-    public int biomeId(int blockX, int blockZ) {
-        return this.biomeId;
-    }
+    public void generateBiomesAndWeightedHeightsVariations(int x, int z, int level, int size, @NonNull int[] biomes, @NonNull double[] heights, @NonNull double[] variations, @NonNull BiomeWeightHelper weightHelper) {
+        Arrays.fill(biomes, 0, size * size, this.biomeId);
 
-    @Override
-    public void biomes(@NonNull Biome[] arr, int blockX, int blockZ, int sizeX, int sizeZ) {
-        checkArg(arr.length >= sizeX * sizeZ, "array (%d) too small! required: %d", arr.length, sizeX * sizeZ);
-        Arrays.fill(arr, 0, sizeX * sizeZ, this.biome);
-    }
+        //compute weighted height+variation for single point, then copy it to all points
+        int[] tempBiomeIds = new int[weightHelper.smoothDiameter()];
+        Arrays.fill(tempBiomeIds, this.biomeId);
+        weightHelper.compute(tempBiomeIds, weightHelper.smoothRadius(), 0, heights, variations, 0);
 
-    @Override
-    public void biomeIds(@NonNull byte[] arr, int blockX, int blockZ, int sizeX, int sizeZ) {
-        checkArg(arr.length >= sizeX * sizeZ, "array (%d) too small! required: %d", arr.length, sizeX * sizeZ);
-        PUnsafe.setMemory(arr, PUnsafe.ARRAY_BYTE_BASE_OFFSET, sizeX * sizeZ, (byte) this.biomeId);
-    }
-
-    @Override
-    public void biomeIdsForGeneration(@NonNull int[] arr, int x, int z, int sizeX, int sizeZ) {
-        checkArg(arr.length >= sizeX * sizeZ, "array (%d) too small! required: %d", arr.length, sizeX * sizeZ);
-        Arrays.fill(arr, 0, sizeX * sizeZ, this.biomeId);
+        Arrays.fill(heights, 0, size * size, heights[0]);
+        Arrays.fill(variations, 0, size * size, variations[0]);
     }
 }

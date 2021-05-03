@@ -25,7 +25,7 @@ import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.minecraft.world.gen.layer.GenLayerIsland;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_

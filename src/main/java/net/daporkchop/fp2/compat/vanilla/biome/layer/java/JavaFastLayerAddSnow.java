@@ -23,7 +23,7 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.minecraft.world.gen.layer.GenLayerAddSnow;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 
 /**
  * @author DaPorkchop_

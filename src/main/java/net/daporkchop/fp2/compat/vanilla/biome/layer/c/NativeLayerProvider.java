@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached;
+import net.daporkchop.fp2.compat.vanilla.biome.BiomeHelperCached;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerFixedBiome;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaLayerProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
@@ -45,8 +45,8 @@ import net.minecraft.world.gen.layer.GenLayerSmooth;
 import net.minecraft.world.gen.layer.GenLayerVoronoiZoom;
 import net.minecraft.world.gen.layer.GenLayerZoom;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelper.*;
-import static net.daporkchop.fp2.compat.vanilla.biome.layer.BiomeHelperCached.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
+import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelperCached.*;
 
 /**
  * Extension of {@link JavaLayerProvider} which replaces a number of the layer types with native C++ implementations.

@@ -31,6 +31,7 @@ import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValue
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.daporkchop.fp2.util.threading.fj.ThreadSafeForkJoinSupplier;
 import net.daporkchop.lib.common.misc.string.PStrings;
+import net.minecraft.world.WorldType;
 import net.minecraft.world.gen.layer.GenLayer;
 import net.minecraft.world.gen.layer.GenLayerAddIsland;
 import net.minecraft.world.gen.layer.GenLayerAddMushroomIsland;
@@ -53,7 +54,9 @@ import net.minecraft.world.gen.layer.GenLayerVoronoiZoom;
 import net.minecraft.world.gen.layer.GenLayerZoom;
 import net.minecraft.world.gen.layer.IntCache;
 import org.junit.BeforeClass;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 import util.FP2Test;
 
 import java.util.Arrays;
@@ -69,6 +72,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestFastBiomeGen {
     @BeforeClass
     public static void init() {
@@ -82,122 +86,132 @@ public class TestFastBiomeGen {
 
     @Test
     public void testRandom() {
-        this.testLayers(new GenLayerRandomValues(0L));
+        this.testLayers(new GenLayerRandomValues(0L), true);
     }
 
     //
 
     @Test
     public void testAddIsland() {
-        this.testLayers(new GenLayerAddIsland(1L, new GenLayerRandomValues(0L, 2)));
+        this.testLayers(new GenLayerAddIsland(1L, new GenLayerRandomValues(0L, 2)), true);
     }
 
     @Test
     public void testAddMushroomIsland() {
-        this.testLayers(new GenLayerAddMushroomIsland(1L, new GenLayerRandomValues(0L, 2)));
+        this.testLayers(new GenLayerAddMushroomIsland(1L, new GenLayerRandomValues(0L, 2)), true);
     }
 
     @Test
     public void testAddSnow() {
-        this.testLayers(new GenLayerAddSnow(1L, new GenLayerRandomValues(0L)));
+        this.testLayers(new GenLayerAddSnow(1L, new GenLayerRandomValues(0L)), true);
     }
 
     @Test
     public void testBiome() {
-        this.testLayers(new GenLayerBiome(1L, new GenLayerRandomValues(0L), null, null));
+        this.testLayers(new GenLayerBiome(1L, new GenLayerRandomValues(0L), null, null), true);
     }
 
     @Test
     public void testBiomeEdge() {
-        this.testLayers(new GenLayerBiomeEdge(1L, new GenLayerFuzzyZoom(1L, new GenLayerRandomValues(0L))));
+        this.testLayers(new GenLayerBiomeEdge(1L, new GenLayerFuzzyZoom(1L, new GenLayerRandomValues(0L))), true);
     }
 
     @Test
     public void testDeepOcean() {
-        this.testLayers(new GenLayerDeepOcean(1L, new GenLayerRandomValues(0L, 2)));
+        this.testLayers(new GenLayerDeepOcean(1L, new GenLayerRandomValues(0L, 2)), true);
     }
 
     @Test
     public void testEdgeCoolWarm() {
-        this.testLayers(new GenLayerEdge(1L, new GenLayerRandomValues(0L, 4), GenLayerEdge.Mode.COOL_WARM));
+        this.testLayers(new GenLayerEdge(1L, new GenLayerRandomValues(0L, 4), GenLayerEdge.Mode.COOL_WARM), true);
     }
 
     @Test
     public void testEdgeHeatIce() {
-        this.testLayers(new GenLayerEdge(1L, new GenLayerRandomValues(0L), GenLayerEdge.Mode.HEAT_ICE));
+        this.testLayers(new GenLayerEdge(1L, new GenLayerRandomValues(0L), GenLayerEdge.Mode.HEAT_ICE), true);
     }
 
     @Test
     public void testEdgeSpecial() {
-        this.testLayers(new GenLayerEdge(1L, new GenLayerRandomValues(0L), GenLayerEdge.Mode.SPECIAL));
+        this.testLayers(new GenLayerEdge(1L, new GenLayerRandomValues(0L), GenLayerEdge.Mode.SPECIAL), true);
     }
 
     @Test
     public void testFuzzyZoom() {
-        this.testLayers(new GenLayerFuzzyZoom(1L, new GenLayerRandomValues(0L)));
+        this.testLayers(new GenLayerFuzzyZoom(1L, new GenLayerRandomValues(0L)), true);
     }
 
     @Test
     public void testHills() {
-        this.testLayers(new GenLayerHills(1L, new GenLayerFuzzyZoom(1L, new GenLayerRandomValues(0L)), new GenLayerRandomValues(1L)));
+        this.testLayers(new GenLayerHills(1L, new GenLayerFuzzyZoom(1L, new GenLayerRandomValues(0L)), new GenLayerRandomValues(1L)), true);
     }
 
     @Test
     public void testIsland() {
-        this.testLayers(new GenLayerIsland(0L));
+        this.testLayers(new GenLayerIsland(0L), true);
     }
 
     @Test
     public void testRareBiome() {
-        this.testLayers(new GenLayerRareBiome(1L, new GenLayerRandomValues(0L)));
+        this.testLayers(new GenLayerRareBiome(1L, new GenLayerRandomValues(0L)), true);
     }
 
     @Test
     public void testRemoveTooMuchOcean() {
-        this.testLayers(new GenLayerRemoveTooMuchOcean(1L, new GenLayerRandomValues(0L, 2)));
+        this.testLayers(new GenLayerRemoveTooMuchOcean(1L, new GenLayerRandomValues(0L, 2)), true);
     }
 
     @Test
     public void testRiver() {
-        this.testLayers(new GenLayerRiver(1L, new GenLayerRandomValues(0L)));
+        this.testLayers(new GenLayerRiver(1L, new GenLayerRandomValues(0L)), true);
     }
 
     @Test
     public void testRiverInit() {
-        this.testLayers(new GenLayerRiverInit(1L, new GenLayerRandomValues(0L)));
+        this.testLayers(new GenLayerRiverInit(1L, new GenLayerRandomValues(0L)), true);
     }
 
     @Test
     public void testRiverMix() {
-        this.testLayers(new GenLayerRiverMix(1L, new GenLayerRandomValues(0L), new GenLayerRandomValues(1L)));
+        this.testLayers(new GenLayerRiverMix(1L, new GenLayerRandomValues(0L), new GenLayerRandomValues(1L)), true);
     }
 
     @Test
     public void testShore() {
-        this.testLayers(new GenLayerShore(1L, new GenLayerRandomValues(0L)));
+        this.testLayers(new GenLayerShore(1L, new GenLayerRandomValues(0L)), true);
     }
 
     @Test
     public void testSmooth() {
-        this.testLayers(new GenLayerSmooth(1L, new GenLayerRandomValues(0L)));
+        this.testLayers(new GenLayerSmooth(1L, new GenLayerRandomValues(0L)), true);
     }
 
     @Test
     public void testVoronoiZoom() {
-        this.testLayers(new GenLayerVoronoiZoom(1L, new GenLayerRandomValues(0L)));
+        this.testLayers(new GenLayerVoronoiZoom(1L, new GenLayerRandomValues(0L)), true);
     }
 
     @Test
     public void testZoom() {
-        this.testLayers(new GenLayerZoom(1L, new GenLayerRandomValues(0L)));
+        this.testLayers(new GenLayerZoom(1L, new GenLayerRandomValues(0L)), true);
     }
 
     @Test
     public void testMultipleZooms() {
-        this.testLayers(new GenLayerZoom(1L, new GenLayerZoom(1L, new GenLayerZoom(1L, new GenLayerRandomValues(0L)))));
+        this.testLayers(new GenLayerZoom(1L, new GenLayerZoom(1L, new GenLayerZoom(1L, new GenLayerRandomValues(0L)))), true);
     }
 
-    private void testLayers(GenLayer vanilla) {
+    @Test
+    public void zzy_testEverything_default() {
+        this.testLayers(GenLayer.initializeAllBiomeGenerators(1L, WorldType.DEFAULT, null)[0], false);
+    }
+
+    @Test
+    public void zzz_testEverything_largeBiomes() {
+        this.testLayers(GenLayer.initializeAllBiomeGenerators(1L, WorldType.LARGE_BIOMES, null)[0], false);
+    }
+
+    private void testLayers(GenLayer vanilla, boolean testSingle) {
         SplittableRandom r = new SplittableRandom(12345L);
 
         vanilla.initWorldGenSeed(r.nextLong());
@@ -210,21 +224,22 @@ public class TestFastBiomeGen {
         };
         if (javaFast.getClass() == nativeFast.getClass()) {
             System.err.printf("warning: no native layer implementation found for %s (fast: %s)\n", vanilla.getClass(), javaFast.getClass());
-            layers = Arrays.copyOf(layers, 1);
+            layers = Arrays.copyOf(layers, 0);
         }
 
-        this.testLayers(0, 0, 2, 2, vanilla, layers);
-        this.testLayers(-1, -1, 2, 2, vanilla, layers);
-        this.testLayers(-10, -10, 21, 21, vanilla, layers);
+        this.testLayers(0, 0, 2, 2, testSingle, vanilla, layers);
+        this.testLayers(-1, -1, 2, 2, testSingle, vanilla, layers);
+        this.testLayers(-10, -10, 21, 21, testSingle, vanilla, layers);
 
         for (int i = 0; i < 256; i++) {
             this.testLayers(r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000),
                     //workaround for a vanilla bug in GenLayerVoronoiZoom
                     vanilla instanceof GenLayerVoronoiZoom ? 16 : r.nextInt(256) + 1, vanilla instanceof GenLayerVoronoiZoom ? 16 : r.nextInt(256) + 1,
-                    vanilla, layers);
+                    testSingle, vanilla, layers);
         }
 
         this.testLayersMultiGrid(-3, -3, 5, 16, 16, vanilla, layers);
+        //this.testLayersMultiGrid((-5664 >> 2) - 2, (-5664 >> 2) - 2, 5, 1 << 3, 21, vanilla, layers);
 
         NamedLayer[] paddedLayers = Stream.of(layers).filter(l -> l.layer instanceof IPaddedLayer).toArray(NamedLayer[]::new);
         NamedLayer[] zoomingLayers = Stream.of(layers).filter(l -> l.layer instanceof IZoomingLayer).toArray(NamedLayer[]::new);
@@ -236,7 +251,7 @@ public class TestFastBiomeGen {
         }
     }
 
-    private void testLayers(int x, int z, int sizeX, int sizeZ, GenLayer vanilla, @NonNull NamedLayer... layers) {
+    private void testLayers(int x, int z, int sizeX, int sizeZ, boolean testSingle, GenLayer vanilla, @NonNull NamedLayer... layers) {
         ForkJoinTask<int[]> futureReference = new ThreadSafeForkJoinSupplier<int[]>() {
             @Override
             protected int[] compute() {
@@ -262,7 +277,7 @@ public class TestFastBiomeGen {
             }
         }.fork()).collect(Collectors.toList());
 
-        List<ForkJoinTask<int[]>> singleFutures = Stream.of(layers).map(layer -> new ThreadSafeForkJoinSupplier<int[]>() {
+        List<ForkJoinTask<int[]>> singleFutures = !testSingle ? null : Stream.of(layers).map(layer -> new ThreadSafeForkJoinSupplier<int[]>() {
             @Override
             protected int[] compute() {
                 int[] grid = new int[sizeX * sizeZ];
@@ -291,7 +306,7 @@ public class TestFastBiomeGen {
                 }
             }
         }
-        for (int j = 0; j < layers.length; j++) {
+        for (int j = 0; testSingle && j < layers.length; j++) {
             String name = layers[j].name;
 
             int[] grid = singleFutures.get(j).join();

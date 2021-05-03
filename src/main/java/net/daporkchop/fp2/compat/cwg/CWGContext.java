@@ -25,6 +25,8 @@ import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGenerato
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.BiomeSource;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.IBuilder;
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper;
+import net.daporkchop.fp2.compat.vanilla.biome.IBiomeProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.weight.BiomeWeightHelper;
 import net.daporkchop.fp2.compat.vanilla.biome.weight.VanillaBiomeWeightHelper;
 import net.daporkchop.lib.common.math.PMath;
@@ -36,8 +38,10 @@ import net.minecraft.world.gen.layer.IntCache;
 import java.lang.reflect.Field;
 import java.util.Random;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.compat.cwg.CWGHelper.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -55,13 +59,12 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
     public final int size;
     public final int[] biomes;
 
-    protected final int gSize;
     protected final double[] heights;
     protected final double[] variations;
 
     @Deprecated
     protected final BiomeSource biomeSource;
-    protected final BiomeProvider biomeProvider;
+    protected final IBiomeProvider biomeProvider;
     protected final BiomeWeightHelper weightHelper;
     protected final IBiomeBlockReplacer[][] biomeBlockReplacers;
 
@@ -96,14 +99,13 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
         }
 
         this.biomeSource = biomeSource;
+        this.biomeProvider = BiomeHelper.from(CWGHelper.getBiomeGen(biomeSource));
         this.biomeBlockReplacers = CWGHelper.blockReplacerMapToArray(CWGHelper.getReplacerMap(biomeSource));
-        this.biomeProvider = CWGHelper.getBiomeGen(biomeSource);
 
         this.biomes = new int[this.size * this.size];
 
-        this.gSize = (size >> GT_SHIFT) + 2;
-        this.heights = new double[this.gSize * this.gSize];
-        this.variations = new double[this.gSize * this.gSize];
+        this.heights = new double[this.size * this.size];
+        this.variations = new double[this.size * this.size];
 
         Random rnd = new Random(world.getSeed());
         this.selectorSeed = packSeed(rnd.nextLong());
@@ -143,57 +145,23 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
         this.baseZ = baseZ;
         this.level = level;
 
-        if (level == 0) { //base level, simply use vanilla system
-            IntCache.resetIntCache();
-            int[] biomes = this.biomeProvider.biomeIndexLayer.getInts(baseX, baseZ, this.size, this.size);
-            for (int i = 0, x = 0; x < this.size; x++) { //convert ZX to XZ
-                for (int z = 0; z < this.size; z++, i++) {
-                    this.biomes[i] = biomes[z * this.size + x];
-                }
-            }
-        } else if (level < 4) { //generate 16x16 tiles at a time and copy the individual samples into the target array
-            //up to a certain scale, this is actually faster than generating individual biomes because the biome generation code
-            int tiles = (((this.size - 1) << level) >> 4) + 1;
-            int samplesPerTile = 16 >> level;
-            int tileSize = 16;
-            for (int tileX = 0; tileX < tiles; tileX++) {
-                for (int tileZ = 0; tileZ < tiles; tileZ++) {
-                    IntCache.resetIntCache();
-                    int[] tile = this.biomeProvider.biomeIndexLayer.getInts(baseX + (tileX << 4), baseZ + (tileZ << 4), tileSize, tileSize);
-                    for (int x = 0; x < samplesPerTile && tileX * samplesPerTile + x < this.size; x++) {
-                        for (int z = 0; z < samplesPerTile && tileZ * samplesPerTile + z < this.size; z++) {
-                            int dst = (tileX * samplesPerTile + x) * this.size + (tileZ * samplesPerTile + z);
-                            int src = (z << level) * tileSize + (x << level);
-                            this.biomes[dst] = tile[src];
-                        }
-                    }
-                }
-            }
-        } else {
-            //TODO: optimized method for generating biomes at low resolution?
-            for (int i = 0, x = 0; x < this.size; x++) {
-                for (int z = 0; z < this.size; z++) {
-                    IntCache.resetIntCache();
-                    this.biomes[i++] = this.biomeProvider.biomeIndexLayer.getInts(baseX + (x << level), baseZ + (z << level), 1, 1)[0];
-                }
-            }
-        }
+        this.biomeProvider.generateBiomesAndWeightedHeightsVariations(baseX, baseZ, level, this.size, this.biomes, this.heights, this.variations, this.weightHelper);
 
-        /*this.weightHelper.compute(this.biomeProvider.genBiomes, baseX >> GT_SHIFT, baseZ >> GT_SHIFT, level, this.gSize, this.heights, this.variations);
-        for (int i = 0, len = this.gSize * this.gSize; i < len; i++) { //convert to CWG format
+        for (int i = 0; i < sq(this.size); i++) {
             this.heights[i] = BiomeHelper.biomeHeightVanilla(this.heights[i]);
             this.variations[i] = BiomeHelper.biomeHeightVariationVanilla(this.variations[i]);
-        }*/
+        }
     }
 
     @Override
     public double get(int x, int y, int z) {
-        int i = ((x - this.baseX) >> (GT_SHIFT + this.level)) * this.gSize + ((z - this.baseZ) >> (GT_SHIFT + this.level));
+        int i = ((x - this.baseX) >> this.level) * this.size + ((z - this.baseZ) >> this.level);
         //TODO: this (height+variation) isn't identical to CWG
-        //double height = this.heights[i] * this.heightFactor + this.heightOffset;
-        //double variation = this.variations[i] * (height > y ? this.specialHeightVariationFactorBelowAverageY : 1.0d) * this.heightVariationFactor + this.heightVariationOffset;
-        double height = this.biomeSource.getHeight(x, y, z) * this.heightFactor + this.heightOffset;
-        double variation = this.biomeSource.getVolatility(x, y, z) * (height > y ? this.specialHeightVariationFactorBelowAverageY : 1.0d) * this.heightVariationFactor + this.heightVariationOffset;
+        //TODO: i redid a bunch of stuff, but need to re-check whether or not it's identical to CWG now
+        double height = this.heights[i] * this.heightFactor + this.heightOffset;
+        double variation = this.variations[i] * (height > y ? this.specialHeightVariationFactorBelowAverageY : 1.0d) * this.heightVariationFactor + this.heightVariationOffset;
+        //double height = this.biomeSource.getHeight(x, y, z) * this.heightFactor + this.heightOffset;
+        //double variation = this.biomeSource.getVolatility(x, y, z) * (height > y ? this.specialHeightVariationFactorBelowAverageY : 1.0d) * this.heightVariationFactor + this.heightVariationOffset;
 
         double low = sample(this.lowSeed, x, y, z, this.lowNoiseOctaves, this.lowNoiseFrequencyX, this.lowNoiseFrequencyY, this.lowNoiseFrequencyZ, this.lowScale) * this.lowNoiseFactor + this.lowNoiseOffset;
         double high = sample(this.highSeed, x, y, z, this.highNoiseOctaves, this.highNoiseFrequencyX, this.highNoiseFrequencyY, this.highNoiseFrequencyZ, this.highScale) * this.highNoiseFactor + this.highNoiseOffset;
