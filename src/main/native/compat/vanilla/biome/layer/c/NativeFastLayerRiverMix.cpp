@@ -26,7 +26,7 @@ FP2_JNI(void, NativeFastLayerRiverMix, mix0) (JNIEnv* env, jobject obj,
     fp2::pinned_int_array river(env, _river);
 
     int32_t i = 0;
-    for (Vec4i b, r; i < count & ~3; i += 4) {
+    for (Vec4i b, r; i < (count & ~3); i += 4) {
         b.load(&biome[i]);
         r.load(&river[i]);
 

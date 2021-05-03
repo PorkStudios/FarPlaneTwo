@@ -224,7 +224,7 @@ public class TestFastBiomeGen {
         };
         if (javaFast.getClass() == nativeFast.getClass()) {
             System.err.printf("warning: no native layer implementation found for %s (fast: %s)\n", vanilla.getClass(), javaFast.getClass());
-            layers = Arrays.copyOf(layers, 0);
+            layers = Arrays.copyOf(layers, 1);
         }
 
         this.testLayers(0, 0, 2, 2, testSingle, vanilla, layers);
@@ -239,7 +239,7 @@ public class TestFastBiomeGen {
         }
 
         this.testLayersMultiGrid(-3, -3, 5, 16, 16, vanilla, layers);
-        //this.testLayersMultiGrid((-5664 >> 2) - 2, (-5664 >> 2) - 2, 5, 1 << 3, 21, vanilla, layers);
+        this.testLayersMultiGrid((-5664 >> 2) - 2, (-5664 >> 2) - 2, 5, 1 << 3, 21, vanilla, layers);
 
         NamedLayer[] paddedLayers = Stream.of(layers).filter(l -> l.layer instanceof IPaddedLayer).toArray(NamedLayer[]::new);
         NamedLayer[] zoomingLayers = Stream.of(layers).filter(l -> l.layer instanceof IZoomingLayer).toArray(NamedLayer[]::new);

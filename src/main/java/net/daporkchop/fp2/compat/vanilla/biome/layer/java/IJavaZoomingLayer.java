@@ -135,31 +135,31 @@ public interface IJavaZoomingLayer extends IZoomingLayer {
         final int tileSize = 1 << shift;
         final int mask = tileSize - 1;
 
-        final int scaledSize = (dist >> depth) + 1;
-        final int inSize = ((scaledSize * count) >> shift) + 2;
-        final int tempSize = (((scaledSize >> shift) + 2) - 1) << shift;
+        final int inSize = ((((dist >> depth) + 1) * count) >> shift) + 2;
+        final int inTileSize = (size >> shift) + 2;
+        final int tempTileSize = (inTileSize - 1) << shift;
 
         int[] offsets = this.offsets(inSize, inSize);
         int[] v = new int[4];
 
-        int[] temp = alloc.get(count * count * tempSize * tempSize);
+        int[] temp = alloc.get(count * count * tempTileSize * tempTileSize);
         try {
             //zoom individual tiles
             for (int tempIdx = 0, gridX = 0; gridX < count; gridX++) {
-                for (int gridZ = 0; gridZ < count; gridZ++, tempIdx += tempSize * tempSize) {
+                for (int gridZ = 0; gridZ < count; gridZ++, tempIdx += tempTileSize * tempTileSize) {
                     final int inX = mulAddShift(gridX, dist, x, depth) >> shift;
                     final int inZ = mulAddShift(gridZ, dist, z, depth) >> shift;
                     final int offsetX = mulAddShift(gridX, dist, gridX & mask, depth) >> shift;
                     final int offsetZ = mulAddShift(gridZ, dist, gridZ & mask, depth) >> shift;
 
-                    for (int tileX = 0; tileX < size - 1; tileX++) {
-                        for (int tileZ = 0; tileZ < size - 1; tileZ++) {
+                    for (int tileX = 0; tileX < inTileSize - 1; tileX++) {
+                        for (int tileZ = 0; tileZ < inTileSize - 1; tileZ++) {
                             final int inIdx = (offsetX + tileX) * inSize + (offsetZ + tileZ);
                             for (int i = 0; i < 4; i++) {
                                 v[i] = in[offsets[i] + inIdx];
                             }
 
-                            this.zoomTile0((inX + tileX) << shift, (inZ + tileZ) << shift, v, temp, tempIdx + (tileX << shift) * tempSize + (tileZ << shift), tempSize);
+                            this.zoomTile0((inX + tileX) << shift, (inZ + tileZ) << shift, v, temp, tempIdx + (tileX << shift) * tempTileSize + (tileZ << shift), tempTileSize);
                         }
                     }
                 }
@@ -167,12 +167,12 @@ public interface IJavaZoomingLayer extends IZoomingLayer {
 
             //remove padding from output tiles
             for (int outIdx = 0, tempIdx = 0, gridX = 0; gridX < count; gridX++) {
-                for (int gridZ = 0; gridZ < count; gridZ++, outIdx += size * size, tempIdx += tempSize * tempSize) {
+                for (int gridZ = 0; gridZ < count; gridZ++, outIdx += size * size, tempIdx += tempTileSize * tempTileSize) {
                     final int realX = mulAddShift(gridX, dist, x, depth);
                     final int realZ = mulAddShift(gridZ, dist, z, depth);
 
                     for (int dx = 0; dx < size; dx++) {
-                        System.arraycopy(temp, tempIdx + (dx + (realX & mask)) * tempSize + (realZ & mask), out, outIdx + dx * size, size);
+                        System.arraycopy(temp, tempIdx + (dx + (realX & mask)) * tempTileSize + (realZ & mask), out, outIdx + dx * size, size);
                     }
                 }
             }

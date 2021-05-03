@@ -127,6 +127,7 @@ namespace fp2::biome::fastlayer {
      * @author DaPorkchop_
      */
     template<typename... ARGS> class padded_layer {
+    public:
     template<int32_t(EVAL)(int64_t, int32_t, int32_t, int32_t, Vec4i, ARGS...), padded_layer_mode MODE> class impl {
         static const inline Vec4i OFFSETS_X = MODE == padded_layer_mode::corners
                 ? Vec4i(-1, 1, -1, 1) : MODE == padded_layer_mode::sides ? Vec4i(-1, 0, 0, 1) : Vec4i(-1, 0, 1, 0);
@@ -220,6 +221,7 @@ namespace fp2::biome::fastlayer {
      * @author DaPorkchop_
      */
     template<typename... ARGS> class translation_layer {
+    public:
     template<int32_t(EVAL)(int64_t, int32_t, int32_t, int32_t, ARGS...)> class impl {
     public:
         inline void grid(JNIEnv* env,
@@ -378,30 +380,30 @@ namespace fp2::biome::fastlayer {
 
         inline void grid_multi_combined(JNIEnv* env,
                 int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t depth, int32_t count, jintArray _out, jintArray _in) {
-            const int32_t scaledSize = (dist >> depth) + 1;
-            const int32_t inSize = ((scaledSize * count) >> ZOOM) + 2;
-            const int32_t tempSize = (((scaledSize >> ZOOM) + 2) - 1) << ZOOM;
+            const int32_t inSize = ((((dist >> depth) + 1) * count) >> ZOOM) + 2;
+            const int32_t inTileSize = (size >> ZOOM) + 2;
+            const int32_t tempTileSize = (inTileSize - 1) << ZOOM;
 
-            std::vector<int32_t> temp(count * count * tempSize * tempSize);
+            std::vector<int32_t> temp(count * count * tempTileSize * tempTileSize);
 
             {
                 const Vec4i in_offsets = OFFSETS_X * inSize + OFFSETS_Z;
                 fp2::pinned_int_array in(env, _in);
 
                 for (int32_t tempIdx = 0, gridX = 0; gridX < count; gridX++) {
-                    for (int32_t gridZ = 0; gridZ < count; gridZ++, tempIdx += tempSize * tempSize) {
+                    for (int32_t gridZ = 0; gridZ < count; gridZ++, tempIdx += tempTileSize * tempTileSize) {
                         const int32_t inX = mulAddShift(gridX, dist, x, depth) >> ZOOM;
                         const int32_t inZ = mulAddShift(gridZ, dist, z, depth) >> ZOOM;
                         const int32_t offsetX = mulAddShift(gridX, dist, gridX & MASK, depth) >> ZOOM;
                         const int32_t offsetZ = mulAddShift(gridZ, dist, gridZ & MASK, depth) >> ZOOM;
 
-                        for (int32_t tileX = 0; tileX < size - 1; tileX++) {
-                            for (int32_t tileZ = 0; tileZ < size - 1; tileZ++) {
+                        for (int32_t tileX = 0; tileX < inTileSize - 1; tileX++) {
+                            for (int32_t tileZ = 0; tileZ < inTileSize - 1; tileZ++) {
                                 Vec4i values = lookup<(1 << 30)>(((offsetX + tileX) * inSize + (offsetZ + tileZ)) + in_offsets, &in[0]);
 
                                 int32_t* pointers[SIZE];
                                 for (int32_t i = 0; i < SIZE; i++) {
-                                    pointers[i] = &temp[tempIdx + ((tileX << ZOOM) + i) * tempSize + (tileZ << ZOOM)];
+                                    pointers[i] = &temp[tempIdx + ((tileX << ZOOM) + i) * tempTileSize + (tileZ << ZOOM)];
                                 }
 
                                 EVAL(seed, (inX + tileX) << ZOOM, (inZ + tileZ) << ZOOM, values, pointers);
@@ -415,12 +417,12 @@ namespace fp2::biome::fastlayer {
                 fp2::pinned_int_array out(env, _out);
 
                 for (int32_t outIdx = 0, tempIdx = 0, gridX = 0; gridX < count; gridX++) {
-                    for (int32_t gridZ = 0; gridZ < count; gridZ++, outIdx += size * size, tempIdx += tempSize * tempSize) {
+                    for (int32_t gridZ = 0; gridZ < count; gridZ++, outIdx += size * size, tempIdx += tempTileSize * tempTileSize) {
                         const int32_t realX = mulAddShift(gridX, dist, x, depth);
                         const int32_t realZ = mulAddShift(gridZ, dist, z, depth);
 
                         for (int32_t dx = 0; dx < size; dx++) {
-                            memcpy(&out[outIdx + dx * size], &temp[tempIdx + (dx + (realX & MASK)) * tempSize + (realZ & MASK)], size * sizeof(int32_t));
+                            memcpy(&out[outIdx + dx * size], &temp[tempIdx + (dx + (realX & MASK)) * tempTileSize + (realZ & MASK)], size * sizeof(int32_t));
                         }
                     }
                 }
