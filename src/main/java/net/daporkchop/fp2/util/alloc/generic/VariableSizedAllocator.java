@@ -24,6 +24,8 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectRBTreeMap;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.ToString;
+import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.math.PMath;
 
 import java.util.Comparator;
@@ -113,7 +115,7 @@ public final class VariableSizedAllocator implements Allocator {
     @Override
     public void free(long address) {
         Node node = this.usedNodes.remove(address);
-        checkArg(node != null, "invalid address: %d", address);
+        checkArg(node != null, "invalid address for free(): %d (allocator state: %s)", address, this);
 
         node.used(false);
         if (node.next != null && !node.next.used) { //next node isn't used either, we can merge forwards
@@ -153,7 +155,12 @@ public final class VariableSizedAllocator implements Allocator {
         long deltaCapacity = newCapacity - oldCapacity;
 
         if (this.tail.used) { //tail node is allocated, create new node to be used as tail
-            Node node = new Node().prev(this.tail).base(oldCapacity).size(deltaCapacity);
+            long oldPrevTailSize = this.tail.size;
+            long newPrevTailSize = PMath.roundUp(oldPrevTailSize, this.blockSize);
+            long newTailOffset = newPrevTailSize - oldPrevTailSize;
+            this.tail.size(newPrevTailSize);
+
+            Node node = new Node().prev(this.tail).base(oldCapacity + newTailOffset).size(deltaCapacity - newTailOffset);
             this.tail.next(node);
             this.tail = node;
             this.emptyNodes.add(node);
