@@ -84,6 +84,10 @@ public class Constants {
     public static final int T_VOXELS = 1 << T_SHIFT;
     public static final int T_VERTS = T_VOXELS + 1;
 
+    public static final int GT_SHIFT = 2; //generation tile shift
+    public static final int GT_COUNT = T_VOXELS >> GT_SHIFT;
+    public static final int GT_SIZE = 1 << (T_SHIFT - GT_SHIFT); //generation tile size
+
     public static final boolean FP2_TEST = Boolean.parseBoolean(System.getProperty("fp2.test", "false"));
 
     public static Logger FP2_LOG = new SimpleLogger("[fp2 bootstrap]", Level.INFO, true, false, true, false, "[yyyy/MM/dd HH:mm:ss:SSS]", null, new PropertiesUtil("log4j2.simplelog.properties"), System.out);
@@ -302,16 +306,6 @@ public class Constants {
     }
 
     //math
-
-    /**
-     * Computes the X coordinate of the point where the line defined by the two given values (at x=0 and x=1, respectively) intersects the X axis.
-     *
-     * @param d0 the value at x=0
-     * @param d1 the value at x=1
-     */
-    public static double minimize(double d0, double d1) {
-        return d0 / (d0 - d1);
-    }
 
     //buffer I/O
     public static void writeVarInt(@NonNull ByteBuf dst, int value) {

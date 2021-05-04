@@ -39,7 +39,6 @@ import net.minecraft.init.Blocks;
 import net.minecraft.world.WorldServer;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.compat.cwg.CWGContext.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**

@@ -23,7 +23,6 @@ package net.daporkchop.fp2.mode.heightmap.server.gen.rough;
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.cwg.CWGContext;
-import net.daporkchop.fp2.compat.cwg.CWGHelper;
 import net.daporkchop.fp2.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
@@ -35,7 +34,6 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.compat.cwg.CWGContext.*;
 import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
@@ -78,7 +76,7 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
             for (int z = -1; z < hMax; z++) {
                 int blockX = baseX + (x << shift);
                 int blockZ = baseZ + (z << shift);
-                heights[(x + 1) * hSize + (z + 1)] = CWGHelper.getHeight(ctx, blockX, blockZ);
+                heights[(x + 1) * hSize + (z + 1)] = ctx.getHeight(blockX, blockZ);
             }
         }
 

@@ -103,27 +103,4 @@ public class CWGHelper {
         double maxValue = (pow(DEFAULT_PERLIN_PERSISTENCE, octaves) - 1.0d) / (DEFAULT_PERLIN_PERSISTENCE - 1.0d);
         return 2.0d / maxValue;
     }
-
-    /**
-     * Estimates the terrain height at the given X and Z coordinates using the given {@link IBuilder}.
-     *
-     * @param builder the {@link IBuilder} to get density values from
-     * @param x       the X coordinate (in blocks)
-     * @param z       the Z coordinate (in blocks)
-     * @return the estimated terrain height value
-     */
-    public static int getHeight(@NonNull IBuilder builder, int x, int z) {
-        int y = Integer.MIN_VALUE;
-        int step = Integer.MAX_VALUE >> 1;
-
-        do {
-            for (int yyPrev = y, yy = y + step; yy > yyPrev; yyPrev = yy, yy += step) {
-                if (builder.get(x, yy, z) <= 0.0d) { //non-solid
-                    y = yyPrev;
-                    break;
-                }
-            }
-        } while ((step >>= 1) != 0);
-        return y;
-    }
 }

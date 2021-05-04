@@ -33,12 +33,10 @@ import net.daporkchop.lib.common.math.PMath;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
-import net.minecraft.world.gen.layer.IntCache;
 
 import java.lang.reflect.Field;
 import java.util.Random;
 
-import static java.lang.Math.*;
 import static net.daporkchop.fp2.compat.cwg.CWGHelper.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
@@ -52,18 +50,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public class CWGContext extends CustomGeneratorSettings implements IBuilder {
-    public static final int GT_SHIFT = 2; //generation tile shift
-    public static final int GT_SIZE = 1 << (T_SHIFT - GT_SHIFT); //generation tile size
-    public static final int GT_COUNT = T_VOXELS >> GT_SHIFT;
-
     public final int size;
     public final int[] biomes;
 
     protected final double[] heights;
     protected final double[] variations;
 
-    @Deprecated
-    protected final BiomeSource biomeSource;
     protected final IBiomeProvider biomeProvider;
     protected final BiomeWeightHelper weightHelper;
     protected final IBiomeBlockReplacer[][] biomeBlockReplacers;
@@ -98,7 +90,6 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
             throw new RuntimeException(e);
         }
 
-        this.biomeSource = biomeSource;
         this.biomeProvider = BiomeHelper.from(CWGHelper.getBiomeGen(biomeSource));
         this.biomeBlockReplacers = CWGHelper.blockReplacerMapToArray(CWGHelper.getReplacerMap(biomeSource));
 
@@ -153,6 +144,55 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
         }
     }
 
+    /**
+     * Estimates the terrain height at the given X and Z coordinates.
+     *
+     * @param x the X coordinate (in blocks)
+     * @param z the Z coordinate (in blocks)
+     * @return the estimated terrain height value
+     */
+    public int getHeight(int x, int z) {
+        int initialY = (int) this.expectedBaseHeight;
+
+        //find minimum and maximum bounds
+        int minY = Integer.MIN_VALUE, maxY = Integer.MAX_VALUE;
+        if (this.get(x, initialY, z) > 0.0d) { //initial point is solid
+            minY = initialY;
+            for (int shift = T_SHIFT; shift < Integer.SIZE; shift++) {
+                if (this.get(x, initialY + (1 << shift), z) <= 0.0d) {
+                    maxY = initialY + (1 << shift);
+                    break;
+                } else {
+                    minY = initialY + (1 << shift);
+                }
+            }
+        } else {
+            maxY = initialY;
+            for (int shift = T_SHIFT; shift < Integer.SIZE; shift++) {
+                if (this.get(x, initialY - (1 << shift), z) > 0.0d) {
+                    minY = initialY - (1 << shift);
+                    break;
+                } else {
+                    maxY = initialY - (1 << shift);
+                }
+            }
+        }
+
+        //binary search
+        for (int error = 8 << this.level; maxY - minY > error; ) {
+            int middle = (minY + maxY) >>> 1;
+            if (this.get(x, middle, z) > 0.0d) { //middle point is solid, move search up
+                minY = middle;
+            } else {
+                maxY = middle;
+            }
+        }
+
+        double d0 = this.get(x, minY, z);
+        double d1 = this.get(x, maxY, z);
+        return PMath.lerpI(minY, maxY, minimize(d0, d1));
+    }
+
     @Override
     public double get(int x, int y, int z) {
         int i = ((x - this.baseX) >> this.level) * this.size + ((z - this.baseZ) >> this.level);
@@ -160,12 +200,11 @@ public class CWGContext extends CustomGeneratorSettings implements IBuilder {
         //TODO: i redid a bunch of stuff, but need to re-check whether or not it's identical to CWG now
         double height = this.heights[i] * this.heightFactor + this.heightOffset;
         double variation = this.variations[i] * (height > y ? this.specialHeightVariationFactorBelowAverageY : 1.0d) * this.heightVariationFactor + this.heightVariationOffset;
-        //double height = this.biomeSource.getHeight(x, y, z) * this.heightFactor + this.heightOffset;
-        //double variation = this.biomeSource.getVolatility(x, y, z) * (height > y ? this.specialHeightVariationFactorBelowAverageY : 1.0d) * this.heightVariationFactor + this.heightVariationOffset;
 
-        double low = sample(this.lowSeed, x, y, z, this.lowNoiseOctaves, this.lowNoiseFrequencyX, this.lowNoiseFrequencyY, this.lowNoiseFrequencyZ, this.lowScale) * this.lowNoiseFactor + this.lowNoiseOffset;
-        double high = sample(this.highSeed, x, y, z, this.highNoiseOctaves, this.highNoiseFrequencyX, this.highNoiseFrequencyY, this.highNoiseFrequencyZ, this.highScale) * this.highNoiseFactor + this.highNoiseOffset;
         double selector = sample(this.selectorSeed, x, y, z, this.selectorNoiseOctaves, this.selectorNoiseFrequencyX, this.selectorNoiseFrequencyY, this.selectorNoiseFrequencyZ, this.selectorScale) * this.selectorNoiseFactor + this.selectorNoiseOffset;
+        //TODO: benchmark and see whether this is actually faster with or without conditional
+        double low = selector >= 1.0d ? 0.0d : sample(this.lowSeed, x, y, z, this.lowNoiseOctaves, this.lowNoiseFrequencyX, this.lowNoiseFrequencyY, this.lowNoiseFrequencyZ, this.lowScale) * this.lowNoiseFactor + this.lowNoiseOffset;
+        double high = selector < 0.0d ? 0.0d : sample(this.highSeed, x, y, z, this.highNoiseOctaves, this.highNoiseFrequencyX, this.highNoiseFrequencyY, this.highNoiseFrequencyZ, this.highScale) * this.highNoiseFactor + this.highNoiseOffset;
 
         double d = PMath.lerp(low, high, PMath.clamp(selector, 0.0d, 1.0d)) + this.randomHeight2d(x, y, z);
         d = d * variation + height;

@@ -20,6 +20,14 @@
 
 //#define DEBUG_DISTANCES
 
+#ifdef DEBUG_DISTANCES
+const vec3[][3] DEBUG_DISTANCE_COLORS = vec3[][](
+vec3[3](vec3(0., 1., 0.), vec3(1., 1., 0.), vec3(1., 0., 0.)),
+vec3[3](vec3(0., 0., 1.), vec3(1., 0., 1.), vec3(0., 1., 1.)),
+vec3[3](vec3(0.), vec3(.5), vec3(1.))
+);
+#endif
+
 void main() {
     //convert position to vec3 afterwards to minimize precision loss
     ivec3 relative_tile_position = (tile_position.xyz << tile_position.w << T_SHIFT) - glState.camera.position_floor;
@@ -39,11 +47,11 @@ void main() {
 
 #ifdef DEBUG_DISTANCES
     if (depth < start) {
-        vs_out.color = vec3(0., 1., 0.);
+        vs_out.color = DEBUG_DISTANCE_COLORS[tile_position.w][0];
     } else if (depth > end) {
-        vs_out.color = vec3(1., 0., 0.);
+        vs_out.color = DEBUG_DISTANCE_COLORS[tile_position.w][2];
     } else {
-        vs_out.color = vec3(1., 1., 0.);
+        vs_out.color = DEBUG_DISTANCE_COLORS[tile_position.w][1];
     }
 #endif
 #endif

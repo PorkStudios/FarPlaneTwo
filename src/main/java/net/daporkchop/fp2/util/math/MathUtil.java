@@ -35,6 +35,12 @@ public class MathUtil {
                 : (val >> shift) + ((val >> (shift - 1)) & 1);
     }
 
+    public static int asrCeil(int val, int shift) {
+        return shift == 0
+                ? val
+                : (val >> shift) + ((val & ((1 << shift) - 1)) != 0 ? 1 : 0);
+    }
+
     public static int mulAddShift(int a, int b, int c, int shift) {
         return (int) (((long) a * (long) b + c) >> shift);
     }
@@ -60,5 +66,15 @@ public class MathUtil {
 
     public static double sq(double d) {
         return d * d;
+    }
+
+    /**
+     * Computes the X coordinate of the point where the line defined by the two given values (at x=0 and x=1, respectively) intersects the X axis.
+     *
+     * @param d0 the value at x=0
+     * @param d1 the value at x=1
+     */
+    public static double minimize(double d0, double d1) {
+        return d0 / (d0 - d1);
     }
 }
