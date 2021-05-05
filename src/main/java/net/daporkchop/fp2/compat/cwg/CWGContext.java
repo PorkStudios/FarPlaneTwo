@@ -147,7 +147,7 @@ public class CWGContext extends CustomGeneratorSettings {
         }
 
         //precompute depth noise
-        INSTANCE.generateNoise(this.randomHeight2d, baseX, baseZ, level, this.depthNoiseFrequencyX, this.depthNoiseFrequencyZ, this.size, this.size, this.randomHeight2dScale, this.depthNoiseOctaves, this.randomHeight2dSeed);
+        INSTANCE.generateNoise(this.randomHeight2d, baseX, baseZ, level, this.depthNoiseFrequencyX, this.depthNoiseFrequencyZ, this.size, this.size, this.randomHeight2dSeed, this.depthNoiseOctaves, this.randomHeight2dScale);
         for (int i = 0; i < sq(this.size); i++) {
             this.randomHeight2d[i] = this.randomHeight2d[i] * this.depthNoiseFactor + this.depthNoiseOffset;
         }

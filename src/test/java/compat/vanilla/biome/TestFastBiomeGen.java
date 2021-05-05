@@ -26,7 +26,6 @@ import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IPaddedLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IZoomingLayer;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaLayerProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.daporkchop.fp2.util.threading.fj.ThreadSafeForkJoinSupplier;
@@ -216,7 +215,7 @@ public class TestFastBiomeGen {
 
         vanilla.initWorldGenSeed(r.nextLong());
         IFastLayer nativeFast = FastLayerProvider.INSTANCE.makeFast(vanilla)[0];
-        IFastLayer javaFast = JavaLayerProvider.INSTANCE.makeFast(vanilla)[0];
+        IFastLayer javaFast = FastLayerProvider.JAVA_INSTANCE.makeFast(vanilla)[0];
 
         NamedLayer[] layers = {
                 new NamedLayer(javaFast, "java"),

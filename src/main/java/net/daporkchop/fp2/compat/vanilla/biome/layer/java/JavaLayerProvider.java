@@ -20,8 +20,6 @@
 
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper;
 import net.daporkchop.fp2.compat.vanilla.biome.BiomeHelperCached;
@@ -39,10 +37,7 @@ import java.util.function.Function;
  *
  * @author DaPorkchop_
  */
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class JavaLayerProvider implements FastLayerProvider {
-    public static final JavaLayerProvider INSTANCE = new JavaLayerProvider();
-
     private static void addAllLayers(Map<GenLayer, GenLayer[]> childrenMap, GenLayer layer) {
         if (childrenMap.containsKey(layer)) {
             return; //don't re-add the same layer twice
@@ -58,6 +53,14 @@ public class JavaLayerProvider implements FastLayerProvider {
     }
 
     protected final Map<Class<? extends GenLayer>, Function<GenLayer, IFastLayer>> fastMapperOverrides = new IdentityHashMap<>();
+
+    /**
+     * @see FastLayerProvider#INSTANCE
+     * @deprecated internal API, do not touch!
+     */
+    @Deprecated
+    public JavaLayerProvider() {
+    }
 
     protected IFastLayer convertLayer(@NonNull GenLayer layer) {
         return this.fastMapperOverrides.getOrDefault(layer.getClass(), BiomeHelper::convertLayer).apply(layer);

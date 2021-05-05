@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaLayerProvider;
 import net.daporkchop.lib.natives.Feature;
 import net.daporkchop.lib.natives.FeatureBuilder;
 import net.minecraft.world.gen.layer.GenLayer;
@@ -35,6 +36,9 @@ public interface FastLayerProvider extends Feature<FastLayerProvider> {
             .addNative("net.daporkchop.fp2.compat.vanilla.biome.layer.c.NativeLayerProvider")
             .addJava("net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaLayerProvider")
             .build(true);
+
+    @SuppressWarnings("deprecation")
+    FastLayerProvider JAVA_INSTANCE = INSTANCE.isNative() ? new JavaLayerProvider() : INSTANCE;
 
     /**
      * Converts the given {@link GenLayer}s to their {@link IFastLayer} equivalents.

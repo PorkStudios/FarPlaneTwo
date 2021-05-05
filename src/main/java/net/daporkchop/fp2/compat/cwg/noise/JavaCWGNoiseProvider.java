@@ -23,7 +23,6 @@ package net.daporkchop.fp2.compat.cwg.noise;
 import com.flowpowered.noise.Noise;
 import com.flowpowered.noise.Utils;
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.cwg.CWGHelper;
 
 import static com.flowpowered.noise.module.source.Perlin.*;
 
@@ -59,18 +58,18 @@ class JavaCWGNoiseProvider implements CWGNoiseProvider {
     }
 
     @Override
-    public void generateNoise(@NonNull double[] out, int baseX, int baseY, int baseZ, double freqX, double freqY, double freqZ, int sizeX, int sizeY, int sizeZ, double scale, int octaves, int seed) {
+    public void generateNoise(@NonNull double[] out, int baseX, int baseY, int baseZ, int level, double freqX, double freqY, double freqZ, int sizeX, int sizeY, int sizeZ, int seed, int octaves, double scale) {
         for (int i = 0, dx = 0; dx < sizeX; dx++) {
             for (int dy = 0; dy < sizeY; dy++) {
                 for (int dz = 0; dz < sizeZ; dz++, i++) {
-                    out[i] = perlin(seed, (baseX + dx) * freqX, (baseY + dy) * freqY, (baseZ + dz) * freqZ, octaves) * scale - 1.0d;
+                    out[i] = perlin(seed, (baseX + (dx << level)) * freqX, (baseY + (dy << level)) * freqY, (baseZ + (dz << level)) * freqZ, octaves) * scale - 1.0d;
                 }
             }
         }
     }
 
     @Override
-    public void generateNoise(@NonNull double[] out, int baseX, int baseZ, int level, double freqX, double freqZ, int sizeX, int sizeZ, double scale, int octaves, int seed) {
+    public void generateNoise(@NonNull double[] out, int baseX, int baseZ, int level, double freqX, double freqZ, int sizeX, int sizeZ, int seed, int octaves, double scale) {
         for (int i = 0, dx = 0; dx < sizeX; dx++) {
             for (int dz = 0; dz < sizeZ; dz++, i++) {
                 out[i] = perlin(seed, (baseX + (dx << level)) * freqX, 0.0d, (baseZ + (dz << level)) * freqZ, octaves) * scale - 1.0d;

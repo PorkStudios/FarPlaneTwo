@@ -23,8 +23,7 @@
 
 #define _GLIBCXX_DEBUG
 
-#include <fp2/fastmod.h>
-
+#include <cstdint>
 #include <jni.h>
 
 #ifndef FP2_MODULE
@@ -104,7 +103,10 @@ namespace fp2 {
         }
     };
 
+    using pinned_byte_array = pinned_array<jbyteArray, jbyte>;
     using pinned_int_array = pinned_array<jintArray, jint>;
+    using pinned_float_array = pinned_array<jfloatArray, jfloat>;
+    using pinned_double_array = pinned_array<jdoubleArray, jdouble>;
 
     /**
      * stupid helper method which simply casts one type to another (for use as a template parameter)

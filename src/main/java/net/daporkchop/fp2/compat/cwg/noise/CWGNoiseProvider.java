@@ -33,9 +33,11 @@ import static com.flowpowered.noise.module.source.Perlin.*;
  */
 public interface CWGNoiseProvider extends Feature<CWGNoiseProvider> {
     CWGNoiseProvider INSTANCE = FeatureBuilder.<CWGNoiseProvider>create(CWGNoiseProvider.class)
-            //.addNative("net.daporkchop.fp2.compat.cwg.noise.NativeCWGNoiseProvider")
+            .addNative("net.daporkchop.fp2.compat.cwg.noise.NativeCWGNoiseProvider")
             .addJava("net.daporkchop.fp2.compat.cwg.noise.JavaCWGNoiseProvider")
             .build(true);
+
+    CWGNoiseProvider JAVA_INSTANCE = INSTANCE.isNative() ? new JavaCWGNoiseProvider() : INSTANCE;
 
     static double scale(int octaves) {
         double maxValue = ((1.0d / (1 << octaves)) - 1.0d) * (1.0d / (DEFAULT_PERLIN_PERSISTENCE - 1.0d));
@@ -46,9 +48,28 @@ public interface CWGNoiseProvider extends Feature<CWGNoiseProvider> {
         return (int) ((seed) ^ (seed >>> 32L));
     }
 
-    void generateNoise(@NonNull double[] out, int baseX, int baseY, int baseZ, double freqX, double freqY, double freqZ, int sizeX, int sizeY, int sizeZ, double scale, int octaves, int seed);
+    /**
+     * @see #scale(int)
+     * @see #generateNoise(double[], int, int, int, int, double, double, double, int, int, int, int, int, double)
+     */
+    @Deprecated
+    default void generateNoise(@NonNull double[] out, int baseX, int baseY, int baseZ, int level, double freqX, double freqY, double freqZ, int sizeX, int sizeY, int sizeZ, int seed, int octaves) {
+        this.generateNoise(out, baseX, baseY, baseZ, level, freqX, freqY, freqZ, sizeX, sizeY, sizeZ, seed, octaves, scale(octaves));
+    }
 
-    void generateNoise(@NonNull double[] out, int baseX, int baseZ, int level, double freqX, double freqZ, int sizeX, int sizeZ, double scale, int octaves, int seed);
+    void generateNoise(@NonNull double[] out, int baseX, int baseY, int baseZ, int level, double freqX, double freqY, double freqZ, int sizeX, int sizeY, int sizeZ, int seed, int octaves, double scale);
+
+    /**
+     * @see #scale(int)
+     * @see #generateNoise(double[], int, int, int, double, double, int, int, int, int, double)
+     */
+    @Deprecated
+    default void generateNoise(@NonNull double[] out, int baseX, int baseZ, int level, double freqX, double freqZ, int sizeX, int sizeZ, int seed, int octaves) {
+        //this.generateNoise(out, baseX, baseZ, level, freqX, freqZ, sizeX, sizeZ, seed, octaves, scale(octaves));
+        this.generateNoise(out, baseX, baseZ, level, freqX, freqZ, sizeX, sizeZ, seed, octaves, 1.0d);
+    }
+
+    void generateNoise(@NonNull double[] out, int baseX, int baseZ, int level, double freqX, double freqZ, int sizeX, int sizeZ, int seed, int octaves, double scale);
 
     double generateSingle(int x, int y, int z, double freqX, double freqY, double freqZ, double scale, int octaves, int seed);
 }

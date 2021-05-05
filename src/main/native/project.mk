@@ -9,7 +9,7 @@ export LIBS_DIR		:=	$(NATIVE_DIR)/lib
 export COMPILE_DIR  :=  $(ROOT_DIR)/build/native
 export OUTPUT_DIR   :=  $(ROOT_DIR)/src/main/resources/net/daporkchop/fp2
 
-export CFLAGS		:=	-O2 -ffast-math -fPIC -ffunction-sections -fdata-sections -fvisibility=hidden -msse4.1
+export CFLAGS		:=	-O2 -fPIC -ffunction-sections -fdata-sections -fvisibility=hidden -msse4.1
 export CXXFLAGS		:=	$(CFLAGS) -std=c++17
 export LDFLAGS		:=	$(CFLAGS) -shared -Wl,--gc-sections
 
@@ -17,7 +17,7 @@ export HEADERFILES	:=	$(wildcard $(NATIVE_DIR)/*.h) $(wildcard $(NATIVE_DIR)/fp2
 export INCLUDES		:=	$(NATIVE_DIR) $(JAVA_HOME)include $(JAVA_HOME)include/linux
 
 export ARCHS		:=	x86_64-linux-gnu x86_64-w64-mingw32
-export MODULES		:=  compat/vanilla/biome/layer/c
+export MODULES		:=  compat/cwg/noise compat/vanilla/biome/layer/c
 
 export LIBS			:=  vectorclass-2.01.03
 export LIB_TASKS	:=  $(addprefix $(LIBS_DIR)/,$(addsuffix .dl,$(LIBS)))

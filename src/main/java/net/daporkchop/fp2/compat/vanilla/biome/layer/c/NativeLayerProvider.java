@@ -22,6 +22,7 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.BiomeHelperCached;
+import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerFixedBiome;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaLayerProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
@@ -54,7 +55,13 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelperCached.*;
  * @author DaPorkchop_
  */
 public class NativeLayerProvider extends JavaLayerProvider implements BiomeHelperCached.ReloadListener {
-    protected NativeLayerProvider() {
+    /**
+     * @see FastLayerProvider#INSTANCE
+     * @deprecated internal API, do not touch!
+     */
+    @Deprecated
+    @SuppressWarnings("deprecation")
+    public NativeLayerProvider() {
         //vanilla layers
         this.fastMapperOverrides.put(GenLayerAddIsland.class, layer -> new NativeFastLayerAddIsland(layer.worldGenSeed));
         this.fastMapperOverrides.put(GenLayerAddMushroomIsland.class, layer -> new NativeFastLayerAddMushroomIsland(layer.worldGenSeed));

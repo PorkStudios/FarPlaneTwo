@@ -22,6 +22,7 @@
 #define NATIVELAYER_NATIVEFASTLAYER_H
 
 #include <fp2.h>
+#include <fp2/fastmod.h>
 
 #include <lib/vectorclass-2.01.03/vectorclass.h>
 
