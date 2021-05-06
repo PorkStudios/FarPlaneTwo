@@ -20,7 +20,9 @@
 
 package net.daporkchop.fp2.compat.cwg.noise;
 
+import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
 import lombok.NonNull;
+import net.daporkchop.fp2.util.alloc.DoubleArrayAllocator;
 import net.daporkchop.lib.natives.Feature;
 import net.daporkchop.lib.natives.FeatureBuilder;
 
@@ -80,4 +82,46 @@ public interface CWGNoiseProvider extends Feature<CWGNoiseProvider> {
     }
 
     double generateSingle(int x, int y, int z, double freqX, double freqY, double freqZ, int seed, int octaves, double scale);
+
+    Configured forSettings(@NonNull CustomGeneratorSettings settings, long seed);
+
+    /**
+     * Alternative to {@link CWGNoiseProvider} which computes all the different noise generator outputs at once and combines them.
+     * <p>
+     * Instances of this class are pre-configured with a given {@link CustomGeneratorSettings} at construction time.
+     *
+     * @author DaPorkchop_
+     * @see #forSettings(CustomGeneratorSettings, long)
+     */
+    interface Configured {
+        //depth noise generation
+
+        void generateDepth2d(@NonNull double[] out, int baseX, int baseZ, int level, int sizeX, int sizeZ);
+
+        double generateDepthSingle(int x, int z);
+
+        //full noise generation
+
+        default void generate3d(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ) {
+            DoubleArrayAllocator alloc = DoubleArrayAllocator.DEFAULT.get();
+            double[] depth = alloc.get(sizeX * sizeZ);
+            try {
+                //generate depth noise
+                this.generateDepth2d(depth, baseX, baseZ, level, sizeX, sizeZ);
+
+                //use generated depth noise for full noise generation
+                this.generate3d(heightIn, variationIn, depth, out, baseX, baseY, baseZ, level, sizeX, sizeY, sizeZ);
+            } finally {
+                alloc.release(depth);
+            }
+        }
+
+        void generate3d(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] depthIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ);
+
+        default double generateSingle(double height, double variation, int x, int y, int z) {
+            return this.generateSingle(height, variation, this.generateDepthSingle(x, z), x, y, z);
+        }
+
+        double generateSingle(double height, double variation, double depth, int x, int y, int z);
+    }
 }

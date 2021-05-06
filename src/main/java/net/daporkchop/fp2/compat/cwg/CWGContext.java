@@ -34,9 +34,7 @@ import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
 
 import java.lang.reflect.Field;
-import java.util.Random;
 
-import static net.daporkchop.fp2.compat.cwg.noise.CWGNoiseProvider.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
@@ -49,27 +47,21 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public class CWGContext extends CustomGeneratorSettings {
+public class CWGContext {
     public final int size;
     public final int[] biomes;
-
-    protected final double[] heights;
-    protected final double[] variations;
-    protected final double[] randomHeight2d;
 
     protected final IBiomeProvider biomeProvider;
     protected final BiomeWeightHelper weightHelper;
     protected final IBiomeBlockReplacer[][] biomeBlockReplacers;
 
-    //noisegen values
-    protected final int selectorSeed;
-    protected final int lowSeed;
-    protected final int highSeed;
-    protected final int randomHeight2dSeed;
-    protected final double selectorScale;
-    protected final double lowScale;
-    protected final double highScale;
-    protected final double randomHeight2dScale;
+    protected final CWGNoiseProvider.Configured configuredNoiseGen;
+
+    protected final double[] heights;
+    protected final double[] variations;
+    protected final double[] depth;
+
+    protected final int expectedBaseHeight;
 
     //current initialization position
     protected int baseX;
@@ -78,38 +70,22 @@ public class CWGContext extends CustomGeneratorSettings {
 
     public CWGContext(@NonNull World world, int size, int smoothRadius) {
         this.size = notNegative(size, "size");
-        this.weightHelper = new VanillaBiomeWeightHelper(0.0d, 1.0d, 0.0d, 1.0d, smoothRadius);
+        this.biomes = new int[this.size * this.size];
 
         CustomGeneratorSettings conf = CustomGeneratorSettings.getFromWorld(world);
         BiomeSource biomeSource = new BiomeSource(world, conf.createBiomeBlockReplacerConfig(), new BiomeProvider(world.getWorldInfo()), smoothRadius);
 
-        try { //copy settings from actual generator settings
-            for (Field field : CustomGeneratorSettings.class.getDeclaredFields()) {
-                field.set(this, field.get(conf));
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
         this.biomeProvider = BiomeHelper.from(CWGHelper.getBiomeGen(biomeSource));
+        this.weightHelper = new VanillaBiomeWeightHelper(0.0d, 1.0d, 0.0d, 1.0d, smoothRadius);
         this.biomeBlockReplacers = CWGHelper.blockReplacerMapToArray(CWGHelper.getReplacerMap(biomeSource));
 
-        this.biomes = new int[this.size * this.size];
+        this.configuredNoiseGen = CWGNoiseProvider.INSTANCE.forSettings(conf, world.getSeed());
 
         this.heights = new double[this.size * this.size];
         this.variations = new double[this.size * this.size];
-        this.randomHeight2d = new double[this.size * this.size];
+        this.depth = new double[this.size * this.size];
 
-        Random rnd = new Random(world.getSeed());
-        this.selectorSeed = packSeed(rnd.nextLong());
-        this.lowSeed = packSeed(rnd.nextLong());
-        this.highSeed = packSeed(rnd.nextLong());
-        this.randomHeight2dSeed = packSeed(rnd.nextLong());
-
-        this.selectorScale = scale(this.selectorNoiseOctaves);
-        this.lowScale = scale(this.lowNoiseOctaves);
-        this.highScale = scale(this.highNoiseOctaves);
-        this.randomHeight2dScale = scale(this.depthNoiseOctaves);
+        this.expectedBaseHeight = (int) conf.expectedBaseHeight;
     }
 
     /**
@@ -147,19 +123,7 @@ public class CWGContext extends CustomGeneratorSettings {
         }
 
         //precompute depth noise
-        INSTANCE.generate2d(this.randomHeight2d, baseX, baseZ, level, this.depthNoiseFrequencyX, this.depthNoiseFrequencyZ, this.size, this.size, this.randomHeight2dSeed, this.depthNoiseOctaves, this.randomHeight2dScale);
-        for (int i = 0; i < sq(this.size); i++) {
-            this.randomHeight2d[i] = this.randomHeight2d[i] * this.depthNoiseFactor + this.depthNoiseOffset;
-        }
-        for (int i = 0; i < sq(this.size); i++) {
-            this.randomHeight2d[i] *= this.randomHeight2d[i] < 0.0d ? -0.9d : 3.0d;
-        }
-        for (int i = 0; i < sq(this.size); i++) {
-            this.randomHeight2d[i] -= 2.0d;
-        }
-        for (int i = 0; i < sq(this.size); i++) {
-            this.randomHeight2d[i] = clamp(this.randomHeight2d[i] * (this.randomHeight2d[i] < 0.0d ? 5.0d / 28.0d : 0.125d), -5.0d / 14.0d, 0.125d) * (0.2d * 17.0d / 64.0d);
-        }
+        this.configuredNoiseGen.generateDepth2d(this.depth, baseX, baseZ, level, this.size, this.size);
     }
 
     /**
@@ -211,22 +175,16 @@ public class CWGContext extends CustomGeneratorSettings {
         return lerpI(minY, maxY, minimize(d0, d1));
     }
 
+    protected int cacheIndex(int x, int z) {
+        return ((x - this.baseX) >> this.level) * this.size + ((z - this.baseZ) >> this.level);
+    }
+
     public double get(int x, int y, int z) {
-        int i = ((x - this.baseX) >> this.level) * this.size + ((z - this.baseZ) >> this.level);
-        double height = this.heights[i] * this.heightFactor + this.heightOffset;
-        double variation = this.variations[i] * (height > y ? this.specialHeightVariationFactorBelowAverageY : 1.0d) * this.heightVariationFactor + this.heightVariationOffset;
-
-        double selector = CWGNoiseProvider.INSTANCE.generateSingle(x, y, z, this.selectorNoiseFrequencyX, this.selectorNoiseFrequencyY, this.selectorNoiseFrequencyZ, this.selectorSeed, this.selectorNoiseOctaves, this.selectorScale) * this.selectorNoiseFactor + this.selectorNoiseOffset;
-        //TODO: benchmark and see whether this is actually faster with or without conditional
-        double low = selector >= 1.0d ? 0.0d : CWGNoiseProvider.INSTANCE.generateSingle(x, y, z, this.lowNoiseFrequencyX, this.lowNoiseFrequencyY, this.lowNoiseFrequencyZ, this.lowSeed, this.lowNoiseOctaves, this.lowScale) * this.lowNoiseFactor + this.lowNoiseOffset;
-        double high = selector < 0.0d ? 0.0d : CWGNoiseProvider.INSTANCE.generateSingle(x, y, z, this.highNoiseFrequencyX, this.highNoiseFrequencyY, this.highNoiseFrequencyZ, this.highSeed, this.highNoiseOctaves, this.highScale) * this.highNoiseFactor + this.highNoiseOffset;
-
-        double d = lerp(low, high, clamp(selector, 0.0d, 1.0d)) + this.randomHeight2d[i];
-        d = d * variation + height;
-        return d - Math.signum(variation) * y;
+        int i = this.cacheIndex(x, z);
+        return this.configuredNoiseGen.generateSingle(this.heights[i], this.variations[i], this.depth[i], x, y, z);
     }
 
     public int getBiome(int x, int z) {
-        return this.biomes[((x - this.baseX) >> this.level) * this.size + ((z - this.baseZ) >> this.level)];
+        return this.biomes[this.cacheIndex(x, z)];
     }
 }

@@ -18,7 +18,10 @@
  *
  */
 
-package util;import lombok.experimental.UtilityClass;
+package util;
+
+import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.CubicBiome;
+import lombok.experimental.UtilityClass;
 import net.minecraft.init.Bootstrap;
 
 /**
@@ -32,6 +35,7 @@ public class FP2Test {
         System.setProperty("fp2.test", "true");
 
         Bootstrap.register();
+        CubicBiome.init();
     }
 
     /**

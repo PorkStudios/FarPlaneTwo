@@ -114,6 +114,22 @@ namespace fp2 {
     template <typename A, typename B> B cast(const A a) {
         return (B) a;
     }
+
+    //
+    // misc. helpers
+    //
+
+    template<typename T> constexpr T min(T a, T b) {
+        return a < b ? a : b;
+    }
+
+    template<typename T> constexpr T max(T a, T b) {
+        return a > b ? a : b;
+    }
+
+    template<typename T> constexpr T clamp(T val, T min, T max) {
+        return val > min ? val < max ? val : max : min;
+    }
 }
 
 #endif //FP2_H

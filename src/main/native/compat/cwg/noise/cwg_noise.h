@@ -196,6 +196,31 @@ namespace fp2::cwg::noise {
         return value;
     }
 
+    template<size_t VEC_LANES> inline typename fp2::simd::type_vec<double, VEC_LANES>::TYPE octaves3dVarying(
+            typename fp2::simd::type_vec<double, VEC_LANES>::TYPE x, typename fp2::simd::type_vec<double, VEC_LANES>::TYPE y, typename fp2::simd::type_vec<double, VEC_LANES>::TYPE z,
+            typename fp2::simd::type_vec<double, VEC_LANES>::INT::TYPE seed, typename fp2::simd::type_vec<double, VEC_LANES>::UINT::TYPE octaves) {
+        using DOUBLE = typename fp2::simd::type_vec<double, VEC_LANES>::TYPE;
+        using DOUBLE_MASK = typename fp2::simd::type_vec<double, VEC_LANES>::BOOL;
+
+        static const DOUBLE INITIAL_PERSISTENCE = 1.0d;
+        static const DOUBLE PERSISTENCE = 0.5d;
+
+        static const DOUBLE LANCULARITY = 2.0d;
+
+        DOUBLE value = 0.0d;
+        DOUBLE persistence = INITIAL_PERSISTENCE;
+
+        for (uint32_t curOctave = 0, maxOctaves = horizontal_max(octaves); curOctave < maxOctaves; curOctave++, persistence *= PERSISTENCE, x *= LANCULARITY, y *= LANCULARITY, z *= LANCULARITY) {
+            DOUBLE nx = makeInt32Range<VEC_LANES>(x);
+            DOUBLE ny = makeInt32Range<VEC_LANES>(y);
+            DOUBLE nz = makeInt32Range<VEC_LANES>(z);
+
+            value = if_add(curOctave < octaves, value, noise3d<VEC_LANES>(nx, ny, nz, seed + curOctave) * persistence);
+        }
+
+        return value;
+    }
+
     template<size_t VEC_LANES> inline double octaves3dPoint(double _x, double _y, double _z, int32_t seed, size_t octaves) {
         using DOUBLE = typename fp2::simd::type_vec<double, VEC_LANES>::TYPE;
         using DOUBLE_MASK = typename fp2::simd::type_vec<double, VEC_LANES>::BOOL;

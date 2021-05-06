@@ -24,8 +24,8 @@
 #include <lib/vectorclass-2.01.03/vectorclass.h>
 
 #ifndef _FP2_VEC_SIZE
-#warning "_FP2_VEC_SIZE not set, defaulting to 128!"
 #define _FP2_VEC_SIZE 128
+#warning "_FP2_VEC_SIZE not set, defaulting to 128!"
 #endif
 
 #define _FP2_VEC_MIN_SIZE 128
