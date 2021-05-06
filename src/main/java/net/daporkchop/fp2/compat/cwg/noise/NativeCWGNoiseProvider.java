@@ -23,15 +23,24 @@ package net.daporkchop.fp2.compat.cwg.noise;
 import com.flowpowered.noise.Utils;
 import lombok.NonNull;
 
+import static net.daporkchop.lib.common.util.PValidation.*;
+
 /**
  * @author DaPorkchop_
  */
 class NativeCWGNoiseProvider extends JavaCWGNoiseProvider {
     public NativeCWGNoiseProvider() {
-        this.setRandomVectors(Utils.RANDOM_VECTORS);
+        float[] randomVectors = new float[Utils.RANDOM_VECTORS.length];
+        for (int i = 0; i < Utils.RANDOM_VECTORS.length; i++) {
+            double d = Utils.RANDOM_VECTORS[i];
+            float f = (float) d;
+            checkState(d == (double) f, "RANDOM_VECTORS[%d]: original value %s cannot be converted to float %s without losing precision!", (Integer) i, (Double) d, (Float) f);
+            randomVectors[i] = f;
+        }
+        this.setRandomVectors(randomVectors);
     }
 
-    protected native void setRandomVectors(@NonNull double[] random_vectors);
+    protected native void setRandomVectors(@NonNull float[] randomVectors);
 
     @Override
     public void generateNoise(@NonNull double[] out, int baseX, int baseY, int baseZ, int level, double freqX, double freqY, double freqZ, int sizeX, int sizeY, int sizeZ, int seed, int octaves, double scale) {
