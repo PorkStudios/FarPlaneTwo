@@ -147,7 +147,7 @@ public class CWGContext extends CustomGeneratorSettings {
         }
 
         //precompute depth noise
-        INSTANCE.generateNoise(this.randomHeight2d, baseX, baseZ, level, this.depthNoiseFrequencyX, this.depthNoiseFrequencyZ, this.size, this.size, this.randomHeight2dSeed, this.depthNoiseOctaves, this.randomHeight2dScale);
+        INSTANCE.generate2d(this.randomHeight2d, baseX, baseZ, level, this.depthNoiseFrequencyX, this.depthNoiseFrequencyZ, this.size, this.size, this.randomHeight2dSeed, this.depthNoiseOctaves, this.randomHeight2dScale);
         for (int i = 0; i < sq(this.size); i++) {
             this.randomHeight2d[i] = this.randomHeight2d[i] * this.depthNoiseFactor + this.depthNoiseOffset;
         }
@@ -216,10 +216,10 @@ public class CWGContext extends CustomGeneratorSettings {
         double height = this.heights[i] * this.heightFactor + this.heightOffset;
         double variation = this.variations[i] * (height > y ? this.specialHeightVariationFactorBelowAverageY : 1.0d) * this.heightVariationFactor + this.heightVariationOffset;
 
-        double selector = CWGNoiseProvider.INSTANCE.generateSingle(x, y, z, this.selectorNoiseFrequencyX, this.selectorNoiseFrequencyY, this.selectorNoiseFrequencyZ, this.selectorScale, this.selectorNoiseOctaves, this.selectorSeed) * this.selectorNoiseFactor + this.selectorNoiseOffset;
+        double selector = CWGNoiseProvider.INSTANCE.generateSingle(x, y, z, this.selectorNoiseFrequencyX, this.selectorNoiseFrequencyY, this.selectorNoiseFrequencyZ, this.selectorSeed, this.selectorNoiseOctaves, this.selectorScale) * this.selectorNoiseFactor + this.selectorNoiseOffset;
         //TODO: benchmark and see whether this is actually faster with or without conditional
-        double low = selector >= 1.0d ? 0.0d : CWGNoiseProvider.INSTANCE.generateSingle(x, y, z, this.lowNoiseFrequencyX, this.lowNoiseFrequencyY, this.lowNoiseFrequencyZ, this.lowScale, this.lowNoiseOctaves, this.lowSeed) * this.lowNoiseFactor + this.lowNoiseOffset;
-        double high = selector < 0.0d ? 0.0d : CWGNoiseProvider.INSTANCE.generateSingle(x, y, z, this.highNoiseFrequencyX, this.highNoiseFrequencyY, this.highNoiseFrequencyZ, this.highScale, this.highNoiseOctaves, this.highSeed) * this.highNoiseFactor + this.highNoiseOffset;
+        double low = selector >= 1.0d ? 0.0d : CWGNoiseProvider.INSTANCE.generateSingle(x, y, z, this.lowNoiseFrequencyX, this.lowNoiseFrequencyY, this.lowNoiseFrequencyZ, this.lowSeed, this.lowNoiseOctaves, this.lowScale) * this.lowNoiseFactor + this.lowNoiseOffset;
+        double high = selector < 0.0d ? 0.0d : CWGNoiseProvider.INSTANCE.generateSingle(x, y, z, this.highNoiseFrequencyX, this.highNoiseFrequencyY, this.highNoiseFrequencyZ, this.highSeed, this.highNoiseOctaves, this.highScale) * this.highNoiseFactor + this.highNoiseOffset;
 
         double d = lerp(low, high, clamp(selector, 0.0d, 1.0d)) + this.randomHeight2d[i];
         d = d * variation + height;

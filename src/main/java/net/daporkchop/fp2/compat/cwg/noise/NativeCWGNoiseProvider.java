@@ -43,18 +43,13 @@ class NativeCWGNoiseProvider extends JavaCWGNoiseProvider {
     protected native void setRandomVectors(@NonNull float[] randomVectors);
 
     @Override
-    public void generateNoise(@NonNull double[] out, int baseX, int baseY, int baseZ, int level, double freqX, double freqY, double freqZ, int sizeX, int sizeY, int sizeZ, int seed, int octaves, double scale) {
-        this.generateNoise3d(out, baseX, baseY, baseZ, level, freqX, freqY, freqZ, sizeX, sizeY, sizeZ, seed, octaves, scale);
-    }
-
-    protected native void generateNoise3d(@NonNull double[] out, int baseX, int baseY, int baseZ, int level, double freqX, double freqY, double freqZ, int sizeX, int sizeY, int sizeZ, int seed, int octaves, double scale);
+    public native void generate3d(@NonNull double[] out, int baseX, int baseY, int baseZ, int level, double freqX, double freqY, double freqZ, int sizeX, int sizeY, int sizeZ, int seed, int octaves, double scale);
 
     @Override
-    public void generateNoise(@NonNull double[] out, int baseX, int baseZ, int level, double freqX, double freqZ, int sizeX, int sizeZ, int seed, int octaves, double scale) {
-        this.generateNoise2d(out, baseX, baseZ, level, freqX, freqZ, sizeX, sizeZ, seed, octaves, scale);
-    }
+    public native void generate2d(@NonNull double[] out, int baseX, int baseZ, int level, double freqX, double freqZ, int sizeX, int sizeZ, int seed, int octaves, double scale);
 
-    protected native void generateNoise2d(@NonNull double[] out, int baseX, int baseZ, int level, double freqX, double freqZ, int sizeX, int sizeZ, int seed, int octaves, double scale);
+    @Override
+    public native double generateSingle(int x, int y, int z, double freqX, double freqY, double freqZ, int seed, int octaves, double scale);
 
     @Override
     public boolean isNative() {

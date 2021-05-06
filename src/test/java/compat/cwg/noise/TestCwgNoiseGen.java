@@ -65,6 +65,55 @@ public class TestCwgNoiseGen {
     }
 
     @Test
+    public void test3d() {
+        SplittableRandom r = new SplittableRandom(67890L);
+
+        this.test3d(
+                2, 2, 2, 0,
+                0.2d, 0.2d, 0.2d,
+                32, 32, 32,
+                237582, 4).join();
+
+        this.test3d(
+                2, 2, 2, 0,
+                0.2d, 0.2d, 0.2d,
+                32, 32, 32,
+                237582, 5).join();
+
+        CompletableFuture<?>[] futures = uncheckedCast(new CompletableFuture[256]);
+        for (int i = 0; i < futures.length; i++) {
+            futures[i] = this.test3d(
+                    r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(4),
+                    r.nextDouble(Double.MIN_VALUE, 100000.0d), r.nextDouble(Double.MIN_VALUE, 100000.0d), r.nextDouble(Double.MIN_VALUE, 100000.0d),
+                    r.nextInt(1, 65), r.nextInt(1, 65), r.nextInt(1, 65),
+                    r.nextInt(), r.nextInt(1, 17));
+        }
+        CompletableFuture.allOf(futures).join();
+    }
+
+    protected CompletableFuture<Void> test3d(int baseX, int baseY, int baseZ, int level, double freqX, double freqY, double freqZ, int sizeX, int sizeY, int sizeZ, int seed, int octaves) {
+        return CompletableFuture.runAsync(() -> {
+            double[] outJava = new double[sizeX * sizeY * sizeZ];
+            CWGNoiseProvider.JAVA_INSTANCE.generate3d(outJava, baseX, baseY, baseZ, level, freqX, freqY, freqZ, sizeX, sizeY, sizeZ, seed, octaves);
+
+            double[] outNative = new double[sizeX * sizeY * sizeZ];
+            CWGNoiseProvider.INSTANCE.generate3d(outNative, baseX, baseY, baseZ, level, freqX, freqY, freqZ, sizeX, sizeY, sizeZ, seed, octaves);
+
+            for (int i = 0, dx = 0; dx < sizeX; dx++) {
+                for (int dy = 0; dy < sizeY; dy++) {
+                    for (int dz = 0; dz < sizeZ; dz++, i++) {
+                        double javaVal = outJava[i];
+                        double nativeVal = outNative[i];
+                        if (Math.round(javaVal * 100000.0d) != Math.round(nativeVal * 100000.0d)) {
+                            throw new IllegalStateException(PStrings.fastFormat("@(%s, %s, %s): %s (java) != %s (native)", (baseX + (dx << level)) * freqX, (baseY + (dy << level)) * freqY, (baseZ + (dz << level)) * freqZ, javaVal, nativeVal));
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    @Test
     public void test2d() {
         SplittableRandom r = new SplittableRandom(12345L);
 
@@ -94,10 +143,10 @@ public class TestCwgNoiseGen {
     protected CompletableFuture<Void> test2d(int baseX, int baseZ, int level, double freqX, double freqZ, int sizeX, int sizeZ, int seed, int octaves) {
         return CompletableFuture.runAsync(() -> {
             double[] outJava = new double[sizeX * sizeZ];
-            CWGNoiseProvider.JAVA_INSTANCE.generateNoise(outJava, baseX, baseZ, level, freqX, freqZ, sizeX, sizeZ, seed, octaves);
+            CWGNoiseProvider.JAVA_INSTANCE.generate2d(outJava, baseX, baseZ, level, freqX, freqZ, sizeX, sizeZ, seed, octaves);
 
             double[] outNative = new double[sizeX * sizeZ];
-            CWGNoiseProvider.INSTANCE.generateNoise(outNative, baseX, baseZ, level, freqX, freqZ, sizeX, sizeZ, seed, octaves);
+            CWGNoiseProvider.INSTANCE.generate2d(outNative, baseX, baseZ, level, freqX, freqZ, sizeX, sizeZ, seed, octaves);
 
             for (int i = 0, dx = 0; dx < sizeX; dx++) {
                 for (int dz = 0; dz < sizeZ; dz++, i++) {
@@ -109,5 +158,37 @@ public class TestCwgNoiseGen {
                 }
             }
         });
+    }
+
+    @Test
+    public void testSingle() {
+        SplittableRandom r = new SplittableRandom(67890L);
+
+        this.testSingle(
+                2, 2, 2,
+                0.2d, 0.2d, 0.2d,
+                237582, 4);
+
+        this.testSingle(
+                2, 2, 2,
+                0.2d, 0.2d, 0.2d,
+                237582, 5);
+
+        for (int i = 0; i < 256; i++) {
+            this.testSingle(
+                    r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000),
+                    r.nextDouble(Double.MIN_VALUE, 100000.0d), r.nextDouble(Double.MIN_VALUE, 100000.0d), r.nextDouble(Double.MIN_VALUE, 100000.0d),
+                    r.nextInt(), r.nextInt(1, 17));
+        }
+    }
+
+    protected void testSingle(int x, int y, int z, double freqX, double freqY, double freqZ, int seed, int octaves) {
+        double javaVal = CWGNoiseProvider.JAVA_INSTANCE.generateSingle(x, y, z, freqX, freqY, freqZ, seed, octaves);
+
+        double nativeVal = CWGNoiseProvider.INSTANCE.generateSingle(x, y, z, freqX, freqY, freqZ, seed, octaves);
+
+        if (Math.round(javaVal * 100000.0d) != Math.round(nativeVal * 100000.0d)) {
+            throw new IllegalStateException(PStrings.fastFormat("@(%s, %s, %s): %s (java) != %s (native)", x * freqX, y * freqY, z * freqZ, javaVal, nativeVal));
+        }
     }
 }

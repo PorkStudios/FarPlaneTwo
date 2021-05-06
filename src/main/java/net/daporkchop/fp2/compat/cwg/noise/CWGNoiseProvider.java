@@ -50,26 +50,34 @@ public interface CWGNoiseProvider extends Feature<CWGNoiseProvider> {
 
     /**
      * @see #scale(int)
-     * @see #generateNoise(double[], int, int, int, int, double, double, double, int, int, int, int, int, double)
+     * @see #generate3d(double[], int, int, int, int, double, double, double, int, int, int, int, int, double)
      */
     @Deprecated
-    default void generateNoise(@NonNull double[] out, int baseX, int baseY, int baseZ, int level, double freqX, double freqY, double freqZ, int sizeX, int sizeY, int sizeZ, int seed, int octaves) {
-        this.generateNoise(out, baseX, baseY, baseZ, level, freqX, freqY, freqZ, sizeX, sizeY, sizeZ, seed, octaves, scale(octaves));
+    default void generate3d(@NonNull double[] out, int baseX, int baseY, int baseZ, int level, double freqX, double freqY, double freqZ, int sizeX, int sizeY, int sizeZ, int seed, int octaves) {
+        this.generate3d(out, baseX, baseY, baseZ, level, freqX, freqY, freqZ, sizeX, sizeY, sizeZ, seed, octaves, scale(octaves));
     }
 
-    void generateNoise(@NonNull double[] out, int baseX, int baseY, int baseZ, int level, double freqX, double freqY, double freqZ, int sizeX, int sizeY, int sizeZ, int seed, int octaves, double scale);
+    void generate3d(@NonNull double[] out, int baseX, int baseY, int baseZ, int level, double freqX, double freqY, double freqZ, int sizeX, int sizeY, int sizeZ, int seed, int octaves, double scale);
 
     /**
      * @see #scale(int)
-     * @see #generateNoise(double[], int, int, int, double, double, int, int, int, int, double)
+     * @see #generate2d(double[], int, int, int, double, double, int, int, int, int, double)
      */
     @Deprecated
-    default void generateNoise(@NonNull double[] out, int baseX, int baseZ, int level, double freqX, double freqZ, int sizeX, int sizeZ, int seed, int octaves) {
-        //this.generateNoise(out, baseX, baseZ, level, freqX, freqZ, sizeX, sizeZ, seed, octaves, scale(octaves));
-        this.generateNoise(out, baseX, baseZ, level, freqX, freqZ, sizeX, sizeZ, seed, octaves, 1.0d);
+    default void generate2d(@NonNull double[] out, int baseX, int baseZ, int level, double freqX, double freqZ, int sizeX, int sizeZ, int seed, int octaves) {
+        this.generate2d(out, baseX, baseZ, level, freqX, freqZ, sizeX, sizeZ, seed, octaves, scale(octaves));
     }
 
-    void generateNoise(@NonNull double[] out, int baseX, int baseZ, int level, double freqX, double freqZ, int sizeX, int sizeZ, int seed, int octaves, double scale);
+    void generate2d(@NonNull double[] out, int baseX, int baseZ, int level, double freqX, double freqZ, int sizeX, int sizeZ, int seed, int octaves, double scale);
 
-    double generateSingle(int x, int y, int z, double freqX, double freqY, double freqZ, double scale, int octaves, int seed);
+    /**
+     * @see #scale(int)
+     * @see #generateSingle(int, int, int, double, double, double, int, int, double)
+     */
+    @Deprecated
+    default double generateSingle(int x, int y, int z, double freqX, double freqY, double freqZ, int seed, int octaves) {
+        return this.generateSingle(x, y, z, freqX, freqY, freqZ, seed, octaves, scale(octaves));
+    }
+
+    double generateSingle(int x, int y, int z, double freqX, double freqY, double freqZ, int seed, int octaves, double scale);
 }

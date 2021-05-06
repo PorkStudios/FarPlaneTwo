@@ -58,27 +58,27 @@ class JavaCWGNoiseProvider implements CWGNoiseProvider {
     }
 
     @Override
-    public void generateNoise(@NonNull double[] out, int baseX, int baseY, int baseZ, int level, double freqX, double freqY, double freqZ, int sizeX, int sizeY, int sizeZ, int seed, int octaves, double scale) {
+    public void generate3d(@NonNull double[] out, int baseX, int baseY, int baseZ, int level, double freqX, double freqY, double freqZ, int sizeX, int sizeY, int sizeZ, int seed, int octaves, double scale) {
         for (int i = 0, dx = 0; dx < sizeX; dx++) {
             for (int dy = 0; dy < sizeY; dy++) {
                 for (int dz = 0; dz < sizeZ; dz++, i++) {
-                    out[i] = perlin(seed, (baseX + (dx << level)) * freqX, (baseY + (dy << level)) * freqY, (baseZ + (dz << level)) * freqZ, octaves) * scale - 1.0d;
+                    out[i] = this.generateSingle(baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level), freqX, freqY, freqZ, seed, octaves, scale);
                 }
             }
         }
     }
 
     @Override
-    public void generateNoise(@NonNull double[] out, int baseX, int baseZ, int level, double freqX, double freqZ, int sizeX, int sizeZ, int seed, int octaves, double scale) {
+    public void generate2d(@NonNull double[] out, int baseX, int baseZ, int level, double freqX, double freqZ, int sizeX, int sizeZ, int seed, int octaves, double scale) {
         for (int i = 0, dx = 0; dx < sizeX; dx++) {
             for (int dz = 0; dz < sizeZ; dz++, i++) {
-                out[i] = perlin(seed, (baseX + (dx << level)) * freqX, 0.0d, (baseZ + (dz << level)) * freqZ, octaves) * scale - 1.0d;
+                out[i] = this.generateSingle(baseX + (dx << level), 0, baseZ + (dz << level), freqX, 0.0d, freqZ, seed, octaves, scale);
             }
         }
     }
 
     @Override
-    public double generateSingle(int x, int y, int z, double freqX, double freqY, double freqZ, double scale, int octaves, int seed) {
+    public double generateSingle(int x, int y, int z, double freqX, double freqY, double freqZ, int seed, int octaves, double scale) {
         return perlin(seed, x * freqX, y * freqY, z * freqZ, octaves) * scale - 1.0d;
     }
 

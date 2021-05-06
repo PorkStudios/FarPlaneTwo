@@ -171,8 +171,74 @@ namespace fp2::cwg::noise {
         return lerp(n00x_n01x, n10x_n11x, zs);
     }
 
+    template<size_t VEC_LANES> inline typename fp2::simd::type_vec<double, VEC_LANES>::TYPE octaves3d(
+            typename fp2::simd::type_vec<double, VEC_LANES>::TYPE x, typename fp2::simd::type_vec<double, VEC_LANES>::TYPE y, typename fp2::simd::type_vec<double, VEC_LANES>::TYPE z,
+            typename fp2::simd::type_vec<double, VEC_LANES>::INT::TYPE seed, size_t octaves) {
+        using DOUBLE = typename fp2::simd::type_vec<double, VEC_LANES>::TYPE;
+        using DOUBLE_MASK = typename fp2::simd::type_vec<double, VEC_LANES>::BOOL;
+
+        static const DOUBLE INITIAL_PERSISTENCE = 1.0d;
+        static const DOUBLE PERSISTENCE = 0.5d;
+
+        static const DOUBLE LANCULARITY = 2.0d;
+
+        DOUBLE value = 0.0d;
+        DOUBLE persistence = INITIAL_PERSISTENCE;
+
+        for (size_t curOctave = 0; curOctave < octaves; curOctave++, persistence *= PERSISTENCE, x *= LANCULARITY, y *= LANCULARITY, z *= LANCULARITY) {
+            DOUBLE nx = makeInt32Range<VEC_LANES>(x);
+            DOUBLE ny = makeInt32Range<VEC_LANES>(y);
+            DOUBLE nz = makeInt32Range<VEC_LANES>(z);
+
+            value += noise3d<VEC_LANES>(nx, ny, nz, seed + curOctave) * persistence;
+        }
+
+        return value;
+    }
+
+    template<size_t VEC_LANES> inline double octaves3dPoint(double _x, double _y, double _z, int32_t seed, size_t octaves) {
+        using DOUBLE = typename fp2::simd::type_vec<double, VEC_LANES>::TYPE;
+        using DOUBLE_MASK = typename fp2::simd::type_vec<double, VEC_LANES>::BOOL;
+        using INT = typename fp2::simd::type_vec<double, VEC_LANES>::INT::TYPE;
+
+        static const DOUBLE INITIAL_LACUNARITY = fp2::simd::increment_shift<DOUBLE>();
+        static const DOUBLE LANCULARITY = 1 << VEC_LANES;
+
+        static const DOUBLE INITIAL_PERSISTENCE = 1.0d / fp2::simd::increment_shift<DOUBLE>();
+        static const DOUBLE PERSISTENCE = 1.0d / (1 << VEC_LANES);
+
+        static const INT INCREMENT = fp2::simd::increment<INT>();
+
+        DOUBLE x = _x * INITIAL_LACUNARITY;
+        DOUBLE y = _y * INITIAL_LACUNARITY;
+        DOUBLE z = _z * INITIAL_LACUNARITY;
+
+        DOUBLE value = 0.0d;
+        DOUBLE persistence = INITIAL_PERSISTENCE;
+
+        size_t curOctave = 0;
+        for (; curOctave < (octaves & ~(VEC_LANES - 1)); curOctave += VEC_LANES, persistence *= PERSISTENCE, x *= LANCULARITY, y *= LANCULARITY, z *= LANCULARITY) {
+            DOUBLE nx = makeInt32Range<VEC_LANES>(x);
+            DOUBLE ny = makeInt32Range<VEC_LANES>(y);
+            DOUBLE nz = makeInt32Range<VEC_LANES>(z);
+
+            value += noise3d<VEC_LANES>(nx, ny, nz, seed + curOctave + INCREMENT) * persistence;
+        }
+
+        if (curOctave < octaves) { //there are some number of octaves left, let's do them with a mask
+            DOUBLE nx = makeInt32Range<VEC_LANES>(x);
+            DOUBLE ny = makeInt32Range<VEC_LANES>(y);
+            DOUBLE nz = makeInt32Range<VEC_LANES>(z);
+
+            value = if_add(DOUBLE_MASK().load_bits(to_bits(curOctave + INCREMENT < octaves)), value, noise3d<VEC_LANES>(nx, ny, nz, seed + curOctave + INCREMENT) * persistence);
+        }
+
+        return horizontal_add(value);
+    }
+
     template<size_t VEC_LANES> inline typename fp2::simd::type_vec<double, VEC_LANES>::TYPE octaves2d(
-            typename fp2::simd::type_vec<double, VEC_LANES>::TYPE x, typename fp2::simd::type_vec<double, VEC_LANES>::TYPE z, typename fp2::simd::type_vec<double, VEC_LANES>::INT::TYPE seed, size_t octaves) {
+            typename fp2::simd::type_vec<double, VEC_LANES>::TYPE x, typename fp2::simd::type_vec<double, VEC_LANES>::TYPE z,
+            typename fp2::simd::type_vec<double, VEC_LANES>::INT::TYPE seed, size_t octaves) {
         using DOUBLE = typename fp2::simd::type_vec<double, VEC_LANES>::TYPE;
         using DOUBLE_MASK = typename fp2::simd::type_vec<double, VEC_LANES>::BOOL;
 

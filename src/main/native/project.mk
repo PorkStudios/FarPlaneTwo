@@ -9,7 +9,7 @@ export LIBS_DIR		:=	$(NATIVE_DIR)/lib
 export COMPILE_DIR  :=  $(ROOT_DIR)/build/native
 export OUTPUT_DIR   :=  $(ROOT_DIR)/src/main/resources/net/daporkchop/fp2
 
-export CFLAGS		:=	-O2 -fPIC -ffunction-sections -fdata-sections -fvisibility=hidden -msse4.1
+export CFLAGS		:=	-O2 -ffast-math -fPIC -ffunction-sections -fdata-sections -fvisibility=hidden -msse4.1
 export CXXFLAGS		:=	$(CFLAGS) -std=c++17
 export LDFLAGS		:=	$(CFLAGS) -shared -Wl,--gc-sections
 
