@@ -35,7 +35,6 @@ public:
     double _selectorNoiseFrequencyX;
     double _selectorNoiseFrequencyY;
     double _selectorNoiseFrequencyZ;
-    double _selectorNoiseScale;
     double _selectorNoiseFactor;
     double _selectorNoiseOffset;
 
@@ -44,7 +43,6 @@ public:
     double _lowNoiseFrequencyX;
     double _lowNoiseFrequencyY;
     double _lowNoiseFrequencyZ;
-    double _lowNoiseScale;
     double _lowNoiseFactor;
     double _lowNoiseOffset;
 
@@ -53,7 +51,6 @@ public:
     double _highNoiseFrequencyX;
     double _highNoiseFrequencyY;
     double _highNoiseFrequencyZ;
-    double _highNoiseScale;
     double _highNoiseFactor;
     double _highNoiseOffset;
 
@@ -61,7 +58,6 @@ public:
     uint32_t _depthNoiseOctaves;
     double _depthNoiseFrequencyX;
     double _depthNoiseFrequencyZ;
-    double _depthNoiseScale;
     double _depthNoiseFactor;
     double _depthNoiseOffset;
 
@@ -70,12 +66,10 @@ public:
     fp2::simd::type_vec<double, 4>::TYPE _allNoiseFrequenciesX;
     fp2::simd::type_vec<double, 4>::TYPE _allNoiseFrequenciesY;
     fp2::simd::type_vec<double, 4>::TYPE _allNoiseFrequenciesZ;
-    fp2::simd::type_vec<double, 4>::TYPE _allNoiseScales;
     fp2::simd::type_vec<double, 4>::TYPE _allNoiseFactors;
     fp2::simd::type_vec<double, 4>::TYPE _allNoiseOffsets;
 
     inline void setupVectorFields() {
-        _allNoiseScales = fp2::simd::type_vec<double, 4>::TYPE(_selectorNoiseScale, _lowNoiseScale, _highNoiseScale, _depthNoiseScale);
         _allNoiseFactors = fp2::simd::type_vec<double, 4>::TYPE(_selectorNoiseFactor, _lowNoiseFactor, _highNoiseFactor, _depthNoiseFactor);
         _allNoiseOffsets = fp2::simd::type_vec<double, 4>::TYPE(_selectorNoiseOffset, _lowNoiseOffset, _highNoiseOffset, _depthNoiseOffset);
         _allNoiseFrequenciesX = fp2::simd::type_vec<double, 4>::TYPE(_selectorNoiseFrequencyX, _lowNoiseFrequencyX, _highNoiseFrequencyX, _depthNoiseFrequencyX);
@@ -88,7 +82,6 @@ public:
     template<bool USE_DEPTH_ARG> inline double generateAndMixAllNoise(double height, double variation, double depth, int32_t x, int32_t y, int32_t z) {
         //there are 3 values to be computed, so there's no reason to use more than 4 lanes
         auto noise_v = fp2::cwg::noise::octaves3dVarying<4>(x * _allNoiseFrequenciesX, y * _allNoiseFrequenciesY, z * _allNoiseFrequenciesZ, _allNoiseSeeds, _allNoiseOctaves);
-        noise_v = noise_v * _allNoiseScales - 1.0d;
         noise_v = noise_v * _allNoiseFactors + _allNoiseOffsets;
 
         struct {
@@ -118,12 +111,12 @@ public:
             typename fp2::simd::type_vec<double, VEC_LANES>::TYPE x, typename fp2::simd::type_vec<double, VEC_LANES>::TYPE y, typename fp2::simd::type_vec<double, VEC_LANES>::TYPE z) {
         using DOUBLE = typename fp2::simd::type_vec<double, VEC_LANES>::TYPE;
 
-        DOUBLE selector = (fp2::cwg::noise::octaves3d<VEC_LANES>(x * _selectorNoiseFrequencyX, y * _selectorNoiseFrequencyY, z * _selectorNoiseFrequencyZ, _selectorNoiseSeed, _selectorNoiseOctaves)
-                * _selectorNoiseScale - 1.0d) * _selectorNoiseFactor + _selectorNoiseOffset;
-        DOUBLE low = (fp2::cwg::noise::octaves3d<VEC_LANES>(x * _lowNoiseFrequencyX, y * _lowNoiseFrequencyY, z * _lowNoiseFrequencyZ, _lowNoiseSeed, _lowNoiseOctaves)
-                * _lowNoiseScale - 1.0d) * _lowNoiseFactor + _lowNoiseOffset;
-        DOUBLE high = (fp2::cwg::noise::octaves3d<VEC_LANES>(x * _highNoiseFrequencyX, y * _highNoiseFrequencyY, z * _highNoiseFrequencyZ, _highNoiseSeed, _highNoiseOctaves)
-                * _highNoiseScale - 1.0d) * _highNoiseFactor + _highNoiseOffset;
+        DOUBLE selector = fp2::cwg::noise::octaves3d<VEC_LANES>(x * _selectorNoiseFrequencyX, y * _selectorNoiseFrequencyY, z * _selectorNoiseFrequencyZ, _selectorNoiseSeed, _selectorNoiseOctaves)
+                * _selectorNoiseFactor + _selectorNoiseOffset;
+        DOUBLE low = fp2::cwg::noise::octaves3d<VEC_LANES>(x * _lowNoiseFrequencyX, y * _lowNoiseFrequencyY, z * _lowNoiseFrequencyZ, _lowNoiseSeed, _lowNoiseOctaves)
+                * _lowNoiseFactor + _lowNoiseOffset;
+        DOUBLE high = fp2::cwg::noise::octaves3d<VEC_LANES>(x * _highNoiseFrequencyX, y * _highNoiseFrequencyY, z * _highNoiseFrequencyZ, _highNoiseSeed, _highNoiseOctaves) 
+                * _highNoiseFactor + _highNoiseOffset;
 
         if constexpr (!USE_DEPTH_ARG) {
             depth = processDepthNoise<VEC_LANES>(fp2::cwg::noise::octaves2d<VEC_LANES>(x * _depthNoiseFrequencyX, z * _depthNoiseFrequencyZ, _depthNoiseSeed, _depthNoiseOctaves));
@@ -139,7 +132,6 @@ public:
 
     template<bool SCALE = true> inline double processDepthNoise(double depth) {
         if constexpr (SCALE) {
-            depth = depth * _depthNoiseScale - 1.0d;
             depth = depth * _depthNoiseFactor + _depthNoiseOffset;
         }
         depth *= depth < 0.0d ? -0.9d : 3.0d;
@@ -150,7 +142,6 @@ public:
     }
 
     template<size_t VEC_LANES> inline typename fp2::simd::type_vec<double, VEC_LANES>::TYPE processDepthNoise(typename fp2::simd::type_vec<double, VEC_LANES>::TYPE depth) {
-        depth = depth * _depthNoiseScale - 1.0d;
         depth = depth * _depthNoiseFactor + _depthNoiseOffset;
         depth *= select(depth < 0.0d, -0.9d, 3.0d);
         depth -= 2.0d;
@@ -337,40 +328,36 @@ FP2_JNI(jlong, NativeCWGNoiseProvider_00024ConfiguredImpl, createState0) (JNIEnv
     state->_heightFactor = heightFactor;
     state->_heightOffset = heightOffset;
 
-    state->_depthNoiseFactor = depthNoiseFactor;
-    state->_depthNoiseOffset = depthNoiseOffset;
+    state->_depthNoiseFactor = depthNoiseScale * depthNoiseFactor;
+    state->_depthNoiseOffset = depthNoiseOffset - depthNoiseFactor;
     state->_depthNoiseFrequencyX = depthNoiseFrequencyX;
     state->_depthNoiseFrequencyZ = depthNoiseFrequencyZ;
     state->_depthNoiseSeed = depthNoiseSeed;
     state->_depthNoiseOctaves = (uint32_t) depthNoiseOctaves;
-    state->_depthNoiseScale = depthNoiseScale;
 
-    state->_selectorNoiseFactor = selectorNoiseFactor;
-    state->_selectorNoiseOffset = selectorNoiseOffset;
+    state->_selectorNoiseFactor = selectorNoiseScale * selectorNoiseFactor;
+    state->_selectorNoiseOffset = selectorNoiseOffset - selectorNoiseFactor;
     state->_selectorNoiseFrequencyX = selectorNoiseFrequencyX;
     state->_selectorNoiseFrequencyY = selectorNoiseFrequencyY;
     state->_selectorNoiseFrequencyZ = selectorNoiseFrequencyZ;
     state->_selectorNoiseSeed = selectorNoiseSeed;
     state->_selectorNoiseOctaves = (uint32_t) selectorNoiseOctaves;
-    state->_selectorNoiseScale = selectorNoiseScale;
 
-    state->_lowNoiseFactor = lowNoiseFactor;
-    state->_lowNoiseOffset = lowNoiseOffset;
+    state->_lowNoiseFactor = lowNoiseScale * lowNoiseFactor;
+    state->_lowNoiseOffset = lowNoiseOffset - lowNoiseFactor;
     state->_lowNoiseFrequencyX = lowNoiseFrequencyX;
     state->_lowNoiseFrequencyY = lowNoiseFrequencyY;
     state->_lowNoiseFrequencyZ = lowNoiseFrequencyZ;
     state->_lowNoiseSeed = lowNoiseSeed;
     state->_lowNoiseOctaves = (uint32_t) lowNoiseOctaves;
-    state->_lowNoiseScale = lowNoiseScale;
 
-    state->_highNoiseFactor = highNoiseFactor;
-    state->_highNoiseOffset = highNoiseOffset;
+    state->_highNoiseFactor = highNoiseScale * highNoiseFactor;
+    state->_highNoiseOffset = highNoiseOffset - highNoiseFactor;
     state->_highNoiseFrequencyX = highNoiseFrequencyX;
     state->_highNoiseFrequencyY = highNoiseFrequencyY;
     state->_highNoiseFrequencyZ = highNoiseFrequencyZ;
     state->_highNoiseSeed = highNoiseSeed;
     state->_highNoiseOctaves = (uint32_t) highNoiseOctaves;
-    state->_highNoiseScale = highNoiseScale;
 
     state->setupVectorFields();
 
