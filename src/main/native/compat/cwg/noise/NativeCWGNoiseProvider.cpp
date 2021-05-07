@@ -55,10 +55,9 @@ FP2_JNI(void, NativeCWGNoiseProvider, generate3d) (JNIEnv* env, jobject obj,
         const INT maxZ = baseZ + (sizeZ << level);
         const INT stepZ = (int32_t) VEC_LANES << level;
         const INT resetZ = sizeZ << level;
-        const INT stepY = 1 << level;
+        const INT stepXY = 1 << level;
         const INT maxY = baseY + (sizeY << level);
         const INT resetY = sizeY << level;
-        const INT stepX = 1 << level;
 
         const size_t totalCount = sizeX * sizeY * sizeZ;
         size_t index = 0;
@@ -72,10 +71,10 @@ FP2_JNI(void, NativeCWGNoiseProvider, generate3d) (JNIEnv* env, jobject obj,
             z = if_sub(ge, z, resetZ);
 
             //increment y coordinates, resetting them and incrementing x if they reach the maximum value
-            y = if_add(ge, y, stepY);
+            y = if_add(ge, y, stepXY);
             ge = y >= maxY;
             y = if_sub(ge, y, resetY);
-            x = if_add(ge, x, stepX);
+            x = if_add(ge, x, stepXY);
         }
 
         if (index < totalCount) { //the number of samples remaining are less than the number of vector lanes, let's finish 'em up

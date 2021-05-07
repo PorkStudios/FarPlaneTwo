@@ -118,19 +118,33 @@ class NativeCWGNoiseProvider extends JavaCWGNoiseProvider {
 
         protected native double generateDepthSingle0(int x, int z, long state);
 
-        /*@Override
-        public double generateSingle(double height, double variation, int x, int y, int z) {
-            return this.generateSingle0_noDepth(height, variation, x, y, z, this.state);
+        @Override
+        public void generate3d(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ) {
+            this.generate3d0noDepth(heightIn, variationIn, out, baseX, baseY, baseZ, level, sizeX, sizeY, sizeZ, this.state);
         }
 
-        protected native double generateSingle0_noDepth(double height, double variation, int x, int y, int z, long state);
+        protected native void generate3d0noDepth(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ, long state);
+
+        @Override
+        public void generate3d(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] depthIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ) {
+            this.generate3d0depth(heightIn, variationIn, depthIn, out, baseX, baseY, baseZ, level, sizeX, sizeY, sizeZ, this.state);
+        }
+
+        protected native void generate3d0depth(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] depthIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ, long state);
+
+        @Override
+        public double generateSingle(double height, double variation, int x, int y, int z) {
+            return this.generateSingle0noDepth(height, variation, x, y, z, this.state);
+        }
+
+        protected native double generateSingle0noDepth(double height, double variation, int x, int y, int z, long state);
 
         @Override
         public double generateSingle(double height, double variation, double depth, int x, int y, int z) {
-            return this.generateSingle0_depth(height, variation, depth, x, y, z, this.state);
+            return this.generateSingle0depth(height, variation, depth, x, y, z, this.state);
         }
 
-        protected native double generateSingle0_depth(double height, double variation, double depth, int x, int y, int z, long state);*7
+        protected native double generateSingle0depth(double height, double variation, double depth, int x, int y, int z, long state);
 
         /**
          * A function which deletes a {@link ConfiguredImpl}'s off-heap state.

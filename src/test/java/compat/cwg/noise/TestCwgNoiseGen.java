@@ -36,6 +36,7 @@ import util.FP2Test;
 
 import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -76,6 +77,10 @@ public class TestCwgNoiseGen {
         }
     }
 
+    protected static boolean approxEquals(double a, double b) {
+        return Math.abs(a - b) <= 0.000000001d;
+    }
+
     @Test
     public void testNormal_3d() {
         SplittableRandom r = new SplittableRandom(67890L);
@@ -107,7 +112,7 @@ public class TestCwgNoiseGen {
                     for (int dz = 0; dz < sizeZ; dz++, i++) {
                         double javaVal = outJava[i];
                         double nativeVal = outNative[i];
-                        if (Math.round(javaVal * 100000.0d) != Math.round(nativeVal * 100000.0d)) {
+                        if (!approxEquals(javaVal, nativeVal)) {
                             throw new IllegalStateException(PStrings.fastFormat("@(%s, %s, %s): %s (java) != %s (native)", (baseX + (dx << level)) * freqX, (baseY + (dy << level)) * freqY, (baseZ + (dz << level)) * freqZ, javaVal, nativeVal));
                         }
                     }
@@ -146,7 +151,7 @@ public class TestCwgNoiseGen {
                 for (int dz = 0; dz < sizeZ; dz++, i++) {
                     double javaVal = outJava[i];
                     double nativeVal = outNative[i];
-                    if (Math.round(javaVal * 100000.0d) != Math.round(nativeVal * 100000.0d)) {
+                    if (!approxEquals(javaVal, nativeVal)) {
                         throw new IllegalStateException(PStrings.fastFormat("@(%s, %s): %s (java) != %s (native)", (baseX + (dx << level)) * freqX, (baseZ + (dz << level)) * freqZ, javaVal, nativeVal));
                     }
                 }
@@ -172,7 +177,7 @@ public class TestCwgNoiseGen {
     protected void testNormal_Single(int x, int y, int z, double freqX, double freqY, double freqZ, int seed, int octaves) {
         double javaVal = CWGNoiseProvider.JAVA_INSTANCE.generateSingle(x, y, z, freqX, freqY, freqZ, seed, octaves);
         double nativeVal = CWGNoiseProvider.INSTANCE.generateSingle(x, y, z, freqX, freqY, freqZ, seed, octaves);
-        if (Math.round(javaVal * 100000.0d) != Math.round(nativeVal * 100000.0d)) {
+        if (!approxEquals(javaVal, nativeVal)) {
             throw new IllegalStateException(PStrings.fastFormat("@(%s, %s, %s): %s (java) != %s (native)", x * freqX, y * freqY, z * freqZ, javaVal, nativeVal));
         }
     }
@@ -191,8 +196,50 @@ public class TestCwgNoiseGen {
     protected void testConfigured_depthSingle(int x, int z) {
         double javaVal = CONFIGURED_JAVA.generateDepthSingle(x, z);
         double nativeVal = CONFIGURED_NATIVE.generateDepthSingle(x, z);
-        if (Math.round(javaVal * 100000.0d) != Math.round(nativeVal * 100000.0d)) {
-            throw new IllegalStateException(PStrings.fastFormat("@(%s, %s, %s): %s (java) != %s (native)", x, z, javaVal, nativeVal));
+        if (!approxEquals(javaVal, nativeVal)) {
+            throw new IllegalStateException(PStrings.fastFormat("@(%s, %s): %s (java) != %s (native)", x, z, javaVal, nativeVal));
+        }
+    }
+
+    @Test
+    public void testConfigured_single_noDepth() {
+        SplittableRandom r = new SplittableRandom(67890L);
+
+        this.testConfigured_single_noDepth(1.0d, 1.0d, 2, 2, 2);
+
+        for (int i = 0; i < 256; i++) {
+            this.testConfigured_single_noDepth(
+                    r.nextDouble(-10, 10), r.nextDouble(-10, 10),
+                    r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000));
+        }
+    }
+
+    protected void testConfigured_single_noDepth(double height, double variation, int x, int y, int z) {
+        double javaVal = CONFIGURED_JAVA.generateSingle(height, variation, x, y, z);
+        double nativeVal = CONFIGURED_NATIVE.generateSingle(height, variation, x, y, z);
+        if (!approxEquals(javaVal, nativeVal)) {
+            throw new IllegalStateException(PStrings.fastFormat("@(%s, %s, %s): %s (java) != %s (native)", x, y, z, javaVal, nativeVal));
+        }
+    }
+
+    @Test
+    public void testConfigured_single_withDepth() {
+        SplittableRandom r = new SplittableRandom(67890L);
+
+        this.testConfigured_single_withDepth(1.0d, 1.0d, 0.0d, 2, 2, 2);
+
+        for (int i = 0; i < 256; i++) {
+            this.testConfigured_single_withDepth(
+                    r.nextDouble(-10, 10), r.nextDouble(-10, 10), r.nextDouble(-1000, 1000),
+                    r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000));
+        }
+    }
+
+    protected void testConfigured_single_withDepth(double height, double variation, double depth, int x, int y, int z) {
+        double javaVal = CONFIGURED_JAVA.generateSingle(height, variation, depth, x, y, z);
+        double nativeVal = CONFIGURED_NATIVE.generateSingle(height, variation, depth, x, y, z);
+        if (!approxEquals(javaVal, nativeVal)) {
+            throw new IllegalStateException(PStrings.fastFormat("@(%s, %s, %s): %s (java) != %s (native)", x, y, z, javaVal, nativeVal));
         }
     }
 
@@ -224,8 +271,102 @@ public class TestCwgNoiseGen {
                 for (int dz = 0; dz < sizeZ; dz++, i++) {
                     double javaVal = outJava[i];
                     double nativeVal = outNative[i];
-                    if (Math.round(javaVal * 100000.0d) != Math.round(nativeVal * 100000.0d)) {
+                    if (!approxEquals(javaVal, nativeVal)) {
                         throw new IllegalStateException(PStrings.fastFormat("@(%s, %s): %s (java) != %s (native)", baseX + (dx << level), baseZ + (dz << level), javaVal, nativeVal));
+                    }
+                }
+            }
+        });
+    }
+
+    @Test
+    public void testConfigured_3d() {
+        SplittableRandom r = new SplittableRandom(12345L);
+
+        this.testConfigured_3d(2, 2, 2, 0, 32, 32, 32).join();
+        this.testConfigured_3d(2, 2, 2, 0, 32, 32, 32).join();
+
+        CompletableFuture<?>[] futures = uncheckedCast(new CompletableFuture[256]);
+        for (int i = 0; i < futures.length; i++) {
+            futures[i] = this.testConfigured_3d(
+                    r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(4),
+                    r.nextInt(1, 65), r.nextInt(1, 65), r.nextInt(1, 65));
+        }
+        CompletableFuture.allOf(futures).join();
+    }
+
+    protected CompletableFuture<Void> testConfigured_3d(int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ) {
+        return CompletableFuture.runAsync(() -> {
+            double[] heights = new double[sizeX * sizeZ];
+            double[] variation = new double[sizeX * sizeZ];
+            double[] depth = new double[sizeX * sizeZ];
+            ThreadLocalRandom r = ThreadLocalRandom.current();
+            for (int i = 0; i < sizeX * sizeZ; i++) {
+                heights[i] = r.nextDouble(-10, 10);
+                variation[i] = r.nextDouble(-10, 10);
+                depth[i] = r.nextDouble(-1000, 1000);
+            }
+
+            double[] outJava = new double[sizeX * sizeY * sizeZ];
+            CONFIGURED_JAVA.generate3d(heights, variation, depth, outJava, baseX, baseY, baseZ, level, sizeX, sizeY, sizeZ);
+
+            double[] outNative = new double[sizeX * sizeY * sizeZ];
+            CONFIGURED_NATIVE.generate3d(heights, variation, depth, outNative, baseX, baseY, baseZ, level, sizeX, sizeY, sizeZ);
+
+            for (int i = 0, dx = 0; dx < sizeX; dx++) {
+                for (int dy = 0; dy < sizeY; dy++) {
+                    for (int dz = 0; dz < sizeZ; dz++, i++) {
+                        double javaVal = outJava[i];
+                        double nativeVal = outNative[i];
+                        if (!approxEquals(javaVal, nativeVal)) {
+                            throw new IllegalStateException(PStrings.fastFormat("%d@(%s, %s, %s): %s (java) != %s (native)", i, baseX + (dy << level), baseY + (dy << level), baseZ + (dz << level), javaVal, nativeVal));
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    @Test
+    public void testConfigured_3d_depth() {
+        SplittableRandom r = new SplittableRandom(12345L);
+
+        this.testConfigured_3d_depth(2, 2, 2, 0, 32, 32, 32).join();
+        this.testConfigured_3d_depth(2, 2, 2, 0, 32, 32, 32).join();
+
+        CompletableFuture<?>[] futures = uncheckedCast(new CompletableFuture[256]);
+        for (int i = 0; i < futures.length; i++) {
+            futures[i] = this.testConfigured_3d_depth(
+                    r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(4),
+                    r.nextInt(1, 65), r.nextInt(1, 65), r.nextInt(1, 65));
+        }
+        CompletableFuture.allOf(futures).join();
+    }
+
+    protected CompletableFuture<Void> testConfigured_3d_depth(int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ) {
+        return CompletableFuture.runAsync(() -> {
+            double[] heights = new double[sizeX * sizeZ];
+            double[] variation = new double[sizeX * sizeZ];
+            ThreadLocalRandom r = ThreadLocalRandom.current();
+            for (int i = 0; i < sizeX * sizeZ; i++) {
+                heights[i] = r.nextDouble(-10, 10);
+                variation[i] = r.nextDouble(-10, 10);
+            }
+
+            double[] outJava = new double[sizeX * sizeY * sizeZ];
+            CONFIGURED_JAVA.generate3d(heights, variation, outJava, baseX, baseY, baseZ, level, sizeX, sizeY, sizeZ);
+
+            double[] outNative = new double[sizeX * sizeY * sizeZ];
+            CONFIGURED_NATIVE.generate3d(heights, variation, outNative, baseX, baseY, baseZ, level, sizeX, sizeY, sizeZ);
+
+            for (int i = 0, dx = 0; dx < sizeX; dx++) {
+                for (int dy = 0; dy < sizeY; dy++) {
+                    for (int dz = 0; dz < sizeZ; dz++, i++) {
+                        double javaVal = outJava[i];
+                        double nativeVal = outNative[i];
+                        if (!approxEquals(javaVal, nativeVal)) {
+                            throw new IllegalStateException(PStrings.fastFormat("@(%s, %s, %s): %s (java) != %s (native)", baseX + (dy << level), baseY + (dy << level), baseZ + (dz << level), javaVal, nativeVal));
+                        }
                     }
                 }
             }
