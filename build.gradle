@@ -110,8 +110,8 @@ dependencies {
 
     compile "net.daporkchop:forgerocks:$forgerocksVersion"
 
-    deobfProvided "io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT"
-    deobfProvided "io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT"
+    deobfCompile "io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT"
+    deobfCompile "io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT"
 
     annotationProcessor "com.google.code.gson:gson:2.8.0"
     annotationProcessor "com.google.guava:guava:21.0"
