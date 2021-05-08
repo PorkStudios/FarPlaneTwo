@@ -280,22 +280,22 @@ public class TestCwgNoiseGen {
     }
 
     @Test
-    public void testConfigured_3d() {
+    public void testConfigured_3d_withDepth() {
         SplittableRandom r = new SplittableRandom(12345L);
 
-        this.testConfigured_3d(2, 2, 2, 0, 32, 32, 32).join();
-        this.testConfigured_3d(2, 2, 2, 0, 32, 32, 32).join();
+        this.testConfigured_3d_withDepth(2, 2, 2, 0, 32, 32, 32).join();
+        this.testConfigured_3d_withDepth(2, 2, 2, 0, 32, 32, 32).join();
 
         CompletableFuture<?>[] futures = uncheckedCast(new CompletableFuture[256]);
         for (int i = 0; i < futures.length; i++) {
-            futures[i] = this.testConfigured_3d(
+            futures[i] = this.testConfigured_3d_withDepth(
                     r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(4),
                     r.nextInt(1, 65), r.nextInt(1, 65), r.nextInt(1, 65));
         }
         CompletableFuture.allOf(futures).join();
     }
 
-    protected CompletableFuture<Void> testConfigured_3d(int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ) {
+    protected CompletableFuture<Void> testConfigured_3d_withDepth(int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ) {
         return CompletableFuture.runAsync(() -> {
             double[] heights = new double[sizeX * sizeZ];
             double[] variation = new double[sizeX * sizeZ];
@@ -328,22 +328,22 @@ public class TestCwgNoiseGen {
     }
 
     @Test
-    public void testConfigured_3d_depth() {
+    public void testConfigured_3d_noDepth() {
         SplittableRandom r = new SplittableRandom(12345L);
 
-        this.testConfigured_3d_depth(2, 2, 2, 0, 32, 32, 32).join();
-        this.testConfigured_3d_depth(2, 2, 2, 0, 32, 32, 32).join();
+        this.testConfigured_3d_noDepth(2, 2, 2, 0, 32, 32, 32).join();
+        this.testConfigured_3d_noDepth(2, 2, 2, 0, 32, 32, 32).join();
 
         CompletableFuture<?>[] futures = uncheckedCast(new CompletableFuture[256]);
         for (int i = 0; i < futures.length; i++) {
-            futures[i] = this.testConfigured_3d_depth(
+            futures[i] = this.testConfigured_3d_noDepth(
                     r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(4),
                     r.nextInt(1, 65), r.nextInt(1, 65), r.nextInt(1, 65));
         }
         CompletableFuture.allOf(futures).join();
     }
 
-    protected CompletableFuture<Void> testConfigured_3d_depth(int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ) {
+    protected CompletableFuture<Void> testConfigured_3d_noDepth(int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ) {
         return CompletableFuture.runAsync(() -> {
             double[] heights = new double[sizeX * sizeZ];
             double[] variation = new double[sizeX * sizeZ];

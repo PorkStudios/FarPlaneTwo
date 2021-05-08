@@ -18,37 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.compat.vanilla.biome.layer;
+package net.daporkchop.fp2.compat.x86;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaLayerProvider;
-import net.daporkchop.fp2.compat.x86.x86FeatureDetector;
 import net.daporkchop.lib.natives.Feature;
 import net.daporkchop.lib.natives.FeatureBuilder;
-import net.minecraft.world.gen.layer.GenLayer;
 
 /**
- * Provides faster alternatives to the standard Minecraft {@link GenLayer}s.
+ * Detects hardware features supported by the current x86 CPU at runtime.
  *
  * @author DaPorkchop_
  */
-public interface FastLayerProvider extends Feature<FastLayerProvider> {
-    FastLayerProvider INSTANCE = FeatureBuilder.<FastLayerProvider>create(FastLayerProvider.class)
-            .addNative("net.daporkchop.fp2.compat.vanilla.biome.layer.c.NativeLayerProvider", x86FeatureDetector.INSTANCE.maxSupportedVectorExtension())
-            .addJava("net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaLayerProvider")
+public interface x86FeatureDetector extends Feature<x86FeatureDetector> {
+    x86FeatureDetector INSTANCE = FeatureBuilder.<x86FeatureDetector>create(x86FeatureDetector.class)
+            .addNative("net.daporkchop.fp2.compat.x86.Native_x86FeatureDetector")
+            .addJava("net.daporkchop.fp2.compat.x86.Java_x86FeatureDetector")
             .build(true);
 
-    @SuppressWarnings("deprecation")
-    FastLayerProvider JAVA_INSTANCE = INSTANCE.isNative() ? new JavaLayerProvider() : INSTANCE;
-
     /**
-     * Converts the given {@link GenLayer}s to their {@link IFastLayer} equivalents.
-     * <p>
-     * Note that if you have multiple {@link GenLayer}s to convert, you should convert them all at once with a single invocation of this method, rather than
-     * converting them each individually. Doing so may provide a not insignificant performance boost.
-     *
-     * @param inputs the {@link GenLayer}s
-     * @return the converted {@link IFastLayer}s, in the same order as the inputs were provided in
+     * @return the name of the best SIMD extension supported by the current CPU, or {@code ""} if unknown or the current CPU isn't x86
      */
-    IFastLayer[] makeFast(@NonNull GenLayer... inputs);
+    String maxSupportedVectorExtension();
 }

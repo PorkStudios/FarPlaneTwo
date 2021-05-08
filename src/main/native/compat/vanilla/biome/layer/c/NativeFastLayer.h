@@ -572,8 +572,7 @@ namespace fp2::biome::fastlayer {
     public:
         inline void reload(JNIEnv* env, jint count, jbyteArray flags, jbyteArray equals, jintArray mutations) {
             if (count != BIOME_COUNT) {
-                throwException(env, "invalid BIOME_COUNT", count);
-                return;
+                throw fp2::error("invalid BIOME_COUNT", count);
             }
 
             env->GetByteArrayRegion(flags, 0, BIOME_COUNT, (jbyte*) &_flags);
@@ -650,7 +649,7 @@ namespace fp2::biome::fastlayer {
         }
 
         inline Vec4ib biomesEqualOrMesaPlateau(Vec4i a, int32_t b) {
-            return b >= 0 && ((a >= 0) & ((lookup<BIOME_COUNT>(max(a, 0), &_equals_simd[b * BIOME_COUNT]) & EQUALS_BIOMES_EQUAL_OR_MESA_PLATEAU) != 0));
+            return b < 0 ? Vec4ib(false) : ((a >= 0) & ((lookup<BIOME_COUNT>(max(a, 0), &_equals_simd[b * BIOME_COUNT]) & EQUALS_BIOMES_EQUAL_OR_MESA_PLATEAU) != 0));
         }
 
         inline bool canBiomesBeNeighbors(int32_t a, int32_t b) {
@@ -658,7 +657,7 @@ namespace fp2::biome::fastlayer {
         }
 
         inline Vec4ib canBiomesBeNeighbors(Vec4i a, int32_t b) {
-            return b >= 0 && ((a >= 0) & ((lookup<BIOME_COUNT>(max(a, 0), &_equals_simd[b * BIOME_COUNT]) & EQUALS_CAN_BIOMES_BE_NEIGHBORS) != 0));
+            return b < 0 ? Vec4ib(false) : ((a >= 0) & ((lookup<BIOME_COUNT>(max(a, 0), &_equals_simd[b * BIOME_COUNT]) & EQUALS_CAN_BIOMES_BE_NEIGHBORS) != 0));
         }
 
         inline int32_t getMutationForBiome(int32_t id) {

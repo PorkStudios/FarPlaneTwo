@@ -18,16 +18,25 @@
  *
  */
 
-#include "NativeFastLayer.h"
+package net.daporkchop.fp2.compat.x86;
 
-FP2_JNI(void, NativeLayerProvider, reload0) (JNIEnv* env, jobject obj,
-        jint count, jintArray ids, jbyteArray flags, jbyteArray equals, jintArray mutations) FP2_JNI_HEAD
-    int32_t ids_length = env->GetArrayLength(ids);
-    if (ids_length * sizeof(int32_t) != sizeof(fp2::biome::fastlayer::biome_ids)) {
-        throw fp2::error("invalid array length", ids_length);
+import static net.daporkchop.fp2.util.Constants.*;
+
+/**
+ * Native implementation of {@link x86FeatureDetector} used on supported x86 systems.
+ *
+ * @author DaPorkchop_
+ */
+final class Native_x86FeatureDetector implements x86FeatureDetector {
+    public Native_x86FeatureDetector() {
+        FP2_LOG.info("using x86 vector extension: {}", this.maxSupportedVectorExtension());
     }
 
-    env->GetIntArrayRegion(ids, 0, ids_length, (jint*) &fp2::biome::fastlayer::biome_ids);
+    @Override
+    public native String maxSupportedVectorExtension();
 
-    fp2::biome::fastlayer::biomes.reload(env, count, flags, equals, mutations);
-FP2_JNI_TAIL
+    @Override
+    public boolean isNative() {
+        return true;
+    }
+}

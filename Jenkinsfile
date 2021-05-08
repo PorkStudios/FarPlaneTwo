@@ -62,9 +62,14 @@ pipeline {
                 sh "./gradlew setupCiWorkspace"
             }
         }
+        stage("Natives") {
+            steps {
+                sh "./gradlew compileNatives -x test -x publish"
+            }
+        }
         stage("Build") {
             steps {
-                sh "./gradlew build -x test -x publish"
+                sh "./gradlew build -x compileNatives -x test -x publish"
             }
             post {
                 success {
@@ -74,7 +79,7 @@ pipeline {
         }
         stage("Test") {
             steps {
-                sh "./gradlew test"
+                sh "./gradlew test -x compileNatives -x publish"
             }
             post {
                 success {
@@ -87,7 +92,7 @@ pipeline {
                 branch "master"
             }
             steps {
-                sh "./gradlew publish -x test -x publishToMavenLocal"
+                sh "./gradlew publish -x compileNatives -x test -x publishToMavenLocal"
             }
         }
     }

@@ -36,44 +36,39 @@
 #define FP2_JNI_EVALUATOR(RETURN_TYPE, MODULE, CLASS, METHOD_NAME) FP2_JNI_PASTER(RETURN_TYPE, MODULE, CLASS, METHOD_NAME)
 #define FP2_JNI(RETURN_TYPE, CLASS, METHOD_NAME) FP2_JNI_EVALUATOR(RETURN_TYPE, FP2_MODULE, CLASS, METHOD_NAME)
 
+#define FP2_JNI_HEAD {try{
+#define FP2_JNI_TAIL }catch(const fp2::error& err) {fp2::throwException(env, err);}}
+
 namespace fp2 {
     //
     //"throw exception from jni" helper methods
     //
 
-    inline void throwException(JNIEnv* env, const char* msg)  {
-        jclass clazz = env->FindClass("net/daporkchop/lib/natives/NativeException");
+    struct error {
+    public:
+        const char* _msg;
+        jint _code;
 
-        env->Throw((jthrowable) env->NewObject(
-            clazz,
-            env->GetMethodID(clazz, "<init>", "(Ljava/lang/String;)V"),
-            env->NewStringUTF(msg)
-        ));
-        throw 0;
-    }
+        error(const char* msg): _msg(msg), _code(-1) {}
 
-    inline void throwException(JNIEnv* env, const char* msg, jint err)  {
+        error(jint code): _msg("<no message>"), _code(code) {}
+
+        error(const char* msg, jint code): _msg(msg), _code(code) {}
+    };
+
+    inline void throwException(JNIEnv* env, const error& err)  {
         jclass clazz = env->FindClass("net/daporkchop/lib/natives/NativeException");
 
         env->Throw((jthrowable) env->NewObject(
             clazz,
             env->GetMethodID(clazz, "<init>", "(Ljava/lang/String;I)V"),
-            env->NewStringUTF(msg),
-            err
+            env->NewStringUTF(err._msg),
+            err._code
         ));
-        throw 0;
     }
 
-    inline void throwException(JNIEnv* env, const char* msg, jlong err)  {
-        jclass clazz = env->FindClass("net/daporkchop/lib/natives/NativeException");
-
-        env->Throw((jthrowable) env->NewObject(
-            clazz,
-            env->GetMethodID(clazz, "<init>", "(Ljava/lang/String;J)V"),
-            env->NewStringUTF(msg),
-            err
-        ));
-        throw 0;
+    inline void throwException(JNIEnv* env, const char* c, jint i)  {
+        throwException(env, error(c, i));
     }
 
     /**
@@ -90,7 +85,7 @@ namespace fp2 {
     public:
         pinned_array(JNIEnv* env, const JAVA& java): _java(java), _env(env) {
             if (!(_ptr = (T*) _env->GetPrimitiveArrayCritical(_java, nullptr))) {
-                throwException(_env, "unable to pin array!");
+                throw "unable to pin array!";
             }
         }
 

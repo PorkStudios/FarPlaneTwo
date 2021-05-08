@@ -35,11 +35,10 @@ namespace fp2::cwg::noise {
      */
     inline float RANDOM_VECTORS[1024];
 
-    inline void setRandomVectors(JNIEnv *env, jfloatArray in) {
+    inline void setRandomVectors(JNIEnv* env, jfloatArray in) {
         int32_t in_length = env->GetArrayLength(in);
         if (in_length * sizeof(float) != sizeof(RANDOM_VECTORS)) {
-            fp2::throwException(env, "invalid array length", in_length);
-            return;
+            throw fp2::error("invalid array length", in_length);
         }
 
         env->GetFloatArrayRegion(in, 0, in_length, &RANDOM_VECTORS[0]);
@@ -49,7 +48,7 @@ namespace fp2::cwg::noise {
         const union {
             uint64_t i;
             double d;
-        } u = { in };
+        } u = {in};
         return u.d;
     }
 
@@ -276,6 +275,7 @@ namespace fp2::cwg::noise {
             typename fp2::simd::type_vec<double, VEC_LANES>::INT::TYPE seed, typename fp2::simd::type_vec<double, VEC_LANES>::UINT::TYPE octaves) {
         using DOUBLE = typename fp2::simd::type_vec<double, VEC_LANES>::TYPE;
         using DOUBLE_MASK = typename fp2::simd::type_vec<double, VEC_LANES>::BOOL;
+        using ULONG = typename fp2::simd::type_vec<double, VEC_LANES>::ULONG::TYPE;
 
         static const DOUBLE INITIAL_PERSISTENCE = 1.0d;
         static const DOUBLE PERSISTENCE = 0.5d;
@@ -285,12 +285,12 @@ namespace fp2::cwg::noise {
         DOUBLE value = 0.0d;
         DOUBLE persistence = INITIAL_PERSISTENCE;
 
-        for (uint32_t curOctave = 0, maxOctaves = horizontal_max(octaves); curOctave < maxOctaves; curOctave++, persistence *= PERSISTENCE, x *= LANCULARITY, y *= LANCULARITY, z *= LANCULARITY) {
+        for (size_t curOctave = 0, maxOctaves = horizontal_max(octaves); curOctave < maxOctaves; curOctave++, persistence *= PERSISTENCE, x *= LANCULARITY, y *= LANCULARITY, z *= LANCULARITY) {
             DOUBLE nx = makeInt32Range<VEC_LANES>(x);
             DOUBLE ny = makeInt32Range<VEC_LANES>(y);
             DOUBLE nz = makeInt32Range<VEC_LANES>(z);
 
-            value = if_add(DOUBLE_MASK().load_bits(to_bits(curOctave < octaves)), value, noise3d<VEC_LANES>(nx, ny, nz, seed + curOctave) * persistence);
+            value = if_add(ULONG(curOctave) < extend(octaves), value, noise3d<VEC_LANES>(nx, ny, nz, seed + curOctave) * persistence);
         }
 
         return value;
@@ -300,6 +300,7 @@ namespace fp2::cwg::noise {
         using DOUBLE = typename fp2::simd::type_vec<double, VEC_LANES>::TYPE;
         using DOUBLE_MASK = typename fp2::simd::type_vec<double, VEC_LANES>::BOOL;
         using INT = typename fp2::simd::type_vec<double, VEC_LANES>::INT::TYPE;
+        using ULONG = typename fp2::simd::type_vec<double, VEC_LANES>::ULONG::TYPE;
 
         static const DOUBLE INITIAL_LACUNARITY = fp2::simd::increment_shift<DOUBLE>();
         static const DOUBLE LANCULARITY = 1 << VEC_LANES;
@@ -308,6 +309,7 @@ namespace fp2::cwg::noise {
         static const DOUBLE PERSISTENCE = 1.0d / (1 << VEC_LANES);
 
         static const INT INCREMENT = fp2::simd::increment<INT>();
+        static const ULONG INCREMENT_L = fp2::simd::increment<ULONG>();
 
         DOUBLE x = _x * INITIAL_LACUNARITY;
         DOUBLE y = _y * INITIAL_LACUNARITY;
@@ -330,7 +332,7 @@ namespace fp2::cwg::noise {
             DOUBLE ny = makeInt32Range<VEC_LANES>(y);
             DOUBLE nz = makeInt32Range<VEC_LANES>(z);
 
-            value = if_add(DOUBLE_MASK().load_bits(to_bits(curOctave + INCREMENT < octaves)), value, noise3d<VEC_LANES>(nx, ny, nz, seed + curOctave + INCREMENT) * persistence);
+            value = if_add(curOctave + INCREMENT_L < octaves, value, noise3d<VEC_LANES>(nx, ny, nz, seed + curOctave + INCREMENT) * persistence);
         }
 
         return horizontal_add(value);
@@ -364,6 +366,7 @@ namespace fp2::cwg::noise {
         using DOUBLE = typename fp2::simd::type_vec<double, VEC_LANES>::TYPE;
         using DOUBLE_MASK = typename fp2::simd::type_vec<double, VEC_LANES>::BOOL;
         using INT = typename fp2::simd::type_vec<double, VEC_LANES>::INT::TYPE;
+        using ULONG = typename fp2::simd::type_vec<double, VEC_LANES>::ULONG::TYPE;
 
         static const DOUBLE INITIAL_LACUNARITY = fp2::simd::increment_shift<DOUBLE>();
         static const DOUBLE LANCULARITY = 1 << VEC_LANES;
@@ -372,6 +375,7 @@ namespace fp2::cwg::noise {
         static const DOUBLE PERSISTENCE = 1.0d / (1 << VEC_LANES);
 
         static const INT INCREMENT = fp2::simd::increment<INT>();
+        static const ULONG INCREMENT_L = fp2::simd::increment<ULONG>();
 
         DOUBLE x = _x * INITIAL_LACUNARITY;
         DOUBLE z = _z * INITIAL_LACUNARITY;
@@ -391,7 +395,7 @@ namespace fp2::cwg::noise {
             DOUBLE nx = makeInt32Range<VEC_LANES>(x);
             DOUBLE nz = makeInt32Range<VEC_LANES>(z);
 
-            value = if_add(DOUBLE_MASK().load_bits(to_bits(curOctave + INCREMENT < octaves)), value, noise3d<VEC_LANES>(nx, 0.0d, nz, seed + curOctave + INCREMENT) * persistence);
+            value = if_add(curOctave + INCREMENT_L < octaves, value, noise3d<VEC_LANES>(nx, 0.0d, nz, seed + curOctave + INCREMENT) * persistence);
         }
 
         return horizontal_add(value);

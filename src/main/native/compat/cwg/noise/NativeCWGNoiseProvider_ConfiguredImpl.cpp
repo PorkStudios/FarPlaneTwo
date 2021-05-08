@@ -63,6 +63,7 @@ public:
 
     fp2::simd::type_vec<int32_t, 4>::TYPE _allNoiseSeeds;
     fp2::simd::type_vec<uint32_t, 4>::TYPE _allNoiseOctaves;
+    fp2::simd::type_vec<uint32_t, 4>::TYPE _allNoiseOctavesNoDepth;
     fp2::simd::type_vec<double, 4>::TYPE _allNoiseFrequenciesX;
     fp2::simd::type_vec<double, 4>::TYPE _allNoiseFrequenciesY;
     fp2::simd::type_vec<double, 4>::TYPE _allNoiseFrequenciesZ;
@@ -70,38 +71,78 @@ public:
     fp2::simd::type_vec<double, 4>::TYPE _allNoiseOffsets;
 
     inline void setupVectorFields() {
-        _allNoiseFactors = fp2::simd::type_vec<double, 4>::TYPE(_selectorNoiseFactor, _lowNoiseFactor, _highNoiseFactor, _depthNoiseFactor);
-        _allNoiseOffsets = fp2::simd::type_vec<double, 4>::TYPE(_selectorNoiseOffset, _lowNoiseOffset, _highNoiseOffset, _depthNoiseOffset);
+        _allNoiseSeeds = fp2::simd::type_vec<int32_t, 4>::TYPE(_selectorNoiseSeed, _lowNoiseSeed, _highNoiseSeed, _depthNoiseSeed);
+        _allNoiseOctaves = fp2::simd::type_vec<uint32_t, 4>::TYPE(_selectorNoiseOctaves, _lowNoiseOctaves, _highNoiseOctaves, _depthNoiseOctaves);
+        _allNoiseOctavesNoDepth = fp2::simd::type_vec<uint32_t, 4>::TYPE(_selectorNoiseOctaves, _lowNoiseOctaves, _highNoiseOctaves, 0);
         _allNoiseFrequenciesX = fp2::simd::type_vec<double, 4>::TYPE(_selectorNoiseFrequencyX, _lowNoiseFrequencyX, _highNoiseFrequencyX, _depthNoiseFrequencyX);
         _allNoiseFrequenciesY = fp2::simd::type_vec<double, 4>::TYPE(_selectorNoiseFrequencyY, _lowNoiseFrequencyY, _highNoiseFrequencyY, 0.0d);
         _allNoiseFrequenciesZ = fp2::simd::type_vec<double, 4>::TYPE(_selectorNoiseFrequencyZ, _lowNoiseFrequencyZ, _highNoiseFrequencyZ, _depthNoiseFrequencyZ);
-        _allNoiseSeeds = fp2::simd::type_vec<int32_t, 4>::TYPE(_selectorNoiseSeed, _lowNoiseSeed, _highNoiseSeed, _depthNoiseSeed);
-        _allNoiseOctaves = fp2::simd::type_vec<uint32_t, 4>::TYPE(_selectorNoiseOctaves, _lowNoiseOctaves, _highNoiseOctaves, _depthNoiseOctaves);
+        _allNoiseFactors = fp2::simd::type_vec<double, 4>::TYPE(_selectorNoiseFactor, _lowNoiseFactor, _highNoiseFactor, _depthNoiseFactor);
+        _allNoiseOffsets = fp2::simd::type_vec<double, 4>::TYPE(_selectorNoiseOffset, _lowNoiseOffset, _highNoiseOffset, _depthNoiseOffset);
     }
 
-    template<bool USE_DEPTH_ARG> inline double generateAndMixAllNoise(double height, double variation, double depth, int32_t x, int32_t y, int32_t z) {
-        //there are 3 values to be computed, so there's no reason to use more than 4 lanes
-        auto noise_v = fp2::cwg::noise::octaves3dVarying<4>(x * _allNoiseFrequenciesX, y * _allNoiseFrequenciesY, z * _allNoiseFrequenciesZ, _allNoiseSeeds, _allNoiseOctaves);
-        noise_v = noise_v * _allNoiseFactors + _allNoiseOffsets;
+    template<size_t VEC_LANES, bool USE_DEPTH_ARG> inline double generateAndMixAllNoise(double height, double variation, double depth, int32_t x, int32_t y, int32_t z) {
+        using DOUBLE = typename fp2::simd::type_vec<double, VEC_LANES>::TYPE;
 
-        struct {
-            double selector;
-            double low;
-            double high;
-            double depth;
+        union {
+            struct {
+                double selector;
+                double low;
+                double high;
+                double depth;
+            } scalar;
+            double vector[4];
         } noise;
-        noise_v.store((double*) &noise);
 
-        if constexpr (USE_DEPTH_ARG) {
-            noise.depth = depth;
+        if constexpr (VEC_LANES == 4) {
+            //there are 3 or 4 values to be computed, and we have 4 vector lanes available: perfect!
+            if constexpr (USE_DEPTH_ARG) {
+                //compute all 4 noise types at once, with depth noise being some irrelevant value
+                DOUBLE noise_vec = fp2::cwg::noise::octaves3dVarying<VEC_LANES>(x * _allNoiseFrequenciesX, y * _allNoiseFrequenciesY, z * _allNoiseFrequenciesZ, _allNoiseSeeds, _allNoiseOctavesNoDepth);
+                noise_vec = noise_vec * _allNoiseFactors + _allNoiseOffsets;
+                noise_vec.store(&noise.vector[0]);
+
+                //override depth value with input value
+                noise.scalar.depth = depth;
+            } else {
+                //compute all 4 noise types at once
+                DOUBLE noise_vec = fp2::cwg::noise::octaves3dVarying<VEC_LANES>(x * _allNoiseFrequenciesX, y * _allNoiseFrequenciesY, z * _allNoiseFrequenciesZ, _allNoiseSeeds, _allNoiseOctaves);
+                noise_vec = noise_vec * _allNoiseFactors + _allNoiseOffsets;
+                noise_vec.store(&noise.vector[0]);
+
+                //post-process depth
+                noise.scalar.depth = processDepthNoise<false>(noise.scalar.depth);
+            }
         } else {
-            noise.depth = processDepthNoise<false>(noise.depth);
+            //there are 3 or 4 values to be computed, but there are more than 4 lanes available: don't waste lanes by computing more values than we need to, let's vectorize on the octave count instead
+            noise.scalar.selector = fp2::cwg::noise::octaves3dPoint<VEC_LANES>(x * _selectorNoiseFrequencyX, y * _selectorNoiseFrequencyY, z * _selectorNoiseFrequencyZ, _selectorNoiseSeed, _selectorNoiseOctaves)
+                    * _selectorNoiseFactor + _selectorNoiseOffset;
+            noise.scalar.low = fp2::cwg::noise::octaves3dPoint<VEC_LANES>(x * _lowNoiseFrequencyX, y * _lowNoiseFrequencyY, z * _lowNoiseFrequencyZ, _lowNoiseSeed, _lowNoiseOctaves)
+                    * _lowNoiseFactor + _lowNoiseOffset;
+            noise.scalar.high = fp2::cwg::noise::octaves3dPoint<VEC_LANES>(x * _highNoiseFrequencyX, y * _highNoiseFrequencyY, z * _highNoiseFrequencyZ, _highNoiseSeed, _highNoiseOctaves)
+                    * _highNoiseFactor + _highNoiseOffset;
+            
+            if constexpr (USE_DEPTH_ARG) {
+                //use input depth
+                noise.scalar.depth = depth;
+            } else {
+                //compute depth from input
+                noise.scalar.depth = fp2::cwg::noise::octaves2dPoint<VEC_LANES>(x * _depthNoiseFrequencyX, z * _depthNoiseFrequencyZ, _depthNoiseSeed, _depthNoiseOctaves)
+                        * _depthNoiseFactor + _depthNoiseOffset;
+
+                //post-process depth
+                noise.scalar.depth = processDepthNoise<false>(noise.scalar.depth);
+            }
         }
 
         height = height * _heightFactor + _heightOffset;
-        variation = variation * _heightVariationFactor * (height > y ? _specialHeightVariationFactorBelowAverageY : 1.0d) + _heightVariationOffset;
+        variation *= _heightVariationFactor;
+        if (height > y) {
+            variation *= _specialHeightVariationFactorBelowAverageY;
+        }
+        variation += _heightVariationOffset;
 
-        double d = fp2::cwg::noise::lerp(noise.low, noise.high, fp2::cwg::noise::clamp(noise.selector, 0.0d, 1.0d)) + noise.depth;
+        double d = fp2::cwg::noise::lerp(noise.scalar.low, noise.scalar.high, fp2::cwg::noise::clamp(noise.scalar.selector, 0.0d, 1.0d)) + noise.scalar.depth;
         d = d * variation + height;
         return d - fp2::cwg::noise::signum(variation) * y;
     }
@@ -115,7 +156,7 @@ public:
                 * _selectorNoiseFactor + _selectorNoiseOffset;
         DOUBLE low = fp2::cwg::noise::octaves3d<VEC_LANES>(x * _lowNoiseFrequencyX, y * _lowNoiseFrequencyY, z * _lowNoiseFrequencyZ, _lowNoiseSeed, _lowNoiseOctaves)
                 * _lowNoiseFactor + _lowNoiseOffset;
-        DOUBLE high = fp2::cwg::noise::octaves3d<VEC_LANES>(x * _highNoiseFrequencyX, y * _highNoiseFrequencyY, z * _highNoiseFrequencyZ, _highNoiseSeed, _highNoiseOctaves) 
+        DOUBLE high = fp2::cwg::noise::octaves3d<VEC_LANES>(x * _highNoiseFrequencyX, y * _highNoiseFrequencyY, z * _highNoiseFrequencyZ, _highNoiseSeed, _highNoiseOctaves)
                 * _highNoiseFactor + _highNoiseOffset;
 
         if constexpr (!USE_DEPTH_ARG) {
@@ -142,10 +183,12 @@ public:
     }
 
     template<size_t VEC_LANES> inline typename fp2::simd::type_vec<double, VEC_LANES>::TYPE processDepthNoise(typename fp2::simd::type_vec<double, VEC_LANES>::TYPE depth) {
+        using DOUBLE = typename fp2::simd::type_vec<double, VEC_LANES>::TYPE;
+
         depth = depth * _depthNoiseFactor + _depthNoiseOffset;
-        depth *= select(depth < 0.0d, -0.9d, 3.0d);
+        depth *= select(depth < 0.0d, DOUBLE(-0.9d), DOUBLE(3.0d));
         depth -= 2.0d;
-        depth = min(max(depth * select(depth < 0.0d, 5.0d / 28.0d, 0.125d), -5.0d / 14.0d), 0.125d);
+        depth = min(max(depth * select(depth < 0.0d, DOUBLE(5.0d / 28.0d), DOUBLE(0.125d)), -5.0d / 14.0d), 0.125d);
         depth *= 0.2d * 17.0d / 64.0d;
         return depth;
     }
@@ -204,18 +247,16 @@ public:
     }
 
     template<size_t VEC_LANES> inline typename fp2::simd::type_vec<double, VEC_LANES>::TYPE loadWithWrap(
-            fp2::pinned_double_array &arr, typename fp2::simd::type_vec<double, VEC_LANES>::INT::TYPE i) {
+            fp2::pinned_double_array& arr, typename fp2::simd::type_vec<double, VEC_LANES>::INT::TYPE i) {
         using DOUBLE = typename fp2::simd::type_vec<double, VEC_LANES>::TYPE;
-        using DOUBLE_BOOL = typename fp2::simd::type_vec<double, VEC_LANES>::BOOL;
         using INT = typename fp2::simd::type_vec<double, VEC_LANES>::INT::TYPE;
         using INT_BOOL = typename fp2::simd::type_vec<double, VEC_LANES>::INT::BOOL;
-        using LONG = typename fp2::simd::type_vec<double, VEC_LANES>::LONG::TYPE;
 
         //using intrinsics here because vectorclass doesn't have a way to lookup 64-bit values with 32-bit indices
         if constexpr (INSTRSET >= 8 && VEC_LANES == 4) { //AVX2
             return DOUBLE(_mm256_i32gather_pd(&arr[0], i, 8));
         } else if constexpr (INSTRSET >= 8 && VEC_LANES == 8) { //AVX512
-            return DOUBLE(_mm512_i32gather_pd(&arr[0], i, 8));
+            return DOUBLE(_mm512_i32gather_pd(i, &arr[0], 8));
         } else { //AVX or SSE
             static const INT INCREMENT = fp2::simd::increment<INT>();
 
@@ -245,7 +286,7 @@ public:
             for (int32_t i = 0, dx = 0; dx < sizeX; dx++) {
                 for (int32_t dy = 0; dy < sizeY; dy++) {
                     for (int32_t inIdx = dx * sizeZ, dz = 0; dz < sizeZ; dz++, inIdx++, i++) {
-                        out[i] = generateAndMixAllNoise<USE_DEPTH_ARG>(
+                        out[i] = generateAndMixAllNoise<VEC_LANES, USE_DEPTH_ARG>(
                                 height[inIdx], variation[inIdx], USE_DEPTH_ARG ? depth[inIdx] : 0.0d,
                                 baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level));
                     }
@@ -274,7 +315,7 @@ public:
                 generateAndMixAllNoise<VEC_LANES, USE_DEPTH_ARG>(
                         loadWithWrap<VEC_LANES>(height, readIndex),
                         loadWithWrap<VEC_LANES>(variation, readIndex),
-                        USE_DEPTH_ARG ? loadWithWrap<VEC_LANES>(depth, readIndex): 0.0d,
+                        USE_DEPTH_ARG ? loadWithWrap<VEC_LANES>(depth, readIndex) : 0.0d,
                         to_double(x), to_double(y), to_double(z)).store(&out[index]);
 
                 //increment z coordinates, resetting them and incrementing y if they reach the maximum value
@@ -306,15 +347,15 @@ public:
     }
 
     inline double generateSingle(double height, double variation, int32_t x, int32_t y, int32_t z) {
-        return generateAndMixAllNoise<false>(height, variation, 0.0d, x, y, z);
+        return generateAndMixAllNoise<fp2::simd::LANES_32AND64, false>(height, variation, 0.0d, x, y, z);
     }
 
     inline double generateSingle(double height, double variation, double depth, int32_t x, int32_t y, int32_t z) {
-        return generateAndMixAllNoise<true>(height, variation, depth, x, y, z);
+        return generateAndMixAllNoise<fp2::simd::LANES_32AND64, true>(height, variation, depth, x, y, z);
     }
 };
 
-FP2_JNI(jlong, NativeCWGNoiseProvider_00024ConfiguredImpl, createState0) (JNIEnv* env, jclass cla,
+FP2_JNI(jlong, NativeCWGNoiseProvider_00024ConfiguredImpl, createState0)(JNIEnv* env, jclass cla,
         jdouble heightVariationFactor, jdouble specialHeightVariationFactorBelowAverageY, jdouble heightVariationOffset, jdouble heightFactor, jdouble heightOffset,
         jdouble selectorNoiseFactor, jdouble selectorNoiseOffset, jdouble selectorNoiseFrequencyX, jdouble selectorNoiseFrequencyY, jdouble selectorNoiseFrequencyZ, jint selectorNoiseSeed, jint selectorNoiseOctaves, jdouble selectorNoiseScale,
         jdouble lowNoiseFactor, jdouble lowNoiseOffset, jdouble lowNoiseFrequencyX, jdouble lowNoiseFrequencyY, jdouble lowNoiseFrequencyZ, jint lowNoiseSeed, jint lowNoiseOctaves, jdouble lowNoiseScale,
@@ -364,28 +405,28 @@ FP2_JNI(jlong, NativeCWGNoiseProvider_00024ConfiguredImpl, createState0) (JNIEnv
     return (jlong) state;
 }
 
-FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, deleteState0) (JNIEnv* env, jclass cla,
+FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, deleteState0)(JNIEnv* env, jclass cla,
         jlong _state) {
     delete (state_t*) _state;
 }
 
-FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, generateDepth2d0) (JNIEnv* env, jobject obj,
+FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, generateDepth2d0)(JNIEnv* env, jobject obj,
         jdoubleArray _out, jint baseX, jint baseZ, jint level, jint sizeX, jint sizeZ, jlong _state) {
     fp2::pinned_double_array out(env, _out);
     ((state_t*) _state)->generateDepth2d(out, baseX, baseZ, level, sizeX, sizeZ);
 }
 
-FP2_JNI(jdouble, NativeCWGNoiseProvider_00024ConfiguredImpl, generateDepthSingle0) (JNIEnv* env, jobject obj,
+FP2_JNI(jdouble, NativeCWGNoiseProvider_00024ConfiguredImpl, generateDepthSingle0)(JNIEnv* env, jobject obj,
         jint x, jint z, jlong _state) {
     return ((state_t*) _state)->generateDepthSingle(x, z);
 }
 
-FP2_JNI(jdouble, NativeCWGNoiseProvider_00024ConfiguredImpl, generateSingle0noDepth) (JNIEnv* env, jobject obj,
+FP2_JNI(jdouble, NativeCWGNoiseProvider_00024ConfiguredImpl, generateSingle0noDepth)(JNIEnv* env, jobject obj,
         jdouble height, jdouble variation, jint x, jint y, jint z, jlong _state) {
     return ((state_t*) _state)->generateSingle(height, variation, x, y, z);
 }
 
-FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, generate3d0noDepth) (JNIEnv* env, jobject obj,
+FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, generate3d0noDepth)(JNIEnv* env, jobject obj,
         jdoubleArray _height, jdoubleArray _variation, jdoubleArray _out, jint baseX, jint baseY, jint baseZ, jint level, jint sizeX, jint sizeY, jint sizeZ, jlong _state) {
     fp2::pinned_double_array height(env, _height);
     fp2::pinned_double_array variation(env, _variation);
@@ -393,7 +434,7 @@ FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, generate3d0noDepth) (J
     ((state_t*) _state)->generate3d<false>(height, variation, variation, out, baseX, baseY, baseZ, level, sizeX, sizeY, sizeZ);
 }
 
-FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, generate3d0depth) (JNIEnv* env, jobject obj,
+FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, generate3d0depth)(JNIEnv* env, jobject obj,
         jdoubleArray _height, jdoubleArray _variation, jdoubleArray _depth, jdoubleArray _out, jint baseX, jint baseY, jint baseZ, jint level, jint sizeX, jint sizeY, jint sizeZ, jlong _state) {
     fp2::pinned_double_array height(env, _height);
     fp2::pinned_double_array variation(env, _variation);
@@ -402,7 +443,7 @@ FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, generate3d0depth) (JNI
     ((state_t*) _state)->generate3d<true>(height, variation, depth, out, baseX, baseY, baseZ, level, sizeX, sizeY, sizeZ);
 }
 
-FP2_JNI(jdouble, NativeCWGNoiseProvider_00024ConfiguredImpl, generateSingle0depth) (JNIEnv* env, jobject obj,
+FP2_JNI(jdouble, NativeCWGNoiseProvider_00024ConfiguredImpl, generateSingle0depth)(JNIEnv* env, jobject obj,
         jdouble height, jdouble variation, jdouble depth, jint x, jint y, jint z, jlong _state) {
     return ((state_t*) _state)->generateSingle(height, variation, depth, x, y, z);
 }

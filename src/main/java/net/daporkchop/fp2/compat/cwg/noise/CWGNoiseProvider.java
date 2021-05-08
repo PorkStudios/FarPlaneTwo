@@ -22,6 +22,7 @@ package net.daporkchop.fp2.compat.cwg.noise;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.x86.x86FeatureDetector;
 import net.daporkchop.fp2.util.alloc.DoubleArrayAllocator;
 import net.daporkchop.lib.natives.Feature;
 import net.daporkchop.lib.natives.FeatureBuilder;
@@ -35,7 +36,7 @@ import static com.flowpowered.noise.module.source.Perlin.*;
  */
 public interface CWGNoiseProvider extends Feature<CWGNoiseProvider> {
     CWGNoiseProvider INSTANCE = FeatureBuilder.<CWGNoiseProvider>create(CWGNoiseProvider.class)
-            .addNative("net.daporkchop.fp2.compat.cwg.noise.NativeCWGNoiseProvider")
+            .addNative("net.daporkchop.fp2.compat.cwg.noise.NativeCWGNoiseProvider", x86FeatureDetector.INSTANCE.maxSupportedVectorExtension())
             .addJava("net.daporkchop.fp2.compat.cwg.noise.JavaCWGNoiseProvider")
             .build(true);
 

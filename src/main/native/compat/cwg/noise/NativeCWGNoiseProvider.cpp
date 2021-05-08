@@ -20,12 +20,12 @@
 
 #include "cwg_noise.h"
 
-FP2_JNI(void, NativeCWGNoiseProvider, setRandomVectors) (JNIEnv* env, jobject obj,
-        jfloatArray random_vectors) {
+FP2_JNI(void, NativeCWGNoiseProvider, setRandomVectors)(JNIEnv* env, jobject obj,
+        jfloatArray random_vectors) FP2_JNI_HEAD
     fp2::cwg::noise::setRandomVectors(env, random_vectors);
-}
+FP2_JNI_TAIL
 
-FP2_JNI(void, NativeCWGNoiseProvider, generate3d) (JNIEnv* env, jobject obj,
+FP2_JNI(void, NativeCWGNoiseProvider, generate3d)(JNIEnv* env, jobject obj,
         jdoubleArray _out, jint baseX, jint baseY, jint baseZ, jint level, jdouble freqX, jdouble freqY, jdouble freqZ, jint sizeX, jint sizeY, jint sizeZ, jint seed, jint octaves, jdouble scale) {
     constexpr size_t VEC_LANES = fp2::simd::LANES_32AND64;
 
@@ -84,8 +84,8 @@ FP2_JNI(void, NativeCWGNoiseProvider, generate3d) (JNIEnv* env, jobject obj,
     }
 }
 
-FP2_JNI(void, NativeCWGNoiseProvider, generate2d) (JNIEnv* env, jobject obj,
-                                                   jdoubleArray _out, jint baseX, jint baseZ, jint level, jdouble freqX, jdouble freqZ, jint sizeX, jint sizeZ, jint seed, jint octaves, jdouble scale) {
+FP2_JNI(void, NativeCWGNoiseProvider, generate2d)(JNIEnv* env, jobject obj,
+        jdoubleArray _out, jint baseX, jint baseZ, jint level, jdouble freqX, jdouble freqZ, jint sizeX, jint sizeZ, jint seed, jint octaves, jdouble scale) {
     constexpr size_t VEC_LANES = fp2::simd::LANES_32AND64;
 
     using DOUBLE = typename fp2::simd::type_vec<double, VEC_LANES>::TYPE;
@@ -133,7 +133,7 @@ FP2_JNI(void, NativeCWGNoiseProvider, generate2d) (JNIEnv* env, jobject obj,
     }
 }
 
-FP2_JNI(jdouble, NativeCWGNoiseProvider, generateSingle) (JNIEnv* env, jobject obj,
+FP2_JNI(jdouble, NativeCWGNoiseProvider, generateSingle)(JNIEnv* env, jobject obj,
         jint x, jint y, jint z, jdouble freqX, jdouble freqY, jdouble freqZ, jint seed, jint octaves, jdouble scale) {
     constexpr size_t VEC_LANES = fp2::simd::LANES_32AND64;
 
