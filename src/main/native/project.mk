@@ -22,9 +22,12 @@ export MODULES_SIMD	:=  compat/cwg/noise compat/vanilla/biome/layer/c
 export LIBS			:=  vectorclass-2.01.03
 export LIB_TASKS	:=  $(addprefix $(LIBS_DIR)/,$(addsuffix .dl,$(LIBS)))
 
+export WIN_LIB_DIR	:=	$(OUTPUT_DIR)/compat/windows/
+export WIN_LIBS		:=	$(addprefix $(WIN_LIB_DIR), libgcc_s_seh-1.dll libwinpthread-1.dll libstdc++-6.dll)
+
 .PHONY: build clean .FORCE
 
-build: $(foreach arch,$(ARCHS),$(arch).arch) $(LIB_TASKS)
+build: $(foreach arch,$(ARCHS),$(arch).arch) $(LIB_TASKS) $(WIN_LIBS)
 
 %.arch: .FORCE $(foreach module,$(subst /,_,$(MODULES_STD)),%/$(module).mod_std) $(foreach module,$(subst /,_,$(MODULES_SIMD)),%/$(module).mod_simd)
 	@echo "built all libraries for $*"
@@ -45,5 +48,10 @@ clean:
 	@curl -o - https://cloud.daporkchop.net/programs/source/$(basename $(notdir $@)).tar.gz | tar zxf -
 	@mv $(basename $(notdir $@))/ $(LIBS_DIR)
 	@touch $@
+
+$(WIN_LIB_DIR)%:
+	@[ -d $(WIN_LIB_DIR) ] || mkdir -p $(WIN_LIB_DIR)
+	@echo "copying $*"
+	@cp `x86_64-w64-mingw32-g++ -print-file-name=$*` $@
 
 .FORCE:

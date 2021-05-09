@@ -82,9 +82,7 @@ pipeline {
                 sh "./gradlew test -x compileNatives -x publish"
             }
             post {
-                success {
-                    junit "**/build/test-results/**/*.xml"
-                }
+                junit "**/build/test-results/**/*.xml"
             }
         }
         stage("Publish") {

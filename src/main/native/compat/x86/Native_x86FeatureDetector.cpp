@@ -46,7 +46,7 @@ FP2_JNI(jstring, Native_1x86FeatureDetector, maxSupportedVectorExtension)(JNIEnv
             if (!hasFMA3()) {
                 throw fp2::error("the CPU reports that it has AVX2, but not FMA3!");
             } else {
-                return env->NewStringUTF("AVX2_FMA");
+                return env->NewStringUTF("AVX2");
             }
         case 9:
             if (!hasFMA3()) {

@@ -20,6 +20,10 @@
 
 package net.daporkchop.fp2.compat.x86;
 
+import net.daporkchop.fp2.compat.windows.WindowsDLLDependencyInjector;
+import net.daporkchop.lib.common.system.OperatingSystem;
+import net.daporkchop.lib.common.system.PlatformInfo;
+
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -28,6 +32,15 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 final class Native_x86FeatureDetector implements x86FeatureDetector {
+    protected static String initAndGetClassName() {
+        if (PlatformInfo.OPERATING_SYSTEM == OperatingSystem.Windows) {
+            //ensure windows DLLs are injected before anything else happens
+            WindowsDLLDependencyInjector.inject();
+        }
+
+        return Native_x86FeatureDetector.class.getCanonicalName();
+    }
+
     public Native_x86FeatureDetector() {
         FP2_LOG.info("using x86 vector extension: {}", this.maxSupportedVectorExtension());
     }
