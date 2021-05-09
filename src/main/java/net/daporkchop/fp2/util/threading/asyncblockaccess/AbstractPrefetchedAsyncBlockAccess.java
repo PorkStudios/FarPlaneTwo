@@ -71,13 +71,13 @@ public abstract class AbstractPrefetchedAsyncBlockAccess<P extends IAsyncBlockAc
     }
 
     @Override
-    public boolean anyColumnExists(int minColumnX, int maxColumnX, int minColumnZ, int maxColumnZ) {
-        return this.parent.anyColumnExists(minColumnX, maxColumnX, minColumnZ, maxColumnZ);
+    public boolean anyColumnIntersects(int tileX, int tileZ, int level) {
+        return this.parent.anyColumnIntersects(tileX, tileZ, level);
     }
 
     @Override
-    public boolean anyCubeExists(int minCubeX, int maxCubeX, int minCubeY, int maxCubeY, int minCubeZ, int maxCubeZ) {
-        return this.parent.anyCubeExists(minCubeX, maxCubeX, minCubeY, maxCubeY, minCubeZ, maxCubeZ);
+    public boolean anyCubeIntersects(int tileX, int tileY, int tileZ, int level) {
+        return this.parent.anyCubeIntersects(tileX, tileY, tileZ, level);
     }
 
     @Override

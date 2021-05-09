@@ -22,12 +22,16 @@ package net.daporkchop.fp2.compat.vanilla.asyncblockaccess;
 
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import net.daporkchop.fp2.compat.cc.asyncblockaccess.CCAsyncBlockAccessImpl;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
+import net.daporkchop.fp2.compat.vanilla.region.ThreadSafeRegionFileCache;
 import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
+import net.daporkchop.fp2.util.datastructure.ConcurrentBooleanHashSegtreeInt;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
+import net.daporkchop.fp2.util.threading.fj.ThreadSafeForkJoinSupplier;
 import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.util.threading.futurecache.IAsyncCache;
 import net.daporkchop.lib.concurrent.PFutures;
@@ -65,11 +69,23 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
 
     protected final ChunkCache chunks = new ChunkCache();
 
+    protected final ForkJoinTask<ConcurrentBooleanHashSegtreeInt> chunksExistCache;
+
     public VanillaAsyncBlockAccessImpl(@NonNull WorldServer world) {
         this.world = world;
         this.io = (AnvilChunkLoader) this.world.getChunkProvider().chunkLoader;
 
         WorldChangeListenerManager.add(this.world, this);
+
+        this.chunksExistCache = new ThreadSafeForkJoinSupplier<ConcurrentBooleanHashSegtreeInt>() {
+            @Override
+            @SneakyThrows(IOException.class)
+            protected ConcurrentBooleanHashSegtreeInt compute() {
+                ConcurrentBooleanHashSegtreeInt tree = new ConcurrentBooleanHashSegtreeInt(2);
+                ThreadSafeRegionFileCache.INSTANCE.forEachChunk(VanillaAsyncBlockAccessImpl.this.io.chunkSaveLocation.toPath(), pos -> tree.set(pos.x, pos.z));
+                return tree;
+            }
+        }.fork();
     }
 
     @Override
@@ -105,21 +121,13 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
     }
 
     @Override
-    public boolean anyColumnExists(int minColumnX, int maxColumnX, int minColumnZ, int maxColumnZ) {
-        for (int columnX = minColumnX; columnX < maxColumnX; columnX++) {
-            for (int columnZ = minColumnZ; columnZ < maxColumnZ; columnZ++) {
-                //TODO: if (this.nbtCache.containsKey(BinMath.packXY(columnX, columnZ)) || this.io.isChunkGeneratedAt(columnX, columnZ)) {
-                if (this.io.isChunkGeneratedAt(columnX, columnZ)) {
-                    return true;
-                }
-            }
-        }
-        return false;
+    public boolean anyColumnIntersects(int tileX, int tileZ, int level) {
+        return this.chunksExistCache.join().isSet(level, tileX, tileZ);
     }
 
     @Override
-    public boolean anyCubeExists(int minCubeX, int maxCubeX, int minCubeY, int maxCubeY, int minCubeZ, int maxCubeZ) {
-        return minCubeY < 16 && maxCubeY >= 0 && this.anyColumnExists(minCubeX, maxCubeX, minCubeZ, maxCubeZ);
+    public boolean anyCubeIntersects(int tileX, int tileY, int tileZ, int level) {
+        return tileZ < 16 && level >= 0 && this.anyColumnIntersects(tileX, tileY, level);
     }
 
     @Override

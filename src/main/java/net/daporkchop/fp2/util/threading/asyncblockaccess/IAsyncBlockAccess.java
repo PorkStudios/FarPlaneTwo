@@ -96,14 +96,14 @@ public interface IAsyncBlockAccess extends IBlockHeightAccess {
     IBlockHeightAccess prefetchWithoutGenerating(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) throws GenerationNotAllowedException;
 
     /**
-     * @return whether or not any columns in the given area exist
+     * @return whether or not any columns in the given tile exist
      */
-    boolean anyColumnExists(int minColumnX, int maxColumnX, int minColumnZ, int maxColumnZ);
+    boolean anyColumnIntersects(int tileX, int tileZ, int level);
 
     /**
      * @return whether or not any cubes in the given area exist
      */
-    boolean anyCubeExists(int minCubeX, int maxCubeX, int minCubeY, int maxCubeY, int minCubeZ, int maxCubeZ);
+    boolean anyCubeIntersects(int tileX, int tileY, int tileZ, int level);
 
     @Override
     default boolean isAirBlock(BlockPos pos) {

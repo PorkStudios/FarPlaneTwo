@@ -52,11 +52,7 @@ public abstract class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelTile> {
 
     @Override
     protected boolean anyVanillaTerrainExistsAt(@NonNull VoxelPos pos) {
-        int x = pos.x();
-        int y = pos.y();
-        int z = pos.z();
-        int level = pos.level();
-        return this.blockAccess().anyCubeExists(x << level, (x + 1) << level, y << level, (y + 1) << level, z << level, (z + 1) << level);
+        return this.blockAccess().anyCubeIntersects(pos.x(), pos.y(), pos.z(), pos.level());
     }
 
     /**

@@ -25,7 +25,9 @@ import io.github.opencubicchunks.cubicchunks.api.world.IColumn;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubeProviderServer;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorldServer;
+import io.github.opencubicchunks.cubicchunks.api.world.storage.ICubicStorage;
 import io.github.opencubicchunks.cubicchunks.core.asm.mixin.ICubicWorldInternal;
+import io.github.opencubicchunks.cubicchunks.core.server.chunkio.AsyncBatchingCubeIO;
 import io.github.opencubicchunks.cubicchunks.core.server.chunkio.ICubeIO;
 import io.github.opencubicchunks.cubicchunks.core.world.ICubeProviderInternal;
 import io.github.opencubicchunks.cubicchunks.core.world.cube.Cube;
@@ -38,13 +40,16 @@ import net.daporkchop.fp2.compat.vanilla.IBiomeAccess;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
+import net.daporkchop.fp2.util.datastructure.ConcurrentBooleanHashSegtreeInt;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
+import net.daporkchop.fp2.util.threading.fj.ThreadSafeForkJoinSupplier;
 import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.futurecache.IAsyncCache;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.concurrent.PFutures;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
@@ -60,7 +65,6 @@ import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinTask;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -72,21 +76,47 @@ import java.util.stream.Stream;
  * @author DaPorkchop_
  */
 public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeListener {
+    protected static final long ASYNCBATCHINGCUBEIO_STORAGE_OFFSET = PUnsafe.pork_getOffset(AsyncBatchingCubeIO.class, "storage");
+
     protected final WorldServer world;
     protected final ICubeIO io;
+    protected final ICubicStorage storage;
 
     protected final ColumnCache columns = new ColumnCache();
     protected final CubeCache cubes = new CubeCache();
 
     protected final ExtendedBlockStorage emptyStorage;
 
+    protected final ForkJoinTask<ConcurrentBooleanHashSegtreeInt> columnsExistCache;
+    protected final ForkJoinTask<ConcurrentBooleanHashSegtreeInt> cubesExistCache;
+
     public CCAsyncBlockAccessImpl(@NonNull WorldServer world) {
         this.world = world;
         this.io = ((ICubeProviderInternal.Server) ((ICubicWorldInternal) world).getCubeCache()).getCubeIO();
+        this.storage = PUnsafe.getObject(AsyncBatchingCubeIO.class.cast(this.io), ASYNCBATCHINGCUBEIO_STORAGE_OFFSET);
 
         this.emptyStorage = new ExtendedBlockStorage(0, world.provider.hasSkyLight());
 
         WorldChangeListenerManager.add(this.world, this);
+
+        this.columnsExistCache = new ThreadSafeForkJoinSupplier<ConcurrentBooleanHashSegtreeInt>() {
+            @Override
+            @SneakyThrows(IOException.class)
+            protected ConcurrentBooleanHashSegtreeInt compute() {
+                ConcurrentBooleanHashSegtreeInt tree = new ConcurrentBooleanHashSegtreeInt(2);
+                CCAsyncBlockAccessImpl.this.storage.forEachColumn(pos -> tree.set(pos.x, pos.z));
+                return tree;
+            }
+        }.fork();
+        this.cubesExistCache = new ThreadSafeForkJoinSupplier<ConcurrentBooleanHashSegtreeInt>() {
+            @Override
+            @SneakyThrows(IOException.class)
+            protected ConcurrentBooleanHashSegtreeInt compute() {
+                ConcurrentBooleanHashSegtreeInt tree = new ConcurrentBooleanHashSegtreeInt(3);
+                CCAsyncBlockAccessImpl.this.storage.forEachCube(pos -> tree.set(pos.getX(), pos.getY(), pos.getZ()));
+                return tree;
+            }
+        }.fork();
     }
 
     @Override
@@ -133,40 +163,24 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
 
     @Override
     public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
+        this.columnsExistCache.join().set(columnX, columnZ);
         this.columns.notifyUpdate(new ChunkPos(columnX, columnZ), nbt);
     }
 
     @Override
     public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt) {
+        this.cubesExistCache.join().set(cubeX, cubeY, cubeZ);
         this.cubes.notifyUpdate(new CubePos(cubeX, cubeY, cubeZ), nbt);
     }
 
     @Override
-    public boolean anyColumnExists(int minColumnX, int maxColumnX, int minColumnZ, int maxColumnZ) {
-        for (int columnX = minColumnX; columnX < maxColumnX; columnX++) {
-            for (int columnZ = minColumnZ; columnZ < maxColumnZ; columnZ++) {
-                //TODO: if (this.nbtCache2d.containsKey(BinMath.packXY(columnX, columnZ)) || this.io.columnExists(columnX, columnZ)) {
-                if (this.io.columnExists(columnX, columnZ)) {
-                    return true;
-                }
-            }
-        }
-        return false;
+    public boolean anyColumnIntersects(int tileX, int tileZ, int level) {
+        return this.columnsExistCache.join().isSet(level, tileX, tileZ);
     }
 
     @Override
-    public boolean anyCubeExists(int minCubeX, int maxCubeX, int minCubeY, int maxCubeY, int minCubeZ, int maxCubeZ) {
-        for (int cubeX = minCubeX; cubeX < maxCubeX; cubeX++) {
-            for (int cubeY = minCubeY; cubeY < maxCubeY; cubeY++) {
-                for (int cubeZ = minCubeZ; cubeZ < maxCubeZ; cubeZ++) {
-                    //TODO: if (this.nbtCache3d.containsKey(new CubePos(cubeX, cubeY, cubeZ)) || this.io.cubeExists(cubeX, cubeY, cubeZ)) {
-                    if (this.io.cubeExists(cubeX, cubeY, cubeZ)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
+    public boolean anyCubeIntersects(int tileX, int tileY, int tileZ, int level) {
+        return this.cubesExistCache.join().isSet(level, tileX, tileY, tileZ);
     }
 
     protected IColumn getColumn(int columnX, int columnZ) {

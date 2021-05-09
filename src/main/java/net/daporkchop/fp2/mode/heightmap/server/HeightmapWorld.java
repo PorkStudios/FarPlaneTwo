@@ -52,10 +52,7 @@ public abstract class HeightmapWorld extends AbstractFarWorld<HeightmapPos, Heig
 
     @Override
     protected boolean anyVanillaTerrainExistsAt(@NonNull HeightmapPos pos) {
-        int x = pos.x();
-        int z = pos.z();
-        int level = pos.level();
-        return this.blockAccess().anyColumnExists(x << level, (x + 1) << level, z << level, (z + 1) << level);
+        return this.blockAccess().anyColumnIntersects(pos.x(), pos.z(), pos.level());
     }
 
     @Override
