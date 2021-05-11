@@ -98,7 +98,7 @@ public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E
     @Override
     public E take() throws InterruptedException {
         this.lock.acquire();
-        return requireNonNull(this.set.pollFirst());
+        return this.set.pollFirst();
     }
 
     @Override

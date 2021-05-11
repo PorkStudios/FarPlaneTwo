@@ -18,47 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.fj;
-
-import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinTask;
+package net.daporkchop.fp2.util.threading.lazy;
 
 /**
- * A {@link ForkJoinTask} wrapping a {@link Runnable} which must be manually invoked (using {@link #run()}).
- * <p>
- * This allows for safe execution e.g. on a separate {@link Executor}, however, it is unsafe to call {@link #run()} multiple times.
+ * A {@link LazyFutureTask} which is completed with a given value at construction time.
  *
  * @author DaPorkchop_
  */
-public abstract class ManuallyInvokedForkJoinRunnable extends ForkJoinTask<Void> implements Runnable {
-    protected volatile boolean complete;
-
-    @Override
-    public Void getRawResult() {
-        return null;
+public class CompletedLazyFutureTask<V> extends LazyFutureTask<V> {
+    public CompletedLazyFutureTask(V value) {
+        this.started = 1;
+        this.complete(value);
     }
 
     @Override
-    protected void setRawResult(Void value) {
-        //no-op
+    protected V compute() {
+        throw new UnsupportedOperationException();
     }
-
-    @Override
-    protected boolean exec() {
-        return this.complete;
-    }
-
-    @Override
-    public void run() {
-        try {
-            this.compute();
-        } catch (Throwable t) {
-            this.completeExceptionally(t);
-        }
-    }
-
-    /**
-     * Actually runs the task.
-     */
-    protected abstract void compute();
 }

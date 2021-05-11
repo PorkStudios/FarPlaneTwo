@@ -28,7 +28,6 @@ import net.daporkchop.fp2.compat.vanilla.biome.layer.IPaddedLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IZoomingLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
-import net.daporkchop.fp2.util.threading.fj.ThreadSafeForkJoinSupplier;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.gen.layer.GenLayer;
@@ -61,7 +60,7 @@ import util.FP2Test;
 import java.util.Arrays;
 import java.util.List;
 import java.util.SplittableRandom;
-import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -251,44 +250,35 @@ public class TestFastBiomeGen {
     }
 
     private void testLayers(int x, int z, int sizeX, int sizeZ, boolean testSingle, GenLayer vanilla, @NonNull NamedLayer... layers) {
-        ForkJoinTask<int[]> futureReference = new ThreadSafeForkJoinSupplier<int[]>() {
-            @Override
-            protected int[] compute() {
-                int[] reference = vanilla.getInts(x, z, sizeX, sizeZ);
-                IntCache.resetIntCache();
+        CompletableFuture<int[]> futureReference = CompletableFuture.supplyAsync(() -> {
+            int[] reference = vanilla.getInts(x, z, sizeX, sizeZ);
+            IntCache.resetIntCache();
 
-                int[] swapped = new int[sizeX * sizeZ];
-                for (int i = 0, x = 0; x < sizeX; x++) {
-                    for (int z = 0; z < sizeZ; z++) {
-                        swapped[i++] = reference[z * sizeX + x];
-                    }
+            int[] swapped = new int[sizeX * sizeZ];
+            for (int i = 0, xx = 0; xx < sizeX; xx++) {
+                for (int zz = 0; zz < sizeZ; zz++) {
+                    swapped[i++] = reference[zz * sizeX + xx];
                 }
-                return swapped;
             }
-        }.fork();
+            return swapped;
+        });
 
-        List<ForkJoinTask<int[]>> gridFutures = Stream.of(layers).map(layer -> new ThreadSafeForkJoinSupplier<int[]>() {
-            @Override
-            protected int[] compute() {
-                int[] grid = new int[sizeX * sizeZ];
-                layer.layer.getGrid(IntArrayAllocator.DEFAULT.get(), x, z, sizeX, sizeZ, grid);
-                return grid;
-            }
-        }.fork()).collect(Collectors.toList());
+        List<CompletableFuture<int[]>> gridFutures = Stream.of(layers).map(layer -> CompletableFuture.supplyAsync(() -> {
+            int[] grid = new int[sizeX * sizeZ];
+            layer.layer.getGrid(IntArrayAllocator.DEFAULT.get(), x, z, sizeX, sizeZ, grid);
+            return grid;
+        })).collect(Collectors.toList());
 
-        List<ForkJoinTask<int[]>> singleFutures = !testSingle ? null : Stream.of(layers).map(layer -> new ThreadSafeForkJoinSupplier<int[]>() {
-            @Override
-            protected int[] compute() {
-                int[] grid = new int[sizeX * sizeZ];
-                IntStream.range(0, sizeX).parallel().forEach(dx -> {
-                    IntArrayAllocator alloc1 = IntArrayAllocator.DEFAULT.get();
-                    for (int i = dx * sizeZ, dz = 0; dz < sizeZ; dz++) {
-                        grid[i++] = layer.layer.getSingle(alloc1, x + dx, z + dz);
-                    }
-                });
-                return grid;
-            }
-        }.fork()).collect(Collectors.toList());
+        List<CompletableFuture<int[]>> singleFutures = !testSingle ? null : Stream.of(layers).map(layer -> CompletableFuture.supplyAsync(() -> {
+            int[] grid = new int[sizeX * sizeZ];
+            IntStream.range(0, sizeX).parallel().forEach(dx -> {
+                IntArrayAllocator alloc1 = IntArrayAllocator.DEFAULT.get();
+                for (int i = dx * sizeZ, dz = 0; dz < sizeZ; dz++) {
+                    grid[i++] = layer.layer.getSingle(alloc1, x + dx, z + dz);
+                }
+            });
+            return grid;
+        })).collect(Collectors.toList());
 
         int[] reference = futureReference.join();
         for (int j = 0; j < layers.length; j++) {
@@ -322,34 +312,28 @@ public class TestFastBiomeGen {
     }
 
     private void testLayersMultiGrid(int x, int z, int size, int dist, int count, GenLayer vanilla, @NonNull NamedLayer... layers) {
-        ForkJoinTask<int[]> futureReference = new ThreadSafeForkJoinSupplier<int[]>() {
-            @Override
-            protected int[] compute() {
-                int[] out = new int[count * count * size * size];
-                for (int i = 0, tileX = 0; tileX < count; tileX++) {
-                    for (int tileZ = 0; tileZ < count; tileZ++) {
-                        int[] reference = vanilla.getInts(x + tileX * dist, z + tileZ * dist, size, size);
-                        IntCache.resetIntCache();
+        CompletableFuture<int[]> futureReference = CompletableFuture.supplyAsync(() -> {
+            int[] out = new int[count * count * size * size];
+            for (int i = 0, tileX = 0; tileX < count; tileX++) {
+                for (int tileZ = 0; tileZ < count; tileZ++) {
+                    int[] reference = vanilla.getInts(x + tileX * dist, z + tileZ * dist, size, size);
+                    IntCache.resetIntCache();
 
-                        for (int dx = 0; dx < size; dx++) {
-                            for (int dz = 0; dz < size; dz++) {
-                                out[i++] = reference[dz * size + dx];
-                            }
+                    for (int dx = 0; dx < size; dx++) {
+                        for (int dz = 0; dz < size; dz++) {
+                            out[i++] = reference[dz * size + dx];
                         }
                     }
                 }
-                return out;
             }
-        }.fork();
+            return out;
+        });
 
-        List<ForkJoinTask<int[]>> fastFutures = Stream.of(layers).map(layer -> new ThreadSafeForkJoinSupplier<int[]>() {
-            @Override
-            protected int[] compute() {
-                int[] grids = new int[count * count * size * size];
-                layer.layer.multiGetGrids(IntArrayAllocator.DEFAULT.get(), x, z, size, dist, 0, count, grids);
-                return grids;
-            }
-        }.fork()).collect(Collectors.toList());
+        List<CompletableFuture<int[]>> fastFutures = Stream.of(layers).map(layer -> CompletableFuture.supplyAsync(() -> {
+            int[] grids = new int[count * count * size * size];
+            layer.layer.multiGetGrids(IntArrayAllocator.DEFAULT.get(), x, z, size, dist, 0, count, grids);
+            return grids;
+        })).collect(Collectors.toList());
 
         int[] reference = futureReference.join();
         for (int j = 0; j < layers.length; j++) {

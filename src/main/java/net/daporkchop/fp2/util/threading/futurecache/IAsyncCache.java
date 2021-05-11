@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.util.threading.futurecache;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.util.threading.lazy.LazyFutureTask;
 
 import java.util.Map;
 import java.util.concurrent.ForkJoinTask;
@@ -38,8 +39,8 @@ public interface IAsyncCache<K, V> {
      *
      * @param key             the key
      * @param allowGeneration whether or not the value may be generated if it doesn't exist already. If {@code false} and the value doesn't exist, the
-     *                        returned {@link ForkJoinTask} will be completed with {@code null}
+     *                        returned {@link LazyFutureTask} will be completed with {@code null}
      * @return a {@link ForkJoinTask} which will be completed with the value corresponding to the given key
      */
-    ForkJoinTask<V> get(@NonNull K key, boolean allowGeneration);
+    LazyFutureTask<V> get(@NonNull K key, boolean allowGeneration);
 }

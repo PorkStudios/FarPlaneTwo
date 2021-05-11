@@ -22,8 +22,8 @@ package net.daporkchop.fp2.util.threading.futurecache;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.util.reference.WeakSelfRemovingReference;
-import net.daporkchop.fp2.util.threading.fj.CompletedForkJoinTask;
-import net.daporkchop.fp2.util.threading.fj.ThreadSafeForkJoinSupplier;
+import net.daporkchop.fp2.util.threading.lazy.CompletedLazyFutureTask;
+import net.daporkchop.fp2.util.threading.lazy.LazyFutureTask;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
 
@@ -45,8 +45,8 @@ public abstract class AsyncCacheBase<K, V> implements IAsyncCache<K, V> {
     protected final Map<K, Object> map = new ObjObjConcurrentHashMap<>();
 
     @Override
-    public ForkJoinTask<V> get(@NonNull K key, boolean allowGeneration) {
-        class State implements BiFunction<K, Object, Object>, Supplier<ForkJoinTask<V>> {
+    public LazyFutureTask<V> get(@NonNull K key, boolean allowGeneration) {
+        class State implements BiFunction<K, Object, Object>, Supplier<LazyFutureTask<V>> {
             Object value;
 
             @Override
@@ -54,7 +54,7 @@ public abstract class AsyncCacheBase<K, V> implements IAsyncCache<K, V> {
                 if (value instanceof Reference) {
                     V dereferenced = PorkUtil.<Reference<V>>uncheckedCast(value).get();
 
-                    if (allowGeneration && dereferenced instanceof CompletedForkJoinTask) { //force generation
+                    if (allowGeneration && dereferenced instanceof CompletedLazyFutureTask) { //force generation
                         dereferenced = null;
                     }
 
@@ -77,11 +77,11 @@ public abstract class AsyncCacheBase<K, V> implements IAsyncCache<K, V> {
             }
 
             @Override
-            public ForkJoinTask<V> get() {
-                if (this.value instanceof ForkJoinTask) {
+            public LazyFutureTask<V> get() {
+                if (this.value instanceof LazyFutureTask) {
                     return uncheckedCast(this.value);
                 } else {
-                    return new CompletedForkJoinTask<>(uncheckedCast(this.value));
+                    return new CompletedLazyFutureTask<>(uncheckedCast(this.value));
                 }
             }
         }
@@ -114,16 +114,13 @@ public abstract class AsyncCacheBase<K, V> implements IAsyncCache<K, V> {
      *
      * @author DaPorkchop_
      */
-    protected class LoadTask extends ThreadSafeForkJoinSupplier<V> {
+    protected class LoadTask extends LazyFutureTask<V> {
         protected final K key;
         protected final boolean allowGeneration;
 
         public LoadTask(@NonNull K key, boolean allowGeneration) {
             this.key = key;
             this.allowGeneration = allowGeneration;
-
-            //immediately fork this task
-            this.fork();
         }
 
         @Override
@@ -133,7 +130,7 @@ public abstract class AsyncCacheBase<K, V> implements IAsyncCache<K, V> {
 
             if (value == null) {
                 checkState(!this.allowGeneration, "allowGeneration was true, but the value for %s wasn't generated!", this.key);
-                cacheValue = uncheckedCast(new CompletedForkJoinTask<>(null));
+                cacheValue = uncheckedCast(new CompletedLazyFutureTask<>(null));
             }
 
             //replace ForkJoinTask in cache with a weak reference

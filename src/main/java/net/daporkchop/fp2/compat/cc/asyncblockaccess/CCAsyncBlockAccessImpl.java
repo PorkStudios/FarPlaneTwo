@@ -43,10 +43,11 @@ import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.datastructure.ConcurrentBooleanHashSegtreeInt;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
-import net.daporkchop.fp2.util.threading.fj.ThreadSafeForkJoinSupplier;
-import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
+import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.util.threading.futurecache.IAsyncCache;
+import net.daporkchop.fp2.util.threading.lazy.LazyFutureTask;
+import net.daporkchop.lib.common.function.io.IOSupplier;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.concurrent.PFutures;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -65,10 +66,11 @@ import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Default implementation of {@link IAsyncBlockAccess} for vanilla worlds.
@@ -87,8 +89,8 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
 
     protected final ExtendedBlockStorage emptyStorage;
 
-    protected final ForkJoinTask<ConcurrentBooleanHashSegtreeInt> columnsExistCache;
-    protected final ForkJoinTask<ConcurrentBooleanHashSegtreeInt> cubesExistCache;
+    protected final CompletableFuture<ConcurrentBooleanHashSegtreeInt> columnsExistCache;
+    protected final CompletableFuture<ConcurrentBooleanHashSegtreeInt> cubesExistCache;
 
     public CCAsyncBlockAccessImpl(@NonNull WorldServer world) {
         this.world = world;
@@ -99,66 +101,59 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
 
         WorldChangeListenerManager.add(this.world, this);
 
-        this.columnsExistCache = new ThreadSafeForkJoinSupplier<ConcurrentBooleanHashSegtreeInt>() {
-            @Override
-            @SneakyThrows(IOException.class)
-            protected ConcurrentBooleanHashSegtreeInt compute() {
-                ConcurrentBooleanHashSegtreeInt tree = new ConcurrentBooleanHashSegtreeInt(2);
-                CCAsyncBlockAccessImpl.this.storage.forEachColumn(pos -> tree.set(pos.x, pos.z));
-                return tree;
-            }
-        }.fork();
-        this.cubesExistCache = new ThreadSafeForkJoinSupplier<ConcurrentBooleanHashSegtreeInt>() {
-            @Override
-            @SneakyThrows(IOException.class)
-            protected ConcurrentBooleanHashSegtreeInt compute() {
-                ConcurrentBooleanHashSegtreeInt tree = new ConcurrentBooleanHashSegtreeInt(3);
-                CCAsyncBlockAccessImpl.this.storage.forEachCube(pos -> tree.set(pos.getX(), pos.getY(), pos.getZ()));
-                return tree;
-            }
-        }.fork();
+        this.columnsExistCache = CompletableFuture.supplyAsync((IOSupplier<ConcurrentBooleanHashSegtreeInt>) () -> {
+            ConcurrentBooleanHashSegtreeInt tree = new ConcurrentBooleanHashSegtreeInt(2);
+            CCAsyncBlockAccessImpl.this.storage.forEachColumn(pos -> tree.set(pos.x, pos.z));
+            return tree;
+        });
+        this.cubesExistCache = CompletableFuture.supplyAsync((IOSupplier<ConcurrentBooleanHashSegtreeInt>) () -> {
+            ConcurrentBooleanHashSegtreeInt tree = new ConcurrentBooleanHashSegtreeInt(3);
+            CCAsyncBlockAccessImpl.this.storage.forEachCube(pos -> tree.set(pos.getX(), pos.getY(), pos.getZ()));
+            return tree;
+        });
     }
 
     @Override
     public IBlockHeightAccess prefetch(@NonNull Stream<ChunkPos> columns) {
         //collect all futures into a list first in order to issue all tasks at once before blocking, thus ensuring maximum parallelism
-        List<ForkJoinTask<IColumn>> columnFutures = columns.map(pos -> this.columns.get(pos, true)).collect(Collectors.toList());
+        LazyFutureTask<IColumn>[] columnFutures = uncheckedCast(columns.map(pos -> this.columns.get(pos, true)).toArray(LazyFutureTask[]::new));
 
-        return new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, columnFutures.stream().map(ForkJoinTask::join));
+        return new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, LazyFutureTask.scatterGather(columnFutures).stream());
     }
 
     @Override
     public IBlockHeightAccess prefetchWithoutGenerating(@NonNull Stream<ChunkPos> columns) throws GenerationNotAllowedException {
         //collect all futures into a list first in order to issue all tasks at once before blocking, thus ensuring maximum parallelism
-        List<ForkJoinTask<IColumn>> columnFutures = columns.map(pos -> this.columns.get(pos, false)).collect(Collectors.toList());
+        LazyFutureTask<IColumn>[] columnFutures = uncheckedCast(columns.map(pos -> this.columns.get(pos, false)).toArray(LazyFutureTask[]::new));
 
-        return new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, columnFutures.stream()
-                .map(ForkJoinTask::join).peek(GenerationNotAllowedException.throwIfNull()));
+        return new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, LazyFutureTask.scatterGather(columnFutures).stream()
+                .peek(GenerationNotAllowedException.throwIfNull()));
     }
 
     @Override
     public IBlockHeightAccess prefetch(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) {
         //collect all futures into a list first in order to issue all tasks at once before blocking, thus ensuring maximum parallelism
-        List<ForkJoinTask<IColumn>> columnFutures = columns.map(pos -> this.columns.get(pos, true)).collect(Collectors.toList());
-        List<IColumn> columnList = columnFutures.stream().map(ForkJoinTask::join).collect(Collectors.toList());
+        LazyFutureTask<IColumn>[] columnFutures = uncheckedCast(columns.map(pos -> this.columns.get(pos, true)).toArray(LazyFutureTask[]::new));
+        List<IColumn> columnList = LazyFutureTask.scatterGather(columnFutures);
 
-        List<ForkJoinTask<ICube>> cubeFutures = cubesMappingFunction.apply(new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, columnList.stream()))
-                .map(vec -> new CubePos(vec.getX(), vec.getY(), vec.getZ())).map(pos -> this.cubes.get(pos, true)).collect(Collectors.toList());
+        LazyFutureTask<ICube>[] cubeFutures = uncheckedCast(cubesMappingFunction.apply(new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, columnList.stream()))
+                .map(vec -> new CubePos(vec.getX(), vec.getY(), vec.getZ())).map(pos -> this.cubes.get(pos, true)).toArray(LazyFutureTask[]::new));
 
-        return new PrefetchedCubesCCAsyncBlockAccess(this, this.world, columnList.stream(), cubeFutures.stream().map(ForkJoinTask::join));
+        return new PrefetchedCubesCCAsyncBlockAccess(this, this.world, columnList.stream(), LazyFutureTask.scatterGather(cubeFutures).stream());
     }
 
     @Override
     public IBlockHeightAccess prefetchWithoutGenerating(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) throws GenerationNotAllowedException {
         //collect all futures into a list first in order to issue all tasks at once before blocking, thus ensuring maximum parallelism
-        List<ForkJoinTask<IColumn>> columnFutures = columns.map(pos -> this.columns.get(pos, false)).collect(Collectors.toList());
-        List<IColumn> columnList = columnFutures.stream().map(ForkJoinTask::join).peek(GenerationNotAllowedException.throwIfNull()).collect(Collectors.toList());
+        LazyFutureTask<IColumn>[] columnFutures = uncheckedCast(columns.map(pos -> this.columns.get(pos, false)).toArray(LazyFutureTask[]::new));
+        List<IColumn> columnList = LazyFutureTask.scatterGather(columnFutures);
+        columnList.forEach(GenerationNotAllowedException.throwIfNull());
 
-        List<ForkJoinTask<ICube>> cubeFutures = cubesMappingFunction.apply(new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, columnList.stream()))
-                .map(vec -> new CubePos(vec.getX(), vec.getY(), vec.getZ())).map(pos -> this.cubes.get(pos, false)).collect(Collectors.toList());
+        LazyFutureTask<ICube>[] cubeFutures = uncheckedCast(cubesMappingFunction.apply(new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, columnList.stream()))
+                .map(vec -> new CubePos(vec.getX(), vec.getY(), vec.getZ())).map(pos -> this.cubes.get(pos, false)).toArray(LazyFutureTask[]::new));
 
-        return new PrefetchedCubesCCAsyncBlockAccess(this, this.world, columnList.stream(), cubeFutures.stream()
-                .map(ForkJoinTask::join).peek(GenerationNotAllowedException.throwIfNull()));
+        return new PrefetchedCubesCCAsyncBlockAccess(this, this.world, columnList.stream(), LazyFutureTask.scatterGather(cubeFutures).stream()
+                .peek(GenerationNotAllowedException.throwIfNull()));
     }
 
     @Override

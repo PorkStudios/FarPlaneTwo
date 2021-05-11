@@ -22,7 +22,6 @@ package net.daporkchop.fp2.compat.vanilla.asyncblockaccess;
 
 import lombok.NonNull;
 import lombok.SneakyThrows;
-import net.daporkchop.fp2.compat.cc.asyncblockaccess.CCAsyncBlockAccessImpl;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.compat.vanilla.region.ThreadSafeRegionFileCache;
 import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
@@ -31,9 +30,10 @@ import net.daporkchop.fp2.util.datastructure.ConcurrentBooleanHashSegtreeInt;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
-import net.daporkchop.fp2.util.threading.fj.ThreadSafeForkJoinSupplier;
 import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.util.threading.futurecache.IAsyncCache;
+import net.daporkchop.fp2.util.threading.lazy.LazyFutureTask;
+import net.daporkchop.lib.common.function.io.IOSupplier;
 import net.daporkchop.lib.concurrent.PFutures;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTTagCompound;
@@ -50,13 +50,12 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.AnvilChunkLoader;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Default implementation of {@link IAsyncBlockAccess} for vanilla worlds.
@@ -69,7 +68,7 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
 
     protected final ChunkCache chunks = new ChunkCache();
 
-    protected final ForkJoinTask<ConcurrentBooleanHashSegtreeInt> chunksExistCache;
+    protected final CompletableFuture<ConcurrentBooleanHashSegtreeInt> chunksExistCache;
 
     public VanillaAsyncBlockAccessImpl(@NonNull WorldServer world) {
         this.world = world;
@@ -77,32 +76,28 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
 
         WorldChangeListenerManager.add(this.world, this);
 
-        this.chunksExistCache = new ThreadSafeForkJoinSupplier<ConcurrentBooleanHashSegtreeInt>() {
-            @Override
-            @SneakyThrows(IOException.class)
-            protected ConcurrentBooleanHashSegtreeInt compute() {
-                ConcurrentBooleanHashSegtreeInt tree = new ConcurrentBooleanHashSegtreeInt(2);
-                ThreadSafeRegionFileCache.INSTANCE.forEachChunk(VanillaAsyncBlockAccessImpl.this.io.chunkSaveLocation.toPath(), pos -> tree.set(pos.x, pos.z));
-                return tree;
-            }
-        }.fork();
+        this.chunksExistCache = CompletableFuture.supplyAsync((IOSupplier<ConcurrentBooleanHashSegtreeInt>) () -> {
+            ConcurrentBooleanHashSegtreeInt tree = new ConcurrentBooleanHashSegtreeInt(2);
+            ThreadSafeRegionFileCache.INSTANCE.forEachChunk(VanillaAsyncBlockAccessImpl.this.io.chunkSaveLocation.toPath(), pos -> tree.set(pos.x, pos.z));
+            return tree;
+        });
     }
 
     @Override
     public IBlockHeightAccess prefetch(@NonNull Stream<ChunkPos> columns) {
         //collect all futures into a list first in order to issue all tasks at once before blocking, thus ensuring maximum parallelism
-        List<ForkJoinTask<Chunk>> chunkFutures = columns.map(pos -> this.chunks.get(pos, true)).collect(Collectors.toList());
+        LazyFutureTask<Chunk>[] chunkFutures = uncheckedCast(columns.map(pos -> this.chunks.get(pos, true)).toArray(LazyFutureTask[]::new));
 
-        return new PrefetchedColumnsVanillaAsyncBlockAccess(this, this.world, chunkFutures.stream().map(ForkJoinTask::join));
+        return new PrefetchedColumnsVanillaAsyncBlockAccess(this, this.world, LazyFutureTask.scatterGather(chunkFutures).stream());
     }
 
     @Override
     public IBlockHeightAccess prefetchWithoutGenerating(@NonNull Stream<ChunkPos> columns) throws GenerationNotAllowedException {
         //collect all futures into a list first in order to issue all tasks at once before blocking, thus ensuring maximum parallelism
-        List<ForkJoinTask<Chunk>> chunkFutures = columns.map(pos -> this.chunks.get(pos, false)).collect(Collectors.toList());
+        LazyFutureTask<Chunk>[] chunkFutures = uncheckedCast(columns.map(pos -> this.chunks.get(pos, false)).toArray(LazyFutureTask[]::new));
 
-        return new PrefetchedColumnsVanillaAsyncBlockAccess(this, this.world, chunkFutures.stream()
-                .map(ForkJoinTask::join).peek(GenerationNotAllowedException.throwIfNull()));
+        return new PrefetchedColumnsVanillaAsyncBlockAccess(this, this.world, LazyFutureTask.scatterGather(chunkFutures).stream()
+                .peek(GenerationNotAllowedException.throwIfNull()));
     }
 
     @Override

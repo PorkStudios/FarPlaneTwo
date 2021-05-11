@@ -21,12 +21,16 @@
 package net.daporkchop.fp2.util.threading;
 
 import lombok.NonNull;
+import lombok.SneakyThrows;
+import net.daporkchop.lib.common.function.PFunctions;
+import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Collection;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -80,25 +84,25 @@ public class PriorityRecursiveExecutor<T extends Comparable<T> & Predicate<T>> i
         }
     }
 
+    @SneakyThrows(InterruptedException.class)
     public void shutdown() {
+        //set running flag to false
         this.running = false;
 
-        //interrupt all workers
-        for (Thread t : this.threads) {
-            t.interrupt();
-        }
+        do {
+            //keep queue topped up with fake tasks
+            this.queue.set.clear();
+            if (this.queue.lock.availablePermits() < this.threads.length) {
+                this.queue.lock.release(this.threads.length - this.queue.lock.availablePermits());
+            }
 
-        //wait for all workers to shut down
-        for (Thread t : this.threads) {
-            do {
-                try {
-                    t.join(50L);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-                ServerThreadExecutor.INSTANCE.workOffQueue();
-            } while (t.isAlive());
-        }
+            //sleep to avoid spinning at 100%
+            //side note: i hate this, it's so ugly
+            Thread.sleep(50L);
+
+            //avoid deadlock by continuing to work off any server thread tasks that might pile up
+            ServerThreadExecutor.INSTANCE.workOffQueue();
+        } while (Stream.of(this.threads).anyMatch(Thread::isAlive));
     }
 
     @Override
@@ -106,7 +110,12 @@ public class PriorityRecursiveExecutor<T extends Comparable<T> & Predicate<T>> i
     public void run() {
         while (this.running) {
             try {
-                this.worker.accept(this.queue.take());
+                T val = this.queue.take();
+                if (val == null) {
+                    return; //null value means we need to exit
+                }
+
+                this.worker.accept(val);
             } catch (InterruptedException e) {
                 //gracefully exit on interrupt
                 return;
