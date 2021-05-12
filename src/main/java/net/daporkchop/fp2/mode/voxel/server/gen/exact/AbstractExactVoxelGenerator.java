@@ -21,18 +21,16 @@
 package net.daporkchop.fp2.mode.voxel.server.gen.exact;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.util.BlockType;
 import net.daporkchop.fp2.util.Constants;
-import net.minecraft.block.Block;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
-import net.minecraft.world.biome.Biome;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
@@ -97,11 +95,11 @@ public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator i
                             //((edges >> (edge << 1) >> 1) & 1) is 1 if the face is negative, 0 otherwise
                             int i = EDGE_VERTEX_MAP[(edge << 1) | ((edges >> (edge << 1) >> 1) & 1)];
                             pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
-                            data.states[edge] = Block.getStateId(world.getBlockState(pos));
+                            data.states[edge] = FastRegistry.getId(world.getBlockState(pos));
                         }
                     }
 
-                    data.biome = Biome.getIdForBiome(world.getBiome(pos));
+                    data.biome = FastRegistry.getId(world.getBiome(pos));
 
                     int skyLight = 0;
                     int blockLight = 0;

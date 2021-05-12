@@ -22,6 +22,7 @@ package net.daporkchop.fp2.compat.cc.biome;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.vanilla.IBiomeAccess;
 import net.minecraft.init.Biomes;
 import net.minecraft.util.math.BlockPos;
@@ -39,6 +40,6 @@ public class Column2dBiomeAccessWrapper implements IBiomeAccess {
 
     @Override
     public Biome getBiome(@NonNull BlockPos pos) {
-        return Biome.getBiome(this.biomeArray[(pos.getX() & 0xF) << 4 | (pos.getZ() & 0xF)] & 0xFF, Biomes.PLAINS);
+        return FastRegistry.getBiome(this.biomeArray[(pos.getX() & 0xF) << 4 | (pos.getZ() & 0xF)] & 0xFF, Biomes.PLAINS);
     }
 }

@@ -25,6 +25,7 @@ import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import io.github.opencubicchunks.cubicchunks.core.util.AddressTools;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.vanilla.IBiomeAccess;
 import net.minecraft.init.Biomes;
 import net.minecraft.util.math.BlockPos;
@@ -44,6 +45,6 @@ public class CubeBiomeAccessWrapper implements IBiomeAccess {
     public Biome getBiome(@NonNull BlockPos pos) {
         int biomeX = Coords.blockToBiome(pos.getX());
         int biomeZ = Coords.blockToBiome(pos.getZ());
-        return Biome.getBiome(this.biomeArray[AddressTools.getBiomeAddress(biomeX, biomeZ)] & 0xFF, Biomes.PLAINS);
+        return FastRegistry.getBiome(this.biomeArray[AddressTools.getBiomeAddress(biomeX, biomeZ)] & 0xFF, Biomes.PLAINS);
     }
 }

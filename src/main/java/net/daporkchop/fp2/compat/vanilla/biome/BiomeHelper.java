@@ -23,6 +23,7 @@ package net.daporkchop.fp2.compat.vanilla.biome;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2;
+import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerAddIsland;
@@ -241,7 +242,7 @@ public class BiomeHelper {
         if (biome != null && biome.getBiomeClass() == BiomeJungle.class) {
             return true;
         } else {
-            int id = Biome.getIdForBiome(biome);
+            int id = FastRegistry.getId(biome);
             return id == ID_JUNGLE || id == ID_JUNGLE_EDGE || id == ID_JUNGLE_HILLS || id == ID_FOREST || id == ID_TAIGA || BiomeManager.oceanBiomes.contains(biome);
         }
     }
@@ -263,8 +264,8 @@ public class BiomeHelper {
             return true;
         }
 
-        Biome a = Biome.getBiome(idA);
-        Biome b = Biome.getBiome(idB);
+        Biome a = FastRegistry.getBiome(idA);
+        Biome b = FastRegistry.getBiome(idB);
         if (a != null && b != null) {
             return a != Biomes.MESA_ROCK && a != Biomes.MESA_CLEAR_ROCK
                     ? a == b || a.getBiomeClass() == b.getBiomeClass()
@@ -279,8 +280,8 @@ public class BiomeHelper {
             return true;
         }
 
-        Biome a = Biome.getBiome(idA);
-        Biome b = Biome.getBiome(idB);
+        Biome a = FastRegistry.getBiome(idA);
+        Biome b = FastRegistry.getBiome(idB);
         if (a != null && b != null) {
             Biome.TempCategory ta = a.getTempCategory();
             Biome.TempCategory tb = b.getTempCategory();

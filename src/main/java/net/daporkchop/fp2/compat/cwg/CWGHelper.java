@@ -20,12 +20,12 @@
 
 package net.daporkchop.fp2.compat.cwg;
 
-import com.flowpowered.noise.Utils;
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.replacer.SwampWaterWithLilypadReplacer;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.BiomeSource;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
@@ -50,9 +50,9 @@ public class CWGHelper {
     }
 
     public static IBiomeBlockReplacer[][] blockReplacerMapToArray(@NonNull Map<Biome, List<IBiomeBlockReplacer>> replacerMap) {
-        int maxBiomeId = replacerMap.keySet().stream().mapToInt(Biome::getIdForBiome).max().orElse(0);
+        int maxBiomeId = replacerMap.keySet().stream().mapToInt(FastRegistry::getId).max().orElse(0);
         IBiomeBlockReplacer[][] biomeReplacers = new IBiomeBlockReplacer[maxBiomeId + 1][];
-        replacerMap.forEach((biome, list) -> biomeReplacers[Biome.getIdForBiome(biome)]
+        replacerMap.forEach((biome, list) -> biomeReplacers[FastRegistry.getId(biome)]
                 = list.stream().filter(r -> !(r instanceof SwampWaterWithLilypadReplacer)).toArray(IBiomeBlockReplacer[]::new));
         return biomeReplacers;
     }

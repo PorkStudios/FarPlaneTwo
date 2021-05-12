@@ -29,6 +29,7 @@ import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.type.Int2_10_10_10_Rev;
+import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
@@ -129,6 +130,10 @@ public class VoxelBake {
     }
 
     protected PointOctree3I buildLowPointOctree(VoxelTile[] srcs) {
+        if (true) { //TODO: low octree isn't actually used atm
+            return null;
+        }
+
         final VoxelData data = new VoxelData();
         final IntList highPoints = new IntArrayList();
 
@@ -243,11 +248,12 @@ public class VoxelBake {
         final int blockZ = baseZ + ((z & ~(z & T_VOXELS)) << level);
 
         pos.setPos(blockX, blockY, blockZ);
-        biomeAccess.biome(Biome.getBiome(data.biome, Biomes.PLAINS));
+        biomeAccess.biome(FastRegistry.getBiome(data.biome, Biomes.PLAINS));
 
-        vertices.writeIntLE(TexUVs.STATEID_TO_INDEXID.get(Block.getStateById(data.states[0]))); //state
+        IBlockState state = FastRegistry.getBlockState(data.states[0]);
+        vertices.writeIntLE(TexUVs.STATEID_TO_INDEXID.get(state)); //state
         vertices.writeShortLE(Constants.packedLightTo8BitVec2(data.light)); //light
-        vertices.writeMediumLE(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.states[0]), biomeAccess, pos, 0))); //color
+        vertices.writeMediumLE(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(state, biomeAccess, pos, 0))); //color
 
         int offset = level == 0 ? POS_ONE >> 1 : 0;
 
@@ -284,8 +290,9 @@ public class VoxelBake {
                 vertices.writeBytes(vertices, bufIndex - VOXEL_VERTEX_SIZE, VOXEL_VERTEX_SIZE);
             }
 
-            vertices.setIntLE(bufIndex, TexUVs.STATEID_TO_INDEXID.get(Block.getStateById(data.states[edge])));
-            vertices.setMediumLE(bufIndex + 6, Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(Block.getStateById(data.states[edge]), biomeAccess, pos, 0))); //color
+            IBlockState edgeState = FastRegistry.getBlockState(data.states[edge]);
+            vertices.setIntLE(bufIndex, TexUVs.STATEID_TO_INDEXID.get(edgeState));
+            vertices.setMediumLE(bufIndex + 6, Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(edgeState, biomeAccess, pos, 0))); //color
             map[baseMapIndex + edge] = indexCounter++;
         }
         return indexCounter;
@@ -318,7 +325,7 @@ public class VoxelBake {
                     continue; //skip if any of the vertices are missing
                 }
 
-                IBlockState state = Block.getStateById(data.states[edge]);
+                IBlockState state = FastRegistry.getBlockState(data.states[edge]);
                 ByteBuf buf = indices[renderType(state)];
 
                 boolean water = state.getBlock() == Blocks.WATER;

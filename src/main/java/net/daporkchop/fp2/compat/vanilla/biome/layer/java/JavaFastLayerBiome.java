@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.biome.Biome;
@@ -65,7 +66,7 @@ public class JavaFastLayerBiome extends AbstractFastLayer implements IJavaTransl
             boolean modded = BiomeManager.isTypeListModded(type);
 
             return biomes.stream().flatMapToInt(entry -> {
-                        int biomeId = Biome.getIdForBiome(entry.biome);
+                        int biomeId = FastRegistry.getId(entry.biome);
                         return IntStream.range(0, modded ? entry.itemWeight : entry.itemWeight / 10).map(i -> biomeId);
                     })
                     .toArray();

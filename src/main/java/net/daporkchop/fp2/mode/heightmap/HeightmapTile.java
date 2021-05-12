@@ -24,10 +24,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.unsafe.PUnsafe;
-import net.minecraft.block.Block;
 import net.minecraft.world.biome.Biome;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
@@ -91,8 +91,8 @@ public class HeightmapTile implements IFarTile {
 
     static void writeLayer(long base, HeightmapData data) {
         PUnsafe.putInt(base + 0L, data.height_int);
-        PUnsafe.putInt(base + 4L, (Block.getStateId(data.state) << 8) | data.height_frac);
-        PUnsafe.putInt(base + 8L, (data.secondaryConnection << 16) | (data.light << 8) | Biome.getIdForBiome(data.biome));
+        PUnsafe.putInt(base + 4L, (FastRegistry.getId(data.state) << 8) | data.height_frac);
+        PUnsafe.putInt(base + 8L, (data.secondaryConnection << 16) | (data.light << 8) | FastRegistry.getId(data.biome));
     }
 
     static void readLayer(long base, HeightmapData data) {
@@ -102,7 +102,7 @@ public class HeightmapTile implements IFarTile {
 
         data.height_int = i0;
         data.height_frac = i1 & 0xFF;
-        data.state = Block.getStateById(i1 >>> 8);
+        data.state = FastRegistry.getBlockState(i1 >>> 8);
         data.light = (i2 >>> 8) & 0xFF;
         data.biome = Biome.getBiomeForId(i2 & 0xFF);
         data.secondaryConnection = i2 >>> 16;

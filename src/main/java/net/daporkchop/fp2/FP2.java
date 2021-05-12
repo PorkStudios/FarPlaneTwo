@@ -21,6 +21,7 @@
 package net.daporkchop.fp2;
 
 import net.daporkchop.fp2.client.FP2Client;
+import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.debug.FP2Debug;
 import net.daporkchop.fp2.net.client.CPacketDropAllTiles;
 import net.daporkchop.fp2.net.client.CPacketRenderMode;
@@ -33,6 +34,7 @@ import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLModIdMappingEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
@@ -96,6 +98,11 @@ public class FP2 {
     public void serverStopped(FMLServerStoppedEvent event) {
         ServerThreadExecutor.INSTANCE.workOffQueue();
         ServerThreadExecutor.INSTANCE.shutdown();
+    }
+
+    @Mod.EventHandler
+    public void onIdsChanged(FMLModIdMappingEvent event) {
+        FastRegistry.reload();
     }
 
     protected void registerPackets() {

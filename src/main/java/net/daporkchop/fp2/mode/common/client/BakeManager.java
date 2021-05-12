@@ -48,20 +48,21 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 public class BakeManager<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarTileCache.Listener<POS, T> {
     protected static final long[] EMPTY_TIMESTAMPS = new long[0];
 
-    protected static boolean compareTimestamps(@NonNull long[] a, @NonNull long[] b) {
-        if (a == EMPTY_TIMESTAMPS) {
-            return a != b;
+    protected static boolean compareTimestamps(@NonNull long[] oldTimestamps, @NonNull long[] newTimestamps) {
+        if (oldTimestamps == EMPTY_TIMESTAMPS) {
+            return oldTimestamps != newTimestamps;
         }
-        checkArg(a.length == b.length, "%d != %d", a.length, b.length);
+        checkArg(oldTimestamps.length == newTimestamps.length, "%d != %d", oldTimestamps.length, newTimestamps.length);
 
-        for (int i = 0, len = a.length; i < len; i++) {
-            if (a[i] >> 63L != b[i] >> 63L) { //sign changed - this means the tile in question was added/removed
+        for (int i = 0, len = oldTimestamps.length; i < len; i++) {
+            if (oldTimestamps[i] >> 63L != newTimestamps[i] >> 63L) { //sign changed - this means the tile in question was added/removed
                 return true;
-            } else if (a[i] < b[i]) { //tile is newer
+            } else if (oldTimestamps[i] < newTimestamps[i]) { //tile is newer
                 return true;
             }
         }
         return false;
+        //return !Arrays.equals(oldTimestamps, newTimestamps);
     }
 
     protected final AbstractFarRenderer<POS, T> renderer;

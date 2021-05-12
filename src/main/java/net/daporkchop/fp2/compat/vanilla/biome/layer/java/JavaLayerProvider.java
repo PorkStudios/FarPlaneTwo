@@ -22,7 +22,6 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper;
-import net.daporkchop.fp2.compat.vanilla.biome.BiomeHelperCached;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.minecraft.world.gen.layer.GenLayer;
@@ -68,9 +67,6 @@ public class JavaLayerProvider implements FastLayerProvider {
 
     @Override
     public IFastLayer[] makeFast(@NonNull GenLayer... inputs) {
-        //reload biome helper cache to ensure the cached information is kept up-to-date
-        BiomeHelperCached.reload();
-
         //initial add all layers and find their children
         Map<GenLayer, GenLayer[]> children = new IdentityHashMap<>();
         for (GenLayer layer : inputs) {

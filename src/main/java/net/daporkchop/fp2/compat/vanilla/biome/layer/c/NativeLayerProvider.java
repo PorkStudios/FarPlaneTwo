@@ -55,12 +55,7 @@ import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelperCached.*;
  * @author DaPorkchop_
  */
 public class NativeLayerProvider extends JavaLayerProvider implements BiomeHelperCached.ReloadListener {
-    /**
-     * @see FastLayerProvider#INSTANCE
-     * @deprecated internal API, do not touch!
-     */
     @Deprecated
-    @SuppressWarnings("deprecation")
     public NativeLayerProvider() {
         //vanilla layers
         this.fastMapperOverrides.put(GenLayerAddIsland.class, layer -> new NativeFastLayerAddIsland(layer.worldGenSeed));

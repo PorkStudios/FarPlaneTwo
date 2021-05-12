@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.voxel.server.gen.rough;
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.cwg.CWGContext;
+import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
@@ -102,7 +103,7 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<CWGContext> implem
     @Override
     protected int getFaceState(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, double density0, double density1, int edge, int layer, CWGContext ctx) {
         if (layer == 0) { //layer 0 is always water lol
-            return Block.getStateId(Blocks.WATER.getDefaultState());
+            return FastRegistry.getId(Blocks.WATER.getDefaultState());
         }
 
         double density = -min(density0, density1);
@@ -112,7 +113,7 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<CWGContext> implem
             state = replacer.getReplacedBlock(state, blockX, blockY, blockZ, nx, ny, nz, density);
         }
 
-        return Block.getStateId(state);
+        return FastRegistry.getId(state);
     }
 
     @Override

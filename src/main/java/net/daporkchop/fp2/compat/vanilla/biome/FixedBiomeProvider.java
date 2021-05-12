@@ -22,6 +22,7 @@ package net.daporkchop.fp2.compat.vanilla.biome;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.vanilla.biome.weight.BiomeWeightHelper;
 import net.minecraft.world.biome.Biome;
 
@@ -37,7 +38,7 @@ public class FixedBiomeProvider implements IBiomeProvider {
     protected final int biomeId;
 
     public FixedBiomeProvider(@NonNull Biome biome) {
-        this.biomeId = Biome.getIdForBiome(biome);
+        this.biomeId = FastRegistry.getId(biome);
     }
 
     @Override

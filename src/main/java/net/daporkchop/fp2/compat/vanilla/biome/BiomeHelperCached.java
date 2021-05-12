@@ -22,6 +22,7 @@ package net.daporkchop.fp2.compat.vanilla.biome;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.minecraft.init.Biomes;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeJungle;
@@ -124,7 +125,7 @@ public class BiomeHelperCached {
     private static final Set<ReloadListener> RELOAD_LISTENERS = new CopyOnWriteArraySet<>();
 
     static {
-        reload();
+        FastRegistry.addReloadListener(BiomeHelperCached::reload);
     }
 
     /**
@@ -132,75 +133,75 @@ public class BiomeHelperCached {
      */
     public synchronized static void reload() {
         //set biome IDs
-        ID_OCEAN = Biome.getIdForBiome(Biomes.OCEAN);
-        ID_DEFAULT = Biome.getIdForBiome(Biomes.DEFAULT);
-        ID_PLAINS = Biome.getIdForBiome(Biomes.PLAINS);
-        ID_DESERT = Biome.getIdForBiome(Biomes.DESERT);
-        ID_EXTREME_HILLS = Biome.getIdForBiome(Biomes.EXTREME_HILLS);
-        ID_FOREST = Biome.getIdForBiome(Biomes.FOREST);
-        ID_TAIGA = Biome.getIdForBiome(Biomes.TAIGA);
-        ID_SWAMPLAND = Biome.getIdForBiome(Biomes.SWAMPLAND);
-        ID_RIVER = Biome.getIdForBiome(Biomes.RIVER);
-        ID_HELL = Biome.getIdForBiome(Biomes.HELL);
-        ID_SKY = Biome.getIdForBiome(Biomes.SKY);
-        ID_FROZEN_OCEAN = Biome.getIdForBiome(Biomes.FROZEN_OCEAN);
-        ID_FROZEN_RIVER = Biome.getIdForBiome(Biomes.FROZEN_RIVER);
-        ID_ICE_PLAINS = Biome.getIdForBiome(Biomes.ICE_PLAINS);
-        ID_ICE_MOUNTAINS = Biome.getIdForBiome(Biomes.ICE_MOUNTAINS);
-        ID_MUSHROOM_ISLAND = Biome.getIdForBiome(Biomes.MUSHROOM_ISLAND);
-        ID_MUSHROOM_ISLAND_SHORE = Biome.getIdForBiome(Biomes.MUSHROOM_ISLAND_SHORE);
-        ID_BEACH = Biome.getIdForBiome(Biomes.BEACH);
-        ID_DESERT_HILLS = Biome.getIdForBiome(Biomes.DESERT_HILLS);
-        ID_FOREST_HILLS = Biome.getIdForBiome(Biomes.FOREST_HILLS);
-        ID_TAIGA_HILLS = Biome.getIdForBiome(Biomes.TAIGA_HILLS);
-        ID_EXTREME_HILLS_EDGE = Biome.getIdForBiome(Biomes.EXTREME_HILLS_EDGE);
-        ID_JUNGLE = Biome.getIdForBiome(Biomes.JUNGLE);
-        ID_JUNGLE_HILLS = Biome.getIdForBiome(Biomes.JUNGLE_HILLS);
-        ID_JUNGLE_EDGE = Biome.getIdForBiome(Biomes.JUNGLE_EDGE);
-        ID_DEEP_OCEAN = Biome.getIdForBiome(Biomes.DEEP_OCEAN);
-        ID_STONE_BEACH = Biome.getIdForBiome(Biomes.STONE_BEACH);
-        ID_COLD_BEACH = Biome.getIdForBiome(Biomes.COLD_BEACH);
-        ID_BIRCH_FOREST = Biome.getIdForBiome(Biomes.BIRCH_FOREST);
-        ID_BIRCH_FOREST_HILLS = Biome.getIdForBiome(Biomes.BIRCH_FOREST_HILLS);
-        ID_ROOFED_FOREST = Biome.getIdForBiome(Biomes.ROOFED_FOREST);
-        ID_COLD_TAIGA = Biome.getIdForBiome(Biomes.COLD_TAIGA);
-        ID_COLD_TAIGA_HILLS = Biome.getIdForBiome(Biomes.COLD_TAIGA_HILLS);
-        ID_REDWOOD_TAIGA = Biome.getIdForBiome(Biomes.REDWOOD_TAIGA);
-        ID_REDWOOD_TAIGA_HILLS = Biome.getIdForBiome(Biomes.REDWOOD_TAIGA_HILLS);
-        ID_EXTREME_HILLS_WITH_TREES = Biome.getIdForBiome(Biomes.EXTREME_HILLS_WITH_TREES);
-        ID_SAVANNA = Biome.getIdForBiome(Biomes.SAVANNA);
-        ID_SAVANNA_PLATEAU = Biome.getIdForBiome(Biomes.SAVANNA_PLATEAU);
-        ID_MESA = Biome.getIdForBiome(Biomes.MESA);
-        ID_MESA_ROCK = Biome.getIdForBiome(Biomes.MESA_ROCK);
-        ID_MESA_CLEAR_ROCK = Biome.getIdForBiome(Biomes.MESA_CLEAR_ROCK);
-        ID_VOID = Biome.getIdForBiome(Biomes.VOID);
-        ID_MUTATED_PLAINS = Biome.getIdForBiome(Biomes.MUTATED_PLAINS);
-        ID_MUTATED_DESERT = Biome.getIdForBiome(Biomes.MUTATED_DESERT);
-        ID_MUTATED_EXTREME_HILLS = Biome.getIdForBiome(Biomes.MUTATED_EXTREME_HILLS);
-        ID_MUTATED_FOREST = Biome.getIdForBiome(Biomes.MUTATED_FOREST);
-        ID_MUTATED_TAIGA = Biome.getIdForBiome(Biomes.MUTATED_TAIGA);
-        ID_MUTATED_SWAMPLAND = Biome.getIdForBiome(Biomes.MUTATED_SWAMPLAND);
-        ID_MUTATED_ICE_FLATS = Biome.getIdForBiome(Biomes.MUTATED_ICE_FLATS);
-        ID_MUTATED_JUNGLE = Biome.getIdForBiome(Biomes.MUTATED_JUNGLE);
-        ID_MUTATED_JUNGLE_EDGE = Biome.getIdForBiome(Biomes.MUTATED_JUNGLE_EDGE);
-        ID_MUTATED_BIRCH_FOREST = Biome.getIdForBiome(Biomes.MUTATED_BIRCH_FOREST);
-        ID_MUTATED_BIRCH_FOREST_HILLS = Biome.getIdForBiome(Biomes.MUTATED_BIRCH_FOREST_HILLS);
-        ID_MUTATED_ROOFED_FOREST = Biome.getIdForBiome(Biomes.MUTATED_ROOFED_FOREST);
-        ID_MUTATED_TAIGA_COLD = Biome.getIdForBiome(Biomes.MUTATED_TAIGA_COLD);
-        ID_MUTATED_REDWOOD_TAIGA = Biome.getIdForBiome(Biomes.MUTATED_REDWOOD_TAIGA);
-        ID_MUTATED_REDWOOD_TAIGA_HILLS = Biome.getIdForBiome(Biomes.MUTATED_REDWOOD_TAIGA_HILLS);
-        ID_MUTATED_EXTREME_HILLS_WITH_TREES = Biome.getIdForBiome(Biomes.MUTATED_EXTREME_HILLS_WITH_TREES);
-        ID_MUTATED_SAVANNA = Biome.getIdForBiome(Biomes.MUTATED_SAVANNA);
-        ID_MUTATED_SAVANNA_ROCK = Biome.getIdForBiome(Biomes.MUTATED_SAVANNA_ROCK);
-        ID_MUTATED_MESA = Biome.getIdForBiome(Biomes.MUTATED_MESA);
-        ID_MUTATED_MESA_ROCK = Biome.getIdForBiome(Biomes.MUTATED_MESA_ROCK);
-        ID_MUTATED_MESA_CLEAR_ROCK = Biome.getIdForBiome(Biomes.MUTATED_MESA_CLEAR_ROCK);
+        ID_OCEAN = FastRegistry.getId(Biomes.OCEAN);
+        ID_DEFAULT = FastRegistry.getId(Biomes.DEFAULT);
+        ID_PLAINS = FastRegistry.getId(Biomes.PLAINS);
+        ID_DESERT = FastRegistry.getId(Biomes.DESERT);
+        ID_EXTREME_HILLS = FastRegistry.getId(Biomes.EXTREME_HILLS);
+        ID_FOREST = FastRegistry.getId(Biomes.FOREST);
+        ID_TAIGA = FastRegistry.getId(Biomes.TAIGA);
+        ID_SWAMPLAND = FastRegistry.getId(Biomes.SWAMPLAND);
+        ID_RIVER = FastRegistry.getId(Biomes.RIVER);
+        ID_HELL = FastRegistry.getId(Biomes.HELL);
+        ID_SKY = FastRegistry.getId(Biomes.SKY);
+        ID_FROZEN_OCEAN = FastRegistry.getId(Biomes.FROZEN_OCEAN);
+        ID_FROZEN_RIVER = FastRegistry.getId(Biomes.FROZEN_RIVER);
+        ID_ICE_PLAINS = FastRegistry.getId(Biomes.ICE_PLAINS);
+        ID_ICE_MOUNTAINS = FastRegistry.getId(Biomes.ICE_MOUNTAINS);
+        ID_MUSHROOM_ISLAND = FastRegistry.getId(Biomes.MUSHROOM_ISLAND);
+        ID_MUSHROOM_ISLAND_SHORE = FastRegistry.getId(Biomes.MUSHROOM_ISLAND_SHORE);
+        ID_BEACH = FastRegistry.getId(Biomes.BEACH);
+        ID_DESERT_HILLS = FastRegistry.getId(Biomes.DESERT_HILLS);
+        ID_FOREST_HILLS = FastRegistry.getId(Biomes.FOREST_HILLS);
+        ID_TAIGA_HILLS = FastRegistry.getId(Biomes.TAIGA_HILLS);
+        ID_EXTREME_HILLS_EDGE = FastRegistry.getId(Biomes.EXTREME_HILLS_EDGE);
+        ID_JUNGLE = FastRegistry.getId(Biomes.JUNGLE);
+        ID_JUNGLE_HILLS = FastRegistry.getId(Biomes.JUNGLE_HILLS);
+        ID_JUNGLE_EDGE = FastRegistry.getId(Biomes.JUNGLE_EDGE);
+        ID_DEEP_OCEAN = FastRegistry.getId(Biomes.DEEP_OCEAN);
+        ID_STONE_BEACH = FastRegistry.getId(Biomes.STONE_BEACH);
+        ID_COLD_BEACH = FastRegistry.getId(Biomes.COLD_BEACH);
+        ID_BIRCH_FOREST = FastRegistry.getId(Biomes.BIRCH_FOREST);
+        ID_BIRCH_FOREST_HILLS = FastRegistry.getId(Biomes.BIRCH_FOREST_HILLS);
+        ID_ROOFED_FOREST = FastRegistry.getId(Biomes.ROOFED_FOREST);
+        ID_COLD_TAIGA = FastRegistry.getId(Biomes.COLD_TAIGA);
+        ID_COLD_TAIGA_HILLS = FastRegistry.getId(Biomes.COLD_TAIGA_HILLS);
+        ID_REDWOOD_TAIGA = FastRegistry.getId(Biomes.REDWOOD_TAIGA);
+        ID_REDWOOD_TAIGA_HILLS = FastRegistry.getId(Biomes.REDWOOD_TAIGA_HILLS);
+        ID_EXTREME_HILLS_WITH_TREES = FastRegistry.getId(Biomes.EXTREME_HILLS_WITH_TREES);
+        ID_SAVANNA = FastRegistry.getId(Biomes.SAVANNA);
+        ID_SAVANNA_PLATEAU = FastRegistry.getId(Biomes.SAVANNA_PLATEAU);
+        ID_MESA = FastRegistry.getId(Biomes.MESA);
+        ID_MESA_ROCK = FastRegistry.getId(Biomes.MESA_ROCK);
+        ID_MESA_CLEAR_ROCK = FastRegistry.getId(Biomes.MESA_CLEAR_ROCK);
+        ID_VOID = FastRegistry.getId(Biomes.VOID);
+        ID_MUTATED_PLAINS = FastRegistry.getId(Biomes.MUTATED_PLAINS);
+        ID_MUTATED_DESERT = FastRegistry.getId(Biomes.MUTATED_DESERT);
+        ID_MUTATED_EXTREME_HILLS = FastRegistry.getId(Biomes.MUTATED_EXTREME_HILLS);
+        ID_MUTATED_FOREST = FastRegistry.getId(Biomes.MUTATED_FOREST);
+        ID_MUTATED_TAIGA = FastRegistry.getId(Biomes.MUTATED_TAIGA);
+        ID_MUTATED_SWAMPLAND = FastRegistry.getId(Biomes.MUTATED_SWAMPLAND);
+        ID_MUTATED_ICE_FLATS = FastRegistry.getId(Biomes.MUTATED_ICE_FLATS);
+        ID_MUTATED_JUNGLE = FastRegistry.getId(Biomes.MUTATED_JUNGLE);
+        ID_MUTATED_JUNGLE_EDGE = FastRegistry.getId(Biomes.MUTATED_JUNGLE_EDGE);
+        ID_MUTATED_BIRCH_FOREST = FastRegistry.getId(Biomes.MUTATED_BIRCH_FOREST);
+        ID_MUTATED_BIRCH_FOREST_HILLS = FastRegistry.getId(Biomes.MUTATED_BIRCH_FOREST_HILLS);
+        ID_MUTATED_ROOFED_FOREST = FastRegistry.getId(Biomes.MUTATED_ROOFED_FOREST);
+        ID_MUTATED_TAIGA_COLD = FastRegistry.getId(Biomes.MUTATED_TAIGA_COLD);
+        ID_MUTATED_REDWOOD_TAIGA = FastRegistry.getId(Biomes.MUTATED_REDWOOD_TAIGA);
+        ID_MUTATED_REDWOOD_TAIGA_HILLS = FastRegistry.getId(Biomes.MUTATED_REDWOOD_TAIGA_HILLS);
+        ID_MUTATED_EXTREME_HILLS_WITH_TREES = FastRegistry.getId(Biomes.MUTATED_EXTREME_HILLS_WITH_TREES);
+        ID_MUTATED_SAVANNA = FastRegistry.getId(Biomes.MUTATED_SAVANNA);
+        ID_MUTATED_SAVANNA_ROCK = FastRegistry.getId(Biomes.MUTATED_SAVANNA_ROCK);
+        ID_MUTATED_MESA = FastRegistry.getId(Biomes.MUTATED_MESA);
+        ID_MUTATED_MESA_ROCK = FastRegistry.getId(Biomes.MUTATED_MESA_ROCK);
+        ID_MUTATED_MESA_CLEAR_ROCK = FastRegistry.getId(Biomes.MUTATED_MESA_CLEAR_ROCK);
 
         //set flag properties for each biome
         byte[] flags = new byte[BIOME_COUNT];
         for (int id = 0; id < BIOME_COUNT; id++) {
             byte temp = 0;
-            Biome biome = Biome.getBiome(id);
+            Biome biome = FastRegistry.getBiome(id);
             if (biome != null) { //check if biome exists
                 temp |= FLAG_VALID;
 
@@ -245,14 +246,14 @@ public class BiomeHelperCached {
 
         //find mutations of each biome
         MUTATIONS = IntStream.range(0, BIOME_COUNT).map(id -> {
-            Biome mutation = Biome.getMutationForBiome(Biome.getBiome(id));
-            return mutation == null ? -1 : Biome.getIdForBiome(mutation);
+            Biome mutation = Biome.getMutationForBiome(FastRegistry.getBiome(id));
+            return mutation == null ? -1 : FastRegistry.getId(mutation);
         }).toArray();
 
         //get biome heights and variations
         double[] heightsVariations = new double[BIOME_COUNT << 1];
         for (int id = 0; id < BIOME_COUNT; id++) {
-            Biome biome = Biome.getBiome(id, Biomes.PLAINS);
+            Biome biome = FastRegistry.getBiome(id, Biomes.PLAINS);
             heightsVariations[id << 1] = biome.getBaseHeight();
             heightsVariations[(id << 1) + 1] = biome.getHeightVariation();
         }
@@ -269,6 +270,7 @@ public class BiomeHelperCached {
      */
     public static void addReloadListener(@NonNull ReloadListener listener) {
         checkState(RELOAD_LISTENERS.add(listener), "reload listener %s already present", listener);
+        listener.onBiomeHelperCachedReload();
     }
 
     /**

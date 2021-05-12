@@ -22,6 +22,7 @@ package net.daporkchop.fp2.mode.voxel.server.scale;
 
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
@@ -136,7 +137,7 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelTile> 
                         int edges = 0;
                         for (int edge = 0; edge < 3; edge++) {
                             if (((data.edges >> (edge << 1)) & EDGE_DIR_MASK) != EDGE_DIR_NONE
-                                && (true || blockType(Block.getStateById(data.states[edge])) == BLOCK_TYPE_OPAQUE)) {
+                                && (true || blockType(FastRegistry.getBlockState(data.states[edge])) == BLOCK_TYPE_OPAQUE)) {
                                 edges |= (data.edges & (EDGE_DIR_MASK << (edge << 1)));
                                 srcStates[srcIndex(x, y, z, edge)] = data.states[edge];
                             }
