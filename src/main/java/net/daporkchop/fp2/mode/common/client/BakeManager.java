@@ -46,32 +46,12 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Getter
 public class BakeManager<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarTileCache.Listener<POS, T> {
-    protected static final long[] EMPTY_TIMESTAMPS = new long[0];
-
-    protected static boolean compareTimestamps(@NonNull long[] oldTimestamps, @NonNull long[] newTimestamps) {
-        if (oldTimestamps == EMPTY_TIMESTAMPS) {
-            return oldTimestamps != newTimestamps;
-        }
-        checkArg(oldTimestamps.length == newTimestamps.length, "%d != %d", oldTimestamps.length, newTimestamps.length);
-
-        for (int i = 0, len = oldTimestamps.length; i < len; i++) {
-            if (oldTimestamps[i] >> 63L != newTimestamps[i] >> 63L) { //sign changed - this means the tile in question was added/removed
-                return true;
-            } else if (oldTimestamps[i] < newTimestamps[i]) { //tile is newer
-                return true;
-            }
-        }
-        return false;
-        //return !Arrays.equals(oldTimestamps, newTimestamps);
-    }
-
     protected final AbstractFarRenderer<POS, T> renderer;
     protected final IFarRenderStrategy<POS, T> strategy;
 
     protected final IFarTileCache<POS, T> tileCache;
 
     protected final FarRenderTree<POS, T> tree;
-    protected final Map<POS, long[]> bakeTimestamps = new ConcurrentHashMap<>();
 
     protected final KeyedTaskScheduler<POS> bakeExecutor;
 
@@ -98,22 +78,16 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
     @Override
     public void tileAdded(@NonNull Compressed<POS, T> tile) {
-        checkState(this.bakeTimestamps.putIfAbsent(tile.pos(), EMPTY_TIMESTAMPS) == null, "tile at %s was already added?!?", tile.pos());
-
         this.notifyOutputs(tile.pos());
     }
 
     @Override
     public void tileModified(@NonNull Compressed<POS, T> tile) {
-        checkState(this.bakeTimestamps.containsKey(tile.pos()), "tile at %s hasn't been added?!?", tile.pos());
-
         this.notifyOutputs(tile.pos());
     }
 
     @Override
     public void tileRemoved(@NonNull POS pos) {
-        checkState(this.bakeTimestamps.remove(pos) != null, "tile at %s hasn't been added?!?", pos);
-
         //make sure that any in-progress bake tasks are finished before the tile is removed
         this.bakeExecutor.submitExclusive(pos, () -> ClientThreadExecutor.INSTANCE.execute(() -> this.tree.removeNode(pos)));
     }
@@ -121,8 +95,6 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     protected void notifyOutputs(@NonNull POS pos) {
         this.strategy.bakeOutputs(pos).forEach(outputPos -> {
             if (outputPos.level() < 0 || outputPos.level() > this.renderer.maxLevel) { //output tile is at an invalid zoom level, skip it
-                return;
-            } else if (!this.bakeTimestamps.containsKey(outputPos)) { //output tile doesn't exist, skip it
                 return;
             }
 
@@ -132,21 +104,13 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     }
 
     protected void bake(@NonNull POS pos) { //this function is called from inside of RENDER_WORKERS, which holds a lock on the position
-        long[] oldTimestamps = this.bakeTimestamps.get(pos);
-        if (oldTimestamps == null) { //the tile was removed before this task began execution
-            return;
-        }
-
         Compressed<POS, T>[] compressedInputTiles = uncheckedCast(this.tileCache.getTilesCached(this.strategy.bakeInputs(pos)).toArray(Compressed[]::new));
         if (compressedInputTiles[0] == null) { //the tile isn't cached any more
             return;
         }
 
-        long[] newTimestamps = Arrays.stream(compressedInputTiles).mapToLong(c -> c != null ? c.timestamp() : -1L).toArray();
-        if (!compareTimestamps(oldTimestamps, newTimestamps)) { //nothing has changed, no need to re-render
-            return;
-        } else if (compressedInputTiles[0].isEmpty()) { //tile has no data, we "bake" it by deleting it if it exists
-            this.scheduleEmptyTile(pos, oldTimestamps);
+        if (compressedInputTiles[0].isEmpty()) { //tile has no data, we "bake" it by deleting it if it exists
+            this.scheduleEmptyTile(pos);
             return;
         }
 
@@ -161,20 +125,14 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
             BakeOutput output = new BakeOutput(this.strategy.renderDataSize());
             boolean nonEmpty = this.strategy.bake(pos, srcs, output);
-            if (!this.bakeTimestamps.replace(pos, oldTimestamps, newTimestamps)) { //tile was removed while baking
-                return;
-            }
 
             if (nonEmpty) {
                 ClientThreadExecutor.INSTANCE.execute(() -> {
-                    if (this.bakeTimestamps.get(pos) != newTimestamps) { //tile was baked again since this task was submitted to the client thread
-                        return;
-                    }
                     this.strategy.executeBakeOutput(pos, output);
                     this.tree.putRenderData(pos, output);
                 });
             } else { //remove tile from render tree
-                this.scheduleEmptyTile(pos, newTimestamps);
+                this.scheduleEmptyTile(pos);
             }
         } finally { //release tiles again
             for (int i = 0; i < srcs.length; i++) {
@@ -185,12 +143,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         }
     }
 
-    protected void scheduleEmptyTile(@NonNull POS pos, @NonNull long[] expectedTimestampArray) {
-        ClientThreadExecutor.INSTANCE.execute(() -> {
-            if (this.bakeTimestamps.get(pos) != expectedTimestampArray) { //tile was baked again since this task was submitted to the client thread
-                return;
-            }
-            this.tree.putRenderData(pos, null);
-        });
+    protected void scheduleEmptyTile(@NonNull POS pos) {
+        ClientThreadExecutor.INSTANCE.execute(() -> this.tree.putRenderData(pos, null));
     }
 }

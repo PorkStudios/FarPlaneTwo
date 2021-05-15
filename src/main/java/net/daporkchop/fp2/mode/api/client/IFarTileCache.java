@@ -59,6 +59,14 @@ public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> extends 
     void removeListener(@NonNull Listener<POS, T> listener, boolean notifyRemoval);
 
     /**
+     * Gets the given tile at the given position from the cache.
+     *
+     * @param position the position
+     * @return the tile at the given position, or {@code null} if the tile wasn't present in the cache
+     */
+    Compressed<POS, T> getTileCached(@NonNull POS position);
+
+    /**
      * Gets the given tiles at the given positions from the cache.
      *
      * @param positions the positions

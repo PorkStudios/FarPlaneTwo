@@ -91,9 +91,15 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
     }
 
     @Override
-    public Stream<Compressed<POS, T>> getTilesCached(@NonNull Stream<POS> positions) {
+    public Compressed<POS, T> getTileCached(@NonNull POS position) {
         this.assertNotReleased();
-        return positions.map(this);
+        return this.tiles.get(position);
+    }
+
+    @Override
+    public Stream<Compressed<POS, T>> getTilesCached(@NonNull Stream<POS> position) {
+        this.assertNotReleased();
+        return position.map(this);
     }
 
     /**
