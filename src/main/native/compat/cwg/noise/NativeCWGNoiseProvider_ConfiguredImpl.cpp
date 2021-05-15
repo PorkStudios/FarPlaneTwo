@@ -199,7 +199,7 @@ public:
         return processDepthNoise(fp2::cwg::noise::octaves2dPoint<VEC_LANES>(x * _depthNoiseFrequencyX, z * _depthNoiseFrequencyZ, _depthNoiseSeed, _depthNoiseOctaves));
     }
 
-    inline void generateDepth2d(fp2::pinned_double_array& out, int32_t baseX, int32_t baseZ, int32_t level, int32_t sizeX, int32_t sizeZ) {
+    inline void generateDepth2d(fp2::pinned_double_array& out, int32_t baseX, int32_t baseZ, int32_t scaleX, int32_t scaleZ, int32_t sizeX, int32_t sizeZ) {
         constexpr size_t VEC_LANES = fp2::simd::LANES_32AND64;
 
         using DOUBLE = typename fp2::simd::type_vec<double, VEC_LANES>::TYPE;
@@ -210,19 +210,19 @@ public:
         if ((sizeZ < VEC_LANES && sizeX != 1)) { //if sizeZ is less than the number of vector lanes, we can't do vectorized multi-dimensional iteration in SIMD
             for (int32_t i = 0, dx = 0; dx < sizeX; dx++) {
                 for (int32_t dz = 0; dz < sizeZ; dz++, i++) {
-                    out[i] = processDepthNoise(fp2::cwg::noise::octaves2dPoint<VEC_LANES>((baseX + (dx << level)) * _depthNoiseFrequencyX, (baseZ + (dz << level)) * _depthNoiseFrequencyX, _depthNoiseSeed, _depthNoiseOctaves));
+                    out[i] = processDepthNoise(fp2::cwg::noise::octaves2dPoint<VEC_LANES>((baseX + dx * scaleX) * _depthNoiseFrequencyX, (baseZ + dz * scaleZ) * _depthNoiseFrequencyX, _depthNoiseSeed, _depthNoiseOctaves));
                 }
             }
         } else {
             static const INT INCREMENT = fp2::simd::increment<INT>();
 
             INT x = baseX;
-            INT z = baseZ + (INCREMENT << level);
+            INT z = baseZ + INCREMENT * scaleZ;
 
-            const INT maxZ = baseZ + (sizeZ << level);
-            const INT stepZ = (int32_t) VEC_LANES << level;
-            const INT resetZ = sizeZ << level;
-            const INT stepX = 1 << level;
+            const INT maxZ = baseZ + sizeZ * scaleZ;
+            const INT stepZ = (int32_t) VEC_LANES * scaleZ;
+            const INT resetZ = sizeZ * scaleZ;
+            const INT stepX = scaleX;
 
             const size_t totalCount = sizeX * sizeZ;
             size_t index = 0;
@@ -274,7 +274,7 @@ public:
 
     template<bool USE_DEPTH_ARG> inline void generate3d(
             fp2::pinned_double_array& height, fp2::pinned_double_array& variation, fp2::pinned_double_array& depth, fp2::pinned_double_array& out,
-            int32_t baseX, int32_t baseY, int32_t baseZ, int32_t level, int32_t sizeX, int32_t sizeY, int32_t sizeZ) {
+            int32_t baseX, int32_t baseY, int32_t baseZ, int32_t scaleX, int32_t scaleY, int32_t scaleZ, int32_t sizeX, int32_t sizeY, int32_t sizeZ) {
         constexpr size_t VEC_LANES = fp2::simd::LANES_32AND64;
 
         using DOUBLE = typename fp2::simd::type_vec<double, VEC_LANES>::TYPE;
@@ -288,7 +288,7 @@ public:
                     for (int32_t inIdx = dx * sizeZ, dz = 0; dz < sizeZ; dz++, inIdx++, i++) {
                         out[i] = generateAndMixAllNoise<VEC_LANES, USE_DEPTH_ARG>(
                                 height[inIdx], variation[inIdx], USE_DEPTH_ARG ? depth[inIdx] : 0.0d,
-                                baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level));
+                                baseX + dx * scaleX, baseY + dy * scaleY, baseZ + dz * scaleZ);
                     }
                 }
             }
@@ -297,15 +297,16 @@ public:
 
             INT x = baseX;
             INT y = baseY;
-            INT z = baseZ + (INCREMENT << level);
+            INT z = baseZ + INCREMENT * scaleZ;
             INT readIndex = INCREMENT;
 
-            const INT maxZ = baseZ + (sizeZ << level);
-            const INT stepZ = (int32_t) VEC_LANES << level;
-            const INT resetZ = sizeZ << level;
-            const INT stepXY = 1 << level;
-            const INT maxY = baseY + (sizeY << level);
-            const INT resetY = sizeY << level;
+            const INT maxZ = baseZ + sizeZ * scaleZ;
+            const INT stepZ = (int32_t) VEC_LANES * scaleZ;
+            const INT resetZ = sizeZ * scaleZ;
+            const INT stepY = scaleY;
+            const INT maxY = baseY + sizeY * scaleY;
+            const INT resetY = sizeY * scaleY;
+            const INT stepX = scaleX;
             const INT stepReadIndex = (int32_t) VEC_LANES;
 
             const size_t totalCount = sizeX * sizeY * sizeZ;
@@ -326,10 +327,10 @@ public:
                 readIndex = if_sub(ge, readIndex, sizeZ);
 
                 //increment y coordinates, resetting them and incrementing x if they reach the maximum value
-                y = if_add(ge, y, stepXY);
+                y = if_add(ge, y, stepY);
                 ge = y >= maxY;
                 y = if_sub(ge, y, resetY);
-                x = if_add(ge, x, stepXY);
+                x = if_add(ge, x, stepX);
                 readIndex = if_add(ge, readIndex, sizeZ);
             }
 
@@ -411,9 +412,9 @@ FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, deleteState0)(JNIEnv* 
 }
 
 FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, generateDepth2d0)(JNIEnv* env, jobject obj,
-        jdoubleArray _out, jint baseX, jint baseZ, jint level, jint sizeX, jint sizeZ, jlong _state) {
+        jdoubleArray _out, jint baseX, jint baseZ, jint scaleX, jint scaleZ, jint sizeX, jint sizeZ, jlong _state) {
     fp2::pinned_double_array out(env, _out);
-    ((state_t*) _state)->generateDepth2d(out, baseX, baseZ, level, sizeX, sizeZ);
+    ((state_t*) _state)->generateDepth2d(out, baseX, baseZ, scaleX, scaleZ, sizeX, sizeZ);
 }
 
 FP2_JNI(jdouble, NativeCWGNoiseProvider_00024ConfiguredImpl, generateDepthSingle0)(JNIEnv* env, jobject obj,
@@ -427,20 +428,20 @@ FP2_JNI(jdouble, NativeCWGNoiseProvider_00024ConfiguredImpl, generateSingle0noDe
 }
 
 FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, generate3d0noDepth)(JNIEnv* env, jobject obj,
-        jdoubleArray _height, jdoubleArray _variation, jdoubleArray _out, jint baseX, jint baseY, jint baseZ, jint level, jint sizeX, jint sizeY, jint sizeZ, jlong _state) {
+        jdoubleArray _height, jdoubleArray _variation, jdoubleArray _out, jint baseX, jint baseY, jint baseZ, jint scaleX, jint scaleY, jint scaleZ, jint sizeX, jint sizeY, jint sizeZ, jlong _state) {
     fp2::pinned_double_array height(env, _height);
     fp2::pinned_double_array variation(env, _variation);
     fp2::pinned_double_array out(env, _out);
-    ((state_t*) _state)->generate3d<false>(height, variation, variation, out, baseX, baseY, baseZ, level, sizeX, sizeY, sizeZ);
+    ((state_t*) _state)->generate3d<false>(height, variation, variation, out, baseX, baseY, baseZ, scaleX, scaleY, scaleZ, sizeX, sizeY, sizeZ);
 }
 
 FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, generate3d0depth)(JNIEnv* env, jobject obj,
-        jdoubleArray _height, jdoubleArray _variation, jdoubleArray _depth, jdoubleArray _out, jint baseX, jint baseY, jint baseZ, jint level, jint sizeX, jint sizeY, jint sizeZ, jlong _state) {
+        jdoubleArray _height, jdoubleArray _variation, jdoubleArray _depth, jdoubleArray _out, jint baseX, jint baseY, jint baseZ, jint scaleX, jint scaleY, jint scaleZ, jint sizeX, jint sizeY, jint sizeZ, jlong _state) {
     fp2::pinned_double_array height(env, _height);
     fp2::pinned_double_array variation(env, _variation);
     fp2::pinned_double_array depth(env, _depth);
     fp2::pinned_double_array out(env, _out);
-    ((state_t*) _state)->generate3d<true>(height, variation, depth, out, baseX, baseY, baseZ, level, sizeX, sizeY, sizeZ);
+    ((state_t*) _state)->generate3d<true>(height, variation, depth, out, baseX, baseY, baseZ, scaleX, scaleY, scaleZ, sizeX, sizeY, sizeZ);
 }
 
 FP2_JNI(jdouble, NativeCWGNoiseProvider_00024ConfiguredImpl, generateSingle0depth)(JNIEnv* env, jobject obj,

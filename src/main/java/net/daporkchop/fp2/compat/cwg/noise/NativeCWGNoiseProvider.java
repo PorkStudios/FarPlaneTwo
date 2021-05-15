@@ -105,11 +105,11 @@ class NativeCWGNoiseProvider extends JavaCWGNoiseProvider {
         }
 
         @Override
-        public void generateDepth2d(@NonNull double[] out, int baseX, int baseZ, int level, int sizeX, int sizeZ) {
-            this.generateDepth2d0(out, baseX, baseZ, level, sizeX, sizeZ, this.state);
+        public void generateDepth2d(@NonNull double[] out, int baseX, int baseZ, int scaleX, int scaleZ, int sizeX, int sizeZ) {
+            this.generateDepth2d0(out, baseX, baseZ, scaleX, scaleZ, sizeX, sizeZ, this.state);
         }
 
-        protected native void generateDepth2d0(@NonNull double[] out, int baseX, int baseZ, int level, int sizeX, int sizeZ, long state);
+        protected native void generateDepth2d0(@NonNull double[] out, int baseX, int baseZ, int scaleX, int scaleZ, int sizeX, int sizeZ, long state);
 
         @Override
         public double generateDepthSingle(int x, int z) {
@@ -119,18 +119,18 @@ class NativeCWGNoiseProvider extends JavaCWGNoiseProvider {
         protected native double generateDepthSingle0(int x, int z, long state);
 
         @Override
-        public void generate3d(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ) {
-            this.generate3d0noDepth(heightIn, variationIn, out, baseX, baseY, baseZ, level, sizeX, sizeY, sizeZ, this.state);
+        public void generate3d(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int scaleX, int scaleY, int scaleZ, int sizeX, int sizeY, int sizeZ) {
+            this.generate3d0noDepth(heightIn, variationIn, out, baseX, baseY, baseZ, scaleX, scaleY, scaleZ, sizeX, sizeY, sizeZ, this.state);
         }
 
-        protected native void generate3d0noDepth(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ, long state);
+        protected native void generate3d0noDepth(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int scaleX, int scaleY, int scaleZ, int sizeX, int sizeY, int sizeZ, long state);
 
         @Override
-        public void generate3d(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] depthIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ) {
-            this.generate3d0depth(heightIn, variationIn, depthIn, out, baseX, baseY, baseZ, level, sizeX, sizeY, sizeZ, this.state);
+        public void generate3d(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] depthIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int scaleX, int scaleY, int scaleZ, int sizeX, int sizeY, int sizeZ) {
+            this.generate3d0depth(heightIn, variationIn, depthIn, out, baseX, baseY, baseZ, scaleX, scaleY, scaleZ, sizeX, sizeY, sizeZ, this.state);
         }
 
-        protected native void generate3d0depth(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] depthIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ, long state);
+        protected native void generate3d0depth(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] depthIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int scaleX, int scaleY, int scaleZ, int sizeX, int sizeY, int sizeZ, long state);
 
         @Override
         public double generateSingle(double height, double variation, int x, int y, int z) {

@@ -60,6 +60,10 @@ public class MathUtil {
         return d * d;
     }
 
+    public static int cb(int d) {
+        return d * d * d;
+    }
+
     public static float sq(float d) {
         return d * d;
     }

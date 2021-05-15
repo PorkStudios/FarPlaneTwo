@@ -85,6 +85,7 @@ public class Constants {
     public static final int T_VERTS = T_VOXELS + 1;
 
     public static final int GT_SHIFT = 2; //generation tile shift
+    public static final int GT_MASK = (1 << GT_SHIFT) - 1;
     public static final int GT_COUNT = T_VOXELS >> GT_SHIFT;
     public static final int GT_SIZE = 1 << (T_SHIFT - GT_SHIFT); //generation tile size
 

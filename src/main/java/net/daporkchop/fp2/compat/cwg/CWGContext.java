@@ -29,11 +29,13 @@ import net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper;
 import net.daporkchop.fp2.compat.vanilla.biome.IBiomeProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.weight.BiomeWeightHelper;
 import net.daporkchop.fp2.compat.vanilla.biome.weight.VanillaBiomeWeightHelper;
+import net.daporkchop.fp2.util.alloc.DoubleArrayAllocator;
+import net.daporkchop.lib.math.grid.Grid3d;
+import net.daporkchop.lib.math.interpolation.Interpolation;
+import net.daporkchop.lib.math.interpolation.LinearInterpolation;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
-
-import java.lang.reflect.Field;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
@@ -67,6 +69,12 @@ public class CWGContext {
     protected int baseX;
     protected int baseZ;
     protected int level = -1;
+
+    protected int cacheLevel;
+    protected int cacheSize;
+    protected int cacheMask;
+    protected int cacheBaseX;
+    protected int cacheBaseZ;
 
     public CWGContext(@NonNull World world, int size, int smoothRadius) {
         this.size = notNegative(size, "size");
@@ -114,16 +122,28 @@ public class CWGContext {
         this.baseZ = baseZ;
         this.level = level;
 
-        this.biomeProvider.generateBiomesAndWeightedHeightsVariations(baseX, baseZ, level, this.size, this.biomes, this.heights, this.variations, this.weightHelper);
+        if (level < GT_SHIFT) {
+            this.cacheLevel = GT_SHIFT;
+            this.cacheSize = (this.size >> (GT_SHIFT - level)) + 3; //+3 is for padding space used for interpolation
+            this.cacheMask = ~(GT_MASK >> level);
+        } else {
+            this.cacheLevel = level;
+            this.cacheSize = this.size;
+            this.cacheMask = -1;
+        }
+        this.cacheBaseX = baseX & this.cacheMask;
+        this.cacheBaseZ = baseZ & this.cacheMask;
+
+        this.biomeProvider.generateBiomesAndWeightedHeightsVariations(this.cacheBaseX, this.cacheBaseZ, this.cacheLevel, this.cacheSize, this.biomes, this.heights, this.variations, this.weightHelper);
 
         //convert biome heights/variations to CWG forms
-        for (int i = 0; i < sq(this.size); i++) {
+        for (int i = 0; i < sq(this.cacheSize); i++) {
             this.heights[i] = BiomeHelper.biomeHeightVanilla(this.heights[i]);
             this.variations[i] = BiomeHelper.biomeHeightVariationVanilla(this.variations[i]);
         }
 
         //precompute depth noise
-        this.configuredNoiseGen.generateDepth2d(this.depth, baseX, baseZ, level, this.size, this.size);
+        this.configuredNoiseGen.generateDepth2d(this.depth, this.cacheBaseX, this.cacheBaseZ, 1 << this.cacheLevel, 1 << this.cacheLevel, this.cacheSize, this.cacheSize);
     }
 
     /**
@@ -134,7 +154,7 @@ public class CWGContext {
      * @return the estimated terrain height value
      */
     public int getHeight(int x, int z) {
-        int initialY = (int) this.expectedBaseHeight;
+        int initialY = this.expectedBaseHeight;
 
         //find minimum and maximum bounds
         int minY = Integer.MIN_VALUE, maxY = Integer.MAX_VALUE;
@@ -176,7 +196,11 @@ public class CWGContext {
     }
 
     protected int cacheIndex(int x, int z) {
-        return ((x - this.baseX) >> this.level) * this.size + ((z - this.baseZ) >> this.level);
+        return ((x - this.cacheBaseX) >> this.cacheLevel) * this.cacheSize + ((z - this.cacheBaseZ) >> this.cacheLevel);
+    }
+
+    public int getBiome(int x, int z) {
+        return this.biomes[this.cacheIndex(x, z)];
     }
 
     public double get(int x, int y, int z) {
@@ -184,7 +208,84 @@ public class CWGContext {
         return this.configuredNoiseGen.generateSingle(this.heights[i], this.variations[i], this.depth[i], x, y, z);
     }
 
-    public int getBiome(int x, int z) {
-        return this.biomes[this.cacheIndex(x, z)];
+    //
+    // 3D noisegen
+    //
+
+    public void get3d(@NonNull double[] out, int baseY) {
+        //CWG generates noise on a 4x8x4 grid and then resamples it with linear interpolation, so we need to do special handling for the cases where the zoom level doesn't contain all samples
+
+        if (this.level < GT_SHIFT) { //noise needs to be generated at low-res and scaled on all three axes
+            this.get3d_resampleXYZ(out, baseY);
+        } else if (this.level == GT_SHIFT) { //noise can be generated at full resolution, resampling only needs to be done along the Y axis
+            this.get3d_resampleY(out, baseY);
+        } else { //noise can be generated directly at full resolution without resampling
+            this.get3d_noResampling(out, baseY);
+        }
+    }
+
+    protected void get3d_resampleXYZ(@NonNull double[] out, int baseY) {
+        DoubleArrayAllocator alloc = DoubleArrayAllocator.DEFAULT.get();
+
+        int cacheBaseY = baseY & (this.cacheMask << 1);
+        int cacheHeight = asrCeil(this.cacheSize, 1) + 2;
+
+        double[] tmp = alloc.get(sq(this.cacheSize) * cacheHeight);
+        try {
+            //generate 3d noise at low resolution
+            this.configuredNoiseGen.generate3d(this.heights, this.variations, this.depth, tmp, this.cacheBaseX, cacheBaseY, this.cacheBaseZ, 1 << GT_SHIFT, 2 << GT_SHIFT, 1 << GT_SHIFT, this.cacheSize, cacheHeight, this.cacheSize);
+
+            //resample noise values
+            double scaleXZ = 1.0d / (1 << (GT_SHIFT - this.level));
+            double scaleY = scaleXZ * 0.5d;
+
+            Grid3d grid = Grid3d.of(tmp, this.cacheBaseX >> (GT_SHIFT - this.level), cacheBaseY >> ((GT_SHIFT - this.level) + 1), this.cacheBaseZ >> (GT_SHIFT - this.level), this.cacheSize, cacheHeight, this.cacheSize);
+            Interpolation interp = new LinearInterpolation();
+            for (int i = 0, dx = 0; dx < this.size; dx++) {
+                for (int dy = 0; dy < this.size; dy++) {
+                    for (int dz = 0; dz < this.size; dz++, i++) {
+                        out[i] = interp.getInterpolated((this.baseX + dx) * scaleXZ, (baseY + dy) * scaleY, (this.baseZ + dz) * scaleXZ, grid);
+                    }
+                }
+            }
+        } finally {
+            alloc.release(tmp);
+        }
+    }
+
+    protected void get3d_resampleY(@NonNull double[] out, int baseY) {
+        DoubleArrayAllocator alloc = DoubleArrayAllocator.DEFAULT.get();
+
+        int cacheBaseY = baseY & (~GT_MASK << 1);
+        int cacheHeight = asrCeil(this.cacheSize, 1);
+
+        double[] tmp = alloc.get(sq(this.cacheSize) * cacheHeight);
+        try {
+            //generate 3d noise at full resolution
+            this.configuredNoiseGen.generate3d(this.heights, this.variations, this.depth, tmp, this.cacheBaseX, cacheBaseY, this.cacheBaseZ, 1 << GT_SHIFT, 2 << GT_SHIFT, 1 << GT_SHIFT, this.cacheSize, cacheHeight, this.cacheSize);
+
+            //resample noise values
+            for (int i = 0, dx = 0; dx < this.size; dx++) {
+                for (int dy = 0; dy < this.size; dy++) {
+                    if (((dy + (baseY >> GT_SHIFT)) & 1) == 0) {
+                        for (int dz = 0, lowIdx = (dx * cacheHeight + (dy >> 1)) * this.size, highIdx = (dx * cacheHeight + (dy >> 1) + 1) * this.size; dz < this.size; dz++, lowIdx++, highIdx++, i++) {
+                            out[i] = (tmp[lowIdx] + tmp[highIdx]) * 0.5d;
+                        }
+                    } else {
+                        System.arraycopy(tmp, (dx * cacheHeight + (dy >> 1)) * this.size, out, i, this.size);
+                        i += this.size;
+                    }
+                }
+            }
+        } finally {
+            alloc.release(tmp);
+        }
+    }
+
+    protected void get3d_noResampling(@NonNull double[] out, int baseY) {
+        checkState(this.cacheSize == this.size, "cacheSize (%d) != size (%d)", this.cacheSize, this.size);
+
+        //generate 3d noise directly at full resolution, no resampling required
+        this.configuredNoiseGen.generate3d(this.heights, this.variations, out, this.baseX, baseY, this.baseZ, 1 << this.cacheLevel, 1 << this.cacheLevel, 1 << this.cacheLevel, this.size, this.size, this.size);
     }
 }

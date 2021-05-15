@@ -247,32 +247,33 @@ public class TestCwgNoiseGen {
     public void testConfigured_depth2d() {
         SplittableRandom r = new SplittableRandom(12345L);
 
-        this.testConfigured_depth2d(2, 2, 0, 32, 32).join();
-        this.testConfigured_depth2d(2, 2, 0, 32, 32).join();
+        this.testConfigured_depth2d(2, 2, 1, 1, 32, 32).join();
+        this.testConfigured_depth2d(2, 2, 1, 1, 32, 32).join();
 
         CompletableFuture<?>[] futures = uncheckedCast(new CompletableFuture[256]);
         for (int i = 0; i < futures.length; i++) {
             futures[i] = this.testConfigured_depth2d(
-                    r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(4),
+                    r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000),
+                    1 << r.nextInt(4), 1 << r.nextInt(4),
                     r.nextInt(1, 257), r.nextInt(1, 257));
         }
         CompletableFuture.allOf(futures).join();
     }
 
-    protected CompletableFuture<Void> testConfigured_depth2d(int baseX, int baseZ, int level, int sizeX, int sizeZ) {
+    protected CompletableFuture<Void> testConfigured_depth2d(int baseX, int baseZ, int scaleX, int scaleZ, int sizeX, int sizeZ) {
         return CompletableFuture.runAsync(() -> {
             double[] outJava = new double[sizeX * sizeZ];
-            CONFIGURED_JAVA.generateDepth2d(outJava, baseX, baseZ, level, sizeX, sizeZ);
+            CONFIGURED_JAVA.generateDepth2d(outJava, baseX, baseZ, scaleX, scaleZ, sizeX, sizeZ);
 
             double[] outNative = new double[sizeX * sizeZ];
-            CONFIGURED_NATIVE.generateDepth2d(outNative, baseX, baseZ, level, sizeX, sizeZ);
+            CONFIGURED_NATIVE.generateDepth2d(outNative, baseX, baseZ, scaleX, scaleZ, sizeX, sizeZ);
 
             for (int i = 0, dx = 0; dx < sizeX; dx++) {
                 for (int dz = 0; dz < sizeZ; dz++, i++) {
                     double javaVal = outJava[i];
                     double nativeVal = outNative[i];
                     if (!approxEquals(javaVal, nativeVal)) {
-                        throw new IllegalStateException(PStrings.fastFormat("@(%s, %s): %s (java) != %s (native)", baseX + (dx << level), baseZ + (dz << level), javaVal, nativeVal));
+                        throw new IllegalStateException(PStrings.fastFormat("@(%s, %s): %s (java) != %s (native)", baseX + dx * scaleX, baseZ + dz * scaleZ, javaVal, nativeVal));
                     }
                 }
             }
@@ -283,19 +284,20 @@ public class TestCwgNoiseGen {
     public void testConfigured_3d_withDepth() {
         SplittableRandom r = new SplittableRandom(12345L);
 
-        this.testConfigured_3d_withDepth(2, 2, 2, 0, 32, 32, 32).join();
-        this.testConfigured_3d_withDepth(2, 2, 2, 0, 32, 32, 32).join();
+        this.testConfigured_3d_withDepth(2, 2, 2, 1, 1, 1, 32, 32, 32).join();
+        this.testConfigured_3d_withDepth(2, 2, 2, 1, 1, 1, 32, 32, 32).join();
 
         CompletableFuture<?>[] futures = uncheckedCast(new CompletableFuture[256]);
         for (int i = 0; i < futures.length; i++) {
             futures[i] = this.testConfigured_3d_withDepth(
-                    r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(4),
+                    r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000),
+                    1 << r.nextInt(4), 1 << r.nextInt(4), 1 << r.nextInt(4),
                     r.nextInt(1, 65), r.nextInt(1, 65), r.nextInt(1, 65));
         }
         CompletableFuture.allOf(futures).join();
     }
 
-    protected CompletableFuture<Void> testConfigured_3d_withDepth(int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ) {
+    protected CompletableFuture<Void> testConfigured_3d_withDepth(int baseX, int baseY, int baseZ, int scaleX, int scaleY, int scaleZ, int sizeX, int sizeY, int sizeZ) {
         return CompletableFuture.runAsync(() -> {
             double[] heights = new double[sizeX * sizeZ];
             double[] variation = new double[sizeX * sizeZ];
@@ -308,10 +310,10 @@ public class TestCwgNoiseGen {
             }
 
             double[] outJava = new double[sizeX * sizeY * sizeZ];
-            CONFIGURED_JAVA.generate3d(heights, variation, depth, outJava, baseX, baseY, baseZ, level, sizeX, sizeY, sizeZ);
+            CONFIGURED_JAVA.generate3d(heights, variation, depth, outJava, baseX, baseY, baseZ, scaleX, scaleY, scaleZ, sizeX, sizeY, sizeZ);
 
             double[] outNative = new double[sizeX * sizeY * sizeZ];
-            CONFIGURED_NATIVE.generate3d(heights, variation, depth, outNative, baseX, baseY, baseZ, level, sizeX, sizeY, sizeZ);
+            CONFIGURED_NATIVE.generate3d(heights, variation, depth, outNative, baseX, baseY, baseZ, scaleX, scaleY, scaleZ, sizeX, sizeY, sizeZ);
 
             for (int i = 0, dx = 0; dx < sizeX; dx++) {
                 for (int dy = 0; dy < sizeY; dy++) {
@@ -319,7 +321,7 @@ public class TestCwgNoiseGen {
                         double javaVal = outJava[i];
                         double nativeVal = outNative[i];
                         if (!approxEquals(javaVal, nativeVal)) {
-                            throw new IllegalStateException(PStrings.fastFormat("%d@(%s, %s, %s): %s (java) != %s (native)", i, baseX + (dy << level), baseY + (dy << level), baseZ + (dz << level), javaVal, nativeVal));
+                            throw new IllegalStateException(PStrings.fastFormat("%d@(%s, %s, %s): %s (java) != %s (native)", i, baseX + dx * scaleX, baseY + dy * scaleY, baseZ + dz * scaleZ, javaVal, nativeVal));
                         }
                     }
                 }
@@ -354,10 +356,10 @@ public class TestCwgNoiseGen {
             }
 
             double[] outJava = new double[sizeX * sizeY * sizeZ];
-            CONFIGURED_JAVA.generate3d(heights, variation, outJava, baseX, baseY, baseZ, level, sizeX, sizeY, sizeZ);
+            CONFIGURED_JAVA.generate3d(heights, variation, outJava, baseX, baseY, baseZ, 1 << level, 1 << level, 1 << level, sizeX, sizeY, sizeZ);
 
             double[] outNative = new double[sizeX * sizeY * sizeZ];
-            CONFIGURED_NATIVE.generate3d(heights, variation, outNative, baseX, baseY, baseZ, level, sizeX, sizeY, sizeZ);
+            CONFIGURED_NATIVE.generate3d(heights, variation, outNative, baseX, baseY, baseZ, 1 << level, 1 << level, 1 << level, sizeX, sizeY, sizeZ);
 
             for (int i = 0, dx = 0; dx < sizeX; dx++) {
                 for (int dy = 0; dy < sizeY; dy++) {

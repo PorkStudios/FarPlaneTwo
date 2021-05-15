@@ -97,27 +97,27 @@ public interface CWGNoiseProvider extends Feature<CWGNoiseProvider> {
     interface Configured {
         //depth noise generation
 
-        void generateDepth2d(@NonNull double[] out, int baseX, int baseZ, int level, int sizeX, int sizeZ);
+        void generateDepth2d(@NonNull double[] out, int baseX, int baseZ, int scaleX, int scaleZ, int sizeX, int sizeZ);
 
         double generateDepthSingle(int x, int z);
 
         //full noise generation
 
-        default void generate3d(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ) {
+        default void generate3d(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int scaleX, int scaleY, int scaleZ, int sizeX, int sizeY, int sizeZ) {
             DoubleArrayAllocator alloc = DoubleArrayAllocator.DEFAULT.get();
             double[] depth = alloc.get(sizeX * sizeZ);
             try {
                 //generate depth noise
-                this.generateDepth2d(depth, baseX, baseZ, level, sizeX, sizeZ);
+                this.generateDepth2d(depth, baseX, baseZ, scaleX, scaleZ, sizeX, sizeZ);
 
                 //use generated depth noise for full noise generation
-                this.generate3d(heightIn, variationIn, depth, out, baseX, baseY, baseZ, level, sizeX, sizeY, sizeZ);
+                this.generate3d(heightIn, variationIn, depth, out, baseX, baseY, baseZ, scaleX, scaleY, scaleZ, sizeX, sizeY, sizeZ);
             } finally {
                 alloc.release(depth);
             }
         }
 
-        void generate3d(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] depthIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ);
+        void generate3d(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] depthIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int scaleX, int scaleY, int scaleZ, int sizeX, int sizeY, int sizeZ);
 
         default double generateSingle(double height, double variation, int x, int y, int z) {
             return this.generateSingle(height, variation, this.generateDepthSingle(x, z), x, y, z);

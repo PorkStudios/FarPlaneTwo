@@ -196,10 +196,10 @@ class JavaCWGNoiseProvider implements CWGNoiseProvider {
         }
 
         @Override
-        public void generateDepth2d(@NonNull double[] out, int baseX, int baseZ, int level, int sizeX, int sizeZ) {
+        public void generateDepth2d(@NonNull double[] out, int baseX, int baseZ, int scaleX, int scaleZ, int sizeX, int sizeZ) {
             for (int i = 0, dx = 0; dx < sizeX; dx++) {
                 for (int dz = 0; dz < sizeZ; dz++, i++) {
-                    out[i] = this.generateDepthSingle(baseX + (dx << level), baseZ + (dz << level));
+                    out[i] = this.generateDepthSingle(baseX + dx * scaleX, baseZ + dz * scaleZ);
                 }
             }
         }
@@ -214,11 +214,11 @@ class JavaCWGNoiseProvider implements CWGNoiseProvider {
         }
 
         @Override
-        public void generate3d(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] depthIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int level, int sizeX, int sizeY, int sizeZ) {
+        public void generate3d(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] depthIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int scaleX, int scaleY, int scaleZ, int sizeX, int sizeY, int sizeZ) {
             for (int i3 = 0, dx = 0; dx < sizeX; dx++) {
                 for (int dy = 0; dy < sizeY; dy++) {
                     for (int i2 = dx * sizeZ, dz = 0; dz < sizeZ; dz++, i2++, i3++) {
-                        out[i3] = this.generateSingle(heightIn[i2], variationIn[i2], depthIn[i2], baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level));
+                        out[i3] = this.generateSingle(heightIn[i2], variationIn[i2], depthIn[i2], baseX + dx * scaleX, baseY + dy * scaleY, baseZ + dz * scaleZ);
                     }
                 }
             }

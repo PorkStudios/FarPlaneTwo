@@ -31,13 +31,11 @@ import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.server.gen.AbstractVoxelGenerator;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
-import net.daporkchop.lib.math.grid.Grid3d;
-import net.daporkchop.lib.math.interpolation.Interpolation;
-import net.daporkchop.lib.math.interpolation.LinearInterpolation;
-import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.world.WorldServer;
+
+import java.util.Arrays;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -56,7 +54,7 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<CWGContext> implem
     public CWGVoxelGenerator(@NonNull WorldServer world) {
         super(world);
 
-        this.ctx = ThreadRef.soft(() -> new CWGContext(world, DMAP_SIZE + 7, 2));
+        this.ctx = ThreadRef.soft(() -> new CWGContext(world, DMAP_SIZE, 2));
     }
 
     @Override
@@ -67,34 +65,21 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<CWGContext> implem
         int baseZ = pos.blockZ();
 
         CWGContext ctx = this.ctx.get();
-        ctx.init(baseX + (DMAP_MIN >> GT_SHIFT << GT_SHIFT << level), baseZ + (DMAP_MIN >> GT_SHIFT << GT_SHIFT << level), level);
+        ctx.init(baseX + (DMAP_MIN << level), baseZ + (DMAP_MIN << level), level);
         double[][] densityMap = DMAP_CACHE.get();
 
         //water
+        double scaleFactor = 1.0d / (1 << level);
         for (int x = DMAP_MIN; x < DMAP_MAX; x++) {
             for (int y = DMAP_MIN; y < DMAP_MAX; y++) {
-                for (int z = DMAP_MIN; z < DMAP_MAX; z++) {
-                    densityMap[0][densityIndex(x, y, z)] = baseY + (y << level) < this.seaLevel ? -1.0d : 1.0d;
-                }
+                Arrays.fill(densityMap[0], densityIndex(x, y, DMAP_MIN), densityIndex(x, y, DMAP_MAX), (this.seaLevel - 1 - (baseY + (y << level))) * scaleFactor);
             }
         }
 
         //blocks
-        Grid3d grid = Grid3d.of(new double[LOWRES_SIZE_3], LOWRES_MIN, LOWRES_MIN, LOWRES_MIN, LOWRES_SIZE, LOWRES_SIZE, LOWRES_SIZE);
-        for (int x = LOWRES_MIN; x < LOWRES_MAX; x++) {
-            for (int y = LOWRES_MIN; y < LOWRES_MAX; y++) {
-                for (int z = LOWRES_MIN; z < LOWRES_MAX; z++) {
-                    grid.setD(x, y, z, -ctx.get(baseX + (x << GT_SHIFT << level), baseY + (y << GT_SHIFT << level), baseZ + (z << GT_SHIFT << level)));
-                }
-            }
-        }
-        Interpolation interp = new LinearInterpolation();
-        for (int x = DMAP_MIN; x < DMAP_MAX; x++) {
-            for (int y = DMAP_MIN; y < DMAP_MAX; y++) {
-                for (int z = DMAP_MIN; z < DMAP_MAX; z++) {
-                    densityMap[1][densityIndex(x, y, z)] = interp.getInterpolated(x * 0.25d, y * 0.25d, z * 0.25d, grid);
-                }
-            }
+        ctx.get3d(densityMap[1], baseY + (DMAP_MIN << level));
+        for (int i = 0; i < DMAP_SIZE_3; i++) { //negate density values because the dual contouring implementation currently processes them backwards
+            densityMap[1][i] = -densityMap[1][i];
         }
 
         this.buildMesh(baseX, baseY, baseZ, level, tile, densityMap, ctx);

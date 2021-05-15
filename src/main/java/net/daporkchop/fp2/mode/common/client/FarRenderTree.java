@@ -356,7 +356,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
     }
 
     protected boolean select0(int level, long node, Volume[] ranges, IFrustum frustum, DirectLongStack index) {
-        if (this.checkFlagsOR(node, FLAG_EMPTY)) {
+        if (level == 0 && this.checkFlagsOR(node, FLAG_EMPTY)) { //TODO: remove "level == 0 && "
             //this tile is baked and empty, so we can be sure that none of its children will be non-empty and there's no reason to recurse any further
             return true;
         } else if (level < this.maxLevel //don't do range checking for the top level, as it will cause a bunch of tiles to be loaded but never rendered
@@ -429,7 +429,10 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
             return true;
         }
 
-        index.push(node + this.tile);
+        if (this.checkFlagsOR(node, FLAG_DATA)) {
+            //actually append node to render list
+            index.push(node + this.tile);
+        }
         return true;
     }
 
