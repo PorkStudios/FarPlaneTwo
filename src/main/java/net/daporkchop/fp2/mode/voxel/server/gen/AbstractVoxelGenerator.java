@@ -24,7 +24,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.util.math.MathUtil;
 import net.daporkchop.fp2.util.math.Vector3d;
 import net.daporkchop.fp2.util.math.qef.QefSolver;
 import net.daporkchop.lib.common.ref.Ref;
@@ -47,41 +46,27 @@ public abstract class AbstractVoxelGenerator<PARAM> extends AbstractFarGenerator
     public static final int DMAP_SIZE = DMAP_MAX - DMAP_MIN;
     public static final int DMAP_SIZE_3 = DMAP_SIZE * DMAP_SIZE * DMAP_SIZE;
 
+    protected static final int DI_ADD_000 = densityIndex(DMAP_MIN + 0, DMAP_MIN + 0, DMAP_MIN + 0);
+    protected static final int DI_ADD_001 = densityIndex(DMAP_MIN + 0, DMAP_MIN + 0, DMAP_MIN + 1);
+    protected static final int DI_ADD_010 = densityIndex(DMAP_MIN + 0, DMAP_MIN + 1, DMAP_MIN + 0);
+    protected static final int DI_ADD_011 = densityIndex(DMAP_MIN + 0, DMAP_MIN + 1, DMAP_MIN + 1);
+    protected static final int DI_ADD_100 = densityIndex(DMAP_MIN + 1, DMAP_MIN + 0, DMAP_MIN + 0);
+    protected static final int DI_ADD_101 = densityIndex(DMAP_MIN + 1, DMAP_MIN + 0, DMAP_MIN + 1);
+    protected static final int DI_ADD_110 = densityIndex(DMAP_MIN + 1, DMAP_MIN + 1, DMAP_MIN + 0);
+    protected static final int DI_ADD_111 = densityIndex(DMAP_MIN + 1, DMAP_MIN + 1, DMAP_MIN + 1);
+
     protected static final int[] DI_ADD = {
-            densityIndex(DMAP_MIN + 0, DMAP_MIN + 0, DMAP_MIN + 0), densityIndex(DMAP_MIN + 0, DMAP_MIN + 0, DMAP_MIN + 1),
-            densityIndex(DMAP_MIN + 0, DMAP_MIN + 1, DMAP_MIN + 0), densityIndex(DMAP_MIN + 0, DMAP_MIN + 1, DMAP_MIN + 1),
-            densityIndex(DMAP_MIN + 1, DMAP_MIN + 0, DMAP_MIN + 0), densityIndex(DMAP_MIN + 1, DMAP_MIN + 0, DMAP_MIN + 1),
-            densityIndex(DMAP_MIN + 1, DMAP_MIN + 1, DMAP_MIN + 0), densityIndex(DMAP_MIN + 1, DMAP_MIN + 1, DMAP_MIN + 1)
+            DI_ADD_000, DI_ADD_001,
+            DI_ADD_010, DI_ADD_011,
+            DI_ADD_100, DI_ADD_101,
+            DI_ADD_110, DI_ADD_111
     };
 
     protected static final Ref<double[][]> DMAP_CACHE = ThreadRef.soft(() -> new double[2][DMAP_SIZE_3]);
-    protected static final Ref<int[]> TMAP_CACHE = ThreadRef.soft(() -> new int[DMAP_SIZE_3]);
+    protected static final Ref<byte[]> TMAP_CACHE = ThreadRef.soft(() -> new byte[DMAP_SIZE_3]);
 
     protected static int densityIndex(int x, int y, int z) {
         return ((x - DMAP_MIN) * DMAP_SIZE + y - DMAP_MIN) * DMAP_SIZE + z - DMAP_MIN;
-    }
-
-    protected static double sampleDensity(double x, double y, double z, double[] densityMap) {
-        int xI = floorI(x);
-        int yI = floorI(y);
-        int zI = floorI(z);
-
-        x -= xI;
-        y -= yI;
-        z -= zI;
-
-        double xyz = densityMap[densityIndex(xI, yI, zI)];
-        double xyZ = densityMap[densityIndex(xI, yI, zI + 1)];
-        double xYz = densityMap[densityIndex(xI, yI + 1, zI)];
-        double xYZ = densityMap[densityIndex(xI, yI + 1, zI + 1)];
-        double Xyz = densityMap[densityIndex(xI + 1, yI, zI)];
-        double XyZ = densityMap[densityIndex(xI + 1, yI, zI + 1)];
-        double XYz = densityMap[densityIndex(xI + 1, yI + 1, zI)];
-        double XYZ = densityMap[densityIndex(xI + 1, yI + 1, zI + 1)];
-
-        return lerp(
-                lerp(lerp(xyz, xyZ, z), lerp(xYz, xYZ, z), y),
-                lerp(lerp(Xyz, XyZ, z), lerp(XYz, XYZ, z), y), x);
     }
 
     public AbstractVoxelGenerator(@NonNull WorldServer world) {
@@ -93,17 +78,15 @@ public abstract class AbstractVoxelGenerator<PARAM> extends AbstractFarGenerator
         VoxelData data = new VoxelData();
         Vector3d vec = new Vector3d();
 
-        //double dn = 0.001d;
-
-        int[] tMap = TMAP_CACHE.get();
+        byte[] tMap = TMAP_CACHE.get();
         for (int di = 0, x = DMAP_MIN; x < DMAP_MAX; x++) {
             for (int y = DMAP_MIN; y < DMAP_MAX; y++) {
                 for (int z = DMAP_MIN; z < DMAP_MAX; z++, di++) {
-                    int type = 0;
-                    if (densityMap[0][di] < 0.0d) {
+                    byte type = 0;
+                    if (densityMap[0][di] > 0.0d) {
                         type |= BLOCK_TYPE_TRANSPARENT;
                     }
-                    if (densityMap[1][di] < 0.0d) {
+                    if (densityMap[1][di] > 0.0d) {
                         type |= BLOCK_TYPE_OPAQUE;
                     }
                     tMap[di] = type;
@@ -120,7 +103,7 @@ public abstract class AbstractVoxelGenerator<PARAM> extends AbstractFarGenerator
                     int corners = 0;
                     for (int i = 0; i < 8; i++) {
                         int di = diBase + DI_ADD[i];
-                        corners |= tMap[di] << (i << 1);
+                        corners |= (tMap[di] & 0xFF) << (i << 1);
                     }
 
                     if (corners == 0 || corners == 0x5555 || corners == 0xAAAA || corners == 0xFFFF) { //if all corners are the same type, this voxel can be safely skipped
@@ -139,6 +122,7 @@ public abstract class AbstractVoxelGenerator<PARAM> extends AbstractFarGenerator
                         int c0 = QEF_EDGE_VERTEX_MAP[edge << 1];
                         int c1 = QEF_EDGE_VERTEX_MAP[(edge << 1) | 1];
 
+                        //determine which layer the two corners that make up this edge are on
                         int layer0 = (corners >> (c0 << 1)) & 3;
                         int layer1 = (corners >> (c1 << 1)) & 3;
                         if (layer0 == layer1 //both corners along the current edge are identical, this edge can be skipped
@@ -146,27 +130,30 @@ public abstract class AbstractVoxelGenerator<PARAM> extends AbstractFarGenerator
                             // generating tons of internal mesh for no reason
                             continue;
                         }
+
+                        //the connection will be made on the bottommost layer
                         int layer = min(max(layer0, layer1) - 1, 1);
 
+                        //compute gradients in the current voxel on the chosen layer, which will also serve as the normal vector
+                        double densityBase = densityMap[layer][diBase + DI_ADD_000];
+                        double nx = densityMap[layer][diBase + DI_ADD_100] - densityBase;
+                        double ny = densityMap[layer][diBase + DI_ADD_010] - densityBase;
+                        double nz = densityMap[layer][diBase + DI_ADD_001] - densityBase;
+                        totalNx += nx;
+                        totalNy += ny;
+                        totalNz += nz;
+
+                        //get density values at both corners
                         double density0 = densityMap[layer][diBase + DI_ADD[c0]];
                         double density1 = densityMap[layer][diBase + DI_ADD[c1]];
 
+                        //minimize the density function along the edge to find the point where it crosses 0
                         double t = clamp(minimize(density0, density1), 0.0d, 1.0d);
                         double px = lerp((c0 >> 2) & 1, (c1 >> 2) & 1, t);
                         double py = lerp((c0 >> 1) & 1, (c1 >> 1) & 1, t);
                         double pz = lerp(c0 & 1, c1 & 1, t);
 
-                        //TODO: figure out whether or not this actually makes any significant difference
-                        /*double nx = sampleDensity(dx + px + dn, dy + py, dz + pz, densityMap[layer]) - sampleDensity(dx + px - dn, dy + py, dz + pz, densityMap[layer]);
-                        double ny = sampleDensity(dx + px, dy + py + dn, dz + pz, densityMap[layer]) - sampleDensity(dx + px, dy + py - dn, dz + pz, densityMap[layer]);
-                        double nz = sampleDensity(dx + px, dy + py, dz + pz + dn, densityMap[layer]) - sampleDensity(dx + px, dy + py, dz + pz - dn, densityMap[layer]);*/
-                        double nx = sampleDensity(dx, dy, dz, densityMap[layer]) - sampleDensity(dx + 1.0d, dy, dz, densityMap[layer]);
-                        double ny = sampleDensity(dx, dy, dz, densityMap[layer]) - sampleDensity(dx, dy + 1.0d, dz, densityMap[layer]);
-                        double nz = sampleDensity(dx, dy, dz, densityMap[layer]) - sampleDensity(dx, dy, dz + 1.0d, densityMap[layer]);
-                        totalNx += nx;
-                        totalNy += ny;
-                        totalNz += nz;
-
+                        //add the edge crossing point to the QEF
                         qef.add(px, py, pz, nx, ny, nz);
                         edgeCount++;
 
@@ -202,10 +189,11 @@ public abstract class AbstractVoxelGenerator<PARAM> extends AbstractFarGenerator
                     data.y = clamp(floorI(vec.y * POS_ONE), 0, POS_ONE);
                     data.z = clamp(floorI(vec.z * POS_ONE), 0, POS_ONE);
 
-                    double nLen = sqrt(totalNx * totalNx + totalNy * totalNy + totalNz * totalNz);
-                    totalNx /= nLen;
-                    totalNy /= nLen;
-                    totalNz /= nLen;
+                    //normalize normal vector
+                    double nFactor = 1.0d / sqrt(totalNx * totalNx + totalNy * totalNy + totalNz * totalNz);
+                    totalNx *= nFactor;
+                    totalNy *= nFactor;
+                    totalNz *= nFactor;
 
                     this.populateVoxelBlockData(baseX + (dx << level), baseY + (dy << level), baseZ + (dz << level), level, totalNx, totalNy, totalNz, data, param);
 

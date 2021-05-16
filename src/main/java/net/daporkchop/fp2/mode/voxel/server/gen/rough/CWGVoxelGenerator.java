@@ -44,11 +44,6 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 public class CWGVoxelGenerator extends AbstractVoxelGenerator<CWGContext> implements IFarGeneratorRough<VoxelPos, VoxelTile> {
-    public static final int LOWRES_MIN = DMAP_MIN >> GT_SHIFT;
-    public static final int LOWRES_MAX = (DMAP_MAX >> GT_SHIFT) + 2;
-    public static final int LOWRES_SIZE = LOWRES_MAX - LOWRES_MIN;
-    public static final int LOWRES_SIZE_3 = LOWRES_SIZE * LOWRES_SIZE * LOWRES_SIZE;
-
     protected final Ref<CWGContext> ctx;
 
     public CWGVoxelGenerator(@NonNull WorldServer world) {
@@ -72,16 +67,14 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<CWGContext> implem
         double scaleFactor = 1.0d / (1 << level);
         for (int x = DMAP_MIN; x < DMAP_MAX; x++) {
             for (int y = DMAP_MIN; y < DMAP_MAX; y++) {
-                Arrays.fill(densityMap[0], densityIndex(x, y, DMAP_MIN), densityIndex(x, y, DMAP_MAX), (this.seaLevel - 1 - (baseY + (y << level))) * scaleFactor);
+                Arrays.fill(densityMap[0], densityIndex(x, y, DMAP_MIN), densityIndex(x, y, DMAP_MAX), ((baseY + (y << level)) - (this.seaLevel - 1)) * scaleFactor);
             }
         }
 
         //blocks
         ctx.get3d(densityMap[1], baseY + (DMAP_MIN << level));
-        for (int i = 0; i < DMAP_SIZE_3; i++) { //negate density values because the dual contouring implementation currently processes them backwards
-            densityMap[1][i] = -densityMap[1][i];
-        }
 
+        //actually create the mesh (using dual contouring)
         this.buildMesh(baseX, baseY, baseZ, level, tile, densityMap, ctx);
     }
 
@@ -91,7 +84,7 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<CWGContext> implem
             return FastRegistry.getId(Blocks.WATER.getDefaultState());
         }
 
-        double density = -min(density0, density1);
+        double density = max(density0, density1);
 
         IBlockState state = Blocks.AIR.getDefaultState();
         for (IBiomeBlockReplacer replacer : ctx.replacersForBiome(ctx.getBiome(blockX, blockZ))) {
