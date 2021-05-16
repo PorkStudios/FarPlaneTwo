@@ -84,10 +84,15 @@ public class Constants {
     public static final int T_VOXELS = 1 << T_SHIFT;
     public static final int T_VERTS = T_VOXELS + 1;
 
-    public static final int GT_SHIFT = 2; //generation tile shift
-    public static final int GT_MASK = (1 << GT_SHIFT) - 1;
-    public static final int GT_COUNT = T_VOXELS >> GT_SHIFT;
-    public static final int GT_SIZE = 1 << (T_SHIFT - GT_SHIFT); //generation tile size
+    public static final int GTH_SHIFT = 2; //generation tile shift (horizontal)
+    public static final int GTH_MASK = (1 << GTH_SHIFT) - 1;
+    public static final int GTH_COUNT = T_VOXELS >> GTH_SHIFT;
+    public static final int GTH_SIZE = 1 << GTH_SHIFT; //generation tile size
+
+    public static final int GTV_SHIFT = GTH_SHIFT + 1; //generation tile shift (vertical)
+    public static final int GTV_MASK = (1 << GTV_SHIFT) - 1;
+    public static final int GTV_COUNT = T_VOXELS >> GTV_SHIFT;
+    public static final int GTV_SIZE = 1 << GTV_SHIFT;
 
     public static final boolean FP2_TEST = Boolean.parseBoolean(System.getProperty("fp2.test", "false"));
 

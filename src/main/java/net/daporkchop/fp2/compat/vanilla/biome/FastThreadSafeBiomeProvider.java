@@ -27,7 +27,6 @@ import net.daporkchop.fp2.compat.vanilla.biome.weight.BiomeWeightHelper;
 import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
 import net.minecraft.world.biome.BiomeProvider;
 
-import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelperCached.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 
@@ -51,14 +50,14 @@ public class FastThreadSafeBiomeProvider implements IBiomeProvider {
             this.biomeLayer.getGrid(alloc, x, z, size, size, biomes);
         } else if (level == 1) {
             this.generateBiomesAtHalfResolution(alloc, x, z, size, biomes, this.biomeLayer);
-        } else if (level < GT_SHIFT) {
+        } else if (level < GTH_SHIFT) {
             this.biomeLayer.multiGetGrids(alloc, x, z, 1, 1 << level, 0, size, biomes);
-        } else if (level == GT_SHIFT) {
-            this.generationLayer.getGrid(alloc, x >> GT_SHIFT, z >> GT_SHIFT, size, size, biomes);
-        } else if (level == GT_SHIFT + 1) {
-            this.generateBiomesAtHalfResolution(alloc, x >> GT_SHIFT, z >> GT_SHIFT, size, biomes, this.generationLayer);
+        } else if (level == GTH_SHIFT) {
+            this.generationLayer.getGrid(alloc, x >> GTH_SHIFT, z >> GTH_SHIFT, size, size, biomes);
+        } else if (level == GTH_SHIFT + 1) {
+            this.generateBiomesAtHalfResolution(alloc, x >> GTH_SHIFT, z >> GTH_SHIFT, size, biomes, this.generationLayer);
         } else { //sample a "multigrid", with each sub-grid being a 1x1 grid - this is effectively the same as getGrid but with a customizable spacing between each sample point
-            this.generationLayer.multiGetGrids(alloc, x >> GT_SHIFT, z >> GT_SHIFT, 1, 1 << (level - GT_SHIFT), 0, size, biomes);
+            this.generationLayer.multiGetGrids(alloc, x >> GTH_SHIFT, z >> GTH_SHIFT, 1, 1 << (level - GTH_SHIFT), 0, size, biomes);
         }
     }
 
@@ -81,7 +80,7 @@ public class FastThreadSafeBiomeProvider implements IBiomeProvider {
 
     @Override
     public void generateBiomesAndWeightedHeightsVariations(int x, int z, int level, int size, @NonNull int[] biomes, @NonNull double[] heights, @NonNull double[] variations, @NonNull BiomeWeightHelper weightHelper) {
-        if (level < GT_SHIFT) { //zoom is low enough that each biome sample is smaller than the noise generation grid, so we'll have to generate them both individually
+        if (level < GTH_SHIFT) { //zoom is low enough that each biome sample is smaller than the noise generation grid, so we'll have to generate them both individually
             this.generateBiomesAndWeightedHeightsVariations_highres(x, z, level, size, biomes, heights, variations, weightHelper);
         } else { //biome layer isn't needed, because the samples are spaced at least 4 blocks apart
             this.generateBiomesAndWeightedHeightsVariations_lowres(x, z, level, size, biomes, heights, variations, weightHelper);
@@ -95,13 +94,13 @@ public class FastThreadSafeBiomeProvider implements IBiomeProvider {
         //generate biomes on generation-scale grid to compute weights
         IntArrayAllocator alloc = IntArrayAllocator.DEFAULT.get();
 
-        int shift = GT_SHIFT - level;
+        int shift = GTH_SHIFT - level;
         int smoothRadius = weightHelper.smoothRadius();
         int tempBiomesSize = asrCeil(size, shift) + (smoothRadius << 1);
         int[] tempBiomes = alloc.get(sq(tempBiomesSize));
         try {
             //generate biomes
-            this.generationLayer.getGrid(alloc, (x >> GT_SHIFT) - smoothRadius, (z >> GT_SHIFT) - smoothRadius, tempBiomesSize, tempBiomesSize, tempBiomes);
+            this.generationLayer.getGrid(alloc, (x >> GTH_SHIFT) - smoothRadius, (z >> GTH_SHIFT) - smoothRadius, tempBiomesSize, tempBiomesSize, tempBiomes);
 
             //compute weights from biome IDs
             for (int outIdx = 0, dx = 0; dx < size; dx++) {
@@ -124,7 +123,7 @@ public class FastThreadSafeBiomeProvider implements IBiomeProvider {
         int[] tempBiomes = alloc.get(sq(size) * sq(smoothDiameter));
         try {
             //generate biomes on generation layer at low resolution
-            this.generationLayer.multiGetGrids(alloc, (x >> GT_SHIFT) - smoothRadius, (z >> GT_SHIFT) - smoothRadius, smoothDiameter, 1 << (level - GT_SHIFT), 0, size, tempBiomes);
+            this.generationLayer.multiGetGrids(alloc, (x >> GTH_SHIFT) - smoothRadius, (z >> GTH_SHIFT) - smoothRadius, smoothDiameter, 1 << (level - GTH_SHIFT), 0, size, tempBiomes);
 
             //copy biomes into output array
             for (int inIdx = centerOffset, outIdx = 0, dx = 0; dx < size; dx++) {

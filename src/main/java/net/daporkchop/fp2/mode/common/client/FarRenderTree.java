@@ -426,7 +426,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         }
 
         if (FP2_DEBUG && FP2Config.debug.skipLevel0 && level == 0) {
-            return true;
+            return false;
         }
 
         if (this.checkFlagsOR(node, FLAG_DATA)) {

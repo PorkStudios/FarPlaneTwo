@@ -33,21 +33,41 @@ import net.minecraft.init.Blocks;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
-import static java.lang.Math.*;
 import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
  * @author DaPorkchop_
  */
 public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
+    public static final int HMAP_MIN = -1;
+    public static final int HMAP_MAX = T_VOXELS + 1;
+    public static final int HMAP_SIZE = HMAP_MAX - HMAP_MIN;
+
+    protected static final int[] SEARCH_AROUND_WATER_OFFSETS = {
+            heightsIndex(HMAP_MIN - 1, HMAP_MIN - 1),
+            heightsIndex(HMAP_MIN - 1, HMAP_MIN + 0),
+            heightsIndex(HMAP_MIN - 1, HMAP_MIN + 1),
+            heightsIndex(HMAP_MIN + 0, HMAP_MIN - 1),
+            heightsIndex(HMAP_MIN + 0, HMAP_MIN + 1),
+            heightsIndex(HMAP_MIN + 1, HMAP_MIN - 1),
+            heightsIndex(HMAP_MIN + 1, HMAP_MIN + 0),
+            heightsIndex(HMAP_MIN + 1, HMAP_MIN + 1)
+    };
+
+    protected static int heightsIndex(int x, int z) {
+        return (x - HMAP_MIN) * HMAP_SIZE + z - HMAP_MIN;
+    }
+
     protected final Ref<CWGContext> ctx;
+    protected final Ref<double[]> hmapCache = ThreadRef.soft(() -> new double[sq(HMAP_SIZE)]);
 
     public CWGHeightmapGenerator(@NonNull WorldServer world) {
         super(world);
 
-        this.ctx = ThreadRef.soft(() -> new CWGContext(world, T_VOXELS + 1 + GT_SIZE, 2));
+        this.ctx = ThreadRef.soft(() -> new CWGContext(world, HMAP_SIZE, 2));
     }
 
     @Override
@@ -63,63 +83,32 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
 
         HeightmapData data = new HeightmapData();
 
-        int shift = max(level, GT_SHIFT);
-        int scale = min(level, GT_SHIFT);
-
         CWGContext ctx = this.ctx.get();
-        ctx.init(baseX - (1 << shift), baseZ - (1 << shift), level);
+        ctx.init(baseX + (HMAP_MIN << level), baseZ + (HMAP_MIN << level), level);
 
-        int hMax = (1 << (scale + (T_SHIFT - GT_SHIFT))) + 1;
-        int hSize = hMax + 1;
-        int[] heights = new int[hSize * hSize];
-        for (int x = -1; x < hMax; x++) {
-            for (int z = -1; z < hMax; z++) {
-                int blockX = baseX + (x << shift);
-                int blockZ = baseZ + (z << shift);
-                heights[(x + 1) * hSize + (z + 1)] = ctx.getHeight(blockX, blockZ);
-            }
-        }
+        double[] hmap = this.hmapCache.get();
+        ctx.getHeights(hmap);
 
-        int tileSize = GT_SIZE >> scale;
-        double f = 1.0d / tileSize;
-        for (int tileX = 0; tileX < hMax - 1; tileX++) {
-            for (int tileZ = 0; tileZ < hMax - 1; tileZ++) {
-                boolean addWater = false;
-                CHECK_ADD_WATER:
-                for (int dx = -1; dx <= 1; dx++) {
-                    for (int dz = -1; dz <= 1; dz++) {
-                        if (heights[(tileX + 1 + dx) * hSize + (tileZ + 1 + dz)] < this.seaLevel) {
+        for (int x = 0; x < T_VOXELS; x++) {
+            for (int z = 0, inIdx = heightsIndex(x, z); z < T_VOXELS; z++, inIdx++) {
+                double height = hmap[inIdx];
+
+                boolean addWater = height < this.seaLevel;
+                if (!addWater) { //check surrounding points to see if they're below sea level
+                    for (int i = 0, lim = SEARCH_AROUND_WATER_OFFSETS.length; i < lim; i++) {
+                        if (hmap[inIdx + SEARCH_AROUND_WATER_OFFSETS[i]] < this.seaLevel) {
                             addWater = true;
-                            break CHECK_ADD_WATER;
+                            break;
                         }
                     }
                 }
 
-                int hxz = heights[(tileX + 1) * hSize + (tileZ + 1)];
-                int hxZ = heights[(tileX + 1) * hSize + (tileZ + 2)];
-                int hXz = heights[(tileX + 2) * hSize + (tileZ + 1)];
-                int hXZ = heights[(tileX + 2) * hSize + (tileZ + 2)];
-
                 double density = 0.5d; //TODO: these gradients aren't being computed properly
-                double dx = (hXz - hxz) * f;
+                double dx = 0.0d;
                 double dy = -1.0d;
-                double dz = (hxZ - hxz) * f;
+                double dz = 0.0d;
 
-                for (int subX = 0; subX < tileSize; subX++) {
-                    double fx = subX * f;
-                    double hz = lerp(hxz, hXz, fx);
-                    double hZ = lerp(hxZ, hXZ, fx);
-
-                    for (int subZ = 0; subZ < tileSize; subZ++) {
-                        double fz = subZ * f;
-                        double height = lerp(hz, hZ, fz);
-
-                        int x = (tileX * tileSize) + subX;
-                        int z = (tileZ * tileSize) + subZ;
-
-                        this.processSample(ctx, data, tile, baseX + (x << level), baseZ + (z << level), x, z, height, dx, dy, dz, density, addWater);
-                    }
-                }
+                this.processSample(ctx, data, tile, baseX + (x << level), baseZ + (z << level), x, z, height + 1.0d, dx, dy, dz, density, addWater);
             }
         }
     }

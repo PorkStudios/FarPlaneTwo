@@ -41,10 +41,9 @@ import static net.daporkchop.lib.common.math.PMath.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractVoxelGenerator<PARAM> extends AbstractFarGenerator {
-    public static final int DMAP_MIN = -1;
-    public static final int DMAP_MAX = T_VOXELS + 2;
+    public static final int DMAP_MIN = 0;
+    public static final int DMAP_MAX = T_VOXELS + 1;
     public static final int DMAP_SIZE = DMAP_MAX - DMAP_MIN;
-    public static final int DMAP_SIZE_3 = DMAP_SIZE * DMAP_SIZE * DMAP_SIZE;
 
     protected static final int DI_ADD_000 = densityIndex(DMAP_MIN + 0, DMAP_MIN + 0, DMAP_MIN + 0);
     protected static final int DI_ADD_001 = densityIndex(DMAP_MIN + 0, DMAP_MIN + 0, DMAP_MIN + 1);
@@ -62,8 +61,8 @@ public abstract class AbstractVoxelGenerator<PARAM> extends AbstractFarGenerator
             DI_ADD_110, DI_ADD_111
     };
 
-    protected static final Ref<double[][]> DMAP_CACHE = ThreadRef.soft(() -> new double[2][DMAP_SIZE_3]);
-    protected static final Ref<byte[]> TMAP_CACHE = ThreadRef.soft(() -> new byte[DMAP_SIZE_3]);
+    protected static final Ref<double[][]> DMAP_CACHE = ThreadRef.soft(() -> new double[2][cb(DMAP_SIZE)]);
+    protected static final Ref<byte[]> TMAP_CACHE = ThreadRef.soft(() -> new byte[cb(DMAP_SIZE)]);
 
     protected static int densityIndex(int x, int y, int z) {
         return ((x - DMAP_MIN) * DMAP_SIZE + y - DMAP_MIN) * DMAP_SIZE + z - DMAP_MIN;
