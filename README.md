@@ -15,6 +15,8 @@
 **This mod currently supports the latest version of Forge for 1.12.2. It requires both [ForgeRocks](https://www.curseforge.com/minecraft/mc-mods/forgerocks) and [Mixin](https://www.curseforge.com/minecraft/mc-mods/mixin-0-7-0-8-compatibility) in order to launch correctly.**  
 (Mixin isn't needed if you're using [Cubic Chunks](https://github.com/OpenCubicChunks/CubicChunks))
 
+## **[Read the FAQ first!](https://github.com/PorkStudios/FarPlaneTwo/wiki/FAQ)**
+
 This is a Minecraft mod which implements a Level-of-Detail (LoD) terrain renderer into the game.
 
 The name is in reference to [Foghrye4's CWGFarPlaneView](https://www.curseforge.com/minecraft/mc-mods/cwg-far-plane-view), which is an addon for CubicWorldGen (which, in turn, is an addon for Cubic Chunks) which renders a plane at sea level with block and biome colors, and served as the original inspiration for me to make this.
