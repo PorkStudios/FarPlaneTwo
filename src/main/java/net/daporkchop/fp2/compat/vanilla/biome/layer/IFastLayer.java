@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayer;
 
 import java.util.Set;
@@ -51,24 +51,23 @@ public interface IFastLayer {
     /**
      * Gets a single value at the given coordinates.
      *
-     * @param alloc an {@link IntArrayAllocator} to use for allocating {@code int[]}s
+     * @param alloc an {@link ArrayAllocator} to use for allocating {@code int[]}s
      * @param x     the X coordinate of the value to get
      * @param z     the Z coordinate of the value to get
      * @return the value
      */
-    int getSingle(@NonNull IntArrayAllocator alloc, int x, int z);
+    int getSingle(@NonNull ArrayAllocator<int[]> alloc, int x, int z);
 
     /**
      * Gets a grid of the given size at the given coordinates.
-     *
-     * @param alloc an {@link IntArrayAllocator} to use for allocating {@code int[]}s
+     *  @param alloc an {@link ArrayAllocator} to use for allocating {@code int[]}s
      * @param x     the grid's base X coordinate
      * @param z     the grid's base Z coordinate
      * @param sizeX the size of the grid along the X axis
      * @param sizeZ the size of the grid along the Z axis
      * @param out   the {@code int[]} to write to
      */
-    default void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+    default void getGrid(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
         if (__HAS_LOGGED_GRID_WARNING.add(this.getClass())) {
             FP2_LOG.warn("{} does not override getGrid(), falling back to slow implementation...", this.getClass().getCanonicalName());
         }
@@ -82,8 +81,7 @@ public interface IFastLayer {
 
     /**
      * Gets a square grid of multiple square grids with the given spacing between each other.
-     *
-     * @param alloc an {@link IntArrayAllocator} to use for allocating {@code int[]}s
+     *  @param alloc an {@link ArrayAllocator} to use for allocating {@code int[]}s
      * @param x     the grid's base X coordinate
      * @param z     the grid's base Z coordinate
      * @param size  the size of each small grid
@@ -92,12 +90,12 @@ public interface IFastLayer {
      * @param count the number of smaller grids to generate
      * @param out   the {@code int[]} to write to
      */
-    default void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+    default void multiGetGrids(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         if (__HAS_LOGGED_MULTIGRID_WARNING.add(this.getClass())) {
             FP2_LOG.warn("{} does not override multiGetGrids(), falling back to slow implementation...", this.getClass().getCanonicalName());
         }
 
-        int[] tmp = alloc.get(size * size);
+        int[] tmp = alloc.atLeast(size * size);
         try {
             for (int i = 0, gridX = 0; gridX < count; gridX++) {
                 for (int gridZ = 0; gridZ < count; gridZ++, i += size * size) {

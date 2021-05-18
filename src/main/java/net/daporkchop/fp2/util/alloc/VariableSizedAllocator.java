@@ -18,14 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.util.alloc.generic;
+package net.daporkchop.fp2.util.alloc;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectRBTreeMap;
 import lombok.NonNull;
 import lombok.Setter;
-import lombok.ToString;
-import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.math.PMath;
 
 import java.util.Comparator;

@@ -22,7 +22,7 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerZoom;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
@@ -37,7 +37,7 @@ public class JavaFastLayerZoom extends AbstractFastLayer implements IJavaZooming
     }
 
     @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+    public int getSingle(@NonNull ArrayAllocator<int[]> alloc, int x, int z) {
         int lowX = x >> 1;
         int lowZ = z >> 1;
 
@@ -59,10 +59,10 @@ public class JavaFastLayerZoom extends AbstractFastLayer implements IJavaZooming
         }
     }
 
-    protected int sampleXZLast(IntArrayAllocator alloc, int lowX, int lowZ) {
+    protected int sampleXZLast(ArrayAllocator<int[]> alloc, int lowX, int lowZ) {
         int xz, xZ, Xz, XZ;
 
-        int[] arr = alloc.get(2 * 2);
+        int[] arr = alloc.atLeast(2 * 2);
         try {
             this.child.getGrid(alloc, lowX, lowZ, 2, 2, arr);
             xz = arr[0];

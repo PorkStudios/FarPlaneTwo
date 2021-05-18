@@ -23,7 +23,7 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IPaddedLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.IJavaPaddedLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
 /**
  * Extension of {@link IPaddedLayer} for native implementations.
@@ -37,21 +37,21 @@ public interface INativePaddedLayer extends IJavaPaddedLayer {
     long seed();
 
     @Override
-    default void getGrid0(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in) {
+    default void getGrid0(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in) {
         this.getGrid0(this.seed(), x, z, sizeX, sizeZ, out, in);
     }
 
     void getGrid0(long seed, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
 
     @Override
-    default void multiGetGridsCombined0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
+    default void multiGetGridsCombined0(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
         this.multiGetGridsCombined0(this.seed(), x, z, size, dist, depth, count, out, in);
     }
 
     void multiGetGridsCombined0(long seed, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 
     @Override
-    default void multiGetGridsIndividual0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
+    default void multiGetGridsIndividual0(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
         this.multiGetGridsIndividual0(this.seed(), x, z, size, dist, depth, count, out, in);
     }
 

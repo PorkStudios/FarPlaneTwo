@@ -22,7 +22,7 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaFastLayerRandomValues;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
 /**
  * @author DaPorkchop_
@@ -37,7 +37,7 @@ public class NativeFastLayerRandomValues extends JavaFastLayerRandomValues {
     }
 
     @Override
-    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+    public void getGrid(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
         this.getGrid0(this.seed, this.limit, x, z, sizeX, sizeZ, out);
     }
 

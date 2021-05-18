@@ -23,9 +23,9 @@ package net.daporkchop.fp2.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
-import net.daporkchop.fp2.util.alloc.generic.Allocator;
-import net.daporkchop.fp2.util.alloc.generic.FixedSizeAllocator;
-import net.daporkchop.fp2.util.alloc.generic.VariableSizedAllocator;
+import net.daporkchop.fp2.util.alloc.Allocator;
+import net.daporkchop.fp2.util.alloc.FixedSizeAllocator;
+import net.daporkchop.fp2.util.alloc.VariableSizedAllocator;
 import net.daporkchop.lib.common.misc.string.PStrings;
 
 import static net.daporkchop.fp2.util.Constants.*;

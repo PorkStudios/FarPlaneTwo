@@ -30,8 +30,10 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.lib.common.misc.string.PStrings;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.common.pool.handle.Handle;
 import net.daporkchop.lib.common.ref.Ref;
+import net.daporkchop.lib.common.ref.ReferenceType;
 import net.daporkchop.lib.common.ref.ThreadRef;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.compression.zstd.Zstd;
@@ -110,6 +112,10 @@ public class Constants {
 
     public static final boolean CC = !FP2_TEST && Loader.isModLoaded("cubicchunks");
     public static final boolean CWG = !FP2_TEST && Loader.isModLoaded("cubicgen");
+
+    public static final Ref<ArrayAllocator<byte[]>> ALLOC_BYTE = ThreadRef.soft(() -> ArrayAllocator.pow2(byte[]::new, ReferenceType.STRONG, 32));
+    public static final Ref<ArrayAllocator<int[]>> ALLOC_INT = ThreadRef.soft(() -> ArrayAllocator.pow2(int[]::new, ReferenceType.STRONG, 32));
+    public static final Ref<ArrayAllocator<double[]>> ALLOC_DOUBLE = ThreadRef.soft(() -> ArrayAllocator.pow2(double[]::new, ReferenceType.STRONG, 32));
 
     public static void bigWarning(String format, Object... data) {
         StackTraceElement[] trace = Thread.currentThread().getStackTrace();

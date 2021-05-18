@@ -22,7 +22,7 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerVoronoiZoom;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
@@ -40,7 +40,7 @@ public class JavaFastLayerVoronoiZoom extends AbstractFastLayer implements IJava
     }
 
     @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+    public int getSingle(@NonNull ArrayAllocator<int[]> alloc, int x, int z) {
         x -= 2;
         z -= 2;
 
@@ -83,12 +83,12 @@ public class JavaFastLayerVoronoiZoom extends AbstractFastLayer implements IJava
     }
 
     @Override
-    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+    public void getGrid(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
         IJavaZoomingLayer.super.getGrid(alloc, x - 2, z - 2, sizeX, sizeZ, out);
     }
 
     @Override
-    public void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+    public void multiGetGrids(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         IJavaZoomingLayer.super.multiGetGrids(alloc, x - (2 << depth), z - (2 << depth), size, dist, depth, count, out);
     }
 

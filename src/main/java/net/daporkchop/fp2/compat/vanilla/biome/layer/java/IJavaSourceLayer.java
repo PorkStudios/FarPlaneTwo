@@ -22,7 +22,7 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.ISourceLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 
@@ -35,7 +35,7 @@ public interface IJavaSourceLayer extends ISourceLayer {
     int get0(int x, int z);
 
     @Override
-    default int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+    default int getSingle(@NonNull ArrayAllocator<int[]> alloc, int x, int z) {
         return this.get0(x, z);
     }
 

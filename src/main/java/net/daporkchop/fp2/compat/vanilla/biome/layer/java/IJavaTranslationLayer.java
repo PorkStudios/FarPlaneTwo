@@ -22,7 +22,7 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.ITranslationLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 
@@ -35,7 +35,7 @@ public interface IJavaTranslationLayer extends ITranslationLayer {
     int translate0(int x, int z, int value);
 
     @Override
-    default int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+    default int getSingle(@NonNull ArrayAllocator<int[]> alloc, int x, int z) {
         return this.translate0(x, z, this.child().getSingle(alloc, x, z));
     }
 

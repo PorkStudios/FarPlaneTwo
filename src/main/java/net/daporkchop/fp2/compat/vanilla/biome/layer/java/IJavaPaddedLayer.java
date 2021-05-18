@@ -22,7 +22,7 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IPaddedLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 
@@ -67,12 +67,12 @@ public interface IJavaPaddedLayer extends IPaddedLayer {
     int eval0(int x, int z, int center, @NonNull int[] v);
 
     @Override
-    default int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+    default int getSingle(@NonNull ArrayAllocator<int[]> alloc, int x, int z) {
         final int inSizeX = 3;
         final int inSizeZ = 3;
 
-        int[] in = alloc.get(inSizeX * inSizeZ);
-        int[] v = alloc.get(4);
+        int[] in = alloc.atLeast(inSizeX * inSizeZ);
+        int[] v = alloc.atLeast(4);
         try {
             this.child().getGrid(alloc, x - 1, z - 1, inSizeX, inSizeZ, in);
 
@@ -90,7 +90,7 @@ public interface IJavaPaddedLayer extends IPaddedLayer {
     }
 
     @Override
-    default void getGrid0(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in) {
+    default void getGrid0(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in) {
         final int inSizeX = sizeX + 2;
         final int inSizeZ = sizeZ + 2;
 
@@ -110,7 +110,7 @@ public interface IJavaPaddedLayer extends IPaddedLayer {
     }
 
     @Override
-    default void multiGetGridsCombined0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
+    default void multiGetGridsCombined0(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
         final int inSize = (((dist >> depth) + 1) * count) + 2;
         final int mask = (depth != 0) ? 1 : 0;
 
@@ -139,7 +139,7 @@ public interface IJavaPaddedLayer extends IPaddedLayer {
     }
 
     @Override
-    default void multiGetGridsIndividual0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
+    default void multiGetGridsIndividual0(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
         final int inSize = size + 2;
 
         int[] offsets = this.offsets(inSize, inSize);

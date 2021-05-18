@@ -21,12 +21,12 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
 /**
  * A {@link IFastLayer} which zooms in.
  * <p>
- * Implementors should always override {@link #multiGetGridsIndividual(IntArrayAllocator, int, int, int, int, int, int, int[])}, and override {@link #multiGetGridsCombined(IntArrayAllocator, int, int, int, int, int, int, int[])}
+ * Implementors should always override {@link #multiGetGridsIndividual(ArrayAllocator, int, int, int, int, int, int, int[])}, and override {@link #multiGetGridsCombined(ArrayAllocator, int, int, int, int, int, int, int[])}
  * whenever possible.
  *
  * @author DaPorkchop_
@@ -50,13 +50,13 @@ public interface IZoomingLayer extends IFastLayer {
     IFastLayer child();
 
     @Override
-    default void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+    default void getGrid(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
         int shift = this.shift();
         int padding = IZoomingLayer.isAligned(shift, x, z, sizeX, sizeZ) ? 1 : 2;
         int lowSizeX = (sizeX >> shift) + padding;
         int lowSizeZ = (sizeZ >> shift) + padding;
 
-        int[] in = alloc.get(lowSizeX * lowSizeZ);
+        int[] in = alloc.atLeast(lowSizeX * lowSizeZ);
         try {
             this.child().getGrid(alloc, x >> shift, z >> shift, lowSizeX, lowSizeZ, in);
 
@@ -66,10 +66,10 @@ public interface IZoomingLayer extends IFastLayer {
         }
     }
 
-    void getGrid0(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
+    void getGrid0(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
 
     @Override
-    default void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+    default void multiGetGrids(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         int shift = this.shift();
         if (((size >> shift) + 2) < (dist >> (depth + shift))) { //if each small grid is smaller than the space between each grid, we should continue getting
             // multiple grids rather than merging the requests
@@ -79,10 +79,10 @@ public interface IZoomingLayer extends IFastLayer {
         }
     }
 
-    default void multiGetGridsCombined(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+    default void multiGetGridsCombined(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         int shift = this.shift();
         int lowSize = ((((dist >> depth) + 1) * count) >> shift) + 2;
-        int[] in = alloc.get(lowSize * lowSize);
+        int[] in = alloc.atLeast(lowSize * lowSize);
         try {
             this.child().getGrid(alloc, x >> (depth + shift), z >> (depth + shift), lowSize, lowSize, in);
 
@@ -92,13 +92,13 @@ public interface IZoomingLayer extends IFastLayer {
         }
     }
 
-    void multiGetGridsCombined0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
+    void multiGetGridsCombined0(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 
-    default void multiGetGridsIndividual(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+    default void multiGetGridsIndividual(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         int shift = this.shift();
         int lowSize = (size >> shift) + 2;
 
-        int[] in = alloc.get(count * count * lowSize * lowSize);
+        int[] in = alloc.atLeast(count * count * lowSize * lowSize);
         try {
             this.child().multiGetGrids(alloc, x, z, lowSize, dist, depth + shift, count, in);
 
@@ -108,5 +108,5 @@ public interface IZoomingLayer extends IFastLayer {
         }
     }
 
-    void multiGetGridsIndividual0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
+    void multiGetGridsIndividual0(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 }

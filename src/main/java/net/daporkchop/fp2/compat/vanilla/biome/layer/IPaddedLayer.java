@@ -21,15 +21,15 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 
 /**
  * A {@link IFastLayer} whose child requests are larger than the initial input request.
  * <p>
- * Implementors should always override {@link #multiGetGridsIndividual(IntArrayAllocator, int, int, int, int, int, int, int[])}, and override
- * {@link #multiGetGridsCombined(IntArrayAllocator, int, int, int, int, int, int, int[])} whenever possible.
+ * Implementors should always override {@link #multiGetGridsIndividual(ArrayAllocator, int, int, int, int, int, int, int[])}, and override
+ * {@link #multiGetGridsCombined(ArrayAllocator, int, int, int, int, int, int, int[])} whenever possible.
  *
  * @author DaPorkchop_
  */
@@ -40,8 +40,8 @@ public interface IPaddedLayer extends IFastLayer {
     IFastLayer child();
 
     @Override
-    default void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
-        int[] in = alloc.get((sizeX + 2) * (sizeZ + 2));
+    default void getGrid(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+        int[] in = alloc.atLeast((sizeX + 2) * (sizeZ + 2));
         try {
             this.child().getGrid(alloc, x - 1, z - 1, sizeX + 2, sizeZ + 2, in);
 
@@ -51,10 +51,10 @@ public interface IPaddedLayer extends IFastLayer {
         }
     }
 
-    void getGrid0(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
+    void getGrid0(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in);
 
     @Override
-    default void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+    default void multiGetGrids(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         if (size + 2 < asrRound(dist, depth)) { //if the padded request bounds don't intersect, we should continue issuing multiget requests rather than combining
             this.multiGetGridsIndividual(alloc, x, z, size, dist, depth, count, out);
         } else { //the requests can be combined into a single one
@@ -62,9 +62,9 @@ public interface IPaddedLayer extends IFastLayer {
         }
     }
 
-    default void multiGetGridsCombined(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+    default void multiGetGridsCombined(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         int lowSize = (((dist >> depth) + 1) * count) + 2;
-        int[] in = alloc.get(lowSize * lowSize);
+        int[] in = alloc.atLeast(lowSize * lowSize);
         try {
             this.child().getGrid(alloc, (x >> depth) - 1, (z >> depth) - 1, lowSize, lowSize, in);
 
@@ -74,11 +74,11 @@ public interface IPaddedLayer extends IFastLayer {
         }
     }
 
-    void multiGetGridsCombined0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
+    void multiGetGridsCombined0(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 
-    default void multiGetGridsIndividual(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+    default void multiGetGridsIndividual(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         int lowSize = size + 2;
-        int[] in = alloc.get(count * count * lowSize * lowSize);
+        int[] in = alloc.atLeast(count * count * lowSize * lowSize);
         try {
             this.child().multiGetGrids(alloc, x - (1 << depth), z - (1 << depth), lowSize, dist, depth, count, in);
 
@@ -88,5 +88,5 @@ public interface IPaddedLayer extends IFastLayer {
         }
     }
 
-    void multiGetGridsIndividual0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
+    void multiGetGridsIndividual0(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in);
 }

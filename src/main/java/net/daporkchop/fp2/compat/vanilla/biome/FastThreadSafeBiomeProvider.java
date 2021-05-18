@@ -24,7 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.weight.BiomeWeightHelper;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.biome.BiomeProvider;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -45,7 +45,7 @@ public class FastThreadSafeBiomeProvider implements IBiomeProvider {
 
     @Override
     public void generateBiomes(int x, int z, int level, int size, @NonNull int[] biomes) {
-        IntArrayAllocator alloc = IntArrayAllocator.DEFAULT.get();
+        ArrayAllocator<int[]> alloc = ALLOC_INT.get();
         if (level == 0) { //max zoom level, the values are tightly packed so we just need to sample a single grid
             this.biomeLayer.getGrid(alloc, x, z, size, size, biomes);
         } else if (level == 1) {
@@ -61,8 +61,8 @@ public class FastThreadSafeBiomeProvider implements IBiomeProvider {
         }
     }
 
-    protected void generateBiomesAtHalfResolution(@NonNull IntArrayAllocator alloc, int x, int z, int size, @NonNull int[] biomes, @NonNull IFastLayer layer) {
-        int[] temp = alloc.get(sq(size << 1));
+    protected void generateBiomesAtHalfResolution(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, @NonNull int[] biomes, @NonNull IFastLayer layer) {
+        int[] temp = alloc.atLeast(sq(size << 1));
         try {
             //generate biome grid at twice the ordinary size
             layer.getGrid(alloc, x, z, size << 1, size << 1, temp);
@@ -92,12 +92,12 @@ public class FastThreadSafeBiomeProvider implements IBiomeProvider {
         this.generateBiomes(x, z, level, size, biomes);
 
         //generate biomes on generation-scale grid to compute weights
-        IntArrayAllocator alloc = IntArrayAllocator.DEFAULT.get();
+        ArrayAllocator<int[]> alloc = ALLOC_INT.get();
 
         int shift = GTH_SHIFT - level;
         int smoothRadius = weightHelper.smoothRadius();
         int tempBiomesSize = asrCeil(size, shift) + (smoothRadius << 1);
-        int[] tempBiomes = alloc.get(sq(tempBiomesSize));
+        int[] tempBiomes = alloc.atLeast(sq(tempBiomesSize));
         try {
             //generate biomes
             this.generationLayer.getGrid(alloc, (x >> GTH_SHIFT) - smoothRadius, (z >> GTH_SHIFT) - smoothRadius, tempBiomesSize, tempBiomesSize, tempBiomes);
@@ -114,13 +114,13 @@ public class FastThreadSafeBiomeProvider implements IBiomeProvider {
     }
 
     protected void generateBiomesAndWeightedHeightsVariations_lowres(int x, int z, int level, int size, @NonNull int[] biomes, @NonNull double[] heights, @NonNull double[] variations, @NonNull BiomeWeightHelper weightHelper) {
-        IntArrayAllocator alloc = IntArrayAllocator.DEFAULT.get();
+        ArrayAllocator<int[]> alloc = ALLOC_INT.get();
 
         int smoothRadius = weightHelper.smoothRadius();
         int smoothDiameter = weightHelper.smoothDiameter();
         int centerOffset = smoothRadius * smoothDiameter + smoothRadius;
 
-        int[] tempBiomes = alloc.get(sq(size) * sq(smoothDiameter));
+        int[] tempBiomes = alloc.atLeast(sq(size) * sq(smoothDiameter));
         try {
             //generate biomes on generation layer at low resolution
             this.generationLayer.multiGetGrids(alloc, (x >> GTH_SHIFT) - smoothRadius, (z >> GTH_SHIFT) - smoothRadius, smoothDiameter, 1 << (level - GTH_SHIFT), 0, size, tempBiomes);

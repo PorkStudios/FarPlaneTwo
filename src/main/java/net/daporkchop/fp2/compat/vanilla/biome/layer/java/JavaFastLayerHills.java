@@ -23,7 +23,7 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayerWithRiverSource;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IPaddedLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerHills;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
@@ -128,12 +128,12 @@ public class JavaFastLayerHills extends AbstractFastLayerWithRiverSource impleme
     }
 
     @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+    public int getSingle(@NonNull ArrayAllocator<int[]> alloc, int x, int z) {
         final int inSizeX = 3;
         final int inSizeZ = 3;
 
-        int[] in = alloc.get(inSizeX * inSizeZ);
-        int[] v = alloc.get(4);
+        int[] in = alloc.atLeast(inSizeX * inSizeZ);
+        int[] v = alloc.atLeast(4);
         try {
             this.child().getGrid(alloc, x - 1, z - 1, inSizeX, inSizeZ, in);
 
@@ -151,14 +151,14 @@ public class JavaFastLayerHills extends AbstractFastLayerWithRiverSource impleme
     }
 
     @Override
-    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+    public void getGrid(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
         this.childRiver.getGrid(alloc, x, z, sizeX, sizeZ, out);
 
         IPaddedLayer.super.getGrid(alloc, x, z, sizeX, sizeZ, out);
     }
 
     @Override
-    public void getGrid0(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in) {
+    public void getGrid0(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in) {
         final int inSizeX = sizeX + 2;
         final int inSizeZ = sizeZ + 2;
 
@@ -178,14 +178,14 @@ public class JavaFastLayerHills extends AbstractFastLayerWithRiverSource impleme
     }
 
     @Override
-    public void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+    public void multiGetGrids(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         this.childRiver.multiGetGrids(alloc, x, z, size, dist, depth, count, out);
 
         IPaddedLayer.super.multiGetGrids(alloc, x, z, size, dist, depth, count, out);
     }
 
     @Override
-    public void multiGetGridsCombined0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
+    public void multiGetGridsCombined0(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
         final int inSize = (((dist >> depth) + 1) * count) + 2;
         final int mask = (depth != 0) ? 1 : 0;
 
@@ -214,7 +214,7 @@ public class JavaFastLayerHills extends AbstractFastLayerWithRiverSource impleme
     }
 
     @Override
-    public void multiGetGridsIndividual0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
+    public void multiGetGridsIndividual0(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
         final int inSize = size + 2;
 
         int[] offsets = IJavaPaddedLayer.offsetsSides(inSize, inSize);

@@ -23,7 +23,7 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
 import java.util.Arrays;
 
@@ -42,17 +42,17 @@ public final class JavaFastLayerFixedBiome implements IFastLayer {
     }
 
     @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+    public int getSingle(@NonNull ArrayAllocator<int[]> alloc, int x, int z) {
         return this.biome;
     }
 
     @Override
-    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+    public void getGrid(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
         Arrays.fill(out, 0, sizeX * sizeZ, this.biome);
     }
 
     @Override
-    public void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+    public void multiGetGrids(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         Arrays.fill(out, 0, count * count * size * size, this.biome);
     }
 }

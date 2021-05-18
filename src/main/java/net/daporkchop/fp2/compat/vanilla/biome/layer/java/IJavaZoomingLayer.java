@@ -22,7 +22,7 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IZoomingLayer;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 
@@ -60,7 +60,7 @@ public interface IJavaZoomingLayer extends IZoomingLayer {
     void zoomTile0(int x, int z, @NonNull int[] v, @NonNull int[] out, int off, int size);
 
     @Override
-    default void getGrid0(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in) {
+    default void getGrid0(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in) {
         if (IZoomingLayer.isAligned(this.shift(), x, z, sizeX, sizeZ)) {
             this.getGrid0_aligned(alloc, x, z, sizeX, sizeZ, out, in);
         } else {
@@ -68,7 +68,7 @@ public interface IJavaZoomingLayer extends IZoomingLayer {
         }
     }
 
-    default void getGrid0_aligned(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in) {
+    default void getGrid0_aligned(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in) {
         final int shift = this.shift();
 
         final int inX = x >> shift;
@@ -91,7 +91,7 @@ public interface IJavaZoomingLayer extends IZoomingLayer {
         }
     }
 
-    default void getGrid0_unaligned(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in) {
+    default void getGrid0_unaligned(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out, @NonNull int[] in) {
         final int shift = this.shift();
         final int tileSize = 1 << shift;
         final int mask = tileSize - 1;
@@ -106,7 +106,7 @@ public interface IJavaZoomingLayer extends IZoomingLayer {
         int[] offsets = this.offsets(inSizeX, inSizeZ);
         int[] v = new int[4];
 
-        int[] temp = alloc.get(tempSizeX * tempSizeZ);
+        int[] temp = alloc.atLeast(tempSizeX * tempSizeZ);
         try {
             //zoom individual tiles
             for (int tileX = 0; tileX < inSizeX - 1; tileX++) {
@@ -130,7 +130,7 @@ public interface IJavaZoomingLayer extends IZoomingLayer {
     }
 
     @Override
-    default void multiGetGridsCombined0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
+    default void multiGetGridsCombined0(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
         final int shift = this.shift();
         final int tileSize = 1 << shift;
         final int mask = tileSize - 1;
@@ -142,7 +142,7 @@ public interface IJavaZoomingLayer extends IZoomingLayer {
         int[] offsets = this.offsets(inSize, inSize);
         int[] v = new int[4];
 
-        int[] temp = alloc.get(count * count * tempTileSize * tempTileSize);
+        int[] temp = alloc.atLeast(count * count * tempTileSize * tempTileSize);
         try {
             //zoom individual tiles
             for (int tempIdx = 0, gridX = 0; gridX < count; gridX++) {
@@ -182,7 +182,7 @@ public interface IJavaZoomingLayer extends IZoomingLayer {
     }
 
     @Override
-    default void multiGetGridsIndividual0(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
+    default void multiGetGridsIndividual0(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out, @NonNull int[] in) {
         final int shift = this.shift();
         final int tileSize = 1 << shift;
         final int mask = tileSize - 1;
@@ -193,7 +193,7 @@ public interface IJavaZoomingLayer extends IZoomingLayer {
         int[] offsets = this.offsets(inSize, inSize);
         int[] v = new int[4];
 
-        int[] temp = alloc.get(count * count * tempSize * tempSize);
+        int[] temp = alloc.atLeast(count * count * tempSize * tempSize);
         try {
             //zoom individual tiles
             for (int inIdx = 0, tempIdx = 0, gridX = 0; gridX < count; gridX++) {

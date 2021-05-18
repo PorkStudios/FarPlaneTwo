@@ -22,7 +22,7 @@ package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayerWithRiverSource;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerRiverMix;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelperCached.*;
@@ -37,15 +37,15 @@ public class JavaFastLayerRiverMix extends AbstractFastLayerWithRiverSource {
     }
 
     @Override
-    public int getSingle(@NonNull IntArrayAllocator alloc, int x, int z) {
+    public int getSingle(@NonNull ArrayAllocator<int[]> alloc, int x, int z) {
         return this.mix0(this.child.getSingle(alloc, x, z), this.childRiver.getSingle(alloc, x, z));
     }
 
     @Override
-    public void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+    public void getGrid(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
         this.child.getGrid(alloc, x, z, sizeX, sizeZ, out);
 
-        int[] river = alloc.get(sizeX * sizeZ);
+        int[] river = alloc.atLeast(sizeX * sizeZ);
         try {
             this.childRiver.getGrid(alloc, x, z, sizeX, sizeZ, river);
 
@@ -56,10 +56,10 @@ public class JavaFastLayerRiverMix extends AbstractFastLayerWithRiverSource {
     }
 
     @Override
-    public void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+    public void multiGetGrids(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         this.child.multiGetGrids(alloc, x, z, size, dist, depth, count, out);
 
-        int[] river = alloc.get(count * count * size * size);
+        int[] river = alloc.atLeast(count * count * size * size);
         try {
             this.childRiver.multiGetGrids(alloc, x, z, size, dist, depth, count, river);
 

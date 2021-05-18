@@ -29,7 +29,7 @@ import net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper;
 import net.daporkchop.fp2.compat.vanilla.biome.IBiomeProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.weight.BiomeWeightHelper;
 import net.daporkchop.fp2.compat.vanilla.biome.weight.VanillaBiomeWeightHelper;
-import net.daporkchop.fp2.util.alloc.DoubleArrayAllocator;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.math.grid.Grid3d;
 import net.daporkchop.lib.math.interpolation.Interpolation;
 import net.daporkchop.lib.math.interpolation.LinearInterpolation;
@@ -255,12 +255,12 @@ public class CWGContext {
     }
 
     protected void get3d_resampleXYZ(@NonNull double[] out, int baseY) {
-        DoubleArrayAllocator alloc = DoubleArrayAllocator.DEFAULT.get();
+        ArrayAllocator<double[]> alloc = ALLOC_DOUBLE.get();
 
         int cacheBaseY = baseY & ~GTV_MASK;
         int cacheHeight = asrCeil(this.cacheSize, 1) + 2;
 
-        double[] tmp = alloc.get(sq(this.cacheSize) * cacheHeight);
+        double[] tmp = alloc.atLeast(sq(this.cacheSize) * cacheHeight);
         try {
             //generate 3d noise at low resolution
             this.configuredNoiseGen.generate3d(this.heights, this.variations, this.depth, tmp, this.cacheBaseX, cacheBaseY, this.cacheBaseZ, GTH_SIZE, GTV_SIZE, GTH_SIZE, this.cacheSize, cacheHeight, this.cacheSize);
@@ -286,12 +286,12 @@ public class CWGContext {
     protected void get3d_resampleY(@NonNull double[] out, int baseY) {
         checkState(this.cacheSize == this.size, "cacheSize (%d) != size (%d)", this.cacheSize, this.size);
 
-        DoubleArrayAllocator alloc = DoubleArrayAllocator.DEFAULT.get();
+        ArrayAllocator<double[]> alloc = ALLOC_DOUBLE.get();
 
         int cacheBaseY = baseY & ~GTV_MASK;
         int cacheHeight = asrCeil(this.size, 1);
 
-        double[] tmp = alloc.get(sq(this.size) * cacheHeight);
+        double[] tmp = alloc.atLeast(sq(this.size) * cacheHeight);
         try {
             //generate 3d noise at full resolution
             this.configuredNoiseGen.generate3d(this.heights, this.variations, this.depth, tmp, this.cacheBaseX, cacheBaseY, this.cacheBaseZ, GTH_SIZE, GTV_SIZE, GTH_SIZE, this.size, cacheHeight, this.size);

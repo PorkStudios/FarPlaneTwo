@@ -23,11 +23,12 @@ package net.daporkchop.fp2.compat.cwg.noise;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.x86.x86FeatureDetector;
-import net.daporkchop.fp2.util.alloc.DoubleArrayAllocator;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.natives.Feature;
 import net.daporkchop.lib.natives.FeatureBuilder;
 
 import static com.flowpowered.noise.module.source.Perlin.*;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * Faster generation of CWG-style noise.
@@ -104,8 +105,8 @@ public interface CWGNoiseProvider extends Feature<CWGNoiseProvider> {
         //full noise generation
 
         default void generate3d(@NonNull double[] heightIn, @NonNull double[] variationIn, @NonNull double[] out, int baseX, int baseY, int baseZ, int scaleX, int scaleY, int scaleZ, int sizeX, int sizeY, int sizeZ) {
-            DoubleArrayAllocator alloc = DoubleArrayAllocator.DEFAULT.get();
-            double[] depth = alloc.get(sizeX * sizeZ);
+            ArrayAllocator<double[]> alloc = ALLOC_DOUBLE.get();
+            double[] depth = alloc.atLeast(sizeX * sizeZ);
             try {
                 //generate depth noise
                 this.generateDepth2d(depth, baseX, baseZ, scaleX, scaleZ, sizeX, sizeZ);

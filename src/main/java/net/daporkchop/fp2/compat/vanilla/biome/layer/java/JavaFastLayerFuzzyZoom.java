@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.gen.layer.GenLayerFuzzyZoom;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
@@ -36,7 +36,7 @@ public class JavaFastLayerFuzzyZoom extends JavaFastLayerZoom {
     }
 
     @Override
-    protected int sampleXZLast(IntArrayAllocator alloc, int lowX, int lowZ) {
+    protected int sampleXZLast(ArrayAllocator<int[]> alloc, int lowX, int lowZ) {
         //random
         long state = start(this.seed, lowX << 1, lowZ << 1);
         state = update(state, this.seed);

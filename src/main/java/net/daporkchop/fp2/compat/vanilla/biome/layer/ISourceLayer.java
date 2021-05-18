@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.compat.vanilla.biome.layer;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
 /**
  * A {@link IFastLayer} which issues no child requests.
@@ -30,14 +30,14 @@ import net.daporkchop.fp2.util.alloc.IntArrayAllocator;
  */
 public interface ISourceLayer extends IFastLayer {
     @Override
-    default void getGrid(@NonNull IntArrayAllocator alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+    default void getGrid(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
         this.getGrid0(x, z, sizeX, sizeZ, out);
     }
 
     void getGrid0(int x, int z, int sizeX, int sizeZ, @NonNull int[] out);
 
     @Override
-    default void multiGetGrids(@NonNull IntArrayAllocator alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+    default void multiGetGrids(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         this.multiGetGrids0(x, z, size, dist, depth, count, out);
     }
 
