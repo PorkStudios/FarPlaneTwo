@@ -17,10 +17,10 @@ HEADERFILES	    :=	$(HEADERFILES) $(wildcard $(MODULE)/*.h) $(wildcard $(MODULE)
 SRCFILES		:=	$(wildcard $(MODULE)/*.cpp) $(wildcard $(MODULE)/**/*.cpp)
 OFILES			:=	$(addprefix $(COMPILE_DIR)/$(ARCH)/,$(addsuffix .$(OFILE_SUFFIX),$(SRCFILES)))
 
-build: $(OUTPUT_FILE)
+build: $(OUTPUT_FILE) $(MAKEFILES_)
 	@echo "built $(MODULE) for $(ARCH)$(foreach ext,$(SIMD_EXT), with $(ext))"
 
-$(OUTPUT_FILE): $(OFILES)
+$(OUTPUT_FILE): $(OFILES) $(MAKEFILES_)
 	@[ -d $(dir $(OUTPUT_FILE)) ] || mkdir -p $(dir $(OUTPUT_FILE))
 	@echo "linking $(OUTPUT_FILE)"
 	@$(LD) $(LDFLAGS) -o $(OUTPUT_FILE) $(OFILES)
