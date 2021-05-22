@@ -29,6 +29,8 @@
 #include <cstring>
 #include <vector>
 
+#define ALWAYS_INLINE inline __attribute__((always_inline,flatten))
+
 namespace fp2::biome::fastlayer {
     /**
      * Faster re-implementation of the PRNG used in GenLayer.
@@ -37,11 +39,11 @@ namespace fp2::biome::fastlayer {
      */
     template<typename T_64, typename T_32, T_32 (CAST_DOWN)(T_64), T_64 (CAST_UP)(T_32)> class base_rng {
     private:
-        constexpr T_64 update(const T_64 state, const T_64 seed) {
+        constexpr ALWAYS_INLINE T_64 update(const T_64 state, const T_64 seed) {
             return state * (state * 6364136223846793005LL + 1442695040888963407LL) + seed;
         }
 
-        constexpr T_64 start(const T_64 seed, const T_32 x, const T_32 z) {
+        constexpr ALWAYS_INLINE T_64 start(const T_64 seed, const T_32 x, const T_32 z) {
             T_64 state = seed;
             state = update(state, CAST_UP(x));
             state = update(state, CAST_UP(z));
@@ -54,11 +56,11 @@ namespace fp2::biome::fastlayer {
         T_64 _state;
 
     public:
-        base_rng(const T_64 seed, const T_32 x, const T_32 z):
+        ALWAYS_INLINE base_rng(const T_64 seed, const T_32 x, const T_32 z):
             _seed(seed),
             _state(start(seed, x, z)) {}
 
-        template<size_t COUNT = 1> inline void update() {
+        template<size_t COUNT = 1> ALWAYS_INLINE void update() {
             for (size_t i = 0; i < COUNT; i++) {
                 _state = update(_state, _seed);
             }
@@ -66,7 +68,7 @@ namespace fp2::biome::fastlayer {
 
         //TODO: i can do vectorized fast modulo by constant using https://www.felixcloutier.com/x86/pmulld:pmullq (needs AVX512)
 
-        template<int32_t MAX> inline T_32 nextInt() {
+        template<int32_t MAX> ALWAYS_INLINE T_32 nextInt() {
             T_32 i;
             if constexpr ((MAX & (MAX - 1)) == 0) { //MAX is a power of two
                 constexpr int32_t MASK = MAX - 1;
@@ -80,7 +82,7 @@ namespace fp2::biome::fastlayer {
             return i;
         }
 
-        inline T_32 nextInt(const fp2::fastmod_s64& fm) {
+        ALWAYS_INLINE T_32 nextInt(const fp2::fastmod_s64& fm) {
             const int32_t max = fm._d;
             T_32 i;
             if (!(max & (max - 1))) {
@@ -94,7 +96,7 @@ namespace fp2::biome::fastlayer {
             return i;
         }
 
-        inline T_32 nextInt(const T_32 max) {
+        ALWAYS_INLINE T_32 nextInt(const T_32 max) {
             T_32 i;
             if (!(max & (max - 1))) {
                 i = (T_32) (_state >> 24) & (max - 1);
@@ -136,7 +138,7 @@ namespace fp2::biome::fastlayer {
                 ? Vec4i(-1, -1, 1, 1) : MODE == padded_layer_mode::sides ? Vec4i(0, -1, 1, 0) : Vec4i(0, -1, 0, 1);
 
     public:
-        inline void grid(JNIEnv* env,
+        ALWAYS_INLINE void grid(JNIEnv* env,
                 int64_t seed, int32_t x, int32_t z, int32_t sizeX, int32_t sizeZ, jintArray _out, jintArray _in, ARGS... args) {
             const int32_t inSizeX = sizeX + 2;
             const int32_t inSizeZ = sizeZ + 2;
@@ -157,7 +159,7 @@ namespace fp2::biome::fastlayer {
             }
         }
 
-        inline void grid_multi_combined(JNIEnv* env,
+        ALWAYS_INLINE void grid_multi_combined(JNIEnv* env,
                 int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t depth, int32_t count, jintArray _out, jintArray _in, ARGS... args) {
             const int32_t inSize = (((dist >> depth) + 1) * count) + 2;
             const int32_t mask = depth != 0;
@@ -187,7 +189,7 @@ namespace fp2::biome::fastlayer {
             }
         }
 
-        inline void grid_multi_individual(JNIEnv* env,
+        ALWAYS_INLINE void grid_multi_individual(JNIEnv* env,
                 int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t depth, int32_t count, jintArray _out, jintArray _in, ARGS... args) {
             const int32_t inSize = size + 2;
 
@@ -225,7 +227,7 @@ namespace fp2::biome::fastlayer {
     public:
     template<int32_t(EVAL)(int64_t, int32_t, int32_t, int32_t, ARGS...)> class impl {
     public:
-        inline void grid(JNIEnv* env,
+        ALWAYS_INLINE void grid(JNIEnv* env,
                 int64_t seed, int32_t x, int32_t z, int32_t sizeX, int32_t sizeZ, jintArray _inout, ARGS... args) {
             fp2::pinned_int_array inout(env, _inout);
 
@@ -236,7 +238,7 @@ namespace fp2::biome::fastlayer {
             }
         }
 
-        inline void grid_multi(JNIEnv* env,
+        ALWAYS_INLINE void grid_multi(JNIEnv* env,
                 int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t depth, int32_t count, jintArray _inout, ARGS... args) {
             fp2::pinned_int_array inout(env, _inout);
 
@@ -260,7 +262,7 @@ namespace fp2::biome::fastlayer {
      */
     template<int32_t(EVAL)(int64_t, int32_t, int32_t)> class source_layer {
     public:
-        inline void grid(JNIEnv* env,
+        ALWAYS_INLINE void grid(JNIEnv* env,
                 int64_t seed, int32_t x, int32_t z, int32_t sizeX, int32_t sizeZ, jintArray _out) {
             fp2::pinned_int_array out(env, _out);
 
@@ -271,7 +273,7 @@ namespace fp2::biome::fastlayer {
             }
         }
 
-        inline void grid_multi(JNIEnv* env,
+        ALWAYS_INLINE void grid_multi(JNIEnv* env,
                 int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t depth, int32_t count, jintArray _out) {
             fp2::pinned_int_array out(env, _out);
 
@@ -301,11 +303,11 @@ namespace fp2::biome::fastlayer {
         static constexpr uint32_t SIZE = 1 << ZOOM;
         static constexpr uint32_t MASK = SIZE - 1;
 
-        constexpr bool is_aligned(int32_t x, int32_t z, int32_t sizeX, int32_t sizeZ) {
+        constexpr ALWAYS_INLINE bool is_aligned(int32_t x, int32_t z, int32_t sizeX, int32_t sizeZ) {
             return ((x | z | sizeX | sizeZ) & MASK) == 0;
         }
 
-        inline void grid_aligned(JNIEnv* env,
+        ALWAYS_INLINE void grid_aligned(JNIEnv* env,
                 int64_t seed, int32_t x, int32_t z, int32_t sizeX, int32_t sizeZ, jintArray _out, jintArray _in) {
             const int32_t inX = x >> ZOOM;
             const int32_t inZ = z >> ZOOM;
@@ -331,7 +333,7 @@ namespace fp2::biome::fastlayer {
             }
         }
 
-        inline void grid_unaligned(JNIEnv* env,
+        ALWAYS_INLINE void grid_unaligned(JNIEnv* env,
                 int64_t seed, int32_t x, int32_t z, int32_t sizeX, int32_t sizeZ, jintArray _out, jintArray _in) {
             const int32_t inX = x >> ZOOM;
             const int32_t inZ = z >> ZOOM;
@@ -370,7 +372,7 @@ namespace fp2::biome::fastlayer {
         }
 
     public:
-        inline void grid(JNIEnv* env,
+        ALWAYS_INLINE void grid(JNIEnv* env,
                 int64_t seed, int32_t x, int32_t z, int32_t sizeX, int32_t sizeZ, jintArray _out, jintArray _in) {
             if (is_aligned(x, z, sizeX, sizeZ)) {
                 grid_aligned(env, seed, x, z, sizeX, sizeZ, _out, _in);
@@ -379,7 +381,7 @@ namespace fp2::biome::fastlayer {
             }
         }
 
-        inline void grid_multi_combined(JNIEnv* env,
+        ALWAYS_INLINE void grid_multi_combined(JNIEnv* env,
                 int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t depth, int32_t count, jintArray _out, jintArray _in) {
             const int32_t inSize = ((((dist >> depth) + 1) * count) >> ZOOM) + 2;
             const int32_t inTileSize = (size >> ZOOM) + 2;
@@ -430,7 +432,7 @@ namespace fp2::biome::fastlayer {
             }
         }
 
-        inline void grid_multi_individual(JNIEnv* env,
+        ALWAYS_INLINE void grid_multi_individual(JNIEnv* env,
                 int64_t seed, int32_t x, int32_t z, int32_t size, int32_t dist, int32_t depth, int32_t count, jintArray _out, jintArray _in) {
             const int32_t inSize = (size >> ZOOM) + 2;
             const int32_t tempSize = (inSize - 1) << ZOOM;
@@ -570,7 +572,7 @@ namespace fp2::biome::fastlayer {
         static constexpr uint8_t EQUALS_CAN_BIOMES_BE_NEIGHBORS = 1 << 1;
 
     public:
-        inline void reload(JNIEnv* env, jint count, jbyteArray flags, jbyteArray equals, jintArray mutations) {
+        ALWAYS_INLINE void reload(JNIEnv* env, jint count, jbyteArray flags, jbyteArray equals, jintArray mutations) {
             if (count != BIOME_COUNT) {
                 throw fp2::error("invalid BIOME_COUNT", count);
             }
@@ -588,79 +590,79 @@ namespace fp2::biome::fastlayer {
             }
         }
 
-        inline bool isValid(int32_t id) {
+        ALWAYS_INLINE bool isValid(int32_t id) {
             return id >= 0 && (_flags[id] & FLAG_VALID);
         }
 
-        inline Vec4ib isValid(Vec4i id) {
+        ALWAYS_INLINE Vec4ib isValid(Vec4i id) {
             return (id >= 0) & ((lookup<BIOME_COUNT>(max(id, 0), &_flags_simd) & FLAG_VALID) != 0);
         }
 
-        inline bool isJungleCompatible(int32_t id) {
+        ALWAYS_INLINE bool isJungleCompatible(int32_t id) {
             return id >= 0 && (_flags[id] & FLAG_IS_JUNGLE_COMPATIBLE);
         }
 
-        inline Vec4ib isJungleCompatible(Vec4i id) {
+        ALWAYS_INLINE Vec4ib isJungleCompatible(Vec4i id) {
             return (id >= 0) & ((lookup<BIOME_COUNT>(max(id, 0), &_flags_simd) & FLAG_IS_JUNGLE_COMPATIBLE) != 0);
         }
 
-        inline bool isBiomeOceanic(int32_t id) {
+        ALWAYS_INLINE bool isBiomeOceanic(int32_t id) {
             return id >= 0 && (_flags[id] & FLAG_IS_BIOME_OCEANIC);
         }
 
-        inline Vec4ib isBiomeOceanic(Vec4i id) {
+        ALWAYS_INLINE Vec4ib isBiomeOceanic(Vec4i id) {
             return (id >= 0) & ((lookup<BIOME_COUNT>(max(id, 0), &_flags_simd) & FLAG_IS_BIOME_OCEANIC) != 0);
         }
 
-        inline bool isMesa(int32_t id) {
+        ALWAYS_INLINE bool isMesa(int32_t id) {
             return id >= 0 && (_flags[id] & FLAG_IS_MESA);
         }
 
-        inline Vec4ib isMesa(Vec4i id) {
+        ALWAYS_INLINE Vec4ib isMesa(Vec4i id) {
             return (id >= 0) & ((lookup<BIOME_COUNT>(max(id, 0), &_flags_simd) & FLAG_IS_MESA) != 0);
         }
 
-        inline bool isMutation(int32_t id) {
+        ALWAYS_INLINE bool isMutation(int32_t id) {
             return id >= 0 && (_flags[id] & FLAG_IS_MUTATION);
         }
 
-        inline Vec4ib isMutation(Vec4i id) {
+        ALWAYS_INLINE Vec4ib isMutation(Vec4i id) {
             return (id >= 0) & ((lookup<BIOME_COUNT>(max(id, 0), &_flags_simd) & FLAG_IS_MUTATION) != 0);
         }
 
-        inline bool isJungle(int32_t id) {
+        ALWAYS_INLINE bool isJungle(int32_t id) {
             return id >= 0 && (_flags[id] & FLAG_IS_JUNGLE);
         }
 
-        inline Vec4ib isJungle(Vec4i id) {
+        ALWAYS_INLINE Vec4ib isJungle(Vec4i id) {
             return (id >= 0) & ((lookup<BIOME_COUNT>(max(id, 0), &_flags_simd) & FLAG_IS_JUNGLE) != 0);
         }
 
-        inline bool isSnowyBiome(int32_t id) {
+        ALWAYS_INLINE bool isSnowyBiome(int32_t id) {
             return id >= 0 && (_flags[id] & FLAG_IS_SNOWY_BIOME);
         }
 
-        inline Vec4ib isSnowyBiome(Vec4i id) {
+        ALWAYS_INLINE Vec4ib isSnowyBiome(Vec4i id) {
             return (id >= 0) & ((lookup<BIOME_COUNT>(max(id, 0), &_flags_simd) & FLAG_IS_SNOWY_BIOME) != 0);
         }
 
-        inline bool biomesEqualOrMesaPlateau(int32_t a, int32_t b) {
+        ALWAYS_INLINE bool biomesEqualOrMesaPlateau(int32_t a, int32_t b) {
             return a >= 0 && b >= 0 && (_equals[b * BIOME_COUNT + a] & EQUALS_BIOMES_EQUAL_OR_MESA_PLATEAU);
         }
 
-        inline Vec4ib biomesEqualOrMesaPlateau(Vec4i a, int32_t b) {
+        ALWAYS_INLINE Vec4ib biomesEqualOrMesaPlateau(Vec4i a, int32_t b) {
             return b < 0 ? Vec4ib(false) : ((a >= 0) & ((lookup<BIOME_COUNT>(max(a, 0), &_equals_simd[b * BIOME_COUNT]) & EQUALS_BIOMES_EQUAL_OR_MESA_PLATEAU) != 0));
         }
 
-        inline bool canBiomesBeNeighbors(int32_t a, int32_t b) {
+        ALWAYS_INLINE bool canBiomesBeNeighbors(int32_t a, int32_t b) {
             return a >= 0 && b >= 0 && (_equals[b * BIOME_COUNT + a] & EQUALS_CAN_BIOMES_BE_NEIGHBORS);
         }
 
-        inline Vec4ib canBiomesBeNeighbors(Vec4i a, int32_t b) {
+        ALWAYS_INLINE Vec4ib canBiomesBeNeighbors(Vec4i a, int32_t b) {
             return b < 0 ? Vec4ib(false) : ((a >= 0) & ((lookup<BIOME_COUNT>(max(a, 0), &_equals_simd[b * BIOME_COUNT]) & EQUALS_CAN_BIOMES_BE_NEIGHBORS) != 0));
         }
 
-        inline int32_t getMutationForBiome(int32_t id) {
+        ALWAYS_INLINE int32_t getMutationForBiome(int32_t id) {
             return id >= 0 ? _mutations[id] : id;
         }
     };

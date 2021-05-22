@@ -32,7 +32,7 @@
 
 //stupid preprocessor workaround
 #define FP2_JNI_PASTER(RETURN_TYPE, MODULE, CLASS, METHOD_NAME) \
-    extern "C" __attribute__((visibility("default"))) JNIEXPORT RETURN_TYPE JNICALL Java_net_daporkchop_fp2_ ## MODULE ## _ ## CLASS ## _ ## METHOD_NAME
+    extern "C" __attribute__((visibility("default"),flatten)) JNIEXPORT RETURN_TYPE JNICALL Java_net_daporkchop_fp2_ ## MODULE ## _ ## CLASS ## _ ## METHOD_NAME
 #define FP2_JNI_EVALUATOR(RETURN_TYPE, MODULE, CLASS, METHOD_NAME) FP2_JNI_PASTER(RETURN_TYPE, MODULE, CLASS, METHOD_NAME)
 #define FP2_JNI(RETURN_TYPE, CLASS, METHOD_NAME) FP2_JNI_EVALUATOR(RETURN_TYPE, FP2_MODULE, CLASS, METHOD_NAME)
 

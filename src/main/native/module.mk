@@ -25,7 +25,7 @@ $(OUTPUT_FILE): $(OFILES)
 	@echo "linking $(OUTPUT_FILE)"
 	@$(LD) $(LDFLAGS) -o $(OUTPUT_FILE) $(OFILES)
 
-$(COMPILE_DIR)/$(ARCH)/%.cpp.$(OFILE_SUFFIX): %.cpp $(HEADERFILES)
+$(COMPILE_DIR)/$(ARCH)/%.cpp.$(OFILE_SUFFIX): %.cpp $(HEADERFILES) $(MAKEFILES_)
 	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	@echo "building $@"
 	@$(CXX) $(CXXFLAGS) -c $*.cpp -o $@
