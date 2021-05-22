@@ -1,4 +1,4 @@
-export CXX		:= x86_64-linux-gnu-g++
-export LD		:= x86_64-linux-gnu-g++
+export CXX	:= clang++ -fPIC -target x86_64-linux-gnu
+export LD	:= $(CXX)
 
 export EXT	:=	so

@@ -60,11 +60,11 @@ namespace fp2::cwg::noise {
         DOUBLE magic0 = raw_to_double(0x3E10000000000000);
         DOUBLE magic1 = raw_to_double(0x41D0000000000000);
 
-        return select(abs(n) >= 1073741824.0d, nn - truncate(nn * magic0) * magic1 - sign_combine(magic1, n), n);
+        return select(abs(n) >= 1073741824.0, nn - truncate(nn * magic0) * magic1 - sign_combine(magic1, n), n);
 
         // equivalent code:
         /*double d0 = n, d1, d2;
-        if (n >= (d1 = 1073741824.0D)) {
+        if (n >= (d1 = 1073741824.0)) {
             d0 = d0 + d0;
             d1 = raw_to_double(0x3E10000000000000);
             d1 = d0 * d1;
@@ -120,7 +120,7 @@ namespace fp2::cwg::noise {
     }
 
     template<typename T> constexpr T sCurve3(T a) {
-        return a * a * (3.0D - 2.0D * a);
+        return a * a * (3.0 - 2.0 * a);
     }
 
     template<typename T> constexpr T vectorIndex(T ix, T iy, T iz, T seed) {
@@ -191,7 +191,7 @@ namespace fp2::cwg::noise {
             assert(false);
         }
 
-        return xvGradient * fx + yvGradient * fy + zvGradient * fz + 0.5D;
+        return xvGradient * fx + yvGradient * fy + zvGradient * fz + 0.5;
     }
 
     template<size_t VEC_LANES> inline typename fp2::simd::type_vec<double, VEC_LANES>::TYPE noise3d(
@@ -201,9 +201,9 @@ namespace fp2::cwg::noise {
         using INT = typename fp2::simd::type_vec<double, VEC_LANES>::INT::TYPE;
 
         //floor coordinates
-        DOUBLE floorX = if_sub(x == 0.0d, floor(x), 1.0d);
-        DOUBLE floorY = if_sub(y == 0.0d, floor(y), 1.0d);
-        DOUBLE floorZ = if_sub(z == 0.0d, floor(z), 1.0d);
+        DOUBLE floorX = if_sub(x == 0.0, floor(x), 1.0);
+        DOUBLE floorY = if_sub(y == 0.0, floor(y), 1.0);
+        DOUBLE floorZ = if_sub(z == 0.0, floor(z), 1.0);
 
         //convert floored coordinates to ints to get the integer coordinates at the corners
         INT x0 = round_to_int32(floorX);
@@ -220,13 +220,13 @@ namespace fp2::cwg::noise {
 
         //compute gradient vectors at each corner
         DOUBLE n000 = gradientNoise3d<VEC_LANES>(fx, fy, fz, x0, y0, z0, seed);
-        DOUBLE n001 = gradientNoise3d<VEC_LANES>(fx, fy, fz - 1.0d, x0, y0, z1, seed);
-        DOUBLE n010 = gradientNoise3d<VEC_LANES>(fx, fy - 1.0d, fz, x0, y1, z0, seed);
-        DOUBLE n011 = gradientNoise3d<VEC_LANES>(fx, fy - 1.0d, fz - 1.0d, x0, y1, z1, seed);
-        DOUBLE n100 = gradientNoise3d<VEC_LANES>(fx - 1.0d, fy, fz, x1, y0, z0, seed);
-        DOUBLE n101 = gradientNoise3d<VEC_LANES>(fx - 1.0d, fy, fz - 1.0d, x1, y0, z1, seed);
-        DOUBLE n110 = gradientNoise3d<VEC_LANES>(fx - 1.0d, fy - 1.0d, fz, x1, y1, z0, seed);
-        DOUBLE n111 = gradientNoise3d<VEC_LANES>(fx - 1.0d, fy - 1.0d, fz - 1.0d, x1, y1, z1, seed);
+        DOUBLE n001 = gradientNoise3d<VEC_LANES>(fx, fy, fz - 1.0, x0, y0, z1, seed);
+        DOUBLE n010 = gradientNoise3d<VEC_LANES>(fx, fy - 1.0, fz, x0, y1, z0, seed);
+        DOUBLE n011 = gradientNoise3d<VEC_LANES>(fx, fy - 1.0, fz - 1.0, x0, y1, z1, seed);
+        DOUBLE n100 = gradientNoise3d<VEC_LANES>(fx - 1.0, fy, fz, x1, y0, z0, seed);
+        DOUBLE n101 = gradientNoise3d<VEC_LANES>(fx - 1.0, fy, fz - 1.0, x1, y0, z1, seed);
+        DOUBLE n110 = gradientNoise3d<VEC_LANES>(fx - 1.0, fy - 1.0, fz, x1, y1, z0, seed);
+        DOUBLE n111 = gradientNoise3d<VEC_LANES>(fx - 1.0, fy - 1.0, fz - 1.0, x1, y1, z1, seed);
 
         //smooth fractional coordinates
         DOUBLE xs = sCurve3(fx);
@@ -251,12 +251,12 @@ namespace fp2::cwg::noise {
         using DOUBLE = typename fp2::simd::type_vec<double, VEC_LANES>::TYPE;
         using DOUBLE_MASK = typename fp2::simd::type_vec<double, VEC_LANES>::BOOL;
 
-        static const DOUBLE INITIAL_PERSISTENCE = 1.0d;
-        static const DOUBLE PERSISTENCE = 0.5d;
+        static const DOUBLE INITIAL_PERSISTENCE = 1.0;
+        static const DOUBLE PERSISTENCE = 0.5;
 
-        static const DOUBLE LANCULARITY = 2.0d;
+        static const DOUBLE LANCULARITY = 2.0;
 
-        DOUBLE value = 0.0d;
+        DOUBLE value = 0.0;
         DOUBLE persistence = INITIAL_PERSISTENCE;
 
         for (size_t curOctave = 0; curOctave < octaves; curOctave++, persistence *= PERSISTENCE, x *= LANCULARITY, y *= LANCULARITY, z *= LANCULARITY) {
@@ -277,12 +277,12 @@ namespace fp2::cwg::noise {
         using DOUBLE_MASK = typename fp2::simd::type_vec<double, VEC_LANES>::BOOL;
         using ULONG = typename fp2::simd::type_vec<double, VEC_LANES>::ULONG::TYPE;
 
-        static const DOUBLE INITIAL_PERSISTENCE = 1.0d;
-        static const DOUBLE PERSISTENCE = 0.5d;
+        static const DOUBLE INITIAL_PERSISTENCE = 1.0;
+        static const DOUBLE PERSISTENCE = 0.5;
 
-        static const DOUBLE LANCULARITY = 2.0d;
+        static const DOUBLE LANCULARITY = 2.0;
 
-        DOUBLE value = 0.0d;
+        DOUBLE value = 0.0;
         DOUBLE persistence = INITIAL_PERSISTENCE;
 
         for (size_t curOctave = 0, maxOctaves = horizontal_max(octaves); curOctave < maxOctaves; curOctave++, persistence *= PERSISTENCE, x *= LANCULARITY, y *= LANCULARITY, z *= LANCULARITY) {
@@ -305,8 +305,8 @@ namespace fp2::cwg::noise {
         static const DOUBLE INITIAL_LACUNARITY = fp2::simd::increment_shift<DOUBLE>();
         static const DOUBLE LANCULARITY = 1 << VEC_LANES;
 
-        static const DOUBLE INITIAL_PERSISTENCE = 1.0d / fp2::simd::increment_shift<DOUBLE>();
-        static const DOUBLE PERSISTENCE = 1.0d / (1 << VEC_LANES);
+        static const DOUBLE INITIAL_PERSISTENCE = 1.0 / fp2::simd::increment_shift<DOUBLE>();
+        static const DOUBLE PERSISTENCE = 1.0 / (1 << VEC_LANES);
 
         static const INT INCREMENT = fp2::simd::increment<INT>();
         static const ULONG INCREMENT_L = fp2::simd::increment<ULONG>();
@@ -315,7 +315,7 @@ namespace fp2::cwg::noise {
         DOUBLE y = _y * INITIAL_LACUNARITY;
         DOUBLE z = _z * INITIAL_LACUNARITY;
 
-        DOUBLE value = 0.0d;
+        DOUBLE value = 0.0;
         DOUBLE persistence = INITIAL_PERSISTENCE;
 
         size_t curOctave = 0;
@@ -344,19 +344,19 @@ namespace fp2::cwg::noise {
         using DOUBLE = typename fp2::simd::type_vec<double, VEC_LANES>::TYPE;
         using DOUBLE_MASK = typename fp2::simd::type_vec<double, VEC_LANES>::BOOL;
 
-        static const DOUBLE INITIAL_PERSISTENCE = 1.0d;
-        static const DOUBLE PERSISTENCE = 0.5d;
+        static const DOUBLE INITIAL_PERSISTENCE = 1.0;
+        static const DOUBLE PERSISTENCE = 0.5;
 
-        static const DOUBLE LANCULARITY = 2.0d;
+        static const DOUBLE LANCULARITY = 2.0;
 
-        DOUBLE value = 0.0d;
+        DOUBLE value = 0.0;
         DOUBLE persistence = INITIAL_PERSISTENCE;
 
         for (size_t curOctave = 0; curOctave < octaves; curOctave++, persistence *= PERSISTENCE, x *= LANCULARITY, z *= LANCULARITY) {
             DOUBLE nx = makeInt32Range<VEC_LANES>(x);
             DOUBLE nz = makeInt32Range<VEC_LANES>(z);
 
-            value += noise3d<VEC_LANES>(nx, 0.0d, nz, seed + curOctave) * persistence;
+            value += noise3d<VEC_LANES>(nx, 0.0, nz, seed + curOctave) * persistence;
         }
 
         return value;
@@ -371,8 +371,8 @@ namespace fp2::cwg::noise {
         static const DOUBLE INITIAL_LACUNARITY = fp2::simd::increment_shift<DOUBLE>();
         static const DOUBLE LANCULARITY = 1 << VEC_LANES;
 
-        static const DOUBLE INITIAL_PERSISTENCE = 1.0d / fp2::simd::increment_shift<DOUBLE>();
-        static const DOUBLE PERSISTENCE = 1.0d / (1 << VEC_LANES);
+        static const DOUBLE INITIAL_PERSISTENCE = 1.0 / fp2::simd::increment_shift<DOUBLE>();
+        static const DOUBLE PERSISTENCE = 1.0 / (1 << VEC_LANES);
 
         static const INT INCREMENT = fp2::simd::increment<INT>();
         static const ULONG INCREMENT_L = fp2::simd::increment<ULONG>();
@@ -380,7 +380,7 @@ namespace fp2::cwg::noise {
         DOUBLE x = _x * INITIAL_LACUNARITY;
         DOUBLE z = _z * INITIAL_LACUNARITY;
 
-        DOUBLE value = 0.0d;
+        DOUBLE value = 0.0;
         DOUBLE persistence = INITIAL_PERSISTENCE;
 
         size_t curOctave = 0;
@@ -388,14 +388,14 @@ namespace fp2::cwg::noise {
             DOUBLE nx = makeInt32Range<VEC_LANES>(x);
             DOUBLE nz = makeInt32Range<VEC_LANES>(z);
 
-            value += noise3d<VEC_LANES>(nx, 0.0d, nz, seed + curOctave + INCREMENT) * persistence;
+            value += noise3d<VEC_LANES>(nx, 0.0, nz, seed + curOctave + INCREMENT) * persistence;
         }
 
         if (curOctave < octaves) { //there are some number of octaves left, let's do them with a mask
             DOUBLE nx = makeInt32Range<VEC_LANES>(x);
             DOUBLE nz = makeInt32Range<VEC_LANES>(z);
 
-            value = if_add(curOctave + INCREMENT_L < octaves, value, noise3d<VEC_LANES>(nx, 0.0d, nz, seed + curOctave + INCREMENT) * persistence);
+            value = if_add(curOctave + INCREMENT_L < octaves, value, noise3d<VEC_LANES>(nx, 0.0, nz, seed + curOctave + INCREMENT) * persistence);
         }
 
         return horizontal_add(value);

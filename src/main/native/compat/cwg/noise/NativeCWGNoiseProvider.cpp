@@ -41,7 +41,7 @@ FP2_JNI(void, NativeCWGNoiseProvider, generate3d)(JNIEnv* env, jobject obj,
         for (int32_t i = 0, dx = 0; dx < sizeX; dx++) {
             for (int32_t dy = 0; dy < sizeY; dy++) {
                 for (int32_t dz = 0; dz < sizeZ; dz++, i++) {
-                    out[i] = fp2::cwg::noise::octaves3dPoint<VEC_LANES>((baseX + (dx << level)) * freqX, (baseY + (dy << level)) * freqY, (baseZ + (dz << level)) * freqZ, seed, octaves) * scale - 1.0d;
+                    out[i] = fp2::cwg::noise::octaves3dPoint<VEC_LANES>((baseX + (dx << level)) * freqX, (baseY + (dy << level)) * freqY, (baseZ + (dz << level)) * freqZ, seed, octaves) * scale - 1.0;
                 }
             }
         }
@@ -63,7 +63,7 @@ FP2_JNI(void, NativeCWGNoiseProvider, generate3d)(JNIEnv* env, jobject obj,
         size_t index = 0;
 
         for (; index < (totalCount & ~(VEC_LANES - 1)); index += VEC_LANES) {
-            (fp2::cwg::noise::octaves3d<VEC_LANES>(to_double(x) * freqX, to_double(y) * freqY, to_double(z) * freqZ, seed, octaves) * scale - 1.0d).store(&out[index]);
+            (fp2::cwg::noise::octaves3d<VEC_LANES>(to_double(x) * freqX, to_double(y) * freqY, to_double(z) * freqZ, seed, octaves) * scale - 1.0).store(&out[index]);
 
             //increment z coordinates, resetting them and incrementing y if they reach the maximum value
             z += stepZ;
@@ -79,7 +79,7 @@ FP2_JNI(void, NativeCWGNoiseProvider, generate3d)(JNIEnv* env, jobject obj,
 
         if (index < totalCount) { //the number of samples remaining are less than the number of vector lanes, let's finish 'em up
             //x and z are already set up correctly
-            (fp2::cwg::noise::octaves3d<VEC_LANES>(to_double(x) * freqX, to_double(y) * freqY, to_double(z) * freqZ, seed, octaves) * scale - 1.0d).store_partial(totalCount & (VEC_LANES - 1), &out[index]);
+            (fp2::cwg::noise::octaves3d<VEC_LANES>(to_double(x) * freqX, to_double(y) * freqY, to_double(z) * freqZ, seed, octaves) * scale - 1.0).store_partial(totalCount & (VEC_LANES - 1), &out[index]);
         }
     }
 }
@@ -99,7 +99,7 @@ FP2_JNI(void, NativeCWGNoiseProvider, generate2d)(JNIEnv* env, jobject obj,
             || (sizeZ < VEC_LANES && sizeX != 1)) { //if sizeZ is less than the number of vector lanes, we can't do vectorized multi-dimensional iteration in SIMD
         for (int32_t i = 0, dx = 0; dx < sizeX; dx++) {
             for (int32_t dz = 0; dz < sizeZ; dz++, i++) {
-                out[i] = fp2::cwg::noise::octaves2dPoint<VEC_LANES>((baseX + (dx << level)) * freqX, (baseZ + (dz << level)) * freqZ, seed, octaves) * scale - 1.0d;
+                out[i] = fp2::cwg::noise::octaves2dPoint<VEC_LANES>((baseX + (dx << level)) * freqX, (baseZ + (dz << level)) * freqZ, seed, octaves) * scale - 1.0;
             }
         }
     } else {
@@ -117,7 +117,7 @@ FP2_JNI(void, NativeCWGNoiseProvider, generate2d)(JNIEnv* env, jobject obj,
         size_t index = 0;
 
         for (; index < (totalCount & ~(VEC_LANES - 1)); index += VEC_LANES) {
-            (fp2::cwg::noise::octaves2d<VEC_LANES>(to_double(x) * freqX, to_double(z) * freqZ, seed, octaves) * scale - 1.0d).store(&out[index]);
+            (fp2::cwg::noise::octaves2d<VEC_LANES>(to_double(x) * freqX, to_double(z) * freqZ, seed, octaves) * scale - 1.0).store(&out[index]);
 
             //increment z coordinates, resetting them and incrementing x if they reach the maximum value
             z += stepZ;
@@ -128,7 +128,7 @@ FP2_JNI(void, NativeCWGNoiseProvider, generate2d)(JNIEnv* env, jobject obj,
 
         if (index < totalCount) { //the number of samples remaining are less than the number of vector lanes, let's finish 'em up
             //x and z are already set up correctly
-            (fp2::cwg::noise::octaves2d<VEC_LANES>(to_double(x) * freqX, to_double(z) * freqZ, seed, octaves) * scale - 1.0d).store_partial(totalCount & (VEC_LANES - 1), &out[index]);
+            (fp2::cwg::noise::octaves2d<VEC_LANES>(to_double(x) * freqX, to_double(z) * freqZ, seed, octaves) * scale - 1.0).store_partial(totalCount & (VEC_LANES - 1), &out[index]);
         }
     }
 }
@@ -137,5 +137,5 @@ FP2_JNI(jdouble, NativeCWGNoiseProvider, generateSingle)(JNIEnv* env, jobject ob
         jint x, jint y, jint z, jdouble freqX, jdouble freqY, jdouble freqZ, jint seed, jint octaves, jdouble scale) {
     constexpr size_t VEC_LANES = fp2::simd::LANES_32AND64;
 
-    return fp2::cwg::noise::octaves3dPoint<VEC_LANES>(x * freqX, y * freqY, z * freqZ, seed, octaves) * scale - 1.0d;
+    return fp2::cwg::noise::octaves3dPoint<VEC_LANES>(x * freqX, y * freqY, z * freqZ, seed, octaves) * scale - 1.0;
 }

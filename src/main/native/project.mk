@@ -9,7 +9,7 @@ export LIBS_DIR		:=	$(NATIVE_DIR)/lib
 export COMPILE_DIR  :=  $(ROOT_DIR)/build/native
 export OUTPUT_DIR   :=  $(ROOT_DIR)/src/main/resources/net/daporkchop/fp2
 
-export CXXFLAGS		:=	-O2 -ffast-math -fPIC -ffunction-sections -fdata-sections -fvisibility=hidden -std=c++17 -Wno-attributes
+export CXXFLAGS		:=	-O2 -ffast-math -ffunction-sections -fdata-sections -fvisibility=hidden -std=c++17 -Wno-attributes
 export LDFLAGS		:=	$(CXXFLAGS) -shared -Wl,--gc-sections
 
 export HEADERFILES	:=	$(wildcard $(NATIVE_DIR)/*.h) $(wildcard $(NATIVE_DIR)/fp2/*.h) $(wildcard $(NATIVE_DIR)/fp2/**/*.h)
