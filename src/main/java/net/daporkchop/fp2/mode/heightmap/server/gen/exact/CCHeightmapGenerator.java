@@ -54,6 +54,7 @@ public class CCHeightmapGenerator extends AbstractExactHeightmapGenerator {
                     return world.getTopBlockY(blockX, blockZ);
                 })
                 .distinct() //we don't want a bunch of identical cube Y coordinates
+                .filter(cubeY -> cubeY > MINIMUM_CONSIDERED_Y)
                 .mapToObj(cubeY -> new Vec3i(pos.flooredChunkX(), cubeY, pos.flooredChunkZ()));
     }
 }

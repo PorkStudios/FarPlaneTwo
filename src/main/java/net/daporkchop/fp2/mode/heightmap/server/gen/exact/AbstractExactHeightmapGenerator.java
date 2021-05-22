@@ -40,6 +40,8 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorExact<HeightmapPos, HeightmapTile> {
+    protected static final int MINIMUM_CONSIDERED_Y = Integer.MIN_VALUE + Character.MAX_VALUE; //the minimum Y coordinate that will be considered for heightmap samples
+
     public AbstractExactHeightmapGenerator(@NonNull WorldServer world) {
         super(world);
     }
@@ -57,10 +59,14 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
                 int height = world.getTopBlockY(tileX * T_VOXELS + x, tileZ * T_VOXELS + z);
                 pos.setPos(tileX * T_VOXELS + x, height, tileZ * T_VOXELS + z);
 
-                IBlockState state = world.getBlockState(pos);
-                while (state.getMaterial().isLiquid()) {
+                IBlockState state = null;
+                while (height > MINIMUM_CONSIDERED_Y && (state = world.getBlockState(pos)).getMaterial().isLiquid()) {
                     pos.setY(--height);
                     state = world.getBlockState(pos);
+                }
+
+                if (height <= MINIMUM_CONSIDERED_Y) { //discard points that are too low
+                    continue;
                 }
 
                 pos.setY(data.height_int = ++height);
