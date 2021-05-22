@@ -1,4 +1,4 @@
-export SHELL		:=	/bin/bash
+export SHELL		:=	/usr/bin/env bash
 
 export NPROC		:=	$(shell nproc)
 
@@ -14,7 +14,7 @@ export LDFLAGS		:=	$(CXXFLAGS) -shared
 
 export MAKEFILES_	:=	$(wildcard $(NATIVE_DIR)/*.mk) $(wildcard $(TOOLCHAIN_DIR)/*.mk) $(wildcard $(TOOLCHAIN_DIR)/**/*.mk)
 export HEADERFILES	:=	$(wildcard $(NATIVE_DIR)/*.h) $(wildcard $(NATIVE_DIR)/fp2/*.h) $(wildcard $(NATIVE_DIR)/fp2/**/*.h)
-export INCLUDES		:=	$(NATIVE_DIR) $(JAVA_HOME)include $(JAVA_HOME)include/linux
+export INCLUDES		:=	$(NATIVE_DIR) $(JAVA_HOME)/include $(JAVA_HOME)/include/linux
 
 export ARCHS		:=	x86_64-linux-gnu x86_64-w64-mingw32
 export MODULES_STD	:=  compat/x86
