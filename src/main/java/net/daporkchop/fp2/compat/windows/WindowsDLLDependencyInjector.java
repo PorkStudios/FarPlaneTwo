@@ -31,8 +31,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 
-import static net.daporkchop.lib.common.util.PValidation.*;
-
 /**
  * Forcibly injects a few DLLs into the native library search path in order to allow Windows to load native libs compiled with GCC correctly.
  * <p>
@@ -71,7 +69,10 @@ public class WindowsDLLDependencyInjector {
 
             //copy library to temp directory
             try (InputStream in = WindowsDLLDependencyInjector.class.getResourceAsStream(lib)) {
-                checkState(in != null, "unable to find %s", lib);
+                if (in == null) { //the dll couldn't be found - skip it, and let porklib:natives handle falling back to the pure-java impl once the actual module dlls fail to load
+                    continue;
+                }
+
                 Files.copy(in, libFile);
             }
 
