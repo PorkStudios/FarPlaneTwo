@@ -62,7 +62,6 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
                 IBlockState state = null;
                 while (height > MINIMUM_CONSIDERED_Y && (state = world.getBlockState(pos)).getMaterial().isLiquid()) {
                     pos.setY(--height);
-                    state = world.getBlockState(pos);
                 }
 
                 if (height <= MINIMUM_CONSIDERED_Y) { //discard points that are too low

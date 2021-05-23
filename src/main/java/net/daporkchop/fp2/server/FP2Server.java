@@ -44,9 +44,9 @@ public class FP2Server {
      */
     public void preInit() {
         if (!PlatformInfo.IS_64BIT) { //require 64-bit
-            unsupported("Your system or JVM is not 64-bit!");
+            unsupported("Your system or JVM is not 64-bit!\nRequired by FarPlaneTwo.");
         } else if (!PlatformInfo.IS_LITTLE_ENDIAN) { //require little-endian
-            unsupported("Your system is not little-endian!");
+            unsupported("Your system is not little-endian!\nRequired by FarPlaneTwo.");
         }
 
         System.setProperty("porklib.native.printStackTraces", "true");

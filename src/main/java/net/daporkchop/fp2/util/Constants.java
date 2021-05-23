@@ -419,11 +419,9 @@ public class Constants {
     }
 
     public static void unsupported(String msg) {
-        bigWarning(msg + "\nRequired by FarPlaneTwo.");
+        bigWarning(msg);
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-            JOptionPane.showMessageDialog(null,
-                    msg + "\nRequired by FarPlaneTwo.",
-                    null, JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, msg, null, JOptionPane.ERROR_MESSAGE);
         }
         FMLCommonHandler.instance().exitJava(1, true);
     }
