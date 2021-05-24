@@ -6,7 +6,7 @@
 [![Discord](https://img.shields.io/discord/428813657816956929?color=7289DA&label=discord)](https://discord.gg/FrBHHCk)
 [![Patreon badge](https://img.shields.io/badge/dynamic/json?color=e64413&label=patreon&query=data.attributes.patron_count&suffix=%20patrons&url=https%3A%2F%2Fwww.patreon.com%2Fapi%2Fcampaigns%2F727078)](https://www.patreon.com/DaPorkchop_)
 
-### This mod is a work in progress!
+### This mod is a work in progress! If you do decide to download this, don't expect stuff to work correctly because it probably won't.
 
 *This is a Forge mod for Minecraft 1.12.2. Other versions WILL be supported in the future.*
 
@@ -28,8 +28,6 @@ Some of the above pages should look a lot like this:
 ![download1](https://user-images.githubusercontent.com/25571687/119328744-49aa7e00-bc39-11eb-827f-f44611c8ae4e.png)
 
 There can be a lot of links on these pages. Click on the first one underneath "Last Successful Artifacts".
-
-
 
 ## **[Read the FAQ first!](https://github.com/PorkStudios/FarPlaneTwo/wiki/FAQ)**
 
