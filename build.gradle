@@ -180,7 +180,9 @@ reobf.jar {
 }
 
 jar {
-    archiveName "fp2-$fp2Version-$minecraftVersion" + ".jar"
+    String branchName = System.getenv("BRANCH_NAME") //suffix jar name with branch name, if present and not the master branch
+    branchName = branchName != null && !branchName.isEmpty() && !"master".equals(branchName) ? '-' + branchName.replaceAll("[^a-zA-Z0-9.-]", "_") : "";
+    archiveName "fp2-$fp2Version-$minecraftVersion" + branchName + ".jar"
 
     from {
         configurations.shade.collect {
