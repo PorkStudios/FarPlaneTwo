@@ -39,17 +39,16 @@ import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
 import net.daporkchop.fp2.util.datastructure.PointOctree3I;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
-import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Biomes;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.biome.Biome;
 
 import java.util.Arrays;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -79,17 +78,19 @@ public class VoxelBake {
 
     public final int VOXEL_VERTEX_STATE_OFFSET = 0;
     public final int VOXEL_VERTEX_LIGHT_OFFSET = VOXEL_VERTEX_STATE_OFFSET + INT_SIZE;
-    public final int VOXEL_VERTEX_COLOR_OFFSET = VOXEL_VERTEX_LIGHT_OFFSET + SHORT_SIZE;
-    public final int VOXEL_VERTEX_POS_LOW_OFFSET = VOXEL_VERTEX_COLOR_OFFSET + MEDIUM_SIZE;
-    public final int VOXEL_VERTEX_POS_HIGH_OFFSET = VOXEL_VERTEX_POS_LOW_OFFSET + MEDIUM_SIZE;
+    public final int VOXEL_VERTEX_COLOR_OFFSET = VOXEL_VERTEX_LIGHT_OFFSET + (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? INT_SIZE : SHORT_SIZE);
+    public final int VOXEL_VERTEX_POS_LOW_OFFSET = VOXEL_VERTEX_COLOR_OFFSET + (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? INT_SIZE : MEDIUM_SIZE);
+    public final int VOXEL_VERTEX_POS_HIGH_OFFSET = VOXEL_VERTEX_POS_LOW_OFFSET + (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? INT_SIZE : MEDIUM_SIZE);
 
     public final int VOXEL_VERTEX_SIZE = VOXEL_VERTEX_POS_HIGH_OFFSET + INT_SIZE;
 
     public void vertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao) {
+        FP2_LOG.info("voxel vertex size: {} bytes", VOXEL_VERTEX_SIZE);
+
         vao.attrI(buffer, 1, GL_UNSIGNED_INT, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_STATE_OFFSET, 0); //state
         vao.attrF(buffer, 2, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_LIGHT_OFFSET, 0); //light
-        vao.attrF(buffer, 3, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_COLOR_OFFSET, 0); //color
-        vao.attrF(buffer, 3, GL_UNSIGNED_BYTE, false, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_POS_LOW_OFFSET, 0); //pos_low
+        vao.attrF(buffer, 4, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_COLOR_OFFSET, 0); //color
+        vao.attrF(buffer, 4, GL_UNSIGNED_BYTE, false, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_POS_LOW_OFFSET, 0); //pos_low
         vao.attrF(buffer, 4, GL_INT_2_10_10_10_REV, false, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_POS_HIGH_OFFSET, 0); //pos_high
     }
 
@@ -253,7 +254,13 @@ public class VoxelBake {
         IBlockState state = FastRegistry.getBlockState(data.states[0]);
         vertices.writeIntLE(TexUVs.STATEID_TO_INDEXID.get(state)); //state
         vertices.writeShortLE(Constants.packedLightTo8BitVec2(data.light)); //light
+        if (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING) {
+            vertices.writeShortLE(0); //pad to next 4-byte boundary
+        }
         vertices.writeMediumLE(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(state, biomeAccess, pos, 0))); //color
+        if (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING) {
+            vertices.writeByte(0); //pad to next 4-byte boundary
+        }
 
         int offset = level == 0 ? POS_ONE >> 1 : 0;
 
@@ -272,6 +279,9 @@ public class VoxelBake {
         }
 
         vertices.writeByte(lowX).writeByte(lowY).writeByte(lowZ); //pos_low
+        if (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING) {
+            vertices.writeByte(0); //pad to next 4-byte boundary
+        }
         vertices.writeIntLE(Int2_10_10_10_Rev.packCoords(highX, highY, highZ)); //pos_high
 
         EDGES:
@@ -292,7 +302,7 @@ public class VoxelBake {
 
             IBlockState edgeState = FastRegistry.getBlockState(data.states[edge]);
             vertices.setIntLE(bufIndex, TexUVs.STATEID_TO_INDEXID.get(edgeState));
-            vertices.setMediumLE(bufIndex + 6, Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(edgeState, biomeAccess, pos, 0))); //color
+            vertices.setMediumLE(bufIndex + VOXEL_VERTEX_COLOR_OFFSET, Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(edgeState, biomeAccess, pos, 0))); //color
             map[baseMapIndex + edge] = indexCounter++;
         }
         return indexCounter;

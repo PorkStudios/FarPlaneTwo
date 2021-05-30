@@ -29,6 +29,7 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.function.Consumer;
 
+import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
@@ -42,7 +43,7 @@ import static org.lwjgl.opengl.GL43.*;
  */
 public class IndirectIndexedMultidrawCommandBuffer extends IndirectMultidrawCommandBuffer {
     public static final int POSITION_SIZE = 4;
-    public static final int COMMAND_SIZE = 5;
+    public static final int COMMAND_SIZE = WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? 8 : 5;
     public static final int ENTRY_SIZE = POSITION_SIZE + COMMAND_SIZE;
 
     public static final int POSITION_SIZE_BYTES = POSITION_SIZE * INT_SIZE;
