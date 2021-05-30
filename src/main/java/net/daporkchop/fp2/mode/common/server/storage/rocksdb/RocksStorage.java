@@ -108,6 +108,7 @@ public final class RocksStorage<POS extends IFarPos, V extends IReusablePersiste
             //grow buffer to required size and try again
             value.ensureWritable(len);
 
+            keyNioBuffer.rewind();
             len = db.get(handle, READ_OPTIONS, keyNioBuffer, value.nioBuffer(value.readerIndex(), value.capacity()));
         }
         return value.writerIndex(len);
