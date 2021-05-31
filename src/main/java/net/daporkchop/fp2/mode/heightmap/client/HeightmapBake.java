@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
+import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.mode.heightmap.HeightmapTile.*;
@@ -54,17 +55,17 @@ import static org.lwjgl.opengl.GL11.*;
 public class HeightmapBake {
     public static final int HEIGHTMAP_VERTEX_STATE_OFFSET = 0;
     public static final int HEIGHTMAP_VERTEX_LIGHT_OFFSET = HEIGHTMAP_VERTEX_STATE_OFFSET + INT_SIZE;
-    public static final int HEIGHTMAP_VERTEX_COLOR_OFFSET = HEIGHTMAP_VERTEX_LIGHT_OFFSET + SHORT_SIZE;
+    public static final int HEIGHTMAP_VERTEX_COLOR_OFFSET = HEIGHTMAP_VERTEX_LIGHT_OFFSET + (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? INT_SIZE : SHORT_SIZE);
 
-    public static final int HEIGHTMAP_VERTEX_POS_LOW_OFFSET = HEIGHTMAP_VERTEX_COLOR_OFFSET + MEDIUM_SIZE;
-    public static final int HEIGHTMAP_VERTEX_HEIGHT_INT_LOW_OFFSET = HEIGHTMAP_VERTEX_POS_LOW_OFFSET + SHORT_SIZE;
+    public static final int HEIGHTMAP_VERTEX_POS_LOW_OFFSET = HEIGHTMAP_VERTEX_COLOR_OFFSET + (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? INT_SIZE : MEDIUM_SIZE);
+    public static final int HEIGHTMAP_VERTEX_HEIGHT_INT_LOW_OFFSET = HEIGHTMAP_VERTEX_POS_LOW_OFFSET + (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? INT_SIZE : SHORT_SIZE);
     public static final int HEIGHTMAP_VERTEX_HEIGHT_FRAC_LOW_OFFSET = HEIGHTMAP_VERTEX_HEIGHT_INT_LOW_OFFSET + INT_SIZE;
 
-    public static final int HEIGHTMAP_VERTEX_POS_HIGH_OFFSET = HEIGHTMAP_VERTEX_HEIGHT_FRAC_LOW_OFFSET + BYTE_SIZE;
-    public static final int HEIGHTMAP_VERTEX_HEIGHT_INT_HIGH_OFFSET = HEIGHTMAP_VERTEX_POS_HIGH_OFFSET + SHORT_SIZE;
+    public static final int HEIGHTMAP_VERTEX_POS_HIGH_OFFSET = HEIGHTMAP_VERTEX_HEIGHT_FRAC_LOW_OFFSET + (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? INT_SIZE : BYTE_SIZE);
+    public static final int HEIGHTMAP_VERTEX_HEIGHT_INT_HIGH_OFFSET = HEIGHTMAP_VERTEX_POS_HIGH_OFFSET + (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? INT_SIZE : SHORT_SIZE);
     public static final int HEIGHTMAP_VERTEX_HEIGHT_FRAC_HIGH_OFFSET = HEIGHTMAP_VERTEX_HEIGHT_INT_HIGH_OFFSET + INT_SIZE;
 
-    public static final int HEIGHTMAP_VERTEX_SIZE = HEIGHTMAP_VERTEX_HEIGHT_FRAC_HIGH_OFFSET + BYTE_SIZE + 1; // +1 to pad to 24 bytes
+    public static final int HEIGHTMAP_VERTEX_SIZE = HEIGHTMAP_VERTEX_HEIGHT_FRAC_HIGH_OFFSET + (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? INT_SIZE : BYTE_SIZE + 1); // +1 to pad to 24 bytes
 
     protected static int vertexMapIndex(int x, int z, int layer) {
         return (x * T_VERTS + z) * MAX_LAYERS + layer;
@@ -205,10 +206,23 @@ public class HeightmapBake {
         //block
         out.writeIntLE(TexUVs.STATEID_TO_INDEXID.get(data.state)); //state
         out.writeShortLE(Constants.packedLightTo8BitVec2(data.light)); //light
+        if (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING) {
+            out.writeShortLE(0); //pad to next 4-byte boundary
+        }
         out.writeMediumLE(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(data.state, biomeAccess, pos, 0))); //color
+        if (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING) {
+            out.writeByte(0); //pad to next 4-byte boundary
+        }
 
-        //pos_low
-        out.writeByte(x).writeByte(z).writeIntLE(data.height_int).writeByte(data.height_frac);
+        out.writeByte(x).writeByte(z); //pos_low
+        if (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING) {
+            out.writeShortLE(0); //pad to next 4-byte boundary
+        }
+        out.writeIntLE(data.height_int) //height_int_low
+                .writeByte(data.height_frac); //height_frac_low
+        if (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING) {
+            out.writeMediumLE(0); //pad to next 4-byte boundary
+        }
 
         //pos_high
         int baseTileX = (baseX >> (level + T_SHIFT)) - (i >> 1);
@@ -218,13 +232,27 @@ public class HeightmapBake {
         final int flooredZ = blockZ & -(1 << (level + 1));
         double highHeight;
         if (highTile == null || Double.isNaN(highHeight = highTile.getLayerOnlyHeight((flooredX >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK, layer))) {
-            out.writeByte(x).writeByte(z).writeIntLE(data.height_int).writeByte(data.height_frac);
+            out.writeByte(x).writeByte(z); //pos_high
+            if (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING) {
+                out.writeShortLE(0); //pad to next 4-byte boundary
+            }
+            out.writeIntLE(data.height_int) //height_int_high
+                    .writeByte(data.height_frac); //height_frac_high
         } else {
             int heightI = floorI(highHeight);
             int heightF = clamp(floorI((highHeight - heightI) * 256.0d), 0, 255);
-            out.writeByte(x & ~1).writeByte(z & ~1).writeIntLE(heightI).writeByte(heightF);
+            out.writeByte(x & ~1).writeByte(z & ~1); //pos_high
+            if (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING) {
+                out.writeShortLE(0); //pad to next 4-byte boundary
+            }
+            out.writeIntLE(heightI) //height_int_high
+                    .writeByte(heightF); //height_frac_high
         }
 
-        out.writeByte(0); //pad to 24 bytes
+        if (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING) {
+            out.writeMediumLE(0); //pad to next 4-byte boundary
+        } else {
+            out.writeByte(0); //pad to 24 bytes
+        }
     }
 }
