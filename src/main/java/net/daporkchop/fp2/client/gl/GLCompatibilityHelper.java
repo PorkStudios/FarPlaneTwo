@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.client.gl;
 
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.config.FP2Config;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.opengl.GL33;
@@ -40,16 +41,22 @@ public class GLCompatibilityHelper {
      * This is a workaround for an issue with the official AMD driver which results in horrible performance when a vertex attribute doesn't
      * have a 4-byte alignment.
      */
-    public final boolean WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING = amdVertexAttributePadding();
+    public final boolean WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING = FP2Config.compatibility.workaroundAmdVertexPadding.shouldEnable(isOfficialAmdDriver());
+
+    /**
+     * This is a workaround for an issue with the official AMD driver which results unpredictable behavior when any of the vertex attributes
+     * use the {@link GL33#GL_INT_2_10_10_10_REV} type.
+     */
+    public final boolean WORKAROUND_AMD_INT_2_10_10_10_REV = FP2Config.compatibility.workaroundAmdInt2_10_10_10_REV.shouldEnable(isOfficialAmdDriver());
 
     static {
         FP2_LOG.info("{}enabling AMD vertex attribute padding workaround", WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? "" : "not ");
+        FP2_LOG.info("{}enabling AMD GL_INT_2_10_10_10_REV workaround", WORKAROUND_AMD_INT_2_10_10_10_REV ? "" : "not ");
     }
 
-    private boolean amdVertexAttributePadding() {
+    private boolean isOfficialAmdDriver() {
         String brand = (glGetString(GL_VENDOR) + ' ' + glGetString(GL_VERSION) + ' ' + glGetString(GL_RENDERER)).toLowerCase(Locale.US);
 
-        return (brand.contains("amd") || brand.contains("ati")) //detect AMD gpu
-               && !brand.contains("mesa"); //mesa actually works correctly, so we don't need to use the workaround there
+        return (brand.contains("amd") || brand.contains("ati")) && !brand.contains("mesa");
     }
 }

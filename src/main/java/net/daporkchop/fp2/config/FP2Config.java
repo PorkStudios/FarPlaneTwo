@@ -27,6 +27,8 @@ import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static java.lang.Math.*;
 
@@ -187,6 +189,41 @@ public class FP2Config {
         })
         @Config.LangKey("config.fp2.compatibility.reversedZ")
         public boolean reversedZ = true;
+
+        @SideOnly(Side.CLIENT)
+        @Config.RequiresMcRestart
+        public WorkaroundState workaroundAmdVertexPadding = WorkaroundState.AUTO;
+
+        @SideOnly(Side.CLIENT)
+        @Config.RequiresMcRestart
+        public WorkaroundState workaroundAmdInt2_10_10_10_REV = WorkaroundState.AUTO;
+
+        /**
+         * @author DaPorkchop_
+         */
+        @SideOnly(Side.CLIENT)
+        public enum WorkaroundState {
+            AUTO {
+                @Override
+                public boolean shouldEnable(boolean flag) {
+                    return flag;
+                }
+            },
+            ENABLED {
+                @Override
+                public boolean shouldEnable(boolean flag) {
+                    return true;
+                }
+            },
+            DISABLED {
+                @Override
+                public boolean shouldEnable(boolean flag) {
+                    return false;
+                }
+            };
+
+            public abstract boolean shouldEnable(boolean flag);
+        }
     }
 
     /**

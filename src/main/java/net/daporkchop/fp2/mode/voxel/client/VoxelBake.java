@@ -82,7 +82,7 @@ public class VoxelBake {
     public final int VOXEL_VERTEX_POS_LOW_OFFSET = VOXEL_VERTEX_COLOR_OFFSET + (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? INT_SIZE : MEDIUM_SIZE);
     public final int VOXEL_VERTEX_POS_HIGH_OFFSET = VOXEL_VERTEX_POS_LOW_OFFSET + (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? INT_SIZE : MEDIUM_SIZE);
 
-    public final int VOXEL_VERTEX_SIZE = VOXEL_VERTEX_POS_HIGH_OFFSET + INT_SIZE;
+    public final int VOXEL_VERTEX_SIZE = VOXEL_VERTEX_POS_HIGH_OFFSET + (WORKAROUND_AMD_INT_2_10_10_10_REV ? 4 * SHORT_SIZE : INT_SIZE);
 
     public void vertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao) {
         FP2_LOG.info("voxel vertex size: {} bytes", VOXEL_VERTEX_SIZE);
@@ -91,7 +91,7 @@ public class VoxelBake {
         vao.attrF(buffer, 2, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_LIGHT_OFFSET, 0); //light
         vao.attrF(buffer, 4, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_COLOR_OFFSET, 0); //color
         vao.attrF(buffer, 4, GL_UNSIGNED_BYTE, false, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_POS_LOW_OFFSET, 0); //pos_low
-        vao.attrF(buffer, 4, GL_INT_2_10_10_10_REV, false, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_POS_HIGH_OFFSET, 0); //pos_high
+        vao.attrF(buffer, 4, WORKAROUND_AMD_INT_2_10_10_10_REV ? GL_SHORT : GL_INT_2_10_10_10_REV, false, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_POS_HIGH_OFFSET, 0); //pos_high
     }
 
     protected static int vertexMapIndex(int dx, int dy, int dz, int i, int edge) {
@@ -282,7 +282,13 @@ public class VoxelBake {
         if (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING) {
             vertices.writeByte(0); //pad to next 4-byte boundary
         }
-        vertices.writeIntLE(Int2_10_10_10_Rev.packCoords(highX, highY, highZ)); //pos_high
+
+        //pos_high
+        if (WORKAROUND_AMD_INT_2_10_10_10_REV) {
+            vertices.writeShortLE(highX).writeShortLE(highY).writeShortLE(highZ).writeShortLE(0);
+        } else {
+            vertices.writeIntLE(Int2_10_10_10_Rev.packCoords(highX, highY, highZ));
+        }
 
         EDGES:
         for (int edge = 0; edge < EDGE_COUNT; edge++) {

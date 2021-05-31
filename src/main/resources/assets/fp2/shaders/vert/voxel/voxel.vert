@@ -36,15 +36,15 @@ vec3[3](vec3(0.), vec3(.5), vec3(1.))
 
 layout(location = 1) in int in_state;
 layout(location = 2) in vec2 in_light;
-layout(location = 3) in vec3 in_color;
+layout(location = 3) in vec4 in_color;
 
-layout(location = 4) in vec3 in_pos_low;
-layout(location = 5) in vec3 in_pos_high;
+layout(location = 4) in vec4 in_pos_low;
+layout(location = 5) in vec4 in_pos_high;
 
 void main() {
     //convert position to vec3 afterwards to minimize precision loss
     ivec3 relative_tile_position = (tile_position.xyz << tile_position.w << T_SHIFT) - glState.camera.position_floor;
-    vec3 relativePos = vec3(relative_tile_position) + in_pos_low * float(1 << tile_position.w) / 8. - glState.camera.position_fract;
+    vec3 relativePos = vec3(relative_tile_position) + in_pos_low.xyz * float(1 << tile_position.w) / 8. - glState.camera.position_fract;
 
     float depth = length(relativePos);
 
@@ -56,7 +56,7 @@ void main() {
     float start = cutoff_scale * fp2_state.view.transitionStart;
     float end = cutoff_scale * fp2_state.view.transitionEnd;
 
-    vec3 relativePos_high = vec3(relative_tile_position) + in_pos_high * float(1 << tile_position.w) / 8. - glState.camera.position_fract;
+    vec3 relativePos_high = vec3(relative_tile_position) + in_pos_high.xyz * float(1 << tile_position.w) / 8. - glState.camera.position_fract;
     relativePos = mix(relativePos_high, relativePos, clamp((end - depth) / (end - start), 0., 1.));
 
 #ifdef DEBUG_DISTANCES
@@ -79,6 +79,6 @@ void main() {
     vs_out.light = in_light;
     vs_out.state = in_state;
 #ifndef DEBUG_DISTANCES
-    vs_out.color = in_color;
+    vs_out.color = in_color.rgb;
 #endif
 }
