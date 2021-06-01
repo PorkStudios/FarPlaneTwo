@@ -38,7 +38,7 @@ import static net.daporkchop.fp2.mode.heightmap.client.HeightmapRenderConstants.
  */
 public abstract class AbstractIndexedMultidrawHeightmapRenderStrategy extends IndexedMultidrawMultipassRenderStrategy<HeightmapPos, HeightmapTile> implements IMultipassHeightmapRenderStrategy {
     public AbstractIndexedMultidrawHeightmapRenderStrategy() {
-        super(HeightmapBake.HEIGHTMAP_VERTEX_SIZE);
+        super(HeightmapBake.VERTEX_FORMAT.size());
     }
 
     @Override

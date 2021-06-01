@@ -29,6 +29,10 @@ import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.type.Int2_10_10_10_Rev;
+import net.daporkchop.fp2.client.gl.vertex.IVertexAttribute;
+import net.daporkchop.fp2.client.gl.vertex.VertexAttributeInterpretation;
+import net.daporkchop.fp2.client.gl.vertex.VertexAttributeType;
+import net.daporkchop.fp2.client.gl.vertex.VertexFormat;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
@@ -46,6 +50,7 @@ import net.minecraft.util.math.BlockPos;
 
 import java.util.Arrays;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
@@ -76,22 +81,43 @@ public class VoxelBake {
         }
     });
 
-    public final int VOXEL_VERTEX_STATE_OFFSET = 0;
-    public final int VOXEL_VERTEX_LIGHT_OFFSET = VOXEL_VERTEX_STATE_OFFSET + INT_SIZE;
-    public final int VOXEL_VERTEX_COLOR_OFFSET = VOXEL_VERTEX_LIGHT_OFFSET + (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? INT_SIZE : SHORT_SIZE);
-    public final int VOXEL_VERTEX_POS_LOW_OFFSET = VOXEL_VERTEX_COLOR_OFFSET + (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? INT_SIZE : MEDIUM_SIZE);
-    public final int VOXEL_VERTEX_POS_HIGH_OFFSET = VOXEL_VERTEX_POS_LOW_OFFSET + (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? INT_SIZE : MEDIUM_SIZE);
+    protected static final IVertexAttribute.Int1 ATTRIB_STATE = IVertexAttribute.Int1.builder()
+            .alignAndPadTo(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT)
+            .type(VertexAttributeType.UNSIGNED_INT)
+            .interpretation(VertexAttributeInterpretation.INTEGER)
+            .build();
 
-    public final int VOXEL_VERTEX_SIZE = VOXEL_VERTEX_POS_HIGH_OFFSET + (WORKAROUND_AMD_INT_2_10_10_10_REV ? 4 * SHORT_SIZE : INT_SIZE);
+    protected static final IVertexAttribute.Int2 ATTRIB_LIGHT = IVertexAttribute.Int2.builder(ATTRIB_STATE)
+            .alignAndPadTo(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT)
+            .type(VertexAttributeType.UNSIGNED_BYTE)
+            .interpretation(VertexAttributeInterpretation.NORMALIZED_FLOAT)
+            .build();
+
+    protected static final IVertexAttribute.Int3 ATTRIB_COLOR = IVertexAttribute.Int3.builder(ATTRIB_LIGHT)
+            .alignAndPadTo(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT)
+            .reportedComponents(4)
+            .type(VertexAttributeType.UNSIGNED_BYTE)
+            .interpretation(VertexAttributeInterpretation.NORMALIZED_FLOAT)
+            .build();
+
+    protected static final IVertexAttribute.Int3 ATTRIB_POS_LOW = IVertexAttribute.Int3.builder(ATTRIB_COLOR)
+            .alignAndPadTo(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT)
+            .reportedComponents(4)
+            .type(VertexAttributeType.UNSIGNED_BYTE)
+            .interpretation(VertexAttributeInterpretation.FLOAT)
+            .build();
+
+    protected static final IVertexAttribute.Int4 ATTRIB_POS_HIGH = IVertexAttribute.Int4.builder(ATTRIB_POS_LOW)
+            .alignAndPadTo(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT)
+            .type(WORKAROUND_AMD_INT_2_10_10_10_REV ? VertexAttributeType.SHORT : VertexAttributeType.INT_2_10_10_10_REV)
+            .interpretation(VertexAttributeInterpretation.FLOAT)
+            .build();
+
+    protected static final VertexFormat VERTEX_FORMAT = new VertexFormat(ATTRIB_POS_HIGH, max(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT, INT_SIZE));
 
     public void vertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao) {
-        FP2_LOG.info("voxel vertex size: {} bytes", VOXEL_VERTEX_SIZE);
-
-        vao.attrI(buffer, 1, GL_UNSIGNED_INT, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_STATE_OFFSET, 0); //state
-        vao.attrF(buffer, 2, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_LIGHT_OFFSET, 0); //light
-        vao.attrF(buffer, 4, GL_UNSIGNED_BYTE, true, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_COLOR_OFFSET, 0); //color
-        vao.attrF(buffer, 4, GL_UNSIGNED_BYTE, false, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_POS_LOW_OFFSET, 0); //pos_low
-        vao.attrF(buffer, 4, WORKAROUND_AMD_INT_2_10_10_10_REV ? GL_SHORT : GL_INT_2_10_10_10_REV, false, VOXEL_VERTEX_SIZE, VOXEL_VERTEX_POS_HIGH_OFFSET, 0); //pos_high
+        FP2_LOG.info("voxel vertex size: {} bytes", VERTEX_FORMAT.size());
+        VERTEX_FORMAT.configureVAO(vao, buffer);
     }
 
     protected static int vertexMapIndex(int dx, int dy, int dz, int i, int edge) {
@@ -156,10 +182,10 @@ public class VoxelBake {
                         int py = (ty << (T_SHIFT + POS_FRACT_SHIFT)) + (dy << POS_FRACT_SHIFT) + data.y;
                         int pz = (tz << (T_SHIFT + POS_FRACT_SHIFT)) + (dz << POS_FRACT_SHIFT) + data.z;
 
-                        if (px >= Int2_10_10_10_Rev.MIN_AXIS_VALUE && px <= Int2_10_10_10_Rev.MAX_AXIS_VALUE
-                            && py >= Int2_10_10_10_Rev.MIN_AXIS_VALUE && py <= Int2_10_10_10_Rev.MAX_AXIS_VALUE
-                            && pz >= Int2_10_10_10_Rev.MIN_AXIS_VALUE && pz <= Int2_10_10_10_Rev.MAX_AXIS_VALUE) { //this will only discard a very small minority of vertices
-                            highPoints.add(Int2_10_10_10_Rev.packCoords(px, py, pz));
+                        if (px >= Int2_10_10_10_Rev.MIN_XYZ_VALUE && px <= Int2_10_10_10_Rev.MAX_XYZ_VALUE
+                            && py >= Int2_10_10_10_Rev.MIN_XYZ_VALUE && py <= Int2_10_10_10_Rev.MAX_XYZ_VALUE
+                            && pz >= Int2_10_10_10_Rev.MIN_XYZ_VALUE && pz <= Int2_10_10_10_Rev.MAX_XYZ_VALUE) { //this will only discard a very small minority of vertices
+                            highPoints.add(Int2_10_10_10_Rev.packXYZ(px, py, pz));
                         }
                     }
                 }
@@ -195,10 +221,10 @@ public class VoxelBake {
                         int py = (ty << (T_SHIFT + POS_FRACT_SHIFT + 1)) + (dy << (POS_FRACT_SHIFT + 1)) + (data.y << 1) + offY;
                         int pz = (tz << (T_SHIFT + POS_FRACT_SHIFT + 1)) + (dz << (POS_FRACT_SHIFT + 1)) + (data.z << 1) + offZ;
 
-                        if (px >= Int2_10_10_10_Rev.MIN_AXIS_VALUE && px <= Int2_10_10_10_Rev.MAX_AXIS_VALUE
-                            && py >= Int2_10_10_10_Rev.MIN_AXIS_VALUE && py <= Int2_10_10_10_Rev.MAX_AXIS_VALUE
-                            && pz >= Int2_10_10_10_Rev.MIN_AXIS_VALUE && pz <= Int2_10_10_10_Rev.MAX_AXIS_VALUE) { //this will only discard a very small minority of vertices
-                            highPoints.add(Int2_10_10_10_Rev.packCoords(px, py, pz));
+                        if (px >= Int2_10_10_10_Rev.MIN_XYZ_VALUE && px <= Int2_10_10_10_Rev.MAX_XYZ_VALUE
+                            && py >= Int2_10_10_10_Rev.MIN_XYZ_VALUE && py <= Int2_10_10_10_Rev.MAX_XYZ_VALUE
+                            && pz >= Int2_10_10_10_Rev.MIN_XYZ_VALUE && pz <= Int2_10_10_10_Rev.MAX_XYZ_VALUE) { //this will only discard a very small minority of vertices
+                            highPoints.add(Int2_10_10_10_Rev.packXYZ(px, py, pz));
                         }
                     }
                 }
@@ -251,50 +277,35 @@ public class VoxelBake {
         pos.setPos(blockX, blockY, blockZ);
         biomeAccess.biome(FastRegistry.getBiome(data.biome, Biomes.PLAINS));
 
+        int vertexBase = VERTEX_FORMAT.appendVertex(vertices);
+
         IBlockState state = FastRegistry.getBlockState(data.states[0]);
-        vertices.writeIntLE(TexUVs.STATEID_TO_INDEXID.get(state)); //state
-        vertices.writeShortLE(Constants.packedLightTo8BitVec2(data.light)); //light
-        if (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING) {
-            vertices.writeShortLE(0); //pad to next 4-byte boundary
-        }
-        vertices.writeMediumLE(Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(state, biomeAccess, pos, 0))); //color
-        if (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING) {
-            vertices.writeByte(0); //pad to next 4-byte boundary
-        }
+        ATTRIB_STATE.set(vertices, vertexBase, TexUVs.STATEID_TO_INDEXID.get(state));
+
+        int blockLight = data.light & 0xF;
+        int skyLight = data.light >> 4;
+        ATTRIB_LIGHT.set(vertices, vertexBase, blockLight | (blockLight << 4), skyLight | (skyLight << 4));
+        ATTRIB_COLOR.setRGB(vertices, vertexBase, mc.getBlockColors().colorMultiplier(state, biomeAccess, pos, 0));
 
         int offset = level == 0 ? POS_ONE >> 1 : 0;
 
         int lowX = (x << POS_FRACT_SHIFT) + data.x + offset;
         int lowY = (y << POS_FRACT_SHIFT) + data.y + offset;
         int lowZ = (z << POS_FRACT_SHIFT) + data.z + offset;
-        int highX = lowX;
-        int highY = lowY;
-        int highZ = lowZ;
 
-        int closestHighPoint = octree.nearestNeighbor(highX, highY, highZ);
-        if (closestHighPoint >= 0) {
-            highX = Int2_10_10_10_Rev.unpackX(closestHighPoint);
-            highY = Int2_10_10_10_Rev.unpackY(closestHighPoint);
-            highZ = Int2_10_10_10_Rev.unpackZ(closestHighPoint);
+        int posHigh = octree.nearestNeighbor(lowX, lowY, lowZ);
+        if (posHigh < 0) {
+            posHigh = Int2_10_10_10_Rev.packXYZ(lowX, lowY, lowZ);
         }
 
-        vertices.writeByte(lowX).writeByte(lowY).writeByte(lowZ); //pos_low
-        if (WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING) {
-            vertices.writeByte(0); //pad to next 4-byte boundary
-        }
-
-        //pos_high
-        if (WORKAROUND_AMD_INT_2_10_10_10_REV) {
-            vertices.writeShortLE(highX).writeShortLE(highY).writeShortLE(highZ).writeShortLE(0);
-        } else {
-            vertices.writeIntLE(Int2_10_10_10_Rev.packCoords(highX, highY, highZ));
-        }
+        ATTRIB_POS_LOW.set(vertices, vertexBase, lowX, lowY, lowZ);
+        ATTRIB_POS_HIGH.setInt2_10_10_10_rev(vertices, vertexBase, posHigh);
 
         EDGES:
         for (int edge = 0; edge < EDGE_COUNT; edge++) {
-            int bufIndex;
+            int currVertexBase;
             if (edge == 0) {
-                bufIndex = vertices.writerIndex() - VOXEL_VERTEX_SIZE;
+                currVertexBase = vertexBase;
             } else {
                 for (int j = 0; j < edge; j++) {
                     if (data.states[j] == data.states[edge]) { //states match, don't duplicate vertex data for this edge
@@ -302,13 +313,12 @@ public class VoxelBake {
                         continue EDGES;
                     }
                 }
-                bufIndex = vertices.writerIndex();
-                vertices.writeBytes(vertices, bufIndex - VOXEL_VERTEX_SIZE, VOXEL_VERTEX_SIZE);
+                currVertexBase = VERTEX_FORMAT.duplicateVertex(vertices, vertexBase);
             }
 
             IBlockState edgeState = FastRegistry.getBlockState(data.states[edge]);
-            vertices.setIntLE(bufIndex, TexUVs.STATEID_TO_INDEXID.get(edgeState));
-            vertices.setMediumLE(bufIndex + VOXEL_VERTEX_COLOR_OFFSET, Constants.convertARGB_ABGR(mc.getBlockColors().colorMultiplier(edgeState, biomeAccess, pos, 0))); //color
+            ATTRIB_STATE.set(vertices, currVertexBase, TexUVs.STATEID_TO_INDEXID.get(edgeState));
+            ATTRIB_COLOR.setRGB(vertices, currVertexBase, mc.getBlockColors().colorMultiplier(edgeState, biomeAccess, pos, 0));
             map[baseMapIndex + edge] = indexCounter++;
         }
         return indexCounter;

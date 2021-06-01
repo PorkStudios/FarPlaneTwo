@@ -35,11 +35,11 @@ public class TestInt2_10_10_10_Rev {
     @Test
     public void test() {
         //there can't be any bugs if i test every possible value!
-        IntStream.rangeClosed(Int2_10_10_10_Rev.MIN_AXIS_VALUE, Int2_10_10_10_Rev.MAX_AXIS_VALUE).parallel()
+        IntStream.rangeClosed(Int2_10_10_10_Rev.MIN_XYZ_VALUE, Int2_10_10_10_Rev.MAX_XYZ_VALUE).parallel()
                 .forEach(x -> {
-                    for (int y = Int2_10_10_10_Rev.MIN_AXIS_VALUE; y <= Int2_10_10_10_Rev.MAX_AXIS_VALUE; y++) {
-                        for (int z = Int2_10_10_10_Rev.MIN_AXIS_VALUE; z <= Int2_10_10_10_Rev.MAX_AXIS_VALUE; z++) {
-                            int pos = Int2_10_10_10_Rev.packCoords(x, y, z);
+                    for (int y = Int2_10_10_10_Rev.MIN_XYZ_VALUE; y <= Int2_10_10_10_Rev.MAX_XYZ_VALUE; y++) {
+                        for (int z = Int2_10_10_10_Rev.MIN_XYZ_VALUE; z <= Int2_10_10_10_Rev.MAX_XYZ_VALUE; z++) {
+                            int pos = Int2_10_10_10_Rev.packXYZ(x, y, z);
 
                             int ux = Int2_10_10_10_Rev.unpackX(pos);
                             int uy = Int2_10_10_10_Rev.unpackY(pos);

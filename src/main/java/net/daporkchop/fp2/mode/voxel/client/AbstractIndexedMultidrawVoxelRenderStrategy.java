@@ -38,7 +38,7 @@ import static net.daporkchop.fp2.mode.voxel.client.VoxelRenderConstants.*;
  */
 public abstract class AbstractIndexedMultidrawVoxelRenderStrategy extends IndexedMultidrawMultipassRenderStrategy<VoxelPos, VoxelTile> implements IMultipassVoxelRenderStrategy {
     public AbstractIndexedMultidrawVoxelRenderStrategy() {
-        super(VoxelBake.VOXEL_VERTEX_SIZE);
+        super(VoxelBake.VERTEX_FORMAT.size());
     }
 
     @Override

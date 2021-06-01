@@ -28,6 +28,7 @@ import org.lwjgl.opengl.GL33;
 
 import java.util.Locale;
 
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
 
@@ -49,14 +50,16 @@ public class GLCompatibilityHelper {
      */
     public final boolean WORKAROUND_AMD_INT_2_10_10_10_REV = FP2Config.compatibility.workaroundAmdInt2_10_10_10_REV.shouldEnable(isOfficialAmdDriver());
 
+    public final int EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT = WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? INT_SIZE : 1;
+
     static {
         FP2_LOG.info("{}enabling AMD vertex attribute padding workaround", WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? "" : "not ");
         FP2_LOG.info("{}enabling AMD GL_INT_2_10_10_10_REV workaround", WORKAROUND_AMD_INT_2_10_10_10_REV ? "" : "not ");
     }
 
     private boolean isOfficialAmdDriver() {
-        String brand = (glGetString(GL_VENDOR) + ' ' + glGetString(GL_VERSION) + ' ' + glGetString(GL_RENDERER)).toLowerCase(Locale.US);
+        String brand = glGetString(GL_VENDOR) + ' ' + glGetString(GL_VERSION) + ' ' + glGetString(GL_RENDERER);
 
-        return (brand.contains("amd") || brand.contains("ati")) && !brand.contains("mesa");
+        return (brand.contains("AMD") || brand.contains("ATI")) && !brand.contains("Mesa");
     }
 }

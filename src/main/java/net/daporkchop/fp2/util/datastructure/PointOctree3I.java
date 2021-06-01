@@ -59,9 +59,9 @@ public final class PointOctree3I {
      * @return the closest point to the given point, or {@code -1} if no points match
      */
     public int nearestNeighbor(int x, int y, int z) {
-        Int2_10_10_10_Rev.checkAxis(x, "x");
-        Int2_10_10_10_Rev.checkAxis(y, "y");
-        Int2_10_10_10_Rev.checkAxis(z, "z");
+        Int2_10_10_10_Rev.checkXYZ(x, "x");
+        Int2_10_10_10_Rev.checkXYZ(y, "y");
+        Int2_10_10_10_Rev.checkXYZ(z, "z");
 
         if (this.root == null) { //octree is empty! no points match
             return -1;
@@ -81,9 +81,9 @@ public final class PointOctree3I {
      * @return the closest point to the given point, or {@code -1} if no points match
      */
     public int nearestNeighborInBounds(int x, int y, int z, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-        Int2_10_10_10_Rev.checkAxis(x, "x");
-        Int2_10_10_10_Rev.checkAxis(y, "y");
-        Int2_10_10_10_Rev.checkAxis(z, "z");
+        Int2_10_10_10_Rev.checkXYZ(x, "x");
+        Int2_10_10_10_Rev.checkXYZ(y, "y");
+        Int2_10_10_10_Rev.checkXYZ(z, "z");
 
         if (this.root == null) { //octree is empty! no points match
             return -1;
@@ -103,9 +103,9 @@ public final class PointOctree3I {
      * @return the closest point to the given point, or {@code -1} if no points match
      */
     public int nearestNeighborOutsideBounds(int x, int y, int z, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-        Int2_10_10_10_Rev.checkAxis(x, "x");
-        Int2_10_10_10_Rev.checkAxis(y, "y");
-        Int2_10_10_10_Rev.checkAxis(z, "z");
+        Int2_10_10_10_Rev.checkXYZ(x, "x");
+        Int2_10_10_10_Rev.checkXYZ(y, "y");
+        Int2_10_10_10_Rev.checkXYZ(z, "z");
 
         if (this.root == null) { //octree is empty! no points match
             return -1;
