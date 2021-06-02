@@ -37,12 +37,9 @@ import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
 import net.daporkchop.fp2.util.datastructure.PointOctree3I;
-import net.daporkchop.lib.common.ref.Ref;
-import net.daporkchop.lib.common.ref.ThreadRef;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Biomes;
 import net.minecraft.init.Blocks;
@@ -52,13 +49,12 @@ import java.util.Arrays;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.client.ClientConstants.*;
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL33.*;
+import static net.daporkchop.fp2.util.math.MathUtil.*;
 
 /**
  * Shared code for baking voxel geometry.
@@ -67,20 +63,6 @@ import static org.lwjgl.opengl.GL33.*;
  */
 @UtilityClass
 public class VoxelBake {
-    protected static final Ref<SimpleRecycler<int[]>> MAP_RECYCLER = ThreadRef.soft(() -> new SimpleRecycler<int[]>() {
-        @Override
-        protected int[] allocate0() {
-            int[] arr = new int[T_VERTS * T_VERTS * T_VERTS * 3];
-            this.reset0(arr);
-            return arr;
-        }
-
-        @Override
-        protected void reset0(@NonNull int[] map) {
-            Arrays.fill(map, -1);
-        }
-    });
-
     protected static final IVertexAttribute.Int1 ATTRIB_STATE = IVertexAttribute.Int1.builder()
             .alignAndPadTo(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT)
             .type(VertexAttributeType.UNSIGNED_INT)
@@ -126,7 +108,7 @@ public class VoxelBake {
         int ddy = dy + ((j >> 1) & 1);
         int ddz = dz + (j & 1);
 
-        return ((ddx * T_VERTS + ddy) * T_VERTS + ddz) * 3 + edge;
+        return ((ddx * T_VERTS + ddy) * T_VERTS + ddz) * EDGE_COUNT + edge;
     }
 
     public void bakeForShaderDraw(@NonNull VoxelPos dstPos, @NonNull VoxelTile[] srcs, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
@@ -139,7 +121,9 @@ public class VoxelBake {
         final int blockY = dstPos.blockY();
         final int blockZ = dstPos.blockZ();
 
-        final int[] map = MAP_RECYCLER.get().allocate();
+        ArrayAllocator<int[]> alloc = ALLOC_INT.get();
+        int[] map = alloc.atLeast(cb(T_VERTS) * EDGE_COUNT);
+        Arrays.fill(map, 0, cb(T_VERTS) * EDGE_COUNT, -1);
 
         try {
             //step 1: build octrees
@@ -152,7 +136,7 @@ public class VoxelBake {
             //step 3: write indices to actually connect the vertices and build the mesh
             writeIndices(srcs[0], map, indices, lowOctree);
         } finally {
-            MAP_RECYCLER.get().release(map);
+            alloc.release(map);
         }
     }
 

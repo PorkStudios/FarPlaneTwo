@@ -1,4 +1,4 @@
-# Far Plane Two
+# FarPlaneTwo
 [![Build Status](https://jenkins.daporkchop.net/job/PorkStudios/job/FarPlaneTwo/job/master/badge/icon)](https://jenkins.daporkchop.net/job/PorkStudios/job/FarPlaneTwo/)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/PorkStudios/FarPlaneTwo)
 ![Lines of code](https://img.shields.io/tokei/lines/github/PorkStudios/FarPlaneTwo)
