@@ -42,48 +42,56 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
     /**
      * @return an array containing the {@link IDrawCommandBuffer} used for each render pass
      */
-    IDrawCommandBuffer[] passes();
+    IDrawCommandBuffer[][] passes();
 
     @Override
     default void prepareRender(long tilev, int tilec) {
-        IDrawCommandBuffer[] passes = this.passes();
+        IDrawCommandBuffer[][] passes = this.passes();
         checkArg(passes.length == RENDER_PASS_COUNT, "invalid number of render passes: %d (expected %d)", passes.length, RENDER_PASS_COUNT);
 
-        for (IDrawCommandBuffer pass : passes) { //begin all passes
-            pass.begin();
+        for (IDrawCommandBuffer[] pass : passes) { //begin all passes
+            for (IDrawCommandBuffer buffer : pass) {
+                buffer.begin();
+            }
         }
         try {
             for (long end = tilev + (long) LONG_SIZE * tilec; tilev != end; tilev += LONG_SIZE) { //draw each tile individually
                 this.drawTile(passes, PUnsafe.getLong(tilev));
             }
         } finally {
-            for (IDrawCommandBuffer pass : passes) { //finish all passes
-                pass.close();
+            for (IDrawCommandBuffer[] pass : passes) { //finish all passes
+                for (IDrawCommandBuffer buffer : pass) {
+                    buffer.close();
+                }
             }
         }
     }
 
-    void drawTile(@NonNull IDrawCommandBuffer[] passes, long tile);
+    void drawTile(@NonNull IDrawCommandBuffer[][] passes, long tile);
 
-    default void renderSolid(@NonNull IDrawCommandBuffer draw) {
+    default void renderSolid(@NonNull IDrawCommandBuffer[] draw) {
         GlStateManager.disableAlpha();
 
-        draw.draw();
+        for (IDrawCommandBuffer buffer : draw) {
+            buffer.draw();
+        }
 
         GlStateManager.enableAlpha();
     }
 
-    default void renderCutout(@NonNull IDrawCommandBuffer draw) {
+    default void renderCutout(@NonNull IDrawCommandBuffer[] draw) {
         mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
         GlStateManager.disableCull();
 
-        draw.draw();
+        for (IDrawCommandBuffer buffer : draw) {
+            buffer.draw();
+        }
 
         GlStateManager.enableCull();
         mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
     }
 
-    default void renderTransparent(@NonNull IDrawCommandBuffer draw) {
+    default void renderTransparent(@NonNull IDrawCommandBuffer[] draw) {
         glEnable(GL_STENCIL_TEST);
 
         this.renderTransparentStencilPass(draw);
@@ -92,7 +100,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         glDisable(GL_STENCIL_TEST);
     }
 
-    default void renderTransparentStencilPass(@NonNull IDrawCommandBuffer draw) {
+    default void renderTransparentStencilPass(@NonNull IDrawCommandBuffer[] draw) {
         GlStateManager.colorMask(false, false, false, false);
 
         GlStateManager.clear(GL_STENCIL_BUFFER_BIT);
@@ -102,14 +110,16 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
 
         GlStateManager.depthMask(false);
 
-        draw.draw();
+        for (IDrawCommandBuffer buffer : draw) {
+            buffer.draw();
+        }
 
         GlStateManager.depthMask(true);
 
         GlStateManager.colorMask(true, true, true, true);
     }
 
-    default void renderTransparentFragmentPass(@NonNull IDrawCommandBuffer draw) {
+    default void renderTransparentFragmentPass(@NonNull IDrawCommandBuffer[] draw) {
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
         GlStateManager.alphaFunc(GL_GREATER, 0.1f);
@@ -118,7 +128,9 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         glStencilFunc(GL_EQUAL, 1, 0xFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-        draw.draw();
+        for (IDrawCommandBuffer buffer : draw) {
+            buffer.draw();
+        }
 
         GlStateManager.disableBlend();
     }
