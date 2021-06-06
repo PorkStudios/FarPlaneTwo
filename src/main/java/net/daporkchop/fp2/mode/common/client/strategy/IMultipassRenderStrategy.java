@@ -69,11 +69,25 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
 
     void drawTile(@NonNull IDrawCommandBuffer[][] passes, long tile);
 
+    default void preRender() {
+        glEnable(GL_STENCIL_TEST);
+
+        glStencilMask(0xFF);
+        glClearStencil(0x7F);
+        GlStateManager.clear(GL_STENCIL_BUFFER_BIT);
+    }
+
+    default void postRender() {
+        glDisable(GL_STENCIL_TEST);
+    }
+
     default void renderSolid(@NonNull IDrawCommandBuffer[] draw) {
         GlStateManager.disableAlpha();
 
-        for (IDrawCommandBuffer buffer : draw) {
-            buffer.draw();
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        for (int level = 0; level < draw.length; level++) {
+            glStencilFunc(GL_LEQUAL, level, 0x7F);
+            draw[level].draw();
         }
 
         GlStateManager.enableAlpha();
@@ -83,8 +97,10 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
         GlStateManager.disableCull();
 
-        for (IDrawCommandBuffer buffer : draw) {
-            buffer.draw();
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        for (int level = 0; level < draw.length; level++) {
+            glStencilFunc(GL_LEQUAL, level, 0x7F);
+            draw[level].draw();
         }
 
         GlStateManager.enableCull();
@@ -92,26 +108,19 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
     }
 
     default void renderTransparent(@NonNull IDrawCommandBuffer[] draw) {
-        glEnable(GL_STENCIL_TEST);
-
         this.renderTransparentStencilPass(draw);
         this.renderTransparentFragmentPass(draw);
-
-        glDisable(GL_STENCIL_TEST);
     }
 
     default void renderTransparentStencilPass(@NonNull IDrawCommandBuffer[] draw) {
         GlStateManager.colorMask(false, false, false, false);
 
-        GlStateManager.clear(GL_STENCIL_BUFFER_BIT);
-        glStencilMask(0xFF);
-        glStencilFunc(GL_ALWAYS, 1, 0xFF); //always allow all fragments
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
         GlStateManager.depthMask(false);
 
-        for (IDrawCommandBuffer buffer : draw) {
-            buffer.draw();
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        for (int level = 0; level < draw.length; level++) {
+            glStencilFunc(GL_GEQUAL, 0x80 | (draw.length - level), 0xFF);
+            draw[level].draw();
         }
 
         GlStateManager.depthMask(true);
@@ -125,11 +134,11 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         GlStateManager.alphaFunc(GL_GREATER, 0.1f);
 
         glStencilMask(0);
-        glStencilFunc(GL_EQUAL, 1, 0xFF);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-        for (IDrawCommandBuffer buffer : draw) {
-            buffer.draw();
+        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+        for (int level = 0; level < draw.length; level++) {
+            glStencilFunc(GL_EQUAL, 0x80 | (draw.length - level), 0xFF);
+            draw[level].draw();
         }
 
         GlStateManager.disableBlend();
