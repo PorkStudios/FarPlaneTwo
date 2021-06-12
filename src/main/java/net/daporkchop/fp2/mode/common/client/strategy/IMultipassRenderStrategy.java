@@ -22,6 +22,8 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
+import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
@@ -31,6 +33,8 @@ import net.minecraft.client.renderer.texture.TextureMap;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.debug.FP2Debug.*;
+import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -70,6 +74,10 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
     void drawTile(@NonNull IDrawCommandBuffer[][] passes, long tile);
 
     default void preRender() {
+        if (FP2_DEBUG && FP2Config.debug.disableBackfaceCull) {
+            GlStateManager.disableCull();
+        }
+
         glEnable(GL_STENCIL_TEST);
 
         glStencilMask(0xFF);
@@ -79,6 +87,10 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
 
     default void postRender() {
         glDisable(GL_STENCIL_TEST);
+
+        if (FP2_DEBUG && FP2Config.debug.disableBackfaceCull) {
+            GlStateManager.enableCull();
+        }
     }
 
     default void renderSolid(@NonNull IDrawCommandBuffer[] draw) {
@@ -95,7 +107,6 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
 
     default void renderCutout(@NonNull IDrawCommandBuffer[] draw) {
         mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
-        GlStateManager.disableCull();
 
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         for (int level = 0; level < draw.length; level++) {
@@ -103,7 +114,6 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
             draw[level].draw();
         }
 
-        GlStateManager.enableCull();
         mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
     }
 

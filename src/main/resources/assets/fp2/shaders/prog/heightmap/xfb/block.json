@@ -3,7 +3,6 @@
     "common.glsl",
     "vert/common.vert",
     "vert/fog.vert",
-    "vert/heightmap/terrain.vert",
     "vert/heightmap/heightmap.vert"
   ],
   "geom": [

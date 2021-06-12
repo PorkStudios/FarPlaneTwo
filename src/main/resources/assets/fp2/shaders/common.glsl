@@ -24,10 +24,18 @@
 //
 //
 
-#define LAYER_SOLID (1 << 0)
-#define LAYER_CUTOUT_MIPPED (1 << 1)
-#define LAYER_CUTOUT (1 << 2)
-#define LAYER_TRANSLUCENT (1 << 3)
+//colors terrain based on its distance to the camera
+//#define USE_DEBUG_COLORS_DISTANCE
+
+//colors terrain based on its tile position
+//#define USE_DEBUG_COLORS_POSITIONS
+
+//colors terrain based on its face normal vector
+//#define USE_DEBUG_COLORS_FACE_NORMAL
+
+#if defined(USE_DEBUG_COLORS_DISTANCE) || defined(USE_DEBUG_COLORS_POSITIONS) || defined(USE_DEBUG_COLORS_FACE_NORMAL)
+#define USE_DEBUG_COLORS
+#endif
 
 #define FOG_LINEAR (9729)
 #define FOG_EXP (2048)
@@ -47,8 +55,7 @@
 //OpenGL state
 
 struct GlCamera {
-    mat4 projection;
-    mat4 modelview;
+    mat4 modelviewprojection;
 
     vec4 anti_flicker_offset;
 
@@ -137,7 +144,7 @@ vec4 fromRGB(int rgb)   {
 // vertex transformation
 
 vec4 cameraTransform(vec4 point) {
-    return glState.camera.projection * glState.camera.modelview * point;
+    return glState.camera.modelviewprojection * point;
 }
 
 vec4 cameraTransform(vec3 point)   {
@@ -147,25 +154,42 @@ vec4 cameraTransform(vec3 point)   {
 // lighting
 
 float diffuseLight(vec3 normal) {
-    return min(normal.x * normal.x * .6 + normal.y * normal.y * ((3. + normal.y) / 4.) + normal.z * normal.z * .8, 1.);
+    //compute all component values in parallel (possibly more likely to be vectorized better)
+    vec3 values = (normal * normal) * (normal * vec3(0., .25, 0.) + vec3(.6, .75, .8));
+
+    //add them together and prevent them from getting too high
+    return min(values.x + values.y + values.z, 1.);
+
+    // equivalent code:
+    //return min(normal.x * normal.x * .6 + normal.y * normal.y * ((3. + normal.y) / 4.) + normal.z * normal.z * .8, 1.);
 }
 
 // vector math
 
 int normalToFaceIndex(vec3 normal)  {
-    //TODO: make this branchless
     vec3 n = abs(normal);
-    if (n.y > n.x && n.y > n.z)  {
+
+    //component-wise mask. one lane is set (the lane whose component has the greatest absolute value)
+    ivec3 axisMask = -ivec3(greaterThan(n, max(n.yxx, n.zzy)));
+
+    //components set to 0 if the corresponding component in the normal vector is negative, 1 otherwise
+    ivec3 positive = ivec3(greaterThanEqual(normal, vec3(0.)));
+
+    //the base offset to apply per component
+    const ivec3 base = ivec3(4, 0, 2);
+
+    //contains the final output value for each component, or 0 if the component isn't the greatest
+    ivec3 values = (base + positive) & axisMask;
+
+    //the maximum component value will be the only one that wasn't masked to zero
+    return max(values.x, max(values.y, values.z));
+
+    // equivalent code:
+    /*if (n.y > n.x && n.y > n.z)  {
         return normal.y < 0. ? 0 : 1;
     } else if (n.z > n.x && n.z > n.y) {
         return normal.z < 0. ? 2 : 3;
     } else {
         return normal.x < 0. ? 4 : 5;
-    }
-}
-
-// general math
-
-vec2 lerp(vec2 a, vec2 b, vec2 t)   {
-    return a + (b - a) * t;
+    }*/
 }

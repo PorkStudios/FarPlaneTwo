@@ -22,6 +22,7 @@ package net.daporkchop.fp2.client;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.util.DirectBufferReuse;
 import net.daporkchop.lib.common.math.PMath;
@@ -63,12 +64,8 @@ public class ShaderGlStateHelper {
         { //camera
             long addr = ADDR_CAMERA;
 
-            //mat4 projection
-            glGetFloat(GL_PROJECTION_MATRIX, DirectBufferReuse.wrapFloat(addr, MAT4_ELEMENTS));
-            addr += MAT4_SIZE;
-
-            //mat4 modelview
-            glGetFloat(GL_MODELVIEW_MATRIX, DirectBufferReuse.wrapFloat(addr, MAT4_ELEMENTS));
+            //mat4 modelviewprojection
+            MatrixHelper.getModelViewProjectionMatrix(addr);
             addr += MAT4_SIZE;
 
             //vec4 anti_flicker_offset

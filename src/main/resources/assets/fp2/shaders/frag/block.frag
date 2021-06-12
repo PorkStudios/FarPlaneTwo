@@ -18,23 +18,23 @@
  *
  */
 
-//makes the fragment color be the normal vector
-//#define BLOCK_FRAG_DEBUG_COLOR_NORMALS
-
 void main() {
     vec3 normal = normalVector();
 
-#ifndef BLOCK_FRAG_DEBUG_COLOR_NORMALS
+    vec4 frag_color;
+#if defined(USE_DEBUG_COLORS_FACE_NORMAL)
+    frag_color = vec4(normal * normal, 1.);
+#elif defined(USE_DEBUG_COLORS)
+    frag_color = vec4(fs_in.color * diffuseLight(normal), 1.);
+#else
     //initial block texture sample
-    vec4 frag_color = sampleTerrain(normal);
+    frag_color = sampleTerrain(normal);
 
     //block/sky light
     frag_color *= texture(lightmap_texture, fs_in.light);
 
     //shading
     frag_color.rgb *= diffuseLight(normal);
-#else
-    vec4 frag_color = vec4(normal * normal, 1.);
 #endif
 
     //fog

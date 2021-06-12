@@ -40,3 +40,49 @@ out VS_OUT {
     flat vec3 base_pos;
     flat int state;
 } vs_out;
+
+//
+//
+// CONSTANTS
+//
+//
+
+#if defined(USE_DEBUG_COLORS_DISTANCE)
+const vec3[][3] DEBUG_COLORS_DISTANCE = vec3[][](
+vec3[3](vec3(0., 1., 0.), vec3(1., 1., 0.), vec3(1., 0., 0.)),
+vec3[3](vec3(0., 0., 1.), vec3(1., 0., 1.), vec3(0., 1., 1.)),
+vec3[3](vec3(0.), vec3(.5), vec3(1.))
+);
+#endif
+
+#if defined(USE_DEBUG_COLORS_POSITIONS)
+const vec3[16] DEBUG_COLORS_POSITIONS = vec3[](
+vec3(0., 1., 0.), vec3(1., 1., 0.), vec3(1., 0., 0.), vec3(0., 0., 1.),
+vec3(1., 0., 1.), vec3(0., 1., 1.), vec3(.5), vec3(1.),
+vec3(.5, 1., 0.), vec3(0., 1., .5), vec3(1., .5, 0.), vec3(1., 0., .5),
+vec3(0., .5, 1.), vec3(.5, 0., 1.), vec3(5., 1., .5), vec3(5., 1., .5)
+);
+#endif
+
+//
+//
+// UTILITIES
+//
+//
+
+vec3 computeVertexColor(vec3 va_color, float start, float end, float depth) {
+#if defined(USE_DEBUG_COLORS_DISTANCE)
+    if (depth < start) {
+        return DEBUG_COLORS_DISTANCE[tile_position.w][0];
+    } else if (depth > end) {
+        return DEBUG_COLORS_DISTANCE[tile_position.w][2];
+    } else {
+        return DEBUG_COLORS_DISTANCE[tile_position.w][1];
+    }
+#elif defined(USE_DEBUG_COLORS_POSITIONS)
+    ivec4 i = (tile_position & 1) << ivec4(3, 2, 1, 0);
+    return DEBUG_COLORS_POSITIONS[(i.x | i.y) | (i.z | i.w)];
+#else
+    return va_color;
+#endif
+}
