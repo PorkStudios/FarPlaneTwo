@@ -24,10 +24,18 @@
 //
 //
 
-#define LAYER_SOLID (1 << 0)
-#define LAYER_CUTOUT_MIPPED (1 << 1)
-#define LAYER_CUTOUT (1 << 2)
-#define LAYER_TRANSLUCENT (1 << 3)
+//colors terrain based on its distance to the camera
+//#define USE_DEBUG_COLORS_DISTANCE
+
+//colors terrain based on its tile position
+//#define USE_DEBUG_COLORS_POSITIONS
+
+//colors terrain based on its face normal vector
+//#define USE_DEBUG_COLORS_FACE_NORMAL
+
+#if defined(USE_DEBUG_COLORS_DISTANCE) || defined(USE_DEBUG_COLORS_POSITIONS) || defined(USE_DEBUG_COLORS_FACE_NORMAL)
+#define USE_DEBUG_COLORS
+#endif
 
 #define FOG_LINEAR (9729)
 #define FOG_EXP (2048)

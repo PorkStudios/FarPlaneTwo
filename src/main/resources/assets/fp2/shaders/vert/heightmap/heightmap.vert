@@ -18,22 +18,45 @@
  *
  */
 
-//#define DEBUG_DISTANCES
+//
+//
+// VERTEX ATTRIBUTES
+//
+//
 
-#ifdef DEBUG_DISTANCES
-const vec3[][3] DEBUG_DISTANCE_COLORS = vec3[][](
-vec3[3](vec3(0., 1., 0.), vec3(1., 1., 0.), vec3(1., 0., 0.)),
-vec3[3](vec3(0., 0., 1.), vec3(1., 0., 1.), vec3(0., 1., 1.)),
-vec3[3](vec3(0.), vec3(.5), vec3(1.))
-);
-#endif
+layout(location = 1) in int in_state;
+layout(location = 2) in vec2 in_light;
+layout(location = 3) in vec3 in_color;
+
+layout(location = 4) in ivec2 in_pos_low;
+layout(location = 5) in int in_height_int_low;
+layout(location = 6) in float in_height_frac_low;
+
+layout(location = 7) in ivec2 in_pos_high;
+layout(location = 8) in int in_height_int_high;
+layout(location = 9) in float in_height_frac_high;
+
+ivec3 getLowOffsetPre(int level) {
+    return ivec3(in_pos_low.x << level, in_height_int_low, in_pos_low.y << level);
+}
+
+vec3 getLowOffsetPost() {
+    return vec3(0., in_height_frac_low / 256., 0.);
+}
+
+ivec3 getHighOffsetPre(int level) {
+    return ivec3(in_pos_high.x << level, in_height_int_high, in_pos_high.y << level);
+}
+
+vec3 getHighOffsetPost() {
+    return vec3(0., in_height_frac_high / 256., 0.);
+}
 
 void main() {
     //convert position to vec3 afterwards to minimize precision loss
     ivec3 relative_tile_position = (tile_position.xyz << tile_position.w << T_SHIFT) - glState.camera.position_floor;
     vec3 relativePos = vec3(relative_tile_position + getLowOffsetPre(tile_position.w)) + getLowOffsetPost() - glState.camera.position_fract;
 
-#ifdef USE_LOD
     //LoD blending should only be done in 2D for heightmap mode to avoid seams
     float depth = length(relativePos.xz);
 
@@ -44,17 +67,6 @@ void main() {
 
     vec3 relativePos_high = vec3(relative_tile_position + getHighOffsetPre(tile_position.w)) + getHighOffsetPost() - glState.camera.position_fract;
     relativePos = mix(relativePos_high, relativePos, clamp((end - depth) / (end - start), 0., 1.));
-
-#ifdef DEBUG_DISTANCES
-    if (depth < start) {
-        vs_out.color = DEBUG_DISTANCE_COLORS[tile_position.w][0];
-    } else if (depth > end) {
-        vs_out.color = DEBUG_DISTANCE_COLORS[tile_position.w][2];
-    } else {
-        vs_out.color = DEBUG_DISTANCE_COLORS[tile_position.w][1];
-    }
-#endif
-#endif
 
     //set fog depth based on vertex distance to camera
     fog_out.depth = length(relativePos);
@@ -68,7 +80,5 @@ void main() {
     //copy trivial attributes
     vs_out.light = in_light;
     vs_out.state = in_state;
-#ifndef DEBUG_DISTANCES
-    vs_out.color = in_color;
-#endif
+    vs_out.color = computeVertexColor(in_color.rgb, start, end, depth);
 }

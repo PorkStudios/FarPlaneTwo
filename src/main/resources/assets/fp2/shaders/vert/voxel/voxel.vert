@@ -18,16 +18,6 @@
  *
  */
 
-//#define DEBUG_DISTANCES
-
-#ifdef DEBUG_DISTANCES
-const vec3[][3] DEBUG_DISTANCE_COLORS = vec3[][](
-vec3[3](vec3(0., 1., 0.), vec3(1., 1., 0.), vec3(1., 0., 0.)),
-vec3[3](vec3(0., 0., 1.), vec3(1., 0., 1.), vec3(0., 1., 1.)),
-vec3[3](vec3(0.), vec3(.5), vec3(1.))
-);
-#endif
-
 //
 //
 // VERTEX ATTRIBUTES
@@ -59,16 +49,6 @@ void main() {
     vec3 relativePos_high = vec3(relative_tile_position) + in_pos_high.xyz * float(1 << tile_position.w) / 8. - glState.camera.position_fract;
     relativePos = mix(relativePos_high, relativePos, clamp((end - depth) / (end - start), 0., 1.));
 
-#ifdef DEBUG_DISTANCES
-    if (depth < start) {
-        vs_out.color = DEBUG_DISTANCE_COLORS[tile_position.w][0];
-    } else if (depth > end) {
-        vs_out.color = DEBUG_DISTANCE_COLORS[tile_position.w][2];
-    } else {
-        vs_out.color = DEBUG_DISTANCE_COLORS[tile_position.w][1];
-    }
-#endif
-
     //vertex position is detail mixed
     gl_Position = cameraTransform(relativePos) + glState.camera.anti_flicker_offset * vec4(31. - float(tile_position.w));
 
@@ -78,7 +58,5 @@ void main() {
     //copy trivial attributes
     vs_out.light = in_light;
     vs_out.state = in_state;
-#ifndef DEBUG_DISTANCES
-    vs_out.color = in_color.rgb;
-#endif
+    vs_out.color = computeVertexColor(in_color.rgb, start, end, depth);
 }
