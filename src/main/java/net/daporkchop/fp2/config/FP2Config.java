@@ -277,5 +277,11 @@ public class FP2Config {
         })
         @Config.LangKey("config.fp2.debug.skipLevel0")
         public boolean skipLevel0 = false;
+
+        @Config.Comment({
+                "If true, backface culling will be disabled."
+        })
+        @Config.LangKey("config.fp2.debug.disableBackfaceCull")
+        public boolean disableBackfaceCull = false;
     }
 }
