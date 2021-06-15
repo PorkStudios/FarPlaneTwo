@@ -28,7 +28,6 @@ import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.mode.voxel.server.gen.AbstractVoxelGenerator;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
 import net.minecraft.block.state.IBlockState;
@@ -43,13 +42,13 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public class CWGVoxelGenerator extends AbstractVoxelGenerator<CWGContext> implements IFarGeneratorRough<VoxelPos, VoxelTile> {
+public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> implements IFarGeneratorRough<VoxelPos, VoxelTile> {
     protected final Ref<CWGContext> ctx;
 
     public CWGVoxelGenerator(@NonNull WorldServer world) {
         super(world);
 
-        this.ctx = ThreadRef.soft(() -> new CWGContext(world, DMAP_SIZE, 2));
+        this.ctx = ThreadRef.soft(() -> new CWGContext(world, CACHE_SIZE, 2));
     }
 
     @Override
@@ -60,22 +59,22 @@ public class CWGVoxelGenerator extends AbstractVoxelGenerator<CWGContext> implem
         int baseZ = pos.blockZ();
 
         CWGContext ctx = this.ctx.get();
-        ctx.init(baseX + (DMAP_MIN << level), baseZ + (DMAP_MIN << level), level);
-        double[][] densityMap = DMAP_CACHE.get();
+        ctx.init(baseX + (CACHE_MIN << level), baseZ + (CACHE_MIN << level), level);
+        double[][] densityMap = this.densityMapCache.get();
 
         //water
         double scaleFactor = 1.0d / (1 << level);
-        for (int x = DMAP_MIN; x < DMAP_MAX; x++) {
-            for (int y = DMAP_MIN; y < DMAP_MAX; y++) {
-                Arrays.fill(densityMap[0], densityIndex(x, y, DMAP_MIN), densityIndex(x, y, DMAP_MAX), ((baseY + (y << level)) - (this.seaLevel - 1)) * scaleFactor);
+        for (int x = CACHE_MIN; x < CACHE_MAX; x++) {
+            for (int y = CACHE_MIN; y < CACHE_MAX; y++) {
+                Arrays.fill(densityMap[0], cacheIndex(x, y, CACHE_MIN), cacheIndex(x, y, CACHE_MAX), ((this.seaLevel - 0.125d) - (baseY + (y << level))) * scaleFactor);
             }
         }
 
         //blocks
-        ctx.get3d(densityMap[1], baseY + (DMAP_MIN << level));
+        ctx.get3d(densityMap[1], baseY + (CACHE_MIN << level));
 
         //actually create the mesh (using dual contouring)
-        this.buildMesh(baseX, baseY, baseZ, level, tile, densityMap, ctx);
+        this.dualContour(baseX, baseY, baseZ, level, tile, densityMap, ctx);
     }
 
     @Override

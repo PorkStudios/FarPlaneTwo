@@ -28,7 +28,10 @@ import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.mode.voxel.server.gen.AbstractVoxelGenerator;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.lib.common.ref.Ref;
+import net.daporkchop.lib.common.ref.ThreadRef;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 
@@ -36,13 +39,48 @@ import static java.lang.Math.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.util.math.MathUtil.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator implements IFarGeneratorExact<VoxelPos, VoxelTile> {
+public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator implements IFarGeneratorExact<VoxelPos, VoxelTile> {
+    protected final Ref<int[]> stateMapCache = ThreadRef.soft(() -> new int[cb(CACHE_SIZE)]);
+
     public AbstractExactVoxelGenerator(@NonNull WorldServer world) {
         super(world);
+    }
+
+    protected int[] populateStateMapFromWorld(@NonNull IBlockHeightAccess world, int baseX, int baseY, int baseZ) {
+        int[] stateMap = this.stateMapCache.get();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
+        //range check here to allow JIT to avoid range checking inside the loop
+        checkArg(stateMap.length >= cb(CACHE_SIZE));
+
+        for (int i = 0, dx = CACHE_MIN; dx < CACHE_MAX; dx++) { //set each type flag depending on the block state at the corresponding position
+            for (int dy = CACHE_MIN; dy < CACHE_MAX; dy++) {
+                for (int dz = CACHE_MIN; dz < CACHE_MAX; dz++, i++) {
+                    stateMap[i] = FastRegistry.getId(world.getBlockState(pos.setPos(baseX + dx, baseY + dy, baseZ + dz)));
+                }
+            }
+        }
+
+        return stateMap;
+    }
+
+    protected byte[] populateTypeMapFromStateMap(@NonNull int[] stateMap) {
+        byte[] typeMap = this.typeMapCache.get();
+
+        //range check here to allow JIT to avoid range checking inside the loop
+        checkArg(typeMap.length >= cb(CACHE_SIZE) && stateMap.length >= cb(CACHE_SIZE));
+
+        for (int i = 0; i < cb(CACHE_SIZE); i++) { //set each type flag depending on the block state at the corresponding position
+            typeMap[i] = (byte) blockType(stateMap[i]);
+        }
+
+        return typeMap;
     }
 
     @Override
@@ -50,6 +88,10 @@ public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator i
         final int baseX = posIn.blockX();
         final int baseY = posIn.blockY();
         final int baseZ = posIn.blockZ();
+
+        int[] stateMap = this.populateStateMapFromWorld(world, baseX, baseY, baseZ);
+        //use bit flags to identify voxel types rather than reading from the world each time to keep innermost loop head tight and cache-friendly
+        byte[] CACHE = this.populateTypeMapFromStateMap(stateMap);
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         VoxelData data = new VoxelData();
@@ -60,11 +102,8 @@ public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator i
             for (int dy = 0; dy < T_VOXELS; dy++) {
                 for (int dz = 0; dz < T_VOXELS; dz++) {
                     int corners = 0;
-                    for (int i = 0; i < 8; i++) {
-                        int x = baseX + dx + ((i >> 2) & 1);
-                        int y = baseY + dy + ((i >> 1) & 1);
-                        int z = baseZ + dz + (i & 1);
-                        corners |= blockType(world.getBlockState(pos.setPos(x, y, z))) << (i << 1);
+                    for (int ciCache = cacheIndex(dx, dy, dz), i = 0; i < 8; i++) {
+                        corners |= (CACHE[ciCache + CACHE_INDEX_ADD[i]] & 0xFF) << (i << 1);
                     }
 
                     if (corners == 0 || corners == 0x5555 || corners == 0xAAAA) { //if all corners are the same type, this voxel can be safely skipped
@@ -72,7 +111,6 @@ public abstract class AbstractExactVoxelGenerator extends AbstractFarGenerator i
                     }
 
                     int edges = 0;
-
                     for (int edge = 0; edge < EDGE_COUNT; edge++) {
                         int c0 = EDGE_VERTEX_MAP[edge << 1] << 1;
                         int c1 = EDGE_VERTEX_MAP[(edge << 1) | 1] << 1;
