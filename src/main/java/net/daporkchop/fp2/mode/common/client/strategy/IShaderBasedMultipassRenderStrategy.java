@@ -31,16 +31,16 @@ import net.daporkchop.fp2.mode.api.IFarTile;
  */
 public interface IShaderBasedMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile> extends IMultipassRenderStrategy<POS, T> {
     @Override
-    default void renderSolid(@NonNull IDrawCommandBuffer[] draw) {
+    default void renderSolid(@NonNull IDrawCommandBuffer draw, int level) {
         try (ShaderProgram program = this.blockShader().use()) {
-            IMultipassRenderStrategy.super.renderSolid(draw);
+            IMultipassRenderStrategy.super.renderSolid(draw, level);
         }
     }
 
     @Override
-    default void renderCutout(@NonNull IDrawCommandBuffer[] draw) {
+    default void renderCutout(@NonNull IDrawCommandBuffer draw, int level) {
         try (ShaderProgram program = this.blockShader().use()) {
-            IMultipassRenderStrategy.super.renderCutout(draw);
+            IMultipassRenderStrategy.super.renderCutout(draw, level);
         }
     }
 

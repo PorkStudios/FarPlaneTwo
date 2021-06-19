@@ -28,6 +28,7 @@ import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.util.math.geometry.Cylinder;
+import net.daporkchop.fp2.util.math.geometry.Uncylinder;
 import net.daporkchop.fp2.util.math.geometry.Volume;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
@@ -51,8 +52,9 @@ public abstract class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos
         Entity entity = mc.getRenderViewEntity();
         double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
         double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
+
         for (int i = 0; i < ranges.length; i++) {
-            ranges[i] = new Cylinder(x, z, (FP2Config.levelCutoffDistance + (T_VOXELS * 3)) << i);
+            ranges[i] = new Uncylinder(x, z, (FP2Config.levelCutoffDistance - T_VOXELS * 2) << (i - 1));
         }
         return ranges;
     }

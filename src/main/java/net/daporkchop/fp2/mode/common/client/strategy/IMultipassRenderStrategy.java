@@ -23,9 +23,9 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.common.client.FarRenderTree;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.renderer.GlStateManager;
@@ -33,7 +33,6 @@ import net.minecraft.client.renderer.texture.TextureMap;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -93,26 +92,42 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         }
     }
 
-    default void renderSolid(@NonNull IDrawCommandBuffer[] draw) {
+    default void render() {
+        this.preRender();
+
+        //in order to properly render overlapping layers while ensuring that low-detail levels always get placed on top of high-detail ones, we'll need to do the following:
+        //- for each detail level:
+        //  - render both the SOLID and CUTOUT passes at once, using the stencil to ensure that previously rendered SOLID and CUTOUT terrain at higher detail levels is left untouched
+        //- render the TRANSPARENT pass at all detail levels at once, using the stencil to not only prevent low-detail from rendering over high-detail, but also fp2 transparent water
+        //  from rendering over vanilla water
+
+        IDrawCommandBuffer[][] passes = this.passes();
+        for (int level = 0; level < FarRenderTree.DEPTH; level++) {
+            this.renderSolid(passes[0][level], level);
+            this.renderCutout(passes[1][level], level);
+        }
+
+        this.renderTransparent(passes[2]);
+
+        this.postRender();
+    }
+
+    default void renderSolid(@NonNull IDrawCommandBuffer draw, int level) {
         GlStateManager.disableAlpha();
 
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        for (int level = 0; level < draw.length; level++) {
-            glStencilFunc(GL_LEQUAL, level, 0x7F);
-            draw[level].draw();
-        }
+        glStencilFunc(GL_LEQUAL, level, 0x7F);
+        draw.draw();
 
         GlStateManager.enableAlpha();
     }
 
-    default void renderCutout(@NonNull IDrawCommandBuffer[] draw) {
+    default void renderCutout(@NonNull IDrawCommandBuffer draw, int level) {
         mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
 
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        for (int level = 0; level < draw.length; level++) {
-            glStencilFunc(GL_LEQUAL, level, 0x7F);
-            draw[level].draw();
-        }
+        glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
+        glStencilFunc(GL_LEQUAL, level, 0x7F);
+        draw.draw();
 
         mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
     }

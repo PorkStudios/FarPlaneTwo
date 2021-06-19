@@ -27,7 +27,7 @@ import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.util.math.geometry.Sphere;
+import net.daporkchop.fp2.util.math.geometry.Unsphere;
 import net.daporkchop.fp2.util.math.geometry.Volume;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
@@ -49,8 +49,9 @@ public abstract class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelT
         double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
         double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks;
         double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
+
         for (int i = 0; i < ranges.length; i++) {
-            ranges[i] = new Sphere(x, y, z, (FP2Config.levelCutoffDistance + (T_VOXELS * 4)) << i);
+            ranges[i] = new Unsphere(x, y, z, (FP2Config.levelCutoffDistance - T_VOXELS * 2) << (i - 1));
         }
         return ranges;
     }

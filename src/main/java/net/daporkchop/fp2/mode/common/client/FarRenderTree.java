@@ -69,7 +69,6 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      *   byte flags;
      *   - 0x00: data //whether or not this node has been rendered and contains data
      *   - 0x01: empty //whether or not this node has been rendered, but contains no data
-     *   - 0x02: render_parent //whether or not the parent tile may be rendered on top of this one
      *   Tile tile;
      *   Node* children[1 << D];
      * };
@@ -82,7 +81,6 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
 
     public static final int FLAG_DATA = 1 << 0;
     public static final int FLAG_EMPTY = 1 << 1;
-    public static final int FLAG_RENDER_PARENT = 1 << 2;
 
     // begin field offsets
 
@@ -263,10 +261,6 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
             PUnsafe.copyMemory(output.renderData, node + this.tile_renderData, output.size);
 
             this.setFlags(node, FLAG_DATA);
-
-            if (output.forceRenderParent) {
-                this.setFlags(node, FLAG_RENDER_PARENT);
-            }
         } else { //new render data is empty
             this.setFlags(node, FLAG_EMPTY);
         }
@@ -359,11 +353,6 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         if (level == 0 && this.checkFlagsOR(node, FLAG_EMPTY)) { //TODO: remove "level == 0 && "
             //this tile is baked and empty, so we can be sure that none of its children will be non-empty and there's no reason to recurse any further
             return true;
-        } else if (level < this.maxLevel //don't do range checking for the top level, as it will cause a bunch of tiles to be loaded but never rendered
-                   && !this.directPosAccess.intersects(node + this.tile_pos, ranges[level])) {
-            //the view range for this level doesn't intersect this tile's bounding box,
-            // so we can be certain that neither this tile nor any of its children would be contained
-            return false;
         } else if (level < DEPTH //don't do frustum culling on the root node, as it doesn't have a valid position because it's not really "there"
                    && !this.directPosAccess.inFrustum(node + this.tile_pos, frustum)) {
             //the frustum doesn't contain this tile's bounding box, so we can be certain that neither
@@ -372,68 +361,41 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         } else if (level == 0 && this.directPosAccess.isVanillaRenderable(node + this.tile_pos)) {
             //the node will be rendered by vanilla, so we don't want to draw over it
             return true;
-        } else if (!this.checkFlagsOR(node, FLAG_DATA | FLAG_EMPTY)) { //this node has no data
-            //try to select as many children as possible, but only return true if all of them were successful
-            boolean allSuccess = true;
-            for (long addr = node + this.children, lastChildAddr = addr + ((long) LONG_SIZE << this.d); addr != lastChildAddr; addr += LONG_SIZE) {
-                long child = PUnsafe.getLong(addr);
-                allSuccess &= child != 0L //check if child is set
-                              && this.select0(level - 1, child, ranges, frustum, index);
-            }
-            return allSuccess;
         }
 
-        //at this point we know that the tile has some data and is selectable
+        if (level != 0 //level-0 tiles will never have any children
+            && this.hasAnyChildren(node) //no need to consider selecting children if the tile has no children
+            && (level > this.maxLevel || this.directPosAccess.intersects(node + this.tile_pos, ranges[level - 1]))) { //no need to consider selecting children if the tile is
+            // too high, or doesn't intersect the lower zoom's selection volume
 
-        CHILDREN:
-        if (level != 0 && this.hasAnyChildren(node) && this.directPosAccess.containedBy(node + this.tile_pos, ranges[level - 1])) {
-            //this tile is entirely within the view distance of the lower zoom level for tiles below it, so let's consider selecting them as well
-            //if all children are selectable, select all of them
-            //otherwise (if only some/none of the children are selectable) we ignore all of the children and only output the current tile. the better
-            // solution to this problem would be to have some mechanism to allow rendering a certain part of a tile, but the memory overhead required
-            // to do so would be atrocious.
+            //this tile has some children and intersects the selection volume for the lower zoom level, so we'll attempt to select
+            // as many children as possible
 
             long firstChildAddr = node + this.children;
             long lastChildAddr = firstChildAddr + ((long) LONG_SIZE << this.d);
 
-            //first pass to simply check for any null children before recursing into any of them
-            for (long addr = firstChildAddr; addr != lastChildAddr; addr += LONG_SIZE) {
-                if (PUnsafe.getLong(addr) == 0L) {
-                    break CHILDREN;
-                }
-            }
-
-            boolean shouldRenderSelf = false;
-
-            int mark = index.mark();
             for (long addr = firstChildAddr; addr != lastChildAddr; addr += LONG_SIZE) {
                 long child = PUnsafe.getLong(addr);
-                if (!this.select0(level - 1, child, ranges, frustum, index)) {
-                    //if any one of the children cannot be added, abort and add this tile over the whole area instead
-                    index.restore(mark);
-                    break CHILDREN;
+                if (child != 0L) {
+                    this.select0(level - 1, child, ranges, frustum, index);
                 }
-
-                shouldRenderSelf |= this.checkFlagsOR(child, FLAG_RENDER_PARENT);
             }
 
-            //all of the children were able to be added
-
-            if (!shouldRenderSelf //unless explicitly requested, we shouldn't be rendering ourself over a high-res tile
-                || this.directPosAccess.containedBy(node + this.tile_pos, ranges[level - 1].shrink(T_VOXELS << level))) {
-                return true;
-            }
+            //don't return true because we want to allow the tiles to overlap
+            //return true;
         }
 
         if (FP2_DEBUG && FP2Config.debug.skipLevel0 && level == 0) {
-            return false;
+            return true;
         }
 
-        if (this.checkFlagsOR(node, FLAG_DATA)) {
+        if (this.checkFlagsOR(node, FLAG_DATA) && this.directPosAccess.intersects(node + this.tile_pos, ranges[level])) {
             //actually append node to render list
             index.push(node + this.tile);
+            return true;
         }
-        return true;
+
+        return false;
     }
 
     @Override
