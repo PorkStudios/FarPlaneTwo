@@ -271,11 +271,9 @@ public class VoxelBake {
         ATTRIB_LIGHT.set(vertices, vertexBase, blockLight | (blockLight << 4), skyLight | (skyLight << 4));
         ATTRIB_COLOR.setRGB(vertices, vertexBase, mc.getBlockColors().colorMultiplier(state, biomeAccess, pos, 0));
 
-        int offset = level == 0 ? POS_ONE >> 1 : 0;
-
-        int lowX = (x << POS_FRACT_SHIFT) + data.x + offset;
-        int lowY = (y << POS_FRACT_SHIFT) + data.y + offset;
-        int lowZ = (z << POS_FRACT_SHIFT) + data.z + offset;
+        int lowX = (x << POS_FRACT_SHIFT) + data.x;
+        int lowY = (y << POS_FRACT_SHIFT) + data.y;
+        int lowZ = (z << POS_FRACT_SHIFT) + data.z;
 
         int posHigh = octree.nearestNeighbor(lowX, lowY, lowZ);
         if (posHigh < 0) {
