@@ -21,11 +21,10 @@
 package net.daporkchop.fp2.util;
 
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.minecraft.block.state.IBlockState;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-
-import java.util.Objects;
 
 /**
  * @author DaPorkchop_
@@ -52,6 +51,16 @@ public class BlockType {
             RENDER_TYPE_CUTOUT, //CUTOUT,
             RENDER_TYPE_TRANSLUCENT, //TRANSLUCENT
     };
+
+    /**
+     * Gets the given {@link IBlockState}'s block type.
+     *
+     * @param stateId the block state ID
+     * @return the block type
+     */
+    public int blockType(int stateId) {
+        return blockType(FastRegistry.getBlockState(stateId));
+    }
 
     /**
      * Gets the given {@link IBlockState}'s block type.
