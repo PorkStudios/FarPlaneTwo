@@ -28,28 +28,16 @@ layout(location = 1) in int in_state;
 layout(location = 2) in vec2 in_light;
 layout(location = 3) in vec3 in_color;
 
-layout(location = 4) in ivec2 in_pos_low;
-layout(location = 5) in int in_height_int_low;
-layout(location = 6) in float in_height_frac_low;
-
-layout(location = 7) in ivec2 in_pos_high;
-layout(location = 8) in int in_height_int_high;
-layout(location = 9) in float in_height_frac_high;
+layout(location = 4) in ivec2 in_pos_horiz;
+layout(location = 5) in int in_height_int;
+layout(location = 6) in float in_height_frac;
 
 ivec3 getLowOffsetPre(int level) {
-    return ivec3(in_pos_low.x << level, in_height_int_low, in_pos_low.y << level);
+    return ivec3(in_pos_horiz.x << level, in_height_int, in_pos_horiz.y << level);
 }
 
 vec3 getLowOffsetPost() {
-    return vec3(0., in_height_frac_low / 256., 0.);
-}
-
-ivec3 getHighOffsetPre(int level) {
-    return ivec3(in_pos_high.x << level, in_height_int_high, in_pos_high.y << level);
-}
-
-vec3 getHighOffsetPost() {
-    return vec3(0., in_height_frac_high / 256., 0.);
+    return vec3(0., in_height_frac / 256., 0.);
 }
 
 void main() {
@@ -57,19 +45,9 @@ void main() {
     ivec3 relative_tile_position = (tile_position.xyz << tile_position.w << T_SHIFT) - glState.camera.position_floor;
     vec3 relativePos = vec3(relative_tile_position + getLowOffsetPre(tile_position.w)) + getLowOffsetPost() - glState.camera.position_fract;
 
-    //LoD blending should only be done in 2D for heightmap mode to avoid seams
-    float depth = length(relativePos.xz);
-
-    //mix low and high vertex positions based on depth
-    float cutoff_scale = float(fp2_state.view.levelCutoffDistance << tile_position.w);
-    float start = cutoff_scale * fp2_state.view.transitionStart;
-    float end = cutoff_scale * fp2_state.view.transitionEnd;
-
-    vec3 relativePos_high = vec3(relative_tile_position + getHighOffsetPre(tile_position.w)) + getHighOffsetPost() - glState.camera.position_fract;
-    relativePos = mix(relativePos_high, relativePos, clamp((end - depth) / (end - start), 0., 1.));
-
     //set fog depth based on vertex distance to camera
-    fog_out.depth = length(relativePos);
+    float depth = length(relativePos);
+    fog_out.depth = depth;
 
     //vertex position is detail mixed
     gl_Position = cameraTransform(relativePos) + glState.camera.anti_flicker_offset;
@@ -80,5 +58,5 @@ void main() {
     //copy trivial attributes
     vs_out.light = in_light;
     vs_out.state = in_state;
-    vs_out.color = computeVertexColor(in_color.rgb, start, end, depth);
+    vs_out.color = computeVertexColor(in_color.rgb, 0., 0., depth);
 }
