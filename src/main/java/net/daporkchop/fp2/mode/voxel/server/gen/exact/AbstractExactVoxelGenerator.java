@@ -96,7 +96,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         VoxelData data = new VoxelData();
 
-        data.x = data.y = data.z = POS_ONE >> 1;
+        data.x = data.y = data.z = POS_ONE;
 
         for (int dx = 0; dx < T_VOXELS; dx++) {
             for (int dy = 0; dy < T_VOXELS; dy++) {

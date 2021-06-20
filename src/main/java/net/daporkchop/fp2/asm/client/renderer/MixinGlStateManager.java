@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,34 +21,16 @@
 package net.daporkchop.fp2.asm.client.renderer;
 
 import net.daporkchop.fp2.client.ReversedZ;
-import net.daporkchop.fp2.client.ShaderGlStateHelper;
 import net.minecraft.client.renderer.GlStateManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import java.nio.FloatBuffer;
-
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL45.*;
 
 /**
  * @author DaPorkchop_
  */
 @Mixin(GlStateManager.class)
 public abstract class MixinGlStateManager {
-    @Inject(method = "Lnet/minecraft/client/renderer/GlStateManager;glFog(ILjava/nio/FloatBuffer;)V",
-            at = @At("HEAD"))
-    private static void glFog_head(int id, FloatBuffer data, CallbackInfo ci) {
-        if (id == GL_FOG_COLOR) {
-            ShaderGlStateHelper.updateFogColor(data);
-        }
-    }
-
     @ModifyVariable(method = "Lnet/minecraft/client/renderer/GlStateManager;depthFunc(I)V",
             at = @At("HEAD"))
     private static int invertDepthModes(int func) {

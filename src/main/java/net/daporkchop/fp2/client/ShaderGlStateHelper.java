@@ -25,16 +25,11 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.util.DirectBufferReuse;
-import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
 
-import java.nio.FloatBuffer;
-
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.fp2.compat.of.OFHelper.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.minecraft.util.math.MathHelper.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -96,31 +91,30 @@ public class ShaderGlStateHelper {
         { //fog
             long addr = ADDR_FOG;
 
-            //vec4 color (already set externally)
+            //vec4 color
+            glGetFloat(GL_FOG_COLOR, DirectBufferReuse.wrapFloat(addr, 16)); //buffer needs to fit 16 elements, but only the first 4 will be used
             addr += VEC4_SIZE;
 
-            GlStateManager.FogState fogState = GlStateManager.fogState;
-            boolean fogEnabled = fogState.fog.currentState
-                                 && (!OF || PUnsafe.getInt(mc.gameSettings, OF_FOGTYPE_OFFSET) != OF_OFF);
-
             //float density
-            PUnsafe.putFloat(addr, fogState.density);
+            PUnsafe.putFloat(addr, glGetFloat(GL_FOG_DENSITY));
             addr += FLOAT_SIZE;
 
             //float start
-            PUnsafe.putFloat(addr, fogState.start);
+            float start = glGetFloat(GL_FOG_START);
+            PUnsafe.putFloat(addr, start);
             addr += FLOAT_SIZE;
 
             //float end
-            PUnsafe.putFloat(addr, fogState.end);
+            float end = glGetFloat(GL_FOG_END);
+            PUnsafe.putFloat(addr, end);
             addr += FLOAT_SIZE;
 
             //float scale
-            PUnsafe.putFloat(addr, 1.0f / (fogState.end - fogState.start));
+            PUnsafe.putFloat(addr, 1.0f / (end - start));
             addr += FLOAT_SIZE;
 
             //int mode
-            PUnsafe.putInt(addr, fogEnabled ? fogState.mode : 0);
+            PUnsafe.putInt(addr, glGetBoolean(GL_FOG) ? glGetInteger(GL_FOG_MODE) : 0);
             addr += INT_SIZE;
         }
 
@@ -131,9 +125,5 @@ public class ShaderGlStateHelper {
 
     public void bind() {
         BUFFER.bindBase(GL_UNIFORM_BUFFER, 0);
-    }
-
-    public void updateFogColor(@NonNull FloatBuffer buffer) {
-        PUnsafe.copyMemory(PUnsafe.pork_directBufferAddress(buffer) + buffer.position() * FLOAT_SIZE, ADDR_FOG, VEC4_SIZE);
     }
 }

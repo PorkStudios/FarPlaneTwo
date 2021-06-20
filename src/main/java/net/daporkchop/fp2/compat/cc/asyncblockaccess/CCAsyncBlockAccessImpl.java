@@ -280,7 +280,7 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
         protected ICube parseNBT(@NonNull CubePos key, @NonNull Chunk param, @NonNull NBTTagCompound nbt) {
             ICubeIO.PartialData<ICube> data = new ICubeIO.PartialData<>(null, nbt);
             CCAsyncBlockAccessImpl.this.io.loadCubeAsyncPart(data, param, key.getY());
-            return data.getObject() != null && data.getObject().isSurfaceTracked() ? data.getObject() : null;
+            return data.getObject() != null && data.getObject().isInitialLightingDone() ? data.getObject() : null;
         }
 
         @Override
@@ -288,7 +288,7 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
         protected ICube loadFromDisk(@NonNull CubePos key, @NonNull Chunk param) {
             ICubeIO.PartialData<ICube> data = CCAsyncBlockAccessImpl.this.io.loadCubeNbt(param, key.getY());
             CCAsyncBlockAccessImpl.this.io.loadCubeAsyncPart(data, param, key.getY());
-            return data.getObject() != null && data.getObject().isSurfaceTracked() ? data.getObject() : null;
+            return data.getObject() != null && data.getObject().isInitialLightingDone() ? data.getObject() : null;
         }
 
         @Override
@@ -297,7 +297,7 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
                 //TODO: save column as well if needed
                 ICube cube = ((ICubicWorldServer) CCAsyncBlockAccessImpl.this.world)
                         .getCubeCache().getCube(key.getX(), key.getY(), key.getZ(), ICubeProviderServer.Requirement.LIGHT);
-                if (cube != null && cube.isSurfaceTracked()) {
+                if (cube != null && cube.isInitialLightingDone()) {
                     CCAsyncBlockAccessImpl.this.io.saveCube((Cube) cube);
                 }
             }, ServerThreadExecutor.INSTANCE).join();

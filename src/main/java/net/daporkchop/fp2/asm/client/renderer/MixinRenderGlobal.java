@@ -53,9 +53,6 @@ public abstract class MixinRenderGlobal {
         if (context != null) {
             Minecraft mc = Minecraft.getMinecraft();
 
-            ShaderGlStateHelper.update((float) partialTicks, mc);
-            ShaderFP2StateHelper.update((float) partialTicks, mc);
-
             mc.profiler.startSection("fp2_prepare");
             context.renderer().prepare((float) partialTicks, mc, (IFrustum) camera);
             mc.profiler.endSection();
