@@ -369,9 +369,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         }
 
         if (level != 0 //level-0 tiles will never have any children
-            && this.hasAnyChildren(node) //no need to consider selecting children if the tile has no children
-            && (level > this.maxLevel || this.directPosAccess.intersects(node + this.tile_pos, ranges[level - 1]))) { //no need to consider selecting children if the tile is
-            // too high, or doesn't intersect the lower zoom's selection volume
+            && this.hasAnyChildren(node)) { //no need to consider selecting children if the tile has no children
 
             //this tile has some children and intersects the selection volume for the lower zoom level, so we'll attempt to select
             // as many children as possible
