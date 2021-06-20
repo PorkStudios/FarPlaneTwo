@@ -73,8 +73,6 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile> ext
 
     boolean bake(@NonNull POS pos, @NonNull T[] srcs, @NonNull BakeOutput output);
 
-    void executeBakeOutput(@NonNull POS pos, @NonNull BakeOutput output);
-
     //
     // RENDER METHODS
     //

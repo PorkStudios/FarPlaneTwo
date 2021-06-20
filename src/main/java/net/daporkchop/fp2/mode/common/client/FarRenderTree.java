@@ -258,6 +258,11 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         this.deleteRenderData(node);
 
         if (output != null) { //new render data is non-empty
+            //execute render output state changes as needed
+            // (doing this here slightly reduces memory overhead, as the old data has already been released at this point)
+            output.execute();
+
+            //copy render data to node
             PUnsafe.copyMemory(output.renderData, node + this.tile_renderData, output.size);
 
             this.setFlags(node, FLAG_DATA);

@@ -130,13 +130,6 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, T extends IFarT
     protected abstract void bakeVertsAndIndices(@NonNull POS pos, @NonNull T[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices);
 
     @Override
-    public void executeBakeOutput(@NonNull POS pos, @NonNull BakeOutput output) {
-        try (AllocatedGLBuffer indices = this.indices.bind(GL_ELEMENT_ARRAY_BUFFER)) {
-            super.executeBakeOutput(pos, output);
-        }
-    }
-
-    @Override
     protected void doRelease() {
         super.doRelease();
 
