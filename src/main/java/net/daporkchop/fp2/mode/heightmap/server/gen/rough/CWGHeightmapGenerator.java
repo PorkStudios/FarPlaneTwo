@@ -136,8 +136,8 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
             data.height_frac = 224; //256 * 7/8
             data.state = Blocks.WATER.getDefaultState();
             data.light = packCombinedLight(15 << 20);
-            data.secondaryConnection = 1;
-            tile.setLayer(x, z, 1, data);
+            data.secondaryConnection = WATER_LAYER;
+            tile.setLayer(x, z, WATER_LAYER, data);
             data.secondaryConnection = DEFAULT_LAYER;
         }
     }
