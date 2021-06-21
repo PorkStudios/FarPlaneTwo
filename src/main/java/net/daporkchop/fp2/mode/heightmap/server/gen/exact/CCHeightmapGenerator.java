@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.mode.heightmap.server.gen.exact;
 
+import io.github.opencubicchunks.cubicchunks.api.util.Coords;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
@@ -51,10 +52,10 @@ public class CCHeightmapGenerator extends AbstractExactHeightmapGenerator {
                 .map(packed -> {
                     int blockX = pos.blockX() + (packed & T_MASK);
                     int blockZ = pos.blockZ() + ((packed >> T_SHIFT) & T_MASK);
-                    return world.getTopBlockY(blockX, blockZ);
+                    return Coords.blockToCube(world.getTopBlockY(blockX, blockZ));
                 })
                 .distinct() //we don't want a bunch of identical cube Y coordinates
-                .filter(cubeY -> cubeY > MINIMUM_CONSIDERED_Y)
+                .filter(cubeY -> cubeY > Coords.blockToCube(MINIMUM_CONSIDERED_Y))
                 .mapToObj(cubeY -> new Vec3i(pos.flooredChunkX(), cubeY, pos.flooredChunkZ()));
     }
 }

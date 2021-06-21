@@ -22,6 +22,8 @@ package net.daporkchop.fp2.mode.heightmap;
 
 import lombok.experimental.UtilityClass;
 
+import java.util.stream.IntStream;
+
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -42,6 +44,16 @@ public class HeightmapConstants {
      * The default layer index.
      */
     public static final int DEFAULT_LAYER = 0;
+
+    /**
+     * The layer index used for water.
+     */
+    public static final int WATER_LAYER = 1;
+
+    /**
+     * The indices of all additional layers that may be customized by the user.
+     */
+    public static final int[] EXTRA_LAYERS = IntStream.range(0, MAX_LAYERS).filter(layer -> layer != DEFAULT_LAYER && layer != WATER_LAYER).toArray();
 
     public static final int[] CONNECTION_INTERSECTION_AREAS = {
             T_VOXELS, T_VOXELS,

@@ -23,7 +23,9 @@ package net.daporkchop.fp2.util;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
-import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomCubicWorldType;
+import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorldServer;
+import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubeGenerator;
+import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomTerrainGenerator;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import lombok.NonNull;
@@ -45,6 +47,8 @@ import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
+import net.minecraft.world.gen.IChunkGenerator;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
@@ -151,13 +155,24 @@ public class Constants {
     }
 
     /**
-     * Checks whether or not the given {@link World} uses Cubic World Gen.
+     * Checks whether or not the given {@link WorldServer} uses Cubic World Gen.
      *
-     * @param world the {@link World} to check
-     * @return whether or not the given {@link World} uses Cubic World Gen
+     * @param world the {@link WorldServer} to check
+     * @return whether or not the given {@link WorldServer} uses Cubic World Gen
      */
-    public static boolean isCwgWorld(@NonNull World world) {
-        return isCubicWorld(world) && Constants.CWG && world.getWorldType() instanceof CustomCubicWorldType;
+    public static boolean isCwgWorld(@NonNull WorldServer world) {
+        return CWG && getTerrainGenerator(world) instanceof CustomTerrainGenerator;
+    }
+
+    /**
+     * Gets the terrain generator for the given {@link WorldServer}.
+     * @param world the {@link WorldServer} to get the terrain generator for
+     * @return the terrain generator instance. May be an arbitrary type (e.g. {@link IChunkGenerator} or {@link ICubeGenerator})
+     */
+    public static Object getTerrainGenerator(@NonNull WorldServer world) {
+        return isCubicWorld(world)
+                ? ((ICubicWorldServer) world).getCubeGenerator() //this is a Cubic Chunks world, so we want to use the cube generator
+                : world.getChunkProvider().chunkGenerator;
     }
 
     /**
@@ -169,6 +184,10 @@ public class Constants {
      */
     public static int packCombinedLight(int combinedLight) {
         return (combinedLight >> 16) | ((combinedLight >> 4) & 0xF);
+    }
+
+    public static int packLight(int skyLight, int blockLight) {
+        return (skyLight << 4) | blockLight;
     }
 
     public static int packedLightTo8BitVec2(int packedLight) {

@@ -38,9 +38,9 @@ float getFogFactor() { //this shouldn't cause any significant performance drop b
     if (glState.fog.mode == FOG_LINEAR) {
         return clamp((glState.fog.end - fog_in.depth) * glState.fog.scale, 0., 1.);
     } else if (glState.fog.mode == FOG_EXP)  {
-        return clamp(exp(-glState.fog.end * fog_in.depth), 0., 1.);
+        return clamp(exp(-glState.fog.density * fog_in.depth), 0., 1.);
     } else if (glState.fog.mode == FOG_EXP2)  {
-        return clamp(exp(-glState.fog.end * pow(fog_in.depth, 2.)), 0., 1.);
+        return clamp(exp(-glState.fog.density * (fog_in.depth * fog_in.depth)), 0., 1.);
     } else {
         return 1.;
     }
