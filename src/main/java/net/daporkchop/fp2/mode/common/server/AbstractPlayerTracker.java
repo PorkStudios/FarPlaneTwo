@@ -147,12 +147,8 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
         });
 
         if (this.world instanceof AbstractFarWorld) {
-            if (((AbstractFarWorld) this.world).notDone.isEmpty()) {
-                FP2_LOG.info("Invalidating tile cache");
-                ((AbstractFarWorld) this.world).tileCache.invalidateAll();
-            } else {
-                FP2_LOG.info("Not invalidating tile cache because some tiles are still queued");
-            }
+            FP2_LOG.info("Invalidating tile cache");
+            ((AbstractFarWorld) this.world).tileCache.invalidateAll();
         }
     }
 
@@ -187,8 +183,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
         public Entry(@NonNull POS pos) {
             this.pos = pos;
 
-            //attempt to get tile now
-            this.tile = AbstractPlayerTracker.this.world.getTileLazy(pos);
+            this.tile = AbstractPlayerTracker.this.world.retainTileFuture(pos);
         }
 
         public void addPlayer(@NonNull EntityPlayerMP player) {
@@ -204,11 +199,17 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
             checkState(this.players.remove(player), player);
 
             if (this.players.isEmpty()) {
-                //remove self from tracker
-                checkState(AbstractPlayerTracker.this.entries.remove(this.pos, this), this);
+                this.remove();
             }
 
             NETWORK_WRAPPER.sendTo(new SPacketUnloadTile().mode(AbstractPlayerTracker.this.world.mode()).pos(this.pos), player);
+        }
+
+        public void remove() {
+            //remove self from tracker
+            checkState(AbstractPlayerTracker.this.entries.remove(this.pos, this), this);
+
+            AbstractPlayerTracker.this.world.releaseTileFuture(this.pos);
         }
 
         public void tileChanged(@NonNull Compressed<POS, ?> tile) {

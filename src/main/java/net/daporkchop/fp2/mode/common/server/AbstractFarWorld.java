@@ -42,14 +42,17 @@ import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.PriorityRecursiveExecutor;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
+import net.daporkchop.fp2.util.threading.keyed.KeyedTaskScheduler;
+import net.daporkchop.fp2.util.threading.keyed.PriorityKeyedTaskScheduler;
+import net.daporkchop.fp2.util.threading.ref.KeyedReferencingScheduler;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
-import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.WorldServer;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
@@ -73,14 +76,14 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
     protected final IFarPlayerTracker<POS> tracker;
 
-    //TODO: somehow merge tileCache and notDone
     protected final Cache<POS, Compressed<POS, T>> tileCache = CacheBuilder.newBuilder() //cache for loaded tiles
             .concurrencyLevel(FP2Config.generationThreads)
             .weakValues()
             .build();
-    protected final Map<POS, Boolean> notDone = new ConcurrentHashMap<>(); //contains positions of all tiles that aren't done
 
     protected final PriorityRecursiveExecutor<PriorityTask<POS>> executor; //TODO: make these global rather than per-dimension
+    protected final KeyedTaskScheduler<PriorityTask<POS>> scheduler;
+    protected final KeyedReferencingScheduler<PriorityTask<POS>> loader;
 
     protected final boolean lowResolution;
 
@@ -107,11 +110,19 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.root = new File(world.getChunkSaveLocation(), "fp2/" + this.mode().name().toLowerCase());
         this.storage = new RocksStorage<>(mode, this.root);
 
+        FarServerWorker<POS, T> worker = new FarServerWorker<>(this);
+
         this.executor = new PriorityRecursiveExecutor<>(
                 FP2Config.generationThreads,
                 PThreadFactories.builder().daemon().minPriority()
                         .collapsingId().name(PStrings.fastFormat("FP2 DIM%d Generation Thread #%%d", world.provider.getDimension())).build(),
-                new FarServerWorker<>(this));
+                worker);
+
+        this.scheduler = new PriorityKeyedTaskScheduler<>(
+                FP2Config.generationThreads,
+                PThreadFactories.builder().daemon().minPriority()
+                        .collapsingId().name(PStrings.fastFormat("FP2 DIM%d Worker #%%d", world.provider.getDimension())).build());
+        this.loader = new KeyedReferencingScheduler<>(this.scheduler, task -> worker.roughGetTile(task, task.pos()));
 
         //add all dirty tiles to update queue
         this.storage.dirtyTracker().forEachDirtyPos((pos, timestamp) -> this.enqueueUpdate(pos));
@@ -126,29 +137,23 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
     protected abstract boolean anyVanillaTerrainExistsAt(@NonNull POS pos);
 
     @Override
-    public Compressed<POS, T> getTileLazy(@NonNull POS pos) {
-        Compressed<POS, T> tile = this.tileCache.getIfPresent(pos);
-        if (tile == null || tile.timestamp() == Compressed.VALUE_BLANK) {
-            if (this.notDone.putIfAbsent(pos, Boolean.TRUE) != Boolean.TRUE) {
-                //tile is not in cache and was newly marked as queued
-                this.executor.submit(new PriorityTask<>(TaskStage.LOAD, pos));
-            }
-            return null;
-        }
-        return tile;
+    public Compressed<POS, T> retainTileFuture(@NonNull POS pos) {
+        this.loader.retain(new PriorityTask<>(TaskStage.ROUGH, pos));
+        return this.tileCache.getIfPresent(pos);
     }
 
+    @Override
+    public void releaseTileFuture(@NonNull POS pos) {
+        this.loader.release(new PriorityTask<>(TaskStage.ROUGH, pos));
+    }
+
+    @SneakyThrows(ExecutionException.class)
     public Compressed<POS, T> getTileCachedOrLoad(@NonNull POS pos) {
-        try {
-            return this.tileCache.get(pos, () -> {
-                Compressed<POS, T> compressedTile = this.storage.load(pos);
-                //create new value if absent
-                return compressedTile == null ? new Compressed<>(pos) : compressedTile;
-            });
-        } catch (ExecutionException e) {
-            PUnsafe.throwException(e);
-            throw new RuntimeException(e);
-        }
+        return this.tileCache.get(pos, () -> {
+            Compressed<POS, T> compressedTile = this.storage.load(pos);
+            //create new value if absent
+            return compressedTile == null ? new Compressed<>(pos) : compressedTile;
+        });
     }
 
     public void saveTile(@NonNull Compressed<POS, T> tile) {
@@ -157,9 +162,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
     }
 
     public void tileAvailable(@NonNull Compressed<POS, T> tile) {
-        //unmark tile as being incomplete
-        this.notDone.remove(tile.pos());
-
         this.notifyPlayerTracker(tile);
     }
 
@@ -216,6 +218,10 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
         FP2_LOG.trace("Shutting down generation workers in DIM{}", this.world.provider.getDimension());
         this.executor.shutdown();
+
+        this.loader.close();
+        this.scheduler.close();
+
         FP2_LOG.trace("Shutting down storage in DIM{}", this.world.provider.getDimension());
         this.storage.close();
     }

@@ -38,6 +38,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
+@Deprecated
 public class PriorityRecursiveExecutor<T extends Comparable<T> & Predicate<T>> implements Runnable {
     protected final ConcurrentUnboundedPriorityBlockingQueue<T> queue;
     protected final Consumer<T> worker;

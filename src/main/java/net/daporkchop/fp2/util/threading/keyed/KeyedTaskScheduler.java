@@ -23,8 +23,6 @@ package net.daporkchop.fp2.util.threading.keyed;
 import lombok.NonNull;
 import net.daporkchop.lib.unsafe.capability.Releasable;
 
-import java.util.concurrent.Executor;
-
 /**
  * An executor which organizes submitted tasks based on a key.
  * <p>
@@ -51,4 +49,14 @@ public interface KeyedTaskScheduler<K> extends Releasable {
      * @param task the task
      */
     void submitExclusive(@NonNull K key, @NonNull Runnable task);
+
+    /**
+     * Cancels a task with the given key.
+     * <p>
+     * The tasks will be checked for equality using standard {@link Object#equals(Object)} and {@link Object#hashCode()} methods.
+     *
+     * @param key  the key
+     * @param task the task
+     */
+    void cancel(@NonNull K key, @NonNull Runnable task);
 }

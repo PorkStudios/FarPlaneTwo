@@ -97,6 +97,19 @@ public class DefaultKeyedTaskScheduler<K> extends AbstractReleasable implements 
     }
 
     @Override
+    public void cancel(@NonNull K keyIn, @NonNull Runnable task) {
+        this.assertNotReleased();
+        this.queues.computeIfPresent(keyIn, (key, queue) -> {
+            if (queue.remove(task) //the task was removed from the queue
+                && queue.isEmpty()) { //no other tasks for this key remain in the queue
+                this.queue.remove(queue); //remove the task queue from the execution queue
+                queue = null; //delete task queue
+            }
+            return queue;
+        });
+    }
+
+    @Override
     protected void doRelease() {
         this.running = false;
 
