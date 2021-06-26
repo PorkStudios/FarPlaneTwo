@@ -145,11 +145,6 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
 
             trackingPositions.clear();
         });
-
-        if (this.world instanceof AbstractFarWorld) {
-            FP2_LOG.info("Invalidating tile cache");
-            ((AbstractFarWorld) this.world).tileCache.invalidateAll();
-        }
     }
 
     protected abstract Stream<POS> getPositions(@NonNull EntityPlayerMP player);

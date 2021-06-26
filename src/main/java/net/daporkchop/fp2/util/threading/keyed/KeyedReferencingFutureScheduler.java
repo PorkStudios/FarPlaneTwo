@@ -38,27 +38,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class KeyedReferencingScheduler<K, V> extends AbstractRefCounted {
-    /*
-     * Implementation details:
-     *
-     * The scheduler operates using a concurrent map of keys to tasks, using the synchronization guarantees of ConcurrentHashMap to ensure
-     * that the same task key is not accessed concurrently.
-     *
-     * When a key is retained for which there is no existing task in the map, the task factory is used to create a new one which is subsequently
-     * inserted into the map and submitted to the task scheduler.
-     *
-     * When a key is retained for which there is an existing task in the map, the existing task is returned.
-     *
-     * When a key is released, the corresponding task's reference count is decremented. If the reference count reaches 0 the task is cancelled
-     * (removed from both the task scheduler and the map).
-     */
-
+public class KeyedReferencingFutureScheduler<K, V> extends AbstractRefCounted {
     protected final KeyedExecutor<? super K> executor;
     protected final Map<K, Task> map = new ConcurrentHashMap<>();
     protected final Function<K, V> task;
 
-    public KeyedReferencingScheduler(@NonNull KeyedExecutor<? super K> executor, @NonNull Function<K, V> task) {
+    public KeyedReferencingFutureScheduler(@NonNull KeyedExecutor<? super K> executor, @NonNull Function<K, V> task) {
         this.executor = executor.retain();
         this.task = task;
     }
@@ -87,9 +72,11 @@ public class KeyedReferencingScheduler<K, V> extends AbstractRefCounted {
         this.map.compute(keyIn, (key, task) -> {
             checkState(task != null, "attempted to release non-existent task for key: %s", key);
 
-            if (--task.refCnt == 0 //the task's reference count has reached 0
-                && task.cancel(false)) { //the task itself was marked as cancelled
-                //remove task from scheduler
+            if (--task.refCnt == 0) { //the task's reference count has reached 0
+                //mark the task itself as cancelled
+                task.cancel(false);
+
+                //remove task from executor
                 this.executor.cancel(key, task);
 
                 //set the task to null to have it removed from the map
@@ -117,12 +104,12 @@ public class KeyedReferencingScheduler<K, V> extends AbstractRefCounted {
         this.map.forEach(this.executor::cancel);
         this.map.clear();
 
-        //release reference to scheduler
+        //release reference to executor
         this.executor.release();
     }
 
     /**
-     * A {@link CompletableFuture} task which is executed by a {@link KeyedReferencingScheduler}.
+     * A {@link CompletableFuture} task which is executed by a {@link KeyedReferencingFutureScheduler}.
      *
      * @author DaPorkchop_
      */
@@ -141,12 +128,12 @@ public class KeyedReferencingScheduler<K, V> extends AbstractRefCounted {
             this.refCnt = 1;
 
             //schedule self for execution
-            KeyedReferencingScheduler.this.executor.submit(key, this);
+            KeyedReferencingFutureScheduler.this.executor.submit(key, this);
         }
 
         @Override
         protected V compute() {
-            return KeyedReferencingScheduler.this.task.apply(this.key);
+            return KeyedReferencingFutureScheduler.this.task.apply(this.key);
         }
     }
 }

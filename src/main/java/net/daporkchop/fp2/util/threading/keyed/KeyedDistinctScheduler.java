@@ -22,17 +22,19 @@ package net.daporkchop.fp2.util.threading.keyed;
 
 import lombok.NonNull;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
+import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
+ * A single function which may be queued for execution by a {@link KeyedExecutor} for specific key values, but never more than once at a time per key.
+ *
  * @author DaPorkchop_
  */
 public class KeyedDistinctScheduler<K> extends AbstractRefCounted {
     protected final KeyedExecutor<? super K> executor;
-    protected final Map<K, Task> map = new ConcurrentHashMap<>();
+    protected final Map<K, Task> map = new ObjObjConcurrentHashMap<>(); //ObjObjConcurrentHashMap has a faster computeIfAbsent implementation
     protected final Consumer<K> task;
 
     public KeyedDistinctScheduler(@NonNull KeyedExecutor<? super K> executor, @NonNull Consumer<K> task) {
@@ -40,9 +42,16 @@ public class KeyedDistinctScheduler<K> extends AbstractRefCounted {
         this.task = task;
     }
 
-    public void submit(@NonNull K keyIn) {
+    /**
+     * Enqueues the function to be executed with the given key.
+     * <p>
+     * If the given key is already pending execution, this method does nothing.
+     *
+     * @param key the key
+     */
+    public void submit(@NonNull K key) {
         this.ensureNotReleased();
-        this.map.computeIfAbsent(keyIn, Task::new);
+        this.map.computeIfAbsent(key, Task::new);
     }
 
     @Override
@@ -51,22 +60,29 @@ public class KeyedDistinctScheduler<K> extends AbstractRefCounted {
         this.map.forEach(this.executor::cancel);
         this.map.clear();
 
-        //release reference to scheduler
+        //release reference to executor
         this.executor.release();
     }
 
+    /**
+     * A task, wrapping a single key which is pending execution.
+     *
+     * @author DaPorkchop_
+     */
     protected class Task implements Runnable {
         protected final K key;
 
         public Task(@NonNull K key) {
             this.key = key;
 
+            //enqueue self
             KeyedDistinctScheduler.this.executor.submit(this.key, this);
         }
 
         @Override
         public void run() {
-            if (KeyedDistinctScheduler.this.map.remove(this.key, this)) {
+            if (KeyedDistinctScheduler.this.map.remove(this.key, this)) { //we were able to remove this key from the "pending execution" queue
+                //run the function with our configured key
                 KeyedDistinctScheduler.this.task.accept(this.key);
             }
         }

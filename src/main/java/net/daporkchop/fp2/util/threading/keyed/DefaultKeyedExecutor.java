@@ -30,6 +30,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 
@@ -59,7 +60,7 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
     }
 
     protected Map<K, TaskQueue> createQueues() {
-        return new ObjObjConcurrentHashMap<>();
+        return new ConcurrentHashMap<>();
     }
 
     protected BlockingQueue<TaskQueue> createQueue() {
@@ -101,11 +102,9 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
     public void cancel(@NonNull K keyIn, @NonNull Runnable task) {
         this.ensureNotReleased();
         this.queues.computeIfPresent(keyIn, (key, queue) -> {
-            if (queue.remove(task) //the task was removed from the queue
-                && queue.isEmpty()) { //no other tasks for this key remain in the queue
-                this.queue.remove(queue); //remove the task queue from the execution queue
-                queue = null; //delete task queue
-            }
+            //remove task from queue
+            // we'll rely on the worker threads to remove the queue itself from the map when they get around to it
+            queue.remove(task);
             return queue;
         });
     }

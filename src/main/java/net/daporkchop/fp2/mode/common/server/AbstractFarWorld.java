@@ -20,8 +20,6 @@
 
 package net.daporkchop.fp2.mode.common.server;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -44,7 +42,7 @@ import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.keyed.KeyedDistinctScheduler;
 import net.daporkchop.fp2.util.threading.keyed.KeyedExecutor;
 import net.daporkchop.fp2.util.threading.keyed.PriorityKeyedExecutor;
-import net.daporkchop.fp2.util.threading.keyed.KeyedReferencingScheduler;
+import net.daporkchop.fp2.util.threading.keyed.KeyedReferencingFutureScheduler;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.minecraft.world.WorldServer;
@@ -73,13 +71,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
     protected final IFarPlayerTracker<POS> tracker;
 
-    protected final Cache<POS, Compressed<POS, T>> tileCache = CacheBuilder.newBuilder() //cache for loaded tiles
-            .concurrencyLevel(FP2Config.generationThreads)
-            .weakValues()
-            .build();
-
     protected final KeyedExecutor<POS> executor; //TODO: make these global rather than per-dimension
-    protected final KeyedReferencingScheduler<POS, Compressed<POS, T>> loader;
+    protected final KeyedReferencingFutureScheduler<POS, Compressed<POS, T>> loader;
     protected final KeyedDistinctScheduler<POS> updater;
 
     protected final boolean lowResolution;
@@ -94,7 +87,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.generatorExact = this.mode().exactGenerator(world);
 
         if (this.generatorRough == null) {
-            FP2_LOG.warn("vo rough {} generator exists for world {} (type={}, generator={})! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.provider.getDimension(), world.getWorldType(), Constants.getTerrainGenerator(world));
+            FP2_LOG.warn("no rough {} generator exists for world {} (type={}, generator={})! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.provider.getDimension(), world.getWorldType(), Constants.getTerrainGenerator(world));
             //TODO: make the fallback generator smart! rather than simply getting the chunks from the world, do generation and population in
             // a volatile, in-memory world clone to prevent huge numbers of chunks/cubes from potentially being generated (and therefore saved)
         }
@@ -113,7 +106,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
                 FP2Config.generationThreads,
                 PThreadFactories.builder().daemon().minPriority()
                         .collapsingId().name(PStrings.fastFormat("FP2 DIM%d Worker #%%d", world.provider.getDimension())).build());
-        this.loader = new KeyedReferencingScheduler<>(this.executor, worker::roughGetTile);
+        this.loader = new KeyedReferencingFutureScheduler<>(this.executor, worker::roughGetTile);
         this.updater = new KeyedDistinctScheduler<>(this.executor, worker::updateTile);
 
         //add all dirty tiles to update queue
