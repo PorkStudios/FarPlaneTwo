@@ -32,6 +32,7 @@ import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -52,35 +53,7 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
 
     @Override
     public void accept(PriorityTask<POS> task) {
-        switch (task.stage()) {
-            case LOAD:
-                this.loadTile(task, task.pos());
-                break;
-            case ROUGH:
-                this.world.tileAvailable(this.roughGetTile(task, task.pos()));
-                break;
-            case UPDATE:
-                this.updateTile(task, task.pos());
-                break;
-            default:
-                throw new IllegalArgumentException(Objects.toString(task));
-        }
-    }
-
-    //
-
-    public Compressed<POS, T> loadTile(PriorityTask<POS> root, POS pos) {
-        Compressed<POS, T> compressedTile = this.world.getTileCachedOrLoad(pos);
-        if (compressedTile.isGenerated()) {
-            //this unmarks the tile as not done and notifies the player tracker
-            this.world.tileAvailable(compressedTile);
-        } else {
-            //the tile has not been fully generated yet
-            //rather than getting the tile now, we enqueue it for rough generation later. this allows all of the LOAD tasks to run first, so that we can send the tiles that
-            // are already available on disk as soon as possible
-            this.world.executor.submit(new PriorityTask<>(TaskStage.ROUGH, pos));
-        }
-        return compressedTile;
+        throw new UnsupportedOperationException();
     }
 
     //
@@ -89,36 +62,42 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
     //
     //
 
-    public Compressed<POS, T> roughGetTile(PriorityTask<POS> root, POS pos) {
-        if (!(FP2_DEBUG && FP2Config.debug.disableExactGeneration) && this.world.anyVanillaTerrainExistsAt(pos)) {
-            //there's some terrain at the given position, let's try to generate something with it
-            if (pos.level() == 0) {
-                //the position is at detail level 0, do exact generation
-                try {
-                    return this.attemptRoughWithExact(root, pos, this.world.currentTime - 1L);
-                } catch (GenerationNotAllowedException e) {
-                    //the terrain existed, but wasn't populated so we don't want to use it
-                }
-            } else {
-                //force the tile to be scaled, which will cause this to be executed recursively
-                return this.roughScaleTile(root, pos);
+    public Compressed<POS, T> roughGetTile(POS pos) {
+        Compressed<POS, T> compressedTile = this.world.loadTile(pos);
+        try {
+            if (compressedTile.isGenerated()) {
+                return compressedTile;
             }
-        }
 
-        if (pos.level() == 0 || this.world.canGenerateRough(pos)) {
-            //the tile can be generated using the rough generator
-            return this.roughGenerateTile(root, pos);
-        } else {
-            //the tile cannot be generated using the rough generator
-            //this will generate the tile and all tiles below it down to level 0 until the tile can be "generated" from scaled data
-            return this.roughScaleTile(root, pos);
+            if (!(FP2_DEBUG && FP2Config.debug.disableExactGeneration) && this.world.anyVanillaTerrainExistsAt(pos)) {
+                //there's some terrain at the given position, let's try to generate something with it
+                if (pos.level() == 0) {
+                    //the position is at detail level 0, do exact generation
+                    try {
+                        return this.attemptRoughWithExact(pos, compressedTile, this.world.currentTime - 1L);
+                    } catch (GenerationNotAllowedException e) {
+                        //the terrain existed, but wasn't populated so we don't want to use it
+                    }
+                } else {
+                    //force the tile to be scaled, which will cause this to be executed recursively
+                    return this.roughScaleTile(pos, compressedTile);
+                }
+            }
+
+            if (pos.level() == 0 || this.world.canGenerateRough(pos)) {
+                //the tile can be generated using the rough generator
+                return this.roughGenerateTile(pos, compressedTile);
+            } else {
+                //the tile cannot be generated using the rough generator
+                //this will generate the tile and all tiles below it down to level 0 until the tile can be "generated" from scaled data
+                return this.roughScaleTile(pos, compressedTile);
+            }
+        } finally {
+            this.world.tileAvailable(compressedTile);
         }
     }
 
-    public Compressed<POS, T> attemptRoughWithExact(PriorityTask<POS> root, POS pos, long newTimestamp) throws GenerationNotAllowedException {
-        this.world.executor().checkForHigherPriorityWork(root);
-
-        Compressed<POS, T> compressedTile = this.world.getTileCachedOrLoad(pos);
+    public Compressed<POS, T> attemptRoughWithExact(POS pos, Compressed<POS, T> compressedTile, long newTimestamp) throws GenerationNotAllowedException {
         if (compressedTile.timestamp() >= newTimestamp) { //break out early if tile is already done or newer
             return compressedTile;
         }
@@ -144,11 +123,9 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
         return compressedTile;
     }
 
-    public Compressed<POS, T> roughGenerateTile(PriorityTask<POS> root, POS pos) {
+    public Compressed<POS, T> roughGenerateTile(POS pos, Compressed<POS, T> compressedTile) {
         checkArg(pos.level() == 0 || this.world.canGenerateRough(pos), "cannot do rough generation at %s!", pos);
-        this.world.executor().checkForHigherPriorityWork(root);
 
-        Compressed<POS, T> compressedTile = this.world.getTileCachedOrLoad(pos);
         if (compressedTile.isGenerated()) { //break out early if tile is already done or newer
             return compressedTile;
         }
@@ -184,15 +161,12 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
         return compressedTile;
     }
 
-    public Compressed<POS, T> roughScaleTile(PriorityTask<POS> root, POS pos) {
-        this.world.executor().checkForHigherPriorityWork(root);
-
-        Compressed<POS, T> compressedTile = this.world.getTileCachedOrLoad(pos);
+    public Compressed<POS, T> roughScaleTile(POS pos, Compressed<POS, T> compressedTile) {
         if (compressedTile.isGenerated()) { //break out early if tile is already done or newer
             return compressedTile;
         }
 
-        return this.scaleTile0(root, pos, compressedTile, Compressed.TIMESTAMP_GENERATED, false);
+        return this.scaleTile0(pos, compressedTile, Compressed.TIMESTAMP_GENERATED, false);
     }
 
     //
@@ -201,7 +175,7 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
     //
     //
 
-    public void updateTile(PriorityTask<POS> root, POS pos) {
+    public void updateTile(POS pos) {
         long newTimestamp = this.world.storage.dirtyTracker().dirtyTimestamp(pos);
         if (newTimestamp < 0L) {
             FP2_LOG.warn("Duplicate update task scheduled for tile at {}!", pos);
@@ -213,29 +187,29 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
                 return;
             }
 
-            this.updateTile(root, pos, newTimestamp);
+            this.updateTile(pos, newTimestamp);
         } finally {
             //remove tile from tracker again
             this.world.storage.dirtyTracker().clearDirty(pos, newTimestamp);
         }
     }
 
-    public Compressed<POS, T> updateTile(PriorityTask<POS> root, POS pos, long newTimestamp) {
-        Compressed<POS, T> compressedTile = this.world.getTileCachedOrLoad(pos);
-        if (compressedTile.timestamp() >= newTimestamp) {
-            return compressedTile;
-        }
+    public void updateTile(POS pos, long newTimestamp) {
+        this.world.loader.doWith(Collections.singletonList(pos), compressedSrcs -> {
+            Compressed<POS, T> compressedTile = compressedSrcs.get(0);
+            if (compressedTile.timestamp() >= newTimestamp) {
+                return;
+            }
 
-        if (pos.level() == 0) {
-            this.updateTileExact(root, pos, compressedTile, newTimestamp);
-        } else {
-            this.updateTileScale(root, pos, compressedTile, newTimestamp);
-        }
-
-        return compressedTile;
+            if (pos.level() == 0) {
+                this.updateTileExact(pos, compressedTile, newTimestamp);
+            } else {
+                this.updateTileScale(pos, compressedTile, newTimestamp);
+            }
+        });
     }
 
-    public void updateTileExact(PriorityTask<POS> root, POS pos, Compressed<POS, T> compressedTile, long newTimestamp) {
+    public void updateTileExact(POS pos, Compressed<POS, T> compressedTile, long newTimestamp) {
         SimpleRecycler<T> tileRecycler = this.world.mode().tileRecycler();
         T tile = tileRecycler.allocate();
         compressedTile.writeLock().lock();
@@ -267,8 +241,8 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
         this.world.generatorExact().generate(access, pos, tile);
     }
 
-    public void updateTileScale(PriorityTask<POS> root, POS pos, Compressed<POS, T> compressedTile, long newTimestamp) {
-        this.scaleTile0(root, pos, compressedTile, newTimestamp, true);
+    public void updateTileScale(POS pos, Compressed<POS, T> compressedTile, long newTimestamp) {
+        this.scaleTile0(pos, compressedTile, newTimestamp, true);
     }
 
     //
@@ -277,48 +251,42 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
     //
     //
 
-    public Compressed<POS, T> scaleTile0(PriorityTask<POS> root, POS pos, Compressed<POS, T> compressedTile, long newTimestamp, boolean allowScale) {
-        this.world.executor().checkForHigherPriorityWork(root);
-
+    public Compressed<POS, T> scaleTile0(POS pos, Compressed<POS, T> compressedTile, long newTimestamp, boolean allowScale) {
         //generate scale inputs
-        List<POS> srcPositions = this.world.scaler().inputs(pos).collect(Collectors.toList());
-        List<Compressed<POS, T>> compressedSrcs = new ArrayList<>(srcPositions.size());
-        for (POS srcPosition : srcPositions) {
-            compressedSrcs.add(this.roughGetTile(root, srcPosition));
-        }
-
-        //inflate sources
-        SimpleRecycler<T> tileRecycler = this.world.mode().tileRecycler();
-        T[] srcs = uncheckedCast(this.world.mode().tileArray(compressedSrcs.size()));
-        for (int i = 0; i < compressedSrcs.size(); i++) {
-            Compressed<POS, T> compressedSrc = compressedSrcs.get(i);
-            compressedSrc.readLock().lock();
-            srcs[i] = compressedSrc.inflate(tileRecycler);
-        }
-
-        T dst = tileRecycler.allocate();
-        compressedTile.writeLock().lock();
-        try {
-            if (compressedTile.timestamp() >= newTimestamp) {
-                return compressedTile;
-            }
-
-            //actually do scaling
-            long extra = this.world.scaler().scale(srcs, dst);
-            if (compressedTile.set(newTimestamp, dst, extra)) {
-                this.world.tileChanged(compressedTile, allowScale);
-            }
-        } finally {
-            compressedTile.writeLock().unlock();
-            tileRecycler.release(dst);
-
+        this.world.loader.doWith(this.world.scaler().inputs(pos).collect(Collectors.toList()), compressedSrcs -> {
+            //inflate sources
+            SimpleRecycler<T> tileRecycler = this.world.mode().tileRecycler();
+            T[] srcs = uncheckedCast(this.world.mode().tileArray(compressedSrcs.size()));
             for (int i = 0; i < compressedSrcs.size(); i++) {
-                compressedSrcs.get(i).readLock().unlock();
-                if (srcs[i] != null) {
-                    tileRecycler.release(srcs[i]);
+                Compressed<POS, T> compressedSrc = compressedSrcs.get(i);
+                compressedSrc.readLock().lock();
+                srcs[i] = compressedSrc.inflate(tileRecycler);
+            }
+
+            T dst = tileRecycler.allocate();
+            compressedTile.writeLock().lock();
+            try {
+                if (compressedTile.timestamp() >= newTimestamp) {
+                    return;
+                }
+
+                //actually do scaling
+                long extra = this.world.scaler().scale(srcs, dst);
+                if (compressedTile.set(newTimestamp, dst, extra)) {
+                    this.world.tileChanged(compressedTile, allowScale);
+                }
+            } finally {
+                compressedTile.writeLock().unlock();
+                tileRecycler.release(dst);
+
+                for (int i = 0; i < compressedSrcs.size(); i++) {
+                    compressedSrcs.get(i).readLock().unlock();
+                    if (srcs[i] != null) {
+                        tileRecycler.release(srcs[i]);
+                    }
                 }
             }
-        }
+        });
 
         return compressedTile;
     }

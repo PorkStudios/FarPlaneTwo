@@ -42,7 +42,7 @@ public interface IFarWorld<POS extends IFarPos, T extends IFarTile> extends Clos
 
     IAsyncBlockAccess blockAccess();
 
-    Compressed<POS, T> retainTileFuture(@NonNull POS pos);
+    CompletableFuture<Compressed<POS, T>> retainTileFuture(@NonNull POS pos);
 
     void releaseTileFuture(@NonNull POS pos);
 

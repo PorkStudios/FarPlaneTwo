@@ -183,7 +183,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
         public Entry(@NonNull POS pos) {
             this.pos = pos;
 
-            this.tile = AbstractPlayerTracker.this.world.retainTileFuture(pos);
+            AbstractPlayerTracker.this.world.retainTileFuture(pos).thenAccept(this::tileChanged);
         }
 
         public void addPlayer(@NonNull EntityPlayerMP player) {

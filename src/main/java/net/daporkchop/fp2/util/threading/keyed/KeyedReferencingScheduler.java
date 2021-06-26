@@ -18,28 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.ref;
+package net.daporkchop.fp2.util.threading.keyed;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.util.threading.keyed.KeyedTaskScheduler;
 import net.daporkchop.fp2.util.threading.lazy.LazyFutureTask;
-import net.daporkchop.lib.unsafe.util.AbstractReleasable;
+import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public class KeyedReferencingScheduler<K extends Comparable<? super K>> extends AbstractReleasable {
+public class KeyedReferencingScheduler<K, V> extends AbstractRefCounted {
     /*
      * Implementation details:
      *
@@ -55,15 +54,22 @@ public class KeyedReferencingScheduler<K extends Comparable<? super K>> extends 
      * (removed from both the task scheduler and the map).
      */
 
-    @NonNull
-    protected final KeyedTaskScheduler<? super K> scheduler;
-    @NonNull
-    protected final Consumer<K> task;
-
+    protected final KeyedExecutor<? super K> executor;
     protected final Map<K, Task> map = new ConcurrentHashMap<>();
+    protected final Function<K, V> task;
 
-    public void retain(@NonNull K keyIn) {
-        this.map.compute(keyIn, (key, task) -> {
+    public KeyedReferencingScheduler(@NonNull KeyedExecutor<? super K> executor, @NonNull Function<K, V> task) {
+        this.executor = executor.retain();
+        this.task = task;
+    }
+
+    public CompletableFuture<V> retain(@NonNull K key) {
+        return this.retainInternal(key);
+    }
+
+    protected Task retainInternal(@NonNull K keyIn) {
+        this.ensureNotReleased();
+        return this.map.compute(keyIn, (key, task) -> {
             if (task == null) { //there is no existing task for this key
                 //create new task
                 task = new Task(key);
@@ -77,13 +83,14 @@ public class KeyedReferencingScheduler<K extends Comparable<? super K>> extends 
     }
 
     public void release(@NonNull K keyIn) {
+        this.ensureNotReleased();
         this.map.compute(keyIn, (key, task) -> {
             checkState(task != null, "attempted to release non-existent task for key: %s", key);
 
             if (--task.refCnt == 0 //the task's reference count has reached 0
                 && task.cancel(false)) { //the task itself was marked as cancelled
                 //remove task from scheduler
-                this.scheduler.cancel(key, task);
+                this.executor.cancel(key, task);
 
                 //set the task to null to have it removed from the map
                 task = null;
@@ -93,9 +100,25 @@ public class KeyedReferencingScheduler<K extends Comparable<? super K>> extends 
         });
     }
 
+    public void doWith(@NonNull List<K> keys, @NonNull Consumer<List<V>> callback) {
+        this.ensureNotReleased();
+        List<Task> tasks = keys.stream().map(this::retainInternal).collect(Collectors.toList());
+
+        try {
+            callback.accept(Task.scatterGather(tasks));
+        } finally {
+            keys.forEach(this::release);
+        }
+    }
+
     @Override
     protected void doRelease() {
-        //TODO: cancel all tasks
+        //cancel all pending tasks
+        this.map.forEach(this.executor::cancel);
+        this.map.clear();
+
+        //release reference to scheduler
+        this.executor.release();
     }
 
     /**
@@ -103,7 +126,7 @@ public class KeyedReferencingScheduler<K extends Comparable<? super K>> extends 
      *
      * @author DaPorkchop_
      */
-    protected class Task extends LazyFutureTask<Void> {
+    protected class Task extends LazyFutureTask<V> {
         @Getter
         protected final K key;
 
@@ -118,13 +141,12 @@ public class KeyedReferencingScheduler<K extends Comparable<? super K>> extends 
             this.refCnt = 1;
 
             //schedule self for execution
-            KeyedReferencingScheduler.this.scheduler.submit(key, this);
+            KeyedReferencingScheduler.this.executor.submit(key, this);
         }
 
         @Override
-        protected Void compute() {
-            KeyedReferencingScheduler.this.task.accept(this.key);
-            return null;
+        protected V compute() {
+            return KeyedReferencingScheduler.this.task.apply(this.key);
         }
     }
 }

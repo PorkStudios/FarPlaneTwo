@@ -29,22 +29,22 @@ import java.util.concurrent.ThreadFactory;
 /**
  * @author DaPorkchop_
  */
-public class PriorityKeyedTaskScheduler<K extends Comparable<K>> extends DefaultKeyedTaskScheduler<K> {
-    public PriorityKeyedTaskScheduler(int threads, @NonNull ThreadFactory threadFactory) {
+public class PriorityKeyedExecutor<K extends Comparable<? super K>> extends DefaultKeyedExecutor<K> {
+    public PriorityKeyedExecutor(int threads, @NonNull ThreadFactory threadFactory) {
         super(threads, threadFactory);
     }
 
     @Override
-    protected BlockingQueue<DefaultKeyedTaskScheduler<K>.TaskQueue> createQueue() {
+    protected BlockingQueue<DefaultKeyedExecutor<K>.TaskQueue> createQueue() {
         return new ConcurrentUnboundedPriorityBlockingQueue<>();
     }
 
     @Override
-    protected DefaultKeyedTaskScheduler<K>.TaskQueue createQueue(@NonNull K key, @NonNull Runnable task) {
+    protected DefaultKeyedExecutor<K>.TaskQueue createQueue(@NonNull K key, @NonNull Runnable task) {
         return new TaskQueue(key, task);
     }
 
-    protected class TaskQueue extends DefaultKeyedTaskScheduler<K>.TaskQueue implements Comparable<TaskQueue> {
+    protected class TaskQueue extends DefaultKeyedExecutor<K>.TaskQueue implements Comparable<TaskQueue> {
         public TaskQueue(@NonNull K key, @NonNull Runnable task) {
             super(key, task);
         }

@@ -29,16 +29,11 @@ import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
-import net.daporkchop.fp2.util.threading.keyed.KeyedTaskScheduler;
-import net.daporkchop.fp2.util.threading.keyed.PriorityKeyedTaskScheduler;
+import net.daporkchop.fp2.util.threading.keyed.KeyedExecutor;
+import net.daporkchop.fp2.util.threading.keyed.PriorityKeyedExecutor;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -53,7 +48,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
     protected final FarRenderTree<POS, T> tree;
 
-    protected final KeyedTaskScheduler<POS> bakeExecutor;
+    protected final KeyedExecutor<POS> bakeExecutor;
 
     public BakeManager(@NonNull AbstractFarRenderer<POS, T> renderer, @NonNull IFarTileCache<POS, T> tileCache) {
         this.renderer = renderer;
@@ -62,7 +57,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
         this.tree = new FarRenderTree<>(renderer.mode(), this.strategy, renderer.maxLevel());
 
-        this.bakeExecutor = uncheckedCast(new PriorityKeyedTaskScheduler<>(
+        this.bakeExecutor = uncheckedCast(new PriorityKeyedExecutor<>(
                 FP2Config.client.renderThreads,
                 PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build()));
 

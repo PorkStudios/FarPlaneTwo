@@ -21,7 +21,8 @@
 package net.daporkchop.fp2.util.threading.keyed;
 
 import lombok.NonNull;
-import net.daporkchop.lib.unsafe.capability.Releasable;
+import net.daporkchop.lib.common.misc.refcount.RefCounted;
+import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 /**
  * An executor which organizes submitted tasks based on a key.
@@ -30,7 +31,7 @@ import net.daporkchop.lib.unsafe.capability.Releasable;
  *
  * @author DaPorkchop_
  */
-public interface KeyedTaskScheduler<K> extends Releasable {
+public interface KeyedExecutor<K> extends RefCounted {
     /**
      * Submits a task using the given key.
      *
@@ -59,4 +60,13 @@ public interface KeyedTaskScheduler<K> extends Releasable {
      * @param task the task
      */
     void cancel(@NonNull K key, @NonNull Runnable task);
+
+    @Override
+    int refCnt();
+
+    @Override
+    KeyedExecutor<K> retain() throws AlreadyReleasedException;
+
+    @Override
+    boolean release() throws AlreadyReleasedException;
 }

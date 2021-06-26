@@ -21,9 +21,10 @@
 package net.daporkchop.fp2.util.threading.keyed;
 
 import lombok.NonNull;
+import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
 import net.daporkchop.lib.unsafe.PUnsafe;
-import net.daporkchop.lib.unsafe.util.AbstractReleasable;
+import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -39,14 +40,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 //nothing here needs to be manually synchronized - it's all accessed from inside (ObjObj)ConcurrentHashMap#compute, which synchronizes on the bucket
-public class DefaultKeyedTaskScheduler<K> extends AbstractReleasable implements KeyedTaskScheduler<K> {
+public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements KeyedExecutor<K> {
     protected final Map<K, TaskQueue> queues;
     protected final BlockingQueue<TaskQueue> queue;
 
     protected final Thread[] threads;
     protected volatile boolean running = true;
 
-    public DefaultKeyedTaskScheduler(int threads, @NonNull ThreadFactory threadFactory) {
+    public DefaultKeyedExecutor(int threads, @NonNull ThreadFactory threadFactory) {
         this.queues = this.createQueues();
         this.queue = this.createQueue();
 
@@ -71,7 +72,7 @@ public class DefaultKeyedTaskScheduler<K> extends AbstractReleasable implements 
 
     @Override
     public void submit(@NonNull K keyIn, @NonNull Runnable task) {
-        this.assertNotReleased();
+        this.ensureNotReleased();
         this.queues.compute(keyIn, (key, queue) -> {
             if (queue == null) { //create new queue
                 queue = this.createQueue(key, task);
@@ -84,7 +85,7 @@ public class DefaultKeyedTaskScheduler<K> extends AbstractReleasable implements 
 
     @Override
     public void submitExclusive(@NonNull K keyIn, @NonNull Runnable task) {
-        this.assertNotReleased();
+        this.ensureNotReleased();
         this.queues.compute(keyIn, (key, queue) -> {
             if (queue == null) { //create new queue
                 queue = this.createQueue(key, task);
@@ -98,7 +99,7 @@ public class DefaultKeyedTaskScheduler<K> extends AbstractReleasable implements 
 
     @Override
     public void cancel(@NonNull K keyIn, @NonNull Runnable task) {
-        this.assertNotReleased();
+        this.ensureNotReleased();
         this.queues.computeIfPresent(keyIn, (key, queue) -> {
             if (queue.remove(task) //the task was removed from the queue
                 && queue.isEmpty()) { //no other tasks for this key remain in the queue
@@ -107,6 +108,12 @@ public class DefaultKeyedTaskScheduler<K> extends AbstractReleasable implements 
             }
             return queue;
         });
+    }
+
+    @Override
+    public KeyedExecutor<K> retain() throws AlreadyReleasedException {
+        super.retain();
+        return this;
     }
 
     @Override
@@ -138,11 +145,11 @@ public class DefaultKeyedTaskScheduler<K> extends AbstractReleasable implements 
             this.add(task);
 
             //schedule this queue to be run
-            DefaultKeyedTaskScheduler.this.queue.add(this);
+            DefaultKeyedExecutor.this.queue.add(this);
         }
 
         public void run(@NonNull Deque<Runnable> taskBuffer) {
-            DefaultKeyedTaskScheduler.this.queues.compute(this.key, (key, queue) -> {
+            DefaultKeyedExecutor.this.queues.compute(this.key, (key, queue) -> {
                 checkState(this == queue, "task queue has been replaced?!?");
 
                 //move all tasks from queue into temporary task buffer
@@ -165,13 +172,13 @@ public class DefaultKeyedTaskScheduler<K> extends AbstractReleasable implements 
                 }
             }
 
-            DefaultKeyedTaskScheduler.this.queues.compute(this.key, (key, queue) -> {
+            DefaultKeyedExecutor.this.queues.compute(this.key, (key, queue) -> {
                 checkState(this == queue, "task queue has been replaced?!?");
 
                 if (queue.isEmpty()) { //no new tasks have been added to this queue, so we can remove it
                     return null;
                 } else { //re-schedule this queue to be run again
-                    DefaultKeyedTaskScheduler.this.queue.add(this);
+                    DefaultKeyedExecutor.this.queue.add(this);
                     return queue;
                 }
             });
@@ -187,9 +194,9 @@ public class DefaultKeyedTaskScheduler<K> extends AbstractReleasable implements 
         public void run() {
             Deque<Runnable> taskBuffer = new ArrayDeque<>();
 
-            while (DefaultKeyedTaskScheduler.this.running) {
+            while (DefaultKeyedExecutor.this.running) {
                 try {
-                    DefaultKeyedTaskScheduler.this.queue.take().run(taskBuffer);
+                    DefaultKeyedExecutor.this.queue.take().run(taskBuffer);
                 } catch (InterruptedException e) {
                     //gracefully exit on interrupt
                 } catch (Exception e) {
