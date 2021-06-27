@@ -27,9 +27,11 @@ import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.util.DirectBufferReuse;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.compat.of.OFHelper.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.minecraft.util.math.MathHelper.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -56,6 +58,12 @@ public class ShaderGlStateHelper {
     private final long ADDR_FOG = DATA + OFFSET_FOG;
 
     public void update(float partialTicks, @NonNull Minecraft mc) {
+        //optifine compatibility: disable fog if it's turned off, because optifine only does this itself if no vanilla terrain is being rendered
+        //  (e.g. it's all being discarded in frustum culling)
+        if (OF && (PUnsafe.getInt(mc.gameSettings, OF_FOGTYPE_OFFSET) == OF_OFF && PUnsafe.getBoolean(mc.entityRenderer, OF_ENTITYRENDERER_FOGSTANDARD_OFFSET))) {
+            GlStateManager.disableFog();
+        }
+
         { //camera
             long addr = ADDR_CAMERA;
 
