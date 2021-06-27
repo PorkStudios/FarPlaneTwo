@@ -50,6 +50,8 @@ import net.minecraft.world.gen.ChunkGeneratorFlat;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import static net.daporkchop.fp2.util.Constants.*;
+
 /**
  * Implementation of {@link IFarRenderMode} for the heightmap rendering mode.
  *
@@ -71,7 +73,7 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
     protected AbstractOrderedRegistryEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>> roughGeneratorFactoryEvent() {
         return new RegisterRoughHeightmapGeneratorsEvent(new LinkedOrderedRegistry<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>>()
                 .addLast("superflat", world -> Constants.getTerrainGenerator(world) instanceof ChunkGeneratorFlat ? new FlatHeightmapGenerator(world) : null)
-                .addLast("flatcubic", world -> Constants.getTerrainGenerator(world) instanceof FlatTerrainProcessor ? new CWGFlatHeightmapGenerator(world) : null)
+                .addLast("flatcubic", world -> CWG && Constants.getTerrainGenerator(world) instanceof FlatTerrainProcessor ? new CWGFlatHeightmapGenerator(world) : null)
                 .addLast("cubic_world_gen", world -> Constants.isCwgWorld(world) ? new CWGHeightmapGenerator(world) : null));
     }
 
