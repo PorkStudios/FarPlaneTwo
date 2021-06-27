@@ -24,6 +24,7 @@ import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.util.BlockRenderLayer;
 import net.minecraftforge.fml.relauncher.Side;
@@ -79,6 +80,8 @@ public class OFHelper {
     public static final long OF_FASTRENDER_OFFSET = !OF ? -1L : PUnsafe.pork_getOffset(GameSettings.class, "ofFastRender");
     public static final long OF_FOGTYPE_OFFSET = !OF ? -1L : PUnsafe.pork_getOffset(GameSettings.class, "ofFogType");
     public static final long OF_BETTERGRASS_OFFSET = !OF ? -1L : PUnsafe.pork_getOffset(GameSettings.class, "ofBetterGrass");
+
+    public static final long OF_ENTITYRENDERER_FOGSTANDARD_OFFSET = !OF ? -1L : PUnsafe.pork_getOffset(EntityRenderer.class, "fogStandard");
 
     public static final int OF_SHADERS_ENTITYATTRIB = 10;
     public static final int OF_SHADERS_MIDTEXCOORDATTRIB = 11;
