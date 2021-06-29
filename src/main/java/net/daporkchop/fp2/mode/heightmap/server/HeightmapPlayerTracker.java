@@ -43,10 +43,10 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos> 
     }
 
     @Override
-    protected Stream<HeightmapPos> getPositions(@NonNull EntityPlayerMP player) {
+    protected Stream<HeightmapPos> getPositions(@NonNull EntityPlayerMP player, double posX, double posY, double posZ) {
         final int dist = asrRound(FP2Config.renderDistance, T_SHIFT); //TODO: make it based on render distance
-        final int playerX = floorI(player.posX);
-        final int playerZ = floorI(player.posZ);
+        final int playerX = floorI(posX);
+        final int playerZ = floorI(posZ);
 
         final int levels = FP2Config.maxLevels;
         final int d = asrRound(FP2Config.levelCutoffDistance, T_SHIFT) + 3; //extra padding of 3 tiles to allow tiles to pre-load on the client when moving
@@ -71,5 +71,11 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos> 
         }
 
         return Arrays.stream(positions, 0, i);
+    }
+
+    @Override
+    protected boolean shouldTriggerUpdate(double x0, double y0, double z0, double x1, double y1, double z1) {
+        //compute distance² in 2D
+        return sq(x0 - x1) + sq(z0 - z1) >= UPDATE_TRIGGER_DISTANCE_SQUARED;
     }
 }

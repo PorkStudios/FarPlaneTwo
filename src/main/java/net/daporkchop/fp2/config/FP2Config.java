@@ -27,8 +27,6 @@ import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static java.lang.Math.*;
 
@@ -71,23 +69,13 @@ public class FP2Config {
     public static int levelCutoffDistance = 256;
 
     @Config.Comment({
-            "The number of threads that will be used for generating far plane terrain data.",
+            "The number of threads that will be used on the server for loading and generating fp2 terrain data.",
             "Default: <cpu count> - 1 (and at least 1)"
     })
     @Config.RangeInt(min = 1)
     @Config.LangKey("config.fp2.generationThreads")
     @Config.RequiresWorldRestart
     public static int generationThreads = max(PorkUtil.CPU_COUNT - 1, 1);
-
-    @Config.Comment({
-            "The number of threads that will be used for saving far plane terrain data.",
-            "Default: <cpu count> / 4 (and at least 1)"
-    })
-    @Config.RangeInt(min = 1)
-    @Config.LangKey("config.fp2.ioThreads")
-    @Config.RequiresWorldRestart
-    @Deprecated
-    public static int ioThreads = max(PorkUtil.CPU_COUNT >> 2, 1);
 
     @Config.Comment({
             "Config options available only on the client."
@@ -171,12 +159,13 @@ public class FP2Config {
         public boolean lowResolutionEnable = true;
 
         @Config.Comment({
-                "If low resolution refine is enabled, allows incomplete tiles to be saved.",
-                "This can provide a performance boost if the server is restarted while tiles are still being generated and low resolution refine is",
-                "enabled, but will likely significantly reduce overall generation performance."
+                "The number of threads to be used for tracking the tiles loaded by a given player.",
+                "You shouldn't need to change this unless you have huge player counts.",
+                "Default: 2"
         })
-        @Config.LangKey("config.fp2.performance.savePartial")
-        public boolean savePartial = false;
+        @Config.LangKey("config.fp2.performance.trackingThreads")
+        @Config.RequiresMcRestart
+        public int trackingThreads = min(PorkUtil.CPU_COUNT, 2);
     }
 
     /**

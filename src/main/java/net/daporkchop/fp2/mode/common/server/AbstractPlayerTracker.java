@@ -20,99 +20,122 @@
 
 package net.daporkchop.fp2.mode.common.server;
 
-import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.channel.DefaultEventLoopGroup;
+import io.netty.util.concurrent.EventExecutor;
+import io.netty.util.concurrent.EventExecutorGroup;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.net.server.SPacketTileData;
 import net.daporkchop.fp2.net.server.SPacketUnloadTile;
+import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
-import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
+import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
+import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.util.math.Vec3d;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
 public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFarPlayerTracker<POS> {
+    /**
+     * The squared distance a player must move from their previous position in order to trigger a tracking update.
+     * <p>
+     * The default value of {@code (T_VOXELS / 2)²} is based on the equivalent value of {@code 64} (which is {@code (CHUNK_SIZE / 2)²}) used by vanilla.
+     */
+    protected static final double UPDATE_TRIGGER_DISTANCE_SQUARED = sq(T_VOXELS >> 1);
+
+    //TODO: consider using a KeyedExecutor for this
+    protected static final EventExecutorGroup TRACKER_THREADS = new DefaultEventLoopGroup(
+            FP2Config.performance.trackingThreads,
+            PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Player Tracker #%%d").build());
+
+    protected static final SimpleRecycler<Set<?>> SET_RECYCLER = new SimpleRecycler<Set<?>>() {
+        @Override
+        protected Set<?> allocate0() {
+            return new ObjectOpenHashSet<>();
+        }
+
+        @Override
+        protected void reset0(@NonNull Set<?> value) {
+            value.clear();
+        }
+    };
+
+    protected static <POS extends IFarPos> Set<POS> allocateSet() {
+        return uncheckedCast(SET_RECYCLER.allocate());
+    }
+
+    protected static <POS extends IFarPos> void releaseSet(@NonNull Set<POS> set) {
+        SET_RECYCLER.release(uncheckedCast(set));
+    }
+
     @NonNull
     protected final IFarWorld<POS, ?> world;
 
-    protected final Map<POS, Entry> entries = new ObjObjOpenHashMap<>();
-    protected final Map<EntityPlayerMP, Set<POS>> trackingPositions = new ObjObjOpenHashMap.Identity<>();
-
-    protected final Function<POS, Entry> entryCreator = this::createEntry;
-    protected final Deque<Set<POS>> setAllocator = new ArrayDeque<>();
+    protected final Map<POS, Entry> entries = new ConcurrentHashMap<>();
+    protected final Map<EntityPlayerMP, Context> contexts = new ConcurrentHashMap<>();
 
     @Override
-    public void playerAdd(@NonNull EntityPlayerMP player) {
-        if (!ServerThreadExecutor.INSTANCE.isServerThread()) {
-            ServerThreadExecutor.INSTANCE.execute(() -> this.playerAdd(player));
-            return;
-        }
+    public void playerAdd(@NonNull EntityPlayerMP playerIn) {
+        this.contexts.compute(playerIn, (player, ctx) -> {
+            checkState(ctx == null, "player already tracked: %s", player);
 
-        checkState(this.trackingPositions.putIfAbsent(player, this.allocateSet()) == null, player);
+            FP2_LOG.debug("added {} to tracker", player);
 
-        FP2_LOG.debug("Added player {} to tracker in dimension {}", player.getName(), this.world.world().provider.getDimension());
+            ctx = new Context(player);
+            ctx.scheduleUpdateIfNeeded();
+            return ctx;
+        });
     }
 
     @Override
-    public void playerRemove(@NonNull EntityPlayerMP player) {
-        if (!ServerThreadExecutor.INSTANCE.isServerThread()) {
-            ServerThreadExecutor.INSTANCE.execute(() -> this.playerRemove(player));
-            return;
-        }
+    public void playerRemove(@NonNull EntityPlayerMP playerIn) {
+        this.contexts.compute(playerIn, (player, ctx) -> {
+            checkState(ctx != null, "attempted to remove untracked player: %s", player);
 
-        Set<POS> trackingPositions = this.trackingPositions.remove(player);
-        checkState(trackingPositions != null, player);
+            FP2_LOG.debug("removed {} from tracker", player);
 
-        //remove player from all tracking positions
-        trackingPositions.stream().map(this.entries::get).forEach(entry -> entry.removePlayer(player));
-        this.releaseSet(trackingPositions);
+            //release context
+            ctx.release();
 
-        FP2_LOG.debug("Removed player {} from tracker in dimension {}", player.getName(), this.world.world().provider.getDimension());
+            //return null to have context be removed from map
+            return null;
+        });
     }
 
     @Override
-    public void playerMove(@NonNull EntityPlayerMP player) {
+    public void playerMove(@NonNull EntityPlayerMP playerIn) {
         ServerThreadExecutor.INSTANCE.checkServerThread();
 
-        Set<POS> oldPositions = this.trackingPositions.get(player);
-        checkState(oldPositions != null, player);
-        Set<POS> newPositions = this.allocateSet();
+        this.contexts.compute(playerIn, (player, ctx) -> {
+            checkState(ctx != null, "attempted to update untracked player: %s", player);
 
-        this.getPositions(player)
-                .map(this::getOrCreateEntry)
-                .forEach(entry -> {
-                    oldPositions.remove(entry.pos);
-                    newPositions.add(entry.pos);
-                    entry.addPlayer(player);
-                });
-
-        oldPositions.forEach(pos -> {
-            if (!newPositions.contains(pos)) {
-                this.entries.get(pos).removePlayer(player);
-            }
+            ctx.scheduleUpdateIfNeeded();
+            return ctx;
         });
-
-        checkState(this.trackingPositions.replace(player, oldPositions, newPositions), player);
-        this.releaseSet(oldPositions);
     }
 
     @Override
@@ -137,41 +160,153 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
             return;
         }
 
-        this.trackingPositions.forEach((player, trackingPositions) -> {
-            trackingPositions.stream()
-                    .map(this.entries::get)
-                    .filter(Objects::nonNull)
-                    .forEach(entry -> entry.removePlayer(player));
+        Collection<EntityPlayerMP> trackedPlayersSnapshot = new ArrayList<>(this.contexts.keySet());
+        trackedPlayersSnapshot.forEach(this::playerRemove);
 
-            trackingPositions.clear();
+        //it should be reasonably safe to assume that all pending tasks will have been cancelled by now
+
+        trackedPlayersSnapshot.forEach(this::playerAdd);
+    }
+
+    protected abstract Stream<POS> getPositions(@NonNull EntityPlayerMP player, double posX, double posY, double posZ);
+
+    protected abstract boolean shouldTriggerUpdate(double x0, double y0, double z0, double x1, double y1, double z1);
+
+    protected void beginTracking(@NonNull Context ctx, @NonNull POS posIn) {
+        this.entries.compute(posIn, (pos, entry) -> {
+            if (entry == null) { //no entry exists at this position, so we should make a new one
+                entry = new Entry(pos);
+            }
+
+            return entry.addContext(ctx);
         });
     }
 
-    protected abstract Stream<POS> getPositions(@NonNull EntityPlayerMP player);
+    protected void stopTracking(@NonNull Context ctx, @NonNull POS posIn) {
+        this.entries.compute(posIn, (pos, entry) -> {
+            checkState(entry != null, "cannot remove player %s from non-existent tracking entry at %s", ctx, pos);
 
-    protected Set<POS> allocateSet() {
-        return this.setAllocator.isEmpty() ? new ReferenceOpenHashSet<>() : this.setAllocator.pop();
+            return entry.removePlayer(ctx);
+        });
     }
 
-    protected void releaseSet(@NonNull Set<POS> set) {
-        if (!set.isEmpty()) {
-            set.clear();
+    /**
+     * A tracking context used for a single player.
+     *
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    protected class Context extends AbstractReleasable {
+        @NonNull
+        protected final EntityPlayerMP player;
+
+        protected final EventExecutor executor = TRACKER_THREADS.next();
+
+        //only ever written to by tracker thread
+        protected volatile Set<POS> trackingPositions = allocateSet();
+
+        //these are using Vec3d instead of 3 doubles to allow the value to be replaced atomically. to ensure coherent access to the coordinates,
+        // readers must take care never to dereference the fields more than once.
+        protected volatile Vec3d lastPos = new Vec3d(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
+        protected volatile Vec3d nextPos;
+
+        /**
+         * Considers scheduling this player for a tracking update.
+         * <p>
+         * May only be called from the server thread.
+         */
+        public void scheduleUpdateIfNeeded() {
+            Vec3d lastPos = this.lastPos;
+            if (AbstractPlayerTracker.this.shouldTriggerUpdate(lastPos.x, lastPos.y, lastPos.z, this.player.posX, this.player.posY, this.player.posZ)) {
+                //set nextPos to be used while updating
+                this.nextPos = new Vec3d(this.player.posX, this.player.posY, this.player.posZ);
+
+                //add update task to execution queue
+                this.executor.submit(this::update);
+            }
         }
-        this.setAllocator.push(set);
-    }
 
-    protected Entry getOrCreateEntry(@NonNull POS pos) {
-        return this.entries.computeIfAbsent(pos, this.entryCreator);
-    }
+        /**
+         * Actually updates this tracking context.
+         * <p>
+         * Must be called on this context's worker thread.
+         */
+        private void update() {
+            try {
+                Vec3d lastPos = this.lastPos;
+                Vec3d nextPos = this.nextPos;
+                if (nextPos == null || !AbstractPlayerTracker.this.shouldTriggerUpdate(lastPos.x, lastPos.y, lastPos.z, nextPos.x, nextPos.y, nextPos.z)) {
+                    //there is no next position (possibly already updated?), so we shouldn't do anything
+                    return;
+                }
 
-    protected Entry createEntry(@NonNull POS pos) {
-        return new Entry(pos);
+                //inform the server thread that this update has started, by updating the current position and clearing the next one
+                this.lastPos = nextPos;
+                this.nextPos = null;
+
+                Set<POS> oldPositions = this.trackingPositions;
+                Set<POS> newPositions = allocateSet();
+
+                AbstractPlayerTracker.this.getPositions(this.player, nextPos.x, nextPos.y, nextPos.z)
+                        .forEach(pos -> {
+                            newPositions.add(pos);
+
+                            if (!oldPositions.remove(pos)) {
+                                //the position wasn't being tracked before, so we should begin tracking it
+                                AbstractPlayerTracker.this.beginTracking(this, pos);
+                            }
+                        });
+
+                //by this point, oldPositions contains all the positions that are no longer needed. we can simply iterate through it and stop tracking them
+                oldPositions.forEach(pos -> AbstractPlayerTracker.this.stopTracking(this, pos));
+
+                this.trackingPositions = newPositions;
+                releaseSet(oldPositions);
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
+        }
+
+        /**
+         * Enqueues the given tile to be sent to the player.
+         *
+         * @param tile the tile to be sent
+         */
+        public void sendTile(@NonNull Compressed<POS, ?> tile) {
+            NETWORK_WRAPPER.sendTo(new SPacketTileData().mode(AbstractPlayerTracker.this.world.mode()).tile(tile), this.player);
+        }
+
+        /**
+         * Enqueues the given tile to be unloaded by the player.
+         *
+         * @param pos the position of the tile to be unloaded
+         */
+        public void unloadTile(@NonNull POS pos) {
+            NETWORK_WRAPPER.sendTo(new SPacketUnloadTile().mode(AbstractPlayerTracker.this.world.mode()).pos(pos), this.player);
+        }
+
+        @Override
+        protected void doRelease() {
+            if (!this.executor.inEventLoop()) { //make sure we're on the tracker thread
+                this.executor.submit(this::doRelease);
+                return;
+            }
+
+            //remove player from all tracking positions
+            this.trackingPositions.forEach(pos -> AbstractPlayerTracker.this.stopTracking(this, pos));
+            releaseSet(this.trackingPositions);
+        }
+
+        @Override
+        public String toString() {
+            return this.player.toString();
+        }
     }
 
     @ToString
     public class Entry {
         protected final POS pos;
-        protected final Set<EntityPlayerMP> players = new ReferenceOpenHashSet<>();
+        protected final Set<Context> contexts = new ReferenceOpenHashSet<>();
 
         protected Compressed<POS, ?> tile;
 
@@ -181,39 +316,40 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
             AbstractPlayerTracker.this.world.retainTileFuture(pos).thenAccept(this::tileChanged);
         }
 
-        public void addPlayer(@NonNull EntityPlayerMP player) {
-            if (this.players.add(player) && this.tile != null) {
-                //player was newly added and the tile has been set, send it
-                //TODO: make this not be async after fixing exact generator
-                GlobalEventExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(new SPacketTileData()
-                        .mode(AbstractPlayerTracker.this.world.mode()).tile(this.tile), player));
-            }
-        }
+        public Entry addContext(@NonNull Context ctx) {
+            checkState(this.contexts.add(ctx), "player %s was already added to entry %s!", ctx, this);
 
-        public void removePlayer(@NonNull EntityPlayerMP player) {
-            checkState(this.players.remove(player), player);
-
-            if (this.players.isEmpty()) {
-                this.remove();
+            if (this.tile != null) { //the tile has already been loaded, let's send it to the player
+                ctx.sendTile(this.tile);
             }
 
-            NETWORK_WRAPPER.sendTo(new SPacketUnloadTile().mode(AbstractPlayerTracker.this.world.mode()).pos(this.pos), player);
+            return this;
         }
 
-        public void remove() {
-            //remove self from tracker
-            checkState(AbstractPlayerTracker.this.entries.remove(this.pos, this), this);
+        public Entry removePlayer(@NonNull Context ctx) {
+            checkState(this.contexts.remove(ctx), "player %s did not belong to entry %s!", ctx, this);
 
-            AbstractPlayerTracker.this.world.releaseTileFuture(this.pos);
+            if (this.tile != null) { //the tile has already been sent to the player, so it needs to be unloaded on their end
+                ctx.unloadTile(this.pos);
+            }
+
+            if (this.contexts.isEmpty()) { //no more players are tracking this entry, so it can be removed
+                //release the tile load future (potentially removing it from the load/generation queue)
+                AbstractPlayerTracker.this.world.releaseTileFuture(this.pos);
+
+                //this entry should be replaced with null
+                return null;
+            } else {
+                return this;
+            }
         }
 
         public void tileChanged(@NonNull Compressed<POS, ?> tile) {
             this.tile = tile;
 
             //send packet to all players
-            SPacketTileData packet = new SPacketTileData().mode(AbstractPlayerTracker.this.world.mode()).tile(tile);
             //TODO: make this not be async after fixing exact generator
-            this.players.forEach(player -> GlobalEventExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(packet, player)));
+            this.contexts.forEach(ctx -> ctx.sendTile(tile));
             //TODO: figure out what the above TODO was referring to
             //TODO: i have now figured out what it was referring to, actually fix it now
             //TODO: actually, i don't think there's any way i can reasonably fix this without breaking AsyncBlockAccess. i'll need to rework
