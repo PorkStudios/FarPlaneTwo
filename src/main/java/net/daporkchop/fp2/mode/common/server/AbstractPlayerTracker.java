@@ -38,6 +38,8 @@ import net.daporkchop.fp2.net.server.SPacketUnloadTile;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
+import net.daporkchop.lib.common.ref.Ref;
+import net.daporkchop.lib.common.ref.ThreadRef;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.Vec3d;
@@ -45,7 +47,6 @@ import net.minecraft.util.math.Vec3d;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -72,7 +73,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
             FP2Config.performance.trackingThreads,
             PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Player Tracker #%%d").build());
 
-    protected static final SimpleRecycler<Set<?>> SET_RECYCLER = new SimpleRecycler<Set<?>>() {
+    protected static final Ref<SimpleRecycler<Set<?>>> SET_RECYCLER = ThreadRef.soft(() -> new SimpleRecycler<Set<?>>() {
         @Override
         protected Set<?> allocate0() {
             return new ObjectOpenHashSet<>();
@@ -82,14 +83,14 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
         protected void reset0(@NonNull Set<?> value) {
             value.clear();
         }
-    };
+    });
 
     protected static <POS extends IFarPos> Set<POS> allocateSet() {
-        return uncheckedCast(SET_RECYCLER.allocate());
+        return uncheckedCast(SET_RECYCLER.get().allocate());
     }
 
     protected static <POS extends IFarPos> void releaseSet(@NonNull Set<POS> set) {
-        SET_RECYCLER.release(uncheckedCast(set));
+        SET_RECYCLER.get().release(uncheckedCast(set));
     }
 
     @NonNull
@@ -141,15 +142,12 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
     @Override
     public void tileChanged(@NonNull Compressed<POS, ?> tile) {
         if (tile.isGenerated()) {
-            if (!ServerThreadExecutor.INSTANCE.isServerThread()) {
-                ServerThreadExecutor.INSTANCE.execute(() -> this.tileChanged(tile));
-                return;
-            }
-
-            Entry entry = this.entries.get(tile.pos());
-            if (entry != null) {
+            this.entries.computeIfPresent(tile.pos(), (pos, entry) -> {
+                //notify entry that the tile has been changed
                 entry.tileChanged(tile);
-            }
+
+                return entry;
+            });
         }
     }
 
@@ -232,39 +230,35 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
          * Must be called on this context's worker thread.
          */
         private void update() {
-            try {
-                Vec3d lastPos = this.lastPos;
-                Vec3d nextPos = this.nextPos;
-                if (nextPos == null || !AbstractPlayerTracker.this.shouldTriggerUpdate(lastPos.x, lastPos.y, lastPos.z, nextPos.x, nextPos.y, nextPos.z)) {
-                    //there is no next position (possibly already updated?), so we shouldn't do anything
-                    return;
-                }
-
-                //inform the server thread that this update has started, by updating the current position and clearing the next one
-                this.lastPos = nextPos;
-                this.nextPos = null;
-
-                Set<POS> oldPositions = this.trackingPositions;
-                Set<POS> newPositions = allocateSet();
-
-                AbstractPlayerTracker.this.getPositions(this.player, nextPos.x, nextPos.y, nextPos.z)
-                        .forEach(pos -> {
-                            newPositions.add(pos);
-
-                            if (!oldPositions.remove(pos)) {
-                                //the position wasn't being tracked before, so we should begin tracking it
-                                AbstractPlayerTracker.this.beginTracking(this, pos);
-                            }
-                        });
-
-                //by this point, oldPositions contains all the positions that are no longer needed. we can simply iterate through it and stop tracking them
-                oldPositions.forEach(pos -> AbstractPlayerTracker.this.stopTracking(this, pos));
-
-                this.trackingPositions = newPositions;
-                releaseSet(oldPositions);
-            } catch (Throwable t) {
-                t.printStackTrace();
+            Vec3d lastPos = this.lastPos;
+            Vec3d nextPos = this.nextPos;
+            if (nextPos == null || !AbstractPlayerTracker.this.shouldTriggerUpdate(lastPos.x, lastPos.y, lastPos.z, nextPos.x, nextPos.y, nextPos.z)) {
+                //there is no next position (possibly already updated?), so we shouldn't do anything
+                return;
             }
+
+            //inform the server thread that this update has started, by updating the current position and clearing the next one
+            this.lastPos = nextPos;
+            this.nextPos = null;
+
+            Set<POS> oldPositions = this.trackingPositions;
+            Set<POS> newPositions = allocateSet();
+
+            AbstractPlayerTracker.this.getPositions(this.player, nextPos.x, nextPos.y, nextPos.z)
+                    .forEach(pos -> {
+                        newPositions.add(pos);
+
+                        if (!oldPositions.remove(pos)) {
+                            //the position wasn't being tracked before, so we should begin tracking it
+                            AbstractPlayerTracker.this.beginTracking(this, pos);
+                        }
+                    });
+
+            //by this point, oldPositions contains all the positions that are no longer needed. we can simply iterate through it and stop tracking them
+            oldPositions.forEach(pos -> AbstractPlayerTracker.this.stopTracking(this, pos));
+
+            this.trackingPositions = newPositions;
+            releaseSet(oldPositions);
         }
 
         /**
@@ -288,7 +282,10 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
         @Override
         protected void doRelease() {
             if (!this.executor.inEventLoop()) { //make sure we're on the tracker thread
-                this.executor.submit(this::doRelease);
+                //set nextPos to null to prevent any update tasks that might be in the queue from running
+                this.nextPos = null;
+
+                this.executor.submit(this::doRelease).syncUninterruptibly(); //block until the task is actually executed
                 return;
             }
 
@@ -355,7 +352,6 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
             //TODO: actually, i don't think there's any way i can reasonably fix this without breaking AsyncBlockAccess. i'll need to rework
             // how tiles are stored on the server (the issue is a deadlock when the server thread is trying to serialize a tile while a worker
             // generating said tile is waiting for the server thread to load a chunk required for generating the tile into AsyncBlockAccess)
-            //this.players.forEach(player -> NETWORK_WRAPPER.sendTo(packet, player));
         }
     }
 }
