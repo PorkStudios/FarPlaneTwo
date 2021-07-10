@@ -64,7 +64,7 @@ public interface IFarWorld<POS extends IFarPos, T extends IFarTile> extends Clos
     /**
      * @return the {@link IFarPlayerTracker} used by this world
      */
-    IFarPlayerTracker<POS> tracker();
+    IFarPlayerTracker<POS, T> tracker();
 
     /**
      * @return the {@link IFarRenderMode} that this world is used by

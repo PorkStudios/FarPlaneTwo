@@ -24,6 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.common.server.AbstractPlayerTracker;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import java.util.Arrays;
@@ -37,7 +38,7 @@ import static net.daporkchop.lib.common.math.PMath.*;
 /**
  * @author DaPorkchop_
  */
-public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos> {
+public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTile> {
     public VoxelPlayerTracker(@NonNull VoxelWorld world) {
         super(world);
     }

@@ -46,7 +46,7 @@ public abstract class HeightmapWorld extends AbstractFarWorld<HeightmapPos, Heig
     }
 
     @Override
-    protected IFarPlayerTracker<HeightmapPos> createTracker() {
+    protected IFarPlayerTracker<HeightmapPos, HeightmapTile> createTracker() {
         return new HeightmapPlayerTracker(this);
     }
 

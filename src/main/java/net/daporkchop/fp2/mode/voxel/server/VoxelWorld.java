@@ -46,7 +46,7 @@ public abstract class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelTile> {
     }
 
     @Override
-    protected IFarPlayerTracker<VoxelPos> createTracker() {
+    protected IFarPlayerTracker<VoxelPos, VoxelTile> createTracker() {
         return new VoxelPlayerTracker(this);
     }
 

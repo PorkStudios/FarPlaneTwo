@@ -31,6 +31,7 @@ import lombok.ToString;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.net.server.SPacketTileData;
@@ -60,7 +61,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFarPlayerTracker<POS> {
+public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarTile> implements IFarPlayerTracker<POS, T> {
     /**
      * The squared distance a player must move from their previous position in order to trigger a tracking update.
      * <p>
@@ -94,7 +95,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
     }
 
     @NonNull
-    protected final IFarWorld<POS, ?> world;
+    protected final IFarWorld<POS, T> world;
 
     protected final Map<POS, Entry> entries = new ConcurrentHashMap<>();
     protected final Map<EntityPlayerMP, Context> contexts = new ConcurrentHashMap<>();
@@ -140,7 +141,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
     }
 
     @Override
-    public void tileChanged(@NonNull Compressed<POS, ?> tile) {
+    public void tileChanged(@NonNull Compressed<POS, T> tile) {
         if (tile.isGenerated()) {
             this.entries.computeIfPresent(tile.pos(), (pos, entry) -> {
                 //notify entry that the tile has been changed
@@ -305,7 +306,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
         protected final POS pos;
         protected final Set<Context> contexts = new ReferenceOpenHashSet<>();
 
-        protected Compressed<POS, ?> tile;
+        protected Compressed<POS, T> tile;
 
         public Entry(@NonNull POS pos) {
             this.pos = pos;
@@ -341,7 +342,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos> implements IFar
             }
         }
 
-        public void tileChanged(@NonNull Compressed<POS, ?> tile) {
+        public void tileChanged(@NonNull Compressed<POS, T> tile) {
             this.tile = tile;
 
             //send packet to all players

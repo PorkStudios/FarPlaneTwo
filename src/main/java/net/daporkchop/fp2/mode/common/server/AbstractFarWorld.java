@@ -69,7 +69,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
     protected final IFarStorage<POS, T> storage;
 
-    protected final IFarPlayerTracker<POS> tracker;
+    protected final IFarPlayerTracker<POS, T> tracker;
 
     protected final KeyedExecutor<POS> executor; //TODO: make these global rather than per-dimension
     protected final KeyedReferencingFutureScheduler<POS, Compressed<POS, T>> loader;
@@ -117,7 +117,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
     protected abstract IFarScaler<POS, T> createScaler();
 
-    protected abstract IFarPlayerTracker<POS> createTracker();
+    protected abstract IFarPlayerTracker<POS, T> createTracker();
 
     protected abstract boolean anyVanillaTerrainExistsAt(@NonNull POS pos);
 

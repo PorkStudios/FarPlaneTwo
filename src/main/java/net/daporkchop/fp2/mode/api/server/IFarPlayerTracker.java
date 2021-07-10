@@ -23,19 +23,20 @@ package net.daporkchop.fp2.mode.api.server;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarPlayerTracker<POS extends IFarPos> {
+public interface IFarPlayerTracker<POS extends IFarPos, T extends IFarTile> {
     void playerAdd(@NonNull EntityPlayerMP player);
 
     void playerRemove(@NonNull EntityPlayerMP player);
 
     void playerMove(@NonNull EntityPlayerMP player);
 
-    void tileChanged(@NonNull Compressed<POS, ?> tile);
+    void tileChanged(@NonNull Compressed<POS, T> tile);
 
     void debug_dropAllTiles();
 }
