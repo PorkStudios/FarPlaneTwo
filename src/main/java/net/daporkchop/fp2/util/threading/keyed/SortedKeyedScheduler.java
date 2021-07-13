@@ -29,8 +29,8 @@ import java.util.concurrent.ThreadFactory;
 /**
  * @author DaPorkchop_
  */
-public class PriorityKeyedExecutor<K extends Comparable<? super K>> extends DefaultKeyedExecutor<K> {
-    public PriorityKeyedExecutor(int threads, @NonNull ThreadFactory threadFactory) {
+public class SortedKeyedScheduler<K extends Comparable<? super K>> extends DefaultKeyedExecutor<K> {
+    public SortedKeyedScheduler(int threads, @NonNull ThreadFactory threadFactory) {
         super(threads, threadFactory);
     }
 

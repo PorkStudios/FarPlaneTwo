@@ -28,6 +28,7 @@ import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.debug.FP2Debug.*;
@@ -52,7 +53,7 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
         final int levels = FP2Config.maxLevels;
         final int d = asrRound(FP2Config.levelCutoffDistance, T_SHIFT) + 3; //extra padding of 3 tiles to allow tiles to pre-load on the client when moving
 
-        HeightmapPos[] positions = new HeightmapPos[pow(d * 2 + 1, 2) * levels];
+        HeightmapPos[] positions = new HeightmapPos[sq(d * 2 + 2) * levels];
         int i = 0;
 
         for (int lvl = FP2_DEBUG && FP2Config.debug.skipLevel0 ? 1 : 0; lvl < levels; lvl++) {
@@ -69,9 +70,16 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
                     positions[i++] = new HeightmapPos(lvl, x, z);
                 }
             }
+
+            Arrays.sort(positions, i - sq(d * 2 + 2), i, Comparator.comparingInt(new HeightmapPos(lvl, baseX, baseZ)::manhattanDistance));
         }
 
         return Arrays.stream(positions, 0, i);
+    }
+
+    @Override
+    protected HeightmapPos getOrigin(@NonNull EntityPlayerMP player, double posX, double posY, double posZ) {
+        return new HeightmapPos(0, asrRound(floorI(posX), T_SHIFT), asrRound(floorI(posZ), T_SHIFT));
     }
 
     @Override

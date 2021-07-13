@@ -110,6 +110,23 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
     }
 
     @Override
+    public void cancelAll(@NonNull K keyIn) {
+        this.ensureNotReleased();
+        this.queues.computeIfPresent(keyIn, (key, queue) -> {
+            //remove all tasks from queue
+            // we'll rely on the worker threads to remove the queue itself from the map when they get around to it
+            queue.clear();
+            return queue;
+        });
+    }
+
+    @Override
+    public boolean updatePriorityFor(@NonNull K key, int priority) {
+        this.ensureNotReleased();
+        return false; //not supported
+    }
+
+    @Override
     public KeyedExecutor<K> retain() throws AlreadyReleasedException {
         super.retain();
         return this;
@@ -151,12 +168,20 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
             DefaultKeyedExecutor.this.queues.compute(this.key, (key, queue) -> {
                 checkState(this == queue, "task queue has been replaced?!?");
 
-                //move all tasks from queue into temporary task buffer
-                taskBuffer.addAll(queue);
-                queue.clear();
+                if (queue.isEmpty()) { //all tasks in the queue have been cancelled, so we can remove it
+                    return null;
+                } else {
+                    //move all tasks from queue into temporary task buffer
+                    taskBuffer.addAll(queue);
+                    queue.clear();
 
-                return queue;
+                    return queue;
+                }
             });
+
+            if (taskBuffer.isEmpty()) { //all the tasks were cancelled before we got around to handling this key, so nothing needs to be processed
+                return;
+            }
 
             Throwable t0 = null;
             for (Runnable r : taskBuffer) {

@@ -37,10 +37,14 @@ import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.net.server.SPacketTileData;
 import net.daporkchop.fp2.net.server.SPacketUnloadTile;
 import net.daporkchop.fp2.util.SimpleRecycler;
+import net.daporkchop.fp2.util.datastructure.RecyclingArrayDeque;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
+import net.daporkchop.lib.common.util.PorkUtil;
+import net.daporkchop.lib.primitive.map.ObjIntMap;
+import net.daporkchop.lib.primitive.map.open.ObjIntOpenHashMap;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.Vec3d;
@@ -49,6 +53,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
@@ -86,12 +91,32 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         }
     });
 
-    protected static <POS extends IFarPos> Set<POS> allocateSet() {
+    protected static final Ref<SimpleRecycler<ObjIntMap<?>>> MAP_RECYCLER = ThreadRef.soft(() -> new SimpleRecycler<ObjIntMap<?>>() {
+        @Override
+        protected ObjIntMap<?> allocate0() {
+            return new ObjIntOpenHashMap<>();
+        }
+
+        @Override
+        protected void reset0(@NonNull ObjIntMap<?> value) {
+            value.clear();
+        }
+    });
+
+    protected static <T> Set<T> allocateSet() {
         return uncheckedCast(SET_RECYCLER.get().allocate());
     }
 
-    protected static <POS extends IFarPos> void releaseSet(@NonNull Set<POS> set) {
+    protected static <T> void releaseSet(@NonNull Set<T> set) {
         SET_RECYCLER.get().release(uncheckedCast(set));
+    }
+
+    protected static <T> ObjIntMap<T> allocateMap() {
+        return uncheckedCast(MAP_RECYCLER.get().allocate());
+    }
+
+    protected static <T> void releaseMap(@NonNull ObjIntMap<T> set) {
+        MAP_RECYCLER.get().release(uncheckedCast(set));
     }
 
     @NonNull
@@ -169,6 +194,8 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
     protected abstract Stream<POS> getPositions(@NonNull EntityPlayerMP player, double posX, double posY, double posZ);
 
+    protected abstract POS getOrigin(@NonNull EntityPlayerMP player, double posX, double posY, double posZ);
+
     protected abstract boolean shouldTriggerUpdate(double x0, double y0, double z0, double x1, double y1, double z1);
 
     protected void beginTracking(@NonNull Context ctx, @NonNull POS posIn) {
@@ -201,13 +228,22 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
         protected final EventExecutor executor = TRACKER_THREADS.next();
 
-        //only ever written to by tracker thread
-        protected volatile Set<POS> trackingPositions = allocateSet();
+        //only ever accessed to by tracker thread
+        protected final Set<POS> loadedPositions = allocateSet();
+        protected final Set<POS> waitingPositions = allocateSet();
+        protected Set<POS> allPositions = allocateSet();
+        protected RecyclingArrayDeque<POS> queuedPositions;
+
+        protected POS origin;
 
         //these are using Vec3d instead of 3 doubles to allow the value to be replaced atomically. to ensure coherent access to the coordinates,
         // readers must take care never to dereference the fields more than once.
         protected volatile Vec3d lastPos = new Vec3d(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
         protected volatile Vec3d nextPos;
+
+        {
+            this.executor.submit(() -> this.queuedPositions = new RecyclingArrayDeque<>()); //create on tracker thread to ensure it uses the correct recycler
+        }
 
         /**
          * Considers scheduling this player for a tracking update.
@@ -231,6 +267,8 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
          * Must be called on this context's worker thread.
          */
         private void update() {
+            this.assertOnTrackerThread();
+
             Vec3d lastPos = this.lastPos;
             Vec3d nextPos = this.nextPos;
             if (nextPos == null || !AbstractPlayerTracker.this.shouldTriggerUpdate(lastPos.x, lastPos.y, lastPos.z, nextPos.x, nextPos.y, nextPos.z)) {
@@ -242,24 +280,46 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
             this.lastPos = nextPos;
             this.nextPos = null;
 
-            Set<POS> oldPositions = this.trackingPositions;
+            Set<POS> oldPositions = this.allPositions;
             Set<POS> newPositions = allocateSet();
+
+            this.origin = AbstractPlayerTracker.this.getOrigin(this.player, nextPos.x, nextPos.y, nextPos.z);
+
+            //remove all positions from load queue
+            this.queuedPositions.clear();
 
             AbstractPlayerTracker.this.getPositions(this.player, nextPos.x, nextPos.y, nextPos.z)
                     .forEach(pos -> {
                         newPositions.add(pos);
+                        oldPositions.remove(pos);
 
-                        if (!oldPositions.remove(pos)) {
-                            //the position wasn't being tracked before, so we should begin tracking it
-                            AbstractPlayerTracker.this.beginTracking(this, pos);
+                        if (!this.loadedPositions.contains(pos) && !this.waitingPositions.contains(pos)) {
+                            //the position is neither loaded nor waiting to be loaded, so let's add it to the queue
+                            this.queuedPositions.addLast(pos);
                         }
                     });
 
             //by this point, oldPositions contains all the positions that are no longer needed. we can simply iterate through it and stop tracking them
-            oldPositions.forEach(pos -> AbstractPlayerTracker.this.stopTracking(this, pos));
+            oldPositions.forEach(pos -> {
+                if (this.loadedPositions.contains(pos) || this.waitingPositions.contains(pos)) {
+                    AbstractPlayerTracker.this.stopTracking(this, pos);
+                }
+            });
 
-            this.trackingPositions = newPositions;
+            //double-check to make sure the load queue is totally filled
+            this.fillLoadQueue();
+
+            this.allPositions = newPositions;
             releaseSet(oldPositions);
+        }
+
+        private void fillLoadQueue() {
+            this.assertOnTrackerThread();
+
+            for (POS pos; this.waitingPositions.size() < FP2Config.generationThreads && (pos = this.queuedPositions.poll()) != null; ) {
+                checkState(this.waitingPositions.add(pos), "position already queued?!?");
+                AbstractPlayerTracker.this.beginTracking(this, pos);
+            }
         }
 
         /**
@@ -267,8 +327,30 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
          *
          * @param tile the tile to be sent
          */
-        public void sendTile(@NonNull Compressed<POS, ?> tile) {
+        public void notifyChanged(@NonNull Compressed<POS, ?> tile) {
+            if (this.executor.inEventLoop()) {
+                this.notifyChangedSync(tile);
+            } else {
+                this.executor.submit(() -> this.notifyChangedSync(tile));
+            }
+        }
+
+        private void notifyChangedSync(@NonNull Compressed<POS, ?> tile) {
+            this.assertOnTrackerThread();
+
+            if (!this.allPositions.contains(tile.pos())) { //the position has been unloaded since the task was enqueued, we can assume it's safe to ignore
+                return;
+            }
+
             NETWORK_WRAPPER.sendTo(new SPacketTileData().mode(AbstractPlayerTracker.this.world.mode()).tile(tile), this.player);
+            if (this.waitingPositions.remove(tile.pos())) { //we were waiting to load this tile, and now it's loaded!
+                checkState(this.loadedPositions.add(tile.pos()), "position already loaded?!?");
+
+                //make sure as many tiles as possible are queued for loading
+                this.fillLoadQueue();
+            } else {
+                checkState(this.loadedPositions.contains(tile.pos()), "position loaded but not in queue?!?");
+            }
         }
 
         /**
@@ -276,8 +358,26 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
          *
          * @param pos the position of the tile to be unloaded
          */
-        public void unloadTile(@NonNull POS pos) {
-            NETWORK_WRAPPER.sendTo(new SPacketUnloadTile().mode(AbstractPlayerTracker.this.world.mode()).pos(pos), this.player);
+        public void notifyUnload(@NonNull POS pos) {
+            if (this.executor.inEventLoop()) {
+                this.notifyUnloadSync(pos);
+            } else {
+                this.executor.submit(() -> this.notifyUnloadSync(pos));
+            }
+        }
+
+        private void notifyUnloadSync(@NonNull POS pos) {
+            this.assertOnTrackerThread();
+
+            if (this.loadedPositions.remove(pos)) {
+                checkState(!this.waitingPositions.remove(pos), "tile at %s was loaded and queued at once?!?", pos);
+
+                NETWORK_WRAPPER.sendTo(new SPacketUnloadTile().mode(AbstractPlayerTracker.this.world.mode()).pos(pos), this.player);
+            } else {
+                checkState(this.waitingPositions.remove(pos), "tile at %s wasn't loaded?!?", pos);
+
+                this.fillLoadQueue();
+            }
         }
 
         @Override
@@ -291,13 +391,27 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
             }
 
             //remove player from all tracking positions
-            this.trackingPositions.forEach(pos -> AbstractPlayerTracker.this.stopTracking(this, pos));
-            releaseSet(this.trackingPositions);
+            // (using temporary set to avoid CME)
+            Set<POS> tmp = allocateSet();
+            tmp.addAll(this.waitingPositions);
+            tmp.addAll(this.loadedPositions);
+            tmp.forEach(pos -> AbstractPlayerTracker.this.stopTracking(this, pos));
+            releaseSet(tmp);
+
+            //release everything
+            this.queuedPositions.close();
+            releaseSet(this.allPositions);
+            releaseSet(this.waitingPositions);
+            releaseSet(this.loadedPositions);
         }
 
         @Override
         public String toString() {
             return this.player.toString();
+        }
+
+        private void assertOnTrackerThread() {
+            checkState(this.executor.inEventLoop(), "may only be called by tracker thread, not %s", Thread.currentThread());
         }
     }
 
@@ -311,14 +425,14 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         public Entry(@NonNull POS pos) {
             this.pos = pos;
 
-            AbstractPlayerTracker.this.world.retainTileFuture(pos).thenAccept(this::tileChanged);
+            AbstractPlayerTracker.this.world.retainTileFuture(pos).thenAcceptAsync(AbstractPlayerTracker.this::tileChanged, TRACKER_THREADS);
         }
 
         public Entry addContext(@NonNull Context ctx) {
             checkState(this.contexts.add(ctx), "player %s was already added to entry %s!", ctx, this);
 
             if (this.tile != null) { //the tile has already been loaded, let's send it to the player
-                ctx.sendTile(this.tile);
+                ctx.notifyChanged(this.tile);
             }
 
             return this;
@@ -328,7 +442,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
             checkState(this.contexts.remove(ctx), "player %s did not belong to entry %s!", ctx, this);
 
             if (this.tile != null) { //the tile has already been sent to the player, so it needs to be unloaded on their end
-                ctx.unloadTile(this.pos);
+                ctx.notifyUnload(this.pos);
             }
 
             if (this.contexts.isEmpty()) { //no more players are tracking this entry, so it can be removed
@@ -347,7 +461,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
             //send packet to all players
             //TODO: make this not be async after fixing exact generator
-            this.contexts.forEach(ctx -> ctx.sendTile(tile));
+            this.contexts.forEach(ctx -> ctx.notifyChanged(tile));
             //TODO: figure out what the above TODO was referring to
             //TODO: i have now figured out what it was referring to, actually fix it now
             //TODO: actually, i don't think there's any way i can reasonably fix this without breaking AsyncBlockAccess. i'll need to rework

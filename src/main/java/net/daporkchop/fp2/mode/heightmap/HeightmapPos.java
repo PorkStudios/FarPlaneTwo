@@ -29,6 +29,7 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.ChunkPos;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -108,6 +109,22 @@ public class HeightmapPos implements IFarPos {
         return new AxisAlignedBB(
                 this.x << shift, Integer.MIN_VALUE, this.z << shift,
                 (this.x + 1) << shift, Integer.MAX_VALUE, (this.z + 1) << shift);
+    }
+
+    @Override
+    public int manhattanDistance(@NonNull IFarPos posIn) {
+        HeightmapPos pos = (HeightmapPos) posIn;
+        if (this.level == pos.level) {
+            return abs(this.x - pos.x) + abs(this.z - pos.z);
+        } else {
+            int l0 = this.level;
+            int l1 = pos.level;
+            int s0 = max(l0 - l1, 0);
+            int s1 = max(l1 - l0, 0);
+            int s2 = max(s0, s1);
+            return (abs((this.x >> s0) - (pos.x >> s1)) << s2)
+                   + (abs((this.z >> s0) - (pos.z >> s1)) << s2);
+        }
     }
 
     @Override

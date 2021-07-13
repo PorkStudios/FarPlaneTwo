@@ -96,6 +96,20 @@ public interface IFarPos extends Comparable<IFarPos> {
     }
 
     /**
+     * Gets the Manhattan distance to the given {@link IFarPos}.
+     * <p>
+     * If the positions are at different detail levels, the distance is approximate.
+     * <p>
+     * Note that the distance may not be returned in blocks, but rather in arbitrary units. The only constraint is that it must remain consistent across
+     * levels (such that the distance between any two positions at the same level is always twice the distance between the positions with the same axis
+     * values one level lower).
+     *
+     * @param posIn the {@link IFarPos} to get the distance to
+     * @return the Manhattan distance to the given {@link IFarPos}
+     */
+    int manhattanDistance(@NonNull IFarPos posIn);
+
+    /**
      * Compares two positions in some arbitrary manner.
      * <p>
      * The function may be implemented in any way, but must be consistent and must only return {@code 0} for positions that are also considered

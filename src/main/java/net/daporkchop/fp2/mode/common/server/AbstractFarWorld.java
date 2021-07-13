@@ -39,9 +39,9 @@ import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
+import net.daporkchop.fp2.util.threading.keyed.ApproximatePriorityKeyedExecutor;
 import net.daporkchop.fp2.util.threading.keyed.KeyedDistinctScheduler;
 import net.daporkchop.fp2.util.threading.keyed.KeyedExecutor;
-import net.daporkchop.fp2.util.threading.keyed.PriorityKeyedExecutor;
 import net.daporkchop.fp2.util.threading.keyed.KeyedReferencingFutureScheduler;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
@@ -49,6 +49,7 @@ import net.minecraft.world.WorldServer;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
@@ -71,6 +72,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
     protected final IFarPlayerTracker<POS, T> tracker;
 
+    @Getter
     protected final KeyedExecutor<POS> executor; //TODO: make these global rather than per-dimension
     protected final KeyedReferencingFutureScheduler<POS, Compressed<POS, T>> loader;
     protected final KeyedDistinctScheduler<POS> updater;
@@ -102,10 +104,11 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
         FarServerWorker<POS, T> worker = new FarServerWorker<>(this);
 
-        this.executor = new PriorityKeyedExecutor<>(
+        this.executor = new ApproximatePriorityKeyedExecutor<>(
                 FP2Config.generationThreads,
                 PThreadFactories.builder().daemon().minPriority()
-                        .collapsingId().name(PStrings.fastFormat("FP2 DIM%d Worker #%%d", world.provider.getDimension())).build());
+                        .collapsingId().name(PStrings.fastFormat("FP2 DIM%d Worker #%%d", world.provider.getDimension())).build(),
+                Comparator.comparingInt(POS::level));
         this.loader = new KeyedReferencingFutureScheduler<>(this.executor, worker::roughGetTile);
         this.updater = new KeyedDistinctScheduler<>(this.executor, worker::updateTile);
 

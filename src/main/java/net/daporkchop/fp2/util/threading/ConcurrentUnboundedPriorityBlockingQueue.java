@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.util.threading;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.EqualsTieBreakComparator;
 
 import java.util.AbstractQueue;
 import java.util.Collection;
@@ -36,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import static java.util.Objects.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Alternative to {@link UnboundedPriorityBlockingQueue} with better performance under high concurrency.
@@ -83,6 +81,17 @@ public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E
         } else {
             return false;
         }
+    }
+
+    @Override
+    public boolean remove(Object o) {
+        if (this.lock.tryAcquire()) {
+            if (this.set.remove(o)) {
+                return true;
+            }
+            this.lock.release();
+        }
+        return false;
     }
 
     @Override

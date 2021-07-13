@@ -61,6 +61,30 @@ public interface KeyedExecutor<K> extends RefCounted {
      */
     void cancel(@NonNull K key, @NonNull Runnable task);
 
+    /**
+     * Cancels all the tasks with the given key.
+     *
+     * @param key the key
+     */
+    void cancelAll(@NonNull K key);
+
+    /**
+     * Updates the execution priority for all previously submitted tasks with the given key.
+     * <p>
+     * This method may not be supported, in which case it will do nothing and return {@code false}.
+     * <p>
+     * By default, all tasks are submitted with a priority value of {@link Integer#MAX_VALUE}, and tasks with a lower priority value are executed sooner.
+     * <p>
+     * The priority change will be executed weakly, meaning that it may not take effect for a variety of reasons (such as a case where some of the tasks have
+     * already begun execution).
+     * <p>
+     * It is undefined whether or not the priority change will affect tasks for the same key which are submitted later.
+     *
+     * @param key      the key
+     * @param priority the key's new priority
+     */
+    boolean updatePriorityFor(@NonNull K key, int priority);
+
     @Override
     int refCnt();
 

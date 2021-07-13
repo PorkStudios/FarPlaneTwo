@@ -30,7 +30,7 @@ import net.daporkchop.fp2.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.daporkchop.fp2.util.threading.keyed.KeyedExecutor;
-import net.daporkchop.fp2.util.threading.keyed.PriorityKeyedExecutor;
+import net.daporkchop.fp2.util.threading.keyed.SortedKeyedScheduler;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 
@@ -57,7 +57,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
         this.tree = new FarRenderTree<>(renderer.mode(), this.strategy, renderer.maxLevel());
 
-        this.bakeExecutor = uncheckedCast(new PriorityKeyedExecutor<>(
+        this.bakeExecutor = uncheckedCast(new SortedKeyedScheduler<>(
                 FP2Config.client.renderThreads,
                 PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build()));
 

@@ -28,6 +28,7 @@ import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.debug.FP2Debug.*;
@@ -53,7 +54,7 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
         final int levels = FP2Config.maxLevels;
         final int d = asrRound(FP2Config.levelCutoffDistance, T_SHIFT) + 3; //extra padding of 3 tiles to allow tiles to pre-load on the client when moving
 
-        VoxelPos[] positions = new VoxelPos[pow(d * 2 + 1, 3) * levels];
+        VoxelPos[] positions = new VoxelPos[cb(d * 2 + 2) * levels];
         int i = 0;
 
         for (int lvl = FP2_DEBUG && FP2Config.debug.skipLevel0 ? 1 : 0; lvl < levels; lvl++) {
@@ -75,9 +76,16 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
                     }
                 }
             }
+
+            Arrays.sort(positions, i - cb(d * 2 + 2), i, Comparator.comparingInt(new VoxelPos(lvl, baseX, baseY, baseZ)::manhattanDistance));
         }
 
         return Arrays.stream(positions, 0, i);
+    }
+
+    @Override
+    protected VoxelPos getOrigin(@NonNull EntityPlayerMP player, double posX, double posY, double posZ) {
+        return new VoxelPos(0, asrRound(floorI(posX), T_SHIFT), asrRound(floorI(posY), T_SHIFT), asrRound(floorI(posZ), T_SHIFT));
     }
 
     @Override

@@ -29,6 +29,7 @@ import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
+import net.daporkchop.fp2.util.threading.keyed.KeyedExecutor;
 import net.minecraft.world.WorldServer;
 
 import java.io.Closeable;
@@ -41,6 +42,8 @@ public interface IFarWorld<POS extends IFarPos, T extends IFarTile> extends Clos
     WorldServer world();
 
     IAsyncBlockAccess blockAccess();
+
+    KeyedExecutor<POS> executor();
 
     CompletableFuture<Compressed<POS, T>> retainTileFuture(@NonNull POS pos);
 
