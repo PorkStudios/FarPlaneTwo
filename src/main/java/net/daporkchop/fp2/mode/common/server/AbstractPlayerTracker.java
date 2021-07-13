@@ -303,14 +303,18 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
             oldPositions.forEach(pos -> {
                 if (this.loadedPositions.contains(pos) || this.waitingPositions.contains(pos)) {
                     AbstractPlayerTracker.this.stopTracking(this, pos);
+
+                    //stopTracking() won't call notifyUnload() if the tile hasn't finished loading yet, so we should manually remove it from both sets afterwards just in case
+                    this.loadedPositions.remove(pos);
+                    this.waitingPositions.remove(pos);
                 }
             });
 
-            //double-check to make sure the load queue is totally filled
-            this.fillLoadQueue();
-
             this.allPositions = newPositions;
             releaseSet(oldPositions);
+
+            //double-check to make sure the load queue is totally filled
+            this.fillLoadQueue();
         }
 
         private void fillLoadQueue() {

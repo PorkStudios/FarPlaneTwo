@@ -45,8 +45,8 @@ public interface IHeightmapRenderStrategy extends IFarRenderStrategy<HeightmapPo
                 arr[i++] = new HeightmapPos(level, x + dx, z + dz);
             }
         }
-        for (int dx = -1; dx <= 0; dx++) {
-            for (int dz = -1; dz <= 0; dz++) {
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
                 arr[i++] = new HeightmapPos(level - 1, (x << 1) + dx, (z << 1) + dz);
             }
         }
