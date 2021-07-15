@@ -115,7 +115,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         try {
             for (int i = 0; i < srcs.length; i++) { //inflate tiles
                 if (compressedInputTiles[i] != null) {
-                    srcs[i] = compressedInputTiles[i].inflate(recycler);
+                    srcs[i] = compressedInputTiles[i].inflateValue(recycler);
                 }
             }
 
@@ -131,9 +131,9 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
                 this.scheduleEmptyTile(pos);
             }
         } finally { //release tiles again
-            for (int i = 0; i < srcs.length; i++) {
-                if (srcs[i] != null) {
-                    recycler.release(srcs[i]);
+            for (T src : srcs) {
+                if (src != null) {
+                    recycler.release(src);
                 }
             }
         }

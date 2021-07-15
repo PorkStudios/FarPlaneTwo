@@ -107,7 +107,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.executor = new ApproximatePriorityKeyedExecutor<>(
                 FP2Config.generationThreads,
                 PThreadFactories.builder().daemon().minPriority()
-                        .collapsingId().name(PStrings.fastFormat("FP2 DIM%d Worker #%%d", world.provider.getDimension())).build(),
+                        .collapsingId().name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build(),
                 Comparator.comparingInt(POS::level));
         this.loader = new KeyedReferencingFutureScheduler<>(this.executor, worker::roughGetTile);
         this.updater = new KeyedDistinctScheduler<>(this.executor, worker::updateTile);

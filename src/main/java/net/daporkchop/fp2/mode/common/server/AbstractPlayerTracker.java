@@ -77,7 +77,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
     //TODO: consider using a KeyedExecutor for this
     protected static final EventExecutorGroup TRACKER_THREADS = new DefaultEventLoopGroup(
             FP2Config.performance.trackingThreads,
-            PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Player Tracker #%%d").build());
+            PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Player Tracker #%d").build());
 
     protected static final Ref<SimpleRecycler<Set<?>>> SET_RECYCLER = ThreadRef.soft(() -> new SimpleRecycler<Set<?>>() {
         @Override

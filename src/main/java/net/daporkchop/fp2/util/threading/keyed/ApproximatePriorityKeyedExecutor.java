@@ -22,7 +22,9 @@ package net.daporkchop.fp2.util.threading.keyed;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.util.threading.ConcurrentUnboundedPriorityBlockingQueue;
+import net.daporkchop.lib.common.util.PorkUtil;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadFactory;
@@ -81,11 +83,15 @@ public class ApproximatePriorityKeyedExecutor<K> extends DefaultKeyedExecutor<K>
 
         @Override
         public int compareTo(TaskQueue o) {
-            int d = ApproximatePriorityKeyedExecutor.this.initialComparator.compare(this.key, o.key);
-            if (d != 0 || (d = Integer.compare(this.priority, o.priority)) != 0) {
+            int d;
+            if ((d = ApproximatePriorityKeyedExecutor.this.initialComparator.compare(this.key, o.key)) != 0
+                || (d = Integer.compare(this.priority, o.priority)) != 0
+                || (d = Long.compare(this.tieBreak, o.tieBreak)) != 0) {
                 return d;
             }
-            return Long.compare(this.tieBreak, o.tieBreak);
+
+            checkState(this.key.equals(o.key), "%s != %s", this.key, o.key);
+            return 0;
         }
 
         @Override

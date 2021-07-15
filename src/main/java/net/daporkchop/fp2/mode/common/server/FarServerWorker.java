@@ -104,19 +104,13 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
 
         SimpleRecycler<T> tileRecycler = this.world.mode().tileRecycler();
         T tile = tileRecycler.allocate();
-        compressedTile.writeLock().lock();
         try {
-            if (compressedTile.timestamp() >= newTimestamp) {
-                return compressedTile;
-            }
-
             this.doExactPrefetchAndGenerate(pos, tile, false);
 
             if (compressedTile.set(newTimestamp, tile, tile.extra())) { //only notify world if the tile was changed
                 this.world.tileChanged(compressedTile, false);
             }
         } finally {
-            compressedTile.writeLock().unlock();
             tileRecycler.release(tile);
         }
 
@@ -132,12 +126,7 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
 
         SimpleRecycler<T> tileRecycler = this.world.mode().tileRecycler();
         T tile = tileRecycler.allocate();
-        compressedTile.writeLock().lock();
         try {
-            if (compressedTile.isGenerated()) {
-                return compressedTile;
-            }
-
             long newTimestamp;
             IFarGeneratorRough<POS, T> generatorRough = this.world.generatorRough();
             if (generatorRough != null) { //generate tile using rough generator
@@ -154,7 +143,6 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
         } catch (GenerationNotAllowedException e) { //impossible
             throw new IllegalStateException(e);
         } finally {
-            compressedTile.writeLock().unlock();
             tileRecycler.release(tile);
         }
 
@@ -197,7 +185,7 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
     public void updateTile(POS pos, long newTimestamp) {
         this.world.loader.doWith(Collections.singletonList(pos), compressedSrcs -> {
             Compressed<POS, T> compressedTile = compressedSrcs.get(0);
-            if (compressedTile.timestamp() >= newTimestamp) {
+            if (compressedTile.timestamp() >= newTimestamp) { //break out early if tile is already done or newer
                 return;
             }
 
@@ -209,15 +197,10 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
         });
     }
 
-    public void updateTileExact(POS pos, Compressed<POS, T> compressedTile, long newTimestamp) {
+    protected void updateTileExact(POS pos, Compressed<POS, T> compressedTile, long newTimestamp) {
         SimpleRecycler<T> tileRecycler = this.world.mode().tileRecycler();
         T tile = tileRecycler.allocate();
-        compressedTile.writeLock().lock();
         try {
-            if (compressedTile.timestamp() >= newTimestamp) {
-                return;
-            }
-
             this.doExactPrefetchAndGenerate(pos, tile, false);
 
             if (compressedTile.set(newTimestamp, tile, tile.extra())) { //only notify world if the tile was changed
@@ -226,7 +209,6 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
         } catch (GenerationNotAllowedException e) {
             //silently discard
         } finally {
-            compressedTile.writeLock().unlock();
             tileRecycler.release(tile);
         }
     }
@@ -241,7 +223,7 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
         this.world.generatorExact().generate(access, pos, tile);
     }
 
-    public void updateTileScale(POS pos, Compressed<POS, T> compressedTile, long newTimestamp) {
+    protected void updateTileScale(POS pos, Compressed<POS, T> compressedTile, long newTimestamp) {
         this.scaleTile0(pos, compressedTile, newTimestamp, true);
     }
 
@@ -256,33 +238,23 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
         this.world.loader.doWith(this.world.scaler().inputs(pos).collect(Collectors.toList()), compressedSrcs -> {
             //inflate sources
             SimpleRecycler<T> tileRecycler = this.world.mode().tileRecycler();
-            T[] srcs = uncheckedCast(this.world.mode().tileArray(compressedSrcs.size()));
+            T[] srcs = this.world.mode().tileArray(compressedSrcs.size());
             for (int i = 0; i < compressedSrcs.size(); i++) {
-                Compressed<POS, T> compressedSrc = compressedSrcs.get(i);
-                compressedSrc.readLock().lock();
-                srcs[i] = compressedSrc.inflate(tileRecycler);
+                srcs[i] = compressedSrcs.get(i).inflateValue(tileRecycler);
             }
 
             T dst = tileRecycler.allocate();
-            compressedTile.writeLock().lock();
             try {
-                if (compressedTile.timestamp() >= newTimestamp) {
-                    return;
-                }
-
                 //actually do scaling
                 long extra = this.world.scaler().scale(srcs, dst);
                 if (compressedTile.set(newTimestamp, dst, extra)) {
                     this.world.tileChanged(compressedTile, allowScale);
                 }
             } finally {
-                compressedTile.writeLock().unlock();
                 tileRecycler.release(dst);
-
-                for (int i = 0; i < compressedSrcs.size(); i++) {
-                    compressedSrcs.get(i).readLock().unlock();
-                    if (srcs[i] != null) {
-                        tileRecycler.release(srcs[i]);
+                for (T src : srcs) {
+                    if (src != null) {
+                        tileRecycler.release(src);
                     }
                 }
             }

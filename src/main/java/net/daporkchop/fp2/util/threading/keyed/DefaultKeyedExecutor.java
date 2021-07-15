@@ -22,7 +22,6 @@ package net.daporkchop.fp2.util.threading.keyed;
 
 import lombok.NonNull;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
-import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
@@ -76,7 +75,7 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
         this.ensureNotReleased();
         this.queues.compute(keyIn, (key, queue) -> {
             if (queue == null) { //create new queue
-                queue = this.createQueue(key, task);
+                queue = this.createQueue(key, task).schedule();
             } else { //add to existing queue
                 queue.add(task);
             }
@@ -89,7 +88,7 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
         this.ensureNotReleased();
         this.queues.compute(keyIn, (key, queue) -> {
             if (queue == null) { //create new queue
-                queue = this.createQueue(key, task);
+                queue = this.createQueue(key, task).schedule();
             } else { //replace contents of existing queue
                 queue.clear();
                 queue.add(task);
@@ -159,9 +158,13 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
         public TaskQueue(@NonNull K key, @NonNull Runnable task) {
             this.key = key;
             this.add(task);
+        }
 
+        public TaskQueue schedule() {
             //schedule this queue to be run
-            DefaultKeyedExecutor.this.queue.add(this);
+            checkState(DefaultKeyedExecutor.this.queue.add(this), "failed to add queue for %s to execution queue!", this.key);
+
+            return this;
         }
 
         public void run(@NonNull Deque<Runnable> taskBuffer) {
@@ -202,8 +205,7 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
                 if (queue.isEmpty()) { //no new tasks have been added to this queue, so we can remove it
                     return null;
                 } else { //re-schedule this queue to be run again
-                    DefaultKeyedExecutor.this.queue.add(this);
-                    return queue;
+                    return queue.schedule();
                 }
             });
 

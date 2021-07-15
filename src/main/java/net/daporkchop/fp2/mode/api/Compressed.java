@@ -26,24 +26,23 @@ import io.netty.buffer.Unpooled;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IReusablePersistent;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.lib.compression.zstd.Zstd;
-
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * A wrapper around a compressed {@link IFarTile}.
+ * A wrapper around a compressed {@link IReusablePersistent} value.
  *
  * @author DaPorkchop_
  */
 @Getter
-public final class Compressed<POS extends IFarPos, V extends IReusablePersistent> extends ReentrantReadWriteLock {
+public final class Compressed<POS extends IFarPos, V extends IReusablePersistent> {
     /**
      * Timestamp indicating that the tile does not contain any data.
      */
@@ -113,20 +112,24 @@ public final class Compressed<POS extends IFarPos, V extends IReusablePersistent
      * @param dst the {@link ByteBuf} to write to
      */
     public void write(@NonNull ByteBuf dst) {
-        this.readLock().lock();
-        try {
-            writeVarLong(dst, this.extra);
-            writeVarLongZigZag(dst, this.timestamp);
+        long extra;
+        long timestamp;
+        byte[] data;
 
-            byte[] data = this.data;
-            if (data == null) {
-                writeVarInt(dst, 0);
-            } else {
-                writeVarInt(dst, data.length + 1);
-                dst.writeBytes(data);
-            }
-        } finally {
-            this.readLock().unlock();
+        synchronized (this) { //lock to ensure we get a consistent view of the data
+            extra = this.extra;
+            timestamp = this.timestamp;
+            data = this.data;
+        }
+
+        writeVarLong(dst, extra);
+        writeVarLongZigZag(dst, timestamp);
+
+        if (data == null) {
+            writeVarInt(dst, 0);
+        } else {
+            writeVarInt(dst, data.length + 1);
+            dst.writeBytes(data);
         }
     }
 
@@ -153,19 +156,8 @@ public final class Compressed<POS extends IFarPos, V extends IReusablePersistent
         return this.data == null;
     }
 
-    /**
-     * @return the inflated, parsed value
-     */
-    public V inflate(@NonNull SimpleRecycler<V> recycler) {
-        this.readLock().lock();
-        try {
-            checkState(this.isGenerated(), "value hasn't been generated!");
-
-            byte[] data = this.data;
-            if (data == null) {
-                return null;
-            }
-
+    private V inflateValue0(@NonNull SimpleRecycler<V> recycler, byte[] data) {
+        if (data != null) {
             ByteBuf compressed = Unpooled.wrappedBuffer(data);
             ByteBuf uncompressed = Constants.allocateByteBufExactly(Zstd.PROVIDER.frameContentSize(compressed));
             try {
@@ -177,9 +169,35 @@ public final class Compressed<POS extends IFarPos, V extends IReusablePersistent
                 uncompressed.release();
                 //no reason to release the wrapped buffer lmao
             }
-        } finally {
-            this.readLock().unlock();
+        } else {
+            return null;
         }
+    }
+
+    /**
+     * @return the inflated, parsed value
+     */
+    public V inflateValue(@NonNull SimpleRecycler<V> recycler) {
+        return this.inflateValue0(recycler, this.data);
+    }
+
+    /**
+     * @return the inflated, parsed value
+     */
+    public Handle<POS, V> inflateHandle(@NonNull SimpleRecycler<V> recycler) {
+        long extra;
+        long timestamp;
+        byte[] data;
+
+        synchronized (this) { //lock to ensure we get a consistent view of the data
+            checkState(this.isGenerated(), "value hasn't been generated!");
+
+            extra = this.extra;
+            timestamp = this.timestamp;
+            data = this.data;
+        }
+
+        return new Handle<>(this.pos, this.inflateValue0(recycler, data), extra, timestamp, recycler);
     }
 
     public boolean set(long timestamp, @NonNull V value, long extra) throws IllegalArgumentException {
@@ -210,8 +228,7 @@ public final class Compressed<POS extends IFarPos, V extends IReusablePersistent
             }
         }
 
-        this.writeLock().lock();
-        try {
+        synchronized (this) { //lock to ensure we get a consistent view of the data
             if (timestamp > this.timestamp) {
                 this.timestamp = timestamp;
                 this.extra = extra;
@@ -220,8 +237,31 @@ public final class Compressed<POS extends IFarPos, V extends IReusablePersistent
             } else {
                 return false;
             }
-        } finally {
-            this.writeLock().unlock();
+        }
+    }
+
+    /**
+     * A snapshot of the decompressed data in a {@link Compressed}.
+     *
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+    @Getter
+    public static final class Handle<POS extends IFarPos, V extends IReusablePersistent> implements AutoCloseable {
+        @NonNull
+        protected final POS pos;
+        protected final V value;
+        protected final long extra;
+        protected final long timestamp;
+
+        @Getter(AccessLevel.NONE)
+        protected final SimpleRecycler<V> recycler;
+
+        @Override
+        public void close() {
+            if (this.value != null && this.recycler != null) {
+                this.recycler.release(this.value);
+            }
         }
     }
 }
