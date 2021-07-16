@@ -23,7 +23,6 @@ package net.daporkchop.fp2.mode.voxel.server;
 import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.common.server.AbstractPlayerTracker;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -141,6 +140,26 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
                 }
             }
         }
+    }
+
+    @Override
+    protected boolean isVisible(@NonNull EntityPlayerMP player, double posX, double posY, double posZ, @NonNull VoxelPos pos) {
+        final int dist = asrRound(FP2Config.renderDistance, T_SHIFT); //TODO: make it based on render distance
+        final int playerX = floorI(posX);
+        final int playerY = floorI(posY);
+        final int playerZ = floorI(posZ);
+
+        final int d = asrRound(FP2Config.levelCutoffDistance, T_SHIFT) + TILE_PRELOAD_PADDING_RADIUS;
+        final int lvl = pos.level();
+
+        if (FP2_DEBUG && FP2Config.debug.skipLevel0 && lvl == 0) { //level-0 tile is never visible if they're disabled
+            return false;
+        }
+
+        return lvl < FP2Config.maxLevels
+               && abs(pos.x() - asrRound(playerX, T_SHIFT + lvl)) <= d
+               && abs(pos.y() - asrRound(playerY, T_SHIFT + lvl)) <= d
+               && abs(pos.z() - asrRound(playerZ, T_SHIFT + lvl)) <= d;
     }
 
     @Override

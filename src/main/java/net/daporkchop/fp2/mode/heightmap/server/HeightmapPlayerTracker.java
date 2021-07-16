@@ -46,7 +46,7 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
         int dz = abs(z0 - z1);
         return dx <= radius && dz <= radius;
     }
-    
+
     public HeightmapPlayerTracker(@NonNull HeightmapWorld world) {
         super(world);
     }
@@ -125,6 +125,24 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
                 }
             }
         }
+    }
+
+    @Override
+    protected boolean isVisible(@NonNull EntityPlayerMP player, double posX, double posY, double posZ, @NonNull HeightmapPos pos) {
+        final int dist = asrRound(FP2Config.renderDistance, T_SHIFT); //TODO: make it based on render distance
+        final int playerX = floorI(posX);
+        final int playerZ = floorI(posZ);
+
+        final int d = asrRound(FP2Config.levelCutoffDistance, T_SHIFT) + TILE_PRELOAD_PADDING_RADIUS;
+        final int lvl = pos.level();
+
+        if (FP2_DEBUG && FP2Config.debug.skipLevel0 && lvl == 0) { //level-0 tile is never visible if they're disabled
+            return false;
+        }
+
+        return lvl < FP2Config.maxLevels
+               && abs(pos.x() - asrRound(playerX, T_SHIFT + lvl)) <= d
+               && abs(pos.z() - asrRound(playerZ, T_SHIFT + lvl)) <= d;
     }
 
     @Override

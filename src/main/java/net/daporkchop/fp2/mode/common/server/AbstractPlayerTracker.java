@@ -74,7 +74,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
     /**
      * An additional radius (in tiles) to load around players in order to prevent visible artifacts when moving.
-     *
+     * <p>
      * TODO: this should be removed after merging dev/fix-holes-with-stencil-hackery
      */
     protected static final int TILE_PRELOAD_PADDING_RADIUS = 3;
@@ -201,6 +201,8 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
     protected abstract void deltaPositions(@NonNull EntityPlayerMP player, double oldX, double oldY, double oldZ, double newX, double newY, double newZ, @NonNull Consumer<POS> added, @NonNull Consumer<POS> removed);
 
+    protected abstract boolean isVisible(@NonNull EntityPlayerMP player, double posX, double posY, double posZ, @NonNull POS pos);
+
     protected abstract boolean shouldTriggerUpdate(@NonNull EntityPlayerMP player, double oldX, double oldY, double oldZ, double newX, double newY, double newZ);
 
     protected void beginTracking(@NonNull Context ctx, @NonNull POS posIn) {
@@ -236,7 +238,6 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         //only ever accessed to by tracker thread
         protected final Set<POS> loadedPositions = allocateSet();
         protected final Set<POS> waitingPositions = allocateSet();
-        protected final Set<POS> allPositions = allocateSet();
         protected RecyclingArrayDeque<POS> queuedPositions;
 
         //these are using Vec3d instead of 3 doubles to allow the value to be replaced atomically. to ensure coherent access to the coordinates,
@@ -289,9 +290,9 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
                 if (lastPos != null) { //if lastPos exists, we can diff the positions (which is faster than iterating over all of them)
                     AbstractPlayerTracker.this.deltaPositions(this.player, lastPos.x, lastPos.y, lastPos.z, nextPos.x, nextPos.y, nextPos.z,
-                            pos -> checkState(this.allPositions.add(pos), "couldn't add position %s", pos),
+                            pos -> checkState(AbstractPlayerTracker.this.isVisible(this.player, nextPos.x, nextPos.y, nextPos.z, pos), "couldn't add position %s", pos),
                             pos -> {
-                                checkState(this.allPositions.remove(pos), "couldn't remove position %s", pos);
+                                checkState(!AbstractPlayerTracker.this.isVisible(this.player, nextPos.x, nextPos.y, nextPos.z, pos), "couldn't remove position %s", pos);
 
                                 //stop loading the tile if needed
                                 if (this.loadedPositions.contains(pos) || this.waitingPositions.contains(pos)) {
@@ -304,12 +305,12 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
                             });
                 } else { //no positions have been added so far, so we need to iterate over them all
                     AbstractPlayerTracker.this.allPositions(this.player, nextPos.x, nextPos.y, nextPos.z,
-                            pos -> checkState(this.allPositions.add(pos), "couldn't add position %s", pos));
+                            pos -> checkState(AbstractPlayerTracker.this.isVisible(this.player, nextPos.x, nextPos.y, nextPos.z, pos), "couldn't add position %s", pos));
                 }
 
                 //re-add all positions to queue
                 AbstractPlayerTracker.this.allPositions(this.player, nextPos.x, nextPos.y, nextPos.z, pos -> {
-                    checkState(this.allPositions.contains(pos), "invalid position %s", pos);
+                    checkState(AbstractPlayerTracker.this.isVisible(this.player, nextPos.x, nextPos.y, nextPos.z, pos), "invalid position %s", pos);
 
                     if (!this.loadedPositions.contains(pos) && !this.waitingPositions.contains(pos)) {
                         //the position is neither loaded nor waiting to be loaded, so let's add it to the queue
@@ -349,7 +350,8 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         private void notifyChangedSync(@NonNull Compressed<POS, ?> tile) {
             this.assertOnTrackerThread();
 
-            if (!this.allPositions.contains(tile.pos())) { //the position has been unloaded since the task was enqueued, we can assume it's safe to ignore
+            Vec3d lastPos = this.lastPos;
+            if (!AbstractPlayerTracker.this.isVisible(this.player, lastPos.x, lastPos.y, lastPos.z, tile.pos())) { //the position has been unloaded since the task was enqueued, we can assume it's safe to ignore
                 return;
             }
 
@@ -411,7 +413,6 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
             //release everything
             this.queuedPositions.close();
-            releaseSet(this.allPositions);
             releaseSet(this.waitingPositions);
             releaseSet(this.loadedPositions);
         }
