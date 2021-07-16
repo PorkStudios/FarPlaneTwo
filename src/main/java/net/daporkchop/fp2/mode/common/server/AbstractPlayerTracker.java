@@ -42,7 +42,6 @@ import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
-import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.primitive.map.ObjIntMap;
 import net.daporkchop.lib.primitive.map.open.ObjIntOpenHashMap;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
@@ -53,9 +52,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
+import java.util.function.Consumer;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
@@ -73,6 +71,13 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
      * The default value of {@code (T_VOXELS / 2)²} is based on the equivalent value of {@code 64} (which is {@code (CHUNK_SIZE / 2)²}) used by vanilla.
      */
     protected static final double UPDATE_TRIGGER_DISTANCE_SQUARED = sq(T_VOXELS >> 1);
+
+    /**
+     * An additional radius (in tiles) to load around players in order to prevent visible artifacts when moving.
+     *
+     * TODO: this should be removed after merging dev/fix-holes-with-stencil-hackery
+     */
+    protected static final int TILE_PRELOAD_PADDING_RADIUS = 3;
 
     //TODO: consider using a KeyedExecutor for this
     protected static final EventExecutorGroup TRACKER_THREADS = new DefaultEventLoopGroup(
@@ -192,11 +197,11 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         trackedPlayersSnapshot.forEach(this::playerAdd);
     }
 
-    protected abstract Stream<POS> getPositions(@NonNull EntityPlayerMP player, double posX, double posY, double posZ);
+    protected abstract void allPositions(@NonNull EntityPlayerMP player, double posX, double posY, double posZ, @NonNull Consumer<POS> callback);
 
-    protected abstract POS getOrigin(@NonNull EntityPlayerMP player, double posX, double posY, double posZ);
+    protected abstract void deltaPositions(@NonNull EntityPlayerMP player, double oldX, double oldY, double oldZ, double newX, double newY, double newZ, @NonNull Consumer<POS> added, @NonNull Consumer<POS> removed);
 
-    protected abstract boolean shouldTriggerUpdate(double x0, double y0, double z0, double x1, double y1, double z1);
+    protected abstract boolean shouldTriggerUpdate(@NonNull EntityPlayerMP player, double oldX, double oldY, double oldZ, double newX, double newY, double newZ);
 
     protected void beginTracking(@NonNull Context ctx, @NonNull POS posIn) {
         this.entries.compute(posIn, (pos, entry) -> {
@@ -231,14 +236,12 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         //only ever accessed to by tracker thread
         protected final Set<POS> loadedPositions = allocateSet();
         protected final Set<POS> waitingPositions = allocateSet();
-        protected Set<POS> allPositions = allocateSet();
+        protected final Set<POS> allPositions = allocateSet();
         protected RecyclingArrayDeque<POS> queuedPositions;
-
-        protected POS origin;
 
         //these are using Vec3d instead of 3 doubles to allow the value to be replaced atomically. to ensure coherent access to the coordinates,
         // readers must take care never to dereference the fields more than once.
-        protected volatile Vec3d lastPos = new Vec3d(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
+        protected volatile Vec3d lastPos;
         protected volatile Vec3d nextPos;
 
         {
@@ -252,7 +255,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
          */
         public void scheduleUpdateIfNeeded() {
             Vec3d lastPos = this.lastPos;
-            if (AbstractPlayerTracker.this.shouldTriggerUpdate(lastPos.x, lastPos.y, lastPos.z, this.player.posX, this.player.posY, this.player.posZ)) {
+            if (lastPos == null || AbstractPlayerTracker.this.shouldTriggerUpdate(this.player, lastPos.x, lastPos.y, lastPos.z, this.player.posX, this.player.posY, this.player.posZ)) {
                 //set nextPos to be used while updating
                 this.nextPos = new Vec3d(this.player.posX, this.player.posY, this.player.posZ);
 
@@ -267,54 +270,58 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
          * Must be called on this context's worker thread.
          */
         private void update() {
-            this.assertOnTrackerThread();
+            try {
+                this.assertOnTrackerThread();
 
-            Vec3d lastPos = this.lastPos;
-            Vec3d nextPos = this.nextPos;
-            if (nextPos == null || !AbstractPlayerTracker.this.shouldTriggerUpdate(lastPos.x, lastPos.y, lastPos.z, nextPos.x, nextPos.y, nextPos.z)) {
-                //there is no next position (possibly already updated?), so we shouldn't do anything
-                return;
-            }
-
-            //inform the server thread that this update has started, by updating the current position and clearing the next one
-            this.lastPos = nextPos;
-            this.nextPos = null;
-
-            Set<POS> oldPositions = this.allPositions;
-            Set<POS> newPositions = allocateSet();
-
-            this.origin = AbstractPlayerTracker.this.getOrigin(this.player, nextPos.x, nextPos.y, nextPos.z);
-
-            //remove all positions from load queue
-            this.queuedPositions.clear();
-
-            AbstractPlayerTracker.this.getPositions(this.player, nextPos.x, nextPos.y, nextPos.z)
-                    .forEach(pos -> {
-                        newPositions.add(pos);
-                        oldPositions.remove(pos);
-
-                        if (!this.loadedPositions.contains(pos) && !this.waitingPositions.contains(pos)) {
-                            //the position is neither loaded nor waiting to be loaded, so let's add it to the queue
-                            this.queuedPositions.addLast(pos);
-                        }
-                    });
-
-            //by this point, oldPositions contains all the positions that are no longer needed. we can simply iterate through it and stop tracking them
-            oldPositions.forEach(pos -> {
-                if (this.loadedPositions.contains(pos) || this.waitingPositions.contains(pos)) {
-                    AbstractPlayerTracker.this.stopTracking(this, pos);
-
-                    //stopTracking() won't call notifyUnload() if the tile hasn't finished loading yet, so we should manually remove it from both sets afterwards just in case
-                    this.loadedPositions.remove(pos);
-                    this.waitingPositions.remove(pos);
+                Vec3d lastPos = this.lastPos;
+                Vec3d nextPos = this.nextPos;
+                if (lastPos != null && (nextPos == null || !AbstractPlayerTracker.this.shouldTriggerUpdate(this.player, lastPos.x, lastPos.y, lastPos.z, nextPos.x, nextPos.y, nextPos.z))) {
+                    //there is no next position (possibly already updated?), so we shouldn't do anything
+                    return;
                 }
-            });
 
-            this.allPositions = newPositions;
-            releaseSet(oldPositions);
+                //inform the server thread that this update has started, by updating the current position and clearing the next one
+                this.lastPos = nextPos;
+                this.nextPos = null;
 
-            //double-check to make sure the load queue is totally filled
-            this.fillLoadQueue();
+                //remove all positions from load queue
+                this.queuedPositions.clear();
+
+                if (lastPos != null) { //if lastPos exists, we can diff the positions (which is faster than iterating over all of them)
+                    AbstractPlayerTracker.this.deltaPositions(this.player, lastPos.x, lastPos.y, lastPos.z, nextPos.x, nextPos.y, nextPos.z,
+                            pos -> checkState(this.allPositions.add(pos), "couldn't add position %s", pos),
+                            pos -> {
+                                checkState(this.allPositions.remove(pos), "couldn't remove position %s", pos);
+
+                                //stop loading the tile if needed
+                                if (this.loadedPositions.contains(pos) || this.waitingPositions.contains(pos)) {
+                                    AbstractPlayerTracker.this.stopTracking(this, pos);
+
+                                    //stopTracking() won't call notifyUnload() if the tile hasn't finished loading yet, so we should manually remove it from both sets afterwards just in case
+                                    this.loadedPositions.remove(pos);
+                                    this.waitingPositions.remove(pos);
+                                }
+                            });
+                } else { //no positions have been added so far, so we need to iterate over them all
+                    AbstractPlayerTracker.this.allPositions(this.player, nextPos.x, nextPos.y, nextPos.z,
+                            pos -> checkState(this.allPositions.add(pos), "couldn't add position %s", pos));
+                }
+
+                //re-add all positions to queue
+                AbstractPlayerTracker.this.allPositions(this.player, nextPos.x, nextPos.y, nextPos.z, pos -> {
+                    checkState(this.allPositions.contains(pos), "invalid position %s", pos);
+
+                    if (!this.loadedPositions.contains(pos) && !this.waitingPositions.contains(pos)) {
+                        //the position is neither loaded nor waiting to be loaded, so let's add it to the queue
+                        this.queuedPositions.addLast(pos);
+                    }
+                });
+
+                //double-check to make sure the load queue is totally filled
+                this.fillLoadQueue();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         private void fillLoadQueue() {

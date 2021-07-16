@@ -29,8 +29,9 @@ import net.minecraft.entity.player.EntityPlayerMP;
 
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.stream.Stream;
+import java.util.function.Consumer;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
@@ -40,51 +41,95 @@ import static net.daporkchop.lib.common.math.PMath.*;
  * @author DaPorkchop_
  */
 public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, HeightmapTile> {
+    protected static boolean overlaps(int x0, int z0, int x1, int z1, int radius) {
+        int dx = abs(x0 - x1);
+        int dz = abs(z0 - z1);
+        return dx <= radius && dz <= radius;
+    }
+    
     public HeightmapPlayerTracker(@NonNull HeightmapWorld world) {
         super(world);
     }
 
     @Override
-    protected Stream<HeightmapPos> getPositions(@NonNull EntityPlayerMP player, double posX, double posY, double posZ) {
+    protected void allPositions(@NonNull EntityPlayerMP player, double posX, double posY, double posZ, @NonNull Consumer<HeightmapPos> callback) {
         final int dist = asrRound(FP2Config.renderDistance, T_SHIFT); //TODO: make it based on render distance
         final int playerX = floorI(posX);
         final int playerZ = floorI(posZ);
 
         final int levels = FP2Config.maxLevels;
-        final int d = asrRound(FP2Config.levelCutoffDistance, T_SHIFT) + 3; //extra padding of 3 tiles to allow tiles to pre-load on the client when moving
+        final int d = asrRound(FP2Config.levelCutoffDistance, T_SHIFT) + TILE_PRELOAD_PADDING_RADIUS;
 
-        HeightmapPos[] positions = new HeightmapPos[sq(d * 2 + 2) * levels];
-        int i = 0;
+        HeightmapPos[] positions = new HeightmapPos[sq(d * 2 + 1)];
 
         for (int lvl = FP2_DEBUG && FP2Config.debug.skipLevel0 ? 1 : 0; lvl < levels; lvl++) {
             final int baseX = asrRound(playerX, T_SHIFT + lvl);
             final int baseZ = asrRound(playerZ, T_SHIFT + lvl);
 
             int xMin = baseX - d;
-            int xMax = baseX + d + 1;
+            int xMax = baseX + d;
             int zMin = baseZ - d;
-            int zMax = baseZ + d + 1;
+            int zMax = baseZ + d;
 
-            for (int x = xMin; x <= xMax; x++) {
+            for (int i = 0, x = xMin; x <= xMax; x++) {
                 for (int z = zMin; z <= zMax; z++) {
                     positions[i++] = new HeightmapPos(lvl, x, z);
                 }
             }
 
-            Arrays.sort(positions, i - sq(d * 2 + 2), i, Comparator.comparingInt(new HeightmapPos(lvl, baseX, baseZ)::manhattanDistance));
+            Arrays.sort(positions, Comparator.comparingInt(new HeightmapPos(lvl, baseX, baseZ)::manhattanDistance));
+            for (HeightmapPos pos : positions) {
+                callback.accept(pos);
+            }
         }
 
-        return Arrays.stream(positions, 0, i);
+        Arrays.fill(positions, null);
     }
 
     @Override
-    protected HeightmapPos getOrigin(@NonNull EntityPlayerMP player, double posX, double posY, double posZ) {
-        return new HeightmapPos(0, asrRound(floorI(posX), T_SHIFT), asrRound(floorI(posZ), T_SHIFT));
+    protected void deltaPositions(@NonNull EntityPlayerMP player, double oldX, double oldY, double oldZ, double newX, double newY, double newZ, @NonNull Consumer<HeightmapPos> added, @NonNull Consumer<HeightmapPos> removed) {
+        final int dist = asrRound(FP2Config.renderDistance, T_SHIFT); //TODO: make it based on render distance
+        final int oldPlayerX = floorI(oldX);
+        final int oldPlayerZ = floorI(oldZ);
+        final int newPlayerX = floorI(newX);
+        final int newPlayerZ = floorI(newZ);
+
+        final int levels = FP2Config.maxLevels;
+        final int d = asrRound(FP2Config.levelCutoffDistance, T_SHIFT) + TILE_PRELOAD_PADDING_RADIUS;
+
+        for (int lvl = FP2_DEBUG && FP2Config.debug.skipLevel0 ? 1 : 0; lvl < levels; lvl++) {
+            final int oldBaseX = asrRound(oldPlayerX, T_SHIFT + lvl);
+            final int oldBaseZ = asrRound(oldPlayerZ, T_SHIFT + lvl);
+            final int newBaseX = asrRound(newPlayerX, T_SHIFT + lvl);
+            final int newBaseZ = asrRound(newPlayerZ, T_SHIFT + lvl);
+
+            if (oldBaseX == newBaseX && oldBaseZ == newBaseZ) { //nothing changed, skip this level
+                continue;
+            }
+
+            //removed positions
+            for (int x = oldBaseX - d; x <= oldBaseX + d; x++) {
+                for (int z = oldBaseZ - d; z <= oldBaseZ + d; z++) {
+                    if (!overlaps(x, z, newBaseX, newBaseZ, d)) {
+                        removed.accept(new HeightmapPos(lvl, x, z));
+                    }
+                }
+            }
+
+            //added positions
+            for (int x = newBaseX - d; x <= newBaseX + d; x++) {
+                for (int z = newBaseZ - d; z <= newBaseZ + d; z++) {
+                    if (!overlaps(x, z, oldBaseX, oldBaseZ, d)) {
+                        added.accept(new HeightmapPos(lvl, x, z));
+                    }
+                }
+            }
+        }
     }
 
     @Override
-    protected boolean shouldTriggerUpdate(double x0, double y0, double z0, double x1, double y1, double z1) {
+    protected boolean shouldTriggerUpdate(@NonNull EntityPlayerMP player, double oldX, double oldY, double oldZ, double newX, double newY, double newZ) {
         //compute distance² in 2D
-        return sq(x0 - x1) + sq(z0 - z1) >= UPDATE_TRIGGER_DISTANCE_SQUARED;
+        return sq(oldX - newX) + sq(oldZ - newZ) >= UPDATE_TRIGGER_DISTANCE_SQUARED;
     }
 }
