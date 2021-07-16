@@ -146,6 +146,26 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
     }
 
     @Override
+    protected Comparator<HeightmapPos> comparatorFor(@NonNull EntityPlayerMP player, double posX, double posY, double posZ) {
+        class HeightmapPosAndComparator extends HeightmapPos implements Comparator<HeightmapPos> {
+            public HeightmapPosAndComparator(int level, int x, int z) {
+                super(level, x, z);
+            }
+
+            @Override
+            public int compare(HeightmapPos o1, HeightmapPos o2) {
+                int d;
+                if ((d = Integer.compare(o1.level(), o2.level())) != 0) {
+                    return d;
+                }
+                return Integer.compare(this.manhattanDistance(o1), this.manhattanDistance(o2));
+            }
+        }
+
+        return new HeightmapPosAndComparator(0, asrRound(floorI(posX), T_SHIFT), asrRound(floorI(posZ), T_SHIFT));
+    }
+
+    @Override
     protected boolean shouldTriggerUpdate(@NonNull EntityPlayerMP player, double oldX, double oldY, double oldZ, double newX, double newY, double newZ) {
         //compute distance² in 2D
         return sq(oldX - newX) + sq(oldZ - newZ) >= UPDATE_TRIGGER_DISTANCE_SQUARED;

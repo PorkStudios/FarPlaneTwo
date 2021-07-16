@@ -29,6 +29,7 @@ import java.util.AbstractCollection;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.ConcurrentModificationException;
 import java.util.Deque;
 import java.util.Iterator;
@@ -61,9 +62,9 @@ public class RecyclingArrayDeque<E> extends AbstractCollection<E> implements Deq
         return max(MIN_CAPACITY, 1 << (Integer.SIZE - Integer.numberOfLeadingZeros(capacity - 1)));
     }
 
-    protected final ArrayAllocator<Object[]> alloc = ALLOC_OBJECT.get();
-
+    protected ArrayAllocator<Object[]> alloc;
     protected Object[] elements;
+
     protected int len;
     protected int head;
     protected int tail;
@@ -73,7 +74,7 @@ public class RecyclingArrayDeque<E> extends AbstractCollection<E> implements Deq
     }
 
     public RecyclingArrayDeque(int capacity) {
-        this.elements = this.alloc.exactly(capacity(capacity));
+        this.elements = (this.alloc = ALLOC_OBJECT.get()).exactly(capacity(capacity));
         this.len = this.elements.length;
     }
 
@@ -91,47 +92,52 @@ public class RecyclingArrayDeque<E> extends AbstractCollection<E> implements Deq
     protected void grow() {
         checkState(this.head == this.tail, "grow() may only be called when array is full!");
 
-        this.resize(this.len + 1);
+        this.resize(this.len + 1, this.len);
     }
 
     protected void tryShrink() {
-        if (this.len > (MIN_CAPACITY << 1) && this.size() <= (this.len >> 2)) {
+        if (this.len > (MIN_CAPACITY << 1) && this.size() < (this.len >> 2)) {
             this.shrink();
         }
     }
 
     protected void shrink() {
-        checkState(this.size() <= (this.len >> 2), "shrink() may only be called when array is 1/4 full");
+        checkState(this.size() < (this.len >> 2), "shrink() may only be called when array is 1/4 full");
         checkState(this.len > (MIN_CAPACITY << 1), "old capacity is already the minimum capacity!");
 
-        this.resize(this.len >> 1);
+        this.resize(this.len >> 1, this.size());
     }
 
-    protected void resize(int newCapacity) {
+    protected void resize(int newCapacity, int newSize) {
         newCapacity = capacity(newCapacity);
-        checkState(newCapacity > this.size(), "cannot shrink array to be smaller than the deque size");
 
+        checkArg(newSize < newCapacity, "newSize (%d) must be less than newCapacity (%d)", newSize, newCapacity);
+
+        ArrayAllocator<Object[]> oldAlloc = this.alloc;
         Object[] oldElements = this.elements;
         int oldLen = this.len;
-        Object[] newElements = this.alloc.exactly(newCapacity);
+
+        ArrayAllocator<Object[]> newAlloc = ALLOC_OBJECT.get();
+        Object[] newElements = newAlloc.exactly(newCapacity);
         int newLen = newElements.length;
 
         this.copyElements(newElements);
 
         Arrays.fill(oldElements, null);
-        this.alloc.release(oldElements);
+        oldAlloc.release(oldElements);
 
+        this.alloc = newAlloc;
         this.elements = newElements;
         this.len = newLen;
         this.head = 0;
-        this.tail = oldLen;
+        this.tail = newSize;
     }
 
     protected <T> T[] copyElements(@NonNull T[] dst) {
         if (this.head < this.tail) {
             System.arraycopy(this.elements, this.head, dst, 0, this.size());
         } else if (this.head > this.tail) {
-            int headPortionLen = this.size() - this.head;
+            int headPortionLen = this.len - this.head;
             System.arraycopy(this.elements, this.head, dst, 0, headPortionLen);
             System.arraycopy(this.elements, 0, dst, headPortionLen, this.tail);
         } else {
@@ -385,7 +391,7 @@ public class RecyclingArrayDeque<E> extends AbstractCollection<E> implements Deq
 
             if (this.len > MIN_CAPACITY) {
                 this.alloc.release(this.elements);
-                this.elements = this.alloc.exactly(MIN_CAPACITY);
+                this.elements = (this.alloc = ALLOC_OBJECT.get()).exactly(MIN_CAPACITY);
                 this.len = MIN_CAPACITY;
             }
 
@@ -395,8 +401,9 @@ public class RecyclingArrayDeque<E> extends AbstractCollection<E> implements Deq
 
     @Override
     public void close() {
-Arrays.fill(this.elements, null);
+        Arrays.fill(this.elements, null);
         this.alloc.release(this.elements);
+        this.alloc = null;
         this.elements = null;
     }
 
@@ -456,5 +463,18 @@ Arrays.fill(this.elements, null);
     @Override
     public Stream<E> parallelStream() {
         return this.stream().parallel();
+    }
+
+    public void sort(@NonNull Comparator<? super E> comparator) {
+        if (this.isEmpty()) { //if the deque is empty, we don't need to do anything lol
+            return;
+        }
+
+        if (this.head > this.tail) { //"resize" to ensure everything is sequentially stored in the array so it can be sorted
+            this.resize(this.len, this.size());
+            checkState(this.head <= this.tail);
+        }
+
+        Arrays.sort(this.elements, this.head, this.tail, uncheckedCast(comparator));
     }
 }

@@ -163,6 +163,26 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
     }
 
     @Override
+    protected Comparator<VoxelPos> comparatorFor(@NonNull EntityPlayerMP player, double posX, double posY, double posZ) {
+        class VoxelPosAndComparator extends VoxelPos implements Comparator<VoxelPos> {
+            public VoxelPosAndComparator(int level, int x, int y, int z) {
+                super(level, x, y, z);
+            }
+
+            @Override
+            public int compare(VoxelPos o1, VoxelPos o2) {
+                int d;
+                if ((d = Integer.compare(o1.level(), o2.level())) != 0) {
+                    return d;
+                }
+                return Integer.compare(this.manhattanDistance(o1), this.manhattanDistance(o2));
+            }
+        }
+
+        return new VoxelPosAndComparator(0, asrRound(floorI(posX), T_SHIFT), asrRound(floorI(posY), T_SHIFT), asrRound(floorI(posZ), T_SHIFT));
+    }
+
+    @Override
     protected boolean shouldTriggerUpdate(@NonNull EntityPlayerMP player, double oldX, double oldY, double oldZ, double newX, double newY, double newZ) {
         //compute distance² in 3D
         return sq(oldX - newX) + sq(oldY - newY) + sq(oldZ - newZ) >= UPDATE_TRIGGER_DISTANCE_SQUARED;
