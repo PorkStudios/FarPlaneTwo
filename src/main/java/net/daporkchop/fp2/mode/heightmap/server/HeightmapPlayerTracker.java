@@ -27,7 +27,6 @@ import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.minecraft.entity.player.EntityPlayerMP;
 
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.function.Consumer;
 
@@ -60,30 +59,16 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
         final int levels = FP2Config.maxLevels;
         final int d = asrRound(FP2Config.levelCutoffDistance, T_SHIFT) + TILE_PRELOAD_PADDING_RADIUS;
 
-        HeightmapPos[] positions = new HeightmapPos[sq(d * 2 + 1)];
-
         for (int lvl = FP2_DEBUG && FP2Config.debug.skipLevel0 ? 1 : 0; lvl < levels; lvl++) {
             final int baseX = asrRound(playerX, T_SHIFT + lvl);
             final int baseZ = asrRound(playerZ, T_SHIFT + lvl);
 
-            int xMin = baseX - d;
-            int xMax = baseX + d;
-            int zMin = baseZ - d;
-            int zMax = baseZ + d;
-
-            for (int i = 0, x = xMin; x <= xMax; x++) {
-                for (int z = zMin; z <= zMax; z++) {
-                    positions[i++] = new HeightmapPos(lvl, x, z);
+            for (int x = baseX - d; x <= baseX + d; x++) {
+                for (int z = baseZ - d; z <= baseZ + d; z++) {
+                    callback.accept(new HeightmapPos(lvl, x, z));
                 }
             }
-
-            Arrays.sort(positions, Comparator.comparingInt(new HeightmapPos(lvl, baseX, baseZ)::manhattanDistance));
-            for (HeightmapPos pos : positions) {
-                callback.accept(pos);
-            }
         }
-
-        Arrays.fill(positions, null);
     }
 
     @Override

@@ -119,8 +119,8 @@ public class HeightmapPos implements IFarPos {
         } else {
             int l0 = this.level;
             int l1 = pos.level;
-            int s0 = max(l0 - l1, 0);
-            int s1 = max(l1 - l0, 0);
+            int s0 = max(l1 - l0, 0);
+            int s1 = max(l0 - l1, 0);
             int s2 = max(s0, s1);
             return (abs((this.x >> s0) - (pos.x >> s1)) << s2)
                    + (abs((this.z >> s0) - (pos.z >> s1)) << s2);

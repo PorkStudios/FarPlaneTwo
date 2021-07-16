@@ -27,7 +27,6 @@ import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.minecraft.entity.player.EntityPlayerMP;
 
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.function.Consumer;
 
@@ -62,35 +61,19 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
         final int levels = FP2Config.maxLevels;
         final int d = asrRound(FP2Config.levelCutoffDistance, T_SHIFT) + TILE_PRELOAD_PADDING_RADIUS;
 
-        VoxelPos[] positions = new VoxelPos[cb(d * 2 + 1)];
-
         for (int lvl = FP2_DEBUG && FP2Config.debug.skipLevel0 ? 1 : 0; lvl < levels; lvl++) {
             final int baseX = asrRound(playerX, T_SHIFT + lvl);
             final int baseY = asrRound(playerY, T_SHIFT + lvl);
             final int baseZ = asrRound(playerZ, T_SHIFT + lvl);
 
-            int xMin = baseX - d;
-            int xMax = baseX + d;
-            int yMin = baseY - d;
-            int yMax = baseY + d;
-            int zMin = baseZ - d;
-            int zMax = baseZ + d;
-
-            for (int i = 0, x = xMin; x <= xMax; x++) {
-                for (int y = yMin; y <= yMax; y++) {
-                    for (int z = zMin; z <= zMax; z++) {
-                        positions[i++] = new VoxelPos(lvl, x, y, z);
+            for (int x = baseX - d; x <= baseX + d; x++) {
+                for (int y = baseY - d; y <= baseY + d; y++) {
+                    for (int z = baseZ - d; z <= baseZ + d; z++) {
+                        callback.accept(new VoxelPos(lvl, x, y, z));
                     }
                 }
             }
-
-            Arrays.sort(positions, Comparator.comparingInt(new VoxelPos(lvl, baseX, baseY, baseZ)::manhattanDistance));
-            for (VoxelPos pos : positions) {
-                callback.accept(pos);
-            }
         }
-
-        Arrays.fill(positions, null);
     }
 
     @Override
