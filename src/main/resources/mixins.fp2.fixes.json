@@ -1,10 +1,10 @@
 {
-  "required": true,
+  "required": false,
   "compatibilityLevel": "JAVA_8",
-  "package": "net.daporkchop.fp2.asm.debug",
+  "package": "net.daporkchop.fp2.asm.fixes",
   "refmap": "mixins.fp2.refmap.json",
   "client": [
-    "client.renderer.MixinRenderGlobal"
+    "client.renderer.texture.MixinTextureUtil"
   ],
   "mixins": [
   ]

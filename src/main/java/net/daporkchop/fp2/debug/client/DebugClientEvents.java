@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.debug.client;
 
-import net.daporkchop.fp2.asm.client.gui.IGuiScreen;
+import net.daporkchop.fp2.asm.core.client.gui.IGuiScreen;
 import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.client.TexUVs;
