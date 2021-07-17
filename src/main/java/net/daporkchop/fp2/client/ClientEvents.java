@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.client;
 
 import net.daporkchop.fp2.FP2;
-import net.daporkchop.fp2.asm.client.gui.IGuiScreen;
+import net.daporkchop.fp2.asm.core.client.gui.IGuiScreen;
 import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.minecraft.client.gui.GuiScreen;

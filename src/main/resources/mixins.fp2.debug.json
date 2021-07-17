@@ -1,7 +1,7 @@
 {
   "required": true,
   "compatibilityLevel": "JAVA_8",
-  "package": "net.daporkchop.fp2.debug.asm",
+  "package": "net.daporkchop.fp2.asm.debug",
   "refmap": "mixins.fp2.refmap.json",
   "client": [
     "client.renderer.MixinRenderGlobal"
