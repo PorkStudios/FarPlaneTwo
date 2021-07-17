@@ -45,6 +45,8 @@ public class FP2MixinLoader implements IFMLLoadingPlugin {
         MixinBootstrap.init();
 
         Mixins.addConfiguration("mixins.fp2.core.json");
+        Mixins.addConfiguration("mixins.fp2.fixes.json");
+
         if (FP2_DEBUG) { //we're in debug mode, add debug mixins
             Mixins.addConfiguration("mixins.fp2.debug.json");
         }
