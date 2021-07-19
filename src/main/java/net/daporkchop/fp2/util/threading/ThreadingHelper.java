@@ -20,22 +20,33 @@
 
 package net.daporkchop.fp2.util.threading;
 
+import com.google.common.collect.ImmutableSet;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.util.threading.specific.WorldThreadExecutor;
+import net.daporkchop.fp2.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor;
+import net.daporkchop.fp2.util.threading.futureexecutor.FutureExecutor;
+import net.daporkchop.fp2.util.threading.futureexecutor.MarkedFutureExecutor;
+import net.daporkchop.fp2.util.threading.futureexecutor.MarkingForwardingFutureExecutor;
+import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
+import net.daporkchop.fp2.util.threading.futureexecutor.ThreadValidatingForwardingFutureExecutor;
+import net.daporkchop.fp2.util.threading.workergroup.WorkerGroupBuilder;
+import net.daporkchop.fp2.util.threading.workergroup.WorldWorkerGroup;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import net.daporkchop.lib.unsafe.util.AbstractReleasable;
+import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.relauncher.Side;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinWorkerThread;
-import java.util.concurrent.ThreadFactory;
-import java.util.stream.Collectors;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -48,25 +59,69 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @UtilityClass
 public class ThreadingHelper {
-    private final Map<World, WorldThreadExecutor> WORLD_EXECUTORS = new ConcurrentHashMap<>();
+    private final Map<Thread, WorldWorkerGroup> THREADS_TO_GROUPS = new ConcurrentHashMap<>();
 
     /**
-     * Starts a new {@link WorkerGroup}.
+     * @return a new {@link WorkerGroupBuilder}
      */
-    public WorkerGroup startWorkers(World world, int threads, @NonNull ThreadFactory threadFactory, @NonNull Runnable r) {
-        WorkerGroup group = new DefaultWorkerGroup(world, threads, threadFactory, r);
-        group.threads().forEach(Thread::start);
-        return group;
+    public WorkerGroupBuilder workerGroupBuilder() {
+        return new WorkerGroupBuilder() {
+            @Override
+            public WorldWorkerGroup build(@NonNull Runnable task) {
+                this.validate();
+                return new DefaultWorldWorkerGroup(this, task);
+            }
+        };
     }
 
     /**
      * Handles the given exception.
      *
-     * @param t the exception to handle
+     * @param world the world that the exception occurred in
+     * @param t     the exception to handle
      */
-    public void handle(@NonNull Throwable t) {
-        FP2_LOG.error(t);
-        ServerThreadExecutor.INSTANCE.execute(() -> PUnsafe.throwException(t));
+    public void handle(@NonNull World world, @NonNull Throwable t) {
+        //wrap the exception to make the current stack trace be included
+        RuntimeException wrapped = new RuntimeException(PStrings.fastFormat("exception in world %s on thread %s", world, Thread.currentThread()), t);
+        FP2_LOG.error(wrapped);
+        scheduleTaskInWorldThread(world, () -> PUnsafe.throwException(wrapped));
+    }
+
+    /**
+     * Schedules a task to be executed on the given world's thread.
+     *
+     * @param world the world whose thread the task should be exected on
+     * @param task  the task to execute
+     */
+    public CompletableFuture<Void> scheduleTaskInWorldThread(@NonNull World world, @NonNull Runnable task) {
+        return workExecutorFor(world).run(task);
+    }
+
+    /**
+     * Schedules a task to be executed on the given world's thread.
+     *
+     * @param world the world whose thread the task should be exected on
+     * @param task  the task to execute
+     */
+    public <V> CompletableFuture<V> scheduleTaskInWorldThread(@NonNull World world, @NonNull Supplier<V> task) {
+        return workExecutorFor(world).supply(task);
+    }
+
+    protected FutureExecutor workExecutorFor(@NonNull World world) {
+        WorldWorkerGroup workerGroup = THREADS_TO_GROUPS.get(Thread.currentThread());
+        if (workerGroup != null) { //this is a worker thread, return the world-specific executor thread
+            checkArg(world == workerGroup.world(), "thread %s attempted to submit task for a world it doesn't belong to!", Thread.currentThread());
+            return workerGroup.worldExecutor();
+        }
+
+        //if it isn't a worker thread, we can just submit the task to the root executor
+        return rootExecutorFor(world);
+    }
+
+    protected MarkedFutureExecutor rootExecutorFor(@NonNull World world) {
+        return world.isRemote
+                ? ClientThreadMarkedFutureExecutor.getFor(Minecraft.getMinecraft())
+                : ServerThreadMarkedFutureExecutor.getFor(FMLCommonHandler.instance().getMinecraftServerInstance());
     }
 
     /**
@@ -77,82 +132,72 @@ public class ThreadingHelper {
      */
     public Thread checkWorkerThread(@NonNull Thread thread) {
         checkArg(!(thread instanceof ForkJoinWorkerThread), "%s is a ForkJoinWorkerThread!", thread);
-        checkArg(FMLCommonHandler.instance().getSide() != Side.CLIENT || !ClientThreadExecutor.INSTANCE.isClientThread(thread), "%s is the client thread!", thread);
-        checkArg(!ServerThreadExecutor.INSTANCE.isServerThread(thread), "%s is the server thread!", thread);
+        checkArg(FMLCommonHandler.instance().getSide() != Side.CLIENT || Minecraft.getMinecraft().thread != thread, "%s is the client thread!", thread);
+        checkArg(FMLCommonHandler.instance().getMinecraftServerInstance().serverThread != thread, "%s is the server thread!", thread);
 
         return thread;
     }
 
-    public void putWorldThreadExecutor(@NonNull World worldIn, @NonNull WorldThreadExecutor executor) {
-        checkArg(worldIn == executor.world(), "executor doesn't belong to world %s", worldIn);
-        WORLD_EXECUTORS.compute(worldIn, (world, e) -> {
-            checkState(e == null, "already stored an executor for world %s", world);
-
-            executor.start();
-            return executor;
-        });
-    }
-
-    public void removeWorldThreadExecutor(@NonNull World worldIn) {
-        WORLD_EXECUTORS.compute(worldIn, (world, executor) -> {
-            checkState(executor != null, "no executor stored for world %s", world);
-
-            executor.close();
-            return null;
-        });
-    }
-
-    public WorldThreadExecutor worldExecutor(@NonNull World world) {
-        WorldThreadExecutor executor = WORLD_EXECUTORS.get(world);
-        checkArg(executor != null, "no executor exists for world %s", world);
-        return executor;
-    }
-
     @Getter
-    private static class DefaultWorkerGroup implements WorkerGroup {
+    private static class DefaultWorldWorkerGroup extends AbstractReleasable implements WorldWorkerGroup {
+        private final World world;
         private final Set<Thread> threads;
-        private World world;
+        private final FutureExecutor worldExecutor;
 
-        public DefaultWorkerGroup(World world, int size, @NonNull ThreadFactory threadFactory, @NonNull Runnable r) {
-            this.threads = IntStream.range(0, positive(size, "size")).mapToObj(i -> threadFactory.newThread(r)).collect(Collectors.toSet());
+        public DefaultWorldWorkerGroup(@NonNull WorkerGroupBuilder builder, @NonNull Runnable r) {
+            this.world = builder.world();
+            this.threads = ImmutableSet.copyOf(IntStream.range(0, builder.threads())
+                    .mapToObj(i -> builder.threadFactory().newThread(r))
+                    .toArray(Thread[]::new));
 
-            if (world != null) {
-                worldExecutor(this.world = world).addChild(this);
-            }
+            this.worldExecutor = new ThreadValidatingForwardingFutureExecutor(
+                    new MarkingForwardingFutureExecutor(rootExecutorFor(this.world)),
+                    this.threads::contains);
+
+            //attempt to insert all threads into THREADS_TO_GROUPS
+            this.threads.forEach(thread -> {
+                if (THREADS_TO_GROUPS.putIfAbsent(thread, this) != null) { //insertion failed - safely remove all entries that may have been inserted, then throw exception
+                    this.threads.forEach(t -> THREADS_TO_GROUPS.remove(t, this));
+                    throw new IllegalStateException(PStrings.fastFormat("unable to insert thread->group mapping %s->%s to THREADS_TO_GROUPS map?!?", thread, this));
+                }
+            });
+
+            //it should be safe now to start all the threads
+            this.threads.forEach(Thread::start);
         }
 
         @Override
-        public synchronized void close() {
-            if (this.world != null) {
-                worldExecutor(this.world).removeChild(this);
-            }
+        public void release() throws AlreadyReleasedException {
+            checkState(!this.threads.contains(Thread.currentThread()), "thread %s cannot release it's own worker group!", Thread.currentThread());
+            super.release();
+        }
 
-            //we want to avoid calling Thread#interrupt(), because that can have annoying side effects such as closing NIO channels.
+        @Override
+        protected void doRelease() {
+            //we want to avoid interrupting the workers, because that can have annoying side effects (such as closing NIO channels).
+
+            //closing the world executor will cancel all tasks which might have been pending execution on the server thread, thus preventing a deadlock in the case where
+            //  we're currently on the server thread, but any of our workers was waiting for the server thread to do something.
+            this.worldExecutor.close();
 
             //wait for all workers to shut down
-            RuntimeException exception = new RuntimeException();
+            boolean interrupted = false;
             for (Thread thread : this.threads) {
                 do {
-                    if (ServerThreadExecutor.INSTANCE.isServerThread()) { //some workers might be blocked waiting for the server thread to do something, so we should make sure to keep the queue drained
-                        try {
-                            ServerThreadExecutor.INSTANCE.workOffQueue();
-                        } catch (Throwable e) {
-                            FP2_LOG.error(PStrings.fastFormat("exception on ServerThreadExecutor while waiting for %s to exit", thread), e);
-                            exception.addSuppressed(e);
-                        }
-                    }
-
                     try {
                         thread.join(50L);
                     } catch (InterruptedException e) {
                         FP2_LOG.error(PStrings.fastFormat("%s was interrupted while waiting for %s to exit", Thread.currentThread(), thread), e);
-                        exception.addSuppressed(e);
+                        interrupted = true;
                     }
                 } while (thread.isAlive());
             }
 
-            if (exception.getSuppressed().length != 0) { //if any exceptions were thrown, we should rethrow them
-                throw exception;
+            //remove all threads from thread->group map now that they're shut down
+            this.threads.forEach(thread -> checkState(THREADS_TO_GROUPS.remove(thread, this), "unable to remove thread->group mapping %s->%s from THREADS_TO_GROUPS map?!?", thread, this));
+
+            if (interrupted) { //restore interrupted state
+                Thread.currentThread().interrupt();
             }
         }
     }

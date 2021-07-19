@@ -18,52 +18,52 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.specific;
+package net.daporkchop.fp2.util.threading.futureexecutor;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.threading.WorkerGroup;
-import net.minecraft.world.World;
+import lombok.RequiredArgsConstructor;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
+import static net.daporkchop.lib.common.util.PValidation.*;
+
 /**
- * An executor which accepts tasks from async workers and executes them on specific world's thread.
+ * Simple {@link FutureExecutor} implementation which delegates to a given {@link MarkedFutureExecutor} while applying a unique marker.
+ * <p>
+ * This allows all submitted tasks to be cancelled immediately when this executor is shut down.
+ * <p>
+ * Newly created instances are assumed to be running immediately, even if their delegate executor isn't.
  *
  * @author DaPorkchop_
  */
-public interface WorldThreadExecutor extends AutoCloseable {
-    /**
-     * @return the world whose thread this executor will execute tasks on
-     */
-    World world();
+@RequiredArgsConstructor
+public class MarkingForwardingFutureExecutor implements FutureExecutor {
+    @NonNull
+    protected final MarkedFutureExecutor delegate;
 
-    /**
-     * Informs this executor that the threads in the given {@link WorkerGroup} may begin to submit tasks to this executor.
-     *
-     * @param group the {@link WorkerGroup} to add
-     */
-    void addChild(@NonNull WorkerGroup group);
+    protected final Object marker = new Object[0]; //arbitrary unique object
 
-    /**
-     * Informs this executor that the threads in the given {@link WorkerGroup} will no longer submit tasks to this executor.
-     * <p>
-     * This will also result in the cancellation of any pending tasks submitted by threads in the given {@link WorkerGroup}.
-     *
-     * @param group the {@link WorkerGroup} to remove
-     */
-    void removeChild(@NonNull WorkerGroup group);
-
-    /**
-     * Executes the given {@link Supplier} on this thread.
-     *
-     * @param supplier the {@link Supplier} to run
-     * @return a {@link CompletableFuture} which will be completed with the {@link Supplier}'s return value
-     */
-    <V> CompletableFuture<V> supply(@NonNull Supplier<V> supplier);
-
-    void start();
+    protected volatile boolean running = true;
 
     @Override
-    void close();
+    public synchronized CompletableFuture<Void> run(@NonNull Runnable runnable) {
+        checkState(this.running, "not running");
+        return this.delegate.run(this.marker, runnable);
+    }
+
+    @Override
+    public synchronized <V> CompletableFuture<V> supply(@NonNull Supplier<V> supplier) {
+        checkState(this.running, "not running");
+        return this.delegate.supply(this.marker, supplier);
+    }
+
+    @Override
+    public synchronized void close() {
+        checkState(this.running, "not running");
+        this.running = false;
+
+        //cancel all tasks submitted by us
+        this.delegate.cancelAll(this.marker);
+    }
 }

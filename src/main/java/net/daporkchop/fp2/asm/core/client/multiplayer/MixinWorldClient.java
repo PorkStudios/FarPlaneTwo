@@ -26,8 +26,9 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
+import net.daporkchop.lib.common.function.throwing.EFunction;
 import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Implements;
@@ -36,7 +37,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -53,9 +53,9 @@ public abstract class MixinWorldClient extends World implements IFarWorldClient 
     @Unique
     private final Map<IFarRenderMode, IFarClientContext> contexts = new ObjObjConcurrentHashMap<>();
     @Unique
-    private final Function<IFarRenderMode, IFarClientContext> computeFunction = m ->
+    private final Function<IFarRenderMode, IFarClientContext> computeFunction = (EFunction<IFarRenderMode, IFarClientContext>) m ->
             //always create context on client thread
-            CompletableFuture.supplyAsync(() -> m.clientContext(uncheckedCast(this)), ClientThreadExecutor.INSTANCE).join();
+            Minecraft.getMinecraft().addScheduledTask(() -> m.clientContext(uncheckedCast(this))).get();
 
     @Unique
     private IFarClientContext active;

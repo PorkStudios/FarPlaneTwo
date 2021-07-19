@@ -30,7 +30,7 @@ import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IFarPlayer;
-import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
+import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
@@ -60,7 +60,7 @@ public class CPacketRenderMode implements IMessage {
         @Override
         public IMessage onMessage(CPacketRenderMode message, MessageContext ctx) {
             if (message.mode.equals(IFarRenderMode.REGISTRY.get(FP2Config.renderMode))) {
-                ServerThreadExecutor.INSTANCE.execute(() -> {
+                ThreadingHelper.scheduleTaskInWorldThread(ctx.getServerHandler().player.world, () -> {
                     FP2_LOG.debug("Player {} initiated FP2 session with render mode {}", ctx.getServerHandler().player.getName(), message.mode);
 
                     IFarRenderMode<?, ?> oldMode = ((IFarPlayer) ctx.getServerHandler().player).activeMode();

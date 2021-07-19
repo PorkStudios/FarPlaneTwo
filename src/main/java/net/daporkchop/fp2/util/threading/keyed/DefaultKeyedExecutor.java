@@ -22,7 +22,8 @@ package net.daporkchop.fp2.util.threading.keyed;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.util.threading.ThreadingHelper;
-import net.daporkchop.fp2.util.threading.WorkerGroup;
+import net.daporkchop.fp2.util.threading.workergroup.WorkerGroupBuilder;
+import net.daporkchop.fp2.util.threading.workergroup.WorldWorkerGroup;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
@@ -48,15 +49,15 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
     protected final Map<K, TaskQueue> queues;
     protected final BlockingQueue<TaskQueue> queue;
 
-    protected final WorkerGroup group;
+    protected final WorldWorkerGroup group;
     protected volatile boolean running = true;
 
-    public DefaultKeyedExecutor(World world, int threads, @NonNull ThreadFactory threadFactory) {
+    public DefaultKeyedExecutor(@NonNull WorkerGroupBuilder builder) {
         this.queues = this.createQueues();
         this.queue = this.createQueue();
 
         //create all the threads, then start them
-        this.group = ThreadingHelper.startWorkers(world, threads, threadFactory, this);
+        this.group = builder.build(this);
     }
 
     protected Map<K, TaskQueue> createQueues() {

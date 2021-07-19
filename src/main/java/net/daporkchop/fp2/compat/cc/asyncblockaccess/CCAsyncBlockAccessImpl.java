@@ -41,14 +41,13 @@ import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.datastructure.ConcurrentBooleanHashSegtreeInt;
-import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
+import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.util.threading.futurecache.IAsyncCache;
 import net.daporkchop.fp2.util.threading.lazy.LazyFutureTask;
 import net.daporkchop.lib.common.util.PorkUtil;
-import net.daporkchop.lib.concurrent.PFutures;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTTagCompound;
@@ -254,13 +253,13 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
         @Override
         protected void triggerGeneration(@NonNull ChunkPos key, @NonNull Object param) {
             //load and immediately save column on server thread
-            PFutures.runAsync(() -> {
+            ThreadingHelper.scheduleTaskInWorldThread(CCAsyncBlockAccessImpl.this.world, () -> {
                 Chunk column = ((ICubicWorldServer) CCAsyncBlockAccessImpl.this.world)
                         .getCubeCache().getColumn(key.x, key.z, ICubeProviderServer.Requirement.POPULATE);
                 if (column != null && !column.isEmpty()) {
                     CCAsyncBlockAccessImpl.this.io.saveColumn(column);
                 }
-            }, ServerThreadExecutor.INSTANCE).join();
+            }).join();
         }
     }
 
@@ -293,14 +292,14 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
 
         @Override
         protected void triggerGeneration(@NonNull CubePos key, @NonNull Chunk param) {
-            PFutures.runAsync(() -> {
+            ThreadingHelper.scheduleTaskInWorldThread(CCAsyncBlockAccessImpl.this.world, () -> {
                 //TODO: save column as well if needed
                 ICube cube = ((ICubicWorldServer) CCAsyncBlockAccessImpl.this.world)
                         .getCubeCache().getCube(key.getX(), key.getY(), key.getZ(), ICubeProviderServer.Requirement.LIGHT);
                 if (cube != null && cube.isInitialLightingDone()) {
                     CCAsyncBlockAccessImpl.this.io.saveCube((Cube) cube);
                 }
-            }, ServerThreadExecutor.INSTANCE).join();
+            }).join();
         }
 
         @Override

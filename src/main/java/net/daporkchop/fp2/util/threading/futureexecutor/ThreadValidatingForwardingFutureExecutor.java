@@ -18,42 +18,44 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.keyed;
+package net.daporkchop.fp2.util.threading.futureexecutor;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.datastructure.ConcurrentUnboundedPriorityBlockingQueue;
-import net.daporkchop.fp2.util.threading.workergroup.WorkerGroupBuilder;
-import net.minecraft.world.World;
+import lombok.RequiredArgsConstructor;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
+ * Simple {@link FutureExecutor} implementation which delegates to a given {@link FutureExecutor}, while applying a sanity check to ensure only threads
+ * matching a given {@link Predicate} are allowed to submit tasks.
+ *
  * @author DaPorkchop_
  */
-public class SortedKeyedScheduler<K extends Comparable<? super K>> extends DefaultKeyedExecutor<K> {
-    public SortedKeyedScheduler(@NonNull WorkerGroupBuilder builder) {
-        super(builder);
+@RequiredArgsConstructor
+public class ThreadValidatingForwardingFutureExecutor implements FutureExecutor {
+    @NonNull
+    protected final FutureExecutor delegate;
+    @NonNull
+    protected final Predicate<Thread> filter;
+
+    @Override
+    public CompletableFuture<Void> run(@NonNull Runnable runnable) {
+        checkState(this.filter.test(Thread.currentThread()), "thread %s isn't allowed to submit tasks to this executor!", this.filter);
+        return this.delegate.run(runnable);
     }
 
     @Override
-    protected BlockingQueue<DefaultKeyedExecutor<K>.TaskQueue> createQueue() {
-        return new ConcurrentUnboundedPriorityBlockingQueue<>();
+    public <V> CompletableFuture<V> supply(@NonNull Supplier<V> supplier) {
+        checkState(this.filter.test(Thread.currentThread()), "thread %s isn't allowed to submit tasks to this executor!", this.filter);
+        return this.delegate.supply(supplier);
     }
 
     @Override
-    protected DefaultKeyedExecutor<K>.TaskQueue createQueue(@NonNull K key, @NonNull Runnable task) {
-        return new TaskQueue(key, task);
-    }
-
-    protected class TaskQueue extends DefaultKeyedExecutor<K>.TaskQueue implements Comparable<TaskQueue> {
-        public TaskQueue(@NonNull K key, @NonNull Runnable task) {
-            super(key, task);
-        }
-
-        @Override
-        public int compareTo(TaskQueue o) {
-            return this.key.compareTo(o.key);
-        }
+    public void close() {
+        this.delegate.close();
     }
 }

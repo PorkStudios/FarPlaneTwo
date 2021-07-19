@@ -18,23 +18,45 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading;
+package net.daporkchop.fp2.util.threading.futureexecutor;
 
-import java.util.Collection;
+import lombok.NonNull;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 
 /**
- * A group of worker threads.
+ * An {@link Executor} which returns a {@link CompletableFuture} when submitting tasks.
  *
  * @author DaPorkchop_
  */
-public interface WorkerGroup extends AutoCloseable {
-    /**
-     * @return the threads in this group
-     */
-    Collection<Thread> threads();
+public interface FutureExecutor extends Executor, AutoCloseable {
+    @Override
+    default void execute(@NonNull Runnable runnable) {
+        this.run(runnable);
+    }
 
     /**
-     * Shuts down this worker group, blocking until all worker threads have stopped.
+     * Executes the given {@link Runnable} on this executor.
+     *
+     * @param runnable the {@link Runnable} to run
+     * @return a {@link CompletableFuture} which will be completed once the {@link Runnable} has returned
+     */
+    CompletableFuture<Void> run(@NonNull Runnable runnable);
+
+    /**
+     * Executes the given {@link Supplier} on this executor.
+     *
+     * @param supplier the {@link Supplier} to run
+     * @return a {@link CompletableFuture} which will be completed with the {@link Supplier}'s return value
+     */
+    <V> CompletableFuture<V> supply(@NonNull Supplier<V> supplier);
+
+    /**
+     * Shuts down this executor.
+     * <p>
+     * This will cancel all tasks, and prevent any further ones from being submitted.
      */
     @Override
     void close();

@@ -27,21 +27,19 @@ import net.daporkchop.fp2.compat.vanilla.region.ThreadSafeRegionFileCache;
 import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.datastructure.ConcurrentBooleanHashSegtreeInt;
-import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
+import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.util.threading.futurecache.IAsyncCache;
 import net.daporkchop.fp2.util.threading.lazy.LazyFutureTask;
-import net.daporkchop.lib.common.function.io.IOSupplier;
-import net.daporkchop.lib.concurrent.PFutures;
+import net.daporkchop.lib.common.function.throwing.ERunnable;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.EnumSkyBlock;
-import net.minecraft.world.MinecraftException;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldType;
@@ -52,11 +50,9 @@ import net.minecraft.world.chunk.storage.AnvilChunkLoader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -204,7 +200,7 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
 
         @Override
         protected void triggerGeneration(@NonNull ChunkPos key, @NonNull Object param) {
-            PFutures.runAsync(() -> {
+            ThreadingHelper.scheduleTaskInWorldThread(VanillaAsyncBlockAccessImpl.this.world, (ERunnable) () -> {
                 int x = key.x;
                 int z = key.z;
 
@@ -215,12 +211,8 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
                 VanillaAsyncBlockAccessImpl.this.world.getChunk(x + 1, z + 1);
                 VanillaAsyncBlockAccessImpl.this.world.getChunk(x, z + 1);
 
-                try {
-                    VanillaAsyncBlockAccessImpl.this.io.saveChunk(VanillaAsyncBlockAccessImpl.this.world, chunk);
-                } catch (IOException | MinecraftException e) {
-                    FP2_LOG.error("Unable to save chunk!", e);
-                }
-            }, ServerThreadExecutor.INSTANCE).join();
+                VanillaAsyncBlockAccessImpl.this.io.saveChunk(VanillaAsyncBlockAccessImpl.this.world, chunk);
+            }).join();
         }
     }
 }

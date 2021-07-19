@@ -38,6 +38,7 @@ import net.daporkchop.fp2.mode.common.server.storage.rocksdb.RocksStorage;
 import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.keyed.ApproximatePriorityKeyedExecutor;
 import net.daporkchop.fp2.util.threading.keyed.KeyedDistinctScheduler;
@@ -104,11 +105,11 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
         FarServerWorker<POS, T> worker = new FarServerWorker<>(this);
 
-        this.executor = new ApproximatePriorityKeyedExecutor<>(
-                this.world,
-                FP2Config.generationThreads,
-                PThreadFactories.builder().daemon().minPriority()
-                        .collapsingId().name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build(),
+        this.executor = new ApproximatePriorityKeyedExecutor<>(ThreadingHelper.workerGroupBuilder()
+                .world(this.world)
+                .threads(FP2Config.generationThreads)
+                .threadFactory(PThreadFactories.builder().daemon().minPriority()
+                        .collapsingId().name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build()),
                 Comparator.comparingInt(POS::level));
         this.loader = new KeyedReferencingFutureScheduler<>(this.executor, worker::roughGetTile);
         this.updater = new KeyedDistinctScheduler<>(this.executor, worker::updateTile);

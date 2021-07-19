@@ -18,58 +18,55 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading;
+package net.daporkchop.fp2.util.threading.futureexecutor;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import net.minecraft.client.Minecraft;
+import net.minecraft.server.MinecraftServer;
+import net.minecraftforge.common.WorldWorkerManager;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import java.util.concurrent.Executor;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
-
 /**
- * An {@link Executor} which executes submitted tasks on the client thread.
- *
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-public final class ClientThreadExecutor implements Executor {
-    public static final ClientThreadExecutor INSTANCE = new ClientThreadExecutor();
-
-    @Override
-    public void execute(@NonNull Runnable task) {
-        ((MixinExecutor) Minecraft.getMinecraft()).execute(task);
-    }
-
-    public boolean isClientThread() {
-        return this.isClientThread(Thread.currentThread());
-    }
-
-    public boolean isClientThread(@NonNull Thread thread) {
-        return thread == Minecraft.getMinecraft().thread;
-    }
-
-    public void checkClientThread() {
-        checkState(this.isClientThread(), "not on client thread?!?");
+public class ServerThreadMarkedFutureExecutor extends AbstractMarkedFutureExecutor implements WorldWorkerManager.IWorker {
+    /**
+     * Gets the {@link ServerThreadMarkedFutureExecutor} for the given {@link MinecraftServer} instance.
+     *
+     * @param server the {@link MinecraftServer} instance
+     * @return the corresponding {@link ServerThreadMarkedFutureExecutor}
+     */
+    public static ServerThreadMarkedFutureExecutor getFor(@NonNull MinecraftServer server) {
+        return ((Holder) server).fp2_ServerThreadMarkedFutureExecutor$Holder_get();
     }
 
     /**
-     * {@link Executor}-like interface which is mixed in to {@link Minecraft}.
-     * <p>
-     * As a separate interface in order to avoid theoretical compatibility issues.
-     *
-     * @author DaPorkchop_
+     * @deprecated internal API, do not touch!
      */
-    @FunctionalInterface
-    public interface MixinExecutor {
-        /**
-         * @see Executor#execute(Runnable)
-         */
-        void execute(@NonNull Runnable task);
+    @Deprecated
+    public ServerThreadMarkedFutureExecutor(@NonNull MinecraftServer server) {
+        super(server.serverThread);
+        this.start();
+    }
+
+    @Override
+    protected synchronized void start() {
+        super.start();
+        WorldWorkerManager.addWorker(this);
+    }
+
+    @Override
+    public boolean hasWork() {
+        return this.running;
+    }
+
+    /**
+     * @author DaPorkchop_
+     * @deprecated internal API, do not touch!
+     */
+    @Deprecated
+    public interface Holder {
+        ServerThreadMarkedFutureExecutor fp2_ServerThreadMarkedFutureExecutor$Holder_get();
     }
 }

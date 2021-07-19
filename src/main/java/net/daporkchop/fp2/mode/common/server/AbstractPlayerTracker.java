@@ -37,12 +37,13 @@ import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.net.server.SPacketTileData;
 import net.daporkchop.fp2.net.server.SPacketUnloadTile;
 import net.daporkchop.fp2.util.datastructure.RecyclingArrayDeque;
-import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
+import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.Vec3d;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -61,6 +62,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @RequiredArgsConstructor
 public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarTile> implements IFarPlayerTracker<POS, T> {
+    private static final long ABSTRACTRELEASABLE_RELEASED_OFFSET = PUnsafe.pork_getOffset(AbstractReleasable.class, "released");
+
     /**
      * The squared distance a player must move from their previous position in order to trigger a tracking update.
      * <p>
@@ -116,7 +119,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
     @Override
     public void playerMove(@NonNull EntityPlayerMP playerIn) {
-        ServerThreadExecutor.INSTANCE.checkServerThread();
+        checkState(FMLCommonHandler.instance().getMinecraftServerInstance().isCallingFromMinecraftThread(), "must be called from server thread!");
 
         this.contexts.compute(playerIn, (player, ctx) -> {
             checkState(ctx != null, "attempted to update untracked player: %s", player);
@@ -140,17 +143,14 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
     @Override
     public void debug_dropAllTiles() {
-        if (!ServerThreadExecutor.INSTANCE.isServerThread()) {
-            ServerThreadExecutor.INSTANCE.execute(this::debug_dropAllTiles);
-            return;
-        }
+        ThreadingHelper.scheduleTaskInWorldThread(this.world.world(), () -> {
+            Collection<EntityPlayerMP> trackedPlayersSnapshot = new ArrayList<>(this.contexts.keySet());
+            trackedPlayersSnapshot.forEach(this::playerRemove);
 
-        Collection<EntityPlayerMP> trackedPlayersSnapshot = new ArrayList<>(this.contexts.keySet());
-        trackedPlayersSnapshot.forEach(this::playerRemove);
+            //it should be reasonably safe to assume that all pending tasks will have been cancelled by now
 
-        //it should be reasonably safe to assume that all pending tasks will have been cancelled by now
-
-        trackedPlayersSnapshot.forEach(this::playerAdd);
+            trackedPlayersSnapshot.forEach(this::playerAdd);
+        });
     }
 
     protected abstract void allPositions(@NonNull EntityPlayerMP player, double posX, double posY, double posZ, @NonNull Consumer<POS> callback);
@@ -264,7 +264,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
                 //double-check to make sure the load queue is totally filled
                 this.fillLoadQueue();
             } catch (Exception e) {
-                ServerThreadExecutor.INSTANCE.execute(() -> PUnsafe.throwException(new RuntimeException(e)));
+                ThreadingHelper.handle(AbstractPlayerTracker.this.world.world(), e);
             }
         }
 
@@ -295,7 +295,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
                 this.assertOnTrackerThread();
 
                 Vec3d lastPos = this.lastPos;
-                if (lastPos == null //context is either not yet started or has been released, ignore
+                if (this.isReleased() //context is released, ignore update
                     || !AbstractPlayerTracker.this.isVisible(this.player, lastPos.x, lastPos.y, lastPos.z, tile.pos())) { //the position has been unloaded since the task was enqueued, we can assume it's safe to ignore
                     return;
                 }
@@ -310,7 +310,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
                     checkState(this.loadedPositions.contains(tile.pos()), "position loaded but not in queue?!?");
                 }
             } catch (Exception e) {
-                ServerThreadExecutor.INSTANCE.execute(() -> PUnsafe.throwException(new RuntimeException(e)));
+                ThreadingHelper.handle(AbstractPlayerTracker.this.world.world(), e);
             }
         }
 
@@ -331,7 +331,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
             try {
                 this.assertOnTrackerThread();
 
-                if (this.lastPos == null) { //context is either not yet started or has been released, ignore
+                if (this.isReleased()) { //context is released, ignore update
                     return;
                 }
 
@@ -345,7 +345,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
                     this.fillLoadQueue();
                 }
             } catch (Exception e) {
-                ServerThreadExecutor.INSTANCE.execute(() -> PUnsafe.throwException(new RuntimeException(e)));
+                ThreadingHelper.handle(AbstractPlayerTracker.this.world.world(), e);
             }
         }
 
@@ -369,8 +369,10 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
             //release everything
             this.queuedPositions.close();
+        }
 
-            this.lastPos = null;
+        protected boolean isReleased() {
+            return PUnsafe.getIntVolatile(this, ABSTRACTRELEASABLE_RELEASED_OFFSET) != 0;
         }
 
         @Override
@@ -378,7 +380,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
             return this.player.toString();
         }
 
-        private void assertOnTrackerThread() {
+        protected void assertOnTrackerThread() {
             checkState(this.executor.inEventLoop(), "may only be called by tracker thread, not %s", Thread.currentThread());
         }
     }

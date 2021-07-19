@@ -18,33 +18,44 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.specific;
+package net.daporkchop.fp2.util.threading.futureexecutor;
 
 import lombok.NonNull;
-import net.minecraft.world.World;
-import net.minecraftforge.common.WorldWorkerManager;
+import net.minecraft.client.Minecraft;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 /**
  * @author DaPorkchop_
  */
-public class ServerWorldThreadExecutor extends AbstractWorldThreadExecutor implements WorldWorkerManager.IWorker {
-    public ServerWorldThreadExecutor(@NonNull Thread thread, @NonNull World world) {
-        super(thread, world);
+@SideOnly(Side.CLIENT)
+public class ClientThreadMarkedFutureExecutor extends AbstractMarkedFutureExecutor {
+    /**
+     * Gets the {@link ClientThreadMarkedFutureExecutor} for the given {@link Minecraft} instance.
+     *
+     * @param mc the {@link Minecraft} instance
+     * @return the corresponding {@link ClientThreadMarkedFutureExecutor}
+     */
+    public static ClientThreadMarkedFutureExecutor getFor(@NonNull Minecraft mc) {
+        return ((Holder) mc).fp2_ClientThreadMarkedFutureExecutor$Holder_get();
     }
 
-    @Override
-    public synchronized void start() {
-        super.start();
-        WorldWorkerManager.addWorker(this);
+    /**
+     * @deprecated internal API, do not touch!
+     */
+    @Deprecated
+    public ClientThreadMarkedFutureExecutor(@NonNull Minecraft mc) {
+        super(mc.thread);
+        this.start();
     }
 
-    @Override
-    public boolean hasWork() {
-        return this.running;
-    }
-
-    @Override
-    public boolean doWork() {
-        return super.doWork();
+    /**
+     * @author DaPorkchop_
+     * @deprecated internal API, do not touch!
+     */
+    @SideOnly(Side.CLIENT)
+    @Deprecated
+    public interface Holder {
+        ClientThreadMarkedFutureExecutor fp2_ClientThreadMarkedFutureExecutor$Holder_get();
     }
 }

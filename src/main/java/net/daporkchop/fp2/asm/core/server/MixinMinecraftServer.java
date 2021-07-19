@@ -18,42 +18,39 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.keyed;
+package net.daporkchop.fp2.asm.core.server;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.util.datastructure.ConcurrentUnboundedPriorityBlockingQueue;
-import net.daporkchop.fp2.util.threading.workergroup.WorkerGroupBuilder;
-import net.minecraft.world.World;
+import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
+import net.minecraft.server.MinecraftServer;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ThreadFactory;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
+ * Makes {@link MinecraftServer} implement {@link ServerThreadMarkedFutureExecutor.Holder}.
+ *
  * @author DaPorkchop_
  */
-public class SortedKeyedScheduler<K extends Comparable<? super K>> extends DefaultKeyedExecutor<K> {
-    public SortedKeyedScheduler(@NonNull WorkerGroupBuilder builder) {
-        super(builder);
+@Mixin(MinecraftServer.class)
+@SuppressWarnings("deprecation")
+public abstract class MixinMinecraftServer implements ServerThreadMarkedFutureExecutor.Holder {
+    @Unique
+    private ServerThreadMarkedFutureExecutor executor;
+
+    @Inject(method = "Lnet/minecraft/server/MinecraftServer;startServerThread()V",
+            at = @At(value = "INVOKE",
+                    target = "Ljava/lang/Thread;start()V",
+                    shift = At.Shift.BEFORE))
+    private void fp2_startServerThread_constructMarkedExecutor(CallbackInfo ci) {
+        this.executor = new ServerThreadMarkedFutureExecutor(uncheckedCast(this));
     }
 
     @Override
-    protected BlockingQueue<DefaultKeyedExecutor<K>.TaskQueue> createQueue() {
-        return new ConcurrentUnboundedPriorityBlockingQueue<>();
-    }
-
-    @Override
-    protected DefaultKeyedExecutor<K>.TaskQueue createQueue(@NonNull K key, @NonNull Runnable task) {
-        return new TaskQueue(key, task);
-    }
-
-    protected class TaskQueue extends DefaultKeyedExecutor<K>.TaskQueue implements Comparable<TaskQueue> {
-        public TaskQueue(@NonNull K key, @NonNull Runnable task) {
-            super(key, task);
-        }
-
-        @Override
-        public int compareTo(TaskQueue o) {
-            return this.key.compareTo(o.key);
-        }
+    public ServerThreadMarkedFutureExecutor fp2_ServerThreadMarkedFutureExecutor$Holder_get() {
+        return this.executor;
     }
 }

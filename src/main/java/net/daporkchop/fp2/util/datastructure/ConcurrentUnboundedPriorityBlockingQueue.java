@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading;
+package net.daporkchop.fp2.util.datastructure;
 
 import lombok.NonNull;
 

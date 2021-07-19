@@ -28,9 +28,6 @@ import net.daporkchop.fp2.net.server.SPacketReady;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IFarPlayer;
-import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
-import net.daporkchop.fp2.util.threading.specific.ServerWorldThreadExecutor;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.common.MinecraftForge;
@@ -67,7 +64,6 @@ public class ServerEvents {
     @SubscribeEvent
     public void worldLoad(WorldEvent.Load event) {
         if (!event.getWorld().isRemote) {
-            ThreadingHelper.putWorldThreadExecutor(event.getWorld(), new ServerWorldThreadExecutor(Thread.currentThread(), event.getWorld()));
             ((IFarWorldServer) event.getWorld()).fp2_init();
         }
     }
@@ -76,15 +72,14 @@ public class ServerEvents {
     public void worldUnload(WorldEvent.Unload event) {
         if (!event.getWorld().isRemote) {
             ((IFarWorldServer) event.getWorld()).close();
-            ThreadingHelper.removeWorldThreadExecutor(event.getWorld());
         }
     }
 
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         Constants.FP2_LOG.debug("Handling login for player {}", event.player.getName());
-        ServerThreadExecutor.INSTANCE.execute(() -> NETWORK_WRAPPER.sendTo(new SPacketReady(), (EntityPlayerMP) event.player));
         event.player.sendMessage(new TextComponentString("§c§lFarPlaneTwo pre-pre-pre-alpha build: use at your own risk!"));
+        NETWORK_WRAPPER.sendTo(new SPacketReady(), (EntityPlayerMP) event.player);
     }
 
     @SubscribeEvent

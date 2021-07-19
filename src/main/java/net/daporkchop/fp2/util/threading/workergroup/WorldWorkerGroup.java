@@ -18,42 +18,34 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.keyed;
+package net.daporkchop.fp2.util.threading.workergroup;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.util.datastructure.ConcurrentUnboundedPriorityBlockingQueue;
-import net.daporkchop.fp2.util.threading.workergroup.WorkerGroupBuilder;
+import net.daporkchop.fp2.util.threading.ThreadingHelper;
+import net.daporkchop.fp2.util.threading.futureexecutor.FutureExecutor;
+import net.daporkchop.lib.unsafe.capability.Releasable;
 import net.minecraft.world.World;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ThreadFactory;
+import java.util.Collection;
 
 /**
+ * A group of worker threads in a {@link World}.
+ *
  * @author DaPorkchop_
+ * @see ThreadingHelper#workerGroupBuilder()
  */
-public class SortedKeyedScheduler<K extends Comparable<? super K>> extends DefaultKeyedExecutor<K> {
-    public SortedKeyedScheduler(@NonNull WorkerGroupBuilder builder) {
-        super(builder);
-    }
+public interface WorldWorkerGroup extends Releasable {
+    /**
+     * @return the {@link World} that this group belongs to
+     */
+    World world();
 
-    @Override
-    protected BlockingQueue<DefaultKeyedExecutor<K>.TaskQueue> createQueue() {
-        return new ConcurrentUnboundedPriorityBlockingQueue<>();
-    }
+    /**
+     * @return the individual worker threads in this group
+     */
+    Collection<Thread> threads();
 
-    @Override
-    protected DefaultKeyedExecutor<K>.TaskQueue createQueue(@NonNull K key, @NonNull Runnable task) {
-        return new TaskQueue(key, task);
-    }
-
-    protected class TaskQueue extends DefaultKeyedExecutor<K>.TaskQueue implements Comparable<TaskQueue> {
-        public TaskQueue(@NonNull K key, @NonNull Runnable task) {
-            super(key, task);
-        }
-
-        @Override
-        public int compareTo(TaskQueue o) {
-            return this.key.compareTo(o.key);
-        }
-    }
+    /**
+     * @return the {@link FutureExecutor} to be used by this group's threads to execute tasks on the world thread
+     */
+    FutureExecutor worldExecutor();
 }

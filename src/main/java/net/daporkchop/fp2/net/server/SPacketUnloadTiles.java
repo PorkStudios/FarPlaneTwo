@@ -21,44 +21,56 @@
 package net.daporkchop.fp2.net.server;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.concurrent.GlobalEventExecutor;
-import net.daporkchop.fp2.config.FP2Config;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.net.client.CPacketRenderMode;
+import net.daporkchop.fp2.mode.api.client.IFarTileCache;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.Collection;
 
-import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Neat hack to ensure that the client doesn't send a packet until it's ready.
- *
  * @author DaPorkchop_
  */
-//TODO: this still seems to be being received too early sometimes
-public class SPacketReady implements IMessage {
+@Getter
+@Setter
+public class SPacketUnloadTiles implements IMessage {
+    @NonNull
+    protected IFarRenderMode<?, ?> mode;
+    @NonNull
+    protected Collection<IFarPos> positions;
+
     @Override
     public void fromBytes(ByteBuf buf) {
+        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
+        int size = Constants.readVarInt(buf);
+        this.positions = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            this.positions.add(this.mode.readPos(buf));
+        }
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
+        Constants.writeString(buf, this.mode.name());
+        Constants.writeVarInt(buf, this.positions.size());
+        this.positions.forEach(pos -> pos.writePos(buf));
     }
 
-    public static class Handler implements IMessageHandler<SPacketReady, IMessage> {
+    public static class Handler implements IMessageHandler<SPacketUnloadTiles, IMessage> {
         @Override
-        public IMessage onMessage(SPacketReady message, MessageContext ctx) {
-            GlobalEventExecutor.INSTANCE.schedule(() -> { //TODO: better workaround
-                ThreadingHelper.scheduleTaskInWorldThread(ctx.getClientHandler().world, () -> {
-                    Constants.FP2_LOG.debug("Server notified us that we are ready to go!");
-                    NETWORK_WRAPPER.sendToServer(new CPacketRenderMode().mode(IFarRenderMode.REGISTRY.get(FP2Config.renderMode)));
-                });
-            }, 1L, TimeUnit.SECONDS);
+        public IMessage onMessage(SPacketUnloadTiles message, MessageContext ctx) {
+            IFarTileCache<?, ?> tileCache = ((IFarWorldClient) ctx.getClientHandler().world).contextFor(message.mode).tileCache();
+            message.positions.forEach(pos -> tileCache.unloadTile(uncheckedCast(pos)));
             return null;
         }
     }

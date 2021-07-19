@@ -29,15 +29,15 @@ import net.daporkchop.fp2.net.server.SPacketReady;
 import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
 import net.daporkchop.fp2.net.server.SPacketTileData;
 import net.daporkchop.fp2.net.server.SPacketUnloadTile;
+import net.daporkchop.fp2.net.server.SPacketUnloadTiles;
 import net.daporkchop.fp2.server.FP2Server;
-import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
+import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLModIdMappingEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
 import net.minecraftforge.fml.relauncher.Side;
 
@@ -90,14 +90,12 @@ public class FP2 {
     }
 
     @Mod.EventHandler
-    public void serverAboutToStart(FMLServerAboutToStartEvent event) {
-        ServerThreadExecutor.INSTANCE.startup();
-    }
-
-    @Mod.EventHandler
     public void serverStopped(FMLServerStoppedEvent event) {
-        ServerThreadExecutor.INSTANCE.workOffQueue();
-        ServerThreadExecutor.INSTANCE.shutdown();
+        try {
+            ServerThreadMarkedFutureExecutor.getFor(FMLCommonHandler.instance().getMinecraftServerInstance()).close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Mod.EventHandler
@@ -113,5 +111,6 @@ public class FP2 {
         NETWORK_WRAPPER.registerMessage(SPacketRenderingStrategy.Handler.class, SPacketRenderingStrategy.class, id++, Side.CLIENT);
         NETWORK_WRAPPER.registerMessage(SPacketTileData.Handler.class, SPacketTileData.class, id++, Side.CLIENT);
         NETWORK_WRAPPER.registerMessage(SPacketUnloadTile.Handler.class, SPacketUnloadTile.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(SPacketUnloadTiles.Handler.class, SPacketUnloadTiles.class, id++, Side.CLIENT);
     }
 }

@@ -30,10 +30,10 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.util.datastructure.DirectLongStack;
 import net.daporkchop.fp2.util.math.geometry.Volume;
-import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
+import net.minecraft.client.Minecraft;
 
 import java.util.function.LongConsumer;
 
@@ -459,7 +459,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
 
         @Override
         public void run() {
-            ClientThreadExecutor.INSTANCE.execute(() -> this.deleteNode(this.root));
+            Minecraft.getMinecraft().addScheduledTask(() -> this.deleteNode(this.root));
         }
 
         protected void deleteNode(long node) {

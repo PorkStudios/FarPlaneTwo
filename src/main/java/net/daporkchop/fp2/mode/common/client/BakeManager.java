@@ -28,12 +28,13 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.util.SimpleRecycler;
-import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
+import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.keyed.DefaultKeyedExecutor;
 import net.daporkchop.fp2.util.threading.keyed.KeyedExecutor;
-import net.daporkchop.fp2.util.threading.keyed.SortedKeyedScheduler;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.World;
 
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -50,6 +51,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     protected final FarRenderTree<POS, T> tree;
 
     protected final KeyedExecutor<POS> bakeExecutor;
+    protected final World world;
 
     public BakeManager(@NonNull AbstractFarRenderer<POS, T> renderer, @NonNull IFarTileCache<POS, T> tileCache) {
         this.renderer = renderer;
@@ -57,11 +59,12 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         this.tileCache = tileCache;
 
         this.tree = new FarRenderTree<>(renderer.mode(), this.strategy, renderer.maxLevel());
+        this.world = Minecraft.getMinecraft().world;
 
-        this.bakeExecutor = uncheckedCast(new DefaultKeyedExecutor<>(
-                null,
-                FP2Config.client.renderThreads,
-                PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build()));
+        this.bakeExecutor = new DefaultKeyedExecutor<>(ThreadingHelper.workerGroupBuilder()
+                .world(this.world)
+                .threads(FP2Config.client.renderThreads)
+                .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build()));
 
         this.tileCache.addListener(this, true);
     }
@@ -86,7 +89,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     @Override
     public void tileRemoved(@NonNull POS pos) {
         //make sure that any in-progress bake tasks are finished before the tile is removed
-        this.bakeExecutor.submitExclusive(pos, () -> ClientThreadExecutor.INSTANCE.execute(() -> this.tree.removeNode(pos)));
+        this.bakeExecutor.submitExclusive(pos, () -> ThreadingHelper.scheduleTaskInWorldThread(this.world, () -> this.tree.removeNode(pos)));
     }
 
     protected void notifyOutputs(@NonNull POS pos) {
@@ -124,7 +127,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
             boolean nonEmpty = this.strategy.bake(pos, srcs, output);
 
             if (nonEmpty) {
-                ClientThreadExecutor.INSTANCE.execute(() -> {
+                ThreadingHelper.scheduleTaskInWorldThread(this.world, () -> {
                     this.strategy.executeBakeOutput(pos, output);
                     this.tree.putRenderData(pos, output);
                 });
@@ -141,6 +144,6 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     }
 
     protected void scheduleEmptyTile(@NonNull POS pos) {
-        ClientThreadExecutor.INSTANCE.execute(() -> this.tree.putRenderData(pos, null));
+        ThreadingHelper.scheduleTaskInWorldThread(this.world, () -> this.tree.putRenderData(pos, null));
     }
 }
