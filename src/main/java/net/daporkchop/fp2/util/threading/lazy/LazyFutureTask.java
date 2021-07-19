@@ -20,17 +20,12 @@
 
 package net.daporkchop.fp2.util.threading.lazy;
 
-import io.netty.util.concurrent.EventExecutor;
 import lombok.NonNull;
-import lombok.SneakyThrows;
-import net.daporkchop.lib.concurrent.PExecutors;
-import net.daporkchop.lib.concurrent.future.DefaultPFuture;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RunnableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;

@@ -21,9 +21,12 @@
 package net.daporkchop.fp2.util.threading.keyed;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.util.threading.ThreadingHelper;
+import net.daporkchop.fp2.util.threading.WorkerGroup;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+import net.minecraft.world.World;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -32,6 +35,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -40,22 +44,19 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 //nothing here needs to be manually synchronized - it's all accessed from inside (ObjObj)ConcurrentHashMap#compute, which synchronizes on the bucket
-public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements KeyedExecutor<K> {
+public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements KeyedExecutor<K>, Runnable {
     protected final Map<K, TaskQueue> queues;
     protected final BlockingQueue<TaskQueue> queue;
 
-    protected final Thread[] threads;
+    protected final WorkerGroup group;
     protected volatile boolean running = true;
 
-    public DefaultKeyedExecutor(int threads, @NonNull ThreadFactory threadFactory) {
+    public DefaultKeyedExecutor(World world, int threads, @NonNull ThreadFactory threadFactory) {
         this.queues = this.createQueues();
         this.queue = this.createQueue();
 
-        this.threads = new Thread[positive(threads, "threads")];
-        Runnable worker = new Worker();
-        for (int i = 0; i < threads; i++) {
-            (this.threads[i] = threadFactory.newThread(worker)).start();
-        }
+        //create all the threads, then start them
+        this.group = ThreadingHelper.startWorkers(world, threads, threadFactory, this);
     }
 
     protected Map<K, TaskQueue> createQueues() {
@@ -133,22 +134,34 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
 
     @Override
     protected void doRelease() {
+        //notify workers that we're shutting down
         this.running = false;
 
-        //interrupt all workers
-        for (Thread t : this.threads) {
-            t.interrupt();
-        }
+        //wait until all the workers have exited
+        this.group.close();
+    }
 
-        //wait for all workers to shut down
-        for (Thread t : this.threads) {
-            do {
-                try {
-                    t.join();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
+    /**
+     * @deprecated internal API, do not touch!
+     */
+    @Override
+    @Deprecated
+    public void run() {
+        Deque<Runnable> taskBuffer = new ArrayDeque<>();
+
+        while (this.running) {
+            try {
+                //poll the queue, but don't wait indefinitely because we need to be able to exit if the executor stops running.
+                // we don't want to use interrupts, because they can cause unwanted side-effects (such as closing NIO channels).
+                TaskQueue queue = this.queue.poll(1L, TimeUnit.SECONDS);
+                if (queue != null) {
+                    queue.run(taskBuffer);
                 }
-            } while (t.isAlive());
+            } catch (Exception e) {
+                FP2_LOG.error(Thread.currentThread().getName(), e);
+            } finally {
+                taskBuffer.clear();
+            }
         }
     }
 
@@ -188,6 +201,10 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
 
             Throwable t0 = null;
             for (Runnable r : taskBuffer) {
+                if (!DefaultKeyedExecutor.this.running) { //executor is no longer running, exit ASAP by skipping remaining tasks
+                    break;
+                }
+
                 try {
                     r.run();
                 } catch (Throwable t1) {
@@ -211,25 +228,6 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
 
             if (t0 != null) {
                 PUnsafe.throwException(t0);
-            }
-        }
-    }
-
-    protected class Worker implements Runnable {
-        @Override
-        public void run() {
-            Deque<Runnable> taskBuffer = new ArrayDeque<>();
-
-            while (DefaultKeyedExecutor.this.running) {
-                try {
-                    DefaultKeyedExecutor.this.queue.take().run(taskBuffer);
-                } catch (InterruptedException e) {
-                    //gracefully exit on interrupt
-                } catch (Exception e) {
-                    FP2_LOG.error(Thread.currentThread().getName(), e);
-                } finally {
-                    taskBuffer.clear();
-                }
             }
         }
     }

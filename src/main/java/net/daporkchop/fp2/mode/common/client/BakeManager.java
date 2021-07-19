@@ -59,6 +59,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         this.tree = new FarRenderTree<>(renderer.mode(), this.strategy, renderer.maxLevel());
 
         this.bakeExecutor = uncheckedCast(new DefaultKeyedExecutor<>(
+                null,
                 FP2Config.client.renderThreads,
                 PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build()));
 

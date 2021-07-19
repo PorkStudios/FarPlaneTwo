@@ -81,6 +81,8 @@ public class KeyedDistinctScheduler<K> extends AbstractRefCounted {
 
         @Override
         public void run() {
+            KeyedDistinctScheduler.this.ensureNotReleased();
+
             if (KeyedDistinctScheduler.this.map.remove(this.key, this)) { //we were able to remove this key from the "pending execution" queue
                 //run the function with our configured key
                 KeyedDistinctScheduler.this.task.accept(this.key);

@@ -105,6 +105,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         FarServerWorker<POS, T> worker = new FarServerWorker<>(this);
 
         this.executor = new ApproximatePriorityKeyedExecutor<>(
+                this.world,
                 FP2Config.generationThreads,
                 PThreadFactories.builder().daemon().minPriority()
                         .collapsingId().name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build(),

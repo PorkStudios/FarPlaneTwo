@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -86,7 +86,12 @@ public final class ServerThreadExecutor implements WorldWorkerManager.IWorker, E
     }
 
     public boolean isServerThread() {
-        return Thread.currentThread() == this.serverThread;
+        return this.isServerThread(Thread.currentThread());
+    }
+
+    public boolean isServerThread(@NonNull Thread thread) {
+        checkState(this.added >= 1, "executor is not currently active!");
+        return thread == this.serverThread;
     }
 
     public void checkServerThread() {
@@ -101,7 +106,7 @@ public final class ServerThreadExecutor implements WorldWorkerManager.IWorker, E
 
     public void workOffQueue() {
         checkState(this.added >= 1, "executor is not currently active!");
-        checkState(Thread.currentThread() == this.serverThread);
+        this.checkServerThread();
 
         //work off queue
         synchronized (this.tasks) {

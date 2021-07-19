@@ -29,6 +29,8 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.concurrent.Executor;
 
+import static net.daporkchop.lib.common.util.PValidation.*;
+
 /**
  * An {@link Executor} which executes submitted tasks on the client thread.
  *
@@ -42,6 +44,18 @@ public final class ClientThreadExecutor implements Executor {
     @Override
     public void execute(@NonNull Runnable task) {
         ((MixinExecutor) Minecraft.getMinecraft()).execute(task);
+    }
+
+    public boolean isClientThread() {
+        return this.isClientThread(Thread.currentThread());
+    }
+
+    public boolean isClientThread(@NonNull Thread thread) {
+        return thread == Minecraft.getMinecraft().thread;
+    }
+
+    public void checkClientThread() {
+        checkState(this.isClientThread(), "not on client thread?!?");
     }
 
     /**

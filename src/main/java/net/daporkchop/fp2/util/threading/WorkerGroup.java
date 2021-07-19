@@ -18,41 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.keyed;
+package net.daporkchop.fp2.util.threading;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.util.threading.ConcurrentUnboundedPriorityBlockingQueue;
-import net.minecraft.world.World;
-
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ThreadFactory;
+import java.util.Collection;
 
 /**
+ * A group of worker threads.
+ *
  * @author DaPorkchop_
  */
-public class SortedKeyedScheduler<K extends Comparable<? super K>> extends DefaultKeyedExecutor<K> {
-    public SortedKeyedScheduler(World world, int threads, @NonNull ThreadFactory threadFactory) {
-        super(world, threads, threadFactory);
-    }
+public interface WorkerGroup extends AutoCloseable {
+    /**
+     * @return the threads in this group
+     */
+    Collection<Thread> threads();
 
+    /**
+     * Shuts down this worker group, blocking until all worker threads have stopped.
+     */
     @Override
-    protected BlockingQueue<DefaultKeyedExecutor<K>.TaskQueue> createQueue() {
-        return new ConcurrentUnboundedPriorityBlockingQueue<>();
-    }
-
-    @Override
-    protected DefaultKeyedExecutor<K>.TaskQueue createQueue(@NonNull K key, @NonNull Runnable task) {
-        return new TaskQueue(key, task);
-    }
-
-    protected class TaskQueue extends DefaultKeyedExecutor<K>.TaskQueue implements Comparable<TaskQueue> {
-        public TaskQueue(@NonNull K key, @NonNull Runnable task) {
-            super(key, task);
-        }
-
-        @Override
-        public int compareTo(TaskQueue o) {
-            return this.key.compareTo(o.key);
-        }
-    }
+    void close();
 }

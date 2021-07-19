@@ -23,6 +23,7 @@ package net.daporkchop.fp2.util.threading.keyed;
 import lombok.NonNull;
 import net.daporkchop.fp2.util.threading.ConcurrentUnboundedPriorityBlockingQueue;
 import net.daporkchop.lib.common.util.PorkUtil;
+import net.minecraft.world.World;
 
 import java.util.Collection;
 import java.util.Comparator;
@@ -40,12 +41,12 @@ public class ApproximatePriorityKeyedExecutor<K> extends DefaultKeyedExecutor<K>
     protected final Comparator<K> initialComparator;
 
     @Deprecated
-    public ApproximatePriorityKeyedExecutor(int threads, @NonNull ThreadFactory threadFactory) {
-        this(threads, threadFactory, (a, b) -> 0);
+    public ApproximatePriorityKeyedExecutor(World world, int threads, @NonNull ThreadFactory threadFactory) {
+        this(world, threads, threadFactory, (a, b) -> 0);
     }
 
-    public ApproximatePriorityKeyedExecutor(int threads, @NonNull ThreadFactory threadFactory, @NonNull Comparator<K> initialComparator) {
-        super(threads, threadFactory);
+    public ApproximatePriorityKeyedExecutor(World world, int threads, @NonNull ThreadFactory threadFactory, @NonNull Comparator<K> initialComparator) {
+        super(world, threads, threadFactory);
         this.initialComparator = initialComparator;
     }
 

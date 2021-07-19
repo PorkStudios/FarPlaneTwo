@@ -18,41 +18,33 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.keyed;
+package net.daporkchop.fp2.util.threading.specific;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.threading.ConcurrentUnboundedPriorityBlockingQueue;
 import net.minecraft.world.World;
-
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ThreadFactory;
+import net.minecraftforge.common.WorldWorkerManager;
 
 /**
  * @author DaPorkchop_
  */
-public class SortedKeyedScheduler<K extends Comparable<? super K>> extends DefaultKeyedExecutor<K> {
-    public SortedKeyedScheduler(World world, int threads, @NonNull ThreadFactory threadFactory) {
-        super(world, threads, threadFactory);
+public class ServerWorldThreadExecutor extends AbstractWorldThreadExecutor implements WorldWorkerManager.IWorker {
+    public ServerWorldThreadExecutor(@NonNull Thread thread, @NonNull World world) {
+        super(thread, world);
     }
 
     @Override
-    protected BlockingQueue<DefaultKeyedExecutor<K>.TaskQueue> createQueue() {
-        return new ConcurrentUnboundedPriorityBlockingQueue<>();
+    public synchronized void start() {
+        super.start();
+        WorldWorkerManager.addWorker(this);
     }
 
     @Override
-    protected DefaultKeyedExecutor<K>.TaskQueue createQueue(@NonNull K key, @NonNull Runnable task) {
-        return new TaskQueue(key, task);
+    public boolean hasWork() {
+        return this.running;
     }
 
-    protected class TaskQueue extends DefaultKeyedExecutor<K>.TaskQueue implements Comparable<TaskQueue> {
-        public TaskQueue(@NonNull K key, @NonNull Runnable task) {
-            super(key, task);
-        }
-
-        @Override
-        public int compareTo(TaskQueue o) {
-            return this.key.compareTo(o.key);
-        }
+    @Override
+    public boolean doWork() {
+        return super.doWork();
     }
 }

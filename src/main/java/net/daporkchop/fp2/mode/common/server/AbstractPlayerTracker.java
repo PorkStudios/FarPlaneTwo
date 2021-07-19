@@ -36,12 +36,9 @@ import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.net.server.SPacketTileData;
 import net.daporkchop.fp2.net.server.SPacketUnloadTile;
-import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.datastructure.RecyclingArrayDeque;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
-import net.daporkchop.lib.common.ref.Ref;
-import net.daporkchop.lib.common.ref.ThreadRef;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -58,7 +55,6 @@ import java.util.function.Consumer;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -299,7 +295,8 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
                 this.assertOnTrackerThread();
 
                 Vec3d lastPos = this.lastPos;
-                if (!AbstractPlayerTracker.this.isVisible(this.player, lastPos.x, lastPos.y, lastPos.z, tile.pos())) { //the position has been unloaded since the task was enqueued, we can assume it's safe to ignore
+                if (lastPos == null //context is either not yet started or has been released, ignore
+                    || !AbstractPlayerTracker.this.isVisible(this.player, lastPos.x, lastPos.y, lastPos.z, tile.pos())) { //the position has been unloaded since the task was enqueued, we can assume it's safe to ignore
                     return;
                 }
 
@@ -333,6 +330,10 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         private void notifyUnloadSync(@NonNull POS pos) {
             try {
                 this.assertOnTrackerThread();
+
+                if (this.lastPos == null) { //context is either not yet started or has been released, ignore
+                    return;
+                }
 
                 if (this.loadedPositions.remove(pos)) {
                     checkState(!this.waitingPositions.remove(pos), "tile at %s was loaded and queued at once?!?", pos);
@@ -368,6 +369,8 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
             //release everything
             this.queuedPositions.close();
+
+            this.lastPos = null;
         }
 
         @Override

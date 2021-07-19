@@ -22,6 +22,7 @@ package net.daporkchop.fp2.util.threading.keyed;
 
 import lombok.NonNull;
 import net.daporkchop.lib.common.misc.refcount.RefCounted;
+import net.daporkchop.lib.unsafe.capability.Releasable;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 /**

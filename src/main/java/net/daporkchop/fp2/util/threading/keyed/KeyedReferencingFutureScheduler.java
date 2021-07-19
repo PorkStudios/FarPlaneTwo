@@ -133,6 +133,8 @@ public class KeyedReferencingFutureScheduler<K, V> extends AbstractRefCounted {
 
         @Override
         protected V compute() {
+            KeyedReferencingFutureScheduler.this.ensureNotReleased();
+
             return KeyedReferencingFutureScheduler.this.task.apply(this.key);
         }
     }
