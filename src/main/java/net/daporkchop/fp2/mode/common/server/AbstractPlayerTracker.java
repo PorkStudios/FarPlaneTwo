@@ -36,6 +36,7 @@ import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.net.server.SPacketTileData;
 import net.daporkchop.fp2.net.server.SPacketUnloadTile;
+import net.daporkchop.fp2.net.server.SPacketUnloadTiles;
 import net.daporkchop.fp2.util.datastructure.RecyclingArrayDeque;
 import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
@@ -358,6 +359,9 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
                 this.executor.submit(this::doRelease).syncUninterruptibly(); //block until the task is actually executed
                 return;
             }
+
+            //tell the client to unload all tiles
+            NETWORK_WRAPPER.sendTo(new SPacketUnloadTiles().mode(AbstractPlayerTracker.this.world.mode()).positions(new ArrayList<>(this.loadedPositions)), this.player);
 
             //remove player from all tracking positions
             // (using temporary set to avoid CME)
