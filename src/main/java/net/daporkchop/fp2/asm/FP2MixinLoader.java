@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -45,11 +45,11 @@ public class FP2MixinLoader implements IFMLLoadingPlugin {
         MixinBootstrap.init();
 
         Mixins.addConfiguration("mixins.fp2.core.json");
+        Mixins.addConfiguration("mixins.fp2.fixes.json");
+
         if (FP2_DEBUG) { //we're in debug mode, add debug mixins
             Mixins.addConfiguration("mixins.fp2.debug.json");
         }
-
-        //MixinEnvironment.getDefaultEnvironment().setObfuscationContext("searge");
 
         FMLLog.log.info(MixinEnvironment.getDefaultEnvironment().getObfuscationContext());
     }
