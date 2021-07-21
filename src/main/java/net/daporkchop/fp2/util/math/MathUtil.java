@@ -64,6 +64,14 @@ public class MathUtil {
         return d * d * d;
     }
 
+    public static long sq(long d) {
+        return d * d;
+    }
+
+    public static long cb(long d) {
+        return d * d * d;
+    }
+
     public static float sq(float d) {
         return d * d;
     }

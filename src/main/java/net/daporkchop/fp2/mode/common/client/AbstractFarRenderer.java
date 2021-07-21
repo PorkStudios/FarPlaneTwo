@@ -31,7 +31,6 @@ import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.util.datastructure.DirectLongStack;
-import net.daporkchop.fp2.util.math.geometry.Volume;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.BlockRenderLayer;
@@ -80,10 +79,8 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
     public void prepare(float partialTicks, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
         checkGLError("pre fp2 build index");
 
-        Volume[] volumes = this.createVolumesForSelection(partialTicks, mc);
-
         this.index.clear();
-        this.bakeManager.tree.select(volumes, frustum, this.index);
+        this.bakeManager.tree.select(frustum, this.index);
 
         if (this.index.isEmpty()) {
             return; //nothing to render...
@@ -102,8 +99,6 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
         this.strategy.render(layer, pre);
         checkGLError("post fp2 render");
     }
-
-    protected abstract Volume[] createVolumesForSelection(float partialTicks, Minecraft mc);
 
     @Override
     protected void doRelease() {
