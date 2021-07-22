@@ -188,7 +188,7 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
 
     @Override
     public int getTopBlockYBelow(int blockX, int blockY, int blockZ) {
-        return this.getColumn(blockX >> 4, blockZ >> 4).getOpacityIndex().getTopBlockYBelow(blockX & 0xF, blockY, blockZ & 0xF);
+        return this.getColumn(blockX >> 4, blockZ >> 4).getOpacityIndex().getTopBlockYBelow(blockX & 0xF, blockZ & 0xF, blockY);
     }
 
     protected ICube getCube(int cubeX, int cubeY, int cubeZ) {

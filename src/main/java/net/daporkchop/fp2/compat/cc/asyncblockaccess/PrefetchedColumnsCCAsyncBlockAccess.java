@@ -63,7 +63,7 @@ public class PrefetchedColumnsCCAsyncBlockAccess extends AbstractPrefetchedAsync
     public int getTopBlockYBelow(int blockX, int blockY, int blockZ) {
         IColumn chunk = this.columns.get(ChunkPos.asLong(blockX >> 4, blockZ >> 4));
         if (chunk != null) {
-            return chunk.getOpacityIndex().getTopBlockYBelow(blockX & 0xF, blockY, blockZ & 0xF);
+            return chunk.getOpacityIndex().getTopBlockYBelow(blockX & 0xF, blockZ & 0xF, blockY);
         }
         return this.parent.getTopBlockYBelow(blockX, blockY, blockZ);
     }

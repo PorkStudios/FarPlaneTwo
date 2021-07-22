@@ -61,4 +61,9 @@ public class HeightmapConstants {
             1, T_VOXELS,
             1, 1
     };
+
+    /**
+     * The value of {@link HeightmapData#height_frac} to be used for liquids.
+     */
+    public static final int HEIGHT_FRAC_LIQUID = -32; //-(256 * 1/8)
 }
