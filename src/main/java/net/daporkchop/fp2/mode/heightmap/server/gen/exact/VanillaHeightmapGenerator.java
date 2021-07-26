@@ -21,18 +21,25 @@
 package net.daporkchop.fp2.mode.heightmap.server.gen.exact;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
+import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.init.Blocks;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.WorldServer;
 
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
+
 /**
  * @author DaPorkchop_
  */
 public class VanillaHeightmapGenerator extends AbstractExactHeightmapGenerator {
+    protected static final int Y_LIMIT = 0; //TODO: don't hardcode this to 0 (because 1.17)
+
     public VanillaHeightmapGenerator(@NonNull WorldServer world) {
         super(world);
     }
@@ -45,5 +52,37 @@ public class VanillaHeightmapGenerator extends AbstractExactHeightmapGenerator {
     @Override
     public Stream<Vec3i> neededCubes(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos pos) {
         return Stream.empty(); //assume that all relevant data is loaded with the chunk
+    }
+
+    @Override
+    protected void computeElevations(@NonNull IBlockHeightAccess world, @NonNull int[] elevations, @NonNull BlockPos.MutableBlockPos pos, int blockX, int blockZ) {
+        int y = world.getTopBlockY(blockX, blockZ);
+        if (y < Y_LIMIT) { //there are no blocks in this column, therefore nothing to do
+            return;
+        }
+
+        //vanilla worlds have the convenient trait that everything in the column is already generated and loaded, which allows us to simply iterate from top to bottom
+
+        int usedExtraLayers = 0;
+        for (IBlockState prevState = null; y >= Y_LIMIT; y--) {
+            pos.setY(y);
+            IBlockState state = world.getBlockState(pos);
+
+            if (state == prevState) { //skip duplicate block states
+                continue;
+            }
+            prevState = state;
+
+            if (state.isOpaqueCube()) { //solid block: save elevation and immediately return, no other layers will be visible
+                elevations[DEFAULT_LAYER] = y;
+                return;
+            } else if (state.getBlock() == Blocks.WATER) { //water: remember the first Y value we meet it at, discard all other occurrences
+                if (elevations[WATER_LAYER] == Integer.MIN_VALUE) {
+                    elevations[WATER_LAYER] = y;
+                }
+            } else if (usedExtraLayers < EXTRA_LAYERS.length && (state.getMaterial().isSolid() || state.getMaterial().isLiquid())) { //all other blocks: put the first few on extra layers, discard everything else
+                elevations[EXTRA_LAYERS[usedExtraLayers++]] = y;
+            }
+        }
     }
 }

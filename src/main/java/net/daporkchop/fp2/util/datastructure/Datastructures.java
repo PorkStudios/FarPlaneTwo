@@ -18,52 +18,28 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap;
+package net.daporkchop.fp2.util.datastructure;
 
-import lombok.experimental.UtilityClass;
-
-import java.util.stream.IntStream;
-
-import static net.daporkchop.fp2.util.Constants.*;
+import net.daporkchop.lib.natives.Feature;
+import net.daporkchop.lib.natives.FeatureBuilder;
 
 /**
- * Constants used throughout the heightmap code.
+ * Factory for various datastructures implemented by FP2, potentially using native code.
  *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class HeightmapConstants {
-    public static final int STORAGE_VERSION = 10;
+public interface Datastructures extends Feature<Datastructures> {
+    Datastructures INSTANCE = FeatureBuilder.<Datastructures>create(Datastructures.class)
+            .addJava("net.daporkchop.fp2.util.datastructure.java.JavaDatastructures")
+            .build(true);
 
     /**
-     * The maximum number of layers allowed per block in a tile.
+     * @return a new {@link NDimensionalIntSet.Builder}
      */
-    public static final int MAX_LAYERS = 4;
+    NDimensionalIntSet.Builder nDimensionalIntSet();
 
     /**
-     * The default layer index.
+     * @return a new {@link NDimensionalIntSegtreeSet.Builder}
      */
-    public static final int DEFAULT_LAYER = 0;
-
-    /**
-     * The layer index used for water.
-     */
-    public static final int WATER_LAYER = 1;
-
-    /**
-     * The indices of all additional layers that may be customized by the user.
-     */
-    public static final int[] EXTRA_LAYERS = IntStream.range(0, MAX_LAYERS).filter(layer -> layer != DEFAULT_LAYER && layer != WATER_LAYER).toArray();
-
-    public static final int[] CONNECTION_INTERSECTION_AREAS = {
-            T_VOXELS, T_VOXELS,
-            T_VOXELS, 1,
-            1, T_VOXELS,
-            1, 1
-    };
-
-    /**
-     * The value of {@link HeightmapData#height_frac} to be used for liquids.
-     */
-    public static final int HEIGHT_FRAC_LIQUID = -32; //-(256 * 1/8)
+    NDimensionalIntSegtreeSet.Builder nDimensionalIntSegtreeSet();
 }

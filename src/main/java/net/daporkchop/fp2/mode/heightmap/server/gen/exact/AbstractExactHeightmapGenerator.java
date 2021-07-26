@@ -27,11 +27,11 @@ import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
-import net.minecraft.block.Block;
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
-import net.minecraft.world.biome.Biome;
+
+import java.util.Arrays;
 
 import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -40,11 +40,11 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorExact<HeightmapPos, HeightmapTile> {
-    protected static final int MINIMUM_CONSIDERED_Y = Integer.MIN_VALUE + Character.MAX_VALUE; //the minimum Y coordinate that will be considered for heightmap samples
-
     public AbstractExactHeightmapGenerator(@NonNull WorldServer world) {
         super(world);
     }
+
+    protected abstract void computeElevations(@NonNull IBlockHeightAccess world, @NonNull int[] elevations, @NonNull BlockPos.MutableBlockPos pos, int blockX, int blockZ);
 
     @Override
     public void generate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos posIn, @NonNull HeightmapTile tile) {
@@ -53,31 +53,35 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
 
         HeightmapData data = new HeightmapData();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        int[] elevations = new int[MAX_LAYERS];
 
         for (int x = 0; x < T_VOXELS; x++) {
             for (int z = 0; z < T_VOXELS; z++) {
-                int height = world.getTopBlockY(tileX * T_VOXELS + x, tileZ * T_VOXELS + z);
-                pos.setPos(tileX * T_VOXELS + x, height, tileZ * T_VOXELS + z);
+                Arrays.fill(elevations, Integer.MIN_VALUE);
 
-                IBlockState state = null;
-                while (height > MINIMUM_CONSIDERED_Y && (state = world.getBlockState(pos)).getMaterial().isLiquid()) {
-                    pos.setY(--height);
+                int blockX = tileX * T_VOXELS + x;
+                int blockZ = tileZ * T_VOXELS + z;
+                this.computeElevations(world, elevations, pos.setPos(blockX, 0, blockZ), blockX, blockZ);
+
+                for (int layer = 0; layer < MAX_LAYERS; layer++) {
+                    int elevation = elevations[layer];
+                    if (elevation != Integer.MIN_VALUE) {
+                        data.state = world.getBlockState(pos.setPos(blockX, elevation, blockZ));
+                        data.biome = world.getBiome(pos);
+                        pos.setY(data.height_int = pos.getY() + 1);
+                        data.light = packCombinedLight(world.getCombinedLight(pos, 0));
+
+                        if (layer == WATER_LAYER) {
+                            data.height_frac = HEIGHT_FRAC_LIQUID;
+                            data.secondaryConnection = WATER_LAYER;
+                        } else {
+                            data.height_frac = 0;
+                            data.secondaryConnection = DEFAULT_LAYER;
+                        }
+
+                        tile.setLayer(x, z, layer, data);
+                    }
                 }
-
-                if (height <= MINIMUM_CONSIDERED_Y) { //discard points that are too low
-                    continue;
-                }
-
-                pos.setY(data.height_int = ++height);
-                data.state = state;
-                data.light = packCombinedLight(world.getCombinedLight(pos, 0));
-                data.biome = world.getBiome(pos);
-                tile.setLayer(x, z, DEFAULT_LAYER, data);
-
-                /*pos.setY(this.seaLevel + 1);
-                data.waterLight = packCombinedLight(world.getCombinedLight(pos, 0));
-                data.waterBiome = world.getBiome(pos);
-                tile.setLayer(x, z, 1, data);*/
             }
         }
     }

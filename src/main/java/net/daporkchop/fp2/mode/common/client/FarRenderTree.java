@@ -58,9 +58,6 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable {
-    //this is enough levels for the tree to encompass the entire minecraft world
-    public static final int DEPTH = 32 - Integer.numberOfLeadingZeros(60_000_000 >> T_SHIFT);
-
     /*
      * Constants:
      * - D: number of dimensions
@@ -235,7 +232,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      * @param pos the position of the tile to set the render data for
      */
     public void putRenderData(@NonNull POS pos, BakeOutput output) {
-        this.putRenderData0(DEPTH, this.root, pos, output);
+        this.putRenderData0(MAX_LODS, this.root, pos, output);
     }
 
     protected void putRenderData0(int level, long node, POS pos, BakeOutput output) {
@@ -288,7 +285,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      * @param pos the position of the tile to remove
      */
     public void removeNode(@NonNull POS pos) {
-        this.removeNode0(DEPTH, this.root, pos);
+        this.removeNode0(MAX_LODS, this.root, pos);
     }
 
     protected boolean removeNode0(int level, long node, POS pos) {
@@ -352,7 +349,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      * @param index   the render index to add tiles to
      */
     public void select(@NonNull Volume[] ranges, @NonNull IFrustum frustum, @NonNull DirectLongStack index) {
-        this.select0(DEPTH, this.root, ranges, frustum, index);
+        this.select0(MAX_LODS, this.root, ranges, frustum, index);
     }
 
     protected boolean select0(int level, long node, Volume[] ranges, IFrustum frustum, DirectLongStack index) {
@@ -364,7 +361,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
             //the view range for this level doesn't intersect this tile's bounding box,
             // so we can be certain that neither this tile nor any of its children would be contained
             return false;
-        } else if (level < DEPTH //don't do frustum culling on the root node, as it doesn't have a valid position because it's not really "there"
+        } else if (level < MAX_LODS //don't do frustum culling on the root node, as it doesn't have a valid position because it's not really "there"
                    && !this.directPosAccess.inFrustum(node + this.tile_pos, frustum)) {
             //the frustum doesn't contain this tile's bounding box, so we can be certain that neither
             // this tile nor any of its children would be visible

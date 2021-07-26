@@ -90,8 +90,21 @@ public class HeightmapTile implements IFarTile {
     }
 
     static void writeLayer(long base, HeightmapData data) {
-        PUnsafe.putInt(base + 0L, data.height_int);
-        PUnsafe.putInt(base + 4L, (FastRegistry.getId(data.state) << 8) | data.height_frac);
+        int height_int = data.height_int;
+        int height_frac = data.height_frac;
+
+        /*
+         * if (height_frac < 0) {
+         *     height_int -= 1;
+         *     height_frac += 256;
+         * }
+         */
+        int mask = height_frac >> 31;
+        height_int += mask;
+        height_frac += (mask & 256);
+
+        PUnsafe.putInt(base + 0L, height_int);
+        PUnsafe.putInt(base + 4L, (FastRegistry.getId(data.state) << 8) | height_frac);
         PUnsafe.putInt(base + 8L, (data.secondaryConnection << 16) | (data.light << 8) | FastRegistry.getId(data.biome));
     }
 
