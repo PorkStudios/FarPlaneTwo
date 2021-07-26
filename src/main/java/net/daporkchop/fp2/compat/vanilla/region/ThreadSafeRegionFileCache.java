@@ -24,7 +24,7 @@ import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.util.FastByteArrayOutputStream;
 import net.daporkchop.lib.common.function.io.IOBiFunction;
-import net.daporkchop.lib.common.function.io.IOConsumer;
+import net.daporkchop.lib.common.function.io.IOFunction;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.util.math.ChunkPos;
@@ -36,10 +36,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -192,33 +193,36 @@ public class ThreadSafeRegionFileCache {
     }
 
     /**
-     * Iterates through every chunk in the given world, passing the chunk position to the given callback function.
+     * Gets a {@link Stream} over the position of every chunk that exists in the world.
+     * <p>
+     * Note that the returned {@link Stream} must be closed manually (using {@link Stream#close()}).
      *
      * @param regionDir the path to the region directory
-     * @param callback  the callback function to run
+     * @return a {@link Stream} over the position of every chunk that exists in the world
      */
-    public void forEachChunk(@NonNull Path regionDir, @NonNull Consumer<ChunkPos> callback) throws IOException {
-        try (Stream<Path> pathStream = Files.list(regionDir)) {
-            pathStream.filter(Files::isRegularFile)
-                    .map(Path::getFileName).map(Path::toString)
-                    .map(Pattern.compile("^r\\.(-?\\d+)\\.(-?\\d+)\\.mca$")::matcher)
-                    .filter(Matcher::matches)
-                    .forEach((IOConsumer<Matcher>) matcher -> {
-                        RegionFile region = this.getRegion(regionDir.resolve(matcher.group()), true);
-                        try {
-                            int baseX = Integer.parseInt(matcher.group(1)) << 4;
-                            int baseZ = Integer.parseInt(matcher.group(2)) << 4;
-                            for (int dx = 0; dx < 32; dx++) {
-                                for (int dz = 0; dz < 32; dz++) {
-                                    if (region.isChunkSaved(dx, dz)) {
-                                        callback.accept(new ChunkPos(baseX + dx, baseZ + dz));
-                                    }
+    public Stream<ChunkPos> allChunks(@NonNull Path regionDir) throws IOException {
+        return Files.list(regionDir).filter(Files::isRegularFile)
+                .map(Path::getFileName).map(Path::toString)
+                .map(Pattern.compile("^r\\.(-?\\d+)\\.(-?\\d+)\\.mca$")::matcher)
+                .filter(Matcher::matches)
+                .flatMap((IOFunction<Matcher, Stream<ChunkPos>>) matcher -> {
+                    RegionFile region = this.getRegion(regionDir.resolve(matcher.group()), true);
+                    try {
+                        int baseX = Integer.parseInt(matcher.group(1)) << 4;
+                        int baseZ = Integer.parseInt(matcher.group(2)) << 4;
+
+                        List<ChunkPos> positions = new ArrayList<>();
+                        for (int dx = 0; dx < 32; dx++) {
+                            for (int dz = 0; dz < 32; dz++) {
+                                if (region.isChunkSaved(dx, dz)) {
+                                    positions.add(new ChunkPos(baseX + dx, baseZ + dz));
                                 }
                             }
-                        } finally {
-                            PUnsafe.monitorExit(region);
                         }
-                    });
-        }
+                        return positions.stream();
+                    } finally {
+                        PUnsafe.monitorExit(region);
+                    }
+                });
     }
 }

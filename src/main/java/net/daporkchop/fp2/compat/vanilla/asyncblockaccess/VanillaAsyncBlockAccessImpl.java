@@ -26,14 +26,14 @@ import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.compat.vanilla.region.ThreadSafeRegionFileCache;
 import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
-import net.daporkchop.fp2.util.datastructure.ConcurrentBooleanHashSegtreeInt;
+import net.daporkchop.fp2.util.datastructure.Datastructures;
+import net.daporkchop.fp2.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.util.threading.futurecache.IAsyncCache;
 import net.daporkchop.fp2.util.threading.lazy.LazyFutureTask;
-import net.daporkchop.lib.common.function.io.IOSupplier;
 import net.daporkchop.lib.concurrent.PFutures;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTTagCompound;
@@ -50,9 +50,6 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.AnvilChunkLoader;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -70,15 +67,19 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
 
     protected final ChunkCache chunks = new ChunkCache();
 
-    protected final ConcurrentBooleanHashSegtreeInt chunksExistCache = new ConcurrentBooleanHashSegtreeInt(2, MAX_LODS, () -> {
-        List<int[]> positions = new ArrayList<>();
-        ThreadSafeRegionFileCache.INSTANCE.forEachChunk(VanillaAsyncBlockAccessImpl.this.io.chunkSaveLocation.toPath(), pos -> positions.add(new int[]{ pos.x, pos.z }));
-        return positions.stream();
-    });
+    protected final NDimensionalIntSegtreeSet chunksExistCache;
 
     public VanillaAsyncBlockAccessImpl(@NonNull WorldServer world) {
         this.world = world;
         this.io = (AnvilChunkLoader) this.world.getChunkProvider().chunkLoader;
+
+        this.chunksExistCache = Datastructures.INSTANCE.nDimensionalIntSegtreeSet()
+                .dimensions(2)
+                .threadSafe(true)
+                .initialPoints(() -> ThreadSafeRegionFileCache.INSTANCE.allChunks(this.io.chunkSaveLocation.toPath().resolve("region"))
+                        .map(pos -> new int[]{ pos.x, pos.z })
+                        .parallel())
+                .build();
 
         WorldChangeListenerManager.add(this.world, this);
     }
@@ -112,13 +113,13 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
 
     @Override
     public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
-        this.chunksExistCache.set(columnX, columnZ);
+        this.chunksExistCache.add(columnX, columnZ);
         this.chunks.notifyUpdate(new ChunkPos(columnX, columnZ), nbt);
     }
 
     @Override
     public boolean anyColumnIntersects(int tileX, int tileZ, int level) {
-        return this.chunksExistCache.isSet(level, tileX, tileZ);
+        return this.chunksExistCache.containsAny(level, tileX, tileZ);
     }
 
     @Override
