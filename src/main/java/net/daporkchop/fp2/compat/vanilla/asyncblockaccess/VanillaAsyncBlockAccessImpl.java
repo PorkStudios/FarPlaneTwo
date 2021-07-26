@@ -70,7 +70,7 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
 
     protected final ChunkCache chunks = new ChunkCache();
 
-    protected final ConcurrentBooleanHashSegtreeInt chunksExistCache = new ConcurrentBooleanHashSegtreeInt(2, () -> {
+    protected final ConcurrentBooleanHashSegtreeInt chunksExistCache = new ConcurrentBooleanHashSegtreeInt(2, MAX_LODS, () -> {
         List<int[]> positions = new ArrayList<>();
         ThreadSafeRegionFileCache.INSTANCE.forEachChunk(VanillaAsyncBlockAccessImpl.this.io.chunkSaveLocation.toPath(), pos -> positions.add(new int[]{ pos.x, pos.z }));
         return positions.stream();

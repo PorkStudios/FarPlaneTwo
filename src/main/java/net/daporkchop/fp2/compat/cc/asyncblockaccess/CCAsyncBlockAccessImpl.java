@@ -69,6 +69,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -100,12 +101,12 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
 
         WorldChangeListenerManager.add(this.world, this);
 
-        this.columnsExistCache = new ConcurrentBooleanHashSegtreeInt(2, () -> {
+        this.columnsExistCache = new ConcurrentBooleanHashSegtreeInt(2, MAX_LODS, () -> {
             List<int[]> positions = new ArrayList<>();
             CCAsyncBlockAccessImpl.this.storage.forEachColumn(pos -> positions.add(new int[]{ pos.x, pos.z }));
             return positions.stream();
         });
-        this.cubesExistCache = new ConcurrentBooleanHashSegtreeInt(3, () -> {
+        this.cubesExistCache = new ConcurrentBooleanHashSegtreeInt(3, MAX_LODS, () -> {
             List<int[]> positions = new ArrayList<>();
             CCAsyncBlockAccessImpl.this.storage.forEachCube(pos -> positions.add(new int[]{ pos.getX(), pos.getY(), pos.getZ() }));
             return positions.stream();

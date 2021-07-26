@@ -41,11 +41,13 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class ConcurrentBooleanHashSegtreeInt {
     protected final Set<Key> set = ConcurrentHashMap.newKeySet();
     protected final int dims;
+    protected final int levels;
 
     protected CompletableFuture<Void> initializationFuture = new CompletableFuture<>();
 
-    public ConcurrentBooleanHashSegtreeInt(int dims, @NonNull ESupplier<Stream<int[]>> coords) {
+    public ConcurrentBooleanHashSegtreeInt(int dims, int levels, @NonNull ESupplier<Stream<int[]>> coords) {
         this.dims = positive(dims, "dims");
+        this.levels = positive(levels, "levels");
 
         CompletableFuture.runAsync(() -> {
             try {
@@ -82,7 +84,7 @@ public class ConcurrentBooleanHashSegtreeInt {
         }
 
         Key key = this.makeKey(0, coords);
-        for (int i = 0; i < FarRenderTree.DEPTH && this.set.add(key); i++, key = key.up()) {
+        for (int i = 0; i < this.levels && this.set.add(key); i++, key = key.up()) {
         }
     }
 
