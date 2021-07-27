@@ -201,6 +201,10 @@ public class ThreadSafeRegionFileCache {
      * @return a {@link Stream} over the position of every chunk that exists in the world
      */
     public Stream<ChunkPos> allChunks(@NonNull Path regionDir) throws IOException {
+        if (Files.notExists(regionDir)) { //the region directory might not exist yet in a new world
+            return Stream.empty();
+        }
+
         return Files.list(regionDir).filter(Files::isRegularFile)
                 .map(Path::getFileName).map(Path::toString)
                 .map(Pattern.compile("^r\\.(-?\\d+)\\.(-?\\d+)\\.mca$")::matcher)
