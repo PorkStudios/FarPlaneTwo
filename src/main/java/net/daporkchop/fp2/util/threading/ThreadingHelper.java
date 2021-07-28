@@ -23,6 +23,7 @@ package net.daporkchop.fp2.util.threading;
 import com.google.common.collect.ImmutableSet;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor;
 import net.daporkchop.fp2.util.threading.futureexecutor.FutureExecutor;
@@ -46,6 +47,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinWorkerThread;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
@@ -60,6 +62,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @UtilityClass
 public class ThreadingHelper {
     private final Map<Thread, WorldWorkerGroup> THREADS_TO_GROUPS = new ConcurrentHashMap<>();
+    private final Set<Thread> BLOCKED_THREADS = ConcurrentHashMap.newKeySet();
 
     /**
      * @return a new {@link WorkerGroupBuilder}
@@ -138,6 +141,40 @@ public class ThreadingHelper {
         return thread;
     }
 
+    /**
+     * Begins an interruptible blocking operation whose interruption is managed by {@link ThreadingHelper}.
+     */
+    public void managedBlock() {
+        checkState(BLOCKED_THREADS.add(Thread.currentThread()), "recursively blocking task?!?");
+    }
+
+    /**
+     * Ends an operation initiated by {@link #managedBlock()}.
+     */
+    @SneakyThrows(InterruptedException.class)
+    public void managedUnblock() {
+        if (BLOCKED_THREADS.remove(Thread.currentThread())) { //we were blocking, but we should still double-check to see if we've been interrupted
+            if (Thread.interrupted()) {
+                throw new InterruptedException();
+            }
+        } else { //the thread has been unblocked by something else - wait for the interrupt to arrive
+            LockSupport.park();
+
+            throw new InterruptedException();
+        }
+    }
+
+    /**
+     * Interrupts a thread which was is currently doing a blocking operation managed by {@link #managedBlock()}.
+     *
+     * @param thread the thread
+     */
+    public void externalManagedUnblock(@NonNull Thread thread) {
+        if (BLOCKED_THREADS.remove(thread)) { //we managed to remove the thread - let's interrupt it
+            thread.interrupt();
+        }
+    }
+
     @Getter
     private static class DefaultWorldWorkerGroup extends AbstractReleasable implements WorldWorkerGroup {
         private final World world;
@@ -184,6 +221,8 @@ public class ThreadingHelper {
             boolean interrupted = false;
             for (Thread thread : this.threads) {
                 do {
+                    externalManagedUnblock(thread);
+
                     try {
                         thread.join(50L);
                     } catch (InterruptedException e) {
