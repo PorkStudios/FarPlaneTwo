@@ -67,7 +67,7 @@ public class FlatHeightmapGenerator extends AbstractRoughHeightmapGenerator {
             } else if (blockType == BLOCK_TYPE_OPAQUE) {
                 topOpaqueLayerIndex = i;
                 break;
-            } else if (blockType == BLOCK_TYPE_TRANSPARENT && topTransparentLayers.size() < MAX_LAYERS - 2) { //any additional layers will be discarded
+            } else if (blockType == BLOCK_TYPE_TRANSPARENT && topTransparentLayers.size() < EXTRA_LAYERS.length) { //any additional layers will be discarded
                 topTransparentLayers.add(i);
             }
         }

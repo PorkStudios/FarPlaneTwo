@@ -40,7 +40,8 @@ import net.daporkchop.fp2.compat.vanilla.IBiomeAccess;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
-import net.daporkchop.fp2.util.datastructure.ConcurrentBooleanHashSegtreeInt;
+import net.daporkchop.fp2.util.datastructure.Datastructures;
+import net.daporkchop.fp2.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
@@ -88,8 +89,8 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
 
     protected final ExtendedBlockStorage emptyStorage;
 
-    protected final ConcurrentBooleanHashSegtreeInt columnsExistCache;
-    protected final ConcurrentBooleanHashSegtreeInt cubesExistCache;
+    protected final NDimensionalIntSegtreeSet columnsExistCache;
+    protected final NDimensionalIntSegtreeSet cubesExistCache;
 
     public CCAsyncBlockAccessImpl(@NonNull WorldServer world) {
         this.world = world;
@@ -100,16 +101,24 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
 
         WorldChangeListenerManager.add(this.world, this);
 
-        this.columnsExistCache = new ConcurrentBooleanHashSegtreeInt(2, () -> {
-            List<int[]> positions = new ArrayList<>();
-            CCAsyncBlockAccessImpl.this.storage.forEachColumn(pos -> positions.add(new int[]{ pos.x, pos.z }));
-            return positions.stream();
-        });
-        this.cubesExistCache = new ConcurrentBooleanHashSegtreeInt(3, () -> {
-            List<int[]> positions = new ArrayList<>();
-            CCAsyncBlockAccessImpl.this.storage.forEachCube(pos -> positions.add(new int[]{ pos.getX(), pos.getY(), pos.getZ() }));
-            return positions.stream();
-        });
+        this.columnsExistCache = Datastructures.INSTANCE.nDimensionalIntSegtreeSet()
+                .dimensions(2)
+                .threadSafe(true)
+                .initialPoints(() -> {
+                    List<int[]> positions = new ArrayList<>();
+                    CCAsyncBlockAccessImpl.this.storage.forEachColumn(pos -> positions.add(new int[]{ pos.x, pos.z }));
+                    return positions.stream();
+                })
+                .build();
+        this.cubesExistCache = Datastructures.INSTANCE.nDimensionalIntSegtreeSet()
+                .dimensions(3)
+                .threadSafe(true)
+                .initialPoints(() -> {
+                    List<int[]> positions = new ArrayList<>();
+                    CCAsyncBlockAccessImpl.this.storage.forEachCube(pos -> positions.add(new int[]{ pos.getX(), pos.getY(), pos.getZ() }));
+                    return positions.stream();
+                })
+                .build();
     }
 
     @Override
@@ -157,24 +166,24 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
 
     @Override
     public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
-        this.columnsExistCache.set(columnX, columnZ);
+        this.columnsExistCache.add(columnX, columnZ);
         this.columns.notifyUpdate(new ChunkPos(columnX, columnZ), nbt);
     }
 
     @Override
     public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt) {
-        this.cubesExistCache.set(cubeX, cubeY, cubeZ);
+        this.cubesExistCache.add(cubeX, cubeY, cubeZ);
         this.cubes.notifyUpdate(new CubePos(cubeX, cubeY, cubeZ), nbt);
     }
 
     @Override
     public boolean anyColumnIntersects(int tileX, int tileZ, int level) {
-        return this.columnsExistCache.isSet(level, tileX, tileZ);
+        return this.columnsExistCache.containsAny(level, tileX, tileZ);
     }
 
     @Override
     public boolean anyCubeIntersects(int tileX, int tileY, int tileZ, int level) {
-        return this.cubesExistCache.isSet(level, tileX, tileY, tileZ);
+        return this.cubesExistCache.containsAny(level, tileX, tileY, tileZ);
     }
 
     protected IColumn getColumn(int columnX, int columnZ) {
@@ -188,7 +197,7 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
 
     @Override
     public int getTopBlockYBelow(int blockX, int blockY, int blockZ) {
-        return this.getColumn(blockX >> 4, blockZ >> 4).getOpacityIndex().getTopBlockYBelow(blockX & 0xF, blockY, blockZ & 0xF);
+        return this.getColumn(blockX >> 4, blockZ >> 4).getOpacityIndex().getTopBlockYBelow(blockX & 0xF, blockZ & 0xF, blockY);
     }
 
     protected ICube getCube(int cubeX, int cubeY, int cubeZ) {

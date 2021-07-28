@@ -25,7 +25,6 @@ import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.common.client.FarRenderTree;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.renderer.GlStateManager;
@@ -35,6 +34,7 @@ import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
 
@@ -102,7 +102,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         //  from rendering over vanilla water
 
         IDrawCommandBuffer[][] passes = this.passes();
-        for (int level = 0; level < FarRenderTree.DEPTH; level++) {
+        for (int level = 0; level < MAX_LODS; level++) {
             this.renderSolid(passes[0][level], level);
             this.renderCutout(passes[1][level], level);
         }

@@ -18,52 +18,49 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap;
+package net.daporkchop.fp2.util.datastructure;
 
-import lombok.experimental.UtilityClass;
+import net.daporkchop.lib.common.misc.refcount.RefCounted;
+import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
-import java.util.stream.IntStream;
-
-import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Constants used throughout the heightmap code.
+ * Base for all datastructure interface.
  *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class HeightmapConstants {
-    public static final int STORAGE_VERSION = 10;
+interface IDatastructure<I extends IDatastructure<? extends I>> extends RefCounted {
+    @Override
+    int refCnt();
 
-    /**
-     * The maximum number of layers allowed per block in a tile.
-     */
-    public static final int MAX_LAYERS = 4;
+    @Override
+    I retain() throws AlreadyReleasedException;
 
-    /**
-     * The default layer index.
-     */
-    public static final int DEFAULT_LAYER = 0;
+    @Override
+    boolean release() throws AlreadyReleasedException;
 
-    /**
-     * The layer index used for water.
-     */
-    public static final int WATER_LAYER = 1;
+    abstract class Builder<B extends Builder<B, I>, I> {
+        protected boolean threadSafe;
 
-    /**
-     * The indices of all additional layers that may be customized by the user.
-     */
-    public static final int[] EXTRA_LAYERS = IntStream.range(0, MAX_LAYERS).filter(layer -> layer != DEFAULT_LAYER && layer != WATER_LAYER).toArray();
+        /**
+         * Configures whether or not a thread-safe implementation is required.
+         */
+        public B threadSafe(boolean threadSafe) {
+            this.threadSafe = threadSafe;
+            return uncheckedCast(this);
+        }
 
-    public static final int[] CONNECTION_INTERSECTION_AREAS = {
-            T_VOXELS, T_VOXELS,
-            T_VOXELS, 1,
-            1, T_VOXELS,
-            1, 1
-    };
+        protected void validate() {
+        }
 
-    /**
-     * The value of {@link HeightmapData#height_frac} to be used for liquids.
-     */
-    public static final int HEIGHT_FRAC_LIQUID = -32; //-(256 * 1/8)
+        protected abstract I buildThreadSafe();
+
+        protected abstract I buildNotThreadSafe();
+
+        public I build() {
+            this.validate();
+            return this.threadSafe ? this.buildThreadSafe() : this.buildNotThreadSafe();
+        }
+    }
 }

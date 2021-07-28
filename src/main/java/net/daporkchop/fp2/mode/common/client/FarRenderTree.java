@@ -61,9 +61,6 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable {
-    //this is enough levels for the tree to encompass the entire minecraft world
-    public static final int DEPTH = 32 - Integer.numberOfLeadingZeros(60_000_000 >> T_SHIFT);
-
     /*
      * Constants:
      * - D: number of dimensions
@@ -242,7 +239,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
     public void putRenderData(@NonNull POS pos, BakeOutput output) {
         long node = this.positionsToNodes.get(pos);
         if (node == 0L) { //no node exists, create new one
-            this.putRenderData0(DEPTH, this.root, pos, output);
+            this.putRenderData0(MAX_LODS, this.root, pos, output);
         } else { //quickly re-use existing node without having to recurse through the tree
             this.setRenderData(node, pos, output);
         }
@@ -309,7 +306,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      */
     public void removeNode(@NonNull POS pos) {
         if (this.positionsToNodes.containsKey(pos)) { //there is a node for the requested position, so we should actually try to delete it
-            this.removeNode0(DEPTH, this.root, pos);
+            this.removeNode0(MAX_LODS, this.root, pos);
         }
     }
 
@@ -405,14 +402,14 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      * @param index   the render index to add tiles to
      */
     public void select(@NonNull IFrustum frustum, @NonNull DirectLongStack index) {
-        this.select0(DEPTH, this.root, frustum, index);
+        this.select0(MAX_LODS, this.root, frustum, index);
     }
 
     protected void select0(int level, long node, IFrustum frustum, DirectLongStack index) {
         if (level == 0 && this.checkFlagsOR(node, FLAG_EMPTY)) { //TODO: remove "level == 0 && "
             //this tile is baked and empty, so we can be sure that none of its children will be non-empty and there's no reason to recurse any further
             return;
-        } else if (level < DEPTH //don't do frustum culling on the root node, as it doesn't have a valid position because it's not really "there"
+        } else if (level < MAX_LODS //don't do frustum culling on the root node, as it doesn't have a valid position because it's not really "there"
                    && !this.directPosAccess.inFrustum(node + this.tile_pos, frustum)) {
             //the frustum doesn't contain this tile's bounding box, so we can be certain that neither
             // this tile nor any of its children would be visible
@@ -438,8 +435,8 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
                 }
             }
 
-            //don't return true because we want to allow the tiles to overlap
-            //return true;
+            //don't return because we want to allow the tiles to overlap
+            //return;
         }
 
         if (FP2_DEBUG && FP2Config.debug.skipLevel0 && level == 0) { //skip level-0 tiles when they're disabled by debug mode

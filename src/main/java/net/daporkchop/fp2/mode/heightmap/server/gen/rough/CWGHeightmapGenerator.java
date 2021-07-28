@@ -133,7 +133,7 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
 
         if (addWater) { //set water
             data.height_int = this.seaLevel - 1;
-            data.height_frac = 224; //256 * 7/8
+            data.height_frac = HEIGHT_FRAC_LIQUID;
             data.state = Blocks.WATER.getDefaultState();
             data.light = packCombinedLight(15 << 20);
             data.secondaryConnection = WATER_LAYER;
