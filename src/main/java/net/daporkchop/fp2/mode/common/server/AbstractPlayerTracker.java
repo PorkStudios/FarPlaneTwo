@@ -37,7 +37,9 @@ import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.net.server.SPacketTileData;
 import net.daporkchop.fp2.net.server.SPacketUnloadTile;
 import net.daporkchop.fp2.net.server.SPacketUnloadTiles;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.datastructure.RecyclingArrayDeque;
+import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -53,6 +55,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
@@ -61,7 +64,6 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarTile> implements IFarPlayerTracker<POS, T> {
     private static final long ABSTRACTRELEASABLE_RELEASED_OFFSET = PUnsafe.pork_getOffset(AbstractReleasable.class, "released");
 
@@ -84,11 +86,27 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
             FP2Config.performance.trackingThreads,
             PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Player Tracker #%d").build());
 
-    @NonNull
     protected final IFarWorld<POS, T> world;
 
     protected final Map<POS, Entry> entries = new ConcurrentHashMap<>();
     protected final Map<EntityPlayerMP, Context> contexts = new ConcurrentHashMap<>();
+
+    protected final IntAxisAlignedBB[] coordLimits;
+
+    public AbstractPlayerTracker(@NonNull IFarWorld<POS, T> world) {
+        this.world = world;
+
+        IntAxisAlignedBB bounds = Constants.getBounds(world.world());
+        this.coordLimits = IntStream.range(0, Integer.SIZE)
+                .mapToObj(lvl -> new IntAxisAlignedBB(
+                        asrFloor(bounds.minX(), T_SHIFT + lvl),
+                        asrFloor(bounds.minY(), T_SHIFT + lvl),
+                        asrFloor(bounds.minZ(), T_SHIFT + lvl),
+                        asrCeil(bounds.maxX(), T_SHIFT + lvl),
+                        asrCeil(bounds.maxY(), T_SHIFT + lvl),
+                        asrCeil(bounds.maxZ(), T_SHIFT + lvl)))
+                .toArray(IntAxisAlignedBB[]::new);
+    }
 
     @Override
     public void playerAdd(@NonNull EntityPlayerMP playerIn) {

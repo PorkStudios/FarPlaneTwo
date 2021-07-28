@@ -25,6 +25,7 @@ import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.common.server.AbstractPlayerTracker;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
+import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import java.util.Comparator;
@@ -63,8 +64,14 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
             final int baseX = asrRound(playerX, T_SHIFT + lvl);
             final int baseZ = asrRound(playerZ, T_SHIFT + lvl);
 
-            for (int x = baseX - d; x <= baseX + d; x++) {
-                for (int z = baseZ - d; z <= baseZ + d; z++) {
+            IntAxisAlignedBB limits = this.coordLimits[lvl];
+            int minX = max(baseX - d, limits.minX());
+            int minZ = max(baseZ - d, limits.minZ());
+            int maxX = min(baseX + d, limits.maxX());
+            int maxZ = min(baseZ + d, limits.maxZ());
+
+            for (int x = minX; x <= maxX; x++) {
+                for (int z = minZ; z <= maxZ; z++) {
                     callback.accept(new HeightmapPos(lvl, x, z));
                 }
             }
@@ -92,20 +99,36 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
                 continue;
             }
 
+            IntAxisAlignedBB limits = this.coordLimits[lvl];
+
             //removed positions
-            for (int x = oldBaseX - d; x <= oldBaseX + d; x++) {
-                for (int z = oldBaseZ - d; z <= oldBaseZ + d; z++) {
-                    if (!overlaps(x, z, newBaseX, newBaseZ, d)) {
-                        removed.accept(new HeightmapPos(lvl, x, z));
+            {
+                int minX = max(oldBaseX - d, limits.minX());
+                int minZ = max(oldBaseZ - d, limits.minZ());
+                int maxX = min(oldBaseX + d, limits.maxX());
+                int maxZ = min(oldBaseZ + d, limits.maxZ());
+
+                for (int x = minX; x <= maxX; x++) {
+                    for (int z = minZ; z <= maxZ; z++) {
+                        if (!overlaps(x, z, newBaseX, newBaseZ, d)) {
+                            removed.accept(new HeightmapPos(lvl, x, z));
+                        }
                     }
                 }
             }
 
             //added positions
-            for (int x = newBaseX - d; x <= newBaseX + d; x++) {
-                for (int z = newBaseZ - d; z <= newBaseZ + d; z++) {
-                    if (!overlaps(x, z, oldBaseX, oldBaseZ, d)) {
-                        added.accept(new HeightmapPos(lvl, x, z));
+            {
+                int minX = max(newBaseX - d, limits.minX());
+                int minZ = max(newBaseZ - d, limits.minZ());
+                int maxX = min(newBaseX + d, limits.maxX());
+                int maxZ = min(newBaseZ + d, limits.maxZ());
+
+                for (int x = minX; x <= maxX; x++) {
+                    for (int z = minZ; z <= maxZ; z++) {
+                        if (!overlaps(x, z, oldBaseX, oldBaseZ, d)) {
+                            added.accept(new HeightmapPos(lvl, x, z));
+                        }
                     }
                 }
             }
@@ -126,6 +149,7 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
         }
 
         return lvl < FP2Config.maxLevels
+               && this.coordLimits[lvl].contains2d(pos.x(), pos.z())
                && abs(pos.x() - asrRound(playerX, T_SHIFT + lvl)) <= d
                && abs(pos.z() - asrRound(playerZ, T_SHIFT + lvl)) <= d;
     }

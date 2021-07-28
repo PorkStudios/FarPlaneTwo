@@ -29,6 +29,11 @@ import lombok.experimental.UtilityClass;
  */
 @UtilityClass
 public class MathUtil {
+    public static int asrFloor(int val, int shift) {
+        //lol this is totally useless, i'm just adding it here because it keeps the code cleaner when asrRound()/asrCeil() are used alongside it
+        return val >> shift;
+    }
+
     public static int asrRound(int val, int shift) {
         return shift == 0
                 ? val

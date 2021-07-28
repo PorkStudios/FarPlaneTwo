@@ -31,6 +31,7 @@ import io.netty.buffer.ByteBufAllocator;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2;
+import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.common.pool.handle.Handle;
@@ -170,6 +171,7 @@ public class Constants {
 
     /**
      * Gets the terrain generator for the given {@link WorldServer}.
+     *
      * @param world the {@link WorldServer} to get the terrain generator for
      * @return the terrain generator instance. May be an arbitrary type (e.g. {@link IChunkGenerator} or {@link ICubeGenerator})
      */
@@ -177,6 +179,25 @@ public class Constants {
         return isCubicWorld(world)
                 ? ((ICubicWorldServer) world).getCubeGenerator() //this is a Cubic Chunks world, so we want to use the cube generator
                 : world.getChunkProvider().chunkGenerator;
+    }
+
+    /**
+     * Gets the coordinate limits for the given world.
+     *
+     * @param world the {@link WorldServer} to get the Y coordinate limits for
+     * @return the coordinate limits
+     */
+    public static IntAxisAlignedBB getBounds(@NonNull WorldServer world) {
+        int minY = 0;
+        int maxY = world.getHeight() - 1;
+
+        if (isCubicWorld(world)) { //this is a cubic chunks world, use cubic chunks API to get the real world height limits
+            minY = ((ICubicWorld) world).getMinHeight();
+            maxY = ((ICubicWorld) world).getMaxHeight() - 1;
+        }
+
+        final int HORIZONTAL_LIMIT = 30_000_000; //TODO: hard-coding this is probably a bad idea, but there don't seem to be any variables or methods i can use to get it
+        return new IntAxisAlignedBB(-HORIZONTAL_LIMIT, minY, -HORIZONTAL_LIMIT, HORIZONTAL_LIMIT, maxY, HORIZONTAL_LIMIT);
     }
 
     /**

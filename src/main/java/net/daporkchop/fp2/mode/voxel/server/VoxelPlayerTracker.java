@@ -25,10 +25,13 @@ import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.common.server.AbstractPlayerTracker;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import java.util.Comparator;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.debug.FP2Debug.*;
@@ -66,9 +69,17 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
             final int baseY = asrRound(playerY, T_SHIFT + lvl);
             final int baseZ = asrRound(playerZ, T_SHIFT + lvl);
 
-            for (int x = baseX - d; x <= baseX + d; x++) {
-                for (int y = baseY - d; y <= baseY + d; y++) {
-                    for (int z = baseZ - d; z <= baseZ + d; z++) {
+            IntAxisAlignedBB limits = this.coordLimits[lvl];
+            int minX = max(baseX - d, limits.minX());
+            int minY = max(baseY - d, limits.minY());
+            int minZ = max(baseZ - d, limits.minZ());
+            int maxX = min(baseX + d, limits.maxX());
+            int maxY = min(baseY + d, limits.maxY());
+            int maxZ = min(baseZ + d, limits.maxZ());
+
+            for (int x = minX; x <= maxX; x++) {
+                for (int y = minY; y <= maxY; y++) {
+                    for (int z = minZ; z <= maxZ; z++) {
                         callback.accept(new VoxelPos(lvl, x, y, z));
                     }
                 }
@@ -101,23 +112,43 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
                 continue;
             }
 
+            IntAxisAlignedBB limits = this.coordLimits[lvl];
+
             //removed positions
-            for (int x = oldBaseX - d; x <= oldBaseX + d; x++) {
-                for (int y = oldBaseY - d; y <= oldBaseY + d; y++) {
-                    for (int z = oldBaseZ - d; z <= oldBaseZ + d; z++) {
-                        if (!overlaps(x, y, z, newBaseX, newBaseY, newBaseZ, d)) {
-                            removed.accept(new VoxelPos(lvl, x, y, z));
+            {
+                int minX = max(oldBaseX - d, limits.minX());
+                int minY = max(oldBaseY - d, limits.minY());
+                int minZ = max(oldBaseZ - d, limits.minZ());
+                int maxX = min(oldBaseX + d, limits.maxX());
+                int maxY = min(oldBaseY + d, limits.maxY());
+                int maxZ = min(oldBaseZ + d, limits.maxZ());
+
+                for (int x = minX; x <= maxX; x++) {
+                    for (int y = minY; y <= maxY; y++) {
+                        for (int z = minZ; z <= maxZ; z++) {
+                            if (!overlaps(x, y, z, newBaseX, newBaseY, newBaseZ, d)) {
+                                removed.accept(new VoxelPos(lvl, x, y, z));
+                            }
                         }
                     }
                 }
             }
 
             //added positions
-            for (int x = newBaseX - d; x <= newBaseX + d; x++) {
-                for (int y = newBaseY - d; y <= newBaseY + d; y++) {
-                    for (int z = newBaseZ - d; z <= newBaseZ + d; z++) {
-                        if (!overlaps(x, y, z, oldBaseX, oldBaseY, oldBaseZ, d)) {
-                            added.accept(new VoxelPos(lvl, x, y, z));
+            {
+                int minX = max(newBaseX - d, limits.minX());
+                int minY = max(newBaseY - d, limits.minY());
+                int minZ = max(newBaseZ - d, limits.minZ());
+                int maxX = min(newBaseX + d, limits.maxX());
+                int maxY = min(newBaseY + d, limits.maxY());
+                int maxZ = min(newBaseZ + d, limits.maxZ());
+
+                for (int x = minX; x <= maxX; x++) {
+                    for (int y = minY; y <= maxY; y++) {
+                        for (int z = minZ; z <= maxZ; z++) {
+                            if (!overlaps(x, y, z, oldBaseX, oldBaseY, oldBaseZ, d)) {
+                                added.accept(new VoxelPos(lvl, x, y, z));
+                            }
                         }
                     }
                 }
@@ -140,6 +171,7 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
         }
 
         return lvl < FP2Config.maxLevels
+               && this.coordLimits[lvl].contains(pos.x(), pos.y(), pos.z())
                && abs(pos.x() - asrRound(playerX, T_SHIFT + lvl)) <= d
                && abs(pos.y() - asrRound(playerY, T_SHIFT + lvl)) <= d
                && abs(pos.z() - asrRound(playerZ, T_SHIFT + lvl)) <= d;
