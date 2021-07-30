@@ -496,15 +496,19 @@ public class RecyclingArrayDeque<E> extends AbstractCollection<E> implements Deq
         }
 
         if (writePos != this.tail) { //some elements were removed
-            int newTail = writePos;
+            if (writePos == this.head) { //everything was removed
+                this.clear();
+            } else {
+                int newTail = writePos;
 
-            //fill no longer used slots with nulls
-            for (; writePos != this.tail; writePos = (writePos + 1) & mask) {
-                this.elements[writePos] = null;
+                //fill no longer used slots with nulls
+                for (; writePos != this.tail; writePos = (writePos + 1) & mask) {
+                    this.elements[writePos] = null;
+                }
+                this.tail = newTail;
+
+                this.tryShrink();
             }
-            this.tail = newTail;
-
-            this.tryShrink();
             return true;
         } else { //nothing was removed
             return false;
@@ -530,8 +534,10 @@ public class RecyclingArrayDeque<E> extends AbstractCollection<E> implements Deq
 
         if (this.head > this.tail) { //the elements are not all stored sequentially in the backing array
             //we'll "resize" the array (without actually modifying the array size) in order to ensure they are stored sequentially in order to allow us to sort them
+            int oldLen = this.len;
             this.resize(this.len, this.size());
-            checkState(this.head <= this.tail);
+            checkState(this.head < this.tail, "head must be less than tail!");
+            checkState(this.len == oldLen, "len must be the same!");
         }
 
         Arrays.sort(this.elements, this.head, this.tail, uncheckedCast(comparator));

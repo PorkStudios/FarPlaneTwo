@@ -64,7 +64,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarTile> implements IFarPlayerTracker<POS, T> {
+public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarTile, STATE> implements IFarPlayerTracker<POS, T> {
     private static final long ABSTRACTRELEASABLE_RELEASED_OFFSET = PUnsafe.pork_getOffset(AbstractReleasable.class, "released");
 
     /**
@@ -172,15 +172,17 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         });
     }
 
-    protected abstract void allPositions(@NonNull EntityPlayerMP player, double posX, double posY, double posZ, @NonNull Consumer<POS> callback);
+    protected abstract STATE currentStateFor(@NonNull EntityPlayerMP player);
 
-    protected abstract void deltaPositions(@NonNull EntityPlayerMP player, double oldX, double oldY, double oldZ, double newX, double newY, double newZ, @NonNull Consumer<POS> added, @NonNull Consumer<POS> removed);
+    protected abstract void allPositions(@NonNull EntityPlayerMP player, @NonNull STATE state, @NonNull Consumer<POS> callback);
 
-    protected abstract boolean isVisible(@NonNull EntityPlayerMP player, double posX, double posY, double posZ, @NonNull POS pos);
+    protected abstract void deltaPositions(@NonNull EntityPlayerMP player, @NonNull STATE oldState, @NonNull STATE newState, @NonNull Consumer<POS> added, @NonNull Consumer<POS> removed);
 
-    protected abstract Comparator<POS> comparatorFor(@NonNull EntityPlayerMP player, double posX, double posY, double posZ);
+    protected abstract boolean isVisible(@NonNull EntityPlayerMP player, @NonNull STATE state, @NonNull POS pos);
 
-    protected abstract boolean shouldTriggerUpdate(@NonNull EntityPlayerMP player, double oldX, double oldY, double oldZ, double newX, double newY, double newZ);
+    protected abstract Comparator<POS> comparatorFor(@NonNull EntityPlayerMP player, @NonNull STATE state);
+
+    protected abstract boolean shouldTriggerUpdate(@NonNull EntityPlayerMP player, @NonNull STATE oldState, @NonNull STATE newState);
 
     protected void beginTracking(@NonNull Context ctx, @NonNull POS posIn) {
         this.entries.compute(posIn, (pos, entry) -> {
@@ -217,10 +219,10 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         protected final Set<POS> waitingPositions = new ObjectOpenHashSet<>(FP2Config.generationThreads << 4);
         protected final RecyclingArrayDeque<POS> queuedPositions = new RecyclingArrayDeque<>();
 
-        //these are using Vec3d instead of 3 doubles to allow the value to be replaced atomically. to ensure coherent access to the coordinates,
+        //these are using a single object reference instead of flattened fields to allow the value to be replaced atomically. to ensure coherent access to the values,
         // readers must take care never to dereference the fields more than once.
-        protected volatile Vec3d lastPos;
-        protected volatile Vec3d nextPos;
+        protected volatile STATE lastState;
+        protected volatile STATE nextState;
 
         /**
          * Considers scheduling this player for a tracking update.
@@ -228,10 +230,11 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
          * May only be called from the server thread.
          */
         public void scheduleUpdateIfNeeded() {
-            Vec3d lastPos = this.lastPos;
-            if (lastPos == null || AbstractPlayerTracker.this.shouldTriggerUpdate(this.player, lastPos.x, lastPos.y, lastPos.z, this.player.posX, this.player.posY, this.player.posZ)) {
+            STATE lastPos = this.lastState;
+            STATE nextState = AbstractPlayerTracker.this.currentStateFor(this.player);
+            if (lastPos == null || AbstractPlayerTracker.this.shouldTriggerUpdate(this.player, lastPos, nextState)) {
                 //set nextPos to be used while updating
-                this.nextPos = new Vec3d(this.player.posX, this.player.posY, this.player.posZ);
+                this.nextState = nextState;
 
                 //add update task to execution queue
                 this.executor.submit(this::update);
@@ -247,24 +250,24 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
             try {
                 this.assertOnTrackerThread();
 
-                Vec3d lastPos = this.lastPos;
-                Vec3d nextPos = this.nextPos;
-                if (lastPos != null && (nextPos == null || !AbstractPlayerTracker.this.shouldTriggerUpdate(this.player, lastPos.x, lastPos.y, lastPos.z, nextPos.x, nextPos.y, nextPos.z))) {
-                    //there is no next position (possibly already updated?), so we shouldn't do anything
+                STATE lastState = this.lastState;
+                STATE nextState = this.nextState;
+                if (lastState != null && (nextState == null || !AbstractPlayerTracker.this.shouldTriggerUpdate(this.player, lastState, nextState))) {
+                    //there is no next state (possibly already updated?), so we shouldn't do anything
                     return;
                 }
 
-                //inform the server thread that this update has started, by updating the current position and clearing the next one
-                this.lastPos = nextPos;
-                this.nextPos = null;
+                //inform the server thread that this update has started, by updating the current state and clearing the next one
+                this.lastState = nextState;
+                this.nextState = null;
 
-                if (lastPos != null) { //if lastPos exists, we can diff the positions (which is faster than iterating over all of them)
+                if (lastState != null) { //if lastState exists, we can diff the positions (which is faster than iterating over all of them)
                     //unqueue all positions which are no longer visible.
                     //  this is O(n), whereas removing them during the deltaPositions 'removed' callback would be O(n*m) (where n=queue size, m=number of positions in render
                     //  distance). the savings from this are significant - when flying around with 1level@400cutoff, tracker updates are reduced from 5000-10000ms to about 40-50ms.
-                    this.queuedPositions.removeIf(pos -> !AbstractPlayerTracker.this.isVisible(this.player, nextPos.x, nextPos.y, nextPos.z, pos));
+                    this.queuedPositions.removeIf(pos -> !AbstractPlayerTracker.this.isVisible(this.player, nextState, pos));
 
-                    AbstractPlayerTracker.this.deltaPositions(this.player, lastPos.x, lastPos.y, lastPos.z, nextPos.x, nextPos.y, nextPos.z,
+                    AbstractPlayerTracker.this.deltaPositions(this.player, lastState, nextState,
                             this.queuedPositions::add,
                             pos -> {
                                 //stop loading the tile if needed
@@ -277,17 +280,17 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
                                 }
                             });
                 } else { //no positions have been added so far, so we need to iterate over them all
-                    AbstractPlayerTracker.this.allPositions(this.player, nextPos.x, nextPos.y, nextPos.z, this.queuedPositions::add);
+                    AbstractPlayerTracker.this.allPositions(this.player, nextState, this.queuedPositions::add);
                 }
 
                 //sort queue
-                this.queuedPositions.sort(AbstractPlayerTracker.this.comparatorFor(this.player, nextPos.x, nextPos.y, nextPos.z));
-
-                //double-check to make sure the load queue is totally filled
-                this.fillLoadQueue();
+                this.queuedPositions.sort(AbstractPlayerTracker.this.comparatorFor(this.player, nextState));
             } catch (Exception e) {
                 ThreadingHelper.handle(AbstractPlayerTracker.this.world.world(), e);
             }
+
+            //double-check to make sure the load queue is totally filled
+            this.fillLoadQueue();
         }
 
         private void fillLoadQueue() {
@@ -316,9 +319,9 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
             try {
                 this.assertOnTrackerThread();
 
-                Vec3d lastPos = this.lastPos;
+                STATE lastState = this.lastState;
                 if (this.isReleased() //context is released, ignore update
-                    || !AbstractPlayerTracker.this.isVisible(this.player, lastPos.x, lastPos.y, lastPos.z, tile.pos())) { //the position has been unloaded since the task was enqueued, we can assume it's safe to ignore
+                    || !AbstractPlayerTracker.this.isVisible(this.player, lastState, tile.pos())) { //the position has been unloaded since the task was enqueued, we can assume it's safe to ignore
                     return;
                 }
 
@@ -375,7 +378,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         protected void doRelease() {
             if (!this.executor.inEventLoop()) { //make sure we're on the tracker thread
                 //set nextPos to null to prevent any update tasks that might be in the queue from running
-                this.nextPos = null;
+                this.nextState = null;
 
                 this.executor.submit(this::doRelease).syncUninterruptibly(); //block until the task is actually executed
                 return;
@@ -411,7 +414,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
     }
 
     @ToString
-    public class Entry {
+    protected class Entry {
         protected final POS pos;
         protected final Set<Context> contexts = new ReferenceOpenHashSet<>();
 

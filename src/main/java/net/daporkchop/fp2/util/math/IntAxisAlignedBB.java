@@ -23,6 +23,8 @@ package net.daporkchop.fp2.util.math;
 import lombok.Data;
 import net.minecraft.util.math.AxisAlignedBB;
 
+import static net.daporkchop.lib.common.math.PMath.*;
+
 /**
  * Alternative to {@link AxisAlignedBB} using {@code int} coordinates.
  * <p>
@@ -39,6 +41,18 @@ public class IntAxisAlignedBB {
     protected final int maxY;
     protected final int maxX;
     protected final int maxZ;
+
+    public int clampX(int x) {
+        return clamp(x, this.minX, this.maxX);
+    }
+
+    public int clampY(int y) {
+        return clamp(y, this.minY, this.maxY);
+    }
+
+    public int clampZ(int z) {
+        return clamp(z, this.minZ, this.maxZ);
+    }
 
     public boolean contains(int x, int y, int z) {
         return x >= this.minX && x <= this.maxX

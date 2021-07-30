@@ -85,9 +85,8 @@ public class ThreadingHelper {
      */
     public void handle(@NonNull World world, @NonNull Throwable t) {
         //wrap the exception to make the current stack trace be included
-        RuntimeException wrapped = new RuntimeException(PStrings.fastFormat("exception in world %s on thread %s", world, Thread.currentThread()), t);
-        FP2_LOG.error(wrapped);
-        scheduleTaskInWorldThread(world, () -> PUnsafe.throwException(wrapped));
+        FP2_LOG.error(PStrings.fastFormat("exception in world %s on thread %s", world, Thread.currentThread()), t);
+        scheduleTaskInWorldThread(world, () -> PUnsafe.throwException(t));
     }
 
     /**
