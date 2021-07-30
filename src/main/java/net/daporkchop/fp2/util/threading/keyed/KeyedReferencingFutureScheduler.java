@@ -22,23 +22,34 @@ package net.daporkchop.fp2.util.threading.keyed;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.util.datastructure.RecyclingArrayDeque;
 import net.daporkchop.fp2.util.threading.lazy.LazyFutureTask;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
+import net.daporkchop.lib.common.misc.string.PStrings;
+import net.daporkchop.lib.common.ref.Ref;
+import net.daporkchop.lib.common.ref.ThreadRef;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 public class KeyedReferencingFutureScheduler<K, V> extends AbstractRefCounted {
+    protected static final long TASK_DEPENDENCIES_OFFSET = PUnsafe.pork_getOffset(KeyedReferencingFutureScheduler.Task.class, "dependencies");
+
+    protected static final Ref<Deque> RECURSION_TRACKERS = ThreadRef.soft(RecyclingArrayDeque::new);
+
     protected final KeyedExecutor<? super K> executor;
     protected final Map<K, Task> map = new ConcurrentHashMap<>();
     protected final Function<K, V> task;
@@ -69,32 +80,69 @@ public class KeyedReferencingFutureScheduler<K, V> extends AbstractRefCounted {
 
     public void release(@NonNull K keyIn) {
         this.ensureNotReleased();
-        this.map.compute(keyIn, (key, task) -> {
-            checkState(task != null, "attempted to release non-existent task for key: %s", key);
 
-            if (--task.refCnt == 0) { //the task's reference count has reached 0
-                //mark the task itself as cancelled
-                task.cancel(false);
+        class State implements BiFunction<K, Task, Task>, AutoCloseable {
+            Task toCancel;
 
-                //remove task from executor
-                this.executor.cancel(key, task);
+            @Override
+            public Task apply(K key, Task task) {
+                checkState(task != null, "attempted to release non-existent task for key: %s", key);
 
-                //set the task to null to have it removed from the map
-                task = null;
+                if (--task.refCnt == 0) { //the task's reference count has reached 0
+                    this.toCancel = task;
+
+                    //remove task from executor
+                    KeyedReferencingFutureScheduler.this.executor.cancel(key, task);
+
+                    //set the task to null to have it removed from the map
+                    task = null;
+                }
+
+                return task;
             }
 
-            return task;
-        });
+            @Override
+            public void close() {
+                if (this.toCancel != null) { //the task was removed, cancel it
+                    //we cancel the task here so that it doesn't happen inside of the ConcurrentHashMap#compute function, which doesn't like being
+                    //  called multiple times from the same thread.
+                    this.toCancel.cancel(false);
+                }
+            }
+        }
+
+        try (State state = new State()) {
+            this.map.compute(keyIn, state);
+        }
     }
 
     public void doWith(@NonNull List<K> keys, @NonNull Consumer<List<V>> callback) {
         this.ensureNotReleased();
-        List<Task> tasks = keys.stream().map(this::retainInternal).collect(Collectors.toList());
 
-        try {
-            callback.accept(Task.scatterGather(tasks));
-        } finally {
-            keys.forEach(this::release);
+        Deque<Task> recursionTracker = uncheckedCast(RECURSION_TRACKERS.get());
+        Task[] tasks = uncheckedCast(keys.stream().map(this::retainInternal).toArray(KeyedReferencingFutureScheduler.Task[]::new));
+
+        Task parent = recursionTracker.peek();
+        if (parent != null) { //this is a recursive task, so we need to make sure the parent task is aware that it's resulted in child tasks being spawned
+            if (!PUnsafe.compareAndSwapObject(parent, TASK_DEPENDENCIES_OFFSET, null, tasks)) { //there may only be one active scatter/gather per task at a time
+                keys.forEach(this::release);
+                throw new IllegalStateException(PStrings.fastFormat("task for %s has already started recursion!", parent.key));
+            }
+
+            try {
+                callback.accept(Task.scatterGather(tasks));
+            } finally {
+                if (PUnsafe.compareAndSwapObject(parent, TASK_DEPENDENCIES_OFFSET, tasks, null)) { //don't release dependencies if they've already been released from
+                    //  another thread (due to this task's cancellation)
+                    keys.forEach(this::release);
+                }
+            }
+        } else { //top-level task, do a simple scatter/gather
+            try {
+                callback.accept(Task.scatterGather(tasks));
+            } finally {
+                keys.forEach(this::release);
+            }
         }
     }
 
@@ -135,7 +183,32 @@ public class KeyedReferencingFutureScheduler<K, V> extends AbstractRefCounted {
         protected V compute() {
             KeyedReferencingFutureScheduler.this.ensureNotReleased();
 
-            return KeyedReferencingFutureScheduler.this.task.apply(this.key);
+            Deque<Task> recursionTracker = uncheckedCast(RECURSION_TRACKERS.get());
+            recursionTracker.push(this);
+            try {
+                return KeyedReferencingFutureScheduler.this.task.apply(this.key);
+            } finally {
+                checkState(recursionTracker.pop() == this, "popped different task from recursion tracker?!?");
+            }
+        }
+
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning) {
+            if (super.cancel(mayInterruptIfRunning)) {
+                Task[] dependencies = PUnsafe.pork_swapObject(this, TASK_DEPENDENCIES_OFFSET, null);
+                if (dependencies != null) { //this task was recursive and had some dependencies, let's release them since they aren't actually needed by this task any more
+                    for (Task dependency : dependencies) {
+                        dependency.scheduler().release(dependency.key);
+                    }
+                }
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        public KeyedReferencingFutureScheduler<K, V> scheduler() { //hacky workaround to allow access to KeyedReferencingFutureScheduler.this
+            return KeyedReferencingFutureScheduler.this;
         }
     }
 }

@@ -82,13 +82,8 @@ public abstract class LazyFutureTask<V> extends CompletableFuture<V> implements 
 
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
-        //attempt to start execution
-        if (PUnsafe.compareAndSwapInt(this, STARTED_OFFSET, 0, 1)) {
-            return super.cancel(mayInterruptIfRunning);
-        } else {
-            //don't cancel the task if it's already started
-            return false;
-        }
+        this.started = 1; //mark the task as "started", regardless of whether or not it's actually been started
+        return super.cancel(mayInterruptIfRunning);
     }
 
     protected abstract V compute();

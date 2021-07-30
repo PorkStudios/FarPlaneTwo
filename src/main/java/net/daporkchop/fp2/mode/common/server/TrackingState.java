@@ -33,7 +33,7 @@ import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 
 /**
- *
+ * Immutable container with the information required for an {@link AbstractPlayerTracker} implementation to know which tiles to load for a given player.
  *
  * @author DaPorkchop_
  */
