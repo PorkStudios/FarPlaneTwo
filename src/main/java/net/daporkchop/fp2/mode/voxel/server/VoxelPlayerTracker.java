@@ -29,15 +29,22 @@ import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
 import net.minecraft.entity.player.EntityPlayerMP;
 
+import java.util.AbstractSet;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.Spliterator;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -61,10 +68,11 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
         final int playerY = floorI(posY);
         final int playerZ = floorI(posZ);
 
-        final int levels = FP2Config.maxLevels;
+        final int minLevel = FP2_DEBUG && FP2Config.debug.skipLevel0 ? 1 : 0;
+        final int maxLevel = FP2Config.maxLevels;
         final int d = asrRound(FP2Config.levelCutoffDistance, T_SHIFT) + TILE_PRELOAD_PADDING_RADIUS;
 
-        for (int lvl = FP2_DEBUG && FP2Config.debug.skipLevel0 ? 1 : 0; lvl < levels; lvl++) {
+        for (int lvl = minLevel; lvl < maxLevel; lvl++) {
             final int baseX = asrRound(playerX, T_SHIFT + lvl);
             final int baseY = asrRound(playerY, T_SHIFT + lvl);
             final int baseZ = asrRound(playerZ, T_SHIFT + lvl);
@@ -97,10 +105,11 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
         final int newPlayerY = floorI(newY);
         final int newPlayerZ = floorI(newZ);
 
-        final int levels = FP2Config.maxLevels;
+        final int minLevel = FP2_DEBUG && FP2Config.debug.skipLevel0 ? 1 : 0;
+        final int maxLevel = FP2Config.maxLevels;
         final int d = asrRound(FP2Config.levelCutoffDistance, T_SHIFT) + TILE_PRELOAD_PADDING_RADIUS;
 
-        for (int lvl = FP2_DEBUG && FP2Config.debug.skipLevel0 ? 1 : 0; lvl < levels; lvl++) {
+        for (int lvl = minLevel; lvl < maxLevel; lvl++) {
             final int oldBaseX = asrRound(oldPlayerX, T_SHIFT + lvl);
             final int oldBaseY = asrRound(oldPlayerY, T_SHIFT + lvl);
             final int oldBaseZ = asrRound(oldPlayerZ, T_SHIFT + lvl);

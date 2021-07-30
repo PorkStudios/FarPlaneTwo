@@ -57,10 +57,11 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
         final int playerX = floorI(posX);
         final int playerZ = floorI(posZ);
 
-        final int levels = FP2Config.maxLevels;
+        final int minLevel = FP2_DEBUG && FP2Config.debug.skipLevel0 ? 1 : 0;
+        final int maxLevel = FP2Config.maxLevels;
         final int d = asrRound(FP2Config.levelCutoffDistance, T_SHIFT) + TILE_PRELOAD_PADDING_RADIUS;
 
-        for (int lvl = FP2_DEBUG && FP2Config.debug.skipLevel0 ? 1 : 0; lvl < levels; lvl++) {
+        for (int lvl = minLevel; lvl < maxLevel; lvl++) {
             final int baseX = asrRound(playerX, T_SHIFT + lvl);
             final int baseZ = asrRound(playerZ, T_SHIFT + lvl);
 
@@ -86,10 +87,11 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
         final int newPlayerX = floorI(newX);
         final int newPlayerZ = floorI(newZ);
 
-        final int levels = FP2Config.maxLevels;
+        final int minLevel = FP2_DEBUG && FP2Config.debug.skipLevel0 ? 1 : 0;
+        final int maxLevel = FP2Config.maxLevels;
         final int d = asrRound(FP2Config.levelCutoffDistance, T_SHIFT) + TILE_PRELOAD_PADDING_RADIUS;
 
-        for (int lvl = FP2_DEBUG && FP2Config.debug.skipLevel0 ? 1 : 0; lvl < levels; lvl++) {
+        for (int lvl = minLevel; lvl < maxLevel; lvl++) {
             final int oldBaseX = asrRound(oldPlayerX, T_SHIFT + lvl);
             final int oldBaseZ = asrRound(oldPlayerZ, T_SHIFT + lvl);
             final int newBaseX = asrRound(newPlayerX, T_SHIFT + lvl);

@@ -259,6 +259,11 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
                 this.nextPos = null;
 
                 if (lastPos != null) { //if lastPos exists, we can diff the positions (which is faster than iterating over all of them)
+                    //unqueue all positions which are no longer visible.
+                    //  this is O(n), whereas removing them during the deltaPositions 'removed' callback would be O(n*m) (where n=queue size, m=number of positions in render
+                    //  distance). the savings from this are significant - when flying around with 1level@400cutoff, tracker updates are reduced from 5000-10000ms to about 40-50ms.
+                    this.queuedPositions.removeIf(pos -> !AbstractPlayerTracker.this.isVisible(this.player, nextPos.x, nextPos.y, nextPos.z, pos));
+
                     AbstractPlayerTracker.this.deltaPositions(this.player, lastPos.x, lastPos.y, lastPos.z, nextPos.x, nextPos.y, nextPos.z,
                             this.queuedPositions::add,
                             pos -> {
@@ -269,8 +274,6 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
                                     //stopTracking() won't call notifyUnload() if the tile hasn't finished loading yet, so we should manually remove it from both sets afterwards just in case
                                     this.loadedPositions.remove(pos);
                                     this.waitingPositions.remove(pos);
-                                } else {
-                                    checkState(this.queuedPositions.remove(pos), "couldn't remove position %s", pos);
                                 }
                             });
                 } else { //no positions have been added so far, so we need to iterate over them all

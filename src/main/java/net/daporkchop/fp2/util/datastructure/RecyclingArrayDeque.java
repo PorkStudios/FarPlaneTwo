@@ -36,6 +36,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
@@ -45,6 +46,8 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Re-implementation of {@link ArrayDeque} which allocates arrays using {@link Constants#ALLOC_OBJECT}, and can also shrink the array if enough elements are removed.
+ * <p>
+ * Not thread-safe.
  *
  * @author DaPorkchop_
  * @see ArrayDeque
@@ -401,7 +404,10 @@ public class RecyclingArrayDeque<E> extends AbstractCollection<E> implements Deq
 
     @Override
     public void close() {
-        Arrays.fill(this.elements, null);
+        if (!this.isEmpty()) {
+            Arrays.fill(this.elements, null);
+        }
+
         this.alloc.release(this.elements);
         this.alloc = null;
         this.elements = null;
@@ -465,12 +471,65 @@ public class RecyclingArrayDeque<E> extends AbstractCollection<E> implements Deq
         return this.stream().parallel();
     }
 
+    @Override
+    public boolean removeAll(@NonNull Collection<?> c) {
+        return this.removeIf(c::contains);
+    }
+
+    @Override
+    public boolean retainAll(@NonNull Collection<?> c) {
+        return this.removeIf(((Predicate<? super E>) c::contains).negate());
+    }
+
+    @Override
+    public boolean removeIf(@NonNull Predicate<? super E> filter) {
+        int mask = this.len - 1;
+        int writePos = this.head;
+
+        //iterate through the whole list, removing elements as we go
+        for (int readPos = this.head; readPos != this.tail; readPos = (readPos + 1) & mask) {
+            if (!filter.test(uncheckedCast(this.elements[readPos]))) {
+                //filter didn't match: preserve the element by moving it backwards in the array
+                this.elements[writePos] = this.elements[readPos];
+                writePos = (writePos + 1) & mask;
+            }
+        }
+
+        if (writePos != this.tail) { //some elements were removed
+            int newTail = writePos;
+
+            //fill no longer used slots with nulls
+            for (; writePos != this.tail; writePos = (writePos + 1) & mask) {
+                this.elements[writePos] = null;
+            }
+            this.tail = newTail;
+
+            this.tryShrink();
+            return true;
+        } else { //nothing was removed
+            return false;
+        }
+    }
+
+    /**
+     * Sorts the elements in this deque according to their natural comparison order.
+     */
+    public void sort() {
+        this.sort(uncheckedCast(Comparator.naturalOrder()));
+    }
+
+    /**
+     * Sorts the elements in this deque according to the given {@link Comparator}.
+     *
+     * @param comparator the {@link Comparator} to use
+     */
     public void sort(@NonNull Comparator<? super E> comparator) {
-        if (this.isEmpty()) { //if the deque is empty, we don't need to do anything lol
+        if (this.size() <= 1) { //if the deque is empty or only contains 1 element, it's already sorted so we don't need to do anything
             return;
         }
 
-        if (this.head > this.tail) { //"resize" to ensure everything is sequentially stored in the array so it can be sorted
+        if (this.head > this.tail) { //the elements are not all stored sequentially in the backing array
+            //we'll "resize" the array (without actually modifying the array size) in order to ensure they are stored sequentially in order to allow us to sort them
             this.resize(this.len, this.size());
             checkState(this.head <= this.tail);
         }
