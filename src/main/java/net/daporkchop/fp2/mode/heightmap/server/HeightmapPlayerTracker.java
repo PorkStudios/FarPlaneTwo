@@ -99,7 +99,7 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
             IntAxisAlignedBB limits = this.coordLimits[lvl];
 
             //removed positions
-            {
+            if (!newState.hasLevel(lvl) || oldState.hasLevel(lvl)) {
                 int minX = limits.clampX(oldBaseX - oldState.cutoff());
                 int minZ = limits.clampZ(oldBaseZ - oldState.cutoff());
                 int maxX = limits.clampX(oldBaseX + oldState.cutoff());
@@ -115,7 +115,7 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
             }
 
             //added positions
-            {
+            if (!oldState.hasLevel(lvl) || newState.hasLevel(lvl)) {
                 int minX = limits.clampX(newBaseX - newState.cutoff());
                 int minZ = limits.clampZ(newBaseZ - newState.cutoff());
                 int maxX = limits.clampX(newBaseX + newState.cutoff());

@@ -113,7 +113,7 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
             IntAxisAlignedBB limits = this.coordLimits[lvl];
 
             //removed positions
-            {
+            if (!newState.hasLevel(lvl) || oldState.hasLevel(lvl)) {
                 int minX = limits.clampX(oldBaseX - oldState.cutoff());
                 int minY = limits.clampY(oldBaseY - oldState.cutoff());
                 int minZ = limits.clampZ(oldBaseZ - oldState.cutoff());
@@ -133,7 +133,7 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
             }
 
             //added positions
-            {
+            if (!oldState.hasLevel(lvl) || newState.hasLevel(lvl)) {
                 int minX = limits.clampX(newBaseX - newState.cutoff());
                 int minY = limits.clampY(newBaseY - newState.cutoff());
                 int minZ = limits.clampZ(newBaseZ - newState.cutoff());
