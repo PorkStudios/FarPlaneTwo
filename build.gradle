@@ -57,7 +57,7 @@ ext {
     forgerocksVersion = "6.20.3-1.12.2"
     guavaVersion = "21.0"
     junitVersion = "4.12"
-    lombokVersion = "1.16.20"
+    lombokVersion = "1.18.20"
     mixinVersion = "0.8.1-SNAPSHOT"
     porklibVersion = "0.5.5-SNAPSHOT"
 }
@@ -113,11 +113,17 @@ dependencies {
     deobfCompile "io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT"
     deobfCompile "io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT"
 
-    annotationProcessor "com.google.code.gson:gson:2.8.0"
-    annotationProcessor "com.google.guava:guava:21.0"
-    annotationProcessor "org.apache.logging.log4j:log4j-core:2.8.1"
-    annotationProcessor "org.ow2.asm:asm-debug-all:5.2"
-    annotationProcessor "org.spongepowered:mixin:$mixinVersion"
+    if ("true".equalsIgnoreCase(System.getProperty("idea.sync.active"))) {
+        //intellij is present - we don't want it to register mixin as an annotation processor, so we just add it as a standard dependency
+        compile "org.spongepowered:mixin:$mixinVersion"
+    } else {
+        //manually add mixin and all its dependencies to the annotation processor classpath
+        annotationProcessor "com.google.code.gson:gson:2.8.0"
+        annotationProcessor "com.google.guava:guava:21.0"
+        annotationProcessor "org.apache.logging.log4j:log4j-core:2.8.1"
+        annotationProcessor "org.ow2.asm:asm-debug-all:5.2"
+        annotationProcessor "org.spongepowered:mixin:$mixinVersion"
+    }
 
     compileOnly "org.projectlombok:lombok:$lombokVersion"
     annotationProcessor "org.projectlombok:lombok:$lombokVersion"
