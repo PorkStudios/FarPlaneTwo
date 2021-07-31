@@ -45,7 +45,9 @@ import net.minecraftforge.fml.relauncher.Side;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
@@ -141,30 +143,36 @@ public class ThreadingHelper {
     }
 
     /**
-     * Begins an interruptible blocking operation whose interruption is managed by {@link ThreadingHelper}.
-     */
-    public void managedBlock() {
-        checkState(BLOCKED_THREADS.add(Thread.currentThread()), "recursively blocking task?!?");
-    }
-
-    /**
-     * Ends an operation initiated by {@link #managedBlock()}.
+     * Blocks while waiting for the given {@link CompletableFuture} to be completed.
+     *
+     * @param future the {@link CompletableFuture} to wait for
      */
     @SneakyThrows(InterruptedException.class)
-    public void managedUnblock() {
-        if (BLOCKED_THREADS.remove(Thread.currentThread())) { //we were blocking, but we should still double-check to see if we've been interrupted
-            if (Thread.interrupted()) {
+    public <V> V managedBlock(@NonNull CompletableFuture<V> future) {
+        checkState(BLOCKED_THREADS.add(Thread.currentThread()), "recursively blocking task?!?");
+
+        try {
+            return future.get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw e;
+        } catch (ExecutionException e) {
+            throw new CompletionException(e.getCause());
+        } finally {
+            if (BLOCKED_THREADS.remove(Thread.currentThread())) { //we were blocking, but we should still double-check to see if we've been interrupted
+                if (Thread.interrupted()) {
+                    throw new InterruptedException();
+                }
+            } else { //the thread has been unblocked by something else - wait for the interrupt to arrive
+                LockSupport.park();
+
                 throw new InterruptedException();
             }
-        } else { //the thread has been unblocked by something else - wait for the interrupt to arrive
-            LockSupport.park();
-
-            throw new InterruptedException();
         }
     }
 
     /**
-     * Interrupts a thread which was is currently doing a blocking operation managed by {@link #managedBlock()}.
+     * Interrupts a thread which was is currently blocked by {@link #managedBlock(CompletableFuture)}.
      *
      * @param thread the thread
      */

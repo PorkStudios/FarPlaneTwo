@@ -27,8 +27,6 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RunnableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -94,17 +92,6 @@ public abstract class LazyFutureTask<V> extends CompletableFuture<V> implements 
             this.run();
         }
 
-        ThreadingHelper.managedBlock();
-        try {
-            return super.get();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            PUnsafe.throwException(e);
-            throw new AssertionError();
-        } catch (ExecutionException e) {
-            throw new CompletionException(e.getCause());
-        } finally {
-            ThreadingHelper.managedUnblock();
-        }
+        return ThreadingHelper.managedBlock(this);
     }
 }
