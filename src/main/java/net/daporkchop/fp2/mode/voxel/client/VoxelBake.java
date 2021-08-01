@@ -21,14 +21,11 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import io.netty.buffer.ByteBuf;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
-import net.daporkchop.fp2.client.gl.type.Int2_10_10_10_Rev;
 import net.daporkchop.fp2.client.gl.vertex.IVertexAttribute;
 import net.daporkchop.fp2.client.gl.vertex.VertexAttributeInterpretation;
 import net.daporkchop.fp2.client.gl.vertex.VertexAttributeType;
@@ -38,7 +35,6 @@ import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
-import net.daporkchop.fp2.util.datastructure.PointOctree3I;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Biomes;

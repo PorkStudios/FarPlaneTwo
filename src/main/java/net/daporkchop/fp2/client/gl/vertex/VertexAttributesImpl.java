@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableMap;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.client.gl.type.Int2_10_10_10_Rev;
 
 import java.util.Map;
 import java.util.function.Function;
@@ -76,8 +75,6 @@ public class VertexAttributesImpl {
             .put(VertexAttributeType.UNSIGNED_SHORT, ShortInt4::new)
             .put(VertexAttributeType.INT, IntInt4::new)
             .put(VertexAttributeType.UNSIGNED_INT, IntInt4::new)
-            .put(VertexAttributeType.INT_2_10_10_10_REV, Int_2_10_10_10_RevInt4::new)
-            .put(VertexAttributeType.UNSIGNED_INT_2_10_10_10_REV, Int_2_10_10_10_RevInt4::new)
             .build();
 
     /**
@@ -264,30 +261,6 @@ public class VertexAttributesImpl {
         public void set(@NonNull ByteBuf buf, int vertexBase, int v0, int v1, int v2, int v3) {
             int idx = vertexBase + this.offset;
             buf.setIntLE(idx, v0).setIntLE(idx + INT_SIZE, v1).setIntLE(idx + 2 * INT_SIZE, v2).setIntLE(idx + 3 * INT_SIZE, v3);
-        }
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public static class Int_2_10_10_10_RevInt4 extends AbstractVertexAttribute<IVertexAttribute.Int4> implements IVertexAttribute.Int4 {
-        public Int_2_10_10_10_RevInt4(@NonNull VertexAttributeBuilder<Int4> builder) {
-            super(builder.ensureType(VertexAttributeType.INT_2_10_10_10_REV, VertexAttributeType.UNSIGNED_INT_2_10_10_10_REV));
-        }
-
-        @Override
-        public void set(@NonNull ByteBuf buf, int vertexBase, int v0, int v1, int v2, int v3) {
-            this.setInt2_10_10_10_rev(buf, vertexBase, Int2_10_10_10_Rev.packUnsignedXYZWUnsafe(v0, v1, v2, v3));
-        }
-
-        @Override
-        public void setInt2_10_10_10_rev(@NonNull ByteBuf buf, int vertexBase, int val) {
-            buf.setIntLE(vertexBase + this.offset, val);
-        }
-
-        @Override
-        public void setUnsignedInt2_10_10_10_rev(@NonNull ByteBuf buf, int vertexBase, int val) {
-            buf.setIntLE(vertexBase + this.offset, val);
         }
     }
 }
