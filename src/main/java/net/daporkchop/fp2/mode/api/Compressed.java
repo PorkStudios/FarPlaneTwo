@@ -23,13 +23,14 @@ package net.daporkchop.fp2.mode.api;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IReusablePersistent;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.lib.compression.zstd.Zstd;
+import net.daporkchop.lib.unsafe.PCleaner;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -54,9 +55,21 @@ public final class Compressed<POS extends IFarPos, V extends IReusablePersistent
      */
     public static final long TIMESTAMP_GENERATED = 0L;
 
+    /*
+     * struct Data {
+     *   u32 length;
+     *   u8 bytes[...];
+     * };
+     */
+
+    protected static final long DATA_LENGTH_OFFSET = 0L;
+    protected static final long DATA_BYTES_OFFSET = DATA_LENGTH_OFFSET + Integer.BYTES;
+
     protected final POS pos;
     protected long extra;
-    protected byte[] data;
+
+    protected long data; // Data* data;
+    protected PCleaner cleaner;
 
     protected long timestamp = VALUE_BLANK;
 
@@ -91,9 +104,13 @@ public final class Compressed<POS extends IFarPos, V extends IReusablePersistent
         this.extra = readVarLong(src);
         this.timestamp = readVarLongZigZag(src);
 
-        int len = readVarInt(src) - 1;
-        if (len >= 0) { //if length is -1 (0 on disk) there is no data
-            src.readBytes(this.data = new byte[len]);
+        int length = readVarInt(src) - 1;
+        if (length >= 0) { //if length is -1 (0 on disk) there is no data
+            this.data = PUnsafe.allocateMemory(DATA_BYTES_OFFSET + length);
+            this.cleaner = PCleaner.cleaner(this, this.data);
+
+            PUnsafe.putInt(this.data + DATA_LENGTH_OFFSET, length);
+            src.readBytes(Unpooled.wrappedBuffer(this.data + DATA_BYTES_OFFSET, length, false).clear());
         }
     }
 
@@ -118,12 +135,13 @@ public final class Compressed<POS extends IFarPos, V extends IReusablePersistent
             writeVarLong(dst, this.extra);
             writeVarLongZigZag(dst, this.timestamp);
 
-            byte[] data = this.data;
-            if (data == null) {
+            long data = this.data;
+            if (data == 0L) {
                 writeVarInt(dst, 0);
             } else {
-                writeVarInt(dst, data.length + 1);
-                dst.writeBytes(data);
+                int length = PUnsafe.getInt(data + DATA_LENGTH_OFFSET);
+                writeVarInt(dst, length + 1);
+                dst.writeBytes(Unpooled.wrappedBuffer(data + DATA_BYTES_OFFSET, length, false));
             }
         } finally {
             this.readLock().unlock();
@@ -150,7 +168,7 @@ public final class Compressed<POS extends IFarPos, V extends IReusablePersistent
      * @return whether or not this value is empty, or has been generated but still has no contents
      */
     public boolean isEmpty() {
-        return this.data == null;
+        return this.data == 0L;
     }
 
     /**
@@ -161,12 +179,13 @@ public final class Compressed<POS extends IFarPos, V extends IReusablePersistent
         try {
             checkState(this.isGenerated(), "value hasn't been generated!");
 
-            byte[] data = this.data;
-            if (data == null) {
+            long data = this.data;
+            if (data == 0L) {
                 return null;
             }
 
-            ByteBuf compressed = Unpooled.wrappedBuffer(data);
+            int length = PUnsafe.getInt(data + DATA_LENGTH_OFFSET);
+            ByteBuf compressed = Unpooled.wrappedBuffer(data + DATA_BYTES_OFFSET, length, false);
             ByteBuf uncompressed = Constants.allocateByteBufExactly(Zstd.PROVIDER.frameContentSize(compressed));
             try {
                 checkState(ZSTD_INF.get().decompress(compressed, uncompressed));
@@ -187,8 +206,8 @@ public final class Compressed<POS extends IFarPos, V extends IReusablePersistent
             return false;
         }
 
-        //compress the value data into a byte[]
-        byte[] data = null;
+        //compress the value data into a Data
+        long data = 0L;
         ByteBuf compressed = null;
         COMPRESS:
         try {
@@ -203,7 +222,10 @@ public final class Compressed<POS extends IFarPos, V extends IReusablePersistent
                 uncompressed.release(); //discard uncompressed data
             }
 
-            compressed.readBytes(data = new byte[compressed.readableBytes()]);
+            //allocate new Data and copy compressed data into it
+            data = PUnsafe.allocateMemory(DATA_BYTES_OFFSET + compressed.readableBytes());
+            PUnsafe.putInt(data + DATA_LENGTH_OFFSET, compressed.readableBytes());
+            compressed.readBytes(Unpooled.wrappedBuffer(data + DATA_BYTES_OFFSET, compressed.readableBytes(), false).clear());
         } finally {
             if (compressed != null) {
                 compressed.release();
@@ -213,11 +235,20 @@ public final class Compressed<POS extends IFarPos, V extends IReusablePersistent
         this.writeLock().lock();
         try {
             if (timestamp > this.timestamp) {
+                if (this.cleaner != null) { //run old cleaner to delete old data if necessary
+                    this.cleaner.clean();
+                    this.cleaner = null;
+                }
+
                 this.timestamp = timestamp;
                 this.extra = extra;
                 this.data = data;
+                this.cleaner = data == 0L ? null : PCleaner.cleaner(this, data); //create new cleaner for data if needed
                 return true;
             } else {
+                if (data != 0L) { //delete new Data instance if it was allocated previously
+                    PUnsafe.freeMemory(data);
+                }
                 return false;
             }
         } finally {
