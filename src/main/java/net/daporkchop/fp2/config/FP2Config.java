@@ -27,8 +27,6 @@ import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static java.lang.Math.*;
 
@@ -192,9 +190,6 @@ public class FP2Config {
 
         @Config.RequiresMcRestart
         public WorkaroundState workaroundAmdVertexPadding = WorkaroundState.AUTO;
-
-        @Config.RequiresMcRestart
-        public WorkaroundState workaroundAmdInt2_10_10_10_REV = WorkaroundState.AUTO;
 
         /**
          * @author DaPorkchop_

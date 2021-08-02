@@ -26,9 +26,15 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.minecraft.util.math.AxisAlignedBB;
 
+import java.util.function.Function;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -98,6 +104,22 @@ public class VoxelPos implements IFarPos {
     }
 
     @Override
+    public VoxelPos downTo(int targetLevel) {
+        if (targetLevel == this.level) {
+            return this;
+        }
+        checkArg(targetLevel < this.level, "targetLevel (%d) must be less than current level (%d)", targetLevel, this.level);
+
+        int shift = this.level - targetLevel;
+        return new VoxelPos(targetLevel, this.x << shift, this.y << shift, this.z << shift);
+    }
+
+    @Override
+    public VoxelPos down() {
+        return new VoxelPos(this.level - 1, this.x << 1, this.y << 1, this.z << 1);
+    }
+
+    @Override
     public boolean contains(@NonNull IFarPos posIn) {
         VoxelPos pos = (VoxelPos) posIn;
         int d = this.level - pos.level;
@@ -113,6 +135,31 @@ public class VoxelPos implements IFarPos {
         return new AxisAlignedBB(
                 this.x << shift, this.y << shift, this.z << shift,
                 (this.x + 1) << shift, (this.y + 1) << shift, (this.z + 1) << shift);
+    }
+
+    @Override
+    public Stream<VoxelPos> allPositionsInBB(int offsetMin, int offsetMax) {
+        notNegative(offsetMin, "offsetMin");
+        notNegative(offsetMax, "offsetMax");
+
+        if (cb((long) offsetMin + offsetMax + 1L) < 256L) { //fast-track: fill an array and create a simple stream over that
+            VoxelPos[] arr = new VoxelPos[cb(offsetMin + offsetMax + 1)];
+            for (int i = 0, dx = -offsetMin; dx <= offsetMax; dx++) {
+                for (int dy = -offsetMin; dy <= offsetMax; dy++) {
+                    for (int dz = -offsetMin; dz <= offsetMax; dz++) {
+                        arr[i++] = new VoxelPos(this.level, this.x + dx, this.y + dy, this.z + dz);
+                    }
+                }
+            }
+            return Stream.of(arr);
+        } else { //slower fallback: dynamically computed stream
+            return IntStream.rangeClosed(this.x - offsetMin, this.x + offsetMax)
+                    .mapToObj(x -> IntStream.rangeClosed(this.y - offsetMin, this.y + offsetMax)
+                            .mapToObj(y -> IntStream.rangeClosed(this.z - offsetMin, this.z + offsetMax)
+                                    .mapToObj(z -> new VoxelPos(this.level, x, y, z)))
+                            .flatMap(Function.identity()))
+                    .flatMap(Function.identity());
+        }
     }
 
     @Override

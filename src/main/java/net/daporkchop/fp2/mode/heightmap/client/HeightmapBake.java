@@ -33,7 +33,6 @@ import net.daporkchop.fp2.client.gl.vertex.VertexFormat;
 import net.daporkchop.fp2.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
-import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
 import net.minecraft.util.math.BlockPos;
 
@@ -48,8 +47,6 @@ import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.mode.heightmap.HeightmapTile.*;
 import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.math.PMath.*;
-import static org.lwjgl.opengl.GL11.*;
 
 /**
  * Shared code for baking heightmap geometry.
@@ -77,43 +74,25 @@ public class HeightmapBake {
             .interpretation(VertexAttributeInterpretation.NORMALIZED_FLOAT)
             .build();
 
-    protected static final IVertexAttribute.Int2 ATTRIB_POS_LOW = IVertexAttribute.Int2.builder(ATTRIB_COLOR)
+    protected static final IVertexAttribute.Int2 ATTRIB_POS_HORIZ = IVertexAttribute.Int2.builder(ATTRIB_COLOR)
             .alignAndPadTo(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT)
             .type(VertexAttributeType.UNSIGNED_BYTE)
             .interpretation(VertexAttributeInterpretation.INTEGER)
             .build();
 
-    protected static final IVertexAttribute.Int1 ATTRIB_HEIGHT_INT_LOW = IVertexAttribute.Int1.builder(ATTRIB_POS_LOW)
+    protected static final IVertexAttribute.Int1 ATTRIB_HEIGHT_INT = IVertexAttribute.Int1.builder(ATTRIB_POS_HORIZ)
             .alignAndPadTo(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT)
             .type(VertexAttributeType.INT)
             .interpretation(VertexAttributeInterpretation.INTEGER)
             .build();
 
-    protected static final IVertexAttribute.Int1 ATTRIB_HEIGHT_FRAC_LOW = IVertexAttribute.Int1.builder(ATTRIB_HEIGHT_INT_LOW)
+    protected static final IVertexAttribute.Int1 ATTRIB_HEIGHT_FRAC = IVertexAttribute.Int1.builder(ATTRIB_HEIGHT_INT)
             .alignAndPadTo(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT)
             .type(VertexAttributeType.UNSIGNED_BYTE)
             .interpretation(VertexAttributeInterpretation.FLOAT)
             .build();
 
-    protected static final IVertexAttribute.Int2 ATTRIB_POS_HIGH = IVertexAttribute.Int2.builder(ATTRIB_HEIGHT_FRAC_LOW)
-            .alignAndPadTo(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT)
-            .type(VertexAttributeType.UNSIGNED_BYTE)
-            .interpretation(VertexAttributeInterpretation.INTEGER)
-            .build();
-
-    protected static final IVertexAttribute.Int1 ATTRIB_HEIGHT_INT_HIGH = IVertexAttribute.Int1.builder(ATTRIB_POS_HIGH)
-            .alignAndPadTo(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT)
-            .type(VertexAttributeType.INT)
-            .interpretation(VertexAttributeInterpretation.INTEGER)
-            .build();
-
-    protected static final IVertexAttribute.Int1 ATTRIB_HEIGHT_FRAC_HIGH = IVertexAttribute.Int1.builder(ATTRIB_HEIGHT_INT_HIGH)
-            .alignAndPadTo(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT)
-            .type(VertexAttributeType.UNSIGNED_BYTE)
-            .interpretation(VertexAttributeInterpretation.FLOAT)
-            .build();
-
-    protected static final VertexFormat VERTEX_FORMAT = new VertexFormat(ATTRIB_HEIGHT_FRAC_HIGH, max(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT, INT_SIZE));
+    protected static final VertexFormat VERTEX_FORMAT = new VertexFormat(ATTRIB_HEIGHT_FRAC, max(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT, INT_SIZE));
 
     protected static int vertexMapIndex(int x, int z, int layer) {
         return (x * T_VERTS + z) * MAX_LAYERS + layer;
@@ -160,7 +139,7 @@ public class HeightmapBake {
                         int x = dx + (((i >> 1) & 1) << T_SHIFT);
                         int z = dz + ((i & 1) << T_SHIFT);
 
-                        writeVertex(blockX, blockZ, level, i, srcs, x, z, layer, verts, pos, biomeAccess, data);
+                        writeVertex(blockX, blockZ, level, src, x, z, layer, verts, pos, biomeAccess, data);
                         map[vertexMapIndex(x, z, layer)] = indexCounter++;
                     }
                 }
@@ -228,11 +207,11 @@ public class HeightmapBake {
         }
     }
 
-    private void writeVertex(int baseX, int baseZ, int level, int i, HeightmapTile[] srcs, int x, int z, int layer, ByteBuf out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, HeightmapData data) {
+    private void writeVertex(int baseX, int baseZ, int level, HeightmapTile tile, int x, int z, int layer, ByteBuf out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, HeightmapData data) {
         baseX += (x & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
 
-        srcs[i]._getLayerUnchecked(x & T_MASK, z & T_MASK, layer, data);
+        tile._getLayerUnchecked(x & T_MASK, z & T_MASK, layer, data);
 
         final int blockX = baseX + ((x & T_MASK) << level);
         final int blockZ = baseZ + ((z & T_MASK) << level);
@@ -249,27 +228,8 @@ public class HeightmapBake {
         ATTRIB_LIGHT.set(out, vertexBase, blockLight | (blockLight << 4), skyLight | (skyLight << 4));
         ATTRIB_COLOR.setRGB(out, vertexBase, mc.getBlockColors().colorMultiplier(data.state, biomeAccess, pos, 0));
 
-        ATTRIB_POS_LOW.set(out, vertexBase, x, z);
-        ATTRIB_HEIGHT_INT_LOW.set(out, vertexBase, data.height_int);
-        ATTRIB_HEIGHT_FRAC_LOW.set(out, vertexBase, data.height_frac);
-
-        //pos_high
-        int baseTileX = (baseX >> (level + T_SHIFT)) - (i >> 1);
-        int baseTileZ = (baseZ >> (level + T_SHIFT)) - (i & 1);
-        HeightmapTile highTile = srcs[4 | (i & (((baseTileX & 1) << 1) | (baseTileZ & 1)))];
-        final int flooredX = blockX & -(1 << (level + 1));
-        final int flooredZ = blockZ & -(1 << (level + 1));
-        double highHeight;
-        if (highTile == null || Double.isNaN(highHeight = highTile.getLayerOnlyHeight((flooredX >> (level + 1)) & T_MASK, (flooredZ >> (level + 1)) & T_MASK, layer))) {
-            ATTRIB_POS_HIGH.set(out, vertexBase, x, z);
-            ATTRIB_HEIGHT_INT_HIGH.set(out, vertexBase, data.height_int);
-            ATTRIB_HEIGHT_FRAC_HIGH.set(out, vertexBase, data.height_frac);
-        } else {
-            int heightI = floorI(highHeight);
-            int heightF = clamp(floorI((highHeight - heightI) * 256.0d), 0, 255);
-            ATTRIB_POS_HIGH.set(out, vertexBase, x & ~1, z & ~1);
-            ATTRIB_HEIGHT_INT_HIGH.set(out, vertexBase, floorI(highHeight));
-            ATTRIB_HEIGHT_FRAC_HIGH.set(out, vertexBase, heightF);
-        }
+        ATTRIB_POS_HORIZ.set(out, vertexBase, x, z);
+        ATTRIB_HEIGHT_INT.set(out, vertexBase, data.height_int);
+        ATTRIB_HEIGHT_FRAC.set(out, vertexBase, data.height_frac);
     }
 }

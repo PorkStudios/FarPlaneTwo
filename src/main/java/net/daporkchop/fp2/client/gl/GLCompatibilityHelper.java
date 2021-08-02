@@ -24,9 +24,6 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.config.FP2Config;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-import org.lwjgl.opengl.GL33;
-
-import java.util.Locale;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -44,17 +41,10 @@ public class GLCompatibilityHelper {
      */
     public final boolean WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING = FP2Config.compatibility.workaroundAmdVertexPadding.shouldEnable(isOfficialAmdDriver());
 
-    /**
-     * This is a workaround for an issue with the official AMD driver which results unpredictable behavior when any of the vertex attributes
-     * use the {@link GL33#GL_INT_2_10_10_10_REV} type.
-     */
-    public final boolean WORKAROUND_AMD_INT_2_10_10_10_REV = FP2Config.compatibility.workaroundAmdInt2_10_10_10_REV.shouldEnable(isOfficialAmdDriver());
-
     public final int EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT = WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? INT_SIZE : 1;
 
     static {
         FP2_LOG.info("{}enabling AMD vertex attribute padding workaround", WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? "" : "not ");
-        FP2_LOG.info("{}enabling AMD GL_INT_2_10_10_10_REV workaround", WORKAROUND_AMD_INT_2_10_10_10_REV ? "" : "not ");
     }
 
     private boolean isOfficialAmdDriver() {

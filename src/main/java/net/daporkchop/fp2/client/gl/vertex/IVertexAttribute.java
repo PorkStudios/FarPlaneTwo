@@ -24,7 +24,6 @@ import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
-import net.daporkchop.fp2.client.gl.type.Int2_10_10_10_Rev;
 
 /**
  * Provides write-only access to a vertex attribute.
@@ -54,6 +53,7 @@ public interface IVertexAttribute {
 
     /**
      * Appends this vertex attribute to the given {@link VertexArrayObject} configuration.
+     *
      * @param vao    the {@link VertexArrayObject}
      * @param buffer the {@link IGLBuffer} that will contain the vertex data
      * @param stride
@@ -181,26 +181,6 @@ public interface IVertexAttribute {
          */
         default void setARGB(@NonNull ByteBuf buf, int vertexBase, int val) {
             this.set(buf, vertexBase, val, val >>> 8, val >>> 16, val >>> 24);
-        }
-
-        /**
-         * Sets the this vertex attribute to the given {@link Int2_10_10_10_Rev} value.
-         *
-         * @param buf        the {@link ByteBuf} containing the vertex
-         * @param vertexBase the index of the beginning of the vertex
-         */
-        default void setInt2_10_10_10_rev(@NonNull ByteBuf buf, int vertexBase, int val) {
-            this.set(buf, vertexBase, Int2_10_10_10_Rev.unpackX(val), Int2_10_10_10_Rev.unpackY(val), Int2_10_10_10_Rev.unpackZ(val), Int2_10_10_10_Rev.unpackW(val));
-        }
-
-        /**
-         * Sets the this vertex attribute to the given {@link Int2_10_10_10_Rev} value.
-         *
-         * @param buf        the {@link ByteBuf} containing the vertex
-         * @param vertexBase the index of the beginning of the vertex
-         */
-        default void setUnsignedInt2_10_10_10_rev(@NonNull ByteBuf buf, int vertexBase, int val) {
-            this.set(buf, vertexBase, Int2_10_10_10_Rev.unpackUnsignedX(val), Int2_10_10_10_Rev.unpackUnsignedY(val), Int2_10_10_10_Rev.unpackUnsignedZ(val), Int2_10_10_10_Rev.unpackUnsignedW(val));
         }
     }
 }

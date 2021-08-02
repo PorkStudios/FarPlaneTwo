@@ -21,20 +21,13 @@
 package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
-import net.daporkchop.fp2.util.math.geometry.Cylinder;
-import net.daporkchop.fp2.util.math.geometry.Volume;
-import net.minecraft.client.Minecraft;
-import net.minecraft.entity.Entity;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -43,18 +36,6 @@ import static net.daporkchop.fp2.util.Constants.*;
 public abstract class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos, HeightmapTile> {
     public HeightmapRenderer(@NonNull IFarClientContext<HeightmapPos, HeightmapTile> context) {
         super(context);
-    }
-
-    @Override
-    protected Volume[] createVolumesForSelection(float partialTicks, Minecraft mc) {
-        Volume[] ranges = new Volume[this.maxLevel + 1];
-        Entity entity = mc.getRenderViewEntity();
-        double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
-        double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
-        for (int i = 0; i < ranges.length; i++) {
-            ranges[i] = new Cylinder(x, z, (FP2Config.levelCutoffDistance + (T_VOXELS * 3)) << i);
-        }
-        return ranges;
     }
 
     public static class ShaderMultidraw extends HeightmapRenderer {

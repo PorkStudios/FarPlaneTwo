@@ -29,6 +29,8 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.lwjgl.opengl.GL31.*;
+
 /**
  * A command buffer containing tasks to be executed on the client thread in order to finish baking a tile.
  *
@@ -37,8 +39,6 @@ import java.util.List;
 public final class BakeOutput {
     public final long renderData;
     public final long size;
-
-    public boolean forceRenderParent;
 
     protected final List<Task> tasks = new ArrayList<>();
 
@@ -50,9 +50,9 @@ public final class BakeOutput {
         this.tasks.add(task);
     }
 
-    public void uploadAndStoreAddress(@NonNull ByteBuf data, @NonNull AllocatedGLBuffer buffer, @NonNull LongLongConsumer setAddressCallback) {
+    public void uploadAndStoreAddress(@NonNull ByteBuf data, @NonNull AllocatedGLBuffer bufferIn, @NonNull LongLongConsumer setAddressCallback) {
         this.submit(renderData -> {
-            try {
+            try (AllocatedGLBuffer buffer = bufferIn.bind(GL_COPY_WRITE_BUFFER)) {
                 long addr = buffer.alloc(data.readableBytes());
                 setAddressCallback.accept(renderData, addr);
                 buffer.uploadRange(addr, data);

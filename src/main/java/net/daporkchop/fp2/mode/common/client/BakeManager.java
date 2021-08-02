@@ -34,11 +34,6 @@ import net.daporkchop.fp2.util.threading.keyed.PriorityKeyedTaskScheduler;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -127,10 +122,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
             boolean nonEmpty = this.strategy.bake(pos, srcs, output);
 
             if (nonEmpty) {
-                ClientThreadExecutor.INSTANCE.execute(() -> {
-                    this.strategy.executeBakeOutput(pos, output);
-                    this.tree.putRenderData(pos, output);
-                });
+                ClientThreadExecutor.INSTANCE.execute(() -> this.tree.putRenderData(pos, output));
             } else { //remove tile from render tree
                 this.scheduleEmptyTile(pos);
             }
