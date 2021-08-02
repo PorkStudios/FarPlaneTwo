@@ -419,7 +419,7 @@ public class RecyclingArrayDeque<E> extends AbstractCollection<E> implements Deq
     }
 
     @Override
-    public <T1> T1[] toArray(@NonNull T1[] arr) {
+    public <T> T[] toArray(@NonNull T[] arr) {
         int size = this.size();
         if (arr.length < size) {
             arr = uncheckedCast(Array.newInstance(arr.getClass().getComponentType(), size));

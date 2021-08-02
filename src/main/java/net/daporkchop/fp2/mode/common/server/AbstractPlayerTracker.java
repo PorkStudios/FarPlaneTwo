@@ -24,7 +24,6 @@ import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.EventExecutorGroup;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
@@ -38,6 +37,7 @@ import net.daporkchop.fp2.net.server.SPacketTileData;
 import net.daporkchop.fp2.net.server.SPacketUnloadTile;
 import net.daporkchop.fp2.net.server.SPacketUnloadTiles;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.util.datastructure.CompactReferenceArraySet;
 import net.daporkchop.fp2.util.datastructure.RecyclingArrayDeque;
 import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.util.threading.ThreadingHelper;
@@ -45,7 +45,6 @@ import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import java.util.ArrayList;
@@ -203,7 +202,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
     }
 
     /**
-     * A tracking context used for a single player.
+     * Manages the positions tracked by a single player.
      *
      * @author DaPorkchop_
      */
@@ -413,10 +412,19 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         }
     }
 
+    /**
+     * Associates a tile position to the {@link Context}s which are tracking it.
+     *
+     * @author DaPorkchop_
+     */
     @ToString
-    protected class Entry {
+    protected class Entry extends CompactReferenceArraySet<Context> {
+        //we're using an ArraySet because even though all the operations run in O(n) time, it shouldn't ever be an issue - this should still be plenty fast even if there are
+        //  hundreds of players tracking the same tile, and it uses a fair amount less memory than an equivalent HashSet.
+        //we extend from CompactReferenceArraySet rather than having it as a field in order to minimize memory wasted by JVM object headers and the likes, as well as reduced
+        //  pointer chasing.
+
         protected final POS pos;
-        protected final Set<Context> contexts = new ReferenceOpenHashSet<>();
 
         protected Compressed<POS, T> tile;
 
@@ -427,7 +435,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         }
 
         public Entry addContext(@NonNull Context ctx) {
-            checkState(this.contexts.add(ctx), "player %s was already added to entry %s!", ctx, this);
+            checkState(super.add(ctx), "player %s was already added to entry %s!", ctx, this);
 
             if (this.tile != null) { //the tile has already been loaded, let's send it to the player
                 ctx.notifyChanged(this.tile);
@@ -437,13 +445,13 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         }
 
         public Entry removePlayer(@NonNull Context ctx) {
-            checkState(this.contexts.remove(ctx), "player %s did not belong to entry %s!", ctx, this);
+            checkState(super.remove(ctx), "player %s did not belong to entry %s!", ctx, this);
 
             if (this.tile != null) { //the tile has already been sent to the player, so it needs to be unloaded on their end
                 ctx.notifyUnload(this.pos);
             }
 
-            if (this.contexts.isEmpty()) { //no more players are tracking this entry, so it can be removed
+            if (super.isEmpty()) { //no more players are tracking this entry, so it can be removed
                 //release the tile load future (potentially removing it from the load/generation queue)
                 AbstractPlayerTracker.this.world.releaseTileFuture(this.pos);
 
@@ -457,14 +465,8 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         public void tileChanged(@NonNull Compressed<POS, T> tile) {
             this.tile = tile;
 
-            //send packet to all players
-            //TODO: make this not be async after fixing exact generator
-            this.contexts.forEach(ctx -> ctx.notifyChanged(tile));
-            //TODO: figure out what the above TODO was referring to
-            //TODO: i have now figured out what it was referring to, actually fix it now
-            //TODO: actually, i don't think there's any way i can reasonably fix this without breaking AsyncBlockAccess. i'll need to rework
-            // how tiles are stored on the server (the issue is a deadlock when the server thread is trying to serialize a tile while a worker
-            // generating said tile is waiting for the server thread to load a chunk required for generating the tile into AsyncBlockAccess)
+            //notify all players which have this tile loaded
+            super.forEach(ctx -> ctx.notifyChanged(tile));
         }
     }
 }
