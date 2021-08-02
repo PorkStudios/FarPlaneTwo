@@ -182,9 +182,6 @@ public class FP2Config {
         @Config.RequiresMcRestart
         public WorkaroundState workaroundAmdVertexPadding = WorkaroundState.AUTO;
 
-        @Config.RequiresMcRestart
-        public WorkaroundState workaroundAmdInt2_10_10_10_REV = WorkaroundState.AUTO;
-
         /**
          * @author DaPorkchop_
          */

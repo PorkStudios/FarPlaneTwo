@@ -24,6 +24,8 @@ import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.minecraft.util.math.AxisAlignedBB;
 
+import java.util.stream.Stream;
+
 /**
  * An identifier for a {@link IFarTile}.
  *
@@ -48,6 +50,21 @@ public interface IFarPos extends Comparable<IFarPos> {
      */
     default IFarPos up() {
         return this.upTo(this.level() + 1);
+    }
+
+    /**
+     * Gets the {@link IFarPos} containing this position at the given higher level of detail.
+     *
+     * @param targetLevel the level of detail to go down to
+     * @return the {@link IFarPos} containing this position at the given higher level of detail
+     */
+    IFarPos downTo(int targetLevel);
+
+    /**
+     * @return the {@link IFarPos} containing this position at a higher level of detail
+     */
+    default IFarPos down() {
+        return this.downTo(this.level() - 1);
     }
 
     /**
@@ -94,6 +111,15 @@ public interface IFarPos extends Comparable<IFarPos> {
         double padding = 1 << this.level();
         return this.bounds().expand(padding, padding, padding);
     }
+
+    /**
+     * Gets a {@link Stream} containing all the unique positions in the a bounding box originating at this position.
+     * <p>
+     * The bounding box's corners are defined by adding/subtracting the given max/min offsets to this position's coordinates, respectively.
+     * <p>
+     * Both corners are inclusive.
+     */
+    Stream<? extends IFarPos> allPositionsInBB(int offsetMin, int offsetMax);
 
     /**
      * Gets the Manhattan distance to the given {@link IFarPos}.

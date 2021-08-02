@@ -111,13 +111,6 @@ public abstract class BaseRenderStrategy<POS extends IFarPos, T extends IFarTile
     protected abstract void bakeVerts(@NonNull POS pos, @NonNull T[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts);
 
     @Override
-    public void executeBakeOutput(@NonNull POS pos, @NonNull BakeOutput output) {
-        try (AllocatedGLBuffer vertices = this.vertices.bind(GL_ARRAY_BUFFER)) {
-            output.execute();
-        }
-    }
-
-    @Override
     protected void doRelease() {
         this.vertices.delete();
     }

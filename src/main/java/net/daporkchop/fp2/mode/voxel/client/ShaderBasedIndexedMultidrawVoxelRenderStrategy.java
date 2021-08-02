@@ -38,11 +38,7 @@ public class ShaderBasedIndexedMultidrawVoxelRenderStrategy extends AbstractInde
             ((AbstractTexture) mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE)).setBlurMipmapDirect(false, mc.gameSettings.mipmapLevels > 0);
 
             try (DrawMode mode = DrawMode.SHADER.begin()) {
-                this.preRender();
-                this.renderSolid(this.passes[0]);
-                this.renderCutout(this.passes[1]);
-                this.renderTransparent(this.passes[2]);
-                this.postRender();
+                this.render();
             }
 
             mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();

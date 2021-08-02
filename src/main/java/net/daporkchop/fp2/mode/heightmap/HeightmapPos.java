@@ -30,7 +30,12 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.ChunkPos;
 
 import static java.lang.Math.*;
+import java.util.function.Function;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -95,6 +100,22 @@ public class HeightmapPos implements IFarPos {
     }
 
     @Override
+    public HeightmapPos downTo(int targetLevel) {
+        if (targetLevel == this.level) {
+            return this;
+        }
+        checkArg(targetLevel < this.level, "targetLevel (%d) must be less than current level (%d)", targetLevel, this.level);
+
+        int shift = this.level - targetLevel;
+        return new HeightmapPos(targetLevel, this.x << shift, this.z << shift);
+    }
+
+    @Override
+    public HeightmapPos down() {
+        return new HeightmapPos(this.level - 1, this.x << 1, this.z << 1);
+    }
+
+    @Override
     public boolean contains(@NonNull IFarPos posIn) {
         HeightmapPos pos = (HeightmapPos) posIn;
         int shift = this.level - pos.level;
@@ -109,6 +130,27 @@ public class HeightmapPos implements IFarPos {
         return new AxisAlignedBB(
                 this.x << shift, Integer.MIN_VALUE, this.z << shift,
                 (this.x + 1) << shift, Integer.MAX_VALUE, (this.z + 1) << shift);
+    }
+
+    @Override
+    public Stream<HeightmapPos> allPositionsInBB(int offsetMin, int offsetMax) {
+        notNegative(offsetMin, "offsetMin");
+        notNegative(offsetMax, "offsetMax");
+
+        if (sq((long) offsetMin + offsetMax + 1L) < 256L) { //fast-track: fill an array and create a simple stream over that
+            HeightmapPos[] arr = new HeightmapPos[sq(offsetMin + offsetMax + 1)];
+            for (int i = 0, dx = -offsetMin; dx <= offsetMax; dx++) {
+                for (int dz = -offsetMin; dz <= offsetMax; dz++) {
+                    arr[i++] = new HeightmapPos(this.level, this.x + dx, this.z + dz);
+                }
+            }
+            return Stream.of(arr);
+        } else { //slower fallback: dynamically computed stream
+            return IntStream.rangeClosed(this.x - offsetMin, this.x + offsetMax)
+                    .mapToObj(x -> IntStream.rangeClosed(this.z - offsetMin, this.z + offsetMax)
+                            .mapToObj(z -> new HeightmapPos(this.level, x, z)))
+                    .flatMap(Function.identity());
+        }
     }
 
     @Override

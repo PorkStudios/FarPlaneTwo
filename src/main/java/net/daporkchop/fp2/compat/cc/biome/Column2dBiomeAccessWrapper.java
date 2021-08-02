@@ -40,6 +40,6 @@ public class Column2dBiomeAccessWrapper implements IBiomeAccess {
 
     @Override
     public Biome getBiome(@NonNull BlockPos pos) {
-        return FastRegistry.getBiome(this.biomeArray[(pos.getX() & 0xF) << 4 | (pos.getZ() & 0xF)] & 0xFF, Biomes.PLAINS);
+        return FastRegistry.getBiome(this.biomeArray[(pos.getZ() & 0xF) << 4 | (pos.getX() & 0xF)] & 0xFF, Biomes.PLAINS);
     }
 }

@@ -29,13 +29,16 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.util.datastructure.DirectLongStack;
-import net.daporkchop.fp2.util.math.geometry.Volume;
+import net.daporkchop.lib.common.util.PorkUtil;
+import net.daporkchop.lib.primitive.map.ObjLongMap;
+import net.daporkchop.lib.primitive.map.open.ObjLongOpenHashMap;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraft.client.Minecraft;
 
 import java.util.function.LongConsumer;
+import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.debug.FP2Debug.*;
@@ -64,9 +67,9 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      *
      * struct Node {
      *   byte flags;
-     *   - 0x00: data //whether or not this node has been rendered and contains data
-     *   - 0x01: empty //whether or not this node has been rendered, but contains no data
-     *   - 0x02: render_parent //whether or not the parent tile may be rendered on top of this one
+     *   - bit 0x00: data //whether or not this node has been baked and contains data
+     *   - bit 0x01: empty //whether or not this node has been baked, but contains no data
+     *   - bit 0x02: selectable //whether or not this node may be selected for rendering
      *   Tile tile;
      *   Node* children[1 << D];
      * };
@@ -79,7 +82,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
 
     public static final int FLAG_DATA = 1 << 0;
     public static final int FLAG_EMPTY = 1 << 1;
-    public static final int FLAG_RENDER_PARENT = 1 << 2;
+    public static final int FLAG_SELECTABLE = 1 << 2;
 
     // begin field offsets
 
@@ -102,6 +105,8 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
     protected final long root;
     protected final IFarDirectPosAccess<POS> directPosAccess;
     protected final IFarRenderStrategy<POS, T> strategy;
+
+    protected final ObjLongMap<POS> positionsToNodes = new ObjLongOpenHashMap<POS>().defaultValue(0L);
 
     protected final PCleaner cleaner;
 
@@ -232,7 +237,12 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      * @param pos the position of the tile to set the render data for
      */
     public void putRenderData(@NonNull POS pos, BakeOutput output) {
-        this.putRenderData0(MAX_LODS, this.root, pos, output);
+        long node = this.positionsToNodes.get(pos);
+        if (node == 0L) { //no node exists, create new one
+            this.putRenderData0(MAX_LODS, this.root, pos, output);
+        } else { //quickly re-use existing node without having to recurse through the tree
+            this.setRenderData(node, pos, output);
+        }
     }
 
     protected void putRenderData0(int level, long node, POS pos, BakeOutput output) {
@@ -257,13 +267,14 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         this.deleteRenderData(node);
 
         if (output != null) { //new render data is non-empty
+            //execute render output state changes as needed
+            // (doing this here slightly reduces memory overhead, as the old data has already been released at this point)
+            output.execute();
+
+            //copy render data to node
             PUnsafe.copyMemory(output.renderData, node + this.tile_renderData, output.size);
 
             this.setFlags(node, FLAG_DATA);
-
-            if (output.forceRenderParent) {
-                this.setFlags(node, FLAG_RENDER_PARENT);
-            }
         } else { //new render data is empty
             this.setFlags(node, FLAG_EMPTY);
         }
@@ -276,6 +287,15 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         PUnsafe.setMemory(node, this.nodeSize, (byte) 0);
         this.directPosAccess.storePos(pos, node + this.tile_pos);
 
+        //store the node's address in the map
+        this.positionsToNodes.put(pos, node);
+
+        //check to see if this node is selectable
+        this.recheckSelectable(node, pos);
+
+        //this node has been newly created - we need to notify its selection parents
+        this.updateParentSelectability(pos);
+
         return node;
     }
 
@@ -285,7 +305,9 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      * @param pos the position of the tile to remove
      */
     public void removeNode(@NonNull POS pos) {
-        this.removeNode0(MAX_LODS, this.root, pos);
+        if (this.positionsToNodes.containsKey(pos)) { //there is a node for the requested position, so we should actually try to delete it
+            this.removeNode0(MAX_LODS, this.root, pos);
+        }
     }
 
     protected boolean removeNode0(int level, long node, POS pos) {
@@ -301,6 +323,13 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
 
                 //remove reference to child from children array
                 PUnsafe.putLong(node + this.children + this.childIndex(level, pos) * 8L, 0L);
+
+                POS childPos = uncheckedCast(pos.upTo(level - 1));
+                //remove child from node map
+                this.positionsToNodes.remove(childPos, child);
+
+                //child node has been deleted - we need to notify its selection parents
+                this.updateParentSelectability(childPos);
 
                 if (!this.checkFlagsOR(node, FLAG_DATA | FLAG_EMPTY)) { //node itself has no data
                     //if the node has no children, we return true, indicating that this node is now empty and should be deleted
@@ -326,8 +355,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
             PUnsafe.setMemory(node + this.tile_renderData, this.renderDataSize, (byte) 0);
         }
 
-        //clear all flags
-        this.clearFlags(node, 0xFFFFFFFF);
+        this.clearFlags(node, FLAG_DATA | FLAG_EMPTY);
     }
 
     protected long findChildStep(int level, long node, POS pos) {
@@ -341,96 +369,84 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         return PUnsafe.getLong(node + this.children + childIndex * 8L);
     }
 
+    protected void recheckSelectable(long node, POS pos) {
+        boolean previouslySelectable = this.checkFlagsOR(node, FLAG_SELECTABLE);
+
+        //a tile is considered selectable if at least one of the NODES (not tiles!) one layer down in a radius of 1 tile is absent.
+        boolean nowSelectable = pos.level() == 0 //level-0 tiles are always selectable
+                                || !PorkUtil.<Stream<POS>>uncheckedCast(pos.down().allPositionsInBB(1, 3)).allMatch(this.positionsToNodes::containsKey);
+
+        if (previouslySelectable != nowSelectable) { //select-ability has changed
+            if (nowSelectable) { //update flags
+                this.setFlags(node, FLAG_SELECTABLE);
+            } else {
+                this.clearFlags(node, FLAG_SELECTABLE);
+            }
+        }
+    }
+
+    protected void updateParentSelectability(POS start) {
+        PorkUtil.<Stream<POS>>uncheckedCast(start.up().allPositionsInBB(1, 1))
+                .forEach(pos -> {
+                    long node = this.positionsToNodes.get(pos);
+                    if (node != 0L) {
+                        this.recheckSelectable(node, pos);
+                    }
+                });
+    }
+
     /**
      * Selects all tiles that are applicable for the given view ranges and frustum and adds them to the render index.
      *
-     * @param ranges  an array of volumes defining the LoD level cutoff ranges
      * @param frustum the view frustum
      * @param index   the render index to add tiles to
      */
-    public void select(@NonNull Volume[] ranges, @NonNull IFrustum frustum, @NonNull DirectLongStack index) {
-        this.select0(MAX_LODS, this.root, ranges, frustum, index);
+    public void select(@NonNull IFrustum frustum, @NonNull DirectLongStack index) {
+        this.select0(MAX_LODS, this.root, frustum, index);
     }
 
-    protected boolean select0(int level, long node, Volume[] ranges, IFrustum frustum, DirectLongStack index) {
+    protected void select0(int level, long node, IFrustum frustum, DirectLongStack index) {
         if (level == 0 && this.checkFlagsOR(node, FLAG_EMPTY)) { //TODO: remove "level == 0 && "
             //this tile is baked and empty, so we can be sure that none of its children will be non-empty and there's no reason to recurse any further
-            return true;
-        } else if (level < this.maxLevel //don't do range checking for the top level, as it will cause a bunch of tiles to be loaded but never rendered
-                   && !this.directPosAccess.intersects(node + this.tile_pos, ranges[level])) {
-            //the view range for this level doesn't intersect this tile's bounding box,
-            // so we can be certain that neither this tile nor any of its children would be contained
-            return false;
+            return;
         } else if (level < MAX_LODS //don't do frustum culling on the root node, as it doesn't have a valid position because it's not really "there"
                    && !this.directPosAccess.inFrustum(node + this.tile_pos, frustum)) {
             //the frustum doesn't contain this tile's bounding box, so we can be certain that neither
             // this tile nor any of its children would be visible
-            return true; //return true to prevent parent node from skipping all high-res tiles if some of them were outside of the frustum
+            return;
         } else if (level == 0 && this.directPosAccess.isVanillaRenderable(node + this.tile_pos)) {
             //the node will be rendered by vanilla, so we don't want to draw over it
-            return true;
-        } else if (!this.checkFlagsOR(node, FLAG_DATA | FLAG_EMPTY)) { //this node has no data
-            //try to select as many children as possible, but only return true if all of them were successful
-            boolean allSuccess = true;
-            for (long addr = node + this.children, lastChildAddr = addr + ((long) LONG_SIZE << this.d); addr != lastChildAddr; addr += LONG_SIZE) {
-                long child = PUnsafe.getLong(addr);
-                allSuccess &= child != 0L //check if child is set
-                              && this.select0(level - 1, child, ranges, frustum, index);
-            }
-            return allSuccess;
+            return;
         }
 
-        //at this point we know that the tile has some data and is selectable
+        if (level != 0 //level-0 tiles will never have any children
+            && this.hasAnyChildren(node)) { //no need to consider selecting children if the tile has no children
 
-        CHILDREN:
-        if (level != 0 && this.hasAnyChildren(node) && this.directPosAccess.containedBy(node + this.tile_pos, ranges[level - 1])) {
-            //this tile is entirely within the view distance of the lower zoom level for tiles below it, so let's consider selecting them as well
-            //if all children are selectable, select all of them
-            //otherwise (if only some/none of the children are selectable) we ignore all of the children and only output the current tile. the better
-            // solution to this problem would be to have some mechanism to allow rendering a certain part of a tile, but the memory overhead required
-            // to do so would be atrocious.
+            //this tile has some children and intersects the selection volume for the lower zoom level, so we'll attempt to select
+            // as many children as possible
 
             long firstChildAddr = node + this.children;
             long lastChildAddr = firstChildAddr + ((long) LONG_SIZE << this.d);
 
-            //first pass to simply check for any null children before recursing into any of them
-            for (long addr = firstChildAddr; addr != lastChildAddr; addr += LONG_SIZE) {
-                if (PUnsafe.getLong(addr) == 0L) {
-                    break CHILDREN;
-                }
-            }
-
-            boolean shouldRenderSelf = false;
-
-            int mark = index.mark();
             for (long addr = firstChildAddr; addr != lastChildAddr; addr += LONG_SIZE) {
                 long child = PUnsafe.getLong(addr);
-                if (!this.select0(level - 1, child, ranges, frustum, index)) {
-                    //if any one of the children cannot be added, abort and add this tile over the whole area instead
-                    index.restore(mark);
-                    break CHILDREN;
+                if (child != 0L) {
+                    this.select0(level - 1, child, frustum, index);
                 }
-
-                shouldRenderSelf |= this.checkFlagsOR(child, FLAG_RENDER_PARENT);
             }
 
-            //all of the children were able to be added
-
-            if (!shouldRenderSelf //unless explicitly requested, we shouldn't be rendering ourself over a high-res tile
-                || this.directPosAccess.containedBy(node + this.tile_pos, ranges[level - 1].shrink(T_VOXELS << level))) {
-                return true;
-            }
+            //don't return because we want to allow the tiles to overlap
+            //return;
         }
 
-        if (FP2_DEBUG && FP2Config.debug.skipLevel0 && level == 0) {
-            return false;
+        if (FP2_DEBUG && FP2Config.debug.skipLevel0 && level == 0) { //skip level-0 tiles when they're disabled by debug mode
+            return;
         }
 
-        if (this.checkFlagsOR(node, FLAG_DATA)) {
+        if (this.checkFlagsAND(node, FLAG_DATA | FLAG_SELECTABLE)) {
             //actually append node to render list
             index.push(node + this.tile);
         }
-        return true;
     }
 
     @Override

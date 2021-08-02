@@ -20,8 +20,8 @@
 
 package net.daporkchop.fp2.util.math.geometry;
 
+import lombok.AllArgsConstructor;
 import net.daporkchop.lib.common.misc.string.PStrings;
-import net.minecraft.util.math.Vec3d;
 
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
@@ -29,52 +29,47 @@ import static net.daporkchop.lib.common.math.PMath.*;
 /**
  * @author DaPorkchop_
  */
-public class Sphere extends Vec3d implements Volume {
-    public final double radius;
-
-    public Sphere(double xIn, double yIn, double zIn, double radius) {
-        super(xIn, yIn, zIn);
-
-        this.radius = radius;
-    }
+@AllArgsConstructor
+public class HollowCylinder implements Volume {
+    public final double x;
+    public final double z;
+    public final double innerRadius;
+    public final double outerRadius;
 
     @Override
     public boolean intersects(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
         double dx = this.x - clamp(this.x, minX, maxX);
-        double dy = this.y - clamp(this.y, minY, maxY);
         double dz = this.z - clamp(this.z, minZ, maxZ);
-        return sq(dx) + sq(dy) + sq(dz) <= sq(this.radius);
+        double d = sq(dx) + sq(dz);
+        return d >= sq(this.innerRadius) && d <= sq(this.outerRadius);
     }
 
     @Override
     public boolean contains(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
-        return this.contains(minX, minY, minZ)
-               && this.contains(minX, minY, maxZ)
-               && this.contains(minX, maxY, minZ)
-               && this.contains(minX, maxY, maxZ)
-               && this.contains(maxX, minY, minZ)
-               && this.contains(maxX, minY, maxZ)
-               && this.contains(maxX, maxY, minZ)
-               && this.contains(maxX, maxY, maxZ);
+        return this.contains(minX, 0.0d, minZ)
+               && this.contains(minX, 0.0d, maxZ)
+               && this.contains(minX, 0.0d, minZ)
+               && this.contains(minX, 0.0d, maxZ);
     }
 
     @Override
     public boolean contains(double x, double y, double z) {
-        return sq(this.x - x) + sq(this.y - y) + sq(this.z - z) < sq(this.radius);
+        double d = sq(this.x - x) + sq(this.z - z);
+        return d > sq(this.innerRadius) && d < sq(this.outerRadius);
     }
 
     @Override
-    public Sphere shrink(double d) {
-        return new Sphere(this.x, this.y, this.z, this.radius - d);
+    public HollowCylinder shrink(double d) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;
-        } else if (obj instanceof Sphere) {
-            Sphere s = (Sphere) obj;
-            return Double.compare(this.x, s.x) == 0 && Double.compare(this.y, s.y) == 0 && Double.compare(this.z, s.z) == 0 && Double.compare(this.radius, s.radius) == 0;
+        } else if (obj instanceof HollowCylinder) {
+            HollowCylinder s = (HollowCylinder) obj;
+            return Double.compare(this.x, s.x) == 0 && Double.compare(this.z, s.z) == 0 && Double.compare(this.innerRadius, s.innerRadius) == 0 && Double.compare(this.outerRadius, s.outerRadius) == 0;
         } else {
             return false;
         }
@@ -82,11 +77,11 @@ public class Sphere extends Vec3d implements Volume {
 
     @Override
     public int hashCode() {
-        return mix32(mix64(mix64(mix64(Double.doubleToLongBits(this.x)) + Double.doubleToLongBits(this.y)) + Double.doubleToLongBits(this.z)) + Double.doubleToLongBits(this.radius));
+        return mix32(mix64(mix64(mix64(Double.doubleToLongBits(this.x)) + Double.doubleToLongBits(this.z)) + Double.doubleToLongBits(this.innerRadius)) + Double.doubleToLongBits(this.outerRadius));
     }
 
     @Override
     public String toString() {
-        return PStrings.fastFormat("sphere[x=%f,y=%f,z=%f,r=%f]", this.x, this.y, this.z, this.radius);
+        return PStrings.fastFormat("hollow cylinder[x=%f,z=%f,r=%f - %f]", this.x, this.z, this.innerRadius, this.outerRadius);
     }
 }

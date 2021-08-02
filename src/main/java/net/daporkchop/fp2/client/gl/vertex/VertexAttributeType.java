@@ -25,8 +25,6 @@ import lombok.RequiredArgsConstructor;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL12.*;
-import static org.lwjgl.opengl.GL33.*;
 
 /**
  * The different primitive types allowed to be used as a vertex attribute value.
@@ -41,19 +39,7 @@ public enum VertexAttributeType {
     UNSIGNED_SHORT(GL_UNSIGNED_SHORT, SHORT_SIZE),
     INT(GL_INT, INT_SIZE),
     UNSIGNED_INT(GL_UNSIGNED_INT, INT_SIZE),
-    FLOAT(GL_FLOAT, FLOAT_SIZE),
-    INT_2_10_10_10_REV(GL_INT_2_10_10_10_REV, INT_SIZE) {
-        @Override
-        public int size(int components) {
-            return INT_SIZE; //this type always uses the full 32 bits
-        }
-    },
-    UNSIGNED_INT_2_10_10_10_REV(GL_UNSIGNED_INT_2_10_10_10_REV, INT_SIZE) {
-        @Override
-        public int size(int components) {
-            return INT_SIZE; //this type always uses the full 32 bits
-        }
-    };
+    FLOAT(GL_FLOAT, FLOAT_SIZE);
 
     @Getter
     private final int glType;

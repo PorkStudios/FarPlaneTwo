@@ -27,12 +27,16 @@ import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
+ * The opposite of a sphere.
+ * <p>
+ * This is a volume which contains everything EXCEPT a sphere (with a given center point and radius).
+ *
  * @author DaPorkchop_
  */
-public class Sphere extends Vec3d implements Volume {
+public class Unsphere extends Vec3d implements Volume {
     public final double radius;
 
-    public Sphere(double xIn, double yIn, double zIn, double radius) {
+    public Unsphere(double xIn, double yIn, double zIn, double radius) {
         super(xIn, yIn, zIn);
 
         this.radius = radius;
@@ -43,7 +47,7 @@ public class Sphere extends Vec3d implements Volume {
         double dx = this.x - clamp(this.x, minX, maxX);
         double dy = this.y - clamp(this.y, minY, maxY);
         double dz = this.z - clamp(this.z, minZ, maxZ);
-        return sq(dx) + sq(dy) + sq(dz) <= sq(this.radius);
+        return sq(dx) + sq(dy) + sq(dz) >= sq(this.radius);
     }
 
     @Override
@@ -60,20 +64,20 @@ public class Sphere extends Vec3d implements Volume {
 
     @Override
     public boolean contains(double x, double y, double z) {
-        return sq(this.x - x) + sq(this.y - y) + sq(this.z - z) < sq(this.radius);
+        return sq(this.x - x) + sq(this.y - y) + sq(this.z - z) > sq(this.radius);
     }
 
     @Override
-    public Sphere shrink(double d) {
-        return new Sphere(this.x, this.y, this.z, this.radius - d);
+    public Unsphere shrink(double d) {
+        return new Unsphere(this.x, this.y, this.z, this.radius - d);
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;
-        } else if (obj instanceof Sphere) {
-            Sphere s = (Sphere) obj;
+        } else if (obj instanceof Unsphere) {
+            Unsphere s = (Unsphere) obj;
             return Double.compare(this.x, s.x) == 0 && Double.compare(this.y, s.y) == 0 && Double.compare(this.z, s.z) == 0 && Double.compare(this.radius, s.radius) == 0;
         } else {
             return false;
@@ -87,6 +91,6 @@ public class Sphere extends Vec3d implements Volume {
 
     @Override
     public String toString() {
-        return PStrings.fastFormat("sphere[x=%f,y=%f,z=%f,r=%f]", this.x, this.y, this.z, this.radius);
+        return PStrings.fastFormat("unsphere[x=%f,y=%f,z=%f,r=%f]", this.x, this.y, this.z, this.radius);
     }
 }

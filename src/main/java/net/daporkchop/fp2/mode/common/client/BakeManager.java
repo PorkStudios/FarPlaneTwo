@@ -127,10 +127,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
             boolean nonEmpty = this.strategy.bake(pos, srcs, output);
 
             if (nonEmpty) {
-                ThreadingHelper.scheduleTaskInWorldThread(this.world, () -> {
-                    this.strategy.executeBakeOutput(pos, output);
-                    this.tree.putRenderData(pos, output);
-                });
+                ThreadingHelper.scheduleTaskInWorldThread(this.world, () -> this.tree.putRenderData(pos, output));
             } else { //remove tile from render tree
                 this.scheduleEmptyTile(pos);
             }

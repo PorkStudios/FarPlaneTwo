@@ -38,7 +38,7 @@ public class TransformFeedbackVoxelRenderStrategy extends AbstractIndexedMultidr
     @Override
     public void render(@NonNull BlockRenderLayer layer, boolean pre) {
         try (DrawMode mode = DrawMode.LEGACY.begin()) {
-            if (layer == BlockRenderLayer.SOLID && !pre) {
+            /*if (layer == BlockRenderLayer.SOLID && !pre) {
                 this.preRender();
                 this.renderSolid(this.passes[0]);
                 this.postRender();
@@ -50,7 +50,8 @@ public class TransformFeedbackVoxelRenderStrategy extends AbstractIndexedMultidr
                 this.preRender();
                 this.renderTransparent(this.passes[2]);
                 this.postRender();
-            }
+            }*/
+            throw new UnsupportedOperationException("transform feedback (shader compatibility) mode does not work!");
         }
     }
 }
