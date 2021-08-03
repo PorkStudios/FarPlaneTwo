@@ -34,13 +34,20 @@ import net.daporkchop.fp2.util.threading.keyed.PriorityKeyedTaskScheduler;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public class BakeManager<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarTileCache.Listener<POS, T> {
+public class BakeManager<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarTileCache.Listener<POS, T>, Runnable {
     protected final AbstractFarRenderer<POS, T> renderer;
     protected final IFarRenderStrategy<POS, T> strategy;
 
@@ -49,6 +56,9 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     protected final FarRenderTree<POS, T> tree;
 
     protected final KeyedTaskScheduler<POS> bakeExecutor;
+
+    protected final Map<POS, Optional<BakeOutput>> pendingTreeUpdates = new ConcurrentHashMap<>();
+    protected final AtomicBoolean isBulkUpdateQueued = new AtomicBoolean();
 
     public BakeManager(@NonNull AbstractFarRenderer<POS, T> renderer, @NonNull IFarTileCache<POS, T> tileCache) {
         this.renderer = renderer;
@@ -84,7 +94,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     @Override
     public void tileRemoved(@NonNull POS pos) {
         //make sure that any in-progress bake tasks are finished before the tile is removed
-        this.bakeExecutor.submitExclusive(pos, () -> ClientThreadExecutor.INSTANCE.execute(() -> this.tree.removeNode(pos)));
+        this.bakeExecutor.submitExclusive(pos, () -> this.updateTree(pos, Optional.empty()));
     }
 
     protected void notifyOutputs(@NonNull POS pos) {
@@ -105,7 +115,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         }
 
         if (compressedInputTiles[0].isEmpty()) { //tile has no data, we "bake" it by deleting it if it exists
-            this.scheduleEmptyTile(pos);
+            this.updateTree(pos, Optional.of(BakeOutput.empty()));
             return;
         }
 
@@ -121,11 +131,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
             BakeOutput output = new BakeOutput(this.strategy.renderDataSize());
             boolean nonEmpty = this.strategy.bake(pos, srcs, output);
 
-            if (nonEmpty) {
-                ClientThreadExecutor.INSTANCE.execute(() -> this.tree.putRenderData(pos, output));
-            } else { //remove tile from render tree
-                this.scheduleEmptyTile(pos);
-            }
+            this.updateTree(pos, Optional.of(nonEmpty ? output : BakeOutput.empty()));
         } finally { //release tiles again
             for (int i = 0; i < srcs.length; i++) {
                 if (srcs[i] != null) {
@@ -135,7 +141,32 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         }
     }
 
-    protected void scheduleEmptyTile(@NonNull POS pos) {
-        ClientThreadExecutor.INSTANCE.execute(() -> this.tree.putRenderData(pos, null));
+    protected void updateTree(@NonNull POS pos, @NonNull Optional<BakeOutput> optionalBakeOutput) {
+        this.pendingTreeUpdates.put(pos, optionalBakeOutput);
+
+        if (this.isBulkUpdateQueued.compareAndSet(false, true)) { //we won the race to enqueue a bulk update!
+            ClientThreadExecutor.INSTANCE.execute(this);
+        }
+    }
+
+    /**
+     * @deprecated internal API, do not touch!
+     */
+    @Override
+    @Deprecated
+    public void run() { //executes a bulk update on the client thread
+        try {
+            int size = this.pendingTreeUpdates.size();
+            List<Map.Entry<POS, Optional<BakeOutput>>> updates = new ArrayList<>(size + (size >> 3)); //pre-allocate a bit of extra space in case it grows while we're iterating
+            updates.addAll(this.pendingTreeUpdates.entrySet());
+
+            //atomically remove the corresponding entries from the pending update queue
+            updates.forEach(update -> this.pendingTreeUpdates.remove(update.getKey(), update.getValue()));
+
+            //execute the bulk update
+            this.tree.bulkUpdate(updates);
+        } finally {
+            this.isBulkUpdateQueued.set(false);
+        }
     }
 }

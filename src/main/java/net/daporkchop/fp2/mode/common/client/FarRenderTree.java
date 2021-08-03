@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.mode.common.client;
 
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
@@ -40,7 +41,11 @@ import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 
-import java.util.function.LongConsumer;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
@@ -217,64 +222,48 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
     }
 
     /**
-     * Runs the given function for every node in the tree.
-     *
-     * @param action        the function to run
-     * @param requiredFlags the flags that must be set in order for the node to be considered
-     */
-    public void forEach(@NonNull LongConsumer action, int requiredFlags) {
-        this.forEach0(this.root, action, requiredFlags);
-    }
-
-    protected void forEach0(long node, LongConsumer action, int requiredFlags) {
-        if (this.checkFlagsAND(node, requiredFlags)) {
-            action.accept(node);
-        }
-
-        for (long addr = node + this.children, lastChildAddr = addr + ((long) LONG_SIZE << this.d); addr != lastChildAddr; addr += LONG_SIZE) {
-            long child = PUnsafe.getLong(addr);
-            if (child != 0L) { //child exists
-                this.forEach0(child, action, requiredFlags);
-            }
-        }
-    }
-
-    /**
      * Sets the render data for the tile at the given position.
      *
      * @param pos the position of the tile to set the render data for
+     * @deprecated use {@link #bulkUpdate(Iterable)}
      */
+    @Deprecated
     public void putRenderData(@NonNull POS pos, BakeOutput output) {
         long node = this.positionsToNodes.get(pos);
         if (node == 0L) { //no node exists, create new one
-            this.putRenderData0(MAX_LODS, this.root, pos, output);
+            Set<POS> pendingParentUpdates = new ObjectOpenHashSet<>();
+            this.putRenderData0(MAX_LODS, this.root, pos, output, pendingParentUpdates::add);
+            this.doSelectabilityUpdates(pendingParentUpdates);
         } else { //quickly re-use existing node without having to recurse through the tree
-            this.setRenderData(node, pos, output);
+            this.setRenderData(node, output);
         }
     }
 
-    protected void putRenderData0(int level, long node, POS pos, BakeOutput output) {
+    protected void putRenderData0(int level, long node, POS pos, BakeOutput output, Consumer<POS> updateParentSelectability) {
         long child = this.findChildStep(level, node, pos);
         if (child != node) {
             if (child == 0L) { //next node doesn't exist
                 //allocate new node
-                child = this.createNode(level - 1, uncheckedCast(pos.upTo(level - 1)));
+                child = this.createNode(uncheckedCast(pos.upTo(level - 1)));
+
+                //re-check the node's selection parents, since the existence of a new node means that there's now a chance that they're no longer selectable
+                updateParentSelectability.accept(pos);
 
                 //store pointer into children array
                 PUnsafe.putLong(node + this.children + this.childIndex(level, pos) * 8L, child);
             }
 
-            this.putRenderData0(level - 1, child, pos, output);
+            this.putRenderData0(level - 1, child, pos, output, updateParentSelectability);
         } else { //current node is the target node
-            this.setRenderData(node, pos, output);
+            this.setRenderData(node, output);
         }
     }
 
-    protected void setRenderData(long node, POS pos, BakeOutput output) {
+    protected void setRenderData(long node, @NonNull BakeOutput output) {
         //release exiting data if necessary
         this.deleteRenderData(node);
 
-        if (output != null) { //new render data is non-empty
+        if (!output.isEmpty()) { //new render data is non-empty
             //execute render output state changes as needed
             // (doing this here slightly reduces memory overhead, as the old data has already been released at this point)
             output.execute();
@@ -288,9 +277,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         }
     }
 
-    protected long createNode(int level, POS pos) {
-        notNegative(level, "level");
-
+    protected long createNode(POS pos) {
         long node = this.nodeAlloc.alloc(this.nodeSize);
         PUnsafe.setMemory(node, this.nodeSize, (byte) 0);
         this.directPosAccess.storePos(pos, node + this.tile_pos);
@@ -298,11 +285,8 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         //store the node's address in the map
         this.positionsToNodes.put(pos, node);
 
-        //check to see if this node is selectable
-        this.recheckSelectable(node, pos);
-
-        //this node has been newly created - we need to notify its selection parents
-        this.updateParentSelectability(pos);
+        //since the flag has been newly created, it doesn't have any children and is therefore guaranteed to be selectable
+        this.setFlags(node, FLAG_SELECTABLE);
 
         return node;
     }
@@ -311,21 +295,25 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      * Removes the node at the given position.
      *
      * @param pos the position of the tile to remove
+     * @deprecated use {@link #bulkUpdate(Iterable)}
      */
+    @Deprecated
     public void removeNode(@NonNull POS pos) {
         if (this.positionsToNodes.containsKey(pos)) { //there is a node for the requested position, so we should actually try to delete it
-            this.removeNode0(MAX_LODS, this.root, pos);
+            Set<POS> pendingParentUpdates = new ObjectOpenHashSet<>();
+            this.removeNode0(MAX_LODS, this.root, pos, pendingParentUpdates::add);
+            this.doSelectabilityUpdates(pendingParentUpdates);
         }
     }
 
-    protected boolean removeNode0(int level, long node, POS pos) {
+    protected boolean removeNode0(int level, long node, POS pos, Consumer<POS> updateParentSelectability) {
         long child = this.findChildStep(level, node, pos);
         if (child != node) {
             if (child == 0L) { //next node doesn't exist
                 return false; //exit without changing anything
             }
 
-            if (this.removeNode0(level - 1, child, pos)) { //the child node should be removed
+            if (this.removeNode0(level - 1, child, pos, updateParentSelectability)) { //the child node should be removed
                 //release child's memory
                 this.nodeAlloc.free(child);
 
@@ -337,7 +325,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
                 this.positionsToNodes.remove(childPos, child);
 
                 //child node has been deleted - we need to notify its selection parents
-                this.updateParentSelectability(childPos);
+                updateParentSelectability.accept(pos);
 
                 if (!this.checkFlagsOR(node, FLAG_DATA | FLAG_EMPTY)) { //node itself has no data
                     //if the node has no children, we return true, indicating that this node is now empty and should be deleted
@@ -377,30 +365,71 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         return PUnsafe.getLong(node + this.children + childIndex * 8L);
     }
 
-    protected void recheckSelectable(long node, POS pos) {
-        boolean previouslySelectable = this.checkFlagsOR(node, FLAG_SELECTABLE);
-
-        //a tile is considered selectable if at least one of the NODES (not tiles!) one layer down in a radius of 1 tile is absent.
-        boolean nowSelectable = pos.level() == 0 //level-0 tiles are always selectable
-                                || !PorkUtil.<Stream<POS>>uncheckedCast(pos.down().allPositionsInBB(1, 3)).allMatch(this.positionsToNodes::containsKey);
-
-        if (previouslySelectable != nowSelectable) { //select-ability has changed
-            if (nowSelectable) { //update flags
-                this.setFlags(node, FLAG_SELECTABLE);
-            } else {
-                this.clearFlags(node, FLAG_SELECTABLE);
-            }
+    protected void doSelectabilityUpdates(@NonNull Collection<POS> pendingSelectabilityUpdates) {
+        if (pendingSelectabilityUpdates.isEmpty()) { //nothing to do
+            return;
         }
-    }
 
-    protected void updateParentSelectability(POS start) {
-        PorkUtil.<Stream<POS>>uncheckedCast(start.up().allPositionsInBB(1, 1))
+        pendingSelectabilityUpdates.stream()
+                .flatMap(pos -> PorkUtil.<Stream<POS>>uncheckedCast(pos.up().allPositionsInBB(1, 1)))
+                .distinct()
                 .forEach(pos -> {
                     long node = this.positionsToNodes.get(pos);
-                    if (node != 0L) {
-                        this.recheckSelectable(node, pos);
+                    if (node == 0L) { //the node no longer exists, no reason to bother checking it
+                        return;
+                    }
+
+                    boolean previouslySelectable = this.checkFlagsOR(node, FLAG_SELECTABLE);
+
+                    //a tile is considered selectable if at least one of the NODES (not tiles!) one layer down in a radius of 1 tile is absent.
+                    boolean nowSelectable = pos.level() == 0 //level-0 tiles are always selectable
+                                            || !PorkUtil.<Stream<POS>>uncheckedCast(pos.down().allPositionsInBB(1, 3)).allMatch(this.positionsToNodes::containsKey);
+
+                    if (previouslySelectable != nowSelectable) { //select-ability has changed
+                        if (nowSelectable) { //update flags
+                            this.setFlags(node, FLAG_SELECTABLE);
+                        } else {
+                            this.clearFlags(node, FLAG_SELECTABLE);
+                        }
                     }
                 });
+    }
+
+    /**
+     * Executes multiple operations in bulk.
+     * <p>
+     * Each position may be mapped to one of three different things:<br>
+     * - an {@link Optional} containing a non-empty {@link BakeOutput}, in which case the bake output will be executed and inserted at the position<br>
+     * - an {@link Optional} containing an empty {@link BakeOutput}, in which case the position will be inserted with no data<br>
+     * - an empty {@link Optional}, in which case the position will be removed
+     *
+     * @param operations the updates to be applied
+     */
+    public void bulkUpdate(@NonNull Iterable<Map.Entry<POS, Optional<BakeOutput>>> operations) {
+        Set<POS> pendingSelectabilityUpdates = new ObjectOpenHashSet<>();
+        Consumer<POS> updateParentSelectability = pendingSelectabilityUpdates::add;
+
+        //apply all the operations at once
+        operations.forEach(op -> {
+            POS pos = op.getKey();
+            Optional<BakeOutput> optionalBakeOutput = op.getValue();
+
+            long node = this.positionsToNodes.get(pos);
+            if (optionalBakeOutput.isPresent()) { //insertion
+                if (node == 0L) { //no node exists, create new one
+                    this.putRenderData0(MAX_LODS, this.root, pos, optionalBakeOutput.get(), updateParentSelectability);
+                } else { //quickly re-use existing node without having to recurse through the tree
+                    this.setRenderData(node, optionalBakeOutput.get());
+                }
+            } else { //deletion
+                if (node != 0L) { //there is a node for the requested position, so we should actually try to delete it
+                    this.removeNode0(MAX_LODS, this.root, pos, updateParentSelectability);
+                }
+            }
+        });
+
+        //do all the selectability updates at once, thus eliminating lots of duplicates
+        this.doSelectabilityUpdates(pendingSelectabilityUpdates);
     }
 
     /**

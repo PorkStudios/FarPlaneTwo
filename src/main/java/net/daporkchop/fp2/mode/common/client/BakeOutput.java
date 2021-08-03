@@ -29,6 +29,7 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 import java.util.ArrayList;
 import java.util.List;
 
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL31.*;
 
 /**
@@ -37,6 +38,12 @@ import static org.lwjgl.opengl.GL31.*;
  * @author DaPorkchop_
  */
 public final class BakeOutput {
+    private static final BakeOutput EMPTY = new BakeOutput(0L);
+
+    public static BakeOutput empty() {
+        return EMPTY;
+    }
+
     public final long renderData;
     public final long size;
 
@@ -47,6 +54,8 @@ public final class BakeOutput {
     }
 
     public void submit(@NonNull Task task) {
+        checkState(!this.isEmpty(), "cannot submit execution task to empty BakeOutput!");
+
         this.tasks.add(task);
     }
 
@@ -72,6 +81,8 @@ public final class BakeOutput {
      * Must be called from the client thread.
      */
     public void execute() {
+        checkState(!this.isEmpty(), "cannot execute empty BakeOutput!");
+
         try {
             for (int i = 0, size = this.tasks.size(); i < size; i++) {
                 this.tasks.get(i).run(this.renderData);
@@ -79,6 +90,10 @@ public final class BakeOutput {
         } finally {
             this.tasks.clear();
         }
+    }
+
+    public boolean isEmpty() {
+        return this == EMPTY;
     }
 
     @FunctionalInterface
