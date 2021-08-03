@@ -46,9 +46,9 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @Getter
 public final class Compressed<POS extends IFarPos, V extends IReusablePersistent> extends ReentrantReadWriteLock {
     /**
-     * Timestamp indicating that the tile does not contain any data.
+     * Timestamp indicating that the tile has not yet been generated.
      */
-    public static final long VALUE_BLANK = Long.MIN_VALUE;
+    public static final long TIMESTAMP_BLANK = Long.MIN_VALUE;
 
     /**
      * Timestamp indicating that the tile's rough generation has been completed.
@@ -71,7 +71,7 @@ public final class Compressed<POS extends IFarPos, V extends IReusablePersistent
     protected long data; // Data* data;
     protected PCleaner cleaner;
 
-    protected long timestamp = VALUE_BLANK;
+    protected long timestamp = TIMESTAMP_BLANK;
 
     /**
      * Creates a new compressed value with no data at the given tile position.
@@ -149,19 +149,10 @@ public final class Compressed<POS extends IFarPos, V extends IReusablePersistent
     }
 
     /**
-     * @return whether or not this value is blank (i.e. has not been generated)
-     * @deprecated use the inverted result of {@link #isGenerated()}
-     */
-    @Deprecated
-    public boolean isBlank() {
-        return this.timestamp() == Compressed.VALUE_BLANK;
-    }
-
-    /**
      * @return whether or not this value is done (i.e. has been fully generated and may be saved)
      */
     public boolean isGenerated() {
-        return this.timestamp() != VALUE_BLANK;
+        return this.timestamp() != TIMESTAMP_BLANK;
     }
 
     /**

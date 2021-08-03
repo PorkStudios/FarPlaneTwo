@@ -27,6 +27,8 @@ import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
  * Allocates memory regions in an arbitrary address space.
+ * <p>
+ * Unless otherwise specified, implementations are not thread-safe.
  *
  * @author DaPorkchop_
  */

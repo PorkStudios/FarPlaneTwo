@@ -20,56 +20,60 @@
 
 package net.daporkchop.fp2.util.alloc;
 
-import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.lib.unsafe.PCleaner;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
-import java.util.BitSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Implementation of {@link Allocator} which allocates memory in fixed-size slots.
+ * An {@link Allocator} which allocates actual memory in virtual address space.
+ * <p>
+ * This implementation is thread-safe.
  *
  * @author DaPorkchop_
  */
-public final class FixedSizeAllocator extends BitSet implements Allocator { //extend BitSet to eliminate an indirection
-    protected final long blockSize;
-    protected final GrowFunction growFunction;
-    protected final SequentialHeapManager manager;
-    protected long capacity;
-    protected int fromIndex = 0;
+public final class DirectMemoryAllocator implements Allocator {
+    protected final Set<Long> addresses = ConcurrentHashMap.newKeySet();
 
-    public FixedSizeAllocator(long blockSize, @NonNull SequentialHeapManager manager) {
-        this(blockSize, manager, GrowFunction.DEFAULT);
-    }
-
-    public FixedSizeAllocator(long blockSize, @NonNull SequentialHeapManager manager, @NonNull GrowFunction growFunction) {
-        this.blockSize = positive(blockSize, "blockSize");
-        this.manager = manager;
-        this.growFunction = growFunction;
-
-        this.manager.brk(this.capacity = this.growFunction.grow(0L, blockSize << 4L));
+    public DirectMemoryAllocator() {
+        PCleaner.cleaner(this, new Releaser(this.addresses));
     }
 
     @Override
     public long alloc(long size) {
-        checkArg(size == this.blockSize, "size must be exactly block size (%d)", this.blockSize);
-        int slot = this.nextClearBit(this.fromIndex);
-        this.set(slot);
-        this.fromIndex = slot;
-
-        long addr = slot * this.blockSize;
-        if (addr >= this.capacity) {
-            this.manager.sbrk(this.capacity = this.growFunction.grow(this.capacity, this.blockSize));
-        }
+        long addr = PUnsafe.allocateMemory(positive(size, "size"));
+        this.addresses.add(addr);
         return addr;
     }
 
     @Override
     public void free(long address) {
-        int slot = toInt(address / this.blockSize);
-        this.clear(slot);
-        if (slot < this.fromIndex) {
-            this.fromIndex = slot;
+        checkArg(this.addresses.remove(address), "can't free address 0x016x (which isn't owned by this allocator)", address);
+        PUnsafe.freeMemory(address);
+    }
+
+    /**
+     * Cleans up any memory allocated by a {@link DirectMemoryAllocator} which wasn't freed.
+     *
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    private static final class Releaser implements Runnable {
+        protected final Set<Long> addresses;
+
+        @Override
+        public void run() {
+            if (this.addresses.isEmpty()) { //nothing to do
+                return;
+            }
+
+            bigWarning("{} memory blocks allocated by {} were not freed!", this.addresses.size(), DirectMemoryAllocator.class.getCanonicalName());
+            this.addresses.forEach(PUnsafe::freeMemory);
         }
     }
 }

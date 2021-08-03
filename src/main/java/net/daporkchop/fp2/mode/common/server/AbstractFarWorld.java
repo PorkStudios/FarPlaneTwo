@@ -128,7 +128,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
     @Override
     public Compressed<POS, T> getTileLazy(@NonNull POS pos) {
         Compressed<POS, T> tile = this.tileCache.getIfPresent(pos);
-        if (tile == null || tile.timestamp() == Compressed.VALUE_BLANK) {
+        if (tile == null || !tile.isGenerated()) {
             if (this.notDone.putIfAbsent(pos, Boolean.TRUE) != Boolean.TRUE) {
                 //tile is not in cache and was newly marked as queued
                 this.executor.submit(new PriorityTask<>(TaskStage.LOAD, pos));

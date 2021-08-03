@@ -34,7 +34,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * A simple, efficient memory allocator backed by a doubly linked list of segments sorted into buckets.
+ * A simple, efficient memory allocator for arbitrarily sized blocks of memory backed by a sequential heap.
  * <p>
  * Nodes are inserted and removed from the list whenever an allocation is added or removed, and merged whenever possible.
  * <p>
@@ -42,7 +42,17 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  *
  * @author DaPorkchop_
  */
-public final class VariableSizedAllocator implements Allocator {
+public final class SequentialVariableSizedAllocator implements Allocator {
+    /*
+     * Performance characteristics (C=capacity, N=extents):
+     *
+     * alloc():
+     *   - O(log2(N)) (average)
+     *   - O(log2(N) + C) (worst-case)
+     * free():
+     *   - O(log2(N))
+     */
+
     protected static final long MIN_ALLOC_SZ = 64L; //the maximum number of bytes we are willing to waste as padding at the end of a block
 
     protected final long blockSize;
@@ -63,11 +73,11 @@ public final class VariableSizedAllocator implements Allocator {
     protected final Long2ObjectMap<Node> usedNodes = new Long2ObjectRBTreeMap<>();
     protected Node tail;
 
-    public VariableSizedAllocator(long blockSize, @NonNull SequentialHeapManager manager) {
+    public SequentialVariableSizedAllocator(long blockSize, @NonNull SequentialHeapManager manager) {
         this(blockSize, manager, GrowFunction.DEFAULT);
     }
 
-    public VariableSizedAllocator(long blockSize, @NonNull SequentialHeapManager manager, @NonNull GrowFunction growFunction) {
+    public SequentialVariableSizedAllocator(long blockSize, @NonNull SequentialHeapManager manager, @NonNull GrowFunction growFunction) {
         this.blockSize = positive(blockSize, "blockSize");
         this.manager = manager;
         this.growFunction = growFunction;

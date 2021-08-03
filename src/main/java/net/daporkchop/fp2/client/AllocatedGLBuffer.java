@@ -24,8 +24,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.util.alloc.Allocator;
-import net.daporkchop.fp2.util.alloc.FixedSizeAllocator;
-import net.daporkchop.fp2.util.alloc.VariableSizedAllocator;
+import net.daporkchop.fp2.util.alloc.SequentialFixedSizeAllocator;
+import net.daporkchop.fp2.util.alloc.SequentialVariableSizedAllocator;
 import net.daporkchop.lib.common.misc.string.PStrings;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -90,13 +90,13 @@ public interface AllocatedGLBuffer extends IGLBuffer, Allocator {
                 new Base(name, usage, blockSize) {
                     @Override
                     protected Allocator createAllocator(long blockSize) {
-                        return new VariableSizedAllocator(blockSize, this);
+                        return new SequentialVariableSizedAllocator(blockSize, this);
                     }
                 } :
                 new Base(name, usage, blockSize) {
                     @Override
                     protected Allocator createAllocator(long blockSize) {
-                        return new FixedSizeAllocator(blockSize, this);
+                        return new SequentialFixedSizeAllocator(blockSize, this);
                     }
                 };
     }

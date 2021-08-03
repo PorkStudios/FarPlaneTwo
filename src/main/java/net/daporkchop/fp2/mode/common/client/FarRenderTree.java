@@ -28,6 +28,9 @@ import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.util.alloc.Allocator;
+import net.daporkchop.fp2.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.util.alloc.FragmentedFixedSizeAllocator;
 import net.daporkchop.fp2.util.datastructure.DirectLongStack;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.daporkchop.lib.common.util.PorkUtil;
@@ -108,6 +111,8 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
 
     protected final ObjLongMap<POS> positionsToNodes = new ObjLongOpenHashMap<POS>().defaultValue(0L);
 
+    protected final Allocator nodeAlloc;
+
     protected final PCleaner cleaner;
 
     public FarRenderTree(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T> strategy, int maxLevel) {
@@ -125,9 +130,12 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         this.nodeSize = this.children + ((long) LONG_SIZE << this.d);
         FP2_LOG.info("{}D tree node size: {} bytes", this.d, this.nodeSize);
 
-        PUnsafe.setMemory(this.root = PUnsafe.allocateMemory(this.nodeSize), this.nodeSize, (byte) 0);
+        this.nodeAlloc = new FragmentedFixedSizeAllocator(this.nodeSize, new DirectMemoryAllocator());
+        //this.nodeAlloc = new DirectMemoryAllocator();
 
-        this.cleaner = PCleaner.cleaner(this, new ReleaseFunction<>(this.root, this.flags, this.children, this.tile_renderData, this.d, this.strategy));
+        PUnsafe.setMemory(this.root = this.nodeAlloc.alloc(this.nodeSize), this.nodeSize, (byte) 0);
+
+        this.cleaner = PCleaner.cleaner(this, new ReleaseFunction<>(this.nodeAlloc, this.root, this.flags, this.children, this.tile_renderData, this.d, this.strategy));
     }
 
     /**
@@ -283,7 +291,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
     protected long createNode(int level, POS pos) {
         notNegative(level, "level");
 
-        long node = PUnsafe.allocateMemory(this.nodeSize);
+        long node = this.nodeAlloc.alloc(this.nodeSize);
         PUnsafe.setMemory(node, this.nodeSize, (byte) 0);
         this.directPosAccess.storePos(pos, node + this.tile_pos);
 
@@ -319,7 +327,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
 
             if (this.removeNode0(level - 1, child, pos)) { //the child node should be removed
                 //release child's memory
-                PUnsafe.freeMemory(child);
+                this.nodeAlloc.free(child);
 
                 //remove reference to child from children array
                 PUnsafe.putLong(node + this.children + this.childIndex(level, pos) * 8L, 0L);
@@ -461,6 +469,8 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
      */
     @RequiredArgsConstructor
     private static final class ReleaseFunction<POS extends IFarPos, T extends IFarTile> implements Runnable {
+        @NonNull
+        protected final Allocator nodeAlloc;
         protected final long root;
         protected final long flags;
         protected final long children;
@@ -488,7 +498,7 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
                 this.strategy.deleteRenderData(node + this.tile_renderData);
             }
 
-            PUnsafe.freeMemory(node);
+            this.nodeAlloc.free(node);
         }
     }
 }
