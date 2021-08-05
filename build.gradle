@@ -114,15 +114,12 @@ dependencies {
     deobfCompile "io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT"
 
     if ("true".equalsIgnoreCase(System.getProperty("idea.sync.active"))) {
-        //intellij is present - we don't want it to register mixin as an annotation processor, so we just add it as a standard dependency
+        //intellij is present - we don't want it to register mixin as an annotation processor, so we just add it as a standard dependency.
+        //  if we don't do this, the intellij annotation processors will get totally screwed up
         compile "org.spongepowered:mixin:$mixinVersion"
     } else {
-        //manually add mixin and all its dependencies to the annotation processor classpath
-        annotationProcessor "com.google.code.gson:gson:2.8.0"
-        annotationProcessor "com.google.guava:guava:21.0"
-        annotationProcessor "org.apache.logging.log4j:log4j-core:2.8.1"
-        annotationProcessor "org.ow2.asm:asm-debug-all:5.2"
-        annotationProcessor "org.spongepowered:mixin:$mixinVersion"
+        //register mixin as a standard annotation processor
+        annotationProcessor "org.spongepowered:mixin:$mixinVersion:processor"
     }
 
     compileOnly "org.projectlombok:lombok:$lombokVersion"
