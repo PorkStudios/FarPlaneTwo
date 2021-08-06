@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -26,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL32.*;
+import static org.lwjgl.opengl.GL43.*;
 
 /**
  * The different types of shaders.
@@ -37,7 +38,8 @@ import static org.lwjgl.opengl.GL32.*;
 public enum ShaderType {
     VERTEX("vert", GL_VERTEX_SHADER),
     GEOMETRY("geom", GL_GEOMETRY_SHADER),
-    FRAGMENT("frag", GL_FRAGMENT_SHADER);
+    FRAGMENT("frag", GL_FRAGMENT_SHADER),
+    COMPUTE("comp", GL_COMPUTE_SHADER);
 
     @NonNull
     protected final String extension;

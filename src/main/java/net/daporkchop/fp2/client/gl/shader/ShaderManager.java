@@ -63,18 +63,23 @@ public class ShaderManager {
                         meta = GSON.fromJson(new UTF8FileReader(in), ProgramMeta.class);
                     }
 
-                    checkState(meta.vert != null, "Program \"%s\" has no vertex shaders!", programName);
-                    if (meta.xfb_varying != null) {
-                        checkState(meta.frag == null, "Program \"%s\" has both fragment shaders and transform feedback outputs!", programName);
+                    if (meta.comp != null) {
+                        checkState(meta.vert == null && meta.frag == null && meta.geom == null, "Program \"%s\" has a compute shader used with other shader types!", programName);
                     } else {
-                        checkState(meta.frag != null, "Program \"%s\" has no fragment shaders!", programName);
+                        checkState(meta.vert != null, "Program \"%s\" has no vertex shaders!", programName);
+                        if (meta.xfb_varying != null) {
+                            checkState(meta.frag == null, "Program \"%s\" has both fragment shaders and transform feedback outputs!", programName);
+                        } else {
+                            checkState(meta.frag != null, "Program \"%s\" has no fragment shaders!", programName);
+                        }
                     }
 
                     return new ShaderProgram(
                             programName,
-                            get(meta.vert, ShaderType.VERTEX),
+                            meta.vert != null ? get(meta.vert, ShaderType.VERTEX) : null,
                             meta.geom != null ? get(meta.geom, ShaderType.GEOMETRY) : null,
                             meta.frag != null ? get(meta.frag, ShaderType.FRAGMENT) : null,
+                            meta.comp != null ? get(meta.comp, ShaderType.COMPUTE) : null,
                             meta.xfb_varying);
                 }
             });
@@ -139,17 +144,22 @@ public class ShaderManager {
                     meta = GSON.fromJson(new UTF8FileReader(in), ProgramMeta.class);
                 }
 
-                checkState(meta.vert != null, "Program \"%s\" has no vertex shaders!", programName);
-                if (meta.xfb_varying != null) {
-                    checkState(meta.frag == null, "Program \"%s\" has both fragment shaders and transform feedback outputs!", programName);
+                if (meta.comp != null) {
+                    checkState(meta.vert == null && meta.frag == null && meta.geom == null, "Program \"%s\" has a compute shader used with other shader types!", programName);
                 } else {
-                    checkState(meta.frag != null, "Program \"%s\" has no fragment shaders!", programName);
+                    checkState(meta.vert != null, "Program \"%s\" has no vertex shaders!", programName);
+                    if (meta.xfb_varying != null) {
+                        checkState(meta.frag == null, "Program \"%s\" has both fragment shaders and transform feedback outputs!", programName);
+                    } else {
+                        checkState(meta.frag != null, "Program \"%s\" has no fragment shaders!", programName);
+                    }
                 }
 
                 program.reload(
-                        get(meta.vert, ShaderType.VERTEX),
+                        meta.vert != null ? get(meta.vert, ShaderType.VERTEX) : null,
                         meta.geom != null ? get(meta.geom, ShaderType.GEOMETRY) : null,
                         meta.frag != null ? get(meta.frag, ShaderType.FRAGMENT) : null,
+                        meta.comp != null ? get(meta.comp, ShaderType.COMPUTE) : null,
                         meta.xfb_varying);
                 shaderCount.incrementAndGet();
             });

@@ -446,7 +446,8 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         if (level == 0 && this.checkFlagsOR(node, FLAG_EMPTY)) { //TODO: remove "level == 0 && "
             //this tile is baked and empty, so we can be sure that none of its children will be non-empty and there's no reason to recurse any further
             return;
-        } else if (level < MAX_LODS //don't do frustum culling on the root node, as it doesn't have a valid position because it's not really "there"
+        } else if (false //don't do frustum culling at all, we want to do it on the GPU
+                   && level < MAX_LODS //don't do frustum culling on the root node, as it doesn't have a valid position because it's not really "there"
                    && !this.directPosAccess.inFrustum(node + this.tile_pos, frustum)) {
             //the frustum doesn't contain this tile's bounding box, so we can be certain that neither
             // this tile nor any of its children would be visible

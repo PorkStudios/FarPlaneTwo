@@ -35,4 +35,6 @@ public class VoxelShaders {
     public static final ShaderProgram BLOCK_SHADER_TRANSFORM_FEEDBACK = ShaderManager.get("voxel/xfb/block");
 
     public static final ShaderProgram STENCIL_SHADER = ShaderManager.get("voxel/stencil");
+
+    public static final ShaderProgram CULL_SHADER = ShaderManager.get("voxel/cull");
 }

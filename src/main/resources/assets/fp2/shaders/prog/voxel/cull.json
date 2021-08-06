@@ -1,0 +1,8 @@
+{
+  "comp": [
+    "common.glsl",
+    "comp/common.comp",
+    "comp/frustum.comp",
+    "comp/voxel/frustum.comp"
+  ]
+}

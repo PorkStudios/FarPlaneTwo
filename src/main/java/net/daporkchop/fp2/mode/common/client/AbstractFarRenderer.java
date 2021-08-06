@@ -79,14 +79,14 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
     public void prepare(float partialTicks, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
         checkGLError("pre fp2 build index");
 
-        this.index.clear();
-        this.bakeManager.tree.select(frustum, this.index);
+        //this.index.clear();
+        //this.bakeManager.tree.select(frustum, this.index);
 
         if (this.index.isEmpty()) {
             return; //nothing to render...
         }
 
-        this.index.doWithValues(this.strategy::prepareRender);
+        //this.index.doWithValues(this.strategy::prepareRender);
         checkGLError("post fp2 prepare");
     }
 
