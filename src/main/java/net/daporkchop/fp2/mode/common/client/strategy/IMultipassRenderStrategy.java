@@ -21,58 +21,23 @@
 package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.FarRenderIndex;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
-import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.TextureMap;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.debug.FP2Debug.*;
-import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author DaPorkchop_
  */
 public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile> extends IFarRenderStrategy<POS, T> {
-    /**
-     * @return an array containing the {@link IDrawCommandBuffer} used for each render pass
-     */
-    IDrawCommandBuffer[][] passes();
-
-    @Override
-    default void prepareRender(long tilev, int tilec) {
-        IDrawCommandBuffer[][] passes = this.passes();
-        checkArg(passes.length == RENDER_PASS_COUNT, "invalid number of render passes: %d (expected %d)", passes.length, RENDER_PASS_COUNT);
-
-        for (IDrawCommandBuffer[] pass : passes) { //begin all passes
-            for (IDrawCommandBuffer buffer : pass) {
-                buffer.begin();
-            }
-        }
-        try {
-            for (long end = tilev + (long) LONG_SIZE * tilec; tilev != end; tilev += LONG_SIZE) { //draw each tile individually
-                this.drawTile(passes, PUnsafe.getLong(tilev));
-            }
-        } finally {
-            for (IDrawCommandBuffer[] pass : passes) { //finish all passes
-                for (IDrawCommandBuffer buffer : pass) {
-                    buffer.close();
-                }
-            }
-        }
-    }
-
-    void drawTile(@NonNull IDrawCommandBuffer[][] passes, long tile);
-
     default void preRender() {
         if (FP2_DEBUG && FP2Config.debug.disableBackfaceCull) {
             GlStateManager.disableCull();
@@ -102,12 +67,23 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         //- render the TRANSPARENT pass at all detail levels at once, using the stencil to not only prevent low-detail from rendering over high-detail, but also fp2 transparent water
         //  from rendering over vanilla water
 
-        for (int level = 0; level < MAX_LODS; level++) {
-            this.renderSolid(index, level);
-            this.renderCutout(index, level);
+        boolean hasAnySolid = index.hasAnyTilesForPass(0);
+        boolean hasAnyCutout = index.hasAnyTilesForPass(1);
+
+        if (hasAnySolid || hasAnyCutout) {
+            for (int level = 0; level < MAX_LODS; level++) {
+                if (hasAnySolid && index.hasAnyTilesForLevel(level)) {
+                    this.renderSolid(index, level);
+                }
+                if (hasAnyCutout && index.hasAnyTilesForLevel(level)) {
+                    this.renderCutout(index, level);
+                }
+            }
         }
 
-        this.renderTransparent(index);
+        if (index.hasAnyTilesForPass(2)) {
+            this.renderTransparent(index);
+        }
 
         this.postRender();
     }
@@ -144,8 +120,10 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
 
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         for (int level = 0; level < MAX_LODS; level++) {
-            glStencilFunc(GL_GEQUAL, 0x80 | (MAX_LODS - level), 0xFF);
-            index.draw(level, 2);
+            if (index.hasAnyTilesForLevel(level)) {
+                glStencilFunc(GL_GEQUAL, 0x80 | (MAX_LODS - level), 0xFF);
+                index.draw(level, 2);
+            }
         }
 
         GlStateManager.depthMask(true);
@@ -162,8 +140,10 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
 
         glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
         for (int level = 0; level < MAX_LODS; level++) {
-            glStencilFunc(GL_EQUAL, 0x80 | (MAX_LODS - level), 0xFF);
-            index.draw(level, 2);
+            if (index.hasAnyTilesForLevel(level)) {
+                glStencilFunc(GL_EQUAL, 0x80 | (MAX_LODS - level), 0xFF);
+                index.draw(level, 2);
+            }
         }
 
         GlStateManager.disableBlend();

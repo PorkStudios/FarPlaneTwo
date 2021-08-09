@@ -22,21 +22,17 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
-import net.daporkchop.fp2.mode.common.client.strategy.IndexedMultidrawMultipassRenderStrategy;
-import net.daporkchop.fp2.mode.heightmap.HeightmapDirectPosAccess;
+import net.daporkchop.fp2.mode.common.client.strategy.IndexedMultidrawRenderStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
-
-import static net.daporkchop.fp2.mode.heightmap.client.HeightmapRenderConstants.*;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractIndexedMultidrawHeightmapRenderStrategy extends IndexedMultidrawMultipassRenderStrategy<HeightmapPos, HeightmapTile> implements IMultipassHeightmapRenderStrategy {
+public abstract class AbstractIndexedMultidrawHeightmapRenderStrategy extends IndexedMultidrawRenderStrategy<HeightmapPos, HeightmapTile> implements IMultipassHeightmapRenderStrategy {
     public AbstractIndexedMultidrawHeightmapRenderStrategy() {
         super(HeightmapBake.VERTEX_FORMAT.size());
     }
@@ -49,14 +45,5 @@ public abstract class AbstractIndexedMultidrawHeightmapRenderStrategy extends In
     @Override
     protected void bakeVertsAndIndices(@NonNull HeightmapPos pos, @NonNull HeightmapTile[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
         HeightmapBake.bakeForShaderDraw(pos, srcs, verts, indices);
-    }
-
-    @Override
-    public void drawTile(@NonNull IDrawCommandBuffer[][] passes, long tile) {
-        long pos = _tile_pos(tile);
-        long renderData = _tile_renderData(tile);
-
-        this.drawTileIndexedMultipass(passes, renderData,
-                HeightmapDirectPosAccess._x(pos), 0, HeightmapDirectPosAccess._z(pos), HeightmapDirectPosAccess._level(pos));
     }
 }

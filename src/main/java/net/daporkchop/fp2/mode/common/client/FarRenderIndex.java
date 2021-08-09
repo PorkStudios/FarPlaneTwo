@@ -32,6 +32,7 @@ import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.shader.ComputeShaderBuilder;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
@@ -51,6 +52,7 @@ import java.util.function.Consumer;
 
 import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -82,6 +84,8 @@ public class FarRenderIndex<POS extends IFarPos> extends AbstractReleasable {
     protected final SimpleSet<POS> renderablePositions;
 
     protected final Level<POS>[] levels;
+
+    protected final long[] tileCountsByPass = new long[RENDER_PASS_COUNT];
 
     public <T extends IFarTile> FarRenderIndex(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T> strategy, @NonNull ComputeShaderBuilder cullShaderBuilder, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray) {
         this.directPosAccess = mode.directPosAccess();
@@ -141,6 +145,14 @@ public class FarRenderIndex<POS extends IFarPos> extends AbstractReleasable {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, COMMANDS_BUFFER_BINDING_INDEX, 0);
     }
 
+    public boolean hasAnyTilesForLevel(int level) {
+        return !this.levels[level].positionsToSlots.isEmpty();
+    }
+
+    public boolean hasAnyTilesForPass(int pass) {
+        return this.tileCountsByPass[pass] != 0L;
+    }
+
     /**
      * Draws a single render pass at the given level.
      *
@@ -149,6 +161,11 @@ public class FarRenderIndex<POS extends IFarPos> extends AbstractReleasable {
      */
     public void draw(int level, int pass) {
         checkIndex(RENDER_PASS_COUNT, pass);
+
+        if (FP2_DEBUG && FP2Config.debug.skipLevel0 && level == 0) { //debug mode: skip level-0 rendering if needed
+            return;
+        }
+
         this.levels[level].draw(pass);
     }
 
@@ -240,7 +257,7 @@ public class FarRenderIndex<POS extends IFarPos> extends AbstractReleasable {
                 //initialize draw commands from renderData
                 this.parent.strategy.toDrawCommands(output.renderData, this.tempCommands);
 
-                if (true || this.parent.renderablePositions.contains(pos)) {
+                if (pos.level() == 0 || this.parent.renderablePositions.contains(pos)) {
                     this.addDrawCommands(slot);
                 }
             }
@@ -253,12 +270,12 @@ public class FarRenderIndex<POS extends IFarPos> extends AbstractReleasable {
 
             if (selectable) {
                 if (this.parent.renderablePositions.add(pos) //we made the tile be renderable, so now we should update the render commands
-                    && slot >= 0L) {
+                    && pos.level() != 0 && slot >= 0L) {
                     this.addDrawCommands(slot);
                 }
             } else {
                 if (this.parent.renderablePositions.remove(pos) //we made the tile be non-renderable, so now we should delete the render commands
-                    && slot >= 0L) {
+                    && pos.level() != 0 && slot >= 0L) {
                     this.eraseDrawCommands(slot);
                 }
             }
@@ -274,15 +291,27 @@ public class FarRenderIndex<POS extends IFarPos> extends AbstractReleasable {
             this.parent.strategy.toDrawCommands(this.datasAddr + slot * this.dataSize, this.tempCommands);
 
             long cmdAddr = this.cmdsAddr + slot * this.cmdEntrySize;
-            for (int i = 0; i < this.tempCommands.length; i++, cmdAddr += this.cmdSize) {
-                DrawElementsIndirectCommand command = this.tempCommands[i];
+            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++, cmdAddr += this.cmdSize) {
+                DrawElementsIndirectCommand command = this.tempCommands[pass];
                 command.baseInstance(toInt(slot, "slot"))
-                        .count(command.count())
                         .store(cmdAddr);
+
+                if (command.count() != 0) {
+                    this.parent.tileCountsByPass[pass]++;
+                }
             }
         }
 
         private void eraseDrawCommands(long slot) {
+            DrawElementsIndirectCommand command = new DrawElementsIndirectCommand();
+            long cmdAddr = this.cmdsAddr + slot * this.cmdEntrySize;
+            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++, cmdAddr += this.cmdSize) {
+                command.load(cmdAddr);
+                if (command.count() != 0) {
+                    this.parent.tileCountsByPass[pass]--;
+                }
+            }
+
             PUnsafe.setMemory(this.cmdsAddr + slot * this.cmdEntrySize, this.cmdEntrySize, (byte) 0);
         }
 
@@ -313,7 +342,7 @@ public class FarRenderIndex<POS extends IFarPos> extends AbstractReleasable {
                 glMemoryBarrier(GL_COMMAND_BARRIER_BIT);
 
                 //actually draw stuff lol
-                    glMultiDrawElementsIndirect(GL_QUADS, GL_UNSIGNED_SHORT, pass * this.cmdSize, toInt(this.capacity), toInt(this.cmdEntrySize));
+                glMultiDrawElementsIndirect(GL_QUADS, GL_UNSIGNED_SHORT, pass * this.cmdSize, toInt(this.capacity), toInt(this.cmdEntrySize));
             }
         }
 

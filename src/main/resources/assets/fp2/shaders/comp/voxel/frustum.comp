@@ -57,7 +57,7 @@ void process(in ivec4 pos, inout DrawElementsIndirectCommand cmds[RENDER_PASS_CO
             vec3(position_relative + vec3(T_VOXELS << pos.w)) - glState.camera.position_fract));
 
     for (int i = 0; i < RENDER_PASS_COUNT; i++) {
-        cmds[i].instanceCount = instanceCount;
+        cmds[i].instanceCount = (-cmds[i].count >> 31) & instanceCount;
     }
 }
 

@@ -85,7 +85,5 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile> ext
     // RENDER METHODS
     //
 
-    void prepareRender(long tilev, int tilec); //haha yes C naming conventions
-
     void render(@NonNull FarRenderIndex<POS> index, @NonNull BlockRenderLayer layer, boolean pre);
 }

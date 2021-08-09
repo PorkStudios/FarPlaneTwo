@@ -22,23 +22,19 @@ package net.daporkchop.fp2.mode.voxel.client;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
 import net.daporkchop.fp2.mode.common.client.FarRenderIndex;
-import net.daporkchop.fp2.mode.common.client.strategy.IndexedMultidrawMultipassRenderStrategy;
-import net.daporkchop.fp2.mode.voxel.VoxelDirectPosAccess;
+import net.daporkchop.fp2.mode.common.client.strategy.IndexedMultidrawRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
-
-import static net.daporkchop.fp2.mode.voxel.client.VoxelRenderConstants.*;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractIndexedMultidrawVoxelRenderStrategy extends IndexedMultidrawMultipassRenderStrategy<VoxelPos, VoxelTile> implements IMultipassVoxelRenderStrategy {
+public abstract class AbstractIndexedMultidrawVoxelRenderStrategy extends IndexedMultidrawRenderStrategy<VoxelPos, VoxelTile> implements IMultipassVoxelRenderStrategy {
     public AbstractIndexedMultidrawVoxelRenderStrategy() {
         super(VoxelBake.VERTEX_FORMAT.size());
     }
@@ -56,14 +52,5 @@ public abstract class AbstractIndexedMultidrawVoxelRenderStrategy extends Indexe
     @Override
     protected void bakeVertsAndIndices(@NonNull VoxelPos pos, @NonNull VoxelTile[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
         VoxelBake.bakeForShaderDraw(pos, srcs, verts, indices);
-    }
-
-    @Override
-    public void drawTile(@NonNull IDrawCommandBuffer[][] passes, long tile) {
-        long pos = _tile_pos(tile);
-        long renderData = _tile_renderData(tile);
-
-        this.drawTileIndexedMultipass(passes, renderData,
-                VoxelDirectPosAccess._x(pos), VoxelDirectPosAccess._y(pos), VoxelDirectPosAccess._z(pos), VoxelDirectPosAccess._level(pos));
     }
 }

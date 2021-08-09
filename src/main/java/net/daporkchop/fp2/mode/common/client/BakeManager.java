@@ -20,7 +20,6 @@
 
 package net.daporkchop.fp2.mode.common.client;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
@@ -33,14 +32,17 @@ import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.daporkchop.fp2.util.threading.keyed.KeyedTaskScheduler;
 import net.daporkchop.fp2.util.threading.keyed.PriorityKeyedTaskScheduler;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
+import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -111,6 +113,8 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     }
 
     protected void bake(@NonNull POS pos) { //this function is called from inside of RENDER_WORKERS, which holds a lock on the position
+        this.checkParentsRenderable(pos);
+
         Compressed<POS, T>[] compressedInputTiles = uncheckedCast(this.tileCache.getTilesCached(this.strategy.bakeInputs(pos)).toArray(Compressed[]::new));
         if (compressedInputTiles[0] == null) { //the tile isn't cached any more
             return;
@@ -141,6 +145,11 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
                 }
             }
         }
+    }
+
+    protected void checkParentsRenderable(@NonNull POS posIn) {
+        PorkUtil.<Stream<POS>>uncheckedCast(posIn.up().allPositionsInBB(1, 1))
+                .forEach(pos -> this.updateRenderable(pos, this.tileCache.getTilesCached(uncheckedCast(pos.down().allPositionsInBB(1, 3))).anyMatch(Objects::isNull)));
     }
 
     protected void updateTree(@NonNull POS pos, @NonNull Optional<BakeOutput> optionalBakeOutput) {
