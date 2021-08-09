@@ -30,7 +30,6 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.util.datastructure.DirectLongStack;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.BlockRenderLayer;
@@ -52,7 +51,6 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
 
     protected final GLBuffer drawCommandBuffer = new GLBuffer(GL_STREAM_DRAW);
 
-    protected final DirectLongStack index = new DirectLongStack();
     protected final IFarRenderStrategy<POS, T> strategy;
 
     public AbstractFarRenderer(@NonNull IFarClientContext<POS, T> context) {
@@ -79,24 +77,17 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
     public void prepare(float partialTicks, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
         checkGLError("pre fp2 build index");
 
-        //this.index.clear();
-        //this.bakeManager.tree.select(frustum, this.index);
+        this.bakeManager.index.select(frustum, partialTicks);
 
-        if (this.index.isEmpty()) {
-            return; //nothing to render...
-        }
-
-        //this.index.doWithValues(this.strategy::prepareRender);
         checkGLError("post fp2 prepare");
     }
 
     @Override
     public void render(@NonNull Minecraft mc, @NonNull BlockRenderLayer layer, boolean pre) {
-        if (this.index.isEmpty()) {
-            return; //nothing to render...
-        }
+        checkGLError("pre fp2 render");
 
-        this.strategy.render(layer, pre);
+        this.strategy.render(this.bakeManager.index, layer, pre);
+
         checkGLError("post fp2 render");
     }
 

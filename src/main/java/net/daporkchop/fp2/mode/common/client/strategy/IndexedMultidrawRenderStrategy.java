@@ -22,15 +22,17 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.commandbuffer.FrustumCulledIndirectIndexedMultidrawCommandBuffer;
-import net.daporkchop.fp2.client.gl.object.IGLBuffer;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
+import net.daporkchop.fp2.client.gl.commandbuffer.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.commandbuffer.IndirectIndexedMultidrawCommandBuffer;
+import net.daporkchop.fp2.client.gl.object.IGLBuffer;
+import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
-import net.daporkchop.fp2.mode.voxel.client.VoxelShaders;
+
+import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -42,11 +44,25 @@ public abstract class IndexedMultidrawRenderStrategy<POS extends IFarPos, T exte
 
     @Override
     public IDrawCommandBuffer createCommandBuffer() {
-        return new FrustumCulledIndirectIndexedMultidrawCommandBuffer(vao -> this.configureVertexAttributes(this.vertices, vao), this.indices, VoxelShaders.CULL_SHADER);
+        return new IndirectIndexedMultidrawCommandBuffer(vao -> this.configureVertexAttributes(this.vertices, vao), this.indices);
     }
 
     protected abstract void configureVertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao);
 
     @Override
     protected abstract void bakeVertsAndIndices(@NonNull POS pos, @NonNull T[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices);
+
+    @Override
+    public void toDrawCommands(long renderData, @NonNull DrawElementsIndirectCommand[] commands) {
+        int baseVertex = toInt(_renderdata_vertexOffset(renderData));
+        int firstIndex = toInt(_renderdata_indexOffset(renderData));
+
+        for (int i = 0; i < RENDER_PASS_COUNT; i++) {
+            int count = _renderdata_indexCount(renderData, i);
+            commands[i].baseVertex(baseVertex)
+                    .firstIndex(firstIndex)
+                    .count(count);
+            firstIndex += count;
+        }
+    }
 }

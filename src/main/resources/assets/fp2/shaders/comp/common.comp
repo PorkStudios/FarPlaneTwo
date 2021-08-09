@@ -17,3 +17,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
+
+//
+//
+// INPUTS
+//
+//
+
+/*
+ * builtins:
+ *
+ * in uvec3 gl_NumWorkGroups;
+ * in uvec3 gl_WorkGroupID;
+ * in uvec3 gl_LocalInvocationID;
+ * in uvec3 gl_GlobalInvocationID;
+ * in uint  gl_LocalInvocationIndex;
+ */

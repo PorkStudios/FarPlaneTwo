@@ -89,4 +89,72 @@ public class MathUtil {
     public static double minimize(double d0, double d1) {
         return d0 / (d0 - d1);
     }
+
+    /**
+     * Interleaves the bits of 2 {@code int}s.
+     * <p>
+     * Note that this will discard the upper 16 bits of all parameters.
+     * <p>
+     * Based on <a href="https://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN">Bit Twiddling Hacks - Interleave bits by Binary Magic Numbers</a>.
+     *
+     * @return the interleaved bits
+     */
+    public static int interleaveBits(int i0, int i1) {
+        return spreadBits1(i0) | (spreadBits1(i1) << 1);
+    }
+
+    /**
+     * Interleaves the bits of 3 {@code int}s.
+     * <p>
+     * Note that this will discard the upper 22 bits of all parameters.
+     * <p>
+     * Based on <a href="https://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN">Bit Twiddling Hacks - Interleave bits by Binary Magic Numbers</a>.
+     *
+     * @return the interleaved bits
+     */
+    public static int interleaveBits(int i0, int i1, int i2) {
+        return spreadBits2(i0) | (spreadBits2(i1) << 1) | (spreadBits2(i2) << 2);
+    }
+
+    /**
+     * Inserts a single bit between every bit in the input parameter.
+     * <p>
+     * Note that this will discard the upper 16 bits of the parameter.
+     * <p>
+     * Based on <a href="https://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN">Bit Twiddling Hacks - Interleave bits by Binary Magic Numbers</a>.
+     *
+     * @return the spread bits
+     */
+    public static int spreadBits1(int i) {
+        //clear upper bits
+        i &= (1 << 16) - 1;
+
+        //basically magic
+        i = (i | (i << 8)) & 0x00FF00FF;
+        i = (i | (i << 4)) & 0x0F0F0F0F;
+        i = (i | (i << 2)) & 0x33333333;
+        i = (i | (i << 1)) & 0x55555555;
+        return i;
+    }
+
+    /**
+     * Inserts two bits between every bit in the input parameter.
+     * <p>
+     * Note that this will discard the upper 22 bits of the parameter.
+     * <p>
+     * Based on <a href="https://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN">Bit Twiddling Hacks - Interleave bits by Binary Magic Numbers</a>.
+     *
+     * @return the spread bits
+     */
+    public static int spreadBits2(int i) {
+        //clear upper bits
+        i &= (1 << 10) - 1;
+
+        //basically magic
+        i = (i | (i << 16)) & 0x00FF00FF;
+        i = (i | (i << 8)) & 0x0300F00F;
+        i = (i | (i << 4)) & 0x030C30C3;
+        i = (i | (i << 2)) & 0x09249249;
+        return i;
+    }
 }

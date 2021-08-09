@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-$today.year DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,50 +18,48 @@
  *
  */
 
-//
-//
-// BUFFERS
-//
-//
+package net.daporkchop.fp2.client.gl;
 
-//Commands
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 
-layout(std430, binding = 3) buffer POSITIONS {
-    ivec4 positions[];
-};
+import static net.daporkchop.lib.common.util.PValidation.*;
 
-struct DrawElementsIndirectCommand {
-    int count;
-    int instanceCount;
-    int firstIndex;
-    int baseVertex;
-    int baseInstance;
-};
+/**
+ * Defines the size of a compute shader work group.
+ *
+ * @author DaPorkchop_
+ */
+@Getter
+@ToString
+@EqualsAndHashCode
+public final class WorkGroupSize implements Comparable<WorkGroupSize> {
+    private final int x;
+    private final int y;
+    private final int z;
 
-layout(std430, binding = 4) buffer COMMANDS {
-    DrawElementsIndirectCommand commands[][RENDER_PASS_COUNT];
-};
-
-//
-//
-// CODE
-//
-//
-
-void process(in ivec4 pos, inout DrawElementsIndirectCommand cmds[RENDER_PASS_COUNT]) {
-    ivec3 position_absolute = ivec3(pos.x, pos.y, pos.z) << (T_SHIFT + pos.w);
-    ivec3 position_relative = position_absolute - glState.camera.position_floor;
-
-    int instanceCount = int(isBoxInFrustum(
-            vec3(position_relative) - glState.camera.position_fract,
-            vec3(position_relative + vec3(T_VOXELS << pos.w)) - glState.camera.position_fract));
-
-    for (int i = 0; i < RENDER_PASS_COUNT; i++) {
-        cmds[i].instanceCount = instanceCount;
+    public WorkGroupSize(int x, int y, int z) {
+        this.x = positive(x, "x");
+        this.y = positive(y, "y");
+        this.z = positive(z, "z");
     }
-}
 
-void main() {
-    uint idx = gl_WorkGroupID.x + gl_LocalInvocationIndex;
-    process(positions[idx], commands[idx]);
+    /**
+     * @return the total number of shader invocations per work group
+     */
+    public int totalSize() {
+        return this.x * this.y * this.z;
+    }
+
+    @Override
+    public int compareTo(WorkGroupSize o) {
+        int d;
+        if ((d = Integer.compare(this.totalSize(), o.totalSize())) == 0
+            && (d = Integer.compare(this.x, o.x)) == 0
+            && (d = Integer.compare(this.y, o.y)) == 0) {
+            d = Integer.compare(this.z, o.z);
+        }
+        return d;
+    }
 }

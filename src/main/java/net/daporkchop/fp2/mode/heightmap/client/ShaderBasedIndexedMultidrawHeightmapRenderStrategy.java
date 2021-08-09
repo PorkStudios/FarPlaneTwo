@@ -22,6 +22,8 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.DrawMode;
+import net.daporkchop.fp2.mode.common.client.FarRenderIndex;
+import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.util.BlockRenderLayer;
@@ -33,12 +35,12 @@ import static net.daporkchop.fp2.client.ClientConstants.*;
  */
 public class ShaderBasedIndexedMultidrawHeightmapRenderStrategy extends AbstractIndexedMultidrawHeightmapRenderStrategy implements IShaderBasedMultipassHeightmapRenderStrategy {
     @Override
-    public void render(@NonNull BlockRenderLayer layer, boolean pre) {
+    public void render(@NonNull FarRenderIndex<HeightmapPos> index, @NonNull BlockRenderLayer layer, boolean pre) {
         if (layer == BlockRenderLayer.CUTOUT && !pre) {
             ((AbstractTexture) mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE)).setBlurMipmapDirect(false, mc.gameSettings.mipmapLevels > 0);
 
             try (DrawMode mode = DrawMode.SHADER.begin()) {
-                this.render();
+                this.render(index);
             }
 
             mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();

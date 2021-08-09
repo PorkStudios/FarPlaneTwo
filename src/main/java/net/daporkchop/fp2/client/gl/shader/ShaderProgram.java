@@ -46,7 +46,7 @@ public final class ShaderProgram implements AutoCloseable {
     protected final AtomicInteger idReference = new AtomicInteger();
 
     /**
-     * Creates a new shader program by attaching the given vertex shader with the given fragment shader.
+     * Creates a new shader program by linking the given shaders with each other.
      *
      * @param name the program's name
      * @param vert the vertex shader

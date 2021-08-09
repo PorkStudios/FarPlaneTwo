@@ -24,6 +24,7 @@ import net.daporkchop.lib.common.math.PMath;
 
 import static java.lang.Math.*;
 import static net.daporkchop.lib.common.math.PMath.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Allocates memory regions in an arbitrary address space.
@@ -37,16 +38,26 @@ public interface Allocator {
      * Allocates a region of the given size.
      *
      * @param size the size of the region to allocate
-     * @return the address of the allocated region
+     * @return the starting address of the allocated region
      */
     long alloc(long size);
 
     /**
-     * Frees an allocated region.
-     * <p>
-     * If the same region is freed multiple times, the behavior is undefined.
+     * Modifies the size of an existing region.
      *
-     * @param address the address of the region to free (as returned by {@link #alloc(long)})
+     * @param address the starting address of the region to free. Once re-allocated, this address is no longer valid and must be replaced with the new one.
+     * @param size    the region's new size. If less than the current size, the region's contents will be truncated. If greater than the current size, the region's
+     *                contents will be extended with undefined data.
+     * @return the new starting address of the re-allocated region
+     */
+    default long realloc(long address, long size) {
+        throw new UnsupportedOperationException(className(this));
+    }
+
+    /**
+     * Frees an allocated region.
+     *
+     * @param address the starting address of the region to free
      */
     void free(long address);
 
@@ -57,12 +68,21 @@ public interface Allocator {
      */
     @FunctionalInterface
     interface GrowFunction {
-        GrowFunction DEFAULT = (oldCapacity, increment) -> {
-            final long STEP = 1 << 24L; // 16 MiB
-            final double SQRT2 = 1.4142135623730951d; //approximately sqrt(2)
+        GrowFunction DEFAULT = sqrt2(1 << 24L); // 16MiB
 
-            return PMath.roundUp(max(oldCapacity + increment, ceilL(oldCapacity * SQRT2)), STEP);
-        };
+        /**
+         * Gets a simple {@link GrowFunction} which grows the heap by multiples of {@code sqrt(2)}, rounded up to a given step.
+         *
+         * @param step the step size to round heap sizes to
+         * @return a {@link GrowFunction} with the given step
+         */
+        static GrowFunction sqrt2(long step) {
+            return (oldCapacity, increment) -> {
+                final double SQRT2 = 1.4142135623730951d; //approximately sqrt(2)
+
+                return PMath.roundUp(max(oldCapacity + increment, ceilL(oldCapacity * SQRT2)), step);
+            };
+        }
 
         /**
          * Computes the new capacity to grow to.

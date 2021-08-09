@@ -46,6 +46,8 @@
 #define T_VOXELS (1 << T_SHIFT)
 #define T_VERTS (T_VOXELS + 1)
 
+#define RENDER_PASS_COUNT (3)
+
 //
 //
 // UNIFORMS

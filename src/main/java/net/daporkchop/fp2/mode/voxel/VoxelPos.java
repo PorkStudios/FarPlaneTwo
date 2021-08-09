@@ -180,6 +180,11 @@ public class VoxelPos implements IFarPos {
     }
 
     @Override
+    public int localHash() {
+        return interleaveBits(this.x, this.y, this.z);
+    }
+
+    @Override
     public int compareTo(IFarPos posIn) {
         int d = Integer.compare(this.level, posIn.level());
         if (d == 0) {

@@ -22,6 +22,9 @@ package net.daporkchop.fp2.mode.api;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
+import net.daporkchop.fp2.client.gl.object.IGLBuffer;
+import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
+import net.daporkchop.fp2.util.datastructure.SimpleSet;
 import net.daporkchop.fp2.util.math.geometry.Volume;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -32,6 +35,11 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  * @author DaPorkchop_
  */
 public interface IFarDirectPosAccess<POS extends IFarPos> {
+    /**
+     * @return the number of spatial dimensions required to represent this position
+     */
+    int axisCount();
+
     /**
      * @return the off-heap size of a position, in bytes
      */
@@ -54,11 +62,6 @@ public interface IFarDirectPosAccess<POS extends IFarPos> {
     POS loadPos(long addr);
 
     /**
-     * @return the number of spatial dimensions required to represent this position
-     */
-    int axisCount();
-
-    /**
      * Gets the position's offset along the given axis.
      *
      * @param pos  the position
@@ -75,6 +78,35 @@ public interface IFarDirectPosAccess<POS extends IFarPos> {
      * @return the position's offset along the given axis
      */
     int getAxisDirect(long addr, int axis);
+
+    /**
+     * Checks the positions at the given memory addresses for equality.
+     * <p>
+     * Functionally identical to {@code loadPos(addr1).equals(loadPos(addr2))}.
+     *
+     * @return whether or not the two positions are equal
+     */
+    boolean equalsPos(long addr1, long addr2);
+
+    /**
+     * Hashes the position at the given memory address.
+     * <p>
+     * Functionally identical to {@code loadPos(addr).localHash()}.
+     *
+     * @param addr the memory address
+     * @return the position's hash
+     */
+    int hashPos(long addr);
+
+    /**
+     * Hashes the position at the given memory address.
+     * <p>
+     * Functionally identical to {@code loadPos(addr).hashCode()}.
+     *
+     * @param addr the memory address
+     * @return the position's locality-sensitive hash
+     */
+    int localHashPos(long addr);
 
     /**
      * Checks whether or not the tile at the given position intersects the given volume.
@@ -114,4 +146,18 @@ public interface IFarDirectPosAccess<POS extends IFarPos> {
      */
     @SideOnly(Side.CLIENT)
     boolean isVanillaRenderable(long addr);
+
+    /**
+     * Adds some number of vertex attributes to the given {@link VertexArrayObject} in order to be able to represent a position supported by this {@link IFarDirectPosAccess}.
+     *
+     * @see VertexArrayObject#attrI(IGLBuffer, int, int, int, int, int)
+     * @see VertexArrayObject#attrF(IGLBuffer, int, int, boolean, int, int, int)
+     */
+    @SideOnly(Side.CLIENT)
+    void configureVAO(@NonNull VertexArrayObject vao, @NonNull IGLBuffer buffer, int stride, int offset, int divisor);
+
+    /**
+     * @return a new {@link SimpleSet} which can store positions of type {@link POS}
+     */
+    SimpleSet<POS> newPositionSet();
 }

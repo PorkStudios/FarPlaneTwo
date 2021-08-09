@@ -18,18 +18,60 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.shader;
+package net.daporkchop.fp2.util.datastructure;
+
+import lombok.NonNull;
+
+import java.util.Set;
 
 /**
- * Metadata for a shader program.
+ * Alternative to {@link Set} with a much simpler API.
  *
  * @author DaPorkchop_
  */
-final class ProgramMeta {
-    public String[] vert;
-    public String[] geom;
-    public String[] frag;
-    public String[] comp;
+public interface SimpleSet<E> extends IDatastructure<SimpleSet<E>> {
+    /**
+     * @return the number of points in this set
+     */
+    long count();
 
-    public String[] xfb_varying;
+    /**
+     * @return whether or not this set is empty
+     */
+    default boolean isEmpty() {
+        return this.count() == 0L;
+    }
+
+    /**
+     * Removes every point in this set.
+     */
+    void clear();
+
+    //
+    // generic methods
+    //
+
+    /**
+     * Adds the given value to this set.
+     *
+     * @param value the value to add
+     * @return whether or not this set was modified as a result of this change
+     */
+    boolean add(@NonNull E value);
+
+    /**
+     * Removes the given value from this set.
+     *
+     * @param value the value to remove
+     * @return whether or not this set was modified as a result of this change
+     */
+    boolean remove(@NonNull E value);
+
+    /**
+     * Checks whether or not this set contains the given value.
+     *
+     * @param value the value to check for
+     * @return whether or not this set contains the given point
+     */
+    boolean contains(@NonNull E value);
 }

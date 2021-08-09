@@ -25,6 +25,7 @@ import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.common.client.FarRenderIndex;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.renderer.GlStateManager;
@@ -92,7 +93,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         }
     }
 
-    default void render() {
+    default void render(@NonNull FarRenderIndex<POS> index) {
         this.preRender();
 
         //in order to properly render overlapping layers while ensuring that low-detail levels always get placed on top of high-detail ones, we'll need to do the following:
@@ -101,51 +102,50 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         //- render the TRANSPARENT pass at all detail levels at once, using the stencil to not only prevent low-detail from rendering over high-detail, but also fp2 transparent water
         //  from rendering over vanilla water
 
-        IDrawCommandBuffer[][] passes = this.passes();
         for (int level = 0; level < MAX_LODS; level++) {
-            this.renderSolid(passes[0][level], level);
-            this.renderCutout(passes[1][level], level);
+            this.renderSolid(index, level);
+            this.renderCutout(index, level);
         }
 
-        this.renderTransparent(passes[2]);
+        this.renderTransparent(index);
 
         this.postRender();
     }
 
-    default void renderSolid(@NonNull IDrawCommandBuffer draw, int level) {
+    default void renderSolid(@NonNull FarRenderIndex<POS> index, int level) {
         GlStateManager.disableAlpha();
 
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         glStencilFunc(GL_LEQUAL, level, 0x7F);
-        draw.draw();
+        index.draw(level, 0);
 
         GlStateManager.enableAlpha();
     }
 
-    default void renderCutout(@NonNull IDrawCommandBuffer draw, int level) {
+    default void renderCutout(@NonNull FarRenderIndex<POS> index, int level) {
         mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
 
         glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
         glStencilFunc(GL_LEQUAL, level, 0x7F);
-        draw.draw();
+        index.draw(level, 1);
 
         mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
     }
 
-    default void renderTransparent(@NonNull IDrawCommandBuffer[] draw) {
-        this.renderTransparentStencilPass(draw);
-        this.renderTransparentFragmentPass(draw);
+    default void renderTransparent(FarRenderIndex<POS> index) {
+        this.renderTransparentStencilPass(index);
+        this.renderTransparentFragmentPass(index);
     }
 
-    default void renderTransparentStencilPass(@NonNull IDrawCommandBuffer[] draw) {
+    default void renderTransparentStencilPass(@NonNull FarRenderIndex<POS> index) {
         GlStateManager.colorMask(false, false, false, false);
 
         GlStateManager.depthMask(false);
 
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        for (int level = 0; level < draw.length; level++) {
-            glStencilFunc(GL_GEQUAL, 0x80 | (draw.length - level), 0xFF);
-            draw[level].draw();
+        for (int level = 0; level < MAX_LODS; level++) {
+            glStencilFunc(GL_GEQUAL, 0x80 | (MAX_LODS - level), 0xFF);
+            index.draw(level, 2);
         }
 
         GlStateManager.depthMask(true);
@@ -153,7 +153,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         GlStateManager.colorMask(true, true, true, true);
     }
 
-    default void renderTransparentFragmentPass(@NonNull IDrawCommandBuffer[] draw) {
+    default void renderTransparentFragmentPass(@NonNull FarRenderIndex<POS> index) {
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
         GlStateManager.alphaFunc(GL_GREATER, 0.1f);
@@ -161,9 +161,9 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         glStencilMask(0);
 
         glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-        for (int level = 0; level < draw.length; level++) {
-            glStencilFunc(GL_EQUAL, 0x80 | (draw.length - level), 0xFF);
-            draw[level].draw();
+        for (int level = 0; level < MAX_LODS; level++) {
+            glStencilFunc(GL_EQUAL, 0x80 | (MAX_LODS - level), 0xFF);
+            index.draw(level, 2);
         }
 
         GlStateManager.disableBlend();

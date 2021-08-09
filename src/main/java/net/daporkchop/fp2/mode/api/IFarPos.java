@@ -122,6 +122,11 @@ public interface IFarPos extends Comparable<IFarPos> {
     Stream<? extends IFarPos> allPositionsInBB(int offsetMin, int offsetMax);
 
     /**
+     * @return a locality-sensitive hash of this position
+     */
+    int localHash();
+
+    /**
      * Compares two positions in some arbitrary manner.
      * <p>
      * The function may be implemented in any way, but must be consistent and must only return {@code 0} for positions that are also considered

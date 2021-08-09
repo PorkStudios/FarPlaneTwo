@@ -27,15 +27,15 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.debug.util.DebugUtils;
 import net.daporkchop.lib.binary.oio.StreamUtil;
-import net.daporkchop.lib.binary.oio.reader.UTF8FileReader;
-import net.daporkchop.lib.common.function.io.IOBiConsumer;
 import net.daporkchop.lib.common.function.io.IOFunction;
 import net.daporkchop.lib.common.misc.string.PStrings;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Collections;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -52,37 +52,21 @@ import static org.lwjgl.opengl.GL20.*;
 public class ShaderManager {
     protected final String BASE_PATH = "/assets/fp2/shaders";
 
-    protected final LoadingCache<String, ShaderProgram> SHADER_CACHE = CacheBuilder.newBuilder()
+    protected final LoadingCache<AbstractShaderBuilder, ShaderProgram> SHADER_CACHE = CacheBuilder.newBuilder()
             .weakValues()
-            .build(new CacheLoader<String, ShaderProgram>() {
-                @Override
-                public ShaderProgram load(String programName) throws Exception {
-                    ProgramMeta meta;
-                    try (InputStream in = ShaderManager.class.getResourceAsStream(PStrings.fastFormat("%s/prog/%s.json", BASE_PATH, programName))) {
-                        checkArg(in != null, "Unable to find shader meta file: \"%s/prog/%s.json\"!", BASE_PATH, programName);
-                        meta = GSON.fromJson(new UTF8FileReader(in), ProgramMeta.class);
-                    }
+            .build(CacheLoader.from(AbstractShaderBuilder::supply));
 
-                    if (meta.comp != null) {
-                        checkState(meta.vert == null && meta.frag == null && meta.geom == null, "Program \"%s\" has a compute shader used with other shader types!", programName);
-                    } else {
-                        checkState(meta.vert != null, "Program \"%s\" has no vertex shaders!", programName);
-                        if (meta.xfb_varying != null) {
-                            checkState(meta.frag == null, "Program \"%s\" has both fragment shaders and transform feedback outputs!", programName);
-                        } else {
-                            checkState(meta.frag != null, "Program \"%s\" has no fragment shaders!", programName);
-                        }
-                    }
+    protected String headers(@NonNull Map<String, String> defines) {
+        return defines.entrySet().stream().map(e -> "#define " + e.getKey() + " (" + e.getValue() + ")\n").collect(Collectors.joining());
+    }
 
-                    return new ShaderProgram(
-                            programName,
-                            meta.vert != null ? get(meta.vert, ShaderType.VERTEX) : null,
-                            meta.geom != null ? get(meta.geom, ShaderType.GEOMETRY) : null,
-                            meta.frag != null ? get(meta.frag, ShaderType.FRAGMENT) : null,
-                            meta.comp != null ? get(meta.comp, ShaderType.COMPUTE) : null,
-                            meta.xfb_varying);
-                }
-            });
+    public ShaderBuilder shaderBuilder(@NonNull String programName) {
+        return new ShaderBuilder(programName, Collections.emptyMap());
+    }
+
+    public ComputeShaderBuilder computeShaderBuilder(@NonNull String programName) {
+        return new ComputeShaderBuilder(programName, Collections.emptyMap(), null);
+    }
 
     /**
      * Obtains a shader program with the given name.
@@ -90,13 +74,16 @@ public class ShaderManager {
      * @param programName the name of the shader to get
      * @return the shader program with the given name
      */
+    @Deprecated
     public ShaderProgram get(@NonNull String programName) {
-        return SHADER_CACHE.getUnchecked(programName);
+        return shaderBuilder(programName).link();
     }
 
-    protected Shader get(@NonNull String[] names, @NonNull ShaderType type) {
+    protected Shader get(@NonNull String[] names, @NonNull String headers, @NonNull ShaderType type) {
         return new Shader(type, names, Stream.concat(
-                Stream.of("#version 430 core\n"), //add version prefix
+                Stream.of(
+                        "#version 430 core\n", //add version prefix
+                        headers),
                 Arrays.stream(names)
                         .map((IOFunction<String, String>) fileName -> {
                             try (InputStream in = ShaderManager.class.getResourceAsStream(BASE_PATH + '/' + fileName)) {
@@ -136,37 +123,21 @@ public class ShaderManager {
 
     public void reload() {
         try {
-            AtomicInteger shaderCount = new AtomicInteger();
-            SHADER_CACHE.asMap().forEach((IOBiConsumer<String, ShaderProgram>) (programName, program) -> {
-                ProgramMeta meta;
-                try (InputStream in = ShaderManager.class.getResourceAsStream(PStrings.fastFormat("%s/prog/%s.json", BASE_PATH, programName))) {
-                    checkArg(in != null, "Unable to find shader meta file: \"%s/prog/%s.json\"!", BASE_PATH, programName);
-                    meta = GSON.fromJson(new UTF8FileReader(in), ProgramMeta.class);
-                }
-
-                if (meta.comp != null) {
-                    checkState(meta.vert == null && meta.frag == null && meta.geom == null, "Program \"%s\" has a compute shader used with other shader types!", programName);
-                } else {
-                    checkState(meta.vert != null, "Program \"%s\" has no vertex shaders!", programName);
-                    if (meta.xfb_varying != null) {
-                        checkState(meta.frag == null, "Program \"%s\" has both fragment shaders and transform feedback outputs!", programName);
-                    } else {
-                        checkState(meta.frag != null, "Program \"%s\" has no fragment shaders!", programName);
-                    }
-                }
-
-                program.reload(
-                        meta.vert != null ? get(meta.vert, ShaderType.VERTEX) : null,
-                        meta.geom != null ? get(meta.geom, ShaderType.GEOMETRY) : null,
-                        meta.frag != null ? get(meta.frag, ShaderType.FRAGMENT) : null,
-                        meta.comp != null ? get(meta.comp, ShaderType.COMPUTE) : null,
-                        meta.xfb_varying);
-                shaderCount.incrementAndGet();
-            });
-            DebugUtils.clientMsg("§a" + shaderCount.get() + " shaders successfully reloaded.");
+            SHADER_CACHE.asMap().forEach(AbstractShaderBuilder::reload);
+            DebugUtils.clientMsg("§a" + SHADER_CACHE.size() + " shaders successfully reloaded.");
         } catch (Exception e) {
             FP2_LOG.error("shader reload failed", e);
             DebugUtils.clientMsg("§cshaders reload failed (check console).");
         }
+    }
+
+    protected static abstract class AbstractShaderBuilder {
+        public ShaderProgram link() {
+            return SHADER_CACHE.getUnchecked(this);
+        }
+
+        protected abstract ShaderProgram supply();
+
+        protected abstract void reload(@NonNull ShaderProgram program);
     }
 }

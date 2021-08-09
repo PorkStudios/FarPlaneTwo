@@ -33,9 +33,9 @@ import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-import org.lwjgl.opengl.GLContext;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.compat.of.OFHelper.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -53,7 +53,7 @@ public class FP2Client {
      * Called during {@link FMLPreInitializationEvent}.
      */
     public void preInit() {
-        if (!GLContext.getCapabilities().OpenGL45) { //require at least OpenGL 4.5
+        if (!OPENGL_45) { //require at least OpenGL 4.5
             unsupported("Your system does not support OpenGL 4.5!\nRequired by FarPlaneTwo.");
         }
 

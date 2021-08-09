@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-$today.year DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,50 +18,30 @@
  *
  */
 
-//
-//
-// BUFFERS
-//
-//
+package net.daporkchop.fp2.client.gl.commandbuffer;
 
-//Commands
+/**
+ * Represents an OpenGL indirect draw command.
+ *
+ * @author DaPorkchop_
+ */
+public interface DrawIndirectCommand {
+    /**
+     * @return whether or not this will work
+     */
+    long size();
 
-layout(std430, binding = 3) buffer POSITIONS {
-    ivec4 positions[];
-};
+    /**
+     * Loads this command into this object instance from the given off-heap memory address.
+     *
+     * @param addr the memory address to load from
+     */
+    void load(long addr);
 
-struct DrawElementsIndirectCommand {
-    int count;
-    int instanceCount;
-    int firstIndex;
-    int baseVertex;
-    int baseInstance;
-};
-
-layout(std430, binding = 4) buffer COMMANDS {
-    DrawElementsIndirectCommand commands[][RENDER_PASS_COUNT];
-};
-
-//
-//
-// CODE
-//
-//
-
-void process(in ivec4 pos, inout DrawElementsIndirectCommand cmds[RENDER_PASS_COUNT]) {
-    ivec3 position_absolute = ivec3(pos.x, pos.y, pos.z) << (T_SHIFT + pos.w);
-    ivec3 position_relative = position_absolute - glState.camera.position_floor;
-
-    int instanceCount = int(isBoxInFrustum(
-            vec3(position_relative) - glState.camera.position_fract,
-            vec3(position_relative + vec3(T_VOXELS << pos.w)) - glState.camera.position_fract));
-
-    for (int i = 0; i < RENDER_PASS_COUNT; i++) {
-        cmds[i].instanceCount = instanceCount;
-    }
-}
-
-void main() {
-    uint idx = gl_WorkGroupID.x + gl_LocalInvocationIndex;
-    process(positions[idx], commands[idx]);
+    /**
+     * Stores this command to the given off-heap memory address.
+     *
+     * @param addr the memory address to store to
+     */
+    void store(long addr);
 }

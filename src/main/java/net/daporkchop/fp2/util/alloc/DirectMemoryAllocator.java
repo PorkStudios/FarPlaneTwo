@@ -20,12 +20,12 @@
 
 package net.daporkchop.fp2.util.alloc;
 
+import it.unimi.dsi.fastutil.longs.Long2LongMap;
+import it.unimi.dsi.fastutil.longs.Long2LongMaps;
+import it.unimi.dsi.fastutil.longs.Long2LongRBTreeMap;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
-
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -38,22 +38,52 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public final class DirectMemoryAllocator implements Allocator {
-    protected final Set<Long> addresses = ConcurrentHashMap.newKeySet();
+    protected final Long2LongMap allocations = Long2LongMaps.synchronize(new Long2LongRBTreeMap());
+
+    protected final boolean zero;
 
     public DirectMemoryAllocator() {
-        PCleaner.cleaner(this, new Releaser(this.addresses));
+        this(false);
+    }
+
+    /**
+     * @param zero whether or not uninitialized memory should be zeroed out
+     */
+    public DirectMemoryAllocator(boolean zero) {
+        this.allocations.defaultReturnValue(-1L);
+        PCleaner.cleaner(this, new Releaser(this.allocations));
+
+        this.zero = zero;
     }
 
     @Override
     public long alloc(long size) {
-        long addr = PUnsafe.allocateMemory(positive(size, "size"));
-        this.addresses.add(addr);
+        long addr = PUnsafe.allocateMemory(notNegative(size, "size"));
+        this.allocations.put(addr, size);
+
+        if (this.zero) { //initialize all memory to zero
+            PUnsafe.setMemory(addr, size, (byte) 0);
+        }
         return addr;
     }
 
     @Override
+    public long realloc(long address, long size) {
+        notNegative(size, "size");
+        long oldSize = this.allocations.remove(address);
+        checkArg(oldSize >= 0L, "can't reallocate address 0x016x (which isn't owned by this allocator)", address);
+        address = PUnsafe.reallocateMemory(address, size);
+        this.allocations.put(address, size);
+
+        if (this.zero && oldSize < size) { //initialize new portion of memory to zero
+            PUnsafe.setMemory(address + oldSize, size - oldSize, (byte) 0);
+        }
+        return address;
+    }
+
+    @Override
     public void free(long address) {
-        checkArg(this.addresses.remove(address), "can't free address 0x016x (which isn't owned by this allocator)", address);
+        checkArg(this.allocations.remove(address) >= 0L, "can't free address 0x016x (which isn't owned by this allocator)", address);
         PUnsafe.freeMemory(address);
     }
 
@@ -64,16 +94,17 @@ public final class DirectMemoryAllocator implements Allocator {
      */
     @RequiredArgsConstructor
     private static final class Releaser implements Runnable {
-        protected final Set<Long> addresses;
+        protected final Long2LongMap allocations;
 
         @Override
         public void run() {
-            if (this.addresses.isEmpty()) { //nothing to do
+            if (this.allocations.isEmpty()) { //nothing to do
                 return;
             }
 
-            bigWarning("{} memory blocks allocated by {} were not freed!", this.addresses.size(), DirectMemoryAllocator.class.getCanonicalName());
-            this.addresses.forEach(PUnsafe::freeMemory);
+            bigWarning("{} memory blocks allocated by {} (totalling {} bytes) were not freed!",
+                    this.allocations.size(), this.allocations.values().stream().mapToLong(Long::longValue).sum(), DirectMemoryAllocator.class.getCanonicalName());
+            this.allocations.keySet().forEach(PUnsafe::freeMemory);
         }
     }
 }

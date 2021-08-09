@@ -23,6 +23,7 @@ package net.daporkchop.fp2.client;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
+import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -66,8 +67,24 @@ public class ShaderClippingStateHelper {
 
     private final long DATA = PUnsafe.allocateMemory(TOTAL_SIZE);
 
-    public void update(Frustum frustum) {
+    private final boolean DEBUG_CULLING_FOV = false;
+
+    public void update(@NonNull IFrustum frustum) {
+        if (DEBUG_CULLING_FOV) {
+            GlStateManager.matrixMode(GL_PROJECTION);
+            glPushMatrix();
+            GlStateManager.loadIdentity();
+            MatrixHelper.reversedZ(45.0f, (float) mc.displayWidth / (float) mc.displayHeight, 0.05F);
+            GlStateManager.matrixMode(GL_MODELVIEW);
+        }
+
         ClippingHelper clippingHelper = ClippingHelperImpl.getInstance();
+
+        if (DEBUG_CULLING_FOV) {
+            GlStateManager.matrixMode(GL_PROJECTION);
+            glPopMatrix();
+            GlStateManager.matrixMode(GL_MODELVIEW);
+        }
 
         long addr = DATA;
         //vec4 fullPlanesOR[CLIPPING_PLANES_FULL_OR];

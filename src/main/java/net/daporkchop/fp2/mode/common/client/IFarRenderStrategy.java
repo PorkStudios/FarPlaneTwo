@@ -21,7 +21,9 @@
 package net.daporkchop.fp2.mode.common.client;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.client.gl.commandbuffer.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.lib.unsafe.capability.Releasable;
 import net.minecraft.util.BlockRenderLayer;
@@ -60,12 +62,18 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile> ext
     // RENDER DATA METHODS
     //
 
+    default FarRenderIndex<POS> createRenderIndex(@NonNull IFarRenderMode<POS, T> mode) {
+        throw new AbstractMethodError();
+    }
+
     /**
      * @return the size of the render tree data stored by this rendering strategy
      */
     long renderDataSize();
 
     void deleteRenderData(long renderData);
+
+    void toDrawCommands(long renderData, @NonNull DrawElementsIndirectCommand[] commands);
 
     //
     // BAKE METHODS
@@ -79,5 +87,5 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile> ext
 
     void prepareRender(long tilev, int tilec); //haha yes C naming conventions
 
-    void render(@NonNull BlockRenderLayer layer, boolean pre);
+    void render(@NonNull FarRenderIndex<POS> index, @NonNull BlockRenderLayer layer, boolean pre);
 }

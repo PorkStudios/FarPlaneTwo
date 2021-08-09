@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.client.gl.shader.ComputeShaderBuilder;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 
@@ -36,5 +37,5 @@ public class VoxelShaders {
 
     public static final ShaderProgram STENCIL_SHADER = ShaderManager.get("voxel/stencil");
 
-    public static final ShaderProgram CULL_SHADER = ShaderManager.get("voxel/cull");
+    public static final ComputeShaderBuilder CULL_SHADER = ShaderManager.computeShaderBuilder("voxel/cull");
 }

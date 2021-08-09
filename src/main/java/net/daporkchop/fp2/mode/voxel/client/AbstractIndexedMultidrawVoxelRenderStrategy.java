@@ -25,7 +25,9 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
+import net.daporkchop.fp2.mode.common.client.FarRenderIndex;
 import net.daporkchop.fp2.mode.common.client.strategy.IndexedMultidrawMultipassRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelDirectPosAccess;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
@@ -39,6 +41,11 @@ import static net.daporkchop.fp2.mode.voxel.client.VoxelRenderConstants.*;
 public abstract class AbstractIndexedMultidrawVoxelRenderStrategy extends IndexedMultidrawMultipassRenderStrategy<VoxelPos, VoxelTile> implements IMultipassVoxelRenderStrategy {
     public AbstractIndexedMultidrawVoxelRenderStrategy() {
         super(VoxelBake.VERTEX_FORMAT.size());
+    }
+
+    @Override
+    public FarRenderIndex<VoxelPos> createRenderIndex(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
+        return new FarRenderIndex<>(mode, this, VoxelShaders.CULL_SHADER, vao -> this.configureVertexAttributes(this.vertices, vao), this.indices);
     }
 
     @Override
