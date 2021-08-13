@@ -18,12 +18,6 @@
  *
  */
 
-//
-//
-// INPUTS
-//
-//
-
 /*
  * builtins:
  *
@@ -33,3 +27,94 @@
  * in uvec3 gl_GlobalInvocationID;
  * in uint  gl_LocalInvocationIndex;
  */
+
+/*
+ * defines:
+ *
+ * #define COMPUTE_SHADER_LOCAL_SIZE_X ()
+ * #define COMPUTE_SHADER_LOCAL_SIZE_Y ()
+ * #define COMPUTE_SHADER_LOCAL_SIZE_Z ()
+ * #define COMPUTE_SHADER_LOCAL_SIZE_TOTAL ()
+ * #define COMPUTE_SHADER_LOCAL_ENABLE_X ()
+ * #define COMPUTE_SHADER_LOCAL_ENABLE_Y ()
+ * #define COMPUTE_SHADER_LOCAL_ENABLE_Z ()
+ * #define COMPUTE_SHADER_GLOBAL_ENABLE_X ()
+ * #define COMPUTE_SHADER_GLOBAL_ENABLE_Y ()
+ * #define COMPUTE_SHADER_GLOBAL_ENABLE_Z ()
+ */
+
+//
+//
+// MACRO VALIDATION
+//
+//
+
+#ifndef COMPUTE_SHADER_LOCAL_SIZE_X
+#error COMPUTE_SHADER_LOCAL_SIZE_X must be set!
+#endif
+
+#ifndef COMPUTE_SHADER_LOCAL_SIZE_Y
+#error COMPUTE_SHADER_LOCAL_SIZE_Y must be set!
+#endif
+
+#ifndef COMPUTE_SHADER_LOCAL_SIZE_Z
+#error COMPUTE_SHADER_LOCAL_SIZE_Z must be set!
+#endif
+
+#ifndef COMPUTE_SHADER_LOCAL_SIZE_TOTAL
+#error COMPUTE_SHADER_LOCAL_SIZE_TOTAL must be set!
+#endif
+
+#ifndef COMPUTE_SHADER_LOCAL_ENABLE_X
+#error COMPUTE_SHADER_LOCAL_ENABLE_X must be set!
+#endif
+
+#ifndef COMPUTE_SHADER_LOCAL_ENABLE_Y
+#error COMPUTE_SHADER_LOCAL_ENABLE_Y must be set!
+#endif
+
+#ifndef COMPUTE_SHADER_LOCAL_ENABLE_Z
+#error COMPUTE_SHADER_LOCAL_ENABLE_Z must be set!
+#endif
+
+#ifndef COMPUTE_SHADER_GLOBAL_ENABLE_X
+#error COMPUTE_SHADER_GLOBAL_ENABLE_X must be set!
+#endif
+
+#ifndef COMPUTE_SHADER_GLOBAL_ENABLE_Y
+#error COMPUTE_SHADER_GLOBAL_ENABLE_Y must be set!
+#endif
+
+#ifndef COMPUTE_SHADER_GLOBAL_ENABLE_Z
+#error COMPUTE_SHADER_GLOBAL_ENABLE_Z must be set!
+#endif
+
+//
+//
+// MACROS
+//
+//
+
+// gl_WorkGroupInvocationIndex
+//   This is a 1D version of gl_WorkGroupID. In other words, it is to gl_WorkGroupID what gl_LocalInvocationIndex is to gl_LocalInvocationID.
+#if COMPUTE_SHADER_GLOBAL_ENABLE_X && !COMPUTE_SHADER_GLOBAL_ENABLE_Y && !COMPUTE_SHADER_GLOBAL_ENABLE_Z
+#define gl_WorkGroupInvocationIndex (gl_WorkGroupID.x)
+#elif !COMPUTE_SHADER_GLOBAL_ENABLE_X && COMPUTE_SHADER_GLOBAL_ENABLE_Y && !COMPUTE_SHADER_GLOBAL_ENABLE_Z
+#define gl_WorkGroupInvocationIndex (gl_WorkGroupID.y)
+#elif !COMPUTE_SHADER_GLOBAL_ENABLE_X && !COMPUTE_SHADER_GLOBAL_ENABLE_Y && COMPUTE_SHADER_GLOBAL_ENABLE_Z
+#define gl_WorkGroupInvocationIndex (gl_WorkGroupID.z)
+#elif COMPUTE_SHADER_GLOBAL_ENABLE_X && COMPUTE_SHADER_GLOBAL_ENABLE_Y && !COMPUTE_SHADER_GLOBAL_ENABLE_Z
+#define gl_WorkGroupInvocationIndex (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x)
+#elif COMPUTE_SHADER_GLOBAL_ENABLE_X && !COMPUTE_SHADER_GLOBAL_ENABLE_Y && COMPUTE_SHADER_GLOBAL_ENABLE_Z
+#define gl_WorkGroupInvocationIndex (gl_WorkGroupID.z * gl_NumWorkGroups.x + gl_WorkGroupID.x)
+#elif !COMPUTE_SHADER_GLOBAL_ENABLE_X && COMPUTE_SHADER_GLOBAL_ENABLE_Y && COMPUTE_SHADER_GLOBAL_ENABLE_Z
+#define gl_WorkGroupInvocationIndex (gl_WorkGroupID.z * gl_NumWorkGroups.y + gl_WorkGroupID.y)
+#elif COMPUTE_SHADER_GLOBAL_ENABLE_X && COMPUTE_SHADER_GLOBAL_ENABLE_Y && COMPUTE_SHADER_GLOBAL_ENABLE_Z
+#define gl_WorkGroupInvocationIndex (gl_WorkGroupID.z * gl_NumWorkGroups.y * gl_NumWorkGroups.x + gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x)
+#else
+#error Impossible combination of global axes enabled?!?
+#endif
+
+// gl_GlobalInvocationIndex
+//   This is a 1D version of gl_GlobalInvocationID. In other words, it is to gl_GlobalInvocationID what gl_LocalInvocationIndex is to gl_LocalInvocationID.
+#define gl_GlobalInvocationIndex (gl_WorkGroupInvocationIndex * COMPUTE_SHADER_LOCAL_SIZE_TOTAL + gl_LocalInvocationIndex)

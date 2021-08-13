@@ -98,7 +98,12 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     @Override
     public void tileRemoved(@NonNull POS pos) {
         //make sure that any in-progress bake tasks are finished before the tile is removed
-        this.bakeExecutor.submitExclusive(pos, () -> this.updateTree(pos, Optional.empty()));
+        this.bakeExecutor.submitExclusive(pos, () -> {
+            this.updateRenderable(pos, false);
+            this.checkParentsRenderable(pos);
+
+            this.updateTree(pos, Optional.empty());
+        });
     }
 
     protected void notifyOutputs(@NonNull POS pos) {
@@ -113,6 +118,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     }
 
     protected void bake(@NonNull POS pos) { //this function is called from inside of RENDER_WORKERS, which holds a lock on the position
+        this.checkSelfRenderable(pos);
         this.checkParentsRenderable(pos);
 
         Compressed<POS, T>[] compressedInputTiles = uncheckedCast(this.tileCache.getTilesCached(this.strategy.bakeInputs(pos)).toArray(Compressed[]::new));
@@ -148,8 +154,11 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     }
 
     protected void checkParentsRenderable(@NonNull POS posIn) {
-        PorkUtil.<Stream<POS>>uncheckedCast(posIn.up().allPositionsInBB(1, 1))
-                .forEach(pos -> this.updateRenderable(pos, this.tileCache.getTilesCached(uncheckedCast(pos.down().allPositionsInBB(1, 3))).anyMatch(Objects::isNull)));
+        PorkUtil.<Stream<POS>>uncheckedCast(posIn.up().allPositionsInBB(1, 1)).forEach(this::checkSelfRenderable);
+    }
+
+    protected void checkSelfRenderable(@NonNull POS pos) {
+        this.updateRenderable(pos, this.tileCache.getTilesCached(uncheckedCast(pos.down().allPositionsInBB(1, 3))).anyMatch(Objects::isNull));
     }
 
     protected void updateTree(@NonNull POS pos, @NonNull Optional<BakeOutput> optionalBakeOutput) {

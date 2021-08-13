@@ -26,7 +26,7 @@ import net.daporkchop.fp2.client.DrawMode;
 import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.TransformFeedbackObject;
-import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
@@ -43,7 +43,7 @@ public abstract class AbstractTransformFeedbackCommandBuffer implements IDrawCom
     @NonNull
     protected final IDrawCommandBuffer delegate;
     @NonNull
-    protected final ShaderProgram shader;
+    protected final RenderShaderProgram shader;
     protected final int vertexSize;
 
     protected long vertices;
@@ -75,7 +75,7 @@ public abstract class AbstractTransformFeedbackCommandBuffer implements IDrawCom
         //bind transform feedback object, shader and buffer, then execute a draw
         try (TransformFeedbackObject xfb = this.xfb.bind();
              DrawMode drawMode = DrawMode.SHADER.begin(); //we're going to be doing "rendering" using a shader, so we need to be in shader mode
-             ShaderProgram shader = this.shader.use()) {
+             RenderShaderProgram shader = this.shader.use()) {
             this.buffer.bindBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0);
 
             glEnable(GL_RASTERIZER_DISCARD);

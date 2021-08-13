@@ -39,15 +39,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public final class ShaderBuilder extends ShaderManager.AbstractShaderBuilder {
+public final class RenderShaderBuilder extends ShaderManager.AbstractShaderBuilder<RenderShaderBuilder, RenderShaderProgram> {
     @NonNull
     @With
     protected final String programName;
-    protected final Map<String, String> defines;
+    protected final Map<String, Object> defines;
 
-    @Override
     @SneakyThrows(IOException.class)
-    protected ShaderProgram supply() {
+    protected ProgramMeta meta() {
         ProgramMeta meta;
         try (InputStream in = ShaderManager.class.getResourceAsStream(PStrings.fastFormat("%s/prog/%s.json", ShaderManager.BASE_PATH, this.programName))) {
             checkArg(in != null, "Unable to find shader meta file: \"%s/prog/%s.json\"!", ShaderManager.BASE_PATH, this.programName);
@@ -61,7 +60,14 @@ public final class ShaderBuilder extends ShaderManager.AbstractShaderBuilder {
             checkState(meta.frag != null, "Program \"%s\" has no fragment shaders!", this.programName);
         }
 
-        return new ShaderProgram(
+        return meta;
+    }
+
+    @Override
+    protected RenderShaderProgram supply() {
+        ProgramMeta meta = this.meta();
+
+        return new RenderShaderProgram(
                 this.programName,
                 meta.vert != null ? ShaderManager.get(meta.vert, ShaderManager.headers(this.defines), ShaderType.VERTEX) : null,
                 meta.geom != null ? ShaderManager.get(meta.geom, ShaderManager.headers(this.defines), ShaderType.GEOMETRY) : null,
@@ -71,20 +77,8 @@ public final class ShaderBuilder extends ShaderManager.AbstractShaderBuilder {
     }
 
     @Override
-    @SneakyThrows(IOException.class)
-    protected void reload(@NonNull ShaderProgram program) {
-        ProgramMeta meta;
-        try (InputStream in = ShaderManager.class.getResourceAsStream(PStrings.fastFormat("%s/prog/%s.json", ShaderManager.BASE_PATH, this.programName))) {
-            checkArg(in != null, "Unable to find shader meta file: \"%s/prog/%s.json\"!", ShaderManager.BASE_PATH, this.programName);
-            meta = GSON.fromJson(new UTF8FileReader(in), ProgramMeta.class);
-        }
-
-        checkState(meta.vert != null, "Program \"%s\" has no vertex shaders!", this.programName);
-        if (meta.xfb_varying != null) {
-            checkState(meta.frag == null, "Program \"%s\" has both fragment shaders and transform feedback outputs!", this.programName);
-        } else {
-            checkState(meta.frag != null, "Program \"%s\" has no fragment shaders!", this.programName);
-        }
+    protected void reload(@NonNull RenderShaderProgram program) {
+        ProgramMeta meta = this.meta();
 
         program.reload(
                 meta.vert != null ? ShaderManager.get(meta.vert, ShaderManager.headers(this.defines), ShaderType.VERTEX) : null,

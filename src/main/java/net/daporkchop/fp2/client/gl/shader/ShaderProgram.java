@@ -28,6 +28,7 @@ import net.minecraft.client.Minecraft;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
 
@@ -37,7 +38,7 @@ import static org.lwjgl.opengl.GL30.*;
  * @author DaPorkchop_
  */
 @Getter
-public final class ShaderProgram implements AutoCloseable {
+abstract class ShaderProgram<I extends ShaderProgram<I>> implements AutoCloseable {
     protected final String name;
     protected int id;
 
@@ -140,9 +141,9 @@ public final class ShaderProgram implements AutoCloseable {
      * <p>
      * This method returns itself, for use in a try-with-resources block.
      */
-    public ShaderProgram use() {
+    public I use() {
         glUseProgram(this.id);
-        return this;
+        return uncheckedCast(this);
     }
 
     @Override

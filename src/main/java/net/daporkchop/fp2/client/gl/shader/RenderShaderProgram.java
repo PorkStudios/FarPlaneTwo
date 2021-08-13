@@ -18,24 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.client;
+package net.daporkchop.fp2.client.gl.shader;
 
-import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
-import net.daporkchop.fp2.mode.common.client.strategy.IShaderBasedMultipassRenderStrategy;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
+import lombok.NonNull;
 
 /**
  * @author DaPorkchop_
  */
-public interface IShaderBasedMultipassHeightmapRenderStrategy extends IMultipassHeightmapRenderStrategy, IShaderBasedMultipassRenderStrategy<HeightmapPos, HeightmapTile> {
-    @Override
-    default RenderShaderProgram blockShader() {
-        return HeightmapShaders.BLOCK_SHADER;
-    }
-
-    @Override
-    default RenderShaderProgram stencilShader() {
-        return HeightmapShaders.STENCIL_SHADER;
+public final class RenderShaderProgram extends ShaderProgram<RenderShaderProgram> {
+    protected RenderShaderProgram(@NonNull String name, Shader vert, Shader geom, Shader frag, Shader comp, String[] xfb_varying) {
+        super(name, vert, geom, frag, comp, xfb_varying);
     }
 }

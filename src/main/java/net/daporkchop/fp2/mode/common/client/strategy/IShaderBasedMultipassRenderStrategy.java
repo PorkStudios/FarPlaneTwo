@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.FarRenderIndex;
@@ -32,28 +32,28 @@ import net.daporkchop.fp2.mode.common.client.FarRenderIndex;
 public interface IShaderBasedMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile> extends IMultipassRenderStrategy<POS, T> {
     @Override
     default void renderSolid(@NonNull FarRenderIndex<POS> index, int level) {
-        try (ShaderProgram program = this.blockShader().use()) {
+        try (RenderShaderProgram program = this.blockShader().use()) {
             IMultipassRenderStrategy.super.renderSolid(index, level);
         }
     }
 
     @Override
     default void renderCutout(@NonNull FarRenderIndex<POS> index, int level) {
-        try (ShaderProgram program = this.blockShader().use()) {
+        try (RenderShaderProgram program = this.blockShader().use()) {
             IMultipassRenderStrategy.super.renderCutout(index, level);
         }
     }
 
     @Override
     default void renderTransparentStencilPass(@NonNull FarRenderIndex<POS> index) {
-        try (ShaderProgram program = this.stencilShader().use()) {
+        try (RenderShaderProgram program = this.stencilShader().use()) {
             IMultipassRenderStrategy.super.renderTransparentStencilPass(index);
         }
     }
 
     @Override
     default void renderTransparentFragmentPass(@NonNull FarRenderIndex<POS> index) {
-        try (ShaderProgram program = this.blockShaderTransparent().use()) {
+        try (RenderShaderProgram program = this.blockShaderTransparent().use()) {
             IMultipassRenderStrategy.super.renderTransparentFragmentPass(index);
         }
     }
@@ -61,17 +61,17 @@ public interface IShaderBasedMultipassRenderStrategy<POS extends IFarPos, T exte
     /**
      * @return the shader used for rendering blocks
      */
-    ShaderProgram blockShader();
+    RenderShaderProgram blockShader();
 
     /**
      * @return the shader used for rendering blocks
      */
-    default ShaderProgram blockShaderTransparent() {
+    default RenderShaderProgram blockShaderTransparent() {
         return this.blockShader();
     }
 
     /**
      * @return the shader used for preparing the stencil buffer
      */
-    ShaderProgram stencilShader();
+    RenderShaderProgram stencilShader();
 }

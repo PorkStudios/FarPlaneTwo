@@ -21,6 +21,10 @@
 package net.daporkchop.fp2.util.math;
 
 import lombok.experimental.UtilityClass;
+import net.daporkchop.lib.primitive.list.LongList;
+import net.daporkchop.lib.primitive.list.array.LongArrayList;
+
+import static java.lang.Math.*;
 
 /**
  * Various math helper functions.
@@ -156,5 +160,51 @@ public class MathUtil {
         i = (i | (i << 4)) & 0x030C30C3;
         i = (i | (i << 2)) & 0x09249249;
         return i;
+    }
+
+    public static long lcm(long a, long b) {
+        return multiplyExact(a, b) / gcd(a, b);
+    }
+
+    public static long gcd(long a, long b) {
+        while (b != 0L) {
+            long t = b;
+            b = a % b;
+            a = t;
+        }
+        return a;
+    }
+
+    public static boolean isPrime(long n) { //O(sqrt(N))
+        if (n <= 1L) {
+            return false;
+        } else if (n <= 3L) {
+            return true;
+        }
+
+        //make search about 3x faster by testing these outside of main loop
+        if (n % 2L == 0L || n % 3L == 0L) {
+            return false;
+        }
+
+        for (long i = 5L; i * i <= n; i += 6L) {
+            if (n % i == 0L || n % (i + 2L) == 0L) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static long[] primeFactors(long n) { //O(N) (i think)
+        LongList out = new LongArrayList();
+
+        for (long prime = 2L; n != 1L; prime++) {
+            while (n % prime == 0L) {
+                n /= prime;
+                out.add(prime);
+            }
+        }
+
+        return out.toArray();
     }
 }

@@ -81,7 +81,9 @@ public class OpenGL {
     public final boolean OPENGL_45;
     public final boolean OPENGL_46;
 
-    public final WorkGroupSize MAX_COMPUTE_WORK_GROUP_COUNT;
+    public final int MAX_COMPUTE_WORK_GROUP_COUNT_X;
+    public final int MAX_COMPUTE_WORK_GROUP_COUNT_Y;
+    public final int MAX_COMPUTE_WORK_GROUP_COUNT_Z;
     public final WorkGroupSize MAX_COMPUTE_WORK_GROUP_SIZE;
     public final int MAX_COMPUTE_WORK_GROUP_INVOCATIONS;
 
@@ -100,10 +102,9 @@ public class OpenGL {
         int minorVersion = Integer.parseInt(version_tokenizer.nextToken());
         OPENGL_46 = (majorVersion == 4 && minorVersion >= 6) || majorVersion > 4;
 
-        MAX_COMPUTE_WORK_GROUP_COUNT = new WorkGroupSize(
-                glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0),
-                glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1),
-                glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2));
+        MAX_COMPUTE_WORK_GROUP_COUNT_X = glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0);
+        MAX_COMPUTE_WORK_GROUP_COUNT_Y = glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1);
+        MAX_COMPUTE_WORK_GROUP_COUNT_Z = glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2);
         MAX_COMPUTE_WORK_GROUP_SIZE = new WorkGroupSize(
                 glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0),
                 glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1),

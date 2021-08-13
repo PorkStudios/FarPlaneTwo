@@ -27,19 +27,24 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.debug.util.DebugUtils;
 import net.daporkchop.lib.binary.oio.StreamUtil;
-import net.daporkchop.lib.common.function.io.IOFunction;
 import net.daporkchop.lib.common.misc.string.PStrings;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 
@@ -56,12 +61,17 @@ public class ShaderManager {
             .weakValues()
             .build(CacheLoader.from(AbstractShaderBuilder::supply));
 
-    protected String headers(@NonNull Map<String, String> defines) {
-        return defines.entrySet().stream().map(e -> "#define " + e.getKey() + " (" + e.getValue() + ")\n").collect(Collectors.joining());
+    protected String headers(@NonNull Map<String, Object> defines, @NonNull String... lines) {
+        return Stream.concat(
+                defines.entrySet().stream().map(e -> PStrings.fastFormat("#define %s (%s)", e.getKey(),
+                        e.getValue() instanceof Boolean
+                                ? ((Boolean) e.getValue() ? 1 : 0)
+                                : e.getValue())),
+                Stream.of(lines)).collect(Collectors.joining("\n", "#line 1 -1\n", "\n"));
     }
 
-    public ShaderBuilder shaderBuilder(@NonNull String programName) {
-        return new ShaderBuilder(programName, Collections.emptyMap());
+    public RenderShaderBuilder renderShaderBuilder(@NonNull String programName) {
+        return new RenderShaderBuilder(programName, Collections.emptyMap());
     }
 
     public ComputeShaderBuilder computeShaderBuilder(@NonNull String programName) {
@@ -75,8 +85,8 @@ public class ShaderManager {
      * @return the shader program with the given name
      */
     @Deprecated
-    public ShaderProgram get(@NonNull String programName) {
-        return shaderBuilder(programName).link();
+    public RenderShaderProgram get(@NonNull String programName) {
+        return renderShaderBuilder(programName).link();
     }
 
     protected Shader get(@NonNull String[] names, @NonNull String headers, @NonNull ShaderType type) {
@@ -84,20 +94,26 @@ public class ShaderManager {
                 Stream.of(
                         "#version 430 core\n", //add version prefix
                         headers),
-                Arrays.stream(names)
-                        .map((IOFunction<String, String>) fileName -> {
+                IntStream.range(0, names.length)
+                        .mapToObj(idx -> {
+                            String fileName = names[idx];
                             try (InputStream in = ShaderManager.class.getResourceAsStream(BASE_PATH + '/' + fileName)) {
                                 checkState(in != null, "Unable to find shader file: \"%s\"!", fileName);
-                                return new String(StreamUtil.toByteArray(in), StandardCharsets.UTF_8);
+                                String prefix = "#line 1 " + idx + '\n';
+                                String code = new String(StreamUtil.toByteArray(in), StandardCharsets.UTF_8);
+                                return prefix + code;
+                            } catch (IOException e) {
+                                throw new UncheckedIOException(e);
                             }
                         }))
                 .toArray(String[]::new));
     }
 
-    protected void validateShaderCompile(@NonNull String name, int id) {
+    protected void validateShaderCompile(int id, @NonNull String... names) {
         if (glGetShaderi(id, GL_COMPILE_STATUS) == GL_FALSE) {
-            int size = glGetShaderi(id, GL_INFO_LOG_LENGTH);
-            String error = PStrings.fastFormat("Couldn't compile shader \"%s\":\n%s", name, glGetShaderInfoLog(id, size));
+            String error = PStrings.fastFormat("Couldn't compile shader \"%s\":\n%s",
+                    Arrays.toString(names),
+                    formatInfoLog(glGetShaderInfoLog(id, glGetShaderi(id, GL_INFO_LOG_LENGTH)), names));
             System.err.println(error);
             throw new IllegalStateException(error);
         }
@@ -105,8 +121,7 @@ public class ShaderManager {
 
     protected void validateProgramLink(@NonNull String name, int id) {
         if (glGetProgrami(id, GL_LINK_STATUS) == GL_FALSE) {
-            int size = glGetProgrami(id, GL_INFO_LOG_LENGTH);
-            String error = PStrings.fastFormat("Couldn't compile shader \"%s\":\n%s", name, glGetProgramInfoLog(id, size));
+            String error = PStrings.fastFormat("Couldn't link program \"%s\":\n%s", name, glGetProgramInfoLog(id, glGetProgrami(id, GL_INFO_LOG_LENGTH)));
             System.err.println(error);
             throw new IllegalStateException(error);
         }
@@ -114,13 +129,26 @@ public class ShaderManager {
 
     protected void validateProgramValidate(@NonNull String name, int id) {
         if (glGetProgrami(id, GL_VALIDATE_STATUS) == GL_FALSE) {
-            int size = glGetProgrami(id, GL_INFO_LOG_LENGTH);
-            String error = PStrings.fastFormat("Couldn't compile shader \"%s\":\n%s", name, glGetProgramInfoLog(id, size));
+            String error = PStrings.fastFormat("Couldn't validate program \"%s\":\n%s", name, glGetProgramInfoLog(id, glGetProgrami(id, GL_INFO_LOG_LENGTH)));
             System.err.println(error);
             throw new IllegalStateException(error);
         }
     }
 
+    protected String formatInfoLog(@NonNull String origText, @NonNull String... names) {
+        Matcher matcher = Pattern.compile("^(-?\\d+)\\((-?\\d+)\\) (: .+)", Pattern.MULTILINE).matcher(origText);
+        StringBuffer buffer = new StringBuffer();
+        while (matcher.find()) {
+            int nameIndex = Integer.parseInt(matcher.group(1));
+            String name = nameIndex < 0 || nameIndex >= names.length ? "<unknown source>" : names[nameIndex];
+            matcher.appendReplacement(buffer, Matcher.quoteReplacement('(' + name + ':' + matcher.group(2) + ')' + matcher.group(3))) ;
+        }
+        matcher.appendTail(buffer);
+
+        return buffer.toString();
+    }
+
+    @SuppressWarnings("unchecked")
     public void reload() {
         try {
             SHADER_CACHE.asMap().forEach(AbstractShaderBuilder::reload);
@@ -131,13 +159,13 @@ public class ShaderManager {
         }
     }
 
-    protected static abstract class AbstractShaderBuilder {
-        public ShaderProgram link() {
-            return SHADER_CACHE.getUnchecked(this);
+    protected static abstract class AbstractShaderBuilder<B extends AbstractShaderBuilder<B, S>, S extends ShaderProgram<S>> {
+        public S link() {
+            return uncheckedCast(SHADER_CACHE.getUnchecked(this));
         }
 
-        protected abstract ShaderProgram supply();
+        protected abstract S supply();
 
-        protected abstract void reload(@NonNull ShaderProgram program);
+        protected abstract void reload(@NonNull S program);
     }
 }

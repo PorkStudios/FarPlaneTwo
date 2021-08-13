@@ -31,7 +31,7 @@ import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.shader.ComputeShaderBuilder;
-import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.client.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
@@ -79,7 +79,7 @@ public class FarRenderIndex<POS extends IFarPos> extends AbstractReleasable {
     protected final Allocator directMemoryAlloc = new DirectMemoryAllocator(true);
 
     protected final WorkGroupSize workGroupSize;
-    protected final ShaderProgram cullShader;
+    protected final ComputeShaderProgram cullShader;
 
     protected final SimpleSet<POS> renderablePositions;
 
@@ -135,9 +135,9 @@ public class FarRenderIndex<POS extends IFarPos> extends AbstractReleasable {
         ShaderClippingStateHelper.update(frustum);
         ShaderClippingStateHelper.bind();
 
-        try (ShaderProgram program = this.cullShader.use()) {
+        try (ComputeShaderProgram cullShader = this.cullShader.use()) {
             for (Level level : this.levels) {
-                level.select();
+                level.select(cullShader);
             }
         }
 
@@ -315,7 +315,7 @@ public class FarRenderIndex<POS extends IFarPos> extends AbstractReleasable {
             PUnsafe.setMemory(this.cmdsAddr + slot * this.cmdEntrySize, this.cmdEntrySize, (byte) 0);
         }
 
-        public void select() {
+        public void select(@NonNull ComputeShaderProgram cullShader) {
             //re-upload data if needed
             this.upload();
 
@@ -328,7 +328,7 @@ public class FarRenderIndex<POS extends IFarPos> extends AbstractReleasable {
             this.cmdsBuffer.bindBase(GL_SHADER_STORAGE_BUFFER, COMMANDS_BUFFER_BINDING_INDEX);
 
             //dispatch compute shader
-            glDispatchCompute(toInt(this.capacity / this.parent.workGroupSize.totalSize()), 1, 1);
+            cullShader.dispatch(this.capacity);
         }
 
         public void draw(int pass) {

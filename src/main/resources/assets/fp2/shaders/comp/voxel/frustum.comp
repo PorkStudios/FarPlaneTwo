@@ -62,6 +62,6 @@ void process(in ivec4 pos, inout DrawElementsIndirectCommand cmds[RENDER_PASS_CO
 }
 
 void main() {
-    uint idx = gl_WorkGroupID.x + gl_LocalInvocationIndex;
+    uint idx = gl_GlobalInvocationIndex;
     process(positions[idx], commands[idx]);
 }

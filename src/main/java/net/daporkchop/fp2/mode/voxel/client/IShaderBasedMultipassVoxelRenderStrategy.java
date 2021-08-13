@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.mode.voxel.client;
 
-import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
 import net.daporkchop.fp2.mode.common.client.strategy.IShaderBasedMultipassRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
@@ -30,12 +30,12 @@ import net.daporkchop.fp2.mode.voxel.VoxelTile;
  */
 public interface IShaderBasedMultipassVoxelRenderStrategy extends IMultipassVoxelRenderStrategy, IShaderBasedMultipassRenderStrategy<VoxelPos, VoxelTile> {
     @Override
-    default ShaderProgram blockShader() {
+    default RenderShaderProgram blockShader() {
         return VoxelShaders.BLOCK_SHADER;
     }
 
     @Override
-    default ShaderProgram stencilShader() {
+    default RenderShaderProgram stencilShader() {
         return VoxelShaders.STENCIL_SHADER;
     }
 }

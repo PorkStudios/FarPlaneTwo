@@ -22,7 +22,7 @@ package net.daporkchop.fp2.client.gl.commandbuffer.xfb;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
-import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
 import net.minecraft.client.renderer.OpenGlHelper;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
@@ -38,7 +38,7 @@ public class VanillaTransformFeedbackCommandBuffer extends AbstractTransformFeed
                                               + 2 * FLOAT_SIZE //uv
                                               + 1 * INT_SIZE; //light
 
-    public VanillaTransformFeedbackCommandBuffer(@NonNull IDrawCommandBuffer delegate, @NonNull ShaderProgram shader) {
+    public VanillaTransformFeedbackCommandBuffer(@NonNull IDrawCommandBuffer delegate, @NonNull RenderShaderProgram shader) {
         super(delegate, shader, VERTEX_BYTES);
     }
 

@@ -18,24 +18,32 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.client;
+package net.daporkchop.fp2.util.reference;
 
-import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
-import net.daporkchop.fp2.mode.common.client.strategy.IShaderBasedMultipassRenderStrategy;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
+import lombok.NonNull;
+import net.daporkchop.lib.primitive.map.LongObjMap;
+
+import java.lang.ref.SoftReference;
 
 /**
+ * A {@link SoftReference} which removes itself (using a fixed key) from a {@link LongObjMap} when its reference is garbage collected.
+ *
  * @author DaPorkchop_
  */
-public interface IShaderBasedMultipassHeightmapRenderStrategy extends IMultipassHeightmapRenderStrategy, IShaderBasedMultipassRenderStrategy<HeightmapPos, HeightmapTile> {
-    @Override
-    default RenderShaderProgram blockShader() {
-        return HeightmapShaders.BLOCK_SHADER;
+public class SoftLongKeySelfRemovingReference<T> extends SoftReference<T> implements Runnable {
+    protected final LongObjMap<?> map;
+    protected final long key;
+
+    public SoftLongKeySelfRemovingReference(@NonNull T referent, long key, @NonNull LongObjMap<?> map) {
+        super(referent, ReferenceHandlerThread.queue());
+
+        this.map = map;
+        this.key = key;
     }
 
     @Override
-    default RenderShaderProgram stencilShader() {
-        return HeightmapShaders.STENCIL_SHADER;
+    public void run() {
+        //remove self from map
+        this.map.remove(this.key, this);
     }
 }
