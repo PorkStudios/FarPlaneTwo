@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -67,7 +68,7 @@ public class ShaderManager {
                         e.getValue() instanceof Boolean
                                 ? ((Boolean) e.getValue() ? 1 : 0)
                                 : e.getValue())),
-                Stream.of(lines)).collect(Collectors.joining("\n", "#line 1 -1\n", "\n"));
+                Stream.of(lines)).collect(Collectors.joining("\n", "#line 1 0\n", "\n"));
     }
 
     public RenderShaderBuilder renderShaderBuilder(@NonNull String programName) {
@@ -99,7 +100,7 @@ public class ShaderManager {
                             String fileName = names[idx];
                             try (InputStream in = ShaderManager.class.getResourceAsStream(BASE_PATH + '/' + fileName)) {
                                 checkState(in != null, "Unable to find shader file: \"%s\"!", fileName);
-                                String prefix = "#line 1 " + idx + '\n';
+                                String prefix = "#line 1 " + (idx + 1) + '\n';
                                 String code = new String(StreamUtil.toByteArray(in), StandardCharsets.UTF_8);
                                 return prefix + code;
                             } catch (IOException e) {
@@ -139,7 +140,7 @@ public class ShaderManager {
         Matcher matcher = Pattern.compile("^(-?\\d+)\\((-?\\d+)\\) (: .+)", Pattern.MULTILINE).matcher(origText);
         StringBuffer buffer = new StringBuffer();
         while (matcher.find()) {
-            int nameIndex = Integer.parseInt(matcher.group(1));
+            int nameIndex = Integer.parseInt(matcher.group(1)) - 1;
             String name = nameIndex < 0 || nameIndex >= names.length ? "<unknown source>" : names[nameIndex];
             matcher.appendReplacement(buffer, Matcher.quoteReplacement('(' + name + ':' + matcher.group(2) + ')' + matcher.group(3))) ;
         }
