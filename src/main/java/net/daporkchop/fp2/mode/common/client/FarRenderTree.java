@@ -244,10 +244,11 @@ public class FarRenderTree<POS extends IFarPos, T extends IFarTile> extends Abst
         if (child != node) {
             if (child == 0L) { //next node doesn't exist
                 //allocate new node
-                child = this.createNode(uncheckedCast(pos.upTo(level - 1)));
+                POS childPos = uncheckedCast(pos.upTo(level - 1));
+                child = this.createNode(childPos);
 
                 //re-check the node's selection parents, since the existence of a new node means that there's now a chance that they're no longer selectable
-                updateParentSelectability.accept(pos);
+                updateParentSelectability.accept(childPos);
 
                 //store pointer into children array
                 PUnsafe.putLong(node + this.children + this.childIndex(level, pos) * 8L, child);

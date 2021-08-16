@@ -35,10 +35,8 @@ void main() {
     ivec3 relative_tile_position = (tile_position.xyz << tile_position.w << T_SHIFT) - glState.camera.position_floor;
     vec3 relativePos = vec3(relative_tile_position) + in_pos * float(1 << tile_position.w) / 8. - glState.camera.position_fract;
 
-    float depth = length(relativePos);
-
-    //set fog depth here, simply because it's going to change by at most a few blocks (negligable) and this prevents us from having to compute the depth twice
-    fog_out.depth = depth;
+    //set fog depth based on vertex distance to camera
+    fog_out.depth = length(relativePos);
 
     //vertex position is detail mixed
     gl_Position = cameraTransform(relativePos) + glState.camera.anti_flicker_offset * vec4(31. - float(tile_position.w));
@@ -49,5 +47,5 @@ void main() {
     //copy trivial attributes
     vs_out.light = in_light;
     vs_out.state = in_state;
-    vs_out.color = computeVertexColor(in_color, 0., 0., depth);
+    vs_out.color = computeVertexColor(in_color);
 }
