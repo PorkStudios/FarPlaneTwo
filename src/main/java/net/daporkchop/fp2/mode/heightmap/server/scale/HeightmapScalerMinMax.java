@@ -120,16 +120,16 @@ public class HeightmapScalerMinMax implements IFarScaler<HeightmapPos, Heightmap
 
         double avg = sum / cnt;
 
-        double d0 = Double.isNaN(height0) ? -Double.MAX_VALUE : abs(height0 - avg);
-        double d1 = Double.isNaN(height1) ? -Double.MAX_VALUE : abs(height1 - avg);
-        double d2 = Double.isNaN(height2) ? -Double.MAX_VALUE : abs(height2 - avg);
-        double d3 = Double.isNaN(height3) ? -Double.MAX_VALUE : abs(height3 - avg);
+        double d0 = Double.isNaN(height0) ? Double.NEGATIVE_INFINITY : abs(height0 - avg);
+        double d1 = Double.isNaN(height1) ? Double.NEGATIVE_INFINITY : abs(height1 - avg);
+        double d2 = Double.isNaN(height2) ? Double.NEGATIVE_INFINITY : abs(height2 - avg);
+        double d3 = Double.isNaN(height3) ? Double.NEGATIVE_INFINITY : abs(height3 - avg);
 
-        if (!Double.isNaN(height0) && d0 > d1 && d0 > d2 && d0 > d3) {
+        if (!Double.isNaN(height0) && d0 >= d1 && d0 >= d2 && d0 >= d3) {
             src.getLayer(srcX, srcZ, layer, data);
-        } else if (!Double.isNaN(height1) && d1 > d0 && d1 > d2 && d1 > d3) {
+        } else if (!Double.isNaN(height1) && d1 >= d0 && d1 >= d2 && d1 >= d3) {
             src.getLayer(srcX, srcZ + 1, layer, data);
-        } else if (!Double.isNaN(height1) && d2 > d0 && d2 > d1 && d2 > d3) {
+        } else if (!Double.isNaN(height2) && d2 >= d0 && d2 >= d1 && d2 >= d3) {
             src.getLayer(srcX + 1, srcZ, layer, data);
         } else {
             src.getLayer(srcX + 1, srcZ + 1, layer, data);
