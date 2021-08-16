@@ -46,8 +46,7 @@ void main() {
     vec3 relativePos = vec3(relative_tile_position + getLowOffsetPre(tile_position.w)) + getLowOffsetPost() - glState.camera.position_fract;
 
     //set fog depth based on vertex distance to camera
-    float depth = length(relativePos);
-    fog_out.depth = depth;
+    fog_out.depth = length(relativePos);
 
     //vertex position is detail mixed
     gl_Position = cameraTransform(relativePos) + glState.camera.anti_flicker_offset;
@@ -58,5 +57,5 @@ void main() {
     //copy trivial attributes
     vs_out.light = in_light;
     vs_out.state = in_state;
-    vs_out.color = computeVertexColor(in_color.rgb, 0., 0., depth);
+    vs_out.color = computeVertexColor(in_color.rgb);
 }

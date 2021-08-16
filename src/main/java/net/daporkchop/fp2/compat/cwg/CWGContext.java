@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.compat.cwg;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
+import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomCubicWorldType;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.BiomeSource;
 import lombok.NonNull;
@@ -81,7 +82,7 @@ public class CWGContext {
         this.biomes = new int[this.size * this.size];
 
         CustomGeneratorSettings conf = CustomGeneratorSettings.getFromWorld(world);
-        BiomeSource biomeSource = new BiomeSource(world, conf.createBiomeBlockReplacerConfig(), new BiomeProvider(world.getWorldInfo()), smoothRadius);
+        BiomeSource biomeSource = new BiomeSource(world, conf.createBiomeBlockReplacerConfig(), CustomCubicWorldType.makeBiomeProvider(world, conf), smoothRadius);
 
         this.biomeProvider = BiomeHelper.from(CWGHelper.getBiomeGen(biomeSource));
         this.weightHelper = new VanillaBiomeWeightHelper(0.0d, 1.0d, 0.0d, 1.0d, smoothRadius);

@@ -162,19 +162,12 @@ public class FP2Config {
      */
     public static class Performance {
         @Config.Comment({
-                "Whether or not tiles can be generated at low resolution.",
-                "The generator must support this feature as well."
+                "Whether or not tiles can be generated at low resolution if supported by the terrain generator.",
+                "Don't disable this unless you have a specific reason for doing so - it can have MASSIVE performance implications."
         })
         @Config.LangKey("config.fp2.performance.lowResolutionEnable")
+        @Config.RequiresWorldRestart
         public boolean lowResolutionEnable = true;
-
-        @Config.Comment({
-                "If low resolution refine is enabled, allows incomplete tiles to be saved.",
-                "This can provide a performance boost if the server is restarted while tiles are still being generated and low resolution refine is",
-                "enabled, but will likely significantly reduce overall generation performance."
-        })
-        @Config.LangKey("config.fp2.performance.savePartial")
-        public boolean savePartial = false;
     }
 
     /**

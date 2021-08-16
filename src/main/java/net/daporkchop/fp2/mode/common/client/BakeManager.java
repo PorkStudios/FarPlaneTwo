@@ -183,21 +183,19 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     @Override
     @Deprecated
     public void run() { //executes a bulk update on the client thread
-        try {
-            int dataUpdatesSize = this.pendingDataUpdates.size();
-            List<Map.Entry<POS, Optional<BakeOutput>>> dataUpdates = new ArrayList<>(dataUpdatesSize + (dataUpdatesSize >> 3)); //pre-allocate a bit of extra space in case it grows while we're iterating
-            dataUpdates.addAll(this.pendingDataUpdates.entrySet());
-            dataUpdates.forEach(update -> this.pendingDataUpdates.remove(update.getKey(), update.getValue())); //atomically remove the corresponding entries from the pending update queue
+        this.isBulkUpdateQueued.set(false);
 
-            int renderableUpdatesSize = this.pendingRenderableUpdates.size();
-            List<Map.Entry<POS, Boolean>> renderableUpdates = new ArrayList<>(renderableUpdatesSize + (renderableUpdatesSize >> 3)); //pre-allocate a bit of extra space in case it grows while we're iterating
-            renderableUpdates.addAll(this.pendingRenderableUpdates.entrySet());
-            renderableUpdates.forEach(update -> this.pendingRenderableUpdates.remove(update.getKey(), update.getValue())); //atomically remove the corresponding entries from the pending update queue
+        int dataUpdatesSize = this.pendingDataUpdates.size();
+        List<Map.Entry<POS, Optional<BakeOutput>>> dataUpdates = new ArrayList<>(dataUpdatesSize + (dataUpdatesSize >> 3)); //pre-allocate a bit of extra space in case it grows while we're iterating
+        dataUpdates.addAll(this.pendingDataUpdates.entrySet());
+        dataUpdates.forEach(update -> this.pendingDataUpdates.remove(update.getKey(), update.getValue())); //atomically remove the corresponding entries from the pending update queue
 
-            //execute the bulk update
-            this.index.update(dataUpdates, renderableUpdates);
-        } finally {
-            this.isBulkUpdateQueued.set(false);
-        }
+        int renderableUpdatesSize = this.pendingRenderableUpdates.size();
+        List<Map.Entry<POS, Boolean>> renderableUpdates = new ArrayList<>(renderableUpdatesSize + (renderableUpdatesSize >> 3)); //pre-allocate a bit of extra space in case it grows while we're iterating
+        renderableUpdates.addAll(this.pendingRenderableUpdates.entrySet());
+        renderableUpdates.forEach(update -> this.pendingRenderableUpdates.remove(update.getKey(), update.getValue())); //atomically remove the corresponding entries from the pending update queue
+
+        //execute the bulk update
+        this.index.update(dataUpdates, renderableUpdates);
     }
 }
