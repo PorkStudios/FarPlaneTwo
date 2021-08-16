@@ -155,18 +155,16 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     @Override
     @Deprecated
     public void run() { //executes a bulk update on the client thread
-        try {
-            int size = this.pendingTreeUpdates.size();
-            List<Map.Entry<POS, Optional<BakeOutput>>> updates = new ArrayList<>(size + (size >> 3)); //pre-allocate a bit of extra space in case it grows while we're iterating
-            updates.addAll(this.pendingTreeUpdates.entrySet());
+        this.isBulkUpdateQueued.set(false);
 
-            //atomically remove the corresponding entries from the pending update queue
-            updates.forEach(update -> this.pendingTreeUpdates.remove(update.getKey(), update.getValue()));
+        int size = this.pendingTreeUpdates.size();
+        List<Map.Entry<POS, Optional<BakeOutput>>> updates = new ArrayList<>(size + (size >> 3)); //pre-allocate a bit of extra space in case it grows while we're iterating
+        updates.addAll(this.pendingTreeUpdates.entrySet());
 
-            //execute the bulk update
-            this.tree.bulkUpdate(updates);
-        } finally {
-            this.isBulkUpdateQueued.set(false);
-        }
+        //atomically remove the corresponding entries from the pending update queue
+        updates.forEach(update -> this.pendingTreeUpdates.remove(update.getKey(), update.getValue()));
+
+        //execute the bulk update
+        this.tree.bulkUpdate(updates);
     }
 }
