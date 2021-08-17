@@ -1,0 +1,120 @@
+/*
+ * Adapted from The MIT License (MIT)
+ *
+ * Copyright (c) 2020-2021 DaPorkchop_
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software
+ * is furnished to do so, subject to the following conditions:
+ *
+ * Any persons and/or organizations using this software must include the above copyright notice and this permission notice,
+ * provide sufficient credit to the original authors of the project (IE: DaPorkchop_), as well as provide a link to the original project.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
+package net.daporkchop.fp2.mode.common.client.index;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.client.ShaderClippingStateHelper;
+import net.daporkchop.fp2.client.gl.WorkGroupSize;
+import net.daporkchop.fp2.client.gl.camera.IFrustum;
+import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
+import net.daporkchop.fp2.client.gl.object.IGLBuffer;
+import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
+import net.daporkchop.fp2.client.gl.shader.ComputeShaderBuilder;
+import net.daporkchop.fp2.client.gl.shader.ComputeShaderProgram;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
+import net.daporkchop.fp2.util.alloc.Allocator;
+
+import java.util.function.Consumer;
+
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
+import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.opengl.GL43.*;
+
+/**
+ * @author DaPorkchop_
+ */
+public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCommand> extends AbstractRenderIndex<POS, C, GPUCulledRenderIndex<POS, C>, GPUCulledRenderIndex.Level<POS, C>> {
+    /**
+     * The maximum permitted compute work group size.
+     * <p>
+     * Currently set to {@code 64}, which is nice because it's not too big, is a power of 2, and is also equal to 4³ and 8².
+     */
+    protected static final int MAX_COMPUTE_WORK_GROUP_SIZE = 64;
+
+    protected static final WorkGroupSize WORK_GROUP_SIZE = getOptimalComputeWorkSizePow2(null, MAX_COMPUTE_WORK_GROUP_SIZE);
+
+    protected static final int POSITIONS_BUFFER_BINDING_INDEX = 3;
+    protected static final int COMMANDS_BUFFER_BINDING_INDEX = 4;
+
+    protected final ComputeShaderProgram cullShader;
+
+    public <T extends IFarTile> GPUCulledRenderIndex(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T> strategy, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray, @NonNull ComputeShaderBuilder cullShaderBuilder) {
+        super(mode, strategy, vaoInitializer, elementArray);
+
+        this.cullShader = cullShaderBuilder.withWorkGroupSize(WORK_GROUP_SIZE).link();
+    }
+
+    @Override
+    protected Level<POS, C> createLevel(@NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray) {
+        return new Level<>(this, vao -> {
+            vaoInitializer.accept(vao);
+
+            vao.putElementArray(elementArray);
+        }, Allocator.GrowFunction.sqrt2(WORK_GROUP_SIZE.totalSize()));
+    }
+
+    /**
+     * Should be called before issuing any draw commands.
+     * <p>
+     * This will determine which tiles need to be rendered for the current frame.
+     */
+    public void select(@NonNull IFrustum frustum, float partialTicks) {
+        ShaderClippingStateHelper.update(frustum);
+        ShaderClippingStateHelper.bind();
+
+        try (ComputeShaderProgram cullShader = this.cullShader.use()) {
+            for (Level level : this.levels) {
+                level.select();
+            }
+        }
+
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, POSITIONS_BUFFER_BINDING_INDEX, 0);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, COMMANDS_BUFFER_BINDING_INDEX, 0);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    protected static class Level<POS extends IFarPos, C extends IDrawIndirectCommand> extends AbstractRenderIndex.Level<POS, C, GPUCulledRenderIndex<POS, C>, Level<POS, C>> {
+        public Level(@NonNull GPUCulledRenderIndex<POS, C> parent, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull Allocator.GrowFunction growFunction) {
+            super(parent, vaoInitializer, growFunction);
+        }
+
+        @Override
+        protected void select0() {
+            //bind SSBOs
+            this.positionsBuffer.bindBase(GL_SHADER_STORAGE_BUFFER, POSITIONS_BUFFER_BINDING_INDEX);
+            this.commandBuffer.openglBuffer().bindBase(GL_SHADER_STORAGE_BUFFER, COMMANDS_BUFFER_BINDING_INDEX);
+
+            //dispatch compute shader
+            this.parent.cullShader.dispatch(this.capacity);
+        }
+
+        @Override
+        protected void draw0(int pass) {
+            this.commandBuffer.draw(pass, RENDER_PASS_COUNT, this.capacity);
+        }
+    }
+}

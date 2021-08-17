@@ -106,7 +106,7 @@ public interface IFarDirectPosAccess<POS extends IFarPos> {
      * @param addr the memory address
      * @return the position's locality-sensitive hash
      */
-    int localHashPos(long addr);
+    long localHashPos(long addr);
 
     /**
      * Checks whether or not the tile at the given position intersects the given volume.

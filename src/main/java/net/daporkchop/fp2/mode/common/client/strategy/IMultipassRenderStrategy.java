@@ -24,8 +24,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.common.client.FarRenderIndex;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
+import net.daporkchop.fp2.mode.common.client.index.AbstractRenderIndex;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.TextureMap;
 
@@ -58,7 +58,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         }
     }
 
-    default void render(@NonNull FarRenderIndex<POS> index) {
+    default void render(@NonNull AbstractRenderIndex<POS, ?, ?, ?> index) {
         this.preRender();
 
         //in order to properly render overlapping layers while ensuring that low-detail levels always get placed on top of high-detail ones, we'll need to do the following:
@@ -67,28 +67,19 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         //- render the TRANSPARENT pass at all detail levels at once, using the stencil to not only prevent low-detail from rendering over high-detail, but also fp2 transparent water
         //  from rendering over vanilla water
 
-        boolean hasAnySolid = index.hasAnyTilesForPass(0);
-        boolean hasAnyCutout = index.hasAnyTilesForPass(1);
-
-        if (hasAnySolid || hasAnyCutout) {
-            for (int level = 0; level < MAX_LODS; level++) {
-                if (hasAnySolid && index.hasAnyTilesForLevel(level)) {
-                    this.renderSolid(index, level);
-                }
-                if (hasAnyCutout && index.hasAnyTilesForLevel(level)) {
-                    this.renderCutout(index, level);
-                }
+        for (int level = 0; level < MAX_LODS; level++) {
+            if (index.hasAnyTilesForLevel(level)) {
+                this.renderSolid(index, level);
+                this.renderCutout(index, level);
             }
         }
 
-        if (index.hasAnyTilesForPass(2)) {
-            this.renderTransparent(index);
-        }
+        this.renderTransparent(index);
 
         this.postRender();
     }
 
-    default void renderSolid(@NonNull FarRenderIndex<POS> index, int level) {
+    default void renderSolid(@NonNull AbstractRenderIndex<POS, ?, ?, ?> index, int level) {
         GlStateManager.disableAlpha();
 
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -98,7 +89,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         GlStateManager.enableAlpha();
     }
 
-    default void renderCutout(@NonNull FarRenderIndex<POS> index, int level) {
+    default void renderCutout(@NonNull AbstractRenderIndex<POS, ?, ?, ?> index, int level) {
         mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
 
         glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
@@ -108,12 +99,12 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
     }
 
-    default void renderTransparent(FarRenderIndex<POS> index) {
+    default void renderTransparent(@NonNull AbstractRenderIndex<POS, ?, ?, ?> index) {
         this.renderTransparentStencilPass(index);
         this.renderTransparentFragmentPass(index);
     }
 
-    default void renderTransparentStencilPass(@NonNull FarRenderIndex<POS> index) {
+    default void renderTransparentStencilPass(@NonNull AbstractRenderIndex<POS, ?, ?, ?> index) {
         GlStateManager.colorMask(false, false, false, false);
 
         GlStateManager.depthMask(false);
@@ -131,7 +122,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         GlStateManager.colorMask(true, true, true, true);
     }
 
-    default void renderTransparentFragmentPass(@NonNull FarRenderIndex<POS> index) {
+    default void renderTransparentFragmentPass(@NonNull AbstractRenderIndex<POS, ?, ?, ?> index) {
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
         GlStateManager.alphaFunc(GL_GREATER, 0.1f);

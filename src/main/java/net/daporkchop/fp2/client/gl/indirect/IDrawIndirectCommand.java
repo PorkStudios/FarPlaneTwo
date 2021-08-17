@@ -18,32 +18,59 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.client.DrawMode;
-import net.daporkchop.fp2.mode.common.client.index.AbstractRenderIndex;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.minecraft.client.renderer.texture.AbstractTexture;
-import net.minecraft.client.renderer.texture.TextureMap;
-import net.minecraft.util.BlockRenderLayer;
-
-import static net.daporkchop.fp2.client.ClientConstants.*;
+package net.daporkchop.fp2.client.gl.indirect;
 
 /**
+ * Represents an OpenGL indirect draw command.
+ *
  * @author DaPorkchop_
  */
-public class ShaderBasedIndexedMultidrawVoxelRenderStrategy extends AbstractIndexedMultidrawVoxelRenderStrategy implements IShaderBasedMultipassVoxelRenderStrategy {
-    @Override
-    public void render(@NonNull AbstractRenderIndex<VoxelPos, ?, ?, ?> index, @NonNull BlockRenderLayer layer, boolean pre) {
-        if (layer == BlockRenderLayer.CUTOUT && !pre) {
-            ((AbstractTexture) mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE)).setBlurMipmapDirect(false, mc.gameSettings.mipmapLevels > 0);
+public interface IDrawIndirectCommand {
+    /**
+     * @return the size of a single command, in bytes
+     */
+    long size();
 
-            try (DrawMode mode = DrawMode.SHADER.begin()) {
-                this.render(index);
-            }
+    /**
+     * Loads this command into this object instance from the given off-heap memory address.
+     *
+     * @param addr the memory address to load from
+     */
+    void load(long addr);
 
-            mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
-        }
-    }
+    /**
+     * Stores this command to the given off-heap memory address.
+     *
+     * @param addr the memory address to store to
+     */
+    void store(long addr);
+
+    /**
+     * @return whether or not this command is empty (contains no geometry)
+     */
+    boolean isEmpty();
+
+    /**
+     * @return the base instance number
+     */
+    int baseInstance();
+
+    /**
+     * Sets the base instance number.
+     *
+     * @param baseInstance the new baseInstance
+     */
+    IDrawIndirectCommand baseInstance(int baseInstance);
+
+    /**
+     * @return the number of instances to be rendered
+     */
+    int instanceCount();
+
+    /**
+     * Sets the number of instances to be rendered.
+     *
+     * @param instanceCount the new instanceCount
+     */
+    IDrawIndirectCommand instanceCount(int instanceCount);
 }

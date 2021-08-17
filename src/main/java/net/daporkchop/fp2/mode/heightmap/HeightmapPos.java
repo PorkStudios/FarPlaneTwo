@@ -170,7 +170,7 @@ public class HeightmapPos implements IFarPos {
     }
 
     @Override
-    public int localHash() {
+    public long localHash() {
         return interleaveBits(this.x, this.z);
     }
 

@@ -21,10 +21,11 @@
 package net.daporkchop.fp2.mode.common.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.commandbuffer.DrawElementsIndirectCommand;
+import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.common.client.index.AbstractRenderIndex;
 import net.daporkchop.lib.unsafe.capability.Releasable;
 import net.minecraft.util.BlockRenderLayer;
 
@@ -62,7 +63,7 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile> ext
     // RENDER DATA METHODS
     //
 
-    default FarRenderIndex<POS> createRenderIndex(@NonNull IFarRenderMode<POS, T> mode) {
+    default AbstractRenderIndex<POS, ?, ?, ?> createRenderIndex(@NonNull IFarRenderMode<POS, T> mode) {
         throw new AbstractMethodError();
     }
 
@@ -85,5 +86,5 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile> ext
     // RENDER METHODS
     //
 
-    void render(@NonNull FarRenderIndex<POS> index, @NonNull BlockRenderLayer layer, boolean pre);
+    void render(@NonNull AbstractRenderIndex<POS, ?, ?, ?> index, @NonNull BlockRenderLayer layer, boolean pre);
 }

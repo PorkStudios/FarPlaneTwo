@@ -18,32 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
+package net.daporkchop.fp2.client.gl.indirect.elements;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.client.DrawMode;
-import net.daporkchop.fp2.mode.common.client.index.AbstractRenderIndex;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.minecraft.client.renderer.texture.AbstractTexture;
-import net.minecraft.client.renderer.texture.TextureMap;
-import net.minecraft.util.BlockRenderLayer;
-
-import static net.daporkchop.fp2.client.ClientConstants.*;
+import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBuffer;
 
 /**
  * @author DaPorkchop_
  */
-public class ShaderBasedIndexedMultidrawVoxelRenderStrategy extends AbstractIndexedMultidrawVoxelRenderStrategy implements IShaderBasedMultipassVoxelRenderStrategy {
+interface IDrawElementsIndirectCommandBuffer extends IDrawIndirectCommandBuffer<DrawElementsIndirectCommand> {
     @Override
-    public void render(@NonNull AbstractRenderIndex<VoxelPos, ?, ?, ?> index, @NonNull BlockRenderLayer layer, boolean pre) {
-        if (layer == BlockRenderLayer.CUTOUT && !pre) {
-            ((AbstractTexture) mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE)).setBlurMipmapDirect(false, mc.gameSettings.mipmapLevels > 0);
+    default long commandSize() {
+        return DrawElementsIndirectCommand._SIZE;
+    }
 
-            try (DrawMode mode = DrawMode.SHADER.begin()) {
-                this.render(index);
-            }
-
-            mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
-        }
+    @Override
+    default DrawElementsIndirectCommand newCommand() {
+        return new DrawElementsIndirectCommand();
     }
 }

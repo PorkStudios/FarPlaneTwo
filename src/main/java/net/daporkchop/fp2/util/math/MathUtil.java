@@ -97,69 +97,69 @@ public class MathUtil {
     /**
      * Interleaves the bits of 2 {@code int}s.
      * <p>
-     * Note that this will discard the upper 16 bits of all parameters.
-     * <p>
      * Based on <a href="https://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN">Bit Twiddling Hacks - Interleave bits by Binary Magic Numbers</a>.
      *
      * @return the interleaved bits
      */
-    public static int interleaveBits(int i0, int i1) {
-        return spreadBits1(i0) | (spreadBits1(i1) << 1);
+    public static long interleaveBits(int i0, int i1) {
+        return spreadBits1(i0) | (spreadBits1(i1) << 1L);
     }
 
     /**
      * Interleaves the bits of 3 {@code int}s.
      * <p>
-     * Note that this will discard the upper 22 bits of all parameters.
+     * Note that this will discard the upper 11 bits of all parameters.
      * <p>
      * Based on <a href="https://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN">Bit Twiddling Hacks - Interleave bits by Binary Magic Numbers</a>.
      *
      * @return the interleaved bits
      */
-    public static int interleaveBits(int i0, int i1, int i2) {
-        return spreadBits2(i0) | (spreadBits2(i1) << 1) | (spreadBits2(i2) << 2);
+    public static long interleaveBits(int i0, int i1, int i2) {
+        return spreadBits2(i0) | (spreadBits2(i1) << 1L) | (spreadBits2(i2) << 2L);
     }
 
     /**
      * Inserts a single bit between every bit in the input parameter.
      * <p>
-     * Note that this will discard the upper 16 bits of the parameter.
+     * Note that this will discard the upper 32 bits of the parameter.
      * <p>
      * Based on <a href="https://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN">Bit Twiddling Hacks - Interleave bits by Binary Magic Numbers</a>.
      *
      * @return the spread bits
      */
-    public static int spreadBits1(int i) {
+    public static long spreadBits1(long l) {
         //clear upper bits
-        i &= (1 << 16) - 1;
+        l &= (1L << 32L) - 1L;
 
         //basically magic
-        i = (i | (i << 8)) & 0x00FF00FF;
-        i = (i | (i << 4)) & 0x0F0F0F0F;
-        i = (i | (i << 2)) & 0x33333333;
-        i = (i | (i << 1)) & 0x55555555;
-        return i;
+        l = (l | (l << 16L)) & 0x0000FFFF0000FFFFL;
+        l = (l | (l << 8L)) & 0x00FF00FF00FF00FFL;
+        l = (l | (l << 4L)) & 0x0F0F0F0F0F0F0F0FL;
+        l = (l | (l << 2L)) & 0x3333333333333333L;
+        l = (l | (l << 1L)) & 0x5555555555555555L;
+        return l;
     }
 
     /**
      * Inserts two bits between every bit in the input parameter.
      * <p>
-     * Note that this will discard the upper 22 bits of the parameter.
+     * Note that this will discard the upper 43 bits of the parameter.
      * <p>
      * Based on <a href="https://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN">Bit Twiddling Hacks - Interleave bits by Binary Magic Numbers</a>.
      *
      * @return the spread bits
      */
-    public static int spreadBits2(int i) {
+    public static long spreadBits2(long l) {
         //clear upper bits
-        i &= (1 << 10) - 1;
+        l &= (1L << 21L) - 1L;
 
         //basically magic
-        i = (i | (i << 16)) & 0x00FF00FF;
-        i = (i | (i << 8)) & 0x0300F00F;
-        i = (i | (i << 4)) & 0x030C30C3;
-        i = (i | (i << 2)) & 0x09249249;
-        return i;
+        l = (l | (l << 32L)) & 0x1F00000000FFFFL;
+        l = (l | (l << 16L)) & 0x1F0000FF0000FFL;
+        l = (l | (l << 8L)) & 0x100F00F00F00F00FL;
+        l = (l | (l << 4L)) & 0x10C30C30C30C30C3L;
+        l = (l | (l << 2L)) & 0x1249249249249249L;
+        return l;
     }
 
     public static long lcm(long a, long b) {

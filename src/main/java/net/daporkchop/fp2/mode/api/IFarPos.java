@@ -124,7 +124,7 @@ public interface IFarPos extends Comparable<IFarPos> {
     /**
      * @return a locality-sensitive hash of this position
      */
-    int localHash();
+    long localHash();
 
     /**
      * Compares two positions in some arbitrary manner.

@@ -143,7 +143,7 @@ public class HeightmapDirectPosAccess implements IFarDirectPosAccess<HeightmapPo
     }
 
     @Override
-    public int localHashPos(long addr) {
+    public long localHashPos(long addr) {
         return interleaveBits(_x(addr), _z(addr));
     }
 

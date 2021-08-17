@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.commandbuffer.DrawElementsIndirectCommand;
+import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.commandbuffer.IndirectIndexedMultidrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;

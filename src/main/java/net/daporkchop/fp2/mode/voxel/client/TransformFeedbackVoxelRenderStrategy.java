@@ -24,7 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.DrawMode;
 import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.commandbuffer.xfb.VanillaTransformFeedbackCommandBuffer;
-import net.daporkchop.fp2.mode.common.client.FarRenderIndex;
+import net.daporkchop.fp2.mode.common.client.index.AbstractRenderIndex;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.minecraft.util.BlockRenderLayer;
 
@@ -38,7 +38,7 @@ public class TransformFeedbackVoxelRenderStrategy extends AbstractIndexedMultidr
     }
 
     @Override
-    public void render(@NonNull FarRenderIndex<VoxelPos> index, @NonNull BlockRenderLayer layer, boolean pre) {
+    public void render(@NonNull AbstractRenderIndex<VoxelPos, ?, ?, ?> index, @NonNull BlockRenderLayer layer, boolean pre) {
         try (DrawMode mode = DrawMode.LEGACY.begin()) {
             /*if (layer == BlockRenderLayer.SOLID && !pre) {
                 this.preRender();

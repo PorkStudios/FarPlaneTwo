@@ -18,30 +18,30 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.commandbuffer;
+package net.daporkchop.fp2.client.gl.indirect.elements;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.client.gl.indirect.AbstractDrawIndirectCommandBuffer;
+import net.daporkchop.fp2.util.alloc.Allocator;
+
+import static org.lwjgl.opengl.GL43.*;
 
 /**
- * Represents an OpenGL indirect draw command.
+ * A {@link IDrawElementsIndirectCommandBuffer} for {@link DrawElementsIndirectCommand}s whose commands are kept only in main memory.
  *
  * @author DaPorkchop_
  */
-public interface DrawIndirectCommand {
-    /**
-     * @return whether or not this will work
-     */
-    long size();
+public class CPUDrawElementsIndirectCommandBuffer extends AbstractDrawIndirectCommandBuffer<DrawElementsIndirectCommand> implements IDrawElementsIndirectCommandBuffer {
+    protected final int type;
 
-    /**
-     * Loads this command into this object instance from the given off-heap memory address.
-     *
-     * @param addr the memory address to load from
-     */
-    void load(long addr);
+    public CPUDrawElementsIndirectCommandBuffer(@NonNull Allocator alloc, int mode, int type) {
+        super(alloc, mode);
 
-    /**
-     * Stores this command to the given off-heap memory address.
-     *
-     * @param addr the memory address to store to
-     */
-    void store(long addr);
+        this.type = type;
+    }
+
+    @Override
+    protected void drawBatch(long offset, int count, int stride) {
+        glMultiDrawElementsIndirect(this.mode, this.type, this.addr + offset, count, stride);
+    }
 }

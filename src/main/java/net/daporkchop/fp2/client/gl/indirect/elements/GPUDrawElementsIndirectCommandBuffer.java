@@ -18,32 +18,30 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
+package net.daporkchop.fp2.client.gl.indirect.elements;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.DrawMode;
-import net.daporkchop.fp2.mode.common.client.index.AbstractRenderIndex;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.minecraft.client.renderer.texture.AbstractTexture;
-import net.minecraft.client.renderer.texture.TextureMap;
-import net.minecraft.util.BlockRenderLayer;
+import net.daporkchop.fp2.client.gl.indirect.AbstractGPUDrawIndirectCommandBuffer;
+import net.daporkchop.fp2.util.alloc.Allocator;
 
-import static net.daporkchop.fp2.client.ClientConstants.*;
+import static org.lwjgl.opengl.GL43.*;
 
 /**
+ * A {@link IDrawElementsIndirectCommandBuffer} for {@link DrawElementsIndirectCommand}s whose commands are buffered in GPU video memory.
+ *
  * @author DaPorkchop_
  */
-public class ShaderBasedIndexedMultidrawVoxelRenderStrategy extends AbstractIndexedMultidrawVoxelRenderStrategy implements IShaderBasedMultipassVoxelRenderStrategy {
+public class GPUDrawElementsIndirectCommandBuffer extends AbstractGPUDrawIndirectCommandBuffer<DrawElementsIndirectCommand> implements IDrawElementsIndirectCommandBuffer {
+    protected final int type;
+
+    public GPUDrawElementsIndirectCommandBuffer(@NonNull Allocator alloc, int mode, int type) {
+        super(alloc, mode);
+
+        this.type = type;
+    }
+
     @Override
-    public void render(@NonNull AbstractRenderIndex<VoxelPos, ?, ?, ?> index, @NonNull BlockRenderLayer layer, boolean pre) {
-        if (layer == BlockRenderLayer.CUTOUT && !pre) {
-            ((AbstractTexture) mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE)).setBlurMipmapDirect(false, mc.gameSettings.mipmapLevels > 0);
-
-            try (DrawMode mode = DrawMode.SHADER.begin()) {
-                this.render(index);
-            }
-
-            mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
-        }
+    protected void drawBatch(long offset, int count, int stride) {
+        glMultiDrawElementsIndirect(this.mode, this.type, offset, count, stride);
     }
 }

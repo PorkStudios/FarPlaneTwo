@@ -157,7 +157,7 @@ public class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos> {
     }
 
     @Override
-    public int localHashPos(long addr) {
+    public long localHashPos(long addr) {
         return interleaveBits(_x(addr), _y(addr), _z(addr));
     }
 

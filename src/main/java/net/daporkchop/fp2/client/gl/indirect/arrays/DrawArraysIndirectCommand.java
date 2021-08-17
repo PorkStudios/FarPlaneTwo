@@ -18,11 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.commandbuffer;
+package net.daporkchop.fp2.client.gl.indirect.arrays;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.lwjgl.opengl.GL40;
 import org.lwjgl.opengl.GL43;
@@ -37,9 +38,45 @@ import static net.daporkchop.fp2.client.gl.OpenGL.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class DrawArraysIndirectCommand implements DrawIndirectCommand {
-    public static final int COMMAND_SIZE = 4;
-    public static final int COMMAND_BYTES = COMMAND_SIZE * INT_SIZE;
+public final class DrawArraysIndirectCommand implements IDrawIndirectCommand {
+    public static final long _COUNT_OFFSET = 0L;
+    public static final long _INSTANCECOUNT_OFFSET = _COUNT_OFFSET + INT_SIZE;
+    public static final long _FIRST_OFFSET = _INSTANCECOUNT_OFFSET + INT_SIZE;
+    public static final long _BASEINSTANCE_OFFSET = _FIRST_OFFSET + INT_SIZE;
+
+    public static final long _SIZE = _BASEINSTANCE_OFFSET + INT_SIZE;
+
+    public static int _count(long cmd) {
+        return PUnsafe.getInt(cmd + _COUNT_OFFSET);
+    }
+
+    public static void _count(long cmd, int count) {
+        PUnsafe.putInt(cmd + _COUNT_OFFSET, count);
+    }
+
+    public static int _instanceCount(long cmd) {
+        return PUnsafe.getInt(cmd + _INSTANCECOUNT_OFFSET);
+    }
+
+    public static void _instanceCount(long cmd, int instanceCount) {
+        PUnsafe.putInt(cmd + _INSTANCECOUNT_OFFSET, instanceCount);
+    }
+
+    public static int _first(long cmd) {
+        return PUnsafe.getInt(cmd + _FIRST_OFFSET);
+    }
+
+    public static void _first(long cmd, int first) {
+        PUnsafe.putInt(cmd + _FIRST_OFFSET, first);
+    }
+
+    public static int _baseInstance(long cmd) {
+        return PUnsafe.getInt(cmd + _BASEINSTANCE_OFFSET);
+    }
+
+    public static void _baseInstance(long cmd, int baseInstance) {
+        PUnsafe.putInt(cmd + _BASEINSTANCE_OFFSET, baseInstance);
+    }
 
     protected int count;
     protected int instanceCount;
@@ -48,22 +85,27 @@ public class DrawArraysIndirectCommand implements DrawIndirectCommand {
 
     @Override
     public long size() {
-        return COMMAND_BYTES;
+        return _SIZE;
     }
 
     @Override
     public void load(long addr) {
-        this.count = PUnsafe.getInt(addr + 0 * INT_SIZE);
-        this.instanceCount = PUnsafe.getInt(addr + 1 * INT_SIZE);
-        this.first = PUnsafe.getInt(addr + 2 * INT_SIZE);
-        this.baseInstance = PUnsafe.getInt(addr + 3 * INT_SIZE);
+        this.count = _count(addr);
+        this.instanceCount = _instanceCount(addr);
+        this.first = _first(addr);
+        this.baseInstance = _baseInstance(addr);
     }
 
     @Override
     public void store(long addr) {
-        PUnsafe.putInt(addr + 0 * INT_SIZE, this.count);
-        PUnsafe.putInt(addr + 1 * INT_SIZE, this.instanceCount);
-        PUnsafe.putInt(addr + 2 * INT_SIZE, this.first);
-        PUnsafe.putInt(addr + 3 * INT_SIZE, this.baseInstance);
+        _count(addr, this.count);
+        _instanceCount(addr, this.instanceCount);
+        _first(addr, this.first);
+        _baseInstance(addr, this.baseInstance);
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return this.count == 0;
     }
 }

@@ -26,7 +26,8 @@ import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
-import net.daporkchop.fp2.mode.common.client.FarRenderIndex;
+import net.daporkchop.fp2.mode.common.client.index.AbstractRenderIndex;
+import net.daporkchop.fp2.mode.common.client.index.GPUCulledRenderIndex;
 import net.daporkchop.fp2.mode.common.client.strategy.IndexedMultidrawRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
@@ -40,8 +41,8 @@ public abstract class AbstractIndexedMultidrawVoxelRenderStrategy extends Indexe
     }
 
     @Override
-    public FarRenderIndex<VoxelPos> createRenderIndex(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
-        return new FarRenderIndex<>(mode, this, VoxelShaders.CULL_SHADER, vao -> this.configureVertexAttributes(this.vertices, vao), this.indices);
+    public AbstractRenderIndex<VoxelPos, ?, ?, ?> createRenderIndex(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
+        return new GPUCulledRenderIndex<>(mode, this, vao -> this.configureVertexAttributes(this.vertices, vao), this.indices, VoxelShaders.CULL_SHADER);
     }
 
     @Override
