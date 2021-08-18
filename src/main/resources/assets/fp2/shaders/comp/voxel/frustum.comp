@@ -30,8 +30,14 @@ layout(std430, binding = 3) buffer POSITIONS {
     ivec4 positions[];
 };
 
+//dummy struct which just stores RENDER_PASS_COUNT DrawElementsIndirectCommands, since apparently many drivers don't like
+//  to pass arrays of structs in method parameters
+struct CommandGroup {
+    DrawElementsIndirectCommand commands[RENDER_PASS_COUNT];
+};
+
 layout(std430, binding = 4) buffer COMMANDS {
-    DrawElementsIndirectCommand commands[][RENDER_PASS_COUNT];
+    CommandGroup commands[];
 };
 
 //
@@ -40,7 +46,7 @@ layout(std430, binding = 4) buffer COMMANDS {
 //
 //
 
-void process(in ivec4 pos, inout DrawElementsIndirectCommand cmds[RENDER_PASS_COUNT]) {
+void process(in ivec4 pos, inout CommandGroup group) {
     ivec3 position_absolute = ivec3(pos.x, pos.y, pos.z) << (T_SHIFT + pos.w);
     ivec3 position_relative = position_absolute - glState.camera.position_floor;
 
@@ -49,7 +55,7 @@ void process(in ivec4 pos, inout DrawElementsIndirectCommand cmds[RENDER_PASS_CO
             vec3(position_relative + vec3(T_VOXELS << pos.w)) - glState.camera.position_fract));
 
     for (int i = 0; i < RENDER_PASS_COUNT; i++) {
-        cmds[i].instanceCount = (-cmds[i].count >> 31) & instanceCount;
+        group.commands[i].instanceCount = (-group.commands[i].count >> 31) & instanceCount;
     }
 }
 
