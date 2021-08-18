@@ -193,7 +193,12 @@ public class GLBuffer extends GLObject implements IGLBuffer {
     public void uploadRange(long start, long addr, long size) {
         checkState(this.target >= 0, "not bound!");
         checkRangeLen(this.capacity, start, size);
-        glBufferSubData(this.target, start, DirectBufferReuse.wrapByte(addr, toInt(size, "size")));
+
+        //LWJGL doesn't expose glBufferSubData with a direct memory pointer, so we'll upload the data in increments of Integer.MAX_VALUE
+        for (long offset = 0L, blockSize; offset < size; offset += blockSize) {
+            blockSize = min(size - offset, Integer.MAX_VALUE);
+            glBufferSubData(this.target, start + offset, DirectBufferReuse.wrapByte(addr + offset, toInt(blockSize)));
+        }
     }
 
     @Override
@@ -238,7 +243,12 @@ public class GLBuffer extends GLObject implements IGLBuffer {
     public void downloadRange(long start, long addr, long size) {
         checkState(this.target >= 0, "not bound!");
         checkRangeLen(this.capacity, start, size);
-        glGetBufferSubData(this.target, start, DirectBufferReuse.wrapByte(addr, toInt(size, "size")));
+
+        //LWJGL doesn't expose glGetBufferSubData with a direct memory pointer, so we'll download the data in increments of Integer.MAX_VALUE
+        for (long offset = 0L, blockSize; offset < size; offset += blockSize) {
+            blockSize = min(size - offset, Integer.MAX_VALUE);
+            glGetBufferSubData(this.target, start + offset, DirectBufferReuse.wrapByte(addr + offset, toInt(blockSize)));
+        }
     }
 
     @Override
