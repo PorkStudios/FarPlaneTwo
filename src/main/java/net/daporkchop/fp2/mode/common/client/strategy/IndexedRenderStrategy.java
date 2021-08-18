@@ -26,6 +26,9 @@ import io.netty.buffer.CompositeByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.AllocatedGLBuffer;
+import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBufferFactory;
+import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommand;
+import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommandBufferFactory;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
@@ -33,13 +36,14 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
+import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public abstract class IndexedRenderStrategy<POS extends IFarPos, T extends IFarTile> extends BaseRenderStrategy<POS, T> {
+public abstract class IndexedRenderStrategy<POS extends IFarPos, T extends IFarTile> extends BaseRenderStrategy<POS, T, DrawElementsIndirectCommand> {
     /*
      * struct RenderData {
      *   [...] //inherited from BaseRenderStrategy
@@ -73,6 +77,11 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, T extends IFarT
 
     public IndexedRenderStrategy(int vertexSize) {
         super(vertexSize);
+    }
+
+    @Override
+    public IDrawIndirectCommandBufferFactory<DrawElementsIndirectCommand> createCommandBufferFactory() {
+        return new DrawElementsIndirectCommandBufferFactory(GL_QUADS, INDEX_TYPE);
     }
 
     @Override

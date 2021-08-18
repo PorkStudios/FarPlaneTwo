@@ -66,14 +66,14 @@ import static org.lwjgl.opengl.GL15.*;
  */
 public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawIndirectCommand, I extends AbstractRenderIndex<POS, C, I, L>, L extends AbstractRenderIndex.Level<POS, C, I, L>> extends AbstractReleasable {
     protected final IFarDirectPosAccess<POS> directPosAccess;
-    protected final IFarRenderStrategy<POS, ?> strategy;
+    protected final IFarRenderStrategy<POS, ?, C> strategy;
 
     protected final Allocator directMemoryAlloc = new DirectMemoryAllocator(true);
 
     protected final SimpleSet<POS> renderablePositions;
     protected final L[] levels;
 
-    public <T extends IFarTile> AbstractRenderIndex(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T> strategy, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray) {
+    public <T extends IFarTile> AbstractRenderIndex(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T, C> strategy, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray) {
         this.directPosAccess = mode.directPosAccess();
         this.strategy = strategy;
 
@@ -168,6 +168,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawIn
 
         public Level(@NonNull I parent, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull Allocator.GrowFunction growFunction) {
             this.parent = parent;
+            this.commandBuffer = this.createCommandBuffer(this.parent);
 
             this.directPosAccess = this.parent.directPosAccess;
             this.positionSize = PMath.roundUp(this.directPosAccess.posSize(), EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT);
@@ -175,10 +176,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawIn
 
             this.positionsToSlots.defaultReturnValue(-1L);
 
-            //TODO: don't hardcode this
-            this.commandBuffer = uncheckedCast(new GPUDrawElementsIndirectCommandBuffer(parent.directMemoryAlloc, GL_QUADS, GL_UNSIGNED_SHORT));
-
-            this.tempCommands = uncheckedCast(Array.newInstance(this.commandBuffer.newCommand().getClass(), RENDER_PASS_COUNT));
+            this.tempCommands = uncheckedCast(Array.newInstance(this.commandBuffer.commandClass(), RENDER_PASS_COUNT));
             for (int i = 0; i < RENDER_PASS_COUNT; i++) {
                 this.tempCommands[i] = this.commandBuffer.newCommand();
             }
@@ -190,6 +188,8 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawIn
 
             this.slotAllocator = new SequentialFixedSizeAllocator(1L, this, growFunction);
         }
+
+        protected abstract IDrawIndirectCommandBuffer<C> createCommandBuffer(@NonNull I parent);
 
         public void put(@NonNull POS pos, BakeOutput output) {
             long slot = this.positionsToSlots.getLong(pos);

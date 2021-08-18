@@ -18,34 +18,25 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.indirect.elements;
+package net.daporkchop.fp2.client.gl.indirect;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.indirect.AbstractDrawIndirectCommandBuffer;
 import net.daporkchop.fp2.util.alloc.Allocator;
 
-import static org.lwjgl.opengl.GL43.*;
-
 /**
- * Implementation of {@link IDrawElementsIndirectCommandBuffer} for {@link DrawElementsIndirectCommand}s whose commands are stored only in client memory.
- *
  * @author DaPorkchop_
  */
-public class CPUDrawElementsIndirectCommandBuffer extends AbstractDrawIndirectCommandBuffer<DrawElementsIndirectCommand> implements IDrawElementsIndirectCommandBuffer {
-    protected final int type;
+public interface IDrawIndirectCommandBufferFactory<C extends IDrawIndirectCommand> {
+    /**
+     * @param alloc an {@link Allocator} for allocating off-heap memory
+     * @return a new {@link IDrawIndirectCommandBuffer} for this command type whose commands are stored only in client memory
+     */
+    IDrawIndirectCommandBuffer<C> commandBufferCPU(@NonNull Allocator alloc);
 
     /**
-     * @deprecated use {@link DrawElementsIndirectCommandBufferFactory#commandBufferCPU(Allocator)}
+     * @param alloc an {@link Allocator} for allocating off-heap memory
+     * @param barrier whether or not to place a memory barrier on the buffer contents immediately before any draw commands are issued
+     * @return a new {@link IDrawIndirectCommandBuffer} for this command type whose commands are stored only in client memory
      */
-    @Deprecated
-    public CPUDrawElementsIndirectCommandBuffer(@NonNull Allocator alloc, int mode, int type) {
-        super(alloc, mode);
-
-        this.type = type;
-    }
-
-    @Override
-    protected void drawBatch(long offset, int count, int stride) {
-        glMultiDrawElementsIndirect(this.mode, this.type, this.addr + offset, count, stride);
-    }
+    IDrawIndirectCommandBuffer<C> commandBufferGPU(@NonNull Allocator alloc, boolean barrier);
 }

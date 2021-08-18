@@ -21,6 +21,8 @@
 package net.daporkchop.fp2.mode.common.client;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
+import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBufferFactory;
 import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
@@ -34,7 +36,7 @@ import java.util.stream.Stream;
 /**
  * @author DaPorkchop_
  */
-public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile> extends Releasable {
+public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, C extends IDrawIndirectCommand> extends Releasable {
     //
     // BAKE METHODS
     //
@@ -66,6 +68,8 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile> ext
     default AbstractRenderIndex<POS, ?, ?, ?> createRenderIndex(@NonNull IFarRenderMode<POS, T> mode) {
         throw new AbstractMethodError();
     }
+
+    IDrawIndirectCommandBufferFactory<C> createCommandBufferFactory();
 
     /**
      * @return the size of the render tree data stored by this rendering strategy

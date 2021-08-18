@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.mode.heightmap.client;
 
+import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
 import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
 import net.daporkchop.fp2.mode.common.client.strategy.IShaderBasedMultipassRenderStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
@@ -28,7 +29,7 @@ import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 /**
  * @author DaPorkchop_
  */
-public interface IShaderBasedMultipassHeightmapRenderStrategy extends IMultipassHeightmapRenderStrategy, IShaderBasedMultipassRenderStrategy<HeightmapPos, HeightmapTile> {
+public interface IShaderBasedMultipassHeightmapRenderStrategy<C extends IDrawIndirectCommand> extends IMultipassHeightmapRenderStrategy<C>, IShaderBasedMultipassRenderStrategy<HeightmapPos, HeightmapTile, C> {
     @Override
     default RenderShaderProgram blockShader() {
         return HeightmapShaders.BLOCK_SHADER;

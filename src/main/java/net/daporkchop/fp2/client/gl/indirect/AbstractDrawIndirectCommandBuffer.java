@@ -67,7 +67,6 @@ public abstract class AbstractDrawIndirectCommandBuffer<C extends IDrawIndirectC
             return;
         }
 
-
         long commandSize = this.commandSize();
         this.addr = this.addr == 0L
                 ? this.alloc.alloc(capacity * commandSize) //we should create a new allocation

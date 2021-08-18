@@ -30,6 +30,7 @@ import net.daporkchop.lib.common.math.PMath;
 import java.util.Deque;
 import java.util.LinkedList;
 
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -42,7 +43,7 @@ public class VertexFormat {
     protected final IVertexAttribute[] attributes;
     protected final int size; //the combined size of all of the vertex attributes, in bytes
 
-    public VertexFormat(@NonNull IVertexAttribute attribute, int alignment) {
+    public VertexFormat(@NonNull String name, @NonNull IVertexAttribute attribute, int alignment) {
         //compute total size of a vertex
         this.size = PMath.roundUp(attribute.offset() + attribute.size(), positive(alignment, "alignment"));
 
@@ -52,6 +53,8 @@ public class VertexFormat {
             attributes.addFirst(attribute);
         } while ((attribute = attribute.parent()) != null);
         this.attributes = attributes.toArray(new IVertexAttribute[0]);
+
+        FP2_LOG.info("{} vertex size: {} bytes", name, this.size());
     }
 
     /**

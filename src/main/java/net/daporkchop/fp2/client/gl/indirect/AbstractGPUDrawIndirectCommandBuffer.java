@@ -26,6 +26,7 @@ import net.daporkchop.fp2.util.alloc.Allocator;
 
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL40.*;
+import static org.lwjgl.opengl.GL42.*;
 
 /**
  * Base implementation of {@link IDrawIndirectCommandBuffer} whose commands are buffered in GPU video memory.
@@ -34,9 +35,12 @@ import static org.lwjgl.opengl.GL40.*;
  */
 public abstract class AbstractGPUDrawIndirectCommandBuffer<C extends IDrawIndirectCommand> extends AbstractDrawIndirectCommandBuffer<C> {
     protected final GLBuffer buffer = new GLBuffer(GL_STREAM_DRAW);
+    protected final boolean barrier;
 
-    public AbstractGPUDrawIndirectCommandBuffer(@NonNull Allocator alloc, int mode) {
+    public AbstractGPUDrawIndirectCommandBuffer(@NonNull Allocator alloc, int mode, boolean barrier) {
         super(alloc, mode);
+
+        this.barrier = barrier;
     }
 
     @Override
@@ -68,6 +72,10 @@ public abstract class AbstractGPUDrawIndirectCommandBuffer<C extends IDrawIndire
         this.upload();
 
         try (GLBuffer buffer = this.buffer.bind(GL_DRAW_INDIRECT_BUFFER)) { //bind buffer to ensure the commands are accessible to the draw functions
+            if (this.barrier) { //place a memory barrier before drawing (if requested)
+                glMemoryBarrier(GL_COMMAND_BARRIER_BIT);
+            }
+
             super.draw0(offset, stride, count);
         }
     }

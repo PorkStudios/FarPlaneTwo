@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
@@ -30,7 +31,7 @@ import java.util.stream.Stream;
 /**
  * @author DaPorkchop_
  */
-public interface IVoxelRenderStrategy extends IFarRenderStrategy<VoxelPos, VoxelTile> {
+public interface IVoxelRenderStrategy<C extends IDrawIndirectCommand> extends IFarRenderStrategy<VoxelPos, VoxelTile, C> {
     @Override
     default Stream<VoxelPos> bakeOutputs(@NonNull VoxelPos srcPos) {
         int x = srcPos.x();

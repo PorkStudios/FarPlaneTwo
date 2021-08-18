@@ -25,6 +25,7 @@ import net.daporkchop.fp2.client.ShaderClippingStateHelper;
 import net.daporkchop.fp2.client.gl.WorkGroupSize;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
+import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBuffer;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.shader.ComputeShaderBuilder;
@@ -60,7 +61,7 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
 
     protected final ComputeShaderProgram cullShader;
 
-    public <T extends IFarTile> GPUCulledRenderIndex(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T> strategy, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray, @NonNull ComputeShaderBuilder cullShaderBuilder) {
+    public <T extends IFarTile> GPUCulledRenderIndex(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T, C> strategy, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray, @NonNull ComputeShaderBuilder cullShaderBuilder) {
         super(mode, strategy, vaoInitializer, elementArray);
 
         this.cullShader = cullShaderBuilder.withWorkGroupSize(WORK_GROUP_SIZE).link();
@@ -103,6 +104,13 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
         }
 
         @Override
+        protected IDrawIndirectCommandBuffer<C> createCommandBuffer(@NonNull GPUCulledRenderIndex<POS, C> parent) {
+            //the command buffer must be on GPU memory in order for its contents to be accessible to the compute shader.
+            //  we request a memory barrier to be placed in order to ensure that all compute shader invocations have completed before using the commands
+            return parent.strategy.createCommandBufferFactory().commandBufferGPU(parent.directMemoryAlloc, true);
+        }
+
+        @Override
         protected void select0() {
             //bind SSBOs
             this.positionsBuffer.bindBase(GL_SHADER_STORAGE_BUFFER, POSITIONS_BUFFER_BINDING_INDEX);
@@ -114,6 +122,8 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
 
         @Override
         protected void draw0(int pass) {
+            //draw the buffered draw commands. we assume a memory barrier will be placed on GL_DRAW_INDIRECT_BUFFER, and that the buffer's contents will
+            //  not have been changed since select0() ran.
             this.commandBuffer.draw(pass, RENDER_PASS_COUNT, this.capacity);
         }
     }

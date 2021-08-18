@@ -53,7 +53,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @Getter
 public class BakeManager<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarTileCache.Listener<POS, T>, Runnable {
     protected final AbstractFarRenderer<POS, T> renderer;
-    protected final IFarRenderStrategy<POS, T> strategy;
+    protected final IFarRenderStrategy<POS, T, ?> strategy;
 
     protected final IFarTileCache<POS, T> tileCache;
 

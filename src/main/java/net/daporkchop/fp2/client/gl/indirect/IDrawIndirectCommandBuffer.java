@@ -37,6 +37,18 @@ public interface IDrawIndirectCommandBuffer<C extends IDrawIndirectCommand> exte
     long commandSize();
 
     /**
+     * @return a new {@link C} compatible with the draw commands stored in this command buffer
+     */
+    C newCommand();
+
+    /**
+     * @return the concrete class for type {@link C}
+     */
+    Class<C> commandClass();
+
+    // contents
+
+    /**
      * @return the number of commands in this buffer
      */
     long capacity();
@@ -50,13 +62,6 @@ public interface IDrawIndirectCommandBuffer<C extends IDrawIndirectCommand> exte
      * @param capacity the new capacity
      */
     void resize(long capacity);
-
-    // modification
-
-    /**
-     * @return a new {@link C} compatible with the draw commands stored in this command buffer
-     */
-    C newCommand();
 
     /**
      * Loads the command at the given index into the given {@link C} instance.

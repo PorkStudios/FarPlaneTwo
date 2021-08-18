@@ -22,6 +22,7 @@ package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.DrawMode;
+import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.mode.common.client.index.AbstractRenderIndex;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.minecraft.client.renderer.texture.AbstractTexture;
@@ -33,7 +34,7 @@ import static net.daporkchop.fp2.client.ClientConstants.*;
 /**
  * @author DaPorkchop_
  */
-public class ShaderBasedIndexedMultidrawVoxelRenderStrategy extends AbstractIndexedMultidrawVoxelRenderStrategy implements IShaderBasedMultipassVoxelRenderStrategy {
+public class ShaderBasedIndexedMultidrawVoxelRenderStrategy extends AbstractIndexedMultidrawVoxelRenderStrategy implements IShaderBasedMultipassVoxelRenderStrategy<DrawElementsIndirectCommand> {
     @Override
     public void render(@NonNull AbstractRenderIndex<VoxelPos, ?, ?, ?> index, @NonNull BlockRenderLayer layer, boolean pre) {
         if (layer == BlockRenderLayer.CUTOUT && !pre) {

@@ -27,15 +27,19 @@ import net.daporkchop.fp2.util.alloc.Allocator;
 import static org.lwjgl.opengl.GL43.*;
 
 /**
- * A {@link IDrawElementsIndirectCommandBuffer} for {@link DrawElementsIndirectCommand}s whose commands are buffered in GPU video memory.
+ * Implementation of {@link IDrawElementsIndirectCommandBuffer} for {@link DrawElementsIndirectCommand}s whose commands are buffered in GPU video memory.
  *
  * @author DaPorkchop_
  */
 public class GPUDrawElementsIndirectCommandBuffer extends AbstractGPUDrawIndirectCommandBuffer<DrawElementsIndirectCommand> implements IDrawElementsIndirectCommandBuffer {
     protected final int type;
 
-    public GPUDrawElementsIndirectCommandBuffer(@NonNull Allocator alloc, int mode, int type) {
-        super(alloc, mode);
+    /**
+     * @deprecated use {@link DrawElementsIndirectCommandBufferFactory#commandBufferGPU(Allocator, boolean)}
+     */
+    @Deprecated
+    public GPUDrawElementsIndirectCommandBuffer(@NonNull Allocator alloc, int mode, boolean barrier, int type) {
+        super(alloc, mode, barrier);
 
         this.type = type;
     }

@@ -20,32 +20,31 @@
 
 package net.daporkchop.fp2.client.gl.indirect.elements;
 
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.indirect.AbstractDrawIndirectCommandBuffer;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBuffer;
+import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBufferFactory;
 import net.daporkchop.fp2.util.alloc.Allocator;
 
-import static org.lwjgl.opengl.GL43.*;
-
 /**
- * Implementation of {@link IDrawElementsIndirectCommandBuffer} for {@link DrawElementsIndirectCommand}s whose commands are stored only in client memory.
+ * Implementation of {@link IDrawIndirectCommandBufferFactory} for {@link DrawElementsIndirectCommand}.
  *
  * @author DaPorkchop_
  */
-public class CPUDrawElementsIndirectCommandBuffer extends AbstractDrawIndirectCommandBuffer<DrawElementsIndirectCommand> implements IDrawElementsIndirectCommandBuffer {
+@RequiredArgsConstructor
+@Getter
+public class DrawElementsIndirectCommandBufferFactory implements IDrawIndirectCommandBufferFactory<DrawElementsIndirectCommand> {
+    protected final int mode;
     protected final int type;
 
-    /**
-     * @deprecated use {@link DrawElementsIndirectCommandBufferFactory#commandBufferCPU(Allocator)}
-     */
-    @Deprecated
-    public CPUDrawElementsIndirectCommandBuffer(@NonNull Allocator alloc, int mode, int type) {
-        super(alloc, mode);
-
-        this.type = type;
+    @Override
+    public IDrawIndirectCommandBuffer<DrawElementsIndirectCommand> commandBufferCPU(@NonNull Allocator alloc) {
+        return new CPUDrawElementsIndirectCommandBuffer(alloc, this.mode, this.type);
     }
 
     @Override
-    protected void drawBatch(long offset, int count, int stride) {
-        glMultiDrawElementsIndirect(this.mode, this.type, this.addr + offset, count, stride);
+    public IDrawIndirectCommandBuffer<DrawElementsIndirectCommand> commandBufferGPU(@NonNull Allocator alloc, boolean barrier) {
+        return new GPUDrawElementsIndirectCommandBuffer(alloc, this.mode, barrier, this.type);
     }
 }

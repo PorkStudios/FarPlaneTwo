@@ -35,4 +35,9 @@ interface IDrawElementsIndirectCommandBuffer extends IDrawIndirectCommandBuffer<
     default DrawElementsIndirectCommand newCommand() {
         return new DrawElementsIndirectCommand();
     }
+
+    @Override
+    default Class<DrawElementsIndirectCommand> commandClass() {
+        return DrawElementsIndirectCommand.class;
+    }
 }

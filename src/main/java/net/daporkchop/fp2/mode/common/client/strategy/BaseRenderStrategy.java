@@ -26,6 +26,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.AllocatedGLBuffer;
 import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
+import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
@@ -40,7 +41,7 @@ import static org.lwjgl.opengl.GL15.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseRenderStrategy<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarRenderStrategy<POS, T> {
+public abstract class BaseRenderStrategy<POS extends IFarPos, T extends IFarTile, C extends IDrawIndirectCommand> extends AbstractReleasable implements IFarRenderStrategy<POS, T, C> {
     /*
      * struct RenderData {
      *   u64 vertexOffset; //offset of vertex data from the beginning of gpu memory, in multiples of vertex size

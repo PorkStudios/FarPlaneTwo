@@ -20,6 +20,8 @@
 
 package net.daporkchop.fp2.client.gl.commandbuffer;
 
+import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBuffer;
+
 /**
  * Buffer for OpenGL draw commands.
  * <p>
@@ -27,7 +29,9 @@ package net.daporkchop.fp2.client.gl.commandbuffer;
  * the same order in which they were submitted.
  *
  * @author DaPorkchop_
+ * @deprecated use {@link IDrawIndirectCommandBuffer}
  */
+@Deprecated
 public interface IDrawCommandBuffer extends AutoCloseable {
     /**
      * Prepares to enter a new drawing phase.

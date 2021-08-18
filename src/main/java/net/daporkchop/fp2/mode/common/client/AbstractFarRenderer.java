@@ -51,7 +51,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
 
     protected final GLBuffer drawCommandBuffer = new GLBuffer(GL_STREAM_DRAW);
 
-    protected final IFarRenderStrategy<POS, T> strategy;
+    protected final IFarRenderStrategy<POS, T, ?> strategy;
 
     public AbstractFarRenderer(@NonNull IFarClientContext<POS, T> context) {
         this.context = context;
@@ -64,7 +64,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
     /**
      * @return the {@link IFarRenderStrategy} used by this renderer
      */
-    protected abstract IFarRenderStrategy<POS, T> strategy0();
+    protected abstract IFarRenderStrategy<POS, T, ?> strategy0();
 
     /**
      * @return a new {@link BakeManager}
@@ -75,11 +75,11 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
 
     @Override
     public void prepare(float partialTicks, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
-        checkGLError("pre fp2 build index");
+        checkGLError("pre fp2 select");
 
         this.bakeManager.index.select(frustum, partialTicks);
 
-        checkGLError("post fp2 prepare");
+        checkGLError("post fp2 select");
     }
 
     @Override

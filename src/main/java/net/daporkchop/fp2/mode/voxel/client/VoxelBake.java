@@ -83,10 +83,9 @@ public class VoxelBake {
             .interpretation(VertexAttributeInterpretation.FLOAT)
             .build();
 
-    protected static final VertexFormat VERTEX_FORMAT = new VertexFormat(ATTRIB_POS, max(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT, INT_SIZE));
+    protected static final VertexFormat VERTEX_FORMAT = new VertexFormat("voxel", ATTRIB_POS, max(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT, INT_SIZE));
 
     public void vertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao) {
-        FP2_LOG.info("voxel vertex size: {} bytes", VERTEX_FORMAT.size());
         VERTEX_FORMAT.configureVAO(vao, buffer);
     }
 

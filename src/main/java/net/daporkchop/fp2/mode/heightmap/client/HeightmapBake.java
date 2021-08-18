@@ -92,14 +92,13 @@ public class HeightmapBake {
             .interpretation(VertexAttributeInterpretation.FLOAT)
             .build();
 
-    protected static final VertexFormat VERTEX_FORMAT = new VertexFormat(ATTRIB_HEIGHT_FRAC, max(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT, INT_SIZE));
+    protected static final VertexFormat VERTEX_FORMAT = new VertexFormat("heightmap", ATTRIB_HEIGHT_FRAC, max(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT, INT_SIZE));
 
     protected static int vertexMapIndex(int x, int z, int layer) {
         return (x * T_VERTS + z) * MAX_LAYERS + layer;
     }
 
     public void vertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao) {
-        FP2_LOG.info("heightmap vertex size: {} bytes", VERTEX_FORMAT.size());
         VERTEX_FORMAT.configureVAO(vao, buffer);
     }
 

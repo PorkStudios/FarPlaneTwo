@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.mode.heightmap.client;
 
+import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
 import net.daporkchop.fp2.mode.common.client.strategy.IMultipassRenderStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
@@ -27,5 +28,5 @@ import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 /**
  * @author DaPorkchop_
  */
-public interface IMultipassHeightmapRenderStrategy extends IHeightmapRenderStrategy, IMultipassRenderStrategy<HeightmapPos, HeightmapTile> {
+public interface IMultipassHeightmapRenderStrategy<C extends IDrawIndirectCommand> extends IHeightmapRenderStrategy<C>, IMultipassRenderStrategy<HeightmapPos, HeightmapTile, C> {
 }
