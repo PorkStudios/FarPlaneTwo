@@ -23,8 +23,12 @@ package net.daporkchop.fp2.client.gl.indirect.elements;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.indirect.AbstractGPUDrawIndirectCommandBuffer;
 import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBuffer;
+import net.daporkchop.fp2.util.DirectBufferReuse;
 import net.daporkchop.fp2.util.alloc.Allocator;
 
+import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
+import static org.lwjgl.opengl.GL40.*;
 import static org.lwjgl.opengl.GL43.*;
 
 /**
@@ -43,6 +47,12 @@ final class GPUDrawElementsIndirectCommandBuffer extends AbstractGPUDrawIndirect
 
     @Override
     protected void drawBatch(long offset, int count, int stride) {
-        glMultiDrawElementsIndirect(this.mode, this.type, offset, count, stride);
+        if (ALLOW_MULTIDRAW) { //fast: execute all commands at once
+            glMultiDrawElementsIndirect(this.mode, this.type, offset, count, stride);
+        } else { //slow: execute commands one-at-a-time
+            for (long addr = offset, end = addr + (long) count * stride; addr != end; addr += stride) {
+                glDrawElementsIndirect(this.mode, this.type, addr);
+            }
+        }
     }
 }

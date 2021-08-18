@@ -35,23 +35,15 @@ import static org.lwjgl.opengl.GL11.*;
 @UtilityClass
 @SideOnly(Side.CLIENT)
 public class GLCompatibilityHelper {
-    /**
-     * This is a workaround for an issue with the official AMD driver which results in horrible performance when a vertex attribute doesn't
-     * have a 4-byte alignment.
-     */
     public final boolean WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING = FP2Config.compatibility.workaroundAmdVertexPadding.shouldEnable(isOfficialAmdDriver());
-
-    /**
-     * This is a workaround for an issue with the official Intel driver which results in mesh flickering between frames when issuing indirect
-     * multidraw commands from GPU memory.
-     */
-    public final boolean WORKAROUND_INTEL_MULTIDRAW_FLICKERING = FP2Config.compatibility.workaroundIntelMultidrawFlickering.shouldEnable(isOfficialIntelDriver());
+    public final boolean WORKAROUND_INTEL_MULTIDRAW_NOT_WORKING = FP2Config.compatibility.workaroundIntelMultidrawNotWorking.shouldEnable(isOfficialIntelDriver());
 
     public final int EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT = WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? INT_SIZE : 1;
+    public final boolean ALLOW_MULTIDRAW = !WORKAROUND_INTEL_MULTIDRAW_NOT_WORKING;
 
     static {
         FP2_LOG.info("{}enabling AMD vertex attribute padding workaround", WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? "" : "not ");
-        FP2_LOG.info("{}enabling Intel multidraw flickering workaround", WORKAROUND_INTEL_MULTIDRAW_FLICKERING ? "" : "not ");
+        FP2_LOG.info("{}enabling Intel multidraw workaround", WORKAROUND_INTEL_MULTIDRAW_NOT_WORKING ? "" : "not ");
     }
 
     private boolean isOfficialAmdDriver() {

@@ -25,8 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.minecraft.client.Minecraft;
 
-import java.util.Arrays;
-
+import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL20.*;
 
 /**
@@ -41,6 +40,8 @@ class Shader {
 
     protected Shader(@NonNull ShaderType type, @NonNull String[] names, @NonNull String[] code) {
         this.type = type;
+
+        FP2_LOG.debug("compiling {} shader with source:\n{}", type, String.join("", code));
 
         //allocate shader
         this.id = glCreateShader(type.id);

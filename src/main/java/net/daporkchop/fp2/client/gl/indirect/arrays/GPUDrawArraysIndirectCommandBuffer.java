@@ -25,6 +25,8 @@ import net.daporkchop.fp2.client.gl.indirect.AbstractGPUDrawIndirectCommandBuffe
 import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBuffer;
 import net.daporkchop.fp2.util.alloc.Allocator;
 
+import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
+import static org.lwjgl.opengl.GL40.*;
 import static org.lwjgl.opengl.GL43.*;
 
 /**
@@ -39,6 +41,12 @@ final class GPUDrawArraysIndirectCommandBuffer extends AbstractGPUDrawIndirectCo
 
     @Override
     protected void drawBatch(long offset, int count, int stride) {
-        glMultiDrawArraysIndirect(this.mode, offset, count, stride);
+        if (ALLOW_MULTIDRAW) { //fast: execute all commands at once
+            glMultiDrawArraysIndirect(this.mode, offset, count, stride);
+        } else { //slow: execute commands one-at-a-time
+            for (long addr = offset, end = addr + (long) count * stride; addr != end; addr += stride) {
+                glDrawArraysIndirect(this.mode, addr);
+            }
+        }
     }
 }
