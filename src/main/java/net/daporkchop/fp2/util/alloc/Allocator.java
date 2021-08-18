@@ -85,6 +85,16 @@ public interface Allocator {
         }
 
         /**
+         * Gets a simple {@link GrowFunction} which grows the heap by multiples of {@code 2}, rounded up to a given step.
+         *
+         * @param step the step size to round heap sizes to
+         * @return a {@link GrowFunction} with the given step
+         */
+        static GrowFunction pow2(long step) {
+            return (oldCapacity, increment) -> PMath.roundUp(max(oldCapacity + increment, multiplyExact(oldCapacity, 2L)), step);
+        }
+
+        /**
          * Computes the new capacity to grow to.
          *
          * @param oldCapacity the previous capacity

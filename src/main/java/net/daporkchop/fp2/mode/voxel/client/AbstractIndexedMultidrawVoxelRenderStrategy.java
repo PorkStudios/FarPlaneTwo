@@ -28,10 +28,13 @@ import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
 import net.daporkchop.fp2.mode.common.client.index.AbstractRenderIndex;
+import net.daporkchop.fp2.mode.common.client.index.CPUCulledRenderIndex;
 import net.daporkchop.fp2.mode.common.client.index.GPUCulledRenderIndex;
 import net.daporkchop.fp2.mode.common.client.strategy.IndexedMultidrawRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
+
+import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
 
 /**
  * @author DaPorkchop_
@@ -43,7 +46,9 @@ public abstract class AbstractIndexedMultidrawVoxelRenderStrategy extends Indexe
 
     @Override
     public AbstractRenderIndex<VoxelPos, ?, ?, ?> createRenderIndex(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
-        return new GPUCulledRenderIndex<>(mode, this, vao -> this.configureVertexAttributes(this.vertices, vao), this.indices, VoxelShaders.CULL_SHADER);
+        return WORKAROUND_INTEL_MULTIDRAW_FLICKERING
+                ? new CPUCulledRenderIndex<>(mode, this, vao -> this.configureVertexAttributes(this.vertices, vao), this.indices)
+                : new GPUCulledRenderIndex<>(mode, this, vao -> this.configureVertexAttributes(this.vertices, vao), this.indices, VoxelShaders.CULL_SHADER);
     }
 
     @Override

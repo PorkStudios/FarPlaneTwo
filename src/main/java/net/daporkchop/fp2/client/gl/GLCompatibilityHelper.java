@@ -41,15 +41,28 @@ public class GLCompatibilityHelper {
      */
     public final boolean WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING = FP2Config.compatibility.workaroundAmdVertexPadding.shouldEnable(isOfficialAmdDriver());
 
+    /**
+     * This is a workaround for an issue with the official Intel driver which results in mesh flickering between frames when issuing indirect
+     * multidraw commands from GPU memory.
+     */
+    public final boolean WORKAROUND_INTEL_MULTIDRAW_FLICKERING = FP2Config.compatibility.workaroundIntelMultidrawFlickering.shouldEnable(isOfficialIntelDriver());
+
     public final int EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT = WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? INT_SIZE : 1;
 
     static {
         FP2_LOG.info("{}enabling AMD vertex attribute padding workaround", WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? "" : "not ");
+        FP2_LOG.info("{}enabling Intel multidraw flickering workaround", WORKAROUND_INTEL_MULTIDRAW_FLICKERING ? "" : "not ");
     }
 
     private boolean isOfficialAmdDriver() {
         String brand = glGetString(GL_VENDOR) + ' ' + glGetString(GL_VERSION) + ' ' + glGetString(GL_RENDERER);
 
         return (brand.contains("AMD") || brand.contains("ATI")) && !brand.contains("Mesa");
+    }
+
+    private boolean isOfficialIntelDriver() {
+        String brand = glGetString(GL_VENDOR) + ' ' + glGetString(GL_VERSION) + ' ' + glGetString(GL_RENDERER);
+
+        return (brand.contains("Intel")) && !brand.contains("Mesa");
     }
 }

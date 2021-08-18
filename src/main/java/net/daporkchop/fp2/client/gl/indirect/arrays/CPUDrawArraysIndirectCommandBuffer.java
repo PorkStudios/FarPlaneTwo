@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.indirect.elements;
+package net.daporkchop.fp2.client.gl.indirect.arrays;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.indirect.AbstractDrawIndirectCommandBuffer;
@@ -30,31 +30,27 @@ import static java.lang.Math.*;
 import static org.lwjgl.opengl.GL43.*;
 
 /**
- * Implementation of {@link IDrawIndirectCommandBuffer} for {@link DrawElementsIndirectCommand}s whose commands are stored only in client memory.
+ * Implementation of {@link IDrawIndirectCommandBuffer} for {@link DrawArraysIndirectCommand}s whose commands are stored only in client memory.
  *
  * @author DaPorkchop_
  */
-final class CPUDrawElementsIndirectCommandBuffer extends AbstractDrawIndirectCommandBuffer<DrawElementsIndirectCommand> implements IDrawElementsIndirectCommandBuffer {
-    protected final int type;
-
-    public CPUDrawElementsIndirectCommandBuffer(@NonNull Allocator alloc, int mode, int type) {
+final class CPUDrawArraysIndirectCommandBuffer extends AbstractDrawIndirectCommandBuffer<DrawArraysIndirectCommand> implements IDrawArraysIndirectCommandBuffer {
+    public CPUDrawArraysIndirectCommandBuffer(@NonNull Allocator alloc, int mode) {
         super(alloc, mode);
-
-        this.type = type;
     }
 
     @Override
     protected void drawBatch(long offset, int count, int stride) {
         //this throws an exception?!? wtf LWJGL
-        //glMultiDrawElementsIndirect(this.mode, this.type, this.addr + offset, count, stride);
+        //glMultiDrawArraysIndirect(this.mode, this.addr + offset, count, stride);
 
         //this is gross because it might not have enough capacity
-        //glMultiDrawElementsIndirect(this.mode, this.type, DirectBufferReuse.wrapInt(this.addr + offset, toInt(this.commandSize() * count * stride)), count, stride);
+        //glMultiDrawArraysIndirect(this.mode, DirectBufferReuse.wrapInt(this.addr + offset, toInt(this.commandSize() * count * stride)), count, stride);
 
         int maxCommandsPerBatch = Integer.MAX_VALUE / stride; //maximum number of commands that we can fit into Integer.MAX_VALUE bytes, therefore allowing us to fit it into a ByteBuffer
         for (int done = 0, batchCount; done < count; done += batchCount) {
             batchCount = min(count - done, maxCommandsPerBatch);
-            glMultiDrawElementsIndirect(this.mode, this.type, DirectBufferReuse.wrapByte(this.addr + offset + (long) done * stride, batchCount * stride), batchCount, stride);
+            glMultiDrawArraysIndirect(this.mode, DirectBufferReuse.wrapByte(this.addr + offset + (long) done * stride, batchCount * stride), batchCount, stride);
         }
     }
 }

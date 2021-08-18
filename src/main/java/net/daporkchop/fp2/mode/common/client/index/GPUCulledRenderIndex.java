@@ -44,6 +44,8 @@ import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.opengl.GL43.*;
 
 /**
+ * Implementation of {@link AbstractRenderIndex} which does frustum culling in a compute shader on the GPU.
+ *
  * @author DaPorkchop_
  */
 public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCommand> extends AbstractRenderIndex<POS, C, GPUCulledRenderIndex<POS, C>, GPUCulledRenderIndex.Level<POS, C>> {
@@ -73,21 +75,17 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
             vaoInitializer.accept(vao);
 
             vao.putElementArray(elementArray);
-        }, Allocator.GrowFunction.sqrt2(WORK_GROUP_SIZE.totalSize()));
+        }, Allocator.GrowFunction.pow2(WORK_GROUP_SIZE.totalSize()));
     }
 
-    /**
-     * Should be called before issuing any draw commands.
-     * <p>
-     * This will determine which tiles need to be rendered for the current frame.
-     */
+    @Override
     public void select(@NonNull IFrustum frustum, float partialTicks) {
         ShaderClippingStateHelper.update(frustum);
         ShaderClippingStateHelper.bind();
 
         try (ComputeShaderProgram cullShader = this.cullShader.use()) {
             for (Level level : this.levels) {
-                level.select();
+                level.select(frustum, partialTicks);
             }
         }
 
@@ -111,7 +109,7 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
         }
 
         @Override
-        protected void select0() {
+        protected void select0(@NonNull IFrustum frustum, float partialTicks) {
             //bind SSBOs
             this.positionsBuffer.bindBase(GL_SHADER_STORAGE_BUFFER, POSITIONS_BUFFER_BINDING_INDEX);
             this.commandBuffer.openglBuffer().bindBase(GL_SHADER_STORAGE_BUFFER, COMMANDS_BUFFER_BINDING_INDEX);

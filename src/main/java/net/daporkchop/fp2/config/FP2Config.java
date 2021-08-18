@@ -168,6 +168,22 @@ public class FP2Config {
         @Config.LangKey("config.fp2.performance.lowResolutionEnable")
         @Config.RequiresWorldRestart
         public boolean lowResolutionEnable = true;
+
+        @Config.Comment({
+                "Whether or not frustum culling should be done asynchronously.",
+                "This can improve performance when using high LoD level counts in certain compatibility modes, but will generally",
+                "have no advantages and may cause rendering artifacts."
+        })
+        @Config.LangKey("config.fp2.performance.asyncFrustumCulling")
+        public boolean asyncFrustumCulling = false;
+
+        @Config.Comment({
+                "Whether or not frustum culling should be done on multiple threads.",
+                "This can improve performance when using high cutoff distances in certain compatibility modes, but will generally",
+                "have no advantages."
+        })
+        @Config.LangKey("config.fp2.performance.multithreadedFrustumCulling")
+        public boolean multithreadedFrustumCulling = false;
     }
 
     /**
@@ -183,6 +199,9 @@ public class FP2Config {
 
         @Config.RequiresMcRestart
         public WorkaroundState workaroundAmdVertexPadding = WorkaroundState.AUTO;
+
+        @Config.RequiresMcRestart
+        public WorkaroundState workaroundIntelMultidrawFlickering = WorkaroundState.AUTO;
 
         /**
          * @author DaPorkchop_

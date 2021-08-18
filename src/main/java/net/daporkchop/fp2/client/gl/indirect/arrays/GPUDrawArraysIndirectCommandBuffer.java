@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.indirect.elements;
+package net.daporkchop.fp2.client.gl.indirect.arrays;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.indirect.AbstractGPUDrawIndirectCommandBuffer;
@@ -28,21 +28,17 @@ import net.daporkchop.fp2.util.alloc.Allocator;
 import static org.lwjgl.opengl.GL43.*;
 
 /**
- * Implementation of {@link IDrawIndirectCommandBuffer} for {@link DrawElementsIndirectCommand}s whose commands are buffered in GPU video memory.
+ * Implementation of {@link IDrawIndirectCommandBuffer} for {@link DrawArraysIndirectCommand}s whose commands are buffered in GPU video memory.
  *
  * @author DaPorkchop_
  */
-final class GPUDrawElementsIndirectCommandBuffer extends AbstractGPUDrawIndirectCommandBuffer<DrawElementsIndirectCommand> implements IDrawElementsIndirectCommandBuffer {
-    protected final int type;
-
-    public GPUDrawElementsIndirectCommandBuffer(@NonNull Allocator alloc, int mode, boolean barrier, int type) {
+final class GPUDrawArraysIndirectCommandBuffer extends AbstractGPUDrawIndirectCommandBuffer<DrawArraysIndirectCommand> implements IDrawArraysIndirectCommandBuffer {
+    public GPUDrawArraysIndirectCommandBuffer(@NonNull Allocator alloc, int mode, boolean barrier) {
         super(alloc, mode, barrier);
-
-        this.type = type;
     }
 
     @Override
     protected void drawBatch(long offset, int count, int stride) {
-        glMultiDrawElementsIndirect(this.mode, this.type, offset, count, stride);
+        glMultiDrawArraysIndirect(this.mode, offset, count, stride);
     }
 }

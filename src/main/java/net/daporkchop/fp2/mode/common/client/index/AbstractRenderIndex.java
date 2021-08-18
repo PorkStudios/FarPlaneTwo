@@ -26,7 +26,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
 import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBuffer;
-import net.daporkchop.fp2.client.gl.indirect.elements.GPUDrawElementsIndirectCommandBuffer;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
@@ -58,7 +57,6 @@ import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
-import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 
 /**
@@ -112,7 +110,11 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawIn
      * <p>
      * This will determine which tiles need to be rendered for the current frame.
      */
-    public abstract void select(@NonNull IFrustum frustum, float partialTicks);
+    public void select(@NonNull IFrustum frustum, float partialTicks) {
+        for (L level : this.levels) {
+            level.select(frustum, partialTicks);
+        }
+    }
 
     public boolean hasAnyTilesForLevel(int level) {
         return !this.levels[level].positionsToSlots.isEmpty();
@@ -267,17 +269,17 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawIn
             this.commandBuffer.clearRange(slot * RENDER_PASS_COUNT, RENDER_PASS_COUNT);
         }
 
-        public void select() {
+        public void select(@NonNull IFrustum frustum, float partialTicks) {
             if (this.positionsToSlots.isEmpty()) { //nothing to do
                 return;
             }
 
             this.upload();
 
-            this.select0();
+            this.select0(frustum, partialTicks);
         }
 
-        protected abstract void select0();
+        protected abstract void select0(@NonNull IFrustum frustum, float partialTicks);
 
         public void draw(int pass) {
             if (this.positionsToSlots.isEmpty()) { //nothing to do
