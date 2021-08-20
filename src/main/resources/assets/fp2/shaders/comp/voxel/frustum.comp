@@ -61,5 +61,20 @@ void process(in ivec4 pos, inout CommandGroup group) {
 
 void main() {
     uint idx = gl_GlobalInvocationIndex;
-    process(positions[idx], commands[idx]);
+
+    ivec4 pos = positions[idx];
+    CommandGroup group = commands[idx];
+
+    ivec3 position_absolute = ivec3(pos.x, pos.y, pos.z) << (T_SHIFT + pos.w);
+    ivec3 position_relative = position_absolute - glState.camera.position_floor;
+
+    int instanceCount = int(isBoxInFrustum(
+    vec3(position_relative) - glState.camera.position_fract,
+    vec3(position_relative + vec3(T_VOXELS << pos.w)) - glState.camera.position_fract));
+
+    for (int i = 0; i < RENDER_PASS_COUNT; i++) {
+        group.commands[i].instanceCount = (-group.commands[i].count >> 31) & instanceCount;
+    }
+
+    commands[idx] = group;
 }
