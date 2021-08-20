@@ -260,4 +260,27 @@ public class OpenGL {
                         "impossible to find a work group size in range [%d, %d] (GL_MAX_COMPUTE_WORK_GROUP_SIZE=%s, GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS=%d)",
                         minSize, maxSize, MAX_COMPUTE_WORK_GROUP_SIZE, MAX_COMPUTE_WORK_GROUP_INVOCATIONS)));
     }
+
+    /**
+     * @return the size of the given OpenGL type, in bytes
+     */
+    public int typeSizeBytes(int type) {
+        switch (type) {
+            case GL_BYTE:
+            case GL_UNSIGNED_BYTE:
+                return BYTE_SIZE;
+            case GL_SHORT:
+            case GL_UNSIGNED_SHORT:
+                return SHORT_SIZE;
+            case GL_INT:
+            case GL_UNSIGNED_INT:
+                return INT_SIZE;
+            case GL_FLOAT:
+                return FLOAT_SIZE;
+            case GL_DOUBLE:
+                return DOUBLE_SIZE;
+            default:
+                throw new IllegalArgumentException();
+        }
+    }
 }

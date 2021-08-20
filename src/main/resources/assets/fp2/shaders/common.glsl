@@ -103,7 +103,7 @@ layout(std140, binding = 1) uniform FP2_STATE {
 
 //Texture UVs
 
-layout(std430, binding = 0) buffer QUAD_LISTS {
+layout(std430, binding = 0) readonly buffer QUAD_LISTS {
     ivec2 quad_lists[];
 };
 
@@ -115,7 +115,7 @@ struct BakedQuad {
     float tintFactor;
 };
 
-layout(std430, binding = 1) buffer QUAD_DATA {
+layout(std430, binding = 1) readonly buffer QUAD_DATA {
     BakedQuad quad_data[];
 };
 

@@ -23,11 +23,9 @@ package net.daporkchop.fp2.client.gl.indirect.elements;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.indirect.AbstractGPUDrawIndirectCommandBuffer;
 import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBuffer;
-import net.daporkchop.fp2.util.DirectBufferReuse;
 import net.daporkchop.fp2.util.alloc.Allocator;
 
 import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL40.*;
 import static org.lwjgl.opengl.GL43.*;
 

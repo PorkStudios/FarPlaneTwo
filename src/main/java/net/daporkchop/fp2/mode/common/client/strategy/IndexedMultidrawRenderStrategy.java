@@ -22,11 +22,7 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBufferFactory;
 import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommand;
-import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
-import net.daporkchop.fp2.client.gl.commandbuffer.IndirectIndexedMultidrawCommandBuffer;
-import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommandBufferFactory;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.mode.api.IFarPos;
@@ -42,11 +38,6 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public abstract class IndexedMultidrawRenderStrategy<POS extends IFarPos, T extends IFarTile> extends IndexedRenderStrategy<POS, T> implements IIndexedMultipassRenderStrategy<POS, T> {
     public IndexedMultidrawRenderStrategy(int vertexSize) {
         super(vertexSize);
-    }
-
-    @Override
-    public IDrawCommandBuffer createCommandBuffer() {
-        return new IndirectIndexedMultidrawCommandBuffer(vao -> this.configureVertexAttributes(this.vertices, vao), this.indices);
     }
 
     protected abstract void configureVertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao);

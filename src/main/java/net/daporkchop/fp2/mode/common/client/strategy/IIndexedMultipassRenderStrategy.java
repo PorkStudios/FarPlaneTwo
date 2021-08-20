@@ -20,32 +20,12 @@
 
 package net.daporkchop.fp2.mode.common.client.strategy;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
 import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
-
-import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
-import static net.daporkchop.fp2.mode.common.client.strategy.BaseRenderStrategy.*;
-import static net.daporkchop.fp2.mode.common.client.strategy.IndexedRenderStrategy.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
 public interface IIndexedMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile> extends IMultipassRenderStrategy<POS, T, DrawElementsIndirectCommand> {
-    default void drawTileIndexedMultipass(@NonNull IDrawCommandBuffer[][] passes, long renderData, int x, int y, int z, int level) {
-        int baseVertex = toInt(_renderdata_vertexOffset(renderData));
-        int firstIndex = toInt(_renderdata_indexOffset(renderData));
-
-        for (int i = 0; i < RENDER_PASS_COUNT; i++) {
-            int count = _renderdata_indexCount(renderData, i);
-            if (count != 0) {
-                passes[i][level].drawElements(x, y, z, level, baseVertex, firstIndex, count);
-                firstIndex += count;
-            }
-        }
-    }
 }

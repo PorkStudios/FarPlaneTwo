@@ -76,7 +76,7 @@ public class CPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
         @Override
         protected IDrawIndirectCommandBuffer<C> createCommandBuffer(@NonNull CPUCulledRenderIndex<POS, C> parent) {
             //the command buffer can be in CPU memory, as it's accessed primarily by the CPU
-            return parent.strategy.createCommandBufferFactory().commandBufferGPU(parent.directMemoryAlloc, false);
+            return parent.strategy.createCommandBufferFactory().commandBufferCPU(parent.directMemoryAlloc);
         }
 
         @Override

@@ -25,7 +25,6 @@ import io.netty.buffer.ByteBufAllocator;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.AllocatedGLBuffer;
-import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -76,8 +75,6 @@ public abstract class BaseRenderStrategy<POS extends IFarPos, T extends IFarTile
     public BaseRenderStrategy(int vertexSize) {
         this.vertices = AllocatedGLBuffer.create("vertices", GL_DYNAMIC_DRAW, this.vertexSize = vertexSize, true);
     }
-
-    protected abstract IDrawCommandBuffer createCommandBuffer();
 
     @Override
     public long renderDataSize() {

@@ -21,15 +21,20 @@
 package net.daporkchop.fp2.client.gl.indirect.elements;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.client.gl.OpenGL;
+import net.daporkchop.fp2.client.gl.func.GLFunctions;
 import net.daporkchop.fp2.client.gl.indirect.AbstractDrawIndirectCommandBuffer;
 import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBuffer;
 import net.daporkchop.fp2.util.DirectBufferReuse;
 import net.daporkchop.fp2.util.alloc.Allocator;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL40.*;
+import static org.lwjgl.opengl.GL42.*;
 import static org.lwjgl.opengl.GL43.*;
 
 /**
@@ -60,13 +65,41 @@ final class CPUDrawElementsIndirectCommandBuffer extends AbstractDrawIndirectCom
                 batchCount = min(count - done, maxCommandsPerBatch);
                 glMultiDrawElementsIndirect(this.mode, this.type, DirectBufferReuse.wrapByte(this.addr + offset + (long) done * stride, batchCount * stride), batchCount, stride);
             }
+
+            /*long counts = PUnsafe.allocateMemory((long) count * INT_SIZE);
+            long indices = PUnsafe.allocateMemory((long) count * LONG_SIZE);
+            long baseVerts = PUnsafe.allocateMemory((long) count * INT_SIZE);
+            try {
+                DrawElementsIndirectCommand command = new DrawElementsIndirectCommand();
+                for (long addr = this.addr + offset, end = addr + (long) count * stride, idx = 0L; addr != end; addr += stride, idx++) {
+                    command.load(addr);
+
+                    PUnsafe.putInt(counts + idx * INT_SIZE, command.count());
+                    PUnsafe.putLong(indices + idx * LONG_SIZE, (long) command.firstIndex() * SHORT_SIZE);
+                    PUnsafe.putInt(baseVerts + idx * INT_SIZE, command.baseVertex());
+                }
+
+                GLFunctions.INSTANCE.glMultiDrawElementsBaseVertex(this.mode, counts, this.type, indices, count, baseVerts);
+                //GLFunctions.INSTANCE.glMultiDrawElements(this.mode, counts, this.type, indices, count);
+            } finally {
+                PUnsafe.freeMemory(baseVerts);
+                PUnsafe.freeMemory(indices);
+                PUnsafe.freeMemory(counts);
+            }*/
         } else {
-            for (long addr = offset, end = addr + (long) count * stride; addr != end; addr += stride) {
+            for (long addr = this.addr + offset, end = addr + (long) count * stride; addr != end; addr += stride) {
                 //LWJGL is fucking garbage and doesn't let me do this unless drawing commands from GPU memory
                 //  glDrawElementsIndirect(this.mode, this.type, addr);
 
                 glDrawElementsIndirect(this.mode, this.type, DirectBufferReuse.wrapByte(addr, toInt(DrawElementsIndirectCommand._SIZE)));
             }
+
+            /*DrawElementsIndirectCommand command = new DrawElementsIndirectCommand();
+            for (long addr = this.addr + offset, end = addr + (long) count * stride; addr != end; addr += stride) {
+                command.load(addr);
+
+                glDrawElementsInstancedBaseVertexBaseInstance(this.mode, command.count(), this.type, command.firstIndex() * 2L, command.instanceCount(), command.baseVertex(), command.baseInstance());
+            }*/
         }
     }
 }

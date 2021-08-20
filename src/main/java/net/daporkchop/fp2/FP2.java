@@ -22,6 +22,7 @@ package net.daporkchop.fp2;
 
 import net.daporkchop.fp2.client.FP2Client;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
+import net.daporkchop.fp2.compat.x86.x86FeatureDetector;
 import net.daporkchop.fp2.debug.FP2Debug;
 import net.daporkchop.fp2.net.client.CPacketDropAllTiles;
 import net.daporkchop.fp2.net.client.CPacketRenderMode;
@@ -58,6 +59,7 @@ public class FP2 {
     public void preInit(FMLPreInitializationEvent event) {
         FP2_LOG = event.getModLog();
 
+        FP2_LOG.info("Detected x86 SIMD extension: {}", x86FeatureDetector.INSTANCE.maxSupportedVectorExtension());
         this.registerPackets();
 
         FP2Server.preInit();
