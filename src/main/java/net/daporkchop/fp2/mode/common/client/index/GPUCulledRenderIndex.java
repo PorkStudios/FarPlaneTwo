@@ -38,6 +38,7 @@ import net.daporkchop.fp2.util.alloc.Allocator;
 
 import java.util.function.Consumer;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static org.lwjgl.opengl.GL30.*;
@@ -56,6 +57,14 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
      */
     protected static final int MAX_COMPUTE_WORK_GROUP_SIZE = 64;
 
+    /**
+     * The minimum permitted total size.
+     * <p>
+     * This serves no purpose beyond the annoying fact that for some reason the Intel driver bugs out with multidraw when fewer than about 1024 commands are executed at
+     * once, so we ensure it's always more than that.
+     */
+    protected static final long MIN_CAPACITY = 1024L;
+
     protected static final WorkGroupSize WORK_GROUP_SIZE = getOptimalComputeWorkSizePow2(null, MAX_COMPUTE_WORK_GROUP_SIZE);
 
     protected static final int POSITIONS_BUFFER_BINDING_INDEX = 3;
@@ -70,12 +79,12 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
     }
 
     @Override
-    protected Level<POS, C> createLevel(@NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray) {
+    protected Level<POS, C> createLevel(int level, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray) {
         return new Level<>(this, vao -> {
             vaoInitializer.accept(vao);
 
             vao.putElementArray(elementArray);
-        }, Allocator.GrowFunction.pow2(WORK_GROUP_SIZE.totalSize()));
+        }, Allocator.GrowFunction.pow2(max(WORK_GROUP_SIZE.totalSize(), MIN_CAPACITY)));
     }
 
     @Override

@@ -42,7 +42,6 @@ import net.daporkchop.fp2.util.alloc.SequentialFixedSizeAllocator;
 import net.daporkchop.fp2.util.datastructure.SimpleSet;
 import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.common.util.GenericMatcher;
-import net.daporkchop.lib.common.util.PArrays;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 
@@ -78,10 +77,12 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawIn
         this.renderablePositions = this.directPosAccess.newPositionSet();
 
         this.levels = uncheckedCast(Array.newInstance(GenericMatcher.find(this.getClass(), AbstractRenderIndex.class, "L"), MAX_LODS));
-        PArrays.fill(this.levels, () -> this.createLevel(vaoInitializer, elementArray));
+        for (int level = 0; level < MAX_LODS; level++) {
+            this.levels[level] = this.createLevel(level, vaoInitializer, elementArray);
+        }
     }
 
-    protected abstract L createLevel(@NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray);
+    protected abstract L createLevel(int level, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray);
 
     /**
      * Executes multiple updates in bulk.

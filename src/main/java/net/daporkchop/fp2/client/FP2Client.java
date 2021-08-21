@@ -27,7 +27,6 @@ import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IReloadableResourceManager;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
@@ -71,7 +70,7 @@ public class FP2Client {
             }
         }
 
-        MinecraftForge.EVENT_BUS.register(new ClientEvents());
+        ClientEvents.register();
 
         ((IReloadableResourceManager) Minecraft.getMinecraft().getResourceManager()).registerReloadListener(new FP2ResourceReloadListener());
     }

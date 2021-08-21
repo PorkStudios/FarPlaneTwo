@@ -6,6 +6,7 @@
   "client": [
     "client.gui.IGuiScreen",
     "client.multiplayer.MixinWorldClient",
+    "client.renderer.chunk.MixinRenderChunk",
     "client.renderer.culling.MixinFrustum",
     "client.renderer.culling.MixinICamera",
     "client.renderer.MixinEntityRenderer",

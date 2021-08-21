@@ -21,7 +21,10 @@
 package net.daporkchop.fp2.mode.common.client.index;
 
 import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import lombok.NonNull;
+import net.daporkchop.fp2.asm.interfaz.client.renderer.IMixinRenderGlobal;
+import net.daporkchop.fp2.client.VanillaRenderabilityTracker;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
 import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBuffer;
@@ -32,17 +35,17 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
+import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.util.alloc.Allocator;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.Iterator;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.function.Consumer;
 
+import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Implementation of {@link AbstractRenderIndex} which does frustum culling on the CPU.
@@ -55,18 +58,22 @@ public class CPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
     }
 
     @Override
-    protected Level<POS, C> createLevel(@NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray) {
-        return new Level<>(this, vao -> {
+    protected Level<POS, C> createLevel(int level, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray) {
+        Consumer<VertexArrayObject> theVaoInitializer = vao -> {
             vaoInitializer.accept(vao);
-
             vao.putElementArray(elementArray);
-        }, Allocator.GrowFunction.pow2(1L));
+        };
+        Allocator.GrowFunction growFunction = Allocator.GrowFunction.pow2(1L);
+
+        return level == 0
+                ? new LevelZero<>(this, theVaoInitializer, growFunction)
+                : new LevelNonZero<>(this, theVaoInitializer, growFunction);
     }
 
     /**
      * @author DaPorkchop_
      */
-    protected static class Level<POS extends IFarPos, C extends IDrawIndirectCommand> extends AbstractRenderIndex.Level<POS, C, CPUCulledRenderIndex<POS, C>, Level<POS, C>> {
+    protected static abstract class Level<POS extends IFarPos, C extends IDrawIndirectCommand> extends AbstractRenderIndex.Level<POS, C, CPUCulledRenderIndex<POS, C>, Level<POS, C>> {
         protected ForkJoinTask<Void> cullFuture;
 
         public Level(@NonNull CPUCulledRenderIndex<POS, C> parent, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull Allocator.GrowFunction growFunction) {
@@ -89,6 +96,71 @@ public class CPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
             }
         }
 
+        protected abstract void cull(@NonNull IFrustum frustum);
+
+        @Override
+        protected void draw0(int pass) {
+            if (this.cullFuture != null) { //join the culling task if needed to ensure it's complete before we proceed
+                this.cullFuture.join();
+                this.cullFuture = null;
+            }
+
+            //draw the buffered draw commands. we assume a memory barrier will be placed on GL_DRAW_INDIRECT_BUFFER, and that the buffer's contents will
+            //  not have been changed since select0() ran.
+            this.commandBuffer.draw(pass, RENDER_PASS_COUNT, this.capacity);
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    protected static class LevelZero<POS extends IFarPos, C extends IDrawIndirectCommand> extends Level<POS, C> {
+        public LevelZero(@NonNull CPUCulledRenderIndex<POS, C> parent, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull Allocator.GrowFunction growFunction) {
+            super(parent, vaoInitializer, growFunction);
+        }
+
+        @Override
+        protected void cull(@NonNull IFrustum frustum) {
+            C[] commands = this.tempCommands;
+            checkState(commands.length == RENDER_PASS_COUNT);
+
+            VanillaRenderabilityTracker vanillaRenderabilityTracker = ((IMixinRenderGlobal) mc.renderGlobal).fp2_vanillaRenderabilityTracker();
+
+            for (Iterator<Object2LongMap.Entry<POS>> itr = this.positionsToSlots.object2LongEntrySet().iterator(); itr.hasNext(); ) {
+                Object2LongMap.Entry<POS> entry = itr.next();
+                VoxelPos pos = (VoxelPos) entry.getKey(); //TODO: this
+                long slot = entry.getLongValue();
+
+                //load all commands
+                for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                    this.commandBuffer.load(commands[pass], slot * RENDER_PASS_COUNT + pass);
+                }
+
+                //check frustum intersection and update instanceCount for all commands accordingly
+                boolean inFrustum = !vanillaRenderabilityTracker.blocksFP2Render(pos.x(), pos.y(), pos.z())
+                                    && this.directPosAccess.inFrustum(this.positionsAddr + slot * this.positionSize, frustum);
+                for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                    C command = commands[pass];
+                    command.instanceCount(inFrustum && !command.isEmpty() ? 1 : 0);
+                }
+
+                //store commands again
+                for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                    this.commandBuffer.store(commands[pass], slot * RENDER_PASS_COUNT + pass);
+                }
+            }
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    protected static class LevelNonZero<POS extends IFarPos, C extends IDrawIndirectCommand> extends Level<POS, C> {
+        public LevelNonZero(@NonNull CPUCulledRenderIndex<POS, C> parent, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull Allocator.GrowFunction growFunction) {
+            super(parent, vaoInitializer, growFunction);
+        }
+
+        @Override
         protected void cull(@NonNull IFrustum frustum) {
             C[] commands = this.tempCommands;
             checkState(commands.length == RENDER_PASS_COUNT);
@@ -113,18 +185,6 @@ public class CPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
                     this.commandBuffer.store(commands[pass], slot * RENDER_PASS_COUNT + pass);
                 }
             }
-        }
-
-        @Override
-        protected void draw0(int pass) {
-            if (this.cullFuture != null) { //join the culling task if needed to ensure it's complete before we proceed
-                this.cullFuture.join();
-                this.cullFuture = null;
-            }
-
-            //draw the buffered draw commands. we assume a memory barrier will be placed on GL_DRAW_INDIRECT_BUFFER, and that the buffer's contents will
-            //  not have been changed since select0() ran.
-            this.commandBuffer.draw(pass, RENDER_PASS_COUNT, this.capacity);
         }
     }
 }
