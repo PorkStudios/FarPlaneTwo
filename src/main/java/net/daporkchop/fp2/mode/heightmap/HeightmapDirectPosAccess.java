@@ -23,7 +23,6 @@ package net.daporkchop.fp2.mode.heightmap;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
@@ -176,12 +175,6 @@ public class HeightmapDirectPosAccess implements IFarDirectPosAccess<HeightmapPo
         double d = 1 << _level(addr);
         double f = d * T_VOXELS;
         return frustum.intersectsBB(x * f, Integer.MIN_VALUE, z * f, (x + 1.0d) * f + d, Integer.MAX_VALUE, (z + 1.0d) * f + d);
-    }
-
-    @SideOnly(Side.CLIENT)
-    @Override
-    public boolean isVanillaRenderable(long addr) {
-        return ClientConstants.isVanillaRenderable(_x(addr), _z(addr));
     }
 
     @SideOnly(Side.CLIENT)

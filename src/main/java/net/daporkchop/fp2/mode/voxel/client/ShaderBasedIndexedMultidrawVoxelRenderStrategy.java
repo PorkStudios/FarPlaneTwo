@@ -29,7 +29,7 @@ import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.util.BlockRenderLayer;
 
-import static net.daporkchop.fp2.client.ClientConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -40,13 +40,13 @@ public class ShaderBasedIndexedMultidrawVoxelRenderStrategy extends AbstractInde
         if (layer == BlockRenderLayer.SOLID && pre) {
             this.preVanillaRender();
         } else if (layer == BlockRenderLayer.CUTOUT && !pre) {
-            ((AbstractTexture) mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE)).setBlurMipmapDirect(false, mc.gameSettings.mipmapLevels > 0);
+            ((AbstractTexture) MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE)).setBlurMipmapDirect(false, MC.gameSettings.mipmapLevels > 0);
 
             try (DrawMode mode = DrawMode.SHADER.begin()) {
                 this.render(index);
             }
 
-            mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
+            MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
         }
     }
 }

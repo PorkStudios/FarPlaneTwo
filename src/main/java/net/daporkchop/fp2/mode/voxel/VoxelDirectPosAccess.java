@@ -23,7 +23,6 @@ package net.daporkchop.fp2.mode.voxel;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
@@ -193,12 +192,6 @@ public class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos> {
         double d = 1 << _level(addr);
         double f = d * T_VOXELS;
         return frustum.intersectsBB(x * f, y * f, z * f, (x + 1.0d) * f + d, (y + 1.0d) * f + d, (z + 1.0d) * f + d);
-    }
-
-    @SideOnly(Side.CLIENT)
-    @Override
-    public boolean isVanillaRenderable(long addr) {
-        return ClientConstants.isVanillaRenderable(_x(addr), _y(addr), _z(addr));
     }
 
     @SideOnly(Side.CLIENT)

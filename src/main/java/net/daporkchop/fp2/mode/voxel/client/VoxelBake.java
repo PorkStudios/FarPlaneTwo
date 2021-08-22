@@ -31,6 +31,7 @@ import net.daporkchop.fp2.client.gl.vertex.VertexAttributeInterpretation;
 import net.daporkchop.fp2.client.gl.vertex.VertexAttributeType;
 import net.daporkchop.fp2.client.gl.vertex.VertexFormat;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
+import net.daporkchop.fp2.mode.common.client.RenderConstants;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
@@ -44,12 +45,11 @@ import net.minecraft.util.math.BlockPos;
 import java.util.Arrays;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.client.ClientConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.BlockType.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 
 /**
@@ -174,7 +174,7 @@ public class VoxelBake {
         int blockLight = data.light & 0xF;
         int skyLight = data.light >> 4;
         ATTRIB_LIGHT.set(vertices, vertexBase, blockLight | (blockLight << 4), skyLight | (skyLight << 4));
-        ATTRIB_COLOR.setRGB(vertices, vertexBase, mc.getBlockColors().colorMultiplier(state, biomeAccess, pos, 0));
+        ATTRIB_COLOR.setRGB(vertices, vertexBase, MC.getBlockColors().colorMultiplier(state, biomeAccess, pos, 0));
 
         int lowX = (x << POS_FRACT_SHIFT) + data.x;
         int lowY = (y << POS_FRACT_SHIFT) + data.y;
@@ -199,7 +199,7 @@ public class VoxelBake {
 
             IBlockState edgeState = FastRegistry.getBlockState(data.states[edge]);
             ATTRIB_STATE.set(vertices, currVertexBase, TexUVs.STATEID_TO_INDEXID.get(edgeState));
-            ATTRIB_COLOR.setRGB(vertices, currVertexBase, mc.getBlockColors().colorMultiplier(edgeState, biomeAccess, pos, 0));
+            ATTRIB_COLOR.setRGB(vertices, currVertexBase, MC.getBlockColors().colorMultiplier(edgeState, biomeAccess, pos, 0));
             map[baseMapIndex + edge] = indexCounter++;
         }
         return indexCounter;
@@ -242,7 +242,7 @@ public class VoxelBake {
 
                 if ((edges & (EDGE_DIR_NEGATIVE << (edge << 1))) != 0) { //the face has the negative bit set
                     if ((edges & (EDGE_DIR_POSITIVE << (edge << 1))) != 0) { //the positive bit is set as well, output the face once before flipping
-                        emitQuad(buf, oppositeCorner, c0, c1, provoking);
+                        RenderConstants.emitQuad(buf, oppositeCorner, c0, c1, provoking);
                     }
 
                     //flip the face around
@@ -251,7 +251,7 @@ public class VoxelBake {
                     c1 = i;
                 }
 
-                emitQuad(buf, oppositeCorner, c0, c1, provoking);
+                RenderConstants.emitQuad(buf, oppositeCorner, c0, c1, provoking);
             }
         }
     }

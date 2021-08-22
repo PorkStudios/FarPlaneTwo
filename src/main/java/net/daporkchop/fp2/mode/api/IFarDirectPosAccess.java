@@ -137,17 +137,6 @@ public interface IFarDirectPosAccess<POS extends IFarPos> {
     boolean inFrustum(long addr, @NonNull IFrustum frustum);
 
     /**
-     * Checks whether or not the vanilla terrain at the given position is renderable.
-     * <p>
-     * Guaranteed to only be called for nodes on level 0.
-     *
-     * @param addr the memory address of the off-heap position
-     * @return whether or not the vanilla terrain at the given position is renderable
-     */
-    @SideOnly(Side.CLIENT)
-    boolean isVanillaRenderable(long addr);
-
-    /**
      * Adds some number of vertex attributes to the given {@link VertexArrayObject} in order to be able to represent a position supported by this {@link IFarDirectPosAccess}.
      *
      * @see VertexArrayObject#attrI(IGLBuffer, int, int, int, int, int)

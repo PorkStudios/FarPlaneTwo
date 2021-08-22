@@ -40,7 +40,7 @@ import net.daporkchop.fp2.util.alloc.Allocator;
 import java.util.function.Consumer;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.client.ClientConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static org.lwjgl.opengl.GL30.*;
@@ -136,7 +136,7 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
 
             ComputeShaderProgram cullShader;
             if (this.level == 0) { //level-0: we should bind the vanilla renderability info (for use in shader) and use the level-0 shader
-                ((IMixinRenderGlobal) mc.renderGlobal).fp2_vanillaRenderabilityTracker().bindForShaderUse();
+                ((IMixinRenderGlobal) MC.renderGlobal).fp2_vanillaRenderabilityTracker().bindForShaderUse();
                 cullShader = this.parent.cullShaderLevel0;
             } else { //no need to bind any special resources, and we can use the standard shader
                 cullShader = this.parent.cullShader;

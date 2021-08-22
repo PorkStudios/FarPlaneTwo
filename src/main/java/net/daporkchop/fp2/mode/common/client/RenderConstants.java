@@ -20,7 +20,10 @@
 
 package net.daporkchop.fp2.mode.common.client;
 
+import io.netty.buffer.ByteBuf;
 import lombok.experimental.UtilityClass;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -31,10 +34,24 @@ import static org.lwjgl.opengl.GL11.*;
  * @author DaPorkchop_
  */
 @UtilityClass
+@SideOnly(Side.CLIENT)
 public class RenderConstants {
     public final int RENDER_PASS_COUNT = 3; //the total number of render passes
 
     public final int INDEX_TYPE = GL_UNSIGNED_SHORT;
     public final int INDEX_SIZE = SHORT_SIZE;
     public final int INDEX_SHIFT = Integer.numberOfTrailingZeros(INDEX_SIZE);
+
+    /**
+     * Emits the indices for drawing a quad.
+     *
+     * @param indices        the {@link ByteBuf} to write the indices to
+     * @param oppositeCorner the index of the vertex in the corner opposite the provoking vertex
+     * @param c0             the index of one of the edge vertices
+     * @param c1             the index of the other edge vertex
+     * @param provoking      the index of the provoking vertex
+     */
+    public static void emitQuad(ByteBuf indices, int oppositeCorner, int c0, int c1, int provoking) {
+        indices.writeShortLE(c1).writeShortLE(oppositeCorner).writeShortLE(c0).writeShortLE(provoking);
+    }
 }

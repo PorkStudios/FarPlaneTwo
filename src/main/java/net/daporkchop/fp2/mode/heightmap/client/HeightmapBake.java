@@ -30,6 +30,7 @@ import net.daporkchop.fp2.client.gl.vertex.IVertexAttribute;
 import net.daporkchop.fp2.client.gl.vertex.VertexAttributeInterpretation;
 import net.daporkchop.fp2.client.gl.vertex.VertexAttributeType;
 import net.daporkchop.fp2.client.gl.vertex.VertexFormat;
+import net.daporkchop.fp2.mode.common.client.RenderConstants;
 import net.daporkchop.fp2.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
@@ -40,13 +41,12 @@ import java.util.Arrays;
 import java.util.BitSet;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.client.ClientConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.mode.heightmap.HeightmapTile.*;
 import static net.daporkchop.fp2.util.BlockType.*;
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * Shared code for baking heightmap geometry.
@@ -164,7 +164,7 @@ public class HeightmapBake {
                         continue; //skip if any of the vertices are missing
                     }
 
-                    emitQuad(indices[renderType(data.state)], oppositeCorner, c1, c0, provoking);
+                    RenderConstants.emitQuad(indices[renderType(data.state)], oppositeCorner, c1, c0, provoking);
                     rendered.set(vertexMapIndex(x, z, layer));
                 }
             }
@@ -198,7 +198,7 @@ public class HeightmapBake {
                                 continue; //skip if any of the vertices are missing
                             }
 
-                            emitQuad(indices[renderType(data.state)], oppositeCorner, c1, c0, provoking);
+                            RenderConstants.emitQuad(indices[renderType(data.state)], oppositeCorner, c1, c0, provoking);
                         }
                     }
                 }
@@ -225,7 +225,7 @@ public class HeightmapBake {
         int blockLight = data.light & 0xF;
         int skyLight = data.light >> 4;
         ATTRIB_LIGHT.set(out, vertexBase, blockLight | (blockLight << 4), skyLight | (skyLight << 4));
-        ATTRIB_COLOR.setRGB(out, vertexBase, mc.getBlockColors().colorMultiplier(data.state, biomeAccess, pos, 0));
+        ATTRIB_COLOR.setRGB(out, vertexBase, MC.getBlockColors().colorMultiplier(data.state, biomeAccess, pos, 0));
 
         ATTRIB_POS_HORIZ.set(out, vertexBase, x, z);
         ATTRIB_HEIGHT_INT.set(out, vertexBase, data.height_int);

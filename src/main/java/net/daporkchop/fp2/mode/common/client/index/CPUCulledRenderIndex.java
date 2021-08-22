@@ -43,7 +43,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.function.Consumer;
 
-import static net.daporkchop.fp2.client.ClientConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -124,7 +124,7 @@ public class CPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
             C[] commands = this.tempCommands;
             checkState(commands.length == RENDER_PASS_COUNT);
 
-            VanillaRenderabilityTracker vanillaRenderabilityTracker = ((IMixinRenderGlobal) mc.renderGlobal).fp2_vanillaRenderabilityTracker();
+            VanillaRenderabilityTracker vanillaRenderabilityTracker = ((IMixinRenderGlobal) MC.renderGlobal).fp2_vanillaRenderabilityTracker();
 
             for (Iterator<Object2LongMap.Entry<POS>> itr = this.positionsToSlots.object2LongEntrySet().iterator(); itr.hasNext(); ) {
                 Object2LongMap.Entry<POS> entry = itr.next();

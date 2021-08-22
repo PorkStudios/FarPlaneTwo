@@ -26,7 +26,7 @@ import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import static net.daporkchop.fp2.client.ClientConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * Debug mode utility methods.
@@ -39,6 +39,6 @@ public class DebugUtils {
 
     @SideOnly(Side.CLIENT)
     public void clientMsg(@NonNull String msg) {
-        mc.player.sendMessage(new TextComponentString(CHAT_PREFIX + msg));
+        MC.player.sendMessage(new TextComponentString(CHAT_PREFIX + msg));
     }
 }

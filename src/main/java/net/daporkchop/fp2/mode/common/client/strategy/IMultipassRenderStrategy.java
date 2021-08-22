@@ -30,9 +30,8 @@ import net.daporkchop.fp2.mode.common.client.index.AbstractRenderIndex;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.TextureMap;
 
-import static net.daporkchop.fp2.client.ClientConstants.*;
-import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static org.lwjgl.opengl.GL11.*;
 
 /**
@@ -99,13 +98,13 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
     }
 
     default void renderCutout(@NonNull AbstractRenderIndex<POS, ?, ?, ?> index, int level) {
-        mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
+        MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, MC.gameSettings.mipmapLevels > 0);
 
         glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
         glStencilFunc(GL_LEQUAL, level + 1, 0x1F);
         index.draw(level, 1);
 
-        mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
+        MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
     }
 
     default void renderTransparent(@NonNull AbstractRenderIndex<POS, ?, ?, ?> index) {

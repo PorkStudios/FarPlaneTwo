@@ -33,10 +33,9 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import static net.daporkchop.fp2.client.ClientConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.compat.of.OFHelper.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL43.*;
 
@@ -59,8 +58,8 @@ public class FP2Client {
         int size = glGetInteger(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
         FP2_LOG.info(PStrings.fastFormat("Max SSBO size: %d bytes (%.2f MiB)", size, size / (1024.0d * 1024.0d)));
 
-        if (!mc.getFramebuffer().isStencilEnabled() && !mc.getFramebuffer().enableStencil()) {
-            if (OF && (PUnsafe.getBoolean(mc.gameSettings, OF_FASTRENDER_OFFSET) || PUnsafe.getInt(mc.gameSettings, OF_AALEVEL_OFFSET) > 0)) {
+        if (!MC.getFramebuffer().isStencilEnabled() && !MC.getFramebuffer().enableStencil()) {
+            if (OF && (PUnsafe.getBoolean(MC.gameSettings, OF_FASTRENDER_OFFSET) || PUnsafe.getInt(MC.gameSettings, OF_AALEVEL_OFFSET) > 0)) {
                 unsupported("FarPlaneTwo was unable to enable the OpenGL stencil buffer!\n"
                             + "Please launch the game without FarPlaneTwo and disable\n"
                             + "  OptiFine's \"Fast Render\" and \"Antialiasing\", then\n"

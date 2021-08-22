@@ -25,18 +25,13 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
-import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.lib.unsafe.PUnsafe;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.culling.ClippingHelper;
 import net.minecraft.client.renderer.culling.ClippingHelperImpl;
-import net.minecraft.client.renderer.culling.Frustum;
-import org.lwjgl.util.glu.Project;
 
-import static net.daporkchop.fp2.client.ClientConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.lib.common.math.PMath.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL31.*;
@@ -74,7 +69,7 @@ public class ShaderClippingStateHelper {
             GlStateManager.matrixMode(GL_PROJECTION);
             glPushMatrix();
             GlStateManager.loadIdentity();
-            MatrixHelper.reversedZ(45.0f, (float) mc.displayWidth / (float) mc.displayHeight, 0.05F);
+            MatrixHelper.reversedZ(45.0f, (float) MC.displayWidth / (float) MC.displayHeight, 0.05F);
             GlStateManager.matrixMode(GL_MODELVIEW);
         }
 
