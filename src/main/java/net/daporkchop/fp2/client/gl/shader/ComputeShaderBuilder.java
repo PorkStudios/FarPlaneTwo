@@ -21,7 +21,9 @@
 package net.daporkchop.fp2.client.gl.shader;
 
 import com.google.common.collect.ImmutableMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -44,14 +46,29 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+@EqualsAndHashCode(callSuper = false)
 public final class ComputeShaderBuilder extends ShaderManager.AbstractShaderBuilder<ComputeShaderBuilder, ComputeShaderProgram> {
     @NonNull
     @With
     protected final String programName;
+    @With(AccessLevel.PROTECTED)
     protected final Map<String, Object> defines;
 
     @With
     protected final WorkGroupSize workGroupSize;
+
+    public ComputeShaderBuilder define(@NonNull String name) {
+        return this.define(name, "");
+    }
+
+    public ComputeShaderBuilder define(@NonNull String name, @NonNull Object value) {
+        if (!value.equals(this.defines.get(name))) {
+            Map<String, Object> defines = new Object2ObjectOpenHashMap<>(this.defines);
+            defines.put(name, value);
+            return this.withDefines(ImmutableMap.copyOf(defines));
+        }
+        return this;
+    }
 
     protected String headers(@NonNull ProgramMeta meta) {
         return ShaderManager.headers(ImmutableMap.<String, Object>builder()

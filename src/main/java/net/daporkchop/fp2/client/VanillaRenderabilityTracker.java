@@ -49,7 +49,8 @@ import static org.lwjgl.opengl.GL43.*;
  */
 @RequiredArgsConstructor
 public class VanillaRenderabilityTracker extends AbstractRefCounted {
-    protected static final long ADDR_FLAGS_OFFSET = 2L * IVEC3_SIZE;
+    protected static final long HEADERS_OFFSET = 0L;
+    protected static final long FLAGS_OFFSET = HEADERS_OFFSET + 2L * IVEC3_SIZE;
 
     protected static int visibilityMask(@NonNull CompiledChunk compiledChunk) {
         int mask = 0;
@@ -74,6 +75,8 @@ public class VanillaRenderabilityTracker extends AbstractRefCounted {
 
     protected long sizeBytes;
     protected long addr;
+
+    protected boolean dirty;
 
     @Override
     public VanillaRenderabilityTracker retain() throws AlreadyReleasedException {
@@ -161,7 +164,7 @@ public class VanillaRenderabilityTracker extends AbstractRefCounted {
         int offset5 = (EnumFacing.EAST.getXOffset() * factorChunkY + EnumFacing.EAST.getYOffset()) * factorChunkZ + EnumFacing.EAST.getZOffset();
 
         long sizeBits = factorChunkX * factorChunkY * factorChunkZ;
-        long sizeBytes = ADDR_FLAGS_OFFSET + (PMath.roundUp(sizeBits, 32) >> 2);
+        long sizeBytes = FLAGS_OFFSET + (PMath.roundUp(sizeBits, 32) >> 2);
 
         long addr = this.alloc.alloc(sizeBytes);
         PUnsafe.setMemory(addr, sizeBytes, (byte) 0);
@@ -173,7 +176,7 @@ public class VanillaRenderabilityTracker extends AbstractRefCounted {
                     int centerFlags = srcBits[idx] & 0xFF;
 
                     //look ma, no branches!
-                    long wordAddr = addr + ADDR_FLAGS_OFFSET + (idx >> 5 << 2);
+                    long wordAddr = addr + FLAGS_OFFSET + (idx >> 5 << 2);
                     PUnsafe.putInt(wordAddr, PUnsafe.getInt(wordAddr)
                                              | (((centerFlags >> 7)
                                                  & (((~centerFlags >> 0) & 1) | (srcBits[idx + offset0] >> 7))
@@ -206,25 +209,24 @@ public class VanillaRenderabilityTracker extends AbstractRefCounted {
             }
         }
 
-        {
-            //ivec3 offset
-            PUnsafe.putInt(addr + 0 * IVEC3_SIZE + 0 * INT_SIZE, offsetChunkX);
-            PUnsafe.putInt(addr + 0 * IVEC3_SIZE + 1 * INT_SIZE, offsetChunkY);
-            PUnsafe.putInt(addr + 0 * IVEC3_SIZE + 2 * INT_SIZE, offsetChunkZ);
-
-            //ivec3 size
-            PUnsafe.putInt(addr + 1 * IVEC3_SIZE + 0 * INT_SIZE, factorChunkX);
-            PUnsafe.putInt(addr + 1 * IVEC3_SIZE + 1 * INT_SIZE, factorChunkY);
-            PUnsafe.putInt(addr + 1 * IVEC3_SIZE + 2 * INT_SIZE, factorChunkZ);
-
-            try (GLBuffer buffer = this.glBuffer.bind(GL_SHADER_STORAGE_BUFFER)) { //upload
-                buffer.upload(addr, sizeBytes);
-            }
-            this.glBuffer.bindBase(GL_SHADER_STORAGE_BUFFER, 6);
-        }
-
         if (this.addr != 0L) {
             this.alloc.free(this.addr);
+        }
+
+        {
+            long headersAddr = addr + HEADERS_OFFSET;
+
+            //ivec3 offset
+            PUnsafe.putInt(headersAddr + 0 * INT_SIZE, offsetChunkX);
+            PUnsafe.putInt(headersAddr + 1 * INT_SIZE, offsetChunkY);
+            PUnsafe.putInt(headersAddr + 2 * INT_SIZE, offsetChunkZ);
+            headersAddr += IVEC3_SIZE;
+
+            //ivec3 size
+            PUnsafe.putInt(headersAddr + 0 * INT_SIZE, factorChunkX);
+            PUnsafe.putInt(headersAddr + 1 * INT_SIZE, factorChunkY);
+            PUnsafe.putInt(headersAddr + 2 * INT_SIZE, factorChunkZ);
+            headersAddr += IVEC3_SIZE;
         }
 
         this.offsetX = offsetChunkX;
@@ -235,6 +237,7 @@ public class VanillaRenderabilityTracker extends AbstractRefCounted {
         this.sizeZ = factorChunkZ;
         this.sizeBytes = sizeBytes;
         this.addr = addr;
+        this.dirty = true;
     }
 
     /**
@@ -255,6 +258,21 @@ public class VanillaRenderabilityTracker extends AbstractRefCounted {
         }
 
         int idx = (x * this.sizeY + y) * this.sizeZ + z;
-        return (PUnsafe.getInt(this.addr + ADDR_FLAGS_OFFSET + (idx >> 5 << 2)) & (1 << idx)) != 0;
+        return (PUnsafe.getInt(this.addr + FLAGS_OFFSET + (idx >> 5 << 2)) & (1 << idx)) != 0;
+    }
+
+    /**
+     * Binds the current state of this tracker to be accessed by shaders.
+     */
+    public void bindForShaderUse() {
+        if (this.dirty) { //re-upload data if needed
+            this.dirty = false;
+
+            try (GLBuffer buffer = this.glBuffer.bind(GL_SHADER_STORAGE_BUFFER)) {
+                buffer.upload(this.addr, this.sizeBytes);
+            }
+        }
+
+        this.glBuffer.bindBase(GL_SHADER_STORAGE_BUFFER, 6);
     }
 }

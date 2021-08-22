@@ -55,9 +55,13 @@ void main() {
     ivec3 position_absolute = ivec3(pos.x, pos.y, pos.z) << (T_SHIFT + pos.w);
     ivec3 position_relative = position_absolute - glState.camera.position_floor;
 
-    int instanceCount = int(!(pos.w == 0 && isVanillaRenderableLevel0(pos.xyz)) && isBoxInFrustum(
-    vec3(position_relative) - glState.camera.position_fract,
-    vec3(position_relative + vec3(T_VOXELS << pos.w)) - glState.camera.position_fract));
+    int instanceCount = int(
+#if defined(LEVEL_0)
+        !isVanillaRenderableLevel0(pos.xyz) &&
+#endif
+        isBoxInFrustum(
+            vec3(position_relative) - glState.camera.position_fract,
+            vec3(position_relative + vec3(T_VOXELS << pos.w)) - glState.camera.position_fract));
 
     for (int i = 0; i < RENDER_PASS_COUNT; i++) {
         group.commands[i].instanceCount = (-group.commands[i].count >> 31) & instanceCount;

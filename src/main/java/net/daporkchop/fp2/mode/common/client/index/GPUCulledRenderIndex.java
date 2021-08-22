@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.common.client.index;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.asm.interfaz.client.renderer.IMixinRenderGlobal;
 import net.daporkchop.fp2.client.ShaderClippingStateHelper;
 import net.daporkchop.fp2.client.gl.WorkGroupSize;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
@@ -39,6 +40,7 @@ import net.daporkchop.fp2.util.alloc.Allocator;
 import java.util.function.Consumer;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static org.lwjgl.opengl.GL30.*;
@@ -70,12 +72,19 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
     protected static final int POSITIONS_BUFFER_BINDING_INDEX = 3;
     protected static final int COMMANDS_BUFFER_BINDING_INDEX = 4;
 
+    protected final ComputeShaderProgram cullShaderLevel0;
     protected final ComputeShaderProgram cullShader;
 
     public <T extends IFarTile> GPUCulledRenderIndex(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T, C> strategy, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray, @NonNull ComputeShaderBuilder cullShaderBuilder) {
         super(mode, strategy, vaoInitializer, elementArray);
 
-        this.cullShader = cullShaderBuilder.withWorkGroupSize(WORK_GROUP_SIZE).link();
+        this.cullShaderLevel0 = cullShaderBuilder
+                .withWorkGroupSize(WORK_GROUP_SIZE)
+                .define("LEVEL_0")
+                .link();
+        this.cullShader = cullShaderBuilder
+                .withWorkGroupSize(WORK_GROUP_SIZE)
+                .link();
     }
 
     @Override
@@ -84,7 +93,7 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
             vaoInitializer.accept(vao);
 
             vao.putElementArray(elementArray);
-        }, Allocator.GrowFunction.pow2(max(WORK_GROUP_SIZE.totalSize(), MIN_CAPACITY)));
+        }, Allocator.GrowFunction.pow2(max(WORK_GROUP_SIZE.totalSize(), MIN_CAPACITY)), level);
     }
 
     @Override
@@ -92,10 +101,8 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
         ShaderClippingStateHelper.update(frustum);
         ShaderClippingStateHelper.bind();
 
-        try (ComputeShaderProgram cullShader = this.cullShader.use()) {
-            for (Level level : this.levels) {
-                level.select(frustum, partialTicks);
-            }
+        for (Level level : this.levels) {
+            level.select(frustum, partialTicks);
         }
 
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, POSITIONS_BUFFER_BINDING_INDEX, 0);
@@ -106,8 +113,12 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
      * @author DaPorkchop_
      */
     protected static class Level<POS extends IFarPos, C extends IDrawIndirectCommand> extends AbstractRenderIndex.Level<POS, C, GPUCulledRenderIndex<POS, C>, Level<POS, C>> {
-        public Level(@NonNull GPUCulledRenderIndex<POS, C> parent, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull Allocator.GrowFunction growFunction) {
+        protected final int level;
+
+        public Level(@NonNull GPUCulledRenderIndex<POS, C> parent, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull Allocator.GrowFunction growFunction, int level) {
             super(parent, vaoInitializer, growFunction);
+
+            this.level = level;
         }
 
         @Override
@@ -123,8 +134,17 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
             this.positionsBuffer.bindBase(GL_SHADER_STORAGE_BUFFER, POSITIONS_BUFFER_BINDING_INDEX);
             this.commandBuffer.openglBuffer().bindBase(GL_SHADER_STORAGE_BUFFER, COMMANDS_BUFFER_BINDING_INDEX);
 
-            //dispatch compute shader
-            this.parent.cullShader.dispatch(this.capacity);
+            ComputeShaderProgram cullShader;
+            if (this.level == 0) { //level-0: we should bind the vanilla renderability info (for use in shader) and use the level-0 shader
+                ((IMixinRenderGlobal) mc.renderGlobal).fp2_vanillaRenderabilityTracker().bindForShaderUse();
+                cullShader = this.parent.cullShaderLevel0;
+            } else { //no need to bind any special resources, and we can use the standard shader
+                cullShader = this.parent.cullShader;
+            }
+
+            try (ComputeShaderProgram boundCullShader = cullShader.use()) { //dispatch compute shader
+                boundCullShader.dispatch(this.capacity);
+            }
         }
 
         @Override

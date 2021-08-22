@@ -37,7 +37,9 @@ import static net.daporkchop.fp2.client.ClientConstants.*;
 public class ShaderBasedIndexedMultidrawHeightmapRenderStrategy extends AbstractIndexedMultidrawHeightmapRenderStrategy implements IShaderBasedMultipassHeightmapRenderStrategy<DrawElementsIndirectCommand> {
     @Override
     public void render(@NonNull AbstractRenderIndex<HeightmapPos, ?, ?, ?> index, @NonNull BlockRenderLayer layer, boolean pre) {
-        if (layer == BlockRenderLayer.CUTOUT && !pre) {
+        if (layer == BlockRenderLayer.SOLID && pre) {
+            this.preVanillaRender();
+        } else if (layer == BlockRenderLayer.CUTOUT && !pre) {
             ((AbstractTexture) mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE)).setBlurMipmapDirect(false, mc.gameSettings.mipmapLevels > 0);
 
             try (DrawMode mode = DrawMode.SHADER.begin()) {

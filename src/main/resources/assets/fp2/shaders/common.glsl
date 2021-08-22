@@ -59,8 +59,6 @@
 struct GlCamera {
     mat4 modelviewprojection;
 
-    vec4 anti_flicker_offset;
-
     ivec3 position_floor;
     vec3 position_fract;
 };
@@ -119,6 +117,7 @@ layout(std430, binding = 1) readonly buffer QUAD_DATA {
     BakedQuad quad_data[];
 };
 
+#if defined(LEVEL_0)
 //Vanilla renderability index
 
 layout(std430, binding = 6) readonly buffer VANILLA_RENDERABILITY {
@@ -129,6 +128,7 @@ layout(std430, binding = 6) readonly buffer VANILLA_RENDERABILITY {
 
     uint flags[];
 } vanilla_renderability_state;
+#endif
 
 //
 //
@@ -207,6 +207,7 @@ int normalToFaceIndex(vec3 normal)  {
     }*/
 }
 
+#if defined(LEVEL_0)
 // vanilla renderability tests
 
 bool isVanillaRenderableLevel0(in ivec3 chunkPos) {
@@ -225,3 +226,4 @@ bool isVanillaRenderableLevel0(in ivec3 chunkPos) {
     //extract the bit at the given index
     return (vanilla_renderability_state.flags[idx >> 5] & (1 << idx)) != 0;
 }
+#endif

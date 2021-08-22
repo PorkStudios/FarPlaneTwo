@@ -168,5 +168,11 @@ public class ShaderManager {
         protected abstract S supply();
 
         protected abstract void reload(@NonNull S program);
+
+        @Override
+        public abstract int hashCode();
+
+        @Override
+        public abstract boolean equals(Object obj);
     }
 }

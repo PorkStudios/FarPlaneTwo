@@ -39,16 +39,23 @@ import static org.lwjgl.opengl.GL11.*;
  * @author DaPorkchop_
  */
 public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile, C extends IDrawIndirectCommand> extends IFarRenderStrategy<POS, T, C> {
+    default void preVanillaRender() {
+        glEnable(GL_STENCIL_TEST);
+
+        //initialize stencil buffer to 0x1F
+        glStencilMask(0xFF);
+        glClearStencil(0x1F);
+        GlStateManager.clear(GL_STENCIL_BUFFER_BIT);
+
+        //vanilla terrain for SOLID, CUTOUT_MIPPED and CUTOUT will always set the stencil value to 0
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        glStencilFunc(GL_ALWAYS, 0x40, 0xFF);
+    }
+
     default void preRender() {
         if (FP2_DEBUG && FP2Config.debug.disableBackfaceCull) {
             GlStateManager.disableCull();
         }
-
-        glEnable(GL_STENCIL_TEST);
-
-        glStencilMask(0xFF);
-        glClearStencil(0x7F);
-        GlStateManager.clear(GL_STENCIL_BUFFER_BIT);
     }
 
     default void postRender() {
@@ -83,8 +90,9 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
     default void renderSolid(@NonNull AbstractRenderIndex<POS, ?, ?, ?> index, int level) {
         GlStateManager.disableAlpha();
 
+        //a stencil value of 0 indicates vanilla terrain, so we want to compare with (level + 1)
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        glStencilFunc(GL_LEQUAL, level, 0x7F);
+        glStencilFunc(GL_LEQUAL, level + 1, 0x1F);
         index.draw(level, 0);
 
         GlStateManager.enableAlpha();
@@ -94,7 +102,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, mc.gameSettings.mipmapLevels > 0);
 
         glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
-        glStencilFunc(GL_LEQUAL, level, 0x7F);
+        glStencilFunc(GL_LEQUAL, level + 1, 0x1F);
         index.draw(level, 1);
 
         mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();

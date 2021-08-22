@@ -46,7 +46,7 @@ public class ShaderGlStateHelper {
     private final GLBuffer BUFFER = new GLBuffer(GL_STREAM_DRAW);
 
     private final int OFFSET_CAMERA = 0;
-    private final int SIZE_CAMERA = MAT4_SIZE + VEC4_SIZE + IVEC3_SIZE + VEC3_SIZE;
+    private final int SIZE_CAMERA = MAT4_SIZE + IVEC3_SIZE + VEC3_SIZE;
 
     private final int OFFSET_FOG = OFFSET_CAMERA + SIZE_CAMERA;
     private final int SIZE_FOG = VEC4_SIZE + 4 * FLOAT_SIZE + INT_SIZE;
@@ -70,13 +70,6 @@ public class ShaderGlStateHelper {
             //mat4 modelviewprojection
             MatrixHelper.getModelViewProjectionMatrix(addr);
             addr += MAT4_SIZE;
-
-            //vec4 anti_flicker_offset
-            PUnsafe.putFloat(addr + 0 * FLOAT_SIZE, 0.0f);
-            PUnsafe.putFloat(addr + 1 * FLOAT_SIZE, 0.0f);
-            PUnsafe.putFloat(addr + 2 * FLOAT_SIZE, ReversedZ.REVERSED ? 0.0001f : -0.0001f);
-            PUnsafe.putFloat(addr + 3 * FLOAT_SIZE, 0.0f);
-            addr += VEC4_SIZE;
 
             Entity entity = mc.getRenderViewEntity();
             double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
