@@ -137,7 +137,7 @@ public class CPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
                 }
 
                 //check frustum intersection and update instanceCount for all commands accordingly
-                boolean inFrustum = !vanillaRenderabilityTracker.blocksFP2Render(pos.x(), pos.y(), pos.z())
+                boolean inFrustum = !vanillaRenderabilityTracker.vanillaBlocksFP2RenderingAtLevel0(pos.x(), pos.y(), pos.z())
                                     && this.directPosAccess.inFrustum(this.positionsAddr + slot * this.positionSize, frustum);
                 for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
                     C command = commands[pass];
