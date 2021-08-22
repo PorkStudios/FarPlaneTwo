@@ -53,6 +53,7 @@ import java.util.Map;
 
 import static net.daporkchop.fp2.client.ClientConstants.*;
 import static net.daporkchop.fp2.compat.of.OFHelper.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL43.*;
 
@@ -150,25 +151,33 @@ public class TexUVs {
         List<PackedBakedQuad> missingTextureQuads = new ArrayList<>();
         missingTextureQuads.add(new PackedBakedQuad(mc.getTextureMapBlocks().getMissingSprite(), -1));
 
+        List<IBlockState> erroredStates = new ArrayList<>();
+
         BlockModelShapes shapes = mc.getBlockRendererDispatcher().getBlockModelShapes();
         for (Block block : Block.REGISTRY) {
             for (IBlockState state : block.getBlockState().getValidStates()) {
                 int[] faceIds = new int[6];
 
-                StateFaceReplacer replacer = STATE_TO_REPLACER.getOrDefault(state, DEFAULT_REPLACER);
-                StateFaceQuadRenderer renderer = STATE_TO_RENDERER.getOrDefault(state, DEFAULT_RENDERER);
-                for (EnumFacing face : EnumFacing.VALUES) {
-                    IBlockState replacedState = replacer.replace(state, face);
-                    IBakedModel model = shapes.getModelForState(replacedState);
-                    List<PackedBakedQuad> quads = PorkUtil.fallbackIfNull(renderer.render(replacedState, face, model), missingTextureQuads);
+                try {
+                    StateFaceReplacer replacer = STATE_TO_REPLACER.getOrDefault(state, DEFAULT_REPLACER);
+                    StateFaceQuadRenderer renderer = STATE_TO_RENDERER.getOrDefault(state, DEFAULT_RENDERER);
+                    for (EnumFacing face : EnumFacing.VALUES) {
+                        IBlockState replacedState = replacer.replace(state, face);
+                        IBakedModel model = shapes.getModelForState(replacedState);
+                        List<PackedBakedQuad> quads = PorkUtil.fallbackIfNull(renderer.render(replacedState, face, model), missingTextureQuads);
 
-                    int id = distinctQuadsToId.getOrDefault(quads, -1);
-                    if (id < 0) { //allocate new ID
-                        distinctQuadsToId.put(quads, id = distinctQuadsToId.size());
-                        distinctQuadsById.add(quads);
+                        int id = distinctQuadsToId.getOrDefault(quads, -1);
+                        if (id < 0) { //allocate new ID
+                            distinctQuadsToId.put(quads, id = distinctQuadsToId.size());
+                            distinctQuadsById.add(quads);
+                        }
+
+                        faceIds[face.getIndex()] = id;
                     }
-
-                    faceIds[face.getIndex()] = id;
+                } catch (Exception e) { //we couldn't process the state (likely a buggy mod block), so let's just ignore it for now
+                    FP2_LOG.error("exception while generating texture UVs for " + state, e);
+                    erroredStates.add(state);
+                    continue;
                 }
 
                 int id = distinctIndicesToId.get(faceIds);
@@ -179,6 +188,14 @@ public class TexUVs {
 
                 stateIdToIndexId.put(state, id);
             }
+        }
+
+        if (!erroredStates.isEmpty()) { //some block states failed!
+            FP2_LOG.error("failed to generate texture UVs for {} block states, they will be replaced with missing textures:", erroredStates.size());
+            erroredStates.forEach(FP2_LOG::error);
+
+            int id = stateIdToIndexId.getInt(Blocks.AIR.getDefaultState());
+            erroredStates.forEach(state -> stateIdToIndexId.put(state, id));
         }
 
         STATEID_TO_INDEXID = stateIdToIndexId;
