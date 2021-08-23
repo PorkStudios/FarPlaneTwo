@@ -161,13 +161,17 @@ public class ShaderManager {
     }
 
     @SuppressWarnings("unchecked")
-    public void reload() {
+    public void reload(boolean message) {
         try {
             SHADER_CACHE.asMap().forEach(AbstractShaderBuilder::reload);
-            DebugUtils.clientMsg("§a" + SHADER_CACHE.size() + " shaders successfully reloaded.");
+            if (message) {
+                DebugUtils.clientMsg("§a" + SHADER_CACHE.size() + " shaders successfully reloaded.");
+            }
         } catch (Exception e) {
             FP2_LOG.error("shader reload failed", e);
-            DebugUtils.clientMsg("§cshaders reload failed (check console).");
+            if (message) {
+                DebugUtils.clientMsg("§cshaders reload failed (check console).");
+            }
         }
     }
 
@@ -211,7 +215,7 @@ public class ShaderManager {
                 throw new ConcurrentModificationException();
             }
             GLOBAL_DEFINES = ImmutableMap.copyOf(this.updated);
-            reload();
+            reload(false);
         }
     }
 }

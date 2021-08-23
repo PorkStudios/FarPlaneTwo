@@ -52,7 +52,7 @@ public class DebugClientEvents {
     @SubscribeEvent
     public void keyInput(InputEvent.KeyInputEvent event) {
         if (DebugKeyBindings.RELOAD_SHADERS.isPressed()) {
-            ShaderManager.reload();
+            ShaderManager.reload(true);
         }
         if (DebugKeyBindings.DROP_TILES.isPressed()) {
             NETWORK_WRAPPER.sendToServer(new CPacketDropAllTiles());

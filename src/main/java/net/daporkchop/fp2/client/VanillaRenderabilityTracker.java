@@ -126,9 +126,9 @@ public class VanillaRenderabilityTracker extends AbstractRefCounted {
             maxChunkY = 16;
         }
 
-        int offsetChunkX = -minChunkX - 1;
-        int offsetChunkY = -minChunkY - 1;
-        int offsetChunkZ = -minChunkZ - 1;
+        int offsetChunkX = -minChunkX + 1;
+        int offsetChunkY = -minChunkY + 1;
+        int offsetChunkZ = -minChunkZ + 1;
         int factorChunkX = maxChunkX - minChunkX + 3;
         int factorChunkY = maxChunkY - minChunkY + 3;
         int factorChunkZ = maxChunkZ - minChunkZ + 3;
