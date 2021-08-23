@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.client.ReversedZ;
 import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
@@ -38,26 +39,22 @@ import static org.lwjgl.opengl.GL11.*;
  * @author DaPorkchop_
  */
 public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile, C extends IDrawIndirectCommand> extends IFarRenderStrategy<POS, T, C> {
-    default void preVanillaRender() {
-        glEnable(GL_STENCIL_TEST);
-
-        //initialize stencil buffer to 0x1F
-        glStencilMask(0xFF);
-        glClearStencil(0x1F);
-        GlStateManager.clear(GL_STENCIL_BUFFER_BIT);
-
-        //vanilla terrain for SOLID, CUTOUT_MIPPED and CUTOUT will always set the stencil value to 0
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        glStencilFunc(GL_ALWAYS, 0x40, 0xFF);
-    }
-
     default void preRender() {
         if (FP2_DEBUG && FP2Config.debug.disableBackfaceCull) {
             GlStateManager.disableCull();
         }
+
+        glEnable(GL_STENCIL_TEST);
+        glStencilMask(0xFF);
+        glClearStencil(0x7F);
+        GlStateManager.clear(GL_STENCIL_BUFFER_BIT);
+
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        glPolygonOffset(0.0f, ReversedZ.REVERSED ? -1024.0f : 1.0f);
     }
 
     default void postRender() {
+        glDisable(GL_POLYGON_OFFSET_FILL);
         glDisable(GL_STENCIL_TEST);
 
         if (FP2_DEBUG && FP2Config.debug.disableBackfaceCull) {
@@ -89,9 +86,8 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
     default void renderSolid(@NonNull AbstractRenderIndex<POS, ?, ?, ?> index, int level) {
         GlStateManager.disableAlpha();
 
-        //a stencil value of 0 indicates vanilla terrain, so we want to compare with (level + 1)
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        glStencilFunc(GL_LEQUAL, level + 1, 0x1F);
+        glStencilFunc(GL_LEQUAL, level, 0x7F);
         index.draw(level, 0);
 
         GlStateManager.enableAlpha();
@@ -101,7 +97,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, MC.gameSettings.mipmapLevels > 0);
 
         glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
-        glStencilFunc(GL_LEQUAL, level + 1, 0x1F);
+        glStencilFunc(GL_LEQUAL, level, 0x7F);
         index.draw(level, 1);
 
         MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();

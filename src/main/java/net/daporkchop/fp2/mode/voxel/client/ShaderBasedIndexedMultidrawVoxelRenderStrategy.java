@@ -37,9 +37,7 @@ import static net.daporkchop.fp2.util.Constants.*;
 public class ShaderBasedIndexedMultidrawVoxelRenderStrategy extends AbstractIndexedMultidrawVoxelRenderStrategy implements IShaderBasedMultipassVoxelRenderStrategy<DrawElementsIndirectCommand> {
     @Override
     public void render(@NonNull AbstractRenderIndex<VoxelPos, ?, ?, ?> index, @NonNull BlockRenderLayer layer, boolean pre) {
-        if (layer == BlockRenderLayer.SOLID && pre) {
-            this.preVanillaRender();
-        } else if (layer == BlockRenderLayer.CUTOUT && !pre) {
+        if (layer == BlockRenderLayer.CUTOUT && !pre) {
             ((AbstractTexture) MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE)).setBlurMipmapDirect(false, MC.gameSettings.mipmapLevels > 0);
 
             try (DrawMode mode = DrawMode.SHADER.begin()) {
