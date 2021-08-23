@@ -23,15 +23,19 @@ package net.daporkchop.fp2.client;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
+import net.daporkchop.fp2.client.gl.camera.Frustum;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.util.DirectBufferReuse;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
 
+import static java.lang.Math.abs;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.compat.of.OFHelper.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.minecraft.util.math.MathHelper.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -64,11 +68,13 @@ public class ShaderGlStateHelper {
             GlStateManager.disableFog();
         }
 
+        Frustum.INSTANCE.initFromGlState();
+
         { //camera
             long addr = ADDR_CAMERA;
 
             //mat4 modelviewprojection
-            MatrixHelper.getModelViewProjectionMatrix(addr);
+            modelViewProjectionMatrix(addr);
             addr += MAT4_SIZE;
 
             Entity entity = mc.getRenderViewEntity();
@@ -121,6 +127,32 @@ public class ShaderGlStateHelper {
 
         try (GLBuffer buffer = BUFFER.bind(GL_UNIFORM_BUFFER)) { //upload
             buffer.upload(DATA, TOTAL_SIZE);
+        }
+    }
+
+    private void modelViewProjectionMatrix(long dst) {
+        ArrayAllocator<float[]> alloc = ALLOC_FLOAT.get();
+
+        float[] modelView = alloc.atLeast(MAT4_ELEMENTS);
+        float[] projection = alloc.atLeast(MAT4_ELEMENTS);
+        float[] modelViewProjection = alloc.atLeast(MAT4_ELEMENTS);
+        try {
+            //load both matrices into arrays
+            MatrixHelper.getFloatMatrixFromGL(GL_MODELVIEW_MATRIX, modelView);
+            MatrixHelper.getFloatMatrixFromGL(GL_PROJECTION_MATRIX, projection);
+
+            //pre-multiply matrices on CPU to avoid having to do it per-vertex on GPU
+            MatrixHelper.multiply4x4(projection, modelView, modelViewProjection);
+
+            //offset the projected points' depth values to avoid z-fighting with vanilla terrain
+            MatrixHelper.offsetDepth(modelViewProjection, ReversedZ.REVERSED ? -0.00001f : 0.00001f);
+
+            //copy result to destination address
+            PUnsafe.copyMemory(modelViewProjection, PUnsafe.ARRAY_FLOAT_BASE_OFFSET, null, dst, MAT4_SIZE);
+        } finally {
+            alloc.release(modelViewProjection);
+            alloc.release(projection);
+            alloc.release(modelView);
         }
     }
 

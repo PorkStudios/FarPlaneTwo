@@ -73,6 +73,7 @@ public class OpenGL {
 
     public final int MAT4_ELEMENTS = 4 * 4;
     public final int MAT4_SIZE = MAT4_ELEMENTS * FLOAT_SIZE;
+    public final int DMAT4_SIZE = MAT4_ELEMENTS * DOUBLE_SIZE;
 
     public final boolean OPENGL_33;
     public final boolean OPENGL_42;

@@ -20,6 +20,8 @@
 
 package net.daporkchop.fp2.config;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraftforge.common.config.Config;
@@ -306,5 +308,25 @@ public class FP2Config {
         })
         @Config.LangKey("config.fp2.debug.disableBackfaceCull")
         public boolean disableBackfaceCull = false;
+
+        @Config.Comment({
+                "The debug color mode to enable."
+        })
+        @Config.LangKey("config.fp2.debug.debugShadingMode")
+        public DebugColorMode debugColorMode = DebugColorMode.DISABLED;
+
+        /**
+         * @author DaPorkchop_
+         */
+        @RequiredArgsConstructor
+        @Getter
+        public enum DebugColorMode {
+            DISABLED(false),
+            DISTANCE(true),
+            POSITIONS(true),
+            FACE_NORMAL(true);
+
+            protected final boolean enable;
+        }
     }
 }

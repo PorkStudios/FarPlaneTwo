@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.ReversedZ;
 import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
@@ -31,8 +30,8 @@ import net.daporkchop.fp2.mode.common.client.index.AbstractRenderIndex;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.TextureMap;
 
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.debug.FP2Debug.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
 
 /**
@@ -48,13 +47,9 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         glStencilMask(0xFF);
         glClearStencil(0x7F);
         GlStateManager.clear(GL_STENCIL_BUFFER_BIT);
-
-        glEnable(GL_POLYGON_OFFSET_FILL);
-        glPolygonOffset(0.0f, ReversedZ.REVERSED ? -1024.0f : 1.0f);
     }
 
     default void postRender() {
-        glDisable(GL_POLYGON_OFFSET_FILL);
         glDisable(GL_STENCIL_TEST);
 
         if (FP2_DEBUG && FP2Config.debug.disableBackfaceCull) {

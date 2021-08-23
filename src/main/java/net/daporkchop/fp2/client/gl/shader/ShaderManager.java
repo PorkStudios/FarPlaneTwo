@@ -23,6 +23,10 @@ package net.daporkchop.fp2.client.gl.shader;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.debug.util.DebugUtils;
@@ -35,6 +39,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -42,7 +47,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -62,12 +66,15 @@ public class ShaderManager {
             .weakValues()
             .build(CacheLoader.from(AbstractShaderBuilder::supply));
 
+    protected Map<String, Object> GLOBAL_DEFINES = Collections.emptyMap();
+
     protected String headers(@NonNull Map<String, Object> defines, @NonNull String... lines) {
         return Stream.concat(
-                defines.entrySet().stream().map(e -> PStrings.fastFormat("#define %s (%s)", e.getKey(),
-                        e.getValue() instanceof Boolean
-                                ? ((Boolean) e.getValue() ? 1 : 0)
-                                : e.getValue())),
+                Stream.concat(GLOBAL_DEFINES.entrySet().stream(), defines.entrySet().stream())
+                        .map(e -> PStrings.fastFormat("#define %s (%s)", e.getKey(),
+                                e.getValue() instanceof Boolean
+                                        ? ((Boolean) e.getValue() ? 1 : 0)
+                                        : e.getValue())),
                 Stream.of(lines)).collect(Collectors.joining("\n", "#line 1 0\n", "\n"));
     }
 
@@ -142,11 +149,15 @@ public class ShaderManager {
         while (matcher.find()) {
             int nameIndex = Integer.parseInt(matcher.group(1)) - 1;
             String name = nameIndex < 0 || nameIndex >= names.length ? "<unknown source>" : names[nameIndex];
-            matcher.appendReplacement(buffer, Matcher.quoteReplacement('(' + name + ':' + matcher.group(2) + ')' + matcher.group(3))) ;
+            matcher.appendReplacement(buffer, Matcher.quoteReplacement('(' + name + ':' + matcher.group(2) + ')' + matcher.group(3)));
         }
         matcher.appendTail(buffer);
 
         return buffer.toString();
+    }
+
+    public DefinesChangeBatch changeDefines() {
+        return new DefinesChangeBatch();
     }
 
     @SuppressWarnings("unchecked")
@@ -174,5 +185,33 @@ public class ShaderManager {
 
         @Override
         public abstract boolean equals(Object obj);
+    }
+
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
+    public static final class DefinesChangeBatch {
+        protected final Map<String, Object> originals = GLOBAL_DEFINES;
+        protected final Map<String, Object> updated = new Object2ObjectOpenHashMap<>(this.originals);
+
+        public DefinesChangeBatch undefine(@NonNull String name) {
+            this.updated.remove(name);
+            return this;
+        }
+
+        public DefinesChangeBatch define(@NonNull String name) {
+            return this.define(name, "");
+        }
+
+        public DefinesChangeBatch define(@NonNull String name, @NonNull Object value) {
+            this.updated.put(name, value);
+            return this;
+        }
+
+        public void apply() {
+            if (GLOBAL_DEFINES != this.originals) {
+                throw new ConcurrentModificationException();
+            }
+            GLOBAL_DEFINES = ImmutableMap.copyOf(this.updated);
+            reload();
+        }
     }
 }

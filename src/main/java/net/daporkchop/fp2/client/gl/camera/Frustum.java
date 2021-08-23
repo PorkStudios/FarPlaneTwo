@@ -66,14 +66,8 @@ public class Frustum implements IFrustum, ICamera {
      * Updates the frustum from the current OpenGL projection and modelview matrices.
      */
     public void initFromGlState() {
-        FloatBuffer buffer = MatrixHelper.get(GL_PROJECTION_MATRIX);
-        for (int i = 0; i < MAT4_ELEMENTS; i++) {
-            this.projection[i] = buffer.get(i);
-        }
-        buffer = MatrixHelper.get(GL_MODELVIEW_MATRIX);
-        for (int i = 0; i < MAT4_ELEMENTS; i++) {
-            this.modelView[i] = buffer.get(i);
-        }
+        MatrixHelper.getDoubleMatrixFromGL(GL_PROJECTION_MATRIX, this.projection);
+        MatrixHelper.getDoubleMatrixFromGL(GL_MODELVIEW_MATRIX, this.modelView);
 
         MatrixHelper.multiply4x4(this.projection, this.modelView, this.mvp);
 

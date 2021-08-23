@@ -72,7 +72,7 @@ vec3 computeVertexColor(vec3 va_color) {
     return DEBUG_COLORS[tile_position.w];
 #elif defined(USE_DEBUG_COLORS_POSITIONS)
     ivec4 i = (tile_position & 1) << ivec4(3, 2, 1, 0);
-    return DEBUG_COLORS_POSITIONS[(i.x | i.y) | (i.z | i.w)];
+    return DEBUG_COLORS[(i.x | i.y) | (i.z | i.w)];
 #else
     return va_color;
 #endif
