@@ -31,6 +31,9 @@ import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.util.alloc.Allocator;
 
+import java.util.function.IntPredicate;
+import java.util.stream.IntStream;
+
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL40.*;
@@ -48,6 +51,7 @@ public class IndirectMultipassDrawElementsCommandBuffer extends AbstractMultipas
 
     protected final long stride;
     protected long addr;
+    protected long selectionAddr;
 
     protected boolean needsBarrier;
 
@@ -153,5 +157,35 @@ public class IndirectMultipassDrawElementsCommandBuffer extends AbstractMultipas
         this.buffer.bindBase(GL_SHADER_STORAGE_BUFFER, 4);
         computeShaderProgram.dispatch(this.capacity);
         this.needsBarrier = true;
+    }
+
+    @Override
+    public void select(@NonNull IntPredicate selector) {
+        //we're going to be copying everything relevant into gpu memory anyway, there's no reason to re-upload everything just to overwrite
+        //  it again immediately after. so we'll just clear the dirty flag manually
+        this.dirty = false;
+
+        try (GLBuffer buffer = this.buffer.bind(GL_DRAW_INDIRECT_BUFFER)) {
+            long stride = this.stride;
+            buffer.capacity(this.capacity * stride); //invalidate buffer contents
+
+            //load commands from main memory, store them into mapped GPU memory
+            long inAddr = this.addr;
+            long outAddr = buffer.map(GL_WRITE_ONLY);
+            try {
+                IntStream.range(0, this.capacity).forEach(i -> {
+                    int instanceCount = selector.test(i) ? 1 : 0;
+                    DrawElementsIndirectCommand command = new DrawElementsIndirectCommand();
+
+                    for (long offset = i * stride, endOffset = offset + stride; offset != endOffset; offset += DrawElementsIndirectCommand._SIZE) {
+                        command.load(inAddr + offset);
+                        command.instanceCount(instanceCount & (-command.count() >> 31));
+                        command.store(outAddr + offset);
+                    }
+                });
+            } finally {
+                buffer.unmap();
+            }
+        }
     }
 }

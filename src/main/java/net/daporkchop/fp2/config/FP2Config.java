@@ -180,14 +180,6 @@ public class FP2Config {
         public boolean gpuFrustumCulling = true;
 
         @Config.Comment({
-                "Whether or not frustum culling should be done asynchronously.",
-                "Only makes a difference if GPU frustum culling is disabled.",
-                "This will likely hurt performance except for specific scenarios, and may cause visual glitches."
-        })
-        @Config.LangKey("config.fp2.performance.asyncFrustumCulling")
-        public boolean asyncFrustumCulling = false;
-
-        @Config.Comment({
                 "Whether or not frustum culling should be done on multiple threads.",
                 "Only makes a difference if GPU frustum culling is disabled.",
                 "This will likely hurt performance except for specific scenarios."

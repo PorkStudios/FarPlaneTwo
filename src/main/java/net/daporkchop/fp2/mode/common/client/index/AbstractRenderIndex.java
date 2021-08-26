@@ -35,6 +35,7 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
+import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.util.alloc.Allocator;
 import net.daporkchop.fp2.util.alloc.DirectMemoryAllocator;
@@ -64,15 +65,17 @@ import static org.lwjgl.opengl.GL15.*;
 public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawCommand, I extends AbstractRenderIndex<POS, C, I, L>, L extends AbstractRenderIndex.Level<POS, C, I, L>> extends AbstractReleasable {
     protected final IFarDirectPosAccess<POS> directPosAccess;
     protected final IFarRenderStrategy<POS, ?, C> strategy;
+    protected final ICullingStrategy<POS> cullingStrategy;
 
     protected final Allocator directMemoryAlloc = new DirectMemoryAllocator(true);
 
     protected final SimpleSet<POS> renderablePositions;
     protected final L[] levels;
 
-    public <T extends IFarTile> AbstractRenderIndex(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T, C> strategy, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray) {
+    public <T extends IFarTile> AbstractRenderIndex(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T, C> strategy, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray, @NonNull ICullingStrategy<POS> cullingStrategy) {
         this.directPosAccess = mode.directPosAccess();
         this.strategy = strategy;
+        this.cullingStrategy = cullingStrategy;
 
         this.renderablePositions = this.directPosAccess.newPositionSet();
 

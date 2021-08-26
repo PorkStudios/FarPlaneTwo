@@ -47,8 +47,8 @@ public abstract class AbstractIndexedMultidrawVoxelRenderStrategy extends Indexe
     @Override
     public AbstractRenderIndex<VoxelPos, ?, ?, ?> createRenderIndex(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
         return FP2Config.performance.gpuFrustumCulling
-                ? new GPUCulledRenderIndex<>(mode, this, this.vertices::configureVAO, this.indices, VoxelShaders.CULL_SHADER)
-                : new CPUCulledRenderIndex<>(mode, this, this.vertices::configureVAO, this.indices);
+                ? new GPUCulledRenderIndex<>(mode, this, this.vertices::configureVAO, this.indices, VoxelCullingStrategy.INSTANCE)
+                : new CPUCulledRenderIndex<>(mode, this, this.vertices::configureVAO, this.indices, VoxelCullingStrategy.INSTANCE);
     }
 
     @Override

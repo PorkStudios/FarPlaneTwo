@@ -21,22 +21,23 @@
 package net.daporkchop.fp2.mode.common.client.index;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.asm.interfaz.client.renderer.IMixinRenderGlobal;
+import net.daporkchop.fp2.client.VanillaRenderabilityTracker;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.command.IDrawCommand;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
-import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.util.alloc.Allocator;
 
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
 import java.util.function.Consumer;
+import java.util.function.IntPredicate;
 
-import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * Implementation of {@link AbstractRenderIndex} which does frustum culling on the CPU.
@@ -44,120 +45,46 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public class CPUCulledRenderIndex<POS extends IFarPos, C extends IDrawCommand> extends AbstractRenderIndex<POS, C, CPUCulledRenderIndex<POS, C>, CPUCulledRenderIndex.Level<POS, C>> {
-    public <T extends IFarTile> CPUCulledRenderIndex(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T, C> strategy, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray) {
-        super(mode, strategy, vaoInitializer, elementArray);
+    public <T extends IFarTile> CPUCulledRenderIndex(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T, C> strategy, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray, @NonNull ICullingStrategy<POS> cullingStrategy) {
+        super(mode, strategy, vaoInitializer, elementArray, cullingStrategy);
     }
 
     @Override
     protected Level<POS, C> createLevel(int level, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray) {
-        Consumer<VertexArrayObject> theVaoInitializer = vao -> {
+        return new Level<>(this, vao -> {
             vaoInitializer.accept(vao);
             vao.putElementArray(elementArray);
-        };
-        Allocator.GrowFunction growFunction = Allocator.GrowFunction.pow2(1L);
-
-        return level == 0
-                ? new LevelZero<>(this, theVaoInitializer, growFunction)
-                : new LevelNonZero<>(this, theVaoInitializer, growFunction);
+        }, Allocator.GrowFunction.pow2(1L), level);
     }
 
     /**
      * @author DaPorkchop_
      */
-    protected static abstract class Level<POS extends IFarPos, C extends IDrawCommand> extends AbstractRenderIndex.Level<POS, C, CPUCulledRenderIndex<POS, C>, Level<POS, C>> {
-        protected ForkJoinTask<Void> cullFuture;
+    protected static class Level<POS extends IFarPos, C extends IDrawCommand> extends AbstractRenderIndex.Level<POS, C, CPUCulledRenderIndex<POS, C>, Level<POS, C>> {
+        protected final int level;
 
-        public Level(@NonNull CPUCulledRenderIndex<POS, C> parent, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull Allocator.GrowFunction growFunction) {
+        public Level(@NonNull CPUCulledRenderIndex<POS, C> parent, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull Allocator.GrowFunction growFunction, int level) {
             super(parent, vaoInitializer, growFunction);
+
+            this.level = level;
         }
 
         @Override
         protected void select0(@NonNull IFrustum frustum, float partialTicks) {
-            checkState(this.cullFuture == null, "cullFuture is non-null?!?");
-            if (FP2Config.performance.asyncFrustumCulling) { //schedule async culling task using the provided frustum
-                this.cullFuture = ForkJoinPool.commonPool().submit(() -> this.cull(frustum), null);
-            } else { //cull immediately in the client thread
-                this.cull(frustum);
+            this.commandBuffer.select(this.cull(frustum));
+        }
+
+        protected IntPredicate cull(@NonNull IFrustum frustum) {
+            if (this.level == 0) { //level-0 is tested for vanilla terrain intersection AND frustum intersection
+                ICullingStrategy<POS> cullingStrategy = this.parent.cullingStrategy;
+                VanillaRenderabilityTracker vanillaRenderabilityTracker = ((IMixinRenderGlobal) MC.renderGlobal).fp2_vanillaRenderabilityTracker();
+                return slot -> {
+                    long posAddr = this.positionsAddr + slot * this.positionSize;
+                    return !cullingStrategy.blockedByVanilla(vanillaRenderabilityTracker, posAddr) && this.directPosAccess.inFrustum(posAddr, frustum);
+                };
+            } else { //all other levels are only tested for frustum intersection
+                return slot -> this.directPosAccess.inFrustum(this.positionsAddr + slot * this.positionSize, frustum);
             }
-        }
-
-        protected abstract void cull(@NonNull IFrustum frustum);
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    protected static class LevelZero<POS extends IFarPos, C extends IDrawCommand> extends Level<POS, C> {
-        public LevelZero(@NonNull CPUCulledRenderIndex<POS, C> parent, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull Allocator.GrowFunction growFunction) {
-            super(parent, vaoInitializer, growFunction);
-        }
-
-        @Override
-        protected void cull(@NonNull IFrustum frustum) {
-            /*C[] commands = this.tempCommands;
-            checkState(commands.length == RENDER_PASS_COUNT);
-
-            VanillaRenderabilityTracker vanillaRenderabilityTracker = ((IMixinRenderGlobal) MC.renderGlobal).fp2_vanillaRenderabilityTracker();
-
-            for (Iterator<Object2LongMap.Entry<POS>> itr = this.positionsToSlots.object2LongEntrySet().iterator(); itr.hasNext(); ) {
-                Object2LongMap.Entry<POS> entry = itr.next();
-                VoxelPos pos = (VoxelPos) entry.getKey(); //TODO: this
-                long slot = entry.getLongValue();
-
-                //load all commands
-                for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                    this.commandBuffer.load(commands[pass], slot * RENDER_PASS_COUNT + pass);
-                }
-
-                //check frustum intersection and update instanceCount for all commands accordingly
-                boolean inFrustum = !vanillaRenderabilityTracker.vanillaBlocksFP2RenderingAtLevel0(pos.x(), pos.y(), pos.z())
-                                    && this.directPosAccess.inFrustum(this.positionsAddr + slot * this.positionSize, frustum);
-                for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                    C command = commands[pass];
-                    command.instanceCount(inFrustum && !command.isEmpty() ? 1 : 0);
-                }
-
-                //store commands again
-                for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                    this.commandBuffer.store(commands[pass], slot * RENDER_PASS_COUNT + pass);
-                }
-            }*/
-        }
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    protected static class LevelNonZero<POS extends IFarPos, C extends IDrawCommand> extends Level<POS, C> {
-        public LevelNonZero(@NonNull CPUCulledRenderIndex<POS, C> parent, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull Allocator.GrowFunction growFunction) {
-            super(parent, vaoInitializer, growFunction);
-        }
-
-        @Override
-        protected void cull(@NonNull IFrustum frustum) {
-            /*C[] commands = this.tempCommands;
-            checkState(commands.length == RENDER_PASS_COUNT);
-
-            for (LongIterator itr = this.positionsToSlots.values().iterator(); itr.hasNext(); ) {
-                long slot = itr.nextLong();
-
-                //load all commands
-                for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                    this.commandBuffer.load(commands[pass], slot * RENDER_PASS_COUNT + pass);
-                }
-
-                //check frustum intersection and update instanceCount for all commands accordingly
-                boolean inFrustum = this.directPosAccess.inFrustum(this.positionsAddr + slot * this.positionSize, frustum);
-                for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                    C command = commands[pass];
-                    command.instanceCount(inFrustum && !command.isEmpty() ? 1 : 0);
-                }
-
-                //store commands again
-                for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                    this.commandBuffer.store(commands[pass], slot * RENDER_PASS_COUNT + pass);
-                }
-            }*/
         }
     }
 }

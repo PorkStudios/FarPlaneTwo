@@ -27,6 +27,8 @@ import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.lib.common.misc.refcount.RefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
+import java.util.function.IntPredicate;
+
 /**
  * A buffer of multiple {@link IDrawCommand}s, with multiple commands sharing the same index (multiple render passes).
  *
@@ -109,7 +111,7 @@ public interface IMultipassDrawCommandBuffer<C extends IDrawCommand> extends Ref
      */
     void draw(int pass);
 
-    // shaders
+    // shaders and selection
 
     /**
      * Configures the given shader builder according to the internal implementation details of this draw command buffer.
@@ -126,8 +128,24 @@ public interface IMultipassDrawCommandBuffer<C extends IDrawCommand> extends Ref
      * - have included {@code comp/command_buffer_selection.comp}
      * - have been passed to {@link #configureShader(ShaderManager.AbstractShaderBuilder)} before linkage
      * - be active
+     * <p>
+     * If any methods are called which would modify the state of this command buffer (such as {@link #store(IDrawCommand[], int)} or {@link #resize(int)}), the
+     * effects of selection will be lost.
      *
      * @param computeShaderProgram the compute shader program to use for selection
      */
     void select(@NonNull ComputeShaderProgram computeShaderProgram);
+
+    /**
+     * Selects which commands should be rendered using a Java function.
+     * <p>
+     * The selector will be called with the indices of all non-empty draw commands, and returns whether or not they may be rendered in subsequent calls
+     * to {@link #draw(int)}.
+     * <p>
+     * If any methods are called which would modify the state of this command buffer (such as {@link #store(IDrawCommand[], int)} or {@link #resize(int)}), the
+     * effects of selection will be lost.
+     *
+     * @param selector the function to use for selection
+     */
+    void select(@NonNull IntPredicate selector);
 }

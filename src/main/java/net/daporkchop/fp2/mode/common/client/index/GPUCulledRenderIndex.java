@@ -33,6 +33,7 @@ import net.daporkchop.fp2.client.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.util.alloc.Allocator;
 
@@ -70,13 +71,8 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawCommand> e
     protected static final int POSITIONS_BUFFER_BINDING_INDEX = 3;
     protected static final int COMMANDS_BUFFER_BINDING_INDEX = 4;
 
-    public <T extends IFarTile> GPUCulledRenderIndex(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T, C> strategy, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray, @NonNull ComputeShaderBuilder cullShaderBuilder) {
-        super(mode, strategy, vaoInitializer, elementArray);
-
-        cullShaderBuilder = cullShaderBuilder.withWorkGroupSize(WORK_GROUP_SIZE);
-        for (Level<POS, C> level : this.levels) {
-            level.linkShader(cullShaderBuilder);
-        }
+    public <T extends IFarTile> GPUCulledRenderIndex(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T, C> strategy, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray, @NonNull ICullingStrategy<POS> cullingStrategy) {
+        super(mode, strategy, vaoInitializer, elementArray, cullingStrategy);
     }
 
     @Override
@@ -105,16 +101,16 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawCommand> e
      * @author DaPorkchop_
      */
     protected static class Level<POS extends IFarPos, C extends IDrawCommand> extends AbstractRenderIndex.Level<POS, C, GPUCulledRenderIndex<POS, C>, Level<POS, C>> {
-        protected ComputeShaderProgram cullShader;
+        protected final ComputeShaderProgram cullShader;
         protected final int level;
 
         public Level(@NonNull GPUCulledRenderIndex<POS, C> parent, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull Allocator.GrowFunction growFunction, int level) {
             super(parent, vaoInitializer, growFunction);
 
             this.level = level;
-        }
 
-        protected void linkShader(@NonNull ComputeShaderBuilder cullShaderBuilder) {
+            ComputeShaderBuilder cullShaderBuilder = parent.cullingStrategy.cullShaderBuilder()
+                    .withWorkGroupSize(WORK_GROUP_SIZE);
             if (this.level == 0) {
                 cullShaderBuilder = cullShaderBuilder.define("LEVEL_0");
             }
