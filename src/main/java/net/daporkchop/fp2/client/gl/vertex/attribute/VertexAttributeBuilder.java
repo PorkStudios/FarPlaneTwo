@@ -18,9 +18,8 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.vertex;
+package net.daporkchop.fp2.client.gl.vertex.attribute;
 
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -65,19 +64,11 @@ public abstract class VertexAttributeBuilder<T extends IVertexAttribute> {
     protected VertexAttributeInterpretation interpretation;
     @NonNull
     protected VertexAttributeType type;
+    @NonNull
+    protected String name;
 
-    protected int divisor = 0;
     protected int components = -1;
     protected int reportedComponents = -1;
-    @Setter(AccessLevel.NONE)
-    protected int alignment = 1;
-    @Setter(AccessLevel.NONE)
-    protected int padding = 1;
-
-    public VertexAttributeBuilder<T> divisor(int divisor) {
-        this.divisor = notNegative(divisor, "divisor");
-        return this;
-    }
 
     protected VertexAttributeBuilder<T> components(int components) {
         this.components = positive(components, "components");
@@ -89,26 +80,13 @@ public abstract class VertexAttributeBuilder<T extends IVertexAttribute> {
         return this;
     }
 
-    public VertexAttributeBuilder<T> alignTo(int size) {
-        this.alignment = positive(size, "size");
-        return this;
-    }
-
-    public VertexAttributeBuilder<T> padTo(int size) {
-        this.padding = positive(size, "size");
-        return this;
-    }
-
-    public VertexAttributeBuilder<T> alignAndPadTo(int size) {
-        return this.alignTo(size).padTo(size);
-    }
-
     /**
      * @return the built vertex attribute
      */
     public T build() {
         checkArg(this.interpretation != null, "interpretation must be set!");
         checkArg(this.type != null, "type must be set!");
+        checkArg(this.name != null, "name must be set!");
         checkArg(this.components >= 0, "component count must be set!");
 
         return this.build0();

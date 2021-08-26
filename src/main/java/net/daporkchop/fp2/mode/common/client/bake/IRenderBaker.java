@@ -18,56 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.indirect;
+package net.daporkchop.fp2.mode.common.client.bake;
 
 import net.daporkchop.fp2.client.gl.command.IDrawCommand;
+import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
 
 /**
- * Represents an OpenGL indirect draw command.
- *
  * @author DaPorkchop_
  */
-public interface IDrawIndirectCommand extends IDrawCommand {
-    /**
-     * @return the size of a single command, in bytes
-     */
-    long size();
-
-    /**
-     * Loads this command into this object instance from the given off-heap memory address.
-     *
-     * @param addr the memory address to load from
-     */
-    void load(long addr);
-
-    /**
-     * Stores this command to the given off-heap memory address.
-     *
-     * @param addr the memory address to store to
-     */
-    void store(long addr);
-
-    /**
-     * @return the base instance number
-     */
-    int baseInstance();
-
-    /**
-     * Sets the base instance number.
-     *
-     * @param baseInstance the new baseInstance
-     */
-    IDrawIndirectCommand baseInstance(int baseInstance);
-
-    /**
-     * @return the number of instances to be rendered
-     */
-    int instanceCount();
-
-    /**
-     * Sets the number of instances to be rendered.
-     *
-     * @param instanceCount the new instanceCount
-     */
-    IDrawIndirectCommand instanceCount(int instanceCount);
+public interface IRenderBaker<C extends IDrawCommand> {
 }

@@ -26,10 +26,11 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
-import net.daporkchop.fp2.client.gl.vertex.IVertexAttribute;
-import net.daporkchop.fp2.client.gl.vertex.VertexAttributeInterpretation;
-import net.daporkchop.fp2.client.gl.vertex.VertexAttributeType;
-import net.daporkchop.fp2.client.gl.vertex.VertexFormat;
+import net.daporkchop.fp2.client.gl.vertex.attribute.IVertexAttribute;
+import net.daporkchop.fp2.client.gl.vertex.attribute.VertexAttributeInterpretation;
+import net.daporkchop.fp2.client.gl.vertex.attribute.VertexAttributeType;
+import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
+import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.mode.common.client.RenderConstants;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
@@ -44,10 +45,7 @@ import net.minecraft.util.math.BlockPos;
 
 import java.util.Arrays;
 
-import static java.lang.Math.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
@@ -60,34 +58,30 @@ import static net.daporkchop.fp2.util.math.MathUtil.*;
 @UtilityClass
 public class VoxelBake {
     protected static final IVertexAttribute.Int1 ATTRIB_STATE = IVertexAttribute.Int1.builder()
-            .alignAndPadTo(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT)
+            .name("state")
             .type(VertexAttributeType.UNSIGNED_INT)
             .interpretation(VertexAttributeInterpretation.INTEGER)
             .build();
 
     protected static final IVertexAttribute.Int2 ATTRIB_LIGHT = IVertexAttribute.Int2.builder(ATTRIB_STATE)
-            .alignAndPadTo(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT)
+            .name("light")
             .type(VertexAttributeType.UNSIGNED_BYTE)
             .interpretation(VertexAttributeInterpretation.NORMALIZED_FLOAT)
             .build();
 
     protected static final IVertexAttribute.Int3 ATTRIB_COLOR = IVertexAttribute.Int3.builder(ATTRIB_LIGHT)
-            .alignAndPadTo(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT)
+            .name("color")
             .type(VertexAttributeType.UNSIGNED_BYTE)
             .interpretation(VertexAttributeInterpretation.NORMALIZED_FLOAT)
             .build();
 
     protected static final IVertexAttribute.Int3 ATTRIB_POS = IVertexAttribute.Int3.builder(ATTRIB_COLOR)
-            .alignAndPadTo(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT)
+            .name("pos")
             .type(VertexAttributeType.UNSIGNED_BYTE)
             .interpretation(VertexAttributeInterpretation.FLOAT)
             .build();
 
-    protected static final VertexFormat VERTEX_FORMAT = new VertexFormat("voxel", ATTRIB_POS, max(EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT, INT_SIZE));
-
-    public void vertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao) {
-        VERTEX_FORMAT.configureVAO(vao, buffer);
-    }
+    protected static final VertexFormat VERTEX_FORMAT = new VertexFormat("voxel", ATTRIB_POS);
 
     protected static int vertexMapIndex(int dx, int dy, int dz, int i, int edge) {
         int j = CONNECTION_INDICES[i];
@@ -98,7 +92,7 @@ public class VoxelBake {
         return ((ddx * T_VERTS + ddy) * T_VERTS + ddz) * EDGE_COUNT + edge;
     }
 
-    public void bakeForShaderDraw(@NonNull VoxelPos dstPos, @NonNull VoxelTile[] srcs, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
+    public void bakeForShaderDraw(@NonNull VoxelPos dstPos, @NonNull VoxelTile[] srcs, @NonNull IVertexBuilder verts, @NonNull ByteBuf[] indices) {
         if (srcs[0] == null) {
             return;
         }
@@ -123,7 +117,7 @@ public class VoxelBake {
         }
     }
 
-    protected void writeVertices(VoxelTile[] srcs, int blockX, int blockY, int blockZ, int level, int[] map, ByteBuf verts) {
+    protected void writeVertices(VoxelTile[] srcs, int blockX, int blockY, int blockZ, int level, int[] map, IVertexBuilder verts) {
         final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
         final VoxelData data = new VoxelData();
@@ -152,7 +146,7 @@ public class VoxelBake {
         }
     }
 
-    protected int writeVertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, VoxelData data, ByteBuf vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, int[] map, int indexCounter) {
+    protected int writeVertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, VoxelData data, IVertexBuilder vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, int[] map, int indexCounter) {
         baseX += (x & T_VOXELS) << level;
         baseY += (y & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
@@ -166,7 +160,7 @@ public class VoxelBake {
         pos.setPos(blockX, blockY, blockZ);
         biomeAccess.biome(FastRegistry.getBiome(data.biome, Biomes.PLAINS));
 
-        int vertexBase = VERTEX_FORMAT.appendVertex(vertices);
+        int vertexBase = vertices.appendVertex();
 
         IBlockState state = FastRegistry.getBlockState(data.states[0]);
         ATTRIB_STATE.set(vertices, vertexBase, TexUVs.STATEID_TO_INDEXID.get(state));
@@ -194,7 +188,7 @@ public class VoxelBake {
                         continue EDGES;
                     }
                 }
-                currVertexBase = VERTEX_FORMAT.duplicateVertex(vertices, vertexBase);
+                currVertexBase = vertices.appendDuplicateVertex(vertexBase);
             }
 
             IBlockState edgeState = FastRegistry.getBlockState(data.states[edge]);

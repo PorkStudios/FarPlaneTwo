@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.vertex;
+package net.daporkchop.fp2.client.gl.vertex.attribute;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
@@ -32,19 +32,19 @@ import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 public enum VertexAttributeInterpretation {
     INTEGER {
         @Override
-        public void configureVAO(@NonNull VertexArrayObject vao, @NonNull IGLBuffer buffer, int components, @NonNull VertexAttributeType type, int stride, int offset, int divisor) {
+        public void configureVAO(@NonNull VertexArrayObject vao, @NonNull IGLBuffer buffer, int components, @NonNull VertexAttributeType type, int stride, long offset, int divisor) {
             vao.attrI(buffer, components, type.glType(), stride, offset, divisor);
         }
     },
     FLOAT {
         @Override
-        public void configureVAO(@NonNull VertexArrayObject vao, @NonNull IGLBuffer buffer, int components, @NonNull VertexAttributeType type, int stride, int offset, int divisor) {
+        public void configureVAO(@NonNull VertexArrayObject vao, @NonNull IGLBuffer buffer, int components, @NonNull VertexAttributeType type, int stride, long offset, int divisor) {
             vao.attrF(buffer, components, type.glType(), false, stride, offset, divisor);
         }
     },
     NORMALIZED_FLOAT {
         @Override
-        public void configureVAO(@NonNull VertexArrayObject vao, @NonNull IGLBuffer buffer, int components, @NonNull VertexAttributeType type, int stride, int offset, int divisor) {
+        public void configureVAO(@NonNull VertexArrayObject vao, @NonNull IGLBuffer buffer, int components, @NonNull VertexAttributeType type, int stride, long offset, int divisor) {
             vao.attrF(buffer, components, type.glType(), true, stride, offset, divisor);
         }
     };
@@ -60,5 +60,5 @@ public enum VertexAttributeInterpretation {
      * @param offset     the offset of the vertex attribute from the beginning of the vertex (in bytes). If {@code 0}, the values are tightly packed.
      * @param divisor    the vertex attribute divisor. If {@code 0}, no divisor will be used.
      */
-    public abstract void configureVAO(@NonNull VertexArrayObject vao, @NonNull IGLBuffer buffer, int components, @NonNull VertexAttributeType type, int stride, int offset, int divisor);
+    public abstract void configureVAO(@NonNull VertexArrayObject vao, @NonNull IGLBuffer buffer, int components, @NonNull VertexAttributeType type, int stride, long offset, int divisor);
 }

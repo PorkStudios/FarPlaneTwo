@@ -18,56 +18,40 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.indirect;
+package net.daporkchop.fp2.client.gl.vertex.attribute;
 
-import net.daporkchop.fp2.client.gl.command.IDrawCommand;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static org.lwjgl.opengl.GL11.*;
 
 /**
- * Represents an OpenGL indirect draw command.
+ * The different primitive types allowed to be used as a vertex attribute value.
  *
  * @author DaPorkchop_
  */
-public interface IDrawIndirectCommand extends IDrawCommand {
-    /**
-     * @return the size of a single command, in bytes
-     */
-    long size();
+@RequiredArgsConstructor
+public enum VertexAttributeType {
+    BYTE(GL_BYTE, BYTE_SIZE),
+    UNSIGNED_BYTE(GL_UNSIGNED_BYTE, BYTE_SIZE),
+    SHORT(GL_SHORT, SHORT_SIZE),
+    UNSIGNED_SHORT(GL_UNSIGNED_SHORT, SHORT_SIZE),
+    INT(GL_INT, INT_SIZE),
+    UNSIGNED_INT(GL_UNSIGNED_INT, INT_SIZE),
+    FLOAT(GL_FLOAT, FLOAT_SIZE);
+
+    @Getter
+    private final int glType;
+    private final int size;
 
     /**
-     * Loads this command into this object instance from the given off-heap memory address.
+     * Gets the size of a vertex attribute using this type with the given number of components.
      *
-     * @param addr the memory address to load from
+     * @param components the vertex attribute component count
+     * @return the size of a vertex attribute using this type with the given number of components
      */
-    void load(long addr);
-
-    /**
-     * Stores this command to the given off-heap memory address.
-     *
-     * @param addr the memory address to store to
-     */
-    void store(long addr);
-
-    /**
-     * @return the base instance number
-     */
-    int baseInstance();
-
-    /**
-     * Sets the base instance number.
-     *
-     * @param baseInstance the new baseInstance
-     */
-    IDrawIndirectCommand baseInstance(int baseInstance);
-
-    /**
-     * @return the number of instances to be rendered
-     */
-    int instanceCount();
-
-    /**
-     * Sets the number of instances to be rendered.
-     *
-     * @param instanceCount the new instanceCount
-     */
-    IDrawIndirectCommand instanceCount(int instanceCount);
+    public int size(int components) {
+        return this.size * components;
+    }
 }

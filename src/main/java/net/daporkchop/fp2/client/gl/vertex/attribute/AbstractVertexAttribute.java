@@ -18,13 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.vertex;
+package net.daporkchop.fp2.client.gl.vertex.attribute;
 
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.lib.common.math.PMath;
+
+import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
 
 /**
  * Base implementation of {@link AbstractVertexAttribute}.
@@ -37,9 +39,8 @@ public abstract class AbstractVertexAttribute<T extends IVertexAttribute> implem
     protected final VertexAttributeInterpretation interpretation;
     protected final VertexAttributeType type;
 
-    protected final int offset;
+    protected final int index;
     protected final int size;
-    protected final int divisor;
     protected final int components;
     protected final int reportedComponents;
 
@@ -48,15 +49,15 @@ public abstract class AbstractVertexAttribute<T extends IVertexAttribute> implem
         this.interpretation = builder.interpretation();
         this.type = builder.type();
 
-        this.divisor = builder.divisor();
+        this.index = this.parent != null ? this.parent.index() + 1 : 0;
+
         this.components = builder.components();
         this.reportedComponents = builder.reportedComponents() >= 0 ? builder.reportedComponents() : this.components;
-        this.offset = PMath.roundUp(this.parent != null ? this.parent.offset() + this.parent.size() : 0, builder.alignment());
-        this.size = PMath.roundUp(this.type.size(this.components), builder.padding());
+        this.size = PMath.roundUp(this.type.size(this.components), EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT);
     }
 
     @Override
-    public void configureVAO(@NonNull VertexArrayObject vao, @NonNull IGLBuffer buffer, int stride) {
-        this.interpretation.configureVAO(vao, buffer, this.reportedComponents, this.type, stride, this.offset, this.divisor);
+    public void configureVAO(@NonNull VertexArrayObject vao, @NonNull IGLBuffer buffer, long offset, int stride) {
+        this.interpretation.configureVAO(vao, buffer, this.reportedComponents, this.type, stride, offset, 0);
     }
 }

@@ -25,6 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
+import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
@@ -34,29 +35,25 @@ import net.daporkchop.fp2.mode.common.client.index.GPUCulledRenderIndex;
 import net.daporkchop.fp2.mode.common.client.strategy.IndexedMultidrawRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.util.alloc.DirectMemoryAllocator;
 
 /**
  * @author DaPorkchop_
  */
 public abstract class AbstractIndexedMultidrawVoxelRenderStrategy extends IndexedMultidrawRenderStrategy<VoxelPos, VoxelTile> implements IMultipassVoxelRenderStrategy<DrawElementsIndirectCommand> {
     public AbstractIndexedMultidrawVoxelRenderStrategy() {
-        super(VoxelBake.VERTEX_FORMAT.size());
+        super(new DirectMemoryAllocator(), VoxelBake.VERTEX_FORMAT);
     }
 
     @Override
     public AbstractRenderIndex<VoxelPos, ?, ?, ?> createRenderIndex(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
         return FP2Config.performance.gpuFrustumCulling
-                ? new GPUCulledRenderIndex<>(mode, this, vao -> this.configureVertexAttributes(this.vertices, vao), this.indices, VoxelShaders.CULL_SHADER)
-                : new CPUCulledRenderIndex<>(mode, this, vao -> this.configureVertexAttributes(this.vertices, vao), this.indices);
+                ? new GPUCulledRenderIndex<>(mode, this, this.vertices::configureVAO, this.indices, VoxelShaders.CULL_SHADER)
+                : new CPUCulledRenderIndex<>(mode, this, this.vertices::configureVAO, this.indices);
     }
 
     @Override
-    protected void configureVertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao) {
-        VoxelBake.vertexAttributes(buffer, vao);
-    }
-
-    @Override
-    protected void bakeVertsAndIndices(@NonNull VoxelPos pos, @NonNull VoxelTile[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
+    protected void bakeVertsAndIndices(@NonNull VoxelPos pos, @NonNull VoxelTile[] srcs, @NonNull BakeOutput output, @NonNull IVertexBuilder verts, @NonNull ByteBuf[] indices) {
         VoxelBake.bakeForShaderDraw(pos, srcs, verts, indices);
     }
 }

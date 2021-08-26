@@ -18,56 +18,38 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.indirect;
+package net.daporkchop.fp2.client.gl.vertex.attribute;
 
-import net.daporkchop.fp2.client.gl.command.IDrawCommand;
+import lombok.Getter;
+import lombok.NonNull;
+
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.stream.Stream;
+
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
- * Represents an OpenGL indirect draw command.
+ * A group of {@link IVertexAttribute}s.
  *
  * @author DaPorkchop_
  */
-public interface IDrawIndirectCommand extends IDrawCommand {
-    /**
-     * @return the size of a single command, in bytes
-     */
-    long size();
+@Getter
+public class VertexFormat {
+    protected final IVertexAttribute[] attributes;
+    protected final int vertexSize; //the combined size of all of the vertex attributes, in bytes
 
-    /**
-     * Loads this command into this object instance from the given off-heap memory address.
-     *
-     * @param addr the memory address to load from
-     */
-    void load(long addr);
+    public VertexFormat(@NonNull String name, @NonNull IVertexAttribute attribute) {
+        //enumerate all vertex attributes in the chain
+        Deque<IVertexAttribute> attributes = new LinkedList<>();
+        do {
+            attributes.addFirst(attribute);
+        } while ((attribute = attribute.parent()) != null);
+        this.attributes = attributes.toArray(new IVertexAttribute[0]);
 
-    /**
-     * Stores this command to the given off-heap memory address.
-     *
-     * @param addr the memory address to store to
-     */
-    void store(long addr);
+        //add all the sizes together
+        this.vertexSize = Stream.of(this.attributes).mapToInt(IVertexAttribute::size).sum();
 
-    /**
-     * @return the base instance number
-     */
-    int baseInstance();
-
-    /**
-     * Sets the base instance number.
-     *
-     * @param baseInstance the new baseInstance
-     */
-    IDrawIndirectCommand baseInstance(int baseInstance);
-
-    /**
-     * @return the number of instances to be rendered
-     */
-    int instanceCount();
-
-    /**
-     * Sets the number of instances to be rendered.
-     *
-     * @param instanceCount the new instanceCount
-     */
-    IDrawIndirectCommand instanceCount(int instanceCount);
+        FP2_LOG.info("{} vertex size: {} bytes", name, this.vertexSize());
+    }
 }

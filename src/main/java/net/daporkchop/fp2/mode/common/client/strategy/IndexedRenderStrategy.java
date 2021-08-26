@@ -29,9 +29,12 @@ import net.daporkchop.fp2.client.AllocatedGLBuffer;
 import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBufferFactory;
 import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommandBufferFactory;
+import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
+import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
+import net.daporkchop.fp2.util.alloc.Allocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
@@ -75,8 +78,8 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, T extends IFarT
 
     protected final AllocatedGLBuffer indices = AllocatedGLBuffer.create("indices", GL_DYNAMIC_DRAW, INDEX_SIZE, true);
 
-    public IndexedRenderStrategy(int vertexSize) {
-        super(vertexSize);
+    public IndexedRenderStrategy(@NonNull Allocator alloc, @NonNull VertexFormat vertexFormat) {
+        super(alloc, vertexFormat);
     }
 
     @Override
@@ -97,7 +100,7 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, T extends IFarT
     }
 
     @Override
-    protected void bakeVerts(@NonNull POS pos, @NonNull T[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts) {
+    protected void bakeVerts(@NonNull POS pos, @NonNull T[] srcs, @NonNull BakeOutput output, @NonNull IVertexBuilder verts) {
         ByteBuf[] indices = new ByteBuf[RENDER_PASS_COUNT];
         for (int i = 0; i < RENDER_PASS_COUNT; i++) {
             indices[i] = ByteBufAllocator.DEFAULT.directBuffer();
@@ -105,7 +108,7 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, T extends IFarT
         try {
             this.bakeVertsAndIndices(pos, srcs, output, verts, indices);
 
-            if (!verts.isReadable()) { //there are no vertices, meaning nothing to draw
+            if (verts.size() == 0) { //there are no vertices, meaning nothing to draw
                 return;
             }
 
@@ -136,7 +139,7 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, T extends IFarT
         }
     }
 
-    protected abstract void bakeVertsAndIndices(@NonNull POS pos, @NonNull T[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices);
+    protected abstract void bakeVertsAndIndices(@NonNull POS pos, @NonNull T[] srcs, @NonNull BakeOutput output, @NonNull IVertexBuilder verts, @NonNull ByteBuf[] indices);
 
     @Override
     protected void doRelease() {

@@ -18,40 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.vertex;
+package net.daporkchop.fp2.client.gl.command.arrays;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static org.lwjgl.opengl.GL11.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import net.daporkchop.fp2.client.gl.command.IDrawCommand;
 
 /**
- * The different primitive types allowed to be used as a vertex attribute value.
+ * An array drawing command.
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public enum VertexAttributeType {
-    BYTE(GL_BYTE, BYTE_SIZE),
-    UNSIGNED_BYTE(GL_UNSIGNED_BYTE, BYTE_SIZE),
-    SHORT(GL_SHORT, SHORT_SIZE),
-    UNSIGNED_SHORT(GL_UNSIGNED_SHORT, SHORT_SIZE),
-    INT(GL_INT, INT_SIZE),
-    UNSIGNED_INT(GL_UNSIGNED_INT, INT_SIZE),
-    FLOAT(GL_FLOAT, FLOAT_SIZE);
+@AllArgsConstructor
+@NoArgsConstructor
+@Data
+public final class DrawArraysCommand implements IDrawCommand {
+    protected int count;
+    protected int baseVertex;
 
-    @Getter
-    private final int glType;
-    private final int size;
-
-    /**
-     * Gets the size of a vertex attribute using this type with the given number of components.
-     *
-     * @param components the vertex attribute component count
-     * @return the size of a vertex attribute using this type with the given number of components
-     */
-    public int size(int components) {
-        return this.size * components;
+    @Override
+    public boolean isEmpty() {
+        return this.count == 0;
     }
 }

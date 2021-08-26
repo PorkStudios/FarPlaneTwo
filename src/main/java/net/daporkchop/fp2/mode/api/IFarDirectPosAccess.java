@@ -139,8 +139,8 @@ public interface IFarDirectPosAccess<POS extends IFarPos> {
     /**
      * Adds some number of vertex attributes to the given {@link VertexArrayObject} in order to be able to represent a position supported by this {@link IFarDirectPosAccess}.
      *
-     * @see VertexArrayObject#attrI(IGLBuffer, int, int, int, int, int)
-     * @see VertexArrayObject#attrF(IGLBuffer, int, int, boolean, int, int, int)
+     * @see VertexArrayObject#attrI(IGLBuffer, int, int, int, long, int)
+     * @see VertexArrayObject#attrF(IGLBuffer, int, int, boolean, int, long, int)
      */
     @SideOnly(Side.CLIENT)
     void configureVAO(@NonNull VertexArrayObject vao, @NonNull IGLBuffer buffer, int stride, int offset, int divisor);

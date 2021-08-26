@@ -18,12 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.vertex;
+package net.daporkchop.fp2.client.gl.vertex.attribute;
 
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
+import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
 
 /**
  * Provides write-only access to a vertex attribute.
@@ -32,9 +32,9 @@ import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
  */
 public interface IVertexAttribute {
     /**
-     * @return the offset of this vertex attribute from the vertex base, in bytes
+     * @return this vertex attribute's index
      */
-    int offset();
+    int index();
 
     /**
      * @return the size of this vertex attribute, in bytes
@@ -56,9 +56,10 @@ public interface IVertexAttribute {
      *
      * @param vao    the {@link VertexArrayObject}
      * @param buffer the {@link IGLBuffer} that will contain the vertex data
+     * @param offset
      * @param stride
      */
-    void configureVAO(@NonNull VertexArrayObject vao, @NonNull IGLBuffer buffer, int stride);
+    void configureVAO(@NonNull VertexArrayObject vao, @NonNull IGLBuffer buffer, long offset, int stride);
 
     /**
      * @author DaPorkchop_
@@ -78,12 +79,21 @@ public interface IVertexAttribute {
         }
 
         /**
-         * Sets the this vertex attribute to the given value.
+         * Sets this vertex attribute to the given value.
          *
-         * @param buf        the {@link ByteBuf} containing the vertex
-         * @param vertexBase the index of the beginning of the vertex
+         * @param builder     the {@link IVertexBuilder} containing the vertex
+         * @param vertexIndex the index of the vertex
          */
-        void set(@NonNull ByteBuf buf, int vertexBase, int v0);
+        default void set(@NonNull IVertexBuilder builder, int vertexIndex, int v0) {
+            this.set(builder.addressFor(this, vertexIndex), v0);
+        }
+
+        /**
+         * Sets this vertex attribute to the given value.
+         *
+         * @param addr the memory address
+         */
+        void set(long addr, int v0);
     }
 
     /**
@@ -104,12 +114,21 @@ public interface IVertexAttribute {
         }
 
         /**
-         * Sets the this vertex attribute to the given value.
+         * Sets this vertex attribute to the given value.
          *
-         * @param buf        the {@link ByteBuf} containing the vertex
-         * @param vertexBase the index of the beginning of the vertex
+         * @param builder     the {@link IVertexBuilder} containing the vertex
+         * @param vertexIndex the index of the vertex
          */
-        void set(@NonNull ByteBuf buf, int vertexBase, int v0, int v1);
+        default void set(@NonNull IVertexBuilder builder, int vertexIndex, int v0, int v1) {
+            this.set(builder.addressFor(this, vertexIndex), v0, v1);
+        }
+
+        /**
+         * Sets this vertex attribute to the given value.
+         *
+         * @param addr the memory address
+         */
+        void set(long addr, int v0, int v1);
     }
 
     /**
@@ -130,21 +149,39 @@ public interface IVertexAttribute {
         }
 
         /**
-         * Sets the this vertex attribute to the given value.
+         * Sets this vertex attribute to the given value.
          *
-         * @param buf        the {@link ByteBuf} containing the vertex
-         * @param vertexBase the index of the beginning of the vertex
+         * @param builder     the {@link IVertexBuilder} containing the vertex
+         * @param vertexIndex the index of the vertex
          */
-        void set(@NonNull ByteBuf buf, int vertexBase, int v0, int v1, int v2);
+        default void set(@NonNull IVertexBuilder builder, int vertexIndex, int v0, int v1, int v2) {
+            this.set(builder.addressFor(this, vertexIndex), v0, v1, v2);
+        }
 
         /**
-         * Sets the this vertex attribute to the given RGB value.
+         * Sets this vertex attribute to the given value.
          *
-         * @param buf        the {@link ByteBuf} containing the vertex
-         * @param vertexBase the index of the beginning of the vertex
+         * @param addr the memory address
          */
-        default void setRGB(@NonNull ByteBuf buf, int vertexBase, int val) {
-            this.set(buf, vertexBase, val, val >> 8, val >>> 16);
+        void set(long addr, int v0, int v1, int v2);
+
+        /**
+         * Sets this vertex attribute to the given RGB value.
+         *
+         * @param builder     the {@link IVertexBuilder} containing the vertex
+         * @param vertexIndex the index of the vertex
+         */
+        default void setRGB(@NonNull IVertexBuilder builder, int vertexIndex, int val) {
+            this.setRGB(builder.addressFor(this, vertexIndex), val);
+        }
+
+        /**
+         * Sets this vertex attribute to the given RGB value.
+         *
+         * @param addr the memory address
+         */
+        default void setRGB(long addr, int val) {
+            this.set(addr, val >>> 16, val >>> 8, val);
         }
     }
 
@@ -166,21 +203,39 @@ public interface IVertexAttribute {
         }
 
         /**
-         * Sets the this vertex attribute to the given value.
+         * Sets this vertex attribute to the given value.
          *
-         * @param buf        the {@link ByteBuf} containing the vertex
-         * @param vertexBase the index of the beginning of the vertex
+         * @param builder     the {@link IVertexBuilder} containing the vertex
+         * @param vertexIndex the index of the vertex
          */
-        void set(@NonNull ByteBuf buf, int vertexBase, int v0, int v1, int v2, int v3);
+        default void set(@NonNull IVertexBuilder builder, int vertexIndex, int v0, int v1, int v2, int v3) {
+            this.set(builder.addressFor(this, vertexIndex), v0, v1, v2, v3);
+        }
 
         /**
-         * Sets the this vertex attribute to the given ARGB value.
+         * Sets this vertex attribute to the given value.
          *
-         * @param buf        the {@link ByteBuf} containing the vertex
-         * @param vertexBase the index of the beginning of the vertex
+         * @param addr the memory address
          */
-        default void setARGB(@NonNull ByteBuf buf, int vertexBase, int val) {
-            this.set(buf, vertexBase, val, val >>> 8, val >>> 16, val >>> 24);
+        void set(long addr, int v0, int v1, int v2, int v3);
+
+        /**
+         * Sets this vertex attribute to the given ARGB value.
+         *
+         * @param builder     the {@link IVertexBuilder} containing the vertex
+         * @param vertexIndex the index of the vertex
+         */
+        default void setARGB(@NonNull IVertexBuilder builder, int vertexIndex, int val) {
+            this.setARGB(builder.addressFor(this, vertexIndex), val);
+        }
+
+        /**
+         * Sets this vertex attribute to the given ARGB value.
+         *
+         * @param addr the memory address
+         */
+        default void setARGB(long addr, int val) {
+            this.set(addr, val, val >>> 8, val >>> 16, val >>> 24);
         }
     }
 }

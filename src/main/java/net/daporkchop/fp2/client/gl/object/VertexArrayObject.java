@@ -93,7 +93,7 @@ public final class VertexArrayObject extends GLObject {
         return () -> glDeleteVertexArrays(id);
     }
 
-    public void attrI(@NonNull IGLBuffer buffer, int size, int type, int stride, int offset, int divisor) {
+    public void attrI(@NonNull IGLBuffer buffer, int size, int type, int stride, long offset, int divisor) {
         this.nextIndex(buffer, idx -> {
             glVertexAttribIPointer(idx, size, type, stride, offset);
             if (divisor != 0) {
@@ -102,7 +102,7 @@ public final class VertexArrayObject extends GLObject {
         });
     }
 
-    public void attrF(@NonNull IGLBuffer buffer, int size, int type, boolean normalized, int stride, int offset, int divisor) {
+    public void attrF(@NonNull IGLBuffer buffer, int size, int type, boolean normalized, int stride, long offset, int divisor) {
         this.nextIndex(buffer, idx -> {
             glVertexAttribPointer(idx, size, type, normalized, stride, offset);
             if (divisor != 0) {

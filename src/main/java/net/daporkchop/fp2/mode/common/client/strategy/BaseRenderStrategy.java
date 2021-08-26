@@ -26,14 +26,22 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.AllocatedGLBuffer;
 import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
+import net.daporkchop.fp2.client.gl.object.GLBuffer;
+import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
+import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuffer;
+import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
+import net.daporkchop.fp2.client.gl.vertex.buffer.InterleavedVertexBuffer;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
+import net.daporkchop.fp2.util.alloc.Allocator;
+import net.daporkchop.fp2.util.alloc.SequentialVariableSizedAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL15.*;
 
 /**
@@ -69,11 +77,22 @@ public abstract class BaseRenderStrategy<POS extends IFarPos, T extends IFarTile
         PUnsafe.putInt(renderData + _RENDERDATA_VERTEXCOUNT_OFFSET, vertexCount);
     }
 
-    protected final AllocatedGLBuffer vertices;
-    protected final int vertexSize;
+    protected final IVertexBuffer vertices;
+    protected final Allocator vertexAllocator;
 
-    public BaseRenderStrategy(int vertexSize) {
-        this.vertices = AllocatedGLBuffer.create("vertices", GL_DYNAMIC_DRAW, this.vertexSize = vertexSize, true);
+    public BaseRenderStrategy(@NonNull Allocator alloc, @NonNull VertexFormat vertexFormat) {
+        this.vertices = new InterleavedVertexBuffer(alloc, vertexFormat);
+        this.vertexAllocator = new SequentialVariableSizedAllocator(1L, new Allocator.SequentialHeapManager() {
+            @Override
+            public void brk(long capacity) {
+                this.sbrk(capacity);
+            }
+
+            @Override
+            public void sbrk(long newCapacity) {
+                BaseRenderStrategy.this.vertices.resize(toInt(newCapacity));
+            }
+        });
     }
 
     @Override
@@ -83,33 +102,42 @@ public abstract class BaseRenderStrategy<POS extends IFarPos, T extends IFarTile
 
     @Override
     public void deleteRenderData(long renderData) {
-        this.vertices.free(_renderdata_vertexOffset(renderData) * this.vertexSize);
+        this.vertexAllocator.free(_renderdata_vertexOffset(renderData));
     }
 
     @Override
     public boolean bake(@NonNull POS pos, @NonNull T[] srcs, @NonNull BakeOutput output) {
-        ByteBuf verts = ByteBufAllocator.DEFAULT.directBuffer();
+        IVertexBuilder verts = this.vertices.builder();
         try {
             this.bakeVerts(pos, srcs, output, verts);
 
-            int vertexCount = verts.readableBytes() / this.vertexSize;
+            int vertexCount = verts.size();
 
             if (vertexCount == 0) {
                 return false;
             }
 
             _renderdata_vertexCount(output.renderData, vertexCount);
-            output.uploadAndStoreAddress(verts.retain(), this.vertices, BaseRenderStrategy::_renderdata_vertexOffset, this.vertexSize);
+            verts.retain();
+            output.submit(renderData -> {
+                try {
+                    int idx = toInt(this.vertexAllocator.alloc(vertexCount));
+                    _renderdata_vertexOffset(renderData, idx);
+                    this.vertices.set(idx, verts);
+                } finally {
+                    verts.release();
+                }
+            });
             return true;
         } finally {
             verts.release();
         }
     }
 
-    protected abstract void bakeVerts(@NonNull POS pos, @NonNull T[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts);
+    protected abstract void bakeVerts(@NonNull POS pos, @NonNull T[] srcs, @NonNull BakeOutput output, @NonNull IVertexBuilder verts);
 
     @Override
     protected void doRelease() {
-        this.vertices.delete();
+        this.vertices.release();
     }
 }

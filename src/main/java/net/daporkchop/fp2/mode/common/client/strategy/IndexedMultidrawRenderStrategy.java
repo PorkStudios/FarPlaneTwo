@@ -20,14 +20,12 @@
 
 package net.daporkchop.fp2.mode.common.client.strategy;
 
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommand;
-import net.daporkchop.fp2.client.gl.object.IGLBuffer;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
+import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.common.client.BakeOutput;
+import net.daporkchop.fp2.util.alloc.Allocator;
 
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -36,14 +34,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public abstract class IndexedMultidrawRenderStrategy<POS extends IFarPos, T extends IFarTile> extends IndexedRenderStrategy<POS, T> implements IIndexedMultipassRenderStrategy<POS, T> {
-    public IndexedMultidrawRenderStrategy(int vertexSize) {
-        super(vertexSize);
+    public IndexedMultidrawRenderStrategy(@NonNull Allocator alloc, @NonNull VertexFormat vertexFormat) {
+        super(alloc, vertexFormat);
     }
-
-    protected abstract void configureVertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao);
-
-    @Override
-    protected abstract void bakeVertsAndIndices(@NonNull POS pos, @NonNull T[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices);
 
     @Override
     public void toDrawCommands(long renderData, @NonNull DrawElementsIndirectCommand[] commands) {

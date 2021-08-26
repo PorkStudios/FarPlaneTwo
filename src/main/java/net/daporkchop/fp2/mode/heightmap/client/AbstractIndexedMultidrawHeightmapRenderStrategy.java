@@ -25,26 +25,23 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
+import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.IndexedMultidrawRenderStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
+import net.daporkchop.fp2.util.alloc.DirectMemoryAllocator;
 
 /**
  * @author DaPorkchop_
  */
 public abstract class AbstractIndexedMultidrawHeightmapRenderStrategy extends IndexedMultidrawRenderStrategy<HeightmapPos, HeightmapTile> implements IMultipassHeightmapRenderStrategy<DrawElementsIndirectCommand> {
     public AbstractIndexedMultidrawHeightmapRenderStrategy() {
-        super(HeightmapBake.VERTEX_FORMAT.size());
+        super(new DirectMemoryAllocator(), HeightmapBake.VERTEX_FORMAT);
     }
 
     @Override
-    protected void configureVertexAttributes(@NonNull IGLBuffer buffer, @NonNull VertexArrayObject vao) {
-        HeightmapBake.vertexAttributes(buffer, vao);
-    }
-
-    @Override
-    protected void bakeVertsAndIndices(@NonNull HeightmapPos pos, @NonNull HeightmapTile[] srcs, @NonNull BakeOutput output, @NonNull ByteBuf verts, @NonNull ByteBuf[] indices) {
+    protected void bakeVertsAndIndices(@NonNull HeightmapPos pos, @NonNull HeightmapTile[] srcs, @NonNull BakeOutput output, @NonNull IVertexBuilder verts, @NonNull ByteBuf[] indices) {
         HeightmapBake.bakeForShaderDraw(pos, srcs, verts, indices);
     }
 }

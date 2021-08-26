@@ -18,12 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.vertex;
+package net.daporkchop.fp2.client.gl.vertex.attribute;
 
 import com.google.common.collect.ImmutableMap;
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.lib.common.system.PlatformInfo;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Map;
 import java.util.function.Function;
@@ -36,6 +37,7 @@ import static net.daporkchop.fp2.client.gl.OpenGL.*;
  * @author DaPorkchop_
  */
 @UtilityClass
+//TODO: i'm not certain about a number of the big-endian implementations here
 public class VertexAttributesImpl {
     public static final Map<VertexAttributeType, Function<VertexAttributeBuilder<IVertexAttribute.Int1>, IVertexAttribute.Int1>> FACTORIES_INT1
             = ImmutableMap.<VertexAttributeType, Function<VertexAttributeBuilder<IVertexAttribute.Int1>, IVertexAttribute.Int1>>builder()
@@ -86,8 +88,8 @@ public class VertexAttributesImpl {
         }
 
         @Override
-        public void set(@NonNull ByteBuf buf, int vertexBase, int v0) {
-            buf.setByte(vertexBase + this.offset, v0);
+        public void set(long addr, int v0) {
+            PUnsafe.putByte(addr, (byte) v0);
         }
     }
 
@@ -100,8 +102,8 @@ public class VertexAttributesImpl {
         }
 
         @Override
-        public void set(@NonNull ByteBuf buf, int vertexBase, int v0) {
-            buf.setShortLE(vertexBase + this.offset, v0);
+        public void set(long addr, int v0) {
+            PUnsafe.putShort(addr, (short) v0);
         }
     }
 
@@ -114,8 +116,8 @@ public class VertexAttributesImpl {
         }
 
         @Override
-        public void set(@NonNull ByteBuf buf, int vertexBase, int v0) {
-            buf.setIntLE(vertexBase + this.offset, v0);
+        public void set(long addr, int v0) {
+            PUnsafe.putInt(addr, v0);
         }
     }
 
@@ -128,8 +130,12 @@ public class VertexAttributesImpl {
         }
 
         @Override
-        public void set(@NonNull ByteBuf buf, int vertexBase, int v0, int v1) {
-            buf.setShortLE(vertexBase + this.offset, (v0 & 0xFF) | (v1 << 8));
+        public void set(long addr, int v0, int v1) {
+            if (PlatformInfo.IS_LITTLE_ENDIAN) {
+                PUnsafe.putShort(addr, (short) ((v0 & 0xFF) | (v1 << 8)));
+            } else {
+                PUnsafe.putShort(addr, (short) ((v1 & 0xFF) | (v0 << 8)));
+            }
         }
     }
 
@@ -142,8 +148,12 @@ public class VertexAttributesImpl {
         }
 
         @Override
-        public void set(@NonNull ByteBuf buf, int vertexBase, int v0, int v1) {
-            buf.setIntLE(vertexBase + this.offset, (v0 & 0xFFFF) | (v1 << 16));
+        public void set(long addr, int v0, int v1) {
+            if (PlatformInfo.IS_LITTLE_ENDIAN) {
+                PUnsafe.putInt(addr, (v0 & 0xFFFF) | (v1 << 16));
+            } else {
+                PUnsafe.putInt(addr, (v1 & 0xFFFF) | (v0 << 16));
+            }
         }
     }
 
@@ -156,9 +166,9 @@ public class VertexAttributesImpl {
         }
 
         @Override
-        public void set(@NonNull ByteBuf buf, int vertexBase, int v0, int v1) {
-            int idx = vertexBase + this.offset;
-            buf.setIntLE(idx, v0).setIntLE(idx + INT_SIZE, v1);
+        public void set(long addr, int v0, int v1) {
+            PUnsafe.putInt(addr + 0 * INT_SIZE, v0);
+            PUnsafe.putInt(addr + 1 * INT_SIZE, v1);
         }
     }
 
@@ -171,15 +181,26 @@ public class VertexAttributesImpl {
         }
 
         @Override
-        public void set(@NonNull ByteBuf buf, int vertexBase, int v0, int v1, int v2) {
-            //this weird syntax should allow optimal efficiency due to out-of-order execution
-            buf.setMediumLE(vertexBase + this.offset, ((v0 & 0xFF) | (v2 << 16)) | ((v1 & 0xFF) << 8));
+        public void set(long addr, int v0, int v1, int v2) {
+            if (PlatformInfo.IS_LITTLE_ENDIAN) {
+                PUnsafe.putShort(addr, (short) ((v0 & 0xFF) | (v1 << 8)));
+                PUnsafe.putByte(addr + SHORT_SIZE, (byte) v2);
+            } else {
+                PUnsafe.putShort(addr, (short) ((v1 & 0xFF) | (v0 << 8)));
+                PUnsafe.putByte(addr + SHORT_SIZE, (byte) v2);
+            }
         }
 
         @Override
-        public void setRGB(@NonNull ByteBuf buf, int vertexBase, int val) {
-            //big-endian write here is intentional
-            buf.setMedium(vertexBase + this.offset, val);
+        public void setRGB(long addr, int val) {
+            //this is conceptually executed in big-endian order
+            if (PlatformInfo.IS_LITTLE_ENDIAN) {
+                PUnsafe.putShort(addr, Short.reverseBytes((short) (val >>> 8)));
+                PUnsafe.putByte(addr + SHORT_SIZE, (byte) val);
+            } else {
+                PUnsafe.putShort(addr, (short) val);
+                PUnsafe.putByte(addr + SHORT_SIZE, (byte) (val >>> 16));
+            }
         }
     }
 
@@ -192,9 +213,14 @@ public class VertexAttributesImpl {
         }
 
         @Override
-        public void set(@NonNull ByteBuf buf, int vertexBase, int v0, int v1, int v2) {
-            int idx = vertexBase + this.offset;
-            buf.setIntLE(idx, (v0 & 0xFFFF) | (v1 << 16)).setShortLE(idx + INT_SIZE, v2);
+        public void set(long addr, int v0, int v1, int v2) {
+            if (PlatformInfo.IS_LITTLE_ENDIAN) {
+                PUnsafe.putInt(addr, (v0 & 0xFFFF) | (v1 << 16));
+                PUnsafe.putShort(addr + INT_SIZE, (short) v2);
+            } else {
+                PUnsafe.putInt(addr, (v1 & 0xFFFF) | (v0 << 16));
+                PUnsafe.putShort(addr + INT_SIZE, (short) v2);
+            }
         }
     }
 
@@ -207,9 +233,10 @@ public class VertexAttributesImpl {
         }
 
         @Override
-        public void set(@NonNull ByteBuf buf, int vertexBase, int v0, int v1, int v2) {
-            int idx = vertexBase + this.offset;
-            buf.setIntLE(idx, v0).setIntLE(idx + INT_SIZE, v1).setIntLE(idx + 2 * INT_SIZE, v2);
+        public void set(long addr, int v0, int v1, int v2) {
+            PUnsafe.putInt(addr + 0 * INT_SIZE, v0);
+            PUnsafe.putInt(addr + 1 * INT_SIZE, v1);
+            PUnsafe.putInt(addr + 2 * INT_SIZE, v2);
         }
     }
 
@@ -222,15 +249,16 @@ public class VertexAttributesImpl {
         }
 
         @Override
-        public void set(@NonNull ByteBuf buf, int vertexBase, int v0, int v1, int v2, int v3) {
-            //this weird syntax should allow optimal efficiency due to out-of-order execution
-            buf.setIntLE(vertexBase + this.offset, ((v0 & 0xFF) | (v3 << 24)) | ((v1 & 0xFF) << 8) | ((v2 & 0xFF) << 16));
+        public void set(long addr, int v0, int v1, int v2, int v3) {
+            PUnsafe.putInt(addr, PlatformInfo.IS_LITTLE_ENDIAN
+                    ? ((v0 & 0xFF) | (v3 << 24)) | ((v1 & 0xFF) << 8) | ((v2 & 0xFF) << 16)
+                    : ((v3 & 0xFF) | (v0 << 24)) | ((v2 & 0xFF) << 8) | ((v1 & 0xFF) << 16));
         }
 
         @Override
-        public void setARGB(@NonNull ByteBuf buf, int vertexBase, int val) {
-            //big-endian write here is intentional
-            buf.setInt(vertexBase + this.offset, val);
+        public void setARGB(long addr, int val) {
+            //this is conceptually executed in big-endian order
+            PUnsafe.putInt(addr, PlatformInfo.IS_LITTLE_ENDIAN ? Integer.reverseBytes(val) : val);
         }
     }
 
@@ -243,9 +271,14 @@ public class VertexAttributesImpl {
         }
 
         @Override
-        public void set(@NonNull ByteBuf buf, int vertexBase, int v0, int v1, int v2, int v3) {
-            int idx = vertexBase + this.offset;
-            buf.setIntLE(idx, (v0 & 0xFFFF) | (v1 << 16)).setIntLE(idx + INT_SIZE, (v2 & 0xFFFF) | (v3 << 16));
+        public void set(long addr, int v0, int v1, int v2, int v3) {
+            if (PlatformInfo.IS_LITTLE_ENDIAN) {
+                PUnsafe.putInt(addr, (v0 & 0xFFFF) | (v1 << 16));
+                PUnsafe.putInt(addr + INT_SIZE, (v2 & 0xFFFF) | (v3 << 16));
+            } else {
+                PUnsafe.putInt(addr, (v1 & 0xFFFF) | (v0 << 16));
+                PUnsafe.putInt(addr + INT_SIZE, (v3 & 0xFFFF) | (v2 << 16));
+            }
         }
     }
 
@@ -258,9 +291,11 @@ public class VertexAttributesImpl {
         }
 
         @Override
-        public void set(@NonNull ByteBuf buf, int vertexBase, int v0, int v1, int v2, int v3) {
-            int idx = vertexBase + this.offset;
-            buf.setIntLE(idx, v0).setIntLE(idx + INT_SIZE, v1).setIntLE(idx + 2 * INT_SIZE, v2).setIntLE(idx + 3 * INT_SIZE, v3);
+        public void set(long addr, int v0, int v1, int v2, int v3) {
+            PUnsafe.putInt(addr + 0 * INT_SIZE, v0);
+            PUnsafe.putInt(addr + 1 * INT_SIZE, v1);
+            PUnsafe.putInt(addr + 2 * INT_SIZE, v2);
+            PUnsafe.putInt(addr + 3 * INT_SIZE, v3);
         }
     }
 }
