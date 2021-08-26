@@ -18,25 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.indirect;
+package net.daporkchop.fp2.client.gl.command.elements;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.util.alloc.Allocator;
+import net.daporkchop.fp2.client.gl.command.IMultipassDrawCommandBuffer;
 
 /**
  * @author DaPorkchop_
  */
-public interface IDrawIndirectCommandBufferFactory<C extends IDrawIndirectCommand> {
-    /**
-     * @param alloc an {@link Allocator} for allocating off-heap memory
-     * @return a new {@link IDrawIndirectCommandBuffer} for this command type whose commands are stored only in client memory
-     */
-    IDrawIndirectCommandBuffer<C> commandBufferCPU(@NonNull Allocator alloc);
+interface IMultipassDrawElementsCommandBuffer extends IMultipassDrawCommandBuffer<DrawElementsCommand> {
+    @Override
+    default DrawElementsCommand newCommand() {
+        return new DrawElementsCommand();
+    }
 
-    /**
-     * @param alloc an {@link Allocator} for allocating off-heap memory
-     * @param barrier whether or not to place a memory barrier on the buffer contents immediately before any draw commands are issued
-     * @return a new {@link IDrawIndirectCommandBuffer} for this command type whose commands are stored only in client memory
-     */
-    IDrawIndirectCommandBuffer<C> commandBufferGPU(@NonNull Allocator alloc, boolean barrier);
+    @Override
+    default Class<DrawElementsCommand> commandClass() {
+        return DrawElementsCommand.class;
+    }
 }

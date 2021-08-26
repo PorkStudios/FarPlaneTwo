@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.mode.common.client.bake;
 
 import net.daporkchop.fp2.client.gl.command.IDrawCommand;
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
 
 /**
  * @author DaPorkchop_

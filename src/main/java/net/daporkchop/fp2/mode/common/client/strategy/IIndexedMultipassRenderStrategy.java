@@ -20,12 +20,12 @@
 
 package net.daporkchop.fp2.mode.common.client.strategy;
 
-import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommand;
+import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 
 /**
  * @author DaPorkchop_
  */
-public interface IIndexedMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile> extends IMultipassRenderStrategy<POS, T, DrawElementsIndirectCommand> {
+public interface IIndexedMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile> extends IMultipassRenderStrategy<POS, T, DrawElementsCommand> {
 }

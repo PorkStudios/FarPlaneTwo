@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.mode.voxel.client;
 
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
+import net.daporkchop.fp2.client.gl.command.IDrawCommand;
 import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
 import net.daporkchop.fp2.mode.common.client.strategy.IShaderBasedMultipassRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
@@ -29,7 +29,7 @@ import net.daporkchop.fp2.mode.voxel.VoxelTile;
 /**
  * @author DaPorkchop_
  */
-public interface IShaderBasedMultipassVoxelRenderStrategy<C extends IDrawIndirectCommand> extends IMultipassVoxelRenderStrategy<C>, IShaderBasedMultipassRenderStrategy<VoxelPos, VoxelTile, C> {
+public interface IShaderBasedMultipassVoxelRenderStrategy<C extends IDrawCommand> extends IMultipassVoxelRenderStrategy<C>, IShaderBasedMultipassRenderStrategy<VoxelPos, VoxelTile, C> {
     @Override
     default RenderShaderProgram blockShader() {
         return VoxelShaders.BLOCK_SHADER;

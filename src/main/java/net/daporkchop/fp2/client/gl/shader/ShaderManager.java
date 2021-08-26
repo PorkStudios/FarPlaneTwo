@@ -175,10 +175,18 @@ public class ShaderManager {
         }
     }
 
-    protected static abstract class AbstractShaderBuilder<B extends AbstractShaderBuilder<B, S>, S extends ShaderProgram<S>> {
+    public static abstract class AbstractShaderBuilder<B extends AbstractShaderBuilder<B, S>, S extends ShaderProgram<S>> {
         public S link() {
             return uncheckedCast(SHADER_CACHE.getUnchecked(this));
         }
+
+        public B define(@NonNull String name) {
+            return this.define(name, "");
+        }
+
+        public abstract B define(@NonNull String name, @NonNull Object value);
+
+        public abstract B undefine(@NonNull String name);
 
         protected abstract S supply();
 

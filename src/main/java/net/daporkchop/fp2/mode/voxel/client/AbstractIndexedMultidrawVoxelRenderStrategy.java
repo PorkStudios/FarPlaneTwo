@@ -22,9 +22,8 @@ package net.daporkchop.fp2.mode.voxel.client;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommand;
-import net.daporkchop.fp2.client.gl.object.IGLBuffer;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
+import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
+import net.daporkchop.fp2.client.gl.command.elements.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
@@ -40,7 +39,7 @@ import net.daporkchop.fp2.util.alloc.DirectMemoryAllocator;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractIndexedMultidrawVoxelRenderStrategy extends IndexedMultidrawRenderStrategy<VoxelPos, VoxelTile> implements IMultipassVoxelRenderStrategy<DrawElementsIndirectCommand> {
+public abstract class AbstractIndexedMultidrawVoxelRenderStrategy extends IndexedMultidrawRenderStrategy<VoxelPos, VoxelTile> implements IMultipassVoxelRenderStrategy<DrawElementsCommand> {
     public AbstractIndexedMultidrawVoxelRenderStrategy() {
         super(new DirectMemoryAllocator(), VoxelBake.VERTEX_FORMAT);
     }

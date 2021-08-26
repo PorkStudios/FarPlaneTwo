@@ -25,8 +25,7 @@ import net.daporkchop.fp2.asm.interfaz.client.renderer.IMixinRenderGlobal;
 import net.daporkchop.fp2.client.ShaderClippingStateHelper;
 import net.daporkchop.fp2.client.gl.WorkGroupSize;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBuffer;
+import net.daporkchop.fp2.client.gl.command.IDrawCommand;
 import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.shader.ComputeShaderBuilder;
@@ -40,9 +39,8 @@ import net.daporkchop.fp2.util.alloc.Allocator;
 import java.util.function.Consumer;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.opengl.GL43.*;
 
@@ -51,7 +49,7 @@ import static org.lwjgl.opengl.GL43.*;
  *
  * @author DaPorkchop_
  */
-public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCommand> extends AbstractRenderIndex<POS, C, GPUCulledRenderIndex<POS, C>, GPUCulledRenderIndex.Level<POS, C>> {
+public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawCommand> extends AbstractRenderIndex<POS, C, GPUCulledRenderIndex<POS, C>, GPUCulledRenderIndex.Level<POS, C>> {
     /**
      * The maximum permitted compute work group size.
      * <p>
@@ -72,19 +70,13 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
     protected static final int POSITIONS_BUFFER_BINDING_INDEX = 3;
     protected static final int COMMANDS_BUFFER_BINDING_INDEX = 4;
 
-    protected final ComputeShaderProgram cullShaderLevel0;
-    protected final ComputeShaderProgram cullShader;
-
     public <T extends IFarTile> GPUCulledRenderIndex(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T, C> strategy, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray, @NonNull ComputeShaderBuilder cullShaderBuilder) {
         super(mode, strategy, vaoInitializer, elementArray);
 
-        this.cullShaderLevel0 = cullShaderBuilder
-                .withWorkGroupSize(WORK_GROUP_SIZE)
-                .define("LEVEL_0")
-                .link();
-        this.cullShader = cullShaderBuilder
-                .withWorkGroupSize(WORK_GROUP_SIZE)
-                .link();
+        cullShaderBuilder = cullShaderBuilder.withWorkGroupSize(WORK_GROUP_SIZE);
+        for (Level<POS, C> level : this.levels) {
+            level.linkShader(cullShaderBuilder);
+        }
     }
 
     @Override
@@ -112,7 +104,8 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
     /**
      * @author DaPorkchop_
      */
-    protected static class Level<POS extends IFarPos, C extends IDrawIndirectCommand> extends AbstractRenderIndex.Level<POS, C, GPUCulledRenderIndex<POS, C>, Level<POS, C>> {
+    protected static class Level<POS extends IFarPos, C extends IDrawCommand> extends AbstractRenderIndex.Level<POS, C, GPUCulledRenderIndex<POS, C>, Level<POS, C>> {
+        protected ComputeShaderProgram cullShader;
         protected final int level;
 
         public Level(@NonNull GPUCulledRenderIndex<POS, C> parent, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull Allocator.GrowFunction growFunction, int level) {
@@ -121,37 +114,25 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawIndirectCo
             this.level = level;
         }
 
-        @Override
-        protected IDrawIndirectCommandBuffer<C> createCommandBuffer(@NonNull GPUCulledRenderIndex<POS, C> parent) {
-            //the command buffer must be on GPU memory in order for its contents to be accessible to the compute shader.
-            //  we request a memory barrier to be placed in order to ensure that all compute shader invocations have completed before using the commands
-            return parent.strategy.createCommandBufferFactory().commandBufferGPU(parent.directMemoryAlloc, true);
+        protected void linkShader(@NonNull ComputeShaderBuilder cullShaderBuilder) {
+            if (this.level == 0) {
+                cullShaderBuilder = cullShaderBuilder.define("LEVEL_0");
+            }
+            this.cullShader = this.commandBuffer.configureShader(cullShaderBuilder).link();
         }
 
         @Override
         protected void select0(@NonNull IFrustum frustum, float partialTicks) {
             //bind SSBOs
             this.positionsBuffer.bindBase(GL_SHADER_STORAGE_BUFFER, POSITIONS_BUFFER_BINDING_INDEX);
-            this.commandBuffer.openglBuffer().bindBase(GL_SHADER_STORAGE_BUFFER, COMMANDS_BUFFER_BINDING_INDEX);
 
-            ComputeShaderProgram cullShader;
             if (this.level == 0) { //level-0: we should bind the vanilla renderability info (for use in shader) and use the level-0 shader
                 ((IMixinRenderGlobal) MC.renderGlobal).fp2_vanillaRenderabilityTracker().bindForShaderUse();
-                cullShader = this.parent.cullShaderLevel0;
-            } else { //no need to bind any special resources, and we can use the standard shader
-                cullShader = this.parent.cullShader;
             }
 
-            try (ComputeShaderProgram boundCullShader = cullShader.use()) { //dispatch compute shader
-                boundCullShader.dispatch(this.capacity);
+            try (ComputeShaderProgram cullShader = this.cullShader.use()) { //do frustum culling
+                this.commandBuffer.select(cullShader);
             }
-        }
-
-        @Override
-        protected void draw0(int pass) {
-            //draw the buffered draw commands. we assume a memory barrier will be placed on GL_DRAW_INDIRECT_BUFFER, and that the buffer's contents will
-            //  not have been changed since select0() ran.
-            this.commandBuffer.draw(pass, RENDER_PASS_COUNT, this.capacity);
         }
     }
 }

@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
+import net.daporkchop.fp2.client.gl.command.IDrawCommand;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -37,7 +37,7 @@ import static org.lwjgl.opengl.GL11.*;
 /**
  * @author DaPorkchop_
  */
-public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile, C extends IDrawIndirectCommand> extends IFarRenderStrategy<POS, T, C> {
+public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile, C extends IDrawCommand> extends IFarRenderStrategy<POS, T, C> {
     default void preRender() {
         if (FP2_DEBUG && FP2Config.debug.disableBackfaceCull) {
             GlStateManager.disableCull();

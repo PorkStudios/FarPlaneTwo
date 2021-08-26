@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
+import net.daporkchop.fp2.client.gl.command.IDrawCommand;
 import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
@@ -32,7 +32,7 @@ import java.util.stream.Stream;
 /**
  * @author DaPorkchop_
  */
-public interface IHeightmapRenderStrategy<C extends IDrawIndirectCommand> extends IFarRenderStrategy<HeightmapPos, HeightmapTile, C> {
+public interface IHeightmapRenderStrategy<C extends IDrawCommand> extends IFarRenderStrategy<HeightmapPos, HeightmapTile, C> {
     @Override
     default Stream<HeightmapPos> bakeOutputs(@NonNull HeightmapPos srcPos) {
         int x = srcPos.x();

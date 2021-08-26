@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.mode.voxel.client;
 
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
+import net.daporkchop.fp2.client.gl.command.IDrawCommand;
 import net.daporkchop.fp2.mode.common.client.strategy.IMultipassRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
@@ -28,5 +28,5 @@ import net.daporkchop.fp2.mode.voxel.VoxelTile;
 /**
  * @author DaPorkchop_
  */
-public interface IMultipassVoxelRenderStrategy<C extends IDrawIndirectCommand> extends IVoxelRenderStrategy<C>, IMultipassRenderStrategy<VoxelPos, VoxelTile, C> {
+public interface IMultipassVoxelRenderStrategy<C extends IDrawCommand> extends IVoxelRenderStrategy<C>, IMultipassRenderStrategy<VoxelPos, VoxelTile, C> {
 }

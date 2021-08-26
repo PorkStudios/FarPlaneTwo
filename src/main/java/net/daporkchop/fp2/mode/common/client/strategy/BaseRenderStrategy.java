@@ -20,13 +20,9 @@
 
 package net.daporkchop.fp2.mode.common.client.strategy;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.AllocatedGLBuffer;
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
-import net.daporkchop.fp2.client.gl.object.GLBuffer;
+import net.daporkchop.fp2.client.gl.command.IDrawCommand;
 import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
 import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuffer;
 import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
@@ -42,13 +38,12 @@ import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static org.lwjgl.opengl.GL15.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseRenderStrategy<POS extends IFarPos, T extends IFarTile, C extends IDrawIndirectCommand> extends AbstractReleasable implements IFarRenderStrategy<POS, T, C> {
+public abstract class BaseRenderStrategy<POS extends IFarPos, T extends IFarTile, C extends IDrawCommand> extends AbstractReleasable implements IFarRenderStrategy<POS, T, C> {
     /*
      * struct RenderData {
      *   u64 vertexOffset; //offset of vertex data from the beginning of gpu memory, in multiples of vertex size

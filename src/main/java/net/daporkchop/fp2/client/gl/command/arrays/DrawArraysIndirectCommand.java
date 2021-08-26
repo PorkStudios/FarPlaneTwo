@@ -18,12 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.indirect.arrays;
+package net.daporkchop.fp2.client.gl.command.arrays;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
+import net.daporkchop.fp2.client.gl.command.IDrawIndirectCommand;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.lwjgl.opengl.GL40;
 import org.lwjgl.opengl.GL43;

@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.DrawMode;
-import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommand;
+import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
 import net.daporkchop.fp2.mode.common.client.index.AbstractRenderIndex;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.minecraft.client.renderer.texture.AbstractTexture;
@@ -34,7 +34,7 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public class ShaderBasedIndexedMultidrawHeightmapRenderStrategy extends AbstractIndexedMultidrawHeightmapRenderStrategy implements IShaderBasedMultipassHeightmapRenderStrategy<DrawElementsIndirectCommand> {
+public class ShaderBasedIndexedMultidrawHeightmapRenderStrategy extends AbstractIndexedMultidrawHeightmapRenderStrategy implements IShaderBasedMultipassHeightmapRenderStrategy<DrawElementsCommand> {
     @Override
     public void render(@NonNull AbstractRenderIndex<HeightmapPos, ?, ?, ?> index, @NonNull BlockRenderLayer layer, boolean pre) {
         if (layer == BlockRenderLayer.CUTOUT && !pre) {

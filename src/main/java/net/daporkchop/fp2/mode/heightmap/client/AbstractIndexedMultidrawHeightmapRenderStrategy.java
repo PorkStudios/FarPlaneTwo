@@ -22,9 +22,7 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommand;
-import net.daporkchop.fp2.client.gl.object.IGLBuffer;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
+import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
 import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
 import net.daporkchop.fp2.mode.common.client.BakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.IndexedMultidrawRenderStrategy;
@@ -35,7 +33,7 @@ import net.daporkchop.fp2.util.alloc.DirectMemoryAllocator;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractIndexedMultidrawHeightmapRenderStrategy extends IndexedMultidrawRenderStrategy<HeightmapPos, HeightmapTile> implements IMultipassHeightmapRenderStrategy<DrawElementsIndirectCommand> {
+public abstract class AbstractIndexedMultidrawHeightmapRenderStrategy extends IndexedMultidrawRenderStrategy<HeightmapPos, HeightmapTile> implements IMultipassHeightmapRenderStrategy<DrawElementsCommand> {
     public AbstractIndexedMultidrawHeightmapRenderStrategy() {
         super(new DirectMemoryAllocator(), HeightmapBake.VERTEX_FORMAT);
     }

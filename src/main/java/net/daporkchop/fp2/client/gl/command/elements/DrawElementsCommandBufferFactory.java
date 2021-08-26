@@ -18,56 +18,32 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.indirect;
+package net.daporkchop.fp2.client.gl.command.elements;
 
-import net.daporkchop.fp2.client.gl.command.IDrawCommand;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.client.gl.DrawMode;
+import net.daporkchop.fp2.client.gl.ElementType;
+import net.daporkchop.fp2.client.gl.command.IDrawCommandBufferFactory;
+import net.daporkchop.fp2.client.gl.command.IMultipassDrawCommandBuffer;
+import net.daporkchop.fp2.util.alloc.Allocator;
 
 /**
- * Represents an OpenGL indirect draw command.
+ * Implementation of {@link IDrawCommandBufferFactory} for {@link DrawElementsCommand}.
  *
  * @author DaPorkchop_
  */
-public interface IDrawIndirectCommand extends IDrawCommand {
-    /**
-     * @return the size of a single command, in bytes
-     */
-    long size();
+@RequiredArgsConstructor
+@Getter
+public class DrawElementsCommandBufferFactory implements IDrawCommandBufferFactory<DrawElementsCommand> {
+    @NonNull
+    protected final DrawMode mode;
+    @NonNull
+    protected final ElementType type;
 
-    /**
-     * Loads this command into this object instance from the given off-heap memory address.
-     *
-     * @param addr the memory address to load from
-     */
-    void load(long addr);
-
-    /**
-     * Stores this command to the given off-heap memory address.
-     *
-     * @param addr the memory address to store to
-     */
-    void store(long addr);
-
-    /**
-     * @return the base instance number
-     */
-    int baseInstance();
-
-    /**
-     * Sets the base instance number.
-     *
-     * @param baseInstance the new baseInstance
-     */
-    IDrawIndirectCommand baseInstance(int baseInstance);
-
-    /**
-     * @return the number of instances to be rendered
-     */
-    int instanceCount();
-
-    /**
-     * Sets the number of instances to be rendered.
-     *
-     * @param instanceCount the new instanceCount
-     */
-    IDrawIndirectCommand instanceCount(int instanceCount);
+    @Override
+    public IMultipassDrawCommandBuffer<DrawElementsCommand> multipassCommandBuffer(@NonNull Allocator alloc, int passes) {
+        return new IndirectMultipassDrawElementsCommandBuffer(alloc, passes, this.mode, this.type);
+    }
 }

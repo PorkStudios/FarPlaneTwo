@@ -71,7 +71,7 @@ public final class DirectMemoryAllocator implements Allocator {
     public long realloc(long address, long size) {
         notNegative(size, "size");
         long oldSize = this.allocations.remove(address);
-        checkArg(oldSize >= 0L, "can't reallocate address 0x016x (which isn't owned by this allocator)", address);
+        checkArg(address == 0L || oldSize >= 0L, "can't reallocate address 0x016x (which isn't owned by this allocator)", address);
         address = PUnsafe.reallocateMemory(address, size);
         this.allocations.put(address, size);
 

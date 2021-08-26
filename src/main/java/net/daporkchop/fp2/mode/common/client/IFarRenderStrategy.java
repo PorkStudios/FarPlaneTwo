@@ -21,9 +21,8 @@
 package net.daporkchop.fp2.mode.common.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBufferFactory;
-import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommand;
+import net.daporkchop.fp2.client.gl.command.IDrawCommand;
+import net.daporkchop.fp2.client.gl.command.IDrawCommandBufferFactory;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -36,7 +35,7 @@ import java.util.stream.Stream;
 /**
  * @author DaPorkchop_
  */
-public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, C extends IDrawIndirectCommand> extends Releasable {
+public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, C extends IDrawCommand> extends Releasable {
     //
     // BAKE METHODS
     //
@@ -69,7 +68,7 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, C e
         throw new AbstractMethodError();
     }
 
-    IDrawIndirectCommandBufferFactory<C> createCommandBufferFactory();
+    IDrawCommandBufferFactory<C> createCommandBufferFactory();
 
     /**
      * @return the size of the render tree data stored by this rendering strategy
@@ -78,7 +77,7 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, C e
 
     void deleteRenderData(long renderData);
 
-    void toDrawCommands(long renderData, @NonNull DrawElementsIndirectCommand[] commands);
+    void toDrawCommands(long renderData, @NonNull C[] commands);
 
     //
     // BAKE METHODS

@@ -7,7 +7,7 @@
     "common.glsl",
     "comp/common.comp",
     "comp/frustum.comp",
-    "comp/indirect_draw.comp",
+    "comp/command_buffer_selection.comp",
     "comp/voxel/frustum.comp"
   ]
 }

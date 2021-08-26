@@ -26,9 +26,11 @@ import io.netty.buffer.CompositeByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.AllocatedGLBuffer;
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBufferFactory;
-import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommand;
-import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommandBufferFactory;
+import net.daporkchop.fp2.client.gl.DrawMode;
+import net.daporkchop.fp2.client.gl.ElementType;
+import net.daporkchop.fp2.client.gl.command.IDrawCommandBufferFactory;
+import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
+import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommandBufferFactory;
 import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
 import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
 import net.daporkchop.fp2.mode.api.IFarPos;
@@ -39,14 +41,13 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
-import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public abstract class IndexedRenderStrategy<POS extends IFarPos, T extends IFarTile> extends BaseRenderStrategy<POS, T, DrawElementsIndirectCommand> {
+public abstract class IndexedRenderStrategy<POS extends IFarPos, T extends IFarTile> extends BaseRenderStrategy<POS, T, DrawElementsCommand> {
     /*
      * struct RenderData {
      *   [...] //inherited from BaseRenderStrategy
@@ -83,8 +84,8 @@ public abstract class IndexedRenderStrategy<POS extends IFarPos, T extends IFarT
     }
 
     @Override
-    public IDrawIndirectCommandBufferFactory<DrawElementsIndirectCommand> createCommandBufferFactory() {
-        return new DrawElementsIndirectCommandBufferFactory(GL_QUADS, INDEX_TYPE);
+    public IDrawCommandBufferFactory<DrawElementsCommand> createCommandBufferFactory() {
+        return new DrawElementsCommandBufferFactory(DrawMode.QUADS, ElementType.UNSIGNED_SHORT);
     }
 
     @Override

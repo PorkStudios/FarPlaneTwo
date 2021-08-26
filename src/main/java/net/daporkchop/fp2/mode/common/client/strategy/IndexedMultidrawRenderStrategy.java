@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.indirect.elements.DrawElementsIndirectCommand;
+import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
 import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -39,7 +39,7 @@ public abstract class IndexedMultidrawRenderStrategy<POS extends IFarPos, T exte
     }
 
     @Override
-    public void toDrawCommands(long renderData, @NonNull DrawElementsIndirectCommand[] commands) {
+    public void toDrawCommands(long renderData, @NonNull DrawElementsCommand[] commands) {
         int baseVertex = toInt(_renderdata_vertexOffset(renderData));
         int firstIndex = toInt(_renderdata_indexOffset(renderData));
 

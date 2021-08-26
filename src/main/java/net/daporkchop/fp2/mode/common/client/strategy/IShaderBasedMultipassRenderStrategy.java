@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommand;
+import net.daporkchop.fp2.client.gl.command.IDrawCommand;
 import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -30,7 +30,7 @@ import net.daporkchop.fp2.mode.common.client.index.AbstractRenderIndex;
 /**
  * @author DaPorkchop_
  */
-public interface IShaderBasedMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile, C extends IDrawIndirectCommand> extends IMultipassRenderStrategy<POS, T, C> {
+public interface IShaderBasedMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile, C extends IDrawCommand> extends IMultipassRenderStrategy<POS, T, C> {
     @Override
     default void renderSolid(@NonNull AbstractRenderIndex<POS, ?, ?, ?> index, int level) {
         try (RenderShaderProgram program = this.blockShader().use()) {

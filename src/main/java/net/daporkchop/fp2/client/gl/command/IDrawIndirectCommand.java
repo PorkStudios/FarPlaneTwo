@@ -18,33 +18,54 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.indirect.elements;
-
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBuffer;
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBufferFactory;
-import net.daporkchop.fp2.util.alloc.Allocator;
+package net.daporkchop.fp2.client.gl.command;
 
 /**
- * Implementation of {@link IDrawIndirectCommandBufferFactory} for {@link DrawElementsIndirectCommand}.
+ * Represents an OpenGL indirect draw command.
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public class DrawElementsIndirectCommandBufferFactory implements IDrawIndirectCommandBufferFactory<DrawElementsIndirectCommand> {
-    protected final int mode;
-    protected final int type;
+public interface IDrawIndirectCommand extends IDrawCommand {
+    /**
+     * @return the size of a single command, in bytes
+     */
+    long size();
 
-    @Override
-    public IDrawIndirectCommandBuffer<DrawElementsIndirectCommand> commandBufferCPU(@NonNull Allocator alloc) {
-        return new CPUDrawElementsIndirectCommandBuffer(alloc, this.mode, this.type);
-    }
+    /**
+     * Loads this command into this object instance from the given off-heap memory address.
+     *
+     * @param addr the memory address to load from
+     */
+    void load(long addr);
 
-    @Override
-    public IDrawIndirectCommandBuffer<DrawElementsIndirectCommand> commandBufferGPU(@NonNull Allocator alloc, boolean barrier) {
-        return new GPUDrawElementsIndirectCommandBuffer(alloc, this.mode, barrier, this.type);
-    }
+    /**
+     * Stores this command to the given off-heap memory address.
+     *
+     * @param addr the memory address to store to
+     */
+    void store(long addr);
+
+    /**
+     * @return the base instance number
+     */
+    int baseInstance();
+
+    /**
+     * Sets the base instance number.
+     *
+     * @param baseInstance the new baseInstance
+     */
+    IDrawIndirectCommand baseInstance(int baseInstance);
+
+    /**
+     * @return the number of instances to be rendered
+     */
+    int instanceCount();
+
+    /**
+     * Sets the number of instances to be rendered.
+     *
+     * @param instanceCount the new instanceCount
+     */
+    IDrawIndirectCommand instanceCount(int instanceCount);
 }

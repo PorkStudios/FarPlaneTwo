@@ -57,14 +57,21 @@ public final class ComputeShaderBuilder extends ShaderManager.AbstractShaderBuil
     @With
     protected final WorkGroupSize workGroupSize;
 
-    public ComputeShaderBuilder define(@NonNull String name) {
-        return this.define(name, "");
-    }
-
+    @Override
     public ComputeShaderBuilder define(@NonNull String name, @NonNull Object value) {
         if (!value.equals(this.defines.get(name))) {
             Map<String, Object> defines = new Object2ObjectOpenHashMap<>(this.defines);
             defines.put(name, value);
+            return this.withDefines(ImmutableMap.copyOf(defines));
+        }
+        return this;
+    }
+
+    @Override
+    public ComputeShaderBuilder undefine(@NonNull String name) {
+        if (this.defines.containsKey(name)) {
+            Map<String, Object> defines = new Object2ObjectOpenHashMap<>(this.defines);
+            defines.remove(name);
             return this.withDefines(ImmutableMap.copyOf(defines));
         }
         return this;

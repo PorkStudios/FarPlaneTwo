@@ -38,7 +38,7 @@ import static org.lwjgl.opengl.GL30.*;
  * @author DaPorkchop_
  */
 @Getter
-abstract class ShaderProgram<I extends ShaderProgram<I>> implements AutoCloseable {
+public abstract class ShaderProgram<I extends ShaderProgram<I>> implements AutoCloseable {
     protected final String name;
     protected int id;
 

@@ -18,28 +18,28 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.command.elements;
+package net.daporkchop.fp2.client.gl;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import net.daporkchop.fp2.client.gl.command.IDrawCommand;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import static org.lwjgl.opengl.GL11.*;
 
 /**
- * An indexed drawing command.
+ * The different OpenGL element types.
  *
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-public final class DrawElementsCommand implements IDrawCommand {
-    protected int count;
-    protected int firstIndex;
-    protected int baseVertex;
+@RequiredArgsConstructor
+@Getter
+public enum ElementType {
+    BYTE(GL_BYTE, Byte.BYTES),
+    UNSIGNED_BYTE(GL_UNSIGNED_BYTE, Byte.BYTES),
+    SHORT(GL_SHORT, Short.BYTES),
+    UNSIGNED_SHORT(GL_UNSIGNED_SHORT, Short.BYTES),
+    INT(GL_INT, Integer.BYTES),
+    UNSIGNED_INT(GL_UNSIGNED_INT, Integer.BYTES);
 
-    @Override
-    public boolean isEmpty() {
-        return this.count == 0;
-    }
+    protected final int gl;
+    protected final int size;
 }

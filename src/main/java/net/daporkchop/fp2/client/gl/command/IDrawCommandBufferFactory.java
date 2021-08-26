@@ -18,35 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.indirect.arrays;
+package net.daporkchop.fp2.client.gl.command;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.indirect.AbstractGPUDrawIndirectCommandBuffer;
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBuffer;
 import net.daporkchop.fp2.util.alloc.Allocator;
 
-import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
-import static org.lwjgl.opengl.GL40.*;
-import static org.lwjgl.opengl.GL43.*;
-
 /**
- * Implementation of {@link IDrawIndirectCommandBuffer} for {@link DrawArraysIndirectCommand}s whose commands are buffered in GPU video memory.
- *
  * @author DaPorkchop_
  */
-final class GPUDrawArraysIndirectCommandBuffer extends AbstractGPUDrawIndirectCommandBuffer<DrawArraysIndirectCommand> implements IDrawArraysIndirectCommandBuffer {
-    public GPUDrawArraysIndirectCommandBuffer(@NonNull Allocator alloc, int mode, boolean barrier) {
-        super(alloc, mode, barrier);
-    }
-
-    @Override
-    protected void drawBatch(long offset, int count, int stride) {
-        if (ALLOW_MULTIDRAW) { //fast: execute all commands at once
-            glMultiDrawArraysIndirect(this.mode, offset, count, stride);
-        } else { //slow: execute commands one-at-a-time
-            for (long addr = offset, end = addr + (long) count * stride; addr != end; addr += stride) {
-                glDrawArraysIndirect(this.mode, addr);
-            }
-        }
-    }
+@FunctionalInterface
+public interface IDrawCommandBufferFactory<C extends IDrawCommand> {
+    /**
+     * @param alloc  an {@link Allocator} for allocating off-heap memory
+     * @param passes the number of render passes to do
+     * @return a new {@link IMultipassDrawCommandBuffer} for this command type
+     */
+    IMultipassDrawCommandBuffer<C> multipassCommandBuffer(@NonNull Allocator alloc, int passes);
 }

@@ -18,26 +18,26 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.indirect.elements;
+package net.daporkchop.fp2.client.gl;
 
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBuffer;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import static org.lwjgl.opengl.GL11.*;
 
 /**
+ * The different OpenGL geometry drawing modes.
+ *
  * @author DaPorkchop_
  */
-interface IDrawElementsIndirectCommandBuffer extends IDrawIndirectCommandBuffer<DrawElementsIndirectCommand> {
-    @Override
-    default long commandSize() {
-        return DrawElementsIndirectCommand._SIZE;
-    }
+@RequiredArgsConstructor
+@Getter
+public enum DrawMode {
+    TRIANGLES(GL_TRIANGLES),
+    TRIANGLE_STRIP(GL_TRIANGLE_STRIP),
+    TRIANGLE_FAN(GL_TRIANGLE_FAN),
+    QUADS(GL_QUADS),
+    QUAD_STRIP(GL_QUAD_STRIP);
 
-    @Override
-    default DrawElementsIndirectCommand newCommand() {
-        return new DrawElementsIndirectCommand();
-    }
-
-    @Override
-    default Class<DrawElementsIndirectCommand> commandClass() {
-        return DrawElementsIndirectCommand.class;
-    }
+    protected final int gl;
 }

@@ -18,32 +18,50 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.indirect.arrays;
+package net.daporkchop.fp2.client.gl.command;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBuffer;
-import net.daporkchop.fp2.client.gl.indirect.IDrawIndirectCommandBufferFactory;
+import net.daporkchop.fp2.client.gl.DrawMode;
 import net.daporkchop.fp2.util.alloc.Allocator;
+import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
+import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Implementation of {@link IDrawArraysIndirectCommandBuffer} for {@link DrawArraysIndirectCommand}.
+ * Base implementation of {@link IMultipassDrawCommandBuffer}.
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Getter
-public class DrawArraysIndirectCommandBufferFactory implements IDrawIndirectCommandBufferFactory<DrawArraysIndirectCommand> {
-    protected final int mode;
+public abstract class AbstractMultipassDrawCommandBuffer<C extends IDrawCommand> extends AbstractRefCounted implements IMultipassDrawCommandBuffer<C> {
+    @Getter(AccessLevel.NONE)
+    protected final Allocator alloc;
+    protected final DrawMode mode;
+    protected final int passes;
 
-    @Override
-    public IDrawIndirectCommandBuffer<DrawArraysIndirectCommand> commandBufferCPU(@NonNull Allocator alloc) {
-        return new CPUDrawArraysIndirectCommandBuffer(alloc, this.mode);
+    protected int capacity;
+
+    protected boolean dirty = false; //extra field for use by implementations, may be ignored if not needed
+
+    public AbstractMultipassDrawCommandBuffer(@NonNull Allocator alloc, int passes, @NonNull DrawMode mode) {
+        this.alloc = alloc;
+        this.mode = mode;
+        this.passes = positive(passes, "passes");
     }
 
     @Override
-    public IDrawIndirectCommandBuffer<DrawArraysIndirectCommand> commandBufferGPU(@NonNull Allocator alloc, boolean barrier) {
-        return new GPUDrawArraysIndirectCommandBuffer(alloc, this.mode, barrier);
+    public IMultipassDrawCommandBuffer<C> retain() throws AlreadyReleasedException {
+        super.retain();
+        return this;
     }
+
+    @Override
+    public void resize(int capacity) {
+        this.resize0(this.capacity, this.capacity = notNegative(capacity, "capacity"));
+    }
+
+    protected abstract void resize0(int oldCapacity, int newCapacity);
 }

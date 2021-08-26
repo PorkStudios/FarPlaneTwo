@@ -18,23 +18,36 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.indirect;
+package net.daporkchop.fp2.client.gl.command;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.object.GLBuffer;
+import net.daporkchop.fp2.client.gl.shader.ComputeShaderProgram;
+import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
 import net.daporkchop.lib.common.misc.refcount.RefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 /**
+ * A buffer of multiple {@link IDrawCommand}s, with multiple commands sharing the same index (multiple render passes).
+ *
  * @author DaPorkchop_
  */
-public interface IDrawIndirectCommandBuffer<C extends IDrawIndirectCommand> extends RefCounted {
+public interface IMultipassDrawCommandBuffer<C extends IDrawCommand> extends RefCounted {
     // general methods
 
+    @Override
+    int refCnt();
+
+    @Override
+    IMultipassDrawCommandBuffer<C> retain() throws AlreadyReleasedException;
+
+    @Override
+    boolean release() throws AlreadyReleasedException;
+
     /**
-     * @return the size of a single command, in bytes
+     * @return the number of separate render passes
      */
-    long commandSize();
+    int passes();
 
     /**
      * @return a new {@link C} compatible with the draw commands stored in this command buffer
@@ -51,7 +64,7 @@ public interface IDrawIndirectCommandBuffer<C extends IDrawIndirectCommand> exte
     /**
      * @return the number of commands in this buffer
      */
-    long capacity();
+    int capacity();
 
     /**
      * Sets the capacity of this command buffer.
@@ -61,23 +74,23 @@ public interface IDrawIndirectCommandBuffer<C extends IDrawIndirectCommand> exte
      *
      * @param capacity the new capacity
      */
-    void resize(long capacity);
+    void resize(int capacity);
 
     /**
-     * Loads the command at the given index into the given {@link C} instance.
+     * Loads the commands at the given index into the given {@link C} instance.
      *
-     * @param command the instance for the command to be loaded into
-     * @param index   the index to load the command from
+     * @param commands the instance for the command to be loaded into (one command per pass)
+     * @param index    the index to load the command from
      */
-    void load(@NonNull C command, long index);
+    void load(@NonNull C[] commands, int index);
 
     /**
-     * Stores the command from the given {@link C} instance at the given index.
+     * Stores the commands from the given {@link C} instance at the given index.
      *
-     * @param command the instance for the command to be stored
-     * @param index   the index to store the command at
+     * @param commands the instance for the command to be stored (one command per pass)
+     * @param index    the index to store the command at
      */
-    void store(@NonNull C command, long index);
+    void store(@NonNull C[] commands, int index);
 
     /**
      * Clears the given number of commands starting at the given index.
@@ -85,41 +98,36 @@ public interface IDrawIndirectCommandBuffer<C extends IDrawIndirectCommand> exte
      * @param index the index of the first command to clear
      * @param count the number of commands to be cleared
      */
-    void clearRange(long index, long count);
-
-    /**
-     * @return an OpenGL buffer containing the tightly packed draw commands
-     */
-    default GLBuffer openglBuffer() {
-        throw new UnsupportedOperationException(this.getClass().getCanonicalName());
-    }
+    void clearRange(int index, int count);
 
     // drawing
 
     /**
      * Executes the draw commands in this command buffer.
+     *
+     * @param pass the render pass
      */
-    default void draw() {
-        this.draw(0L, 1L, this.capacity());
-    }
+    void draw(int pass);
+
+    // shaders
 
     /**
-     * Executes some of the draw commands in this command buffer.
-     * <p>
-     * This will start with the {@code offset}-th command and continue advancing in intervals of {@code stride} until {@code count} commands have been executed.
+     * Configures the given shader builder according to the internal implementation details of this draw command buffer.
      *
-     * @param offset the index of the first command to be drawn
-     * @param stride the number of commands to advance by between each executed command
-     * @param count  the number of commands to draw
+     * @param builder the builder to configure
+     * @return the configured builder
      */
-    void draw(long offset, long stride, long count);
+    <B extends ShaderManager.AbstractShaderBuilder<B, S>, S extends ShaderProgram<S>> B configureShader(@NonNull B builder);
 
-    @Override
-    int refCnt();
-
-    @Override
-    IDrawIndirectCommandBuffer<C> retain() throws AlreadyReleasedException;
-
-    @Override
-    boolean release() throws AlreadyReleasedException;
+    /**
+     * Selects which commands should be rendered using a compute shader.
+     * <p>
+     * The shader must:
+     * - have included {@code comp/command_buffer_selection.comp}
+     * - have been passed to {@link #configureShader(ShaderManager.AbstractShaderBuilder)} before linkage
+     * - be active
+     *
+     * @param computeShaderProgram the compute shader program to use for selection
+     */
+    void select(@NonNull ComputeShaderProgram computeShaderProgram);
 }
