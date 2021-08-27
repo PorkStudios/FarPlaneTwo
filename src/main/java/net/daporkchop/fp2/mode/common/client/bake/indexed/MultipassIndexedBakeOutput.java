@@ -18,35 +18,30 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.command.elements;
+package net.daporkchop.fp2.mode.common.client.bake.indexed;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import net.daporkchop.fp2.client.gl.command.IDrawCommand;
+import io.netty.buffer.ByteBuf;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
+import net.daporkchop.fp2.mode.common.client.bake.AbstractBakeOutput;
+import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 
 /**
- * An indexed drawing command.
+ * Implementation of {@link IBakeOutput} which contains indexed geometry in multiple render passes.
  *
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-public final class DrawElementsCommand implements IDrawCommand {
-    protected int count;
-    protected int firstIndex;
-    protected int baseVertex;
+@RequiredArgsConstructor
+public class MultipassIndexedBakeOutput extends AbstractBakeOutput {
+    @NonNull
+    protected final IVertexBuilder verts;
+
+    @NonNull
+    protected final ByteBuf[] indices;
 
     @Override
-    public boolean isEmpty() {
-        return this.count == 0;
-    }
-
-    @Override
-    public void clear() {
-        this.count = 0;
-        this.firstIndex = 0;
-        this.baseVertex = 0;
+    protected void doRelease() {
+        this.verts.release();
     }
 }

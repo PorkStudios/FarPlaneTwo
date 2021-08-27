@@ -32,6 +32,11 @@ import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
  */
 public interface IVertexBuilder extends RefCounted {
     /**
+     * @return the {@link IVertexLayout} used by this vertex builder
+     */
+    IVertexLayout layout();
+
+    /**
      * Gets the memory address at which the given vertex attribute's value for the given vertex index should be written.
      *
      * @param attribute an {@link IVertexAttribute}

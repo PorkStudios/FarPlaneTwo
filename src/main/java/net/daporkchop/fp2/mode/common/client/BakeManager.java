@@ -28,6 +28,7 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.mode.common.client.index.AbstractRenderIndex;
+import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
 import net.daporkchop.fp2.util.threading.keyed.KeyedTaskScheduler;

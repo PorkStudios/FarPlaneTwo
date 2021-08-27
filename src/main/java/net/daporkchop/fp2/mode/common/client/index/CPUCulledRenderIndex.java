@@ -31,7 +31,7 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
-import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
+import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.util.alloc.Allocator;
 
 import java.util.function.Consumer;

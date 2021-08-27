@@ -18,35 +18,39 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.command.elements;
+package net.daporkchop.fp2.client.gl.vertex.buffer;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import net.daporkchop.fp2.client.gl.command.IDrawCommand;
+import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
+import net.daporkchop.lib.common.misc.refcount.RefCounted;
+import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 /**
- * An indexed drawing command.
+ * An exact layout of vertex attributes in a {@link VertexFormat} in-memory.
  *
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-public final class DrawElementsCommand implements IDrawCommand {
-    protected int count;
-    protected int firstIndex;
-    protected int baseVertex;
+public interface IVertexLayout extends RefCounted {
+    /**
+     * @return the {@link VertexFormat} used by this layout
+     */
+    VertexFormat format();
+
+    /**
+     * @return a new {@link IVertexBuffer} using this vertex layout
+     */
+    IVertexBuffer createBuffer();
+
+    /**
+     * @return a new {@link IVertexBuilder} using this vertex layout
+     */
+    IVertexBuilder createBuilder();
 
     @Override
-    public boolean isEmpty() {
-        return this.count == 0;
-    }
+    int refCnt();
 
     @Override
-    public void clear() {
-        this.count = 0;
-        this.firstIndex = 0;
-        this.baseVertex = 0;
-    }
+    IVertexLayout retain() throws AlreadyReleasedException;
+
+    @Override
+    boolean release() throws AlreadyReleasedException;
 }

@@ -33,21 +33,16 @@ import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
  */
 public interface IVertexBuffer extends RefCounted {
     /**
+     * @return the {@link IVertexLayout} used by this vertex buffer
+     */
+    IVertexLayout layout();
+
+    /**
      * Configures the given {@link VertexArrayObject} with the vertex attributes in this buffer.
      *
      * @param vao the {@link VertexArrayObject} to configure
      */
     void configureVAO(@NonNull VertexArrayObject vao);
-
-    /**
-     * @return the vertex format used by the vertices in this buffer
-     */
-    VertexFormat format();
-
-    /**
-     * @return a new {@link IVertexBuilder} compatible with this vertex buffer
-     */
-    IVertexBuilder builder();
 
     /**
      * @return the number of vertices that this buffer can store

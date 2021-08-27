@@ -124,9 +124,9 @@ public interface IMultipassDrawCommandBuffer<C extends IDrawCommand> extends Ref
     /**
      * Selects which commands should be rendered using a compute shader.
      * <p>
-     * The shader must:
-     * - have included {@code comp/command_buffer_selection.comp}
-     * - have been passed to {@link #configureShader(ShaderManager.AbstractShaderBuilder)} before linkage
+     * The shader must:<br>
+     * - have included {@code comp/command_buffer_selection.comp}<br>
+     * - have been passed to {@link #configureShader(ShaderManager.AbstractShaderBuilder)} before linkage<br>
      * - be active
      * <p>
      * If any methods are called which would modify the state of this command buffer (such as {@link #store(IDrawCommand[], int)} or {@link #resize(int)}), the

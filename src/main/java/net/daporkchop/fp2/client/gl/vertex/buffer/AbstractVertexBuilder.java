@@ -18,35 +18,54 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.command.elements;
+package net.daporkchop.fp2.client.gl.vertex.buffer;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import net.daporkchop.fp2.client.gl.command.IDrawCommand;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
+import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+
+import static java.lang.Math.*;
 
 /**
- * An indexed drawing command.
+ * Base implementation of {@link IVertexBuilder}.
  *
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-public final class DrawElementsCommand implements IDrawCommand {
-    protected int count;
-    protected int firstIndex;
-    protected int baseVertex;
+@RequiredArgsConstructor
+@Getter
+public abstract class AbstractVertexBuilder<L extends IVertexLayout> extends AbstractRefCounted implements IVertexBuilder {
+    @NonNull
+    protected final L layout;
+
+    protected int size;
+    protected int capacity;
 
     @Override
-    public boolean isEmpty() {
-        return this.count == 0;
+    public IVertexBuilder retain() throws AlreadyReleasedException {
+        super.retain();
+        return this;
     }
 
     @Override
+    protected void doRelease() {
+        this.layout.release();
+    }
+
+    @Override
+    public int appendVertex() {
+        int idx = this.size++;
+        if (idx == this.capacity) { //we need to grow!
+            this.resize(this.capacity = max(multiplyExact(this.capacity, 2), 64));
+        }
+        return idx;
+    }
+
+    protected abstract void resize(int capacity);
+
+    @Override
     public void clear() {
-        this.count = 0;
-        this.firstIndex = 0;
-        this.baseVertex = 0;
+        this.size = 0;
     }
 }

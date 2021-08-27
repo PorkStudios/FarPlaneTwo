@@ -20,10 +20,33 @@
 
 package net.daporkchop.fp2.mode.common.client.bake;
 
-import net.daporkchop.fp2.client.gl.command.IDrawCommand;
+import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarTile;
+
+import java.util.stream.Stream;
 
 /**
+ * Converts uncompressed tile contents to renderable data which can be stored in an {@link IBakeOutputStorage}.
+ *
  * @author DaPorkchop_
  */
-public interface IRenderBaker<C extends IDrawCommand> {
+public interface IRenderBaker<POS extends IFarPos, T extends IFarTile, B extends IBakeOutput> {
+    /**
+     * Gets the positions of the tiles required in order to bake the tile at the given position.
+     *
+     * @param pos the position of the tile to bake
+     * @return the positions of the tiles required in order to bake the tile at the given position
+     */
+    Stream<POS> bakeInputs(@NonNull POS pos);
+
+    /**
+     * Bakes the tile data at the given position.
+     *
+     * @param pos  the position of the tile to bake
+     * @param srcs the uncompressed source tiles. Tiles are provided in the same order as they were contained in the stream returned by {@link #bakeInputs(IFarPos)}, and will
+     *             be {@code null} if not loaded
+     * @return the bake output, or {@code null} if none/empty
+     */
+    B bake(@NonNull POS pos, @NonNull T[] srcs);
 }

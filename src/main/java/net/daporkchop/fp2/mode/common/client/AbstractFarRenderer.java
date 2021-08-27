@@ -30,6 +30,7 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.BlockRenderLayer;

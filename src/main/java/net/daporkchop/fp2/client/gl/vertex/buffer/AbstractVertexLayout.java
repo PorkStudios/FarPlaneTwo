@@ -18,35 +18,35 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.command.elements;
+package net.daporkchop.fp2.client.gl.vertex.buffer;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import net.daporkchop.fp2.client.gl.command.IDrawCommand;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
+import net.daporkchop.fp2.util.alloc.Allocator;
+import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
+import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * An indexed drawing command.
+ * Base implementation of {@link IVertexLayout}.
  *
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-public final class DrawElementsCommand implements IDrawCommand {
-    protected int count;
-    protected int firstIndex;
-    protected int baseVertex;
+@RequiredArgsConstructor
+@Getter
+public abstract class AbstractVertexLayout<L extends AbstractVertexLayout<L>> extends AbstractRefCounted implements IVertexLayout {
+    @NonNull
+    protected final Allocator alloc;
+
+    @NonNull
+    protected final VertexFormat format;
 
     @Override
-    public boolean isEmpty() {
-        return this.count == 0;
-    }
-
-    @Override
-    public void clear() {
-        this.count = 0;
-        this.firstIndex = 0;
-        this.baseVertex = 0;
+    public L retain() throws AlreadyReleasedException {
+        super.retain();
+        return uncheckedCast(this);
     }
 }

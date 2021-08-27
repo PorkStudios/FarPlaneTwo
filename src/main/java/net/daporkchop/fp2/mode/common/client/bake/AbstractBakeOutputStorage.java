@@ -18,35 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.command.elements;
+package net.daporkchop.fp2.mode.common.client.bake;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import net.daporkchop.fp2.client.gl.command.IDrawCommand;
+import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
+import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 /**
- * An indexed drawing command.
+ * Base implementation of {@link IBakeOutputStorage}.
  *
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-public final class DrawElementsCommand implements IDrawCommand {
-    protected int count;
-    protected int firstIndex;
-    protected int baseVertex;
-
+public abstract class AbstractBakeOutputStorage<B extends IBakeOutput, C extends IDrawCommand> extends AbstractRefCounted implements IBakeOutputStorage<B, C> {
     @Override
-    public boolean isEmpty() {
-        return this.count == 0;
-    }
-
-    @Override
-    public void clear() {
-        this.count = 0;
-        this.firstIndex = 0;
-        this.baseVertex = 0;
+    public IBakeOutputStorage<B, C> retain() throws AlreadyReleasedException {
+        super.retain();
+        return this;
     }
 }

@@ -41,7 +41,7 @@ public final class HeightmapCullingStrategy implements ICullingStrategy<Heightma
 
     @Override
     public ComputeShaderBuilder cullShaderBuilder() {
-        throw new UnsupportedOperationException();
+        return HeightmapShaders.CULL_SHADER;
     }
 
     @Override

@@ -18,35 +18,40 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.command.elements;
+package net.daporkchop.fp2.mode.common.client.strategy;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.command.IDrawCommand;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
+import net.daporkchop.fp2.mode.common.client.bake.IBakeOutputStorage;
+import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
+import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
+import net.daporkchop.lib.common.misc.refcount.RefCounted;
+import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+import net.minecraft.util.BlockRenderLayer;
 
 /**
- * An indexed drawing command.
- *
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-public final class DrawElementsCommand implements IDrawCommand {
-    protected int count;
-    protected int firstIndex;
-    protected int baseVertex;
+public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, B extends IBakeOutput, C extends IDrawCommand> extends RefCounted {
+    IRenderIndex<POS, B, C> createIndex();
+
+    IRenderBaker<POS, T, B> createBaker();
+
+    B createBakeOutput();
+
+    IBakeOutputStorage<B, C> createBakeOutputStorage();
+
+    void render(@NonNull IRenderIndex<POS, B, C> index, @NonNull BlockRenderLayer layer, boolean pre);
 
     @Override
-    public boolean isEmpty() {
-        return this.count == 0;
-    }
+    int refCnt();
 
     @Override
-    public void clear() {
-        this.count = 0;
-        this.firstIndex = 0;
-        this.baseVertex = 0;
-    }
+    IFarRenderStrategy<POS, T, B, C> retain() throws AlreadyReleasedException;
+
+    @Override
+    boolean release() throws AlreadyReleasedException;
 }

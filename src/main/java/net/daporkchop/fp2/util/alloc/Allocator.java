@@ -20,7 +20,10 @@
 
 package net.daporkchop.fp2.util.alloc;
 
+import lombok.NonNull;
 import net.daporkchop.lib.common.math.PMath;
+
+import java.util.function.LongConsumer;
 
 import static java.lang.Math.*;
 import static net.daporkchop.lib.common.math.PMath.*;
@@ -113,6 +116,25 @@ public interface Allocator {
      * @see <a href="https://linux.die.net/man/2/sbrk">Linux Programmer's Manual</a>
      */
     interface SequentialHeapManager {
+        /**
+         * Gets a simple {@link SequentialHeapManager} whose {@link #brk(long)} and {@link #sbrk(long)} methods delegate to the same function.
+         *
+         * @param function the function
+         */
+        static SequentialHeapManager unified(@NonNull LongConsumer function) {
+            return new SequentialHeapManager() {
+                @Override
+                public void brk(long capacity) {
+                    function.accept(capacity);
+                }
+
+                @Override
+                public void sbrk(long newCapacity) {
+                    function.accept(newCapacity);
+                }
+            };
+        }
+
         /**
          * Requests that the capacity be set to the given amount.
          *

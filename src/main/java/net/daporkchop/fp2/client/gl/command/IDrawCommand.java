@@ -28,4 +28,9 @@ public interface IDrawCommand {
      * @return whether or not this command is empty (contains no geometry)
      */
     boolean isEmpty();
+
+    /**
+     * Resets this draw command to its initial blank state.
+     */
+    void clear();
 }

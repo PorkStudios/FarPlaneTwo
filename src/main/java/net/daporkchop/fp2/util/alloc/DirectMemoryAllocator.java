@@ -70,8 +70,13 @@ public final class DirectMemoryAllocator implements Allocator {
     @Override
     public long realloc(long address, long size) {
         notNegative(size, "size");
-        long oldSize = this.allocations.remove(address);
-        checkArg(address == 0L || oldSize >= 0L, "can't reallocate address 0x016x (which isn't owned by this allocator)", address);
+        long oldSize;
+        if (address == 0L) { //no allocation existed previously, so there's nothing to remove
+            oldSize = 0L;
+        } else {
+            oldSize = this.allocations.remove(address);
+            checkArg(oldSize >= 0L, "can't reallocate address 0x%016x (which isn't owned by this allocator)", address);
+        }
         address = PUnsafe.reallocateMemory(address, size);
         this.allocations.put(address, size);
 

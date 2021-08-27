@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.client.gl.shader.ComputeShaderBuilder;
 import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 
@@ -33,4 +34,6 @@ public class HeightmapShaders {
     public final RenderShaderProgram BLOCK_SHADER_TRANSFORM_FEEDBACK = ShaderManager.get("heightmap/xfb/block");
 
     public final RenderShaderProgram STENCIL_SHADER = ShaderManager.get("heightmap/stencil");
+
+    public static final ComputeShaderBuilder CULL_SHADER = ShaderManager.computeShaderBuilder("heightmap/cull");
 }

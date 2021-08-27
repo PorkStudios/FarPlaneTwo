@@ -18,35 +18,48 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.command.elements;
+package net.daporkchop.fp2.mode.common.client.bake;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.command.IDrawCommand;
+import net.daporkchop.lib.common.misc.refcount.RefCounted;
+import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 /**
- * An indexed drawing command.
+ * Stores data contained in a {@link IBakeOutputStorage}.
  *
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-public final class DrawElementsCommand implements IDrawCommand {
-    protected int count;
-    protected int firstIndex;
-    protected int baseVertex;
+public interface IBakeOutputStorage<B extends IBakeOutput, C extends IDrawCommand> extends RefCounted {
+    /**
+     * Adds the given {@link IBakeOutput} to this storage.
+     *
+     * @param output the {@link IBakeOutput} to add
+     * @return a handle to the bake output
+     */
+    int add(@NonNull B output);
+
+    /**
+     * Deletes the resources allocated by a previously allocated
+     *
+     * @param handle the handle returned by {@link #add(IBakeOutput)}
+     */
+    void delete(int handle);
+
+    /**
+     * Gets the draw commands to be used for drawing the data associated with a previously added {@link IBakeOutput}.
+     *
+     * @param handle   the handle returned by {@link #add(IBakeOutput)}
+     * @param commands an array of {@link C}s to be configured
+     */
+    void toDrawCommands(int handle, @NonNull C[] commands);
 
     @Override
-    public boolean isEmpty() {
-        return this.count == 0;
-    }
+    int refCnt();
 
     @Override
-    public void clear() {
-        this.count = 0;
-        this.firstIndex = 0;
-        this.baseVertex = 0;
-    }
+    IBakeOutputStorage<B, C> retain() throws AlreadyReleasedException;
+
+    @Override
+    boolean release() throws AlreadyReleasedException;
 }

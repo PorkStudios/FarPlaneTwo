@@ -25,7 +25,6 @@ import net.daporkchop.fp2.client.gl.command.IDrawCommand;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.common.client.index.AbstractRenderIndex;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.TextureMap;

@@ -34,17 +34,18 @@ import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.common.client.BakeOutput;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
-import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
+import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
+import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.util.alloc.Allocator;
 import net.daporkchop.fp2.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.util.alloc.SequentialFixedSizeAllocator;
 import net.daporkchop.fp2.util.datastructure.SimpleSet;
 import net.daporkchop.lib.common.math.PMath;
+import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.common.util.GenericMatcher;
 import net.daporkchop.lib.unsafe.PUnsafe;
-import net.daporkchop.lib.unsafe.util.AbstractReleasable;
+import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.lang.reflect.Array;
 import java.util.Map;
@@ -62,7 +63,7 @@ import static org.lwjgl.opengl.GL15.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawCommand, I extends AbstractRenderIndex<POS, C, I, L>, L extends AbstractRenderIndex.Level<POS, C, I, L>> extends AbstractReleasable {
+public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOutput, C extends IDrawCommand> extends AbstractRefCounted implements IRenderIndex<POS, B, C> {
     protected final IFarDirectPosAccess<POS> directPosAccess;
     protected final IFarRenderStrategy<POS, ?, C> strategy;
     protected final ICullingStrategy<POS> cullingStrategy;
@@ -70,7 +71,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawCo
     protected final Allocator directMemoryAlloc = new DirectMemoryAllocator(true);
 
     protected final SimpleSet<POS> renderablePositions;
-    protected final L[] levels;
+    protected final Level[] levels;
 
     public <T extends IFarTile> AbstractRenderIndex(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T, C> strategy, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray, @NonNull ICullingStrategy<POS> cullingStrategy) {
         this.directPosAccess = mode.directPosAccess();
@@ -85,19 +86,24 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawCo
         }
     }
 
-    protected abstract L createLevel(int level, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray);
+    protected abstract Level createLevel(int level, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray);
 
-    /**
-     * Executes multiple updates in bulk.
-     * <p>
-     * For data updates, each position may be mapped to one of three different things:<br>
-     * - an {@link Optional} containing a non-empty {@link BakeOutput}, in which case the bake output will be executed and inserted at the position<br>
-     * - an empty {@link Optional}, in which case the position will be removed
-     *
-     * @param dataUpdates       the data updates to be applied
-     * @param renderableUpdates the updates to tile renderability be applied
-     */
-    public void update(@NonNull Iterable<Map.Entry<POS, Optional<BakeOutput>>> dataUpdates, @NonNull Iterable<Map.Entry<POS, Boolean>> renderableUpdates) {
+    @Override
+    public IRenderIndex<POS, B, C> retain() throws AlreadyReleasedException {
+        super.retain();
+        return this;
+    }
+
+    @Override
+    protected void doRelease() {
+        this.renderablePositions.release();
+        for (Level level : this.levels) {
+            level.close();
+        }
+    }
+
+    @Override
+    public void update(@NonNull Iterable<Map.Entry<POS, Optional<B>>> dataUpdates, @NonNull Iterable<Map.Entry<POS, Boolean>> renderableUpdates) {
         dataUpdates.forEach(update -> {
             POS pos = update.getKey();
             this.levels[pos.level()].put(pos, update.getValue().orElse(null));
@@ -109,27 +115,19 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawCo
         });
     }
 
-    /**
-     * Should be called before issuing any draw commands.
-     * <p>
-     * This will determine which tiles need to be rendered for the current frame.
-     */
+    @Override
     public void select(@NonNull IFrustum frustum, float partialTicks) {
-        for (L level : this.levels) {
+        for (Level level : this.levels) {
             level.select(frustum, partialTicks);
         }
     }
 
+    @Override
     public boolean hasAnyTilesForLevel(int level) {
         return !this.levels[level].positionsToSlots.isEmpty();
     }
 
-    /**
-     * Draws a single render pass at the given level.
-     *
-     * @param level the level to render
-     * @param pass  the pass to render
-     */
+    @Override
     public void draw(int level, int pass) {
         checkIndex(RENDER_PASS_COUNT, pass);
 
@@ -140,17 +138,10 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawCo
         this.levels[level].draw(pass);
     }
 
-    @Override
-    protected void doRelease() {
-        this.renderablePositions.release();
-    }
-
     /**
      * @author DaPorkchop_
      */
-    protected abstract static class Level<POS extends IFarPos, C extends IDrawCommand, I extends AbstractRenderIndex<POS, C, I, L>, L extends Level<POS, C, I, L>> extends AbstractReleasable implements Allocator.SequentialHeapManager {
-        protected final I parent;
-
+    protected abstract class Level implements Allocator.SequentialHeapManager, AutoCloseable {
         protected final IFarDirectPosAccess<POS> directPosAccess;
         protected final VertexArrayObject vao = new VertexArrayObject();
 
@@ -172,13 +163,12 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawCo
 
         protected boolean dirty = false;
 
-        public Level(@NonNull I parent, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull Allocator.GrowFunction growFunction) {
-            this.parent = parent;
-            this.commandBuffer = parent.strategy.createCommandBufferFactory().multipassCommandBuffer(parent.directMemoryAlloc, RENDER_PASS_COUNT);
+        public Level(@NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull Allocator.GrowFunction growFunction) {
+            this.commandBuffer = AbstractRenderIndex.this.strategy.createCommandBufferFactory().multipassCommandBuffer(AbstractRenderIndex.this.directMemoryAlloc, RENDER_PASS_COUNT);
 
-            this.directPosAccess = this.parent.directPosAccess;
+            this.directPosAccess = AbstractRenderIndex.this.directPosAccess;
             this.positionSize = PMath.roundUp(this.directPosAccess.posSize(), EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT);
-            this.dataSize = this.parent.strategy.renderDataSize();
+            this.dataSize = AbstractRenderIndex.this.strategy.renderDataSize();
 
             this.positionsToSlots.defaultReturnValue(-1L);
 
@@ -195,7 +185,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawCo
             this.slotAllocator = new SequentialFixedSizeAllocator(1L, this, growFunction);
         }
 
-        public void put(@NonNull POS pos, BakeOutput output) {
+        public void put(@NonNull POS pos, B output) {
             long slot = this.positionsToSlots.getLong(pos);
 
             if (output == null) { //removal
@@ -227,7 +217,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawCo
                 PUnsafe.copyMemory(output.renderData, this.datasAddr + slot * this.dataSize, this.dataSize);
 
                 //if the node is selectable, set its render outputs
-                if (pos.level() == 0 || this.parent.renderablePositions.contains(pos)) {
+                if (pos.level() == 0 || AbstractRenderIndex.this.renderablePositions.contains(pos)) {
                     this.addDrawCommands(slot);
                 }
             }
@@ -239,12 +229,12 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawCo
             long slot = this.positionsToSlots.getLong(pos);
 
             if (selectable) {
-                if (this.parent.renderablePositions.add(pos) //we made the tile be renderable, so now we should update the render commands
+                if (AbstractRenderIndex.this.renderablePositions.add(pos) //we made the tile be renderable, so now we should update the render commands
                     && pos.level() != 0 && slot >= 0L) {
                     this.addDrawCommands(slot);
                 }
             } else {
-                if (this.parent.renderablePositions.remove(pos) //we made the tile be non-renderable, so now we should delete the render commands
+                if (AbstractRenderIndex.this.renderablePositions.remove(pos) //we made the tile be non-renderable, so now we should delete the render commands
                     && pos.level() != 0 && slot >= 0L) {
                     this.eraseDrawCommands(slot);
                 }
@@ -252,13 +242,13 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawCo
         }
 
         protected void delete(long slot) {
-            this.parent.strategy.deleteRenderData(this.datasAddr + slot * this.dataSize);
+            AbstractRenderIndex.this.strategy.deleteRenderData(this.datasAddr + slot * this.dataSize);
             this.eraseDrawCommands(slot);
         }
 
         protected void addDrawCommands(long slot) {
             //initialize draw commands from renderData
-            this.parent.strategy.toDrawCommands(this.datasAddr + slot * this.dataSize, uncheckedCast(this.tempCommands));
+            AbstractRenderIndex.this.strategy.toDrawCommands(this.datasAddr + slot * this.dataSize, uncheckedCast(this.tempCommands));
 
             //store in command buffer
             this.commandBuffer.store(this.tempCommands, toInt(slot, "slot"));
@@ -306,8 +296,8 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawCo
             this.capacity = capacity;
 
             //allocate memory blocks
-            this.positionsAddr = this.parent.directMemoryAlloc.alloc(capacity * this.positionSize);
-            this.datasAddr = this.parent.directMemoryAlloc.alloc(capacity * this.dataSize);
+            this.positionsAddr = AbstractRenderIndex.this.directMemoryAlloc.alloc(capacity * this.positionSize);
+            this.datasAddr = AbstractRenderIndex.this.directMemoryAlloc.alloc(capacity * this.dataSize);
             this.commandBuffer.resize(toInt(capacity));
 
             this.dirty = true;
@@ -319,18 +309,18 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, C extends IDrawCo
             this.capacity = newCapacity;
 
             //resize memory blocks
-            this.positionsAddr = this.parent.directMemoryAlloc.realloc(this.positionsAddr, newCapacity * this.positionSize);
-            this.datasAddr = this.parent.directMemoryAlloc.realloc(this.datasAddr, newCapacity * this.dataSize);
+            this.positionsAddr = AbstractRenderIndex.this.directMemoryAlloc.realloc(this.positionsAddr, newCapacity * this.positionSize);
+            this.datasAddr = AbstractRenderIndex.this.directMemoryAlloc.realloc(this.datasAddr, newCapacity * this.dataSize);
             this.commandBuffer.resize(toInt(newCapacity));
 
             this.dirty = true;
         }
 
         @Override
-        protected void doRelease() {
+        public void close() {
             //free all direct memory allocations
-            this.parent.directMemoryAlloc.free(this.positionsAddr);
-            this.parent.directMemoryAlloc.free(this.datasAddr);
+            AbstractRenderIndex.this.directMemoryAlloc.free(this.positionsAddr);
+            AbstractRenderIndex.this.directMemoryAlloc.free(this.datasAddr);
 
             //delete all opengl objects
             this.vao.delete();

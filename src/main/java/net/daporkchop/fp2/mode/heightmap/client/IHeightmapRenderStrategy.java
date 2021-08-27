@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.command.IDrawCommand;
-import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
+import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 

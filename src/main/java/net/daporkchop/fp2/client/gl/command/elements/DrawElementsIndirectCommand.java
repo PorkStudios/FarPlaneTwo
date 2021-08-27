@@ -120,4 +120,13 @@ public final class DrawElementsIndirectCommand implements IDrawIndirectCommand {
     public boolean isEmpty() {
         return this.count == 0;
     }
+
+    @Override
+    public void clear() {
+        this.count = 0;
+        this.instanceCount = 0;
+        this.firstIndex = 0;
+        this.baseVertex = 0;
+        this.baseInstance = 0;
+    }
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-$today.year DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,35 +18,20 @@
  *
  */
 
-//
-//
-// BUFFERS
-//
-//
+package net.daporkchop.fp2.mode.common.client.bake;
 
-//Commands
+import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
+import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
-layout(std430, binding = 3) readonly buffer POSITIONS {
-    ivec4 positions[];
-};
-
-//
-//
-// CODE
-//
-//
-
-bool select(uint index) { //implements method in comp/command_buffer_selection.comp
-    ivec4 pos = positions[index];
-
-    ivec3 position_absolute = ivec3(pos.x, pos.y, pos.z) << (T_SHIFT + pos.w);
-    ivec3 position_relative = position_absolute - glState.camera.position_floor;
-
-    return
-#if defined(LEVEL_0)
-        !isVanillaRenderableLevel0(pos.xyz) &&
-#endif
-        isBoxInFrustum(
-            vec3(position_relative) - glState.camera.position_fract,
-            vec3(position_relative + vec3(T_VOXELS << pos.w)) - glState.camera.position_fract);
+/**
+ * Base implementation of {@link IBakeOutput}.
+ *
+ * @author DaPorkchop_
+ */
+public abstract class AbstractBakeOutput extends AbstractRefCounted implements IBakeOutput {
+    @Override
+    public IBakeOutput retain() throws AlreadyReleasedException {
+        super.retain();
+        return this;
+    }
 }
