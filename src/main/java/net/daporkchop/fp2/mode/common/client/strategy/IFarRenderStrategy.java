@@ -28,7 +28,7 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
-import net.daporkchop.fp2.mode.common.client.bake.IBakeOutputStorage;
+import net.daporkchop.fp2.mode.common.client.bake.IMultipassBakeOutputStorage;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
 import net.daporkchop.lib.common.misc.refcount.RefCounted;
@@ -49,7 +49,7 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, B e
 
     B createBakeOutput();
 
-    IBakeOutputStorage<B, C> createBakeOutputStorage();
+    IMultipassBakeOutputStorage<B, C> createBakeOutputStorage();
 
     IMultipassDrawCommandBuffer<C> createCommandBuffer();
 

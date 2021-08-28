@@ -24,7 +24,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.command.IDrawCommand;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.common.client.BakeOutput;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.lib.common.misc.refcount.RefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
@@ -42,7 +41,7 @@ public interface IRenderIndex<POS extends IFarPos, B extends IBakeOutput, C exte
      * Executes multiple updates in bulk.
      * <p>
      * For data updates, each position may be mapped to one of three different things:<br>
-     * - an {@link Optional} containing a non-empty {@link BakeOutput}, in which case the bake output will be executed and inserted at the position<br>
+     * - an {@link Optional} containing a non-empty {@link B}, in which case the bake output will be executed and inserted at the position<br>
      * - an empty {@link Optional}, in which case the position will be removed
      *
      * @param dataUpdates       the data updates to be applied

@@ -25,13 +25,13 @@ import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 /**
- * Base implementation of {@link IBakeOutputStorage}.
+ * Base implementation of {@link IMultipassBakeOutputStorage}.
  *
  * @author DaPorkchop_
  */
-public abstract class AbstractBakeOutputStorage<B extends IBakeOutput, C extends IDrawCommand> extends AbstractRefCounted implements IBakeOutputStorage<B, C> {
+public abstract class AbstractMultipassBakeOutputStorage<B extends IBakeOutput, C extends IDrawCommand> extends AbstractRefCounted implements IMultipassBakeOutputStorage<B, C> {
     @Override
-    public IBakeOutputStorage<B, C> retain() throws AlreadyReleasedException {
+    public IMultipassBakeOutputStorage<B, C> retain() throws AlreadyReleasedException {
         super.retain();
         return this;
     }

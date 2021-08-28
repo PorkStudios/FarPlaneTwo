@@ -39,7 +39,9 @@ import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -172,7 +174,12 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     }
 
     protected void updateData(@NonNull POS pos, @NonNull Optional<IBakeOutput> optionalBakeOutput) {
-        this.pendingDataUpdates.put(pos, optionalBakeOutput);
+        this.pendingDataUpdates.merge(pos, optionalBakeOutput, (oldOutput, newOutput) -> {
+            if (oldOutput.isPresent()) { //release old bake output to avoid potential memory leak when silently replacing entries
+                oldOutput.get().release();
+            }
+            return newOutput;
+        });
 
         if (this.isBulkUpdateQueued.compareAndSet(false, true)) { //we won the race to enqueue a bulk update!
             ClientThreadExecutor.INSTANCE.execute(this);
@@ -197,8 +204,12 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
         int dataUpdatesSize = this.pendingDataUpdates.size();
         List<Map.Entry<POS, Optional<IBakeOutput>>> dataUpdates = new ArrayList<>(dataUpdatesSize + (dataUpdatesSize >> 3)); //pre-allocate a bit of extra space in case it grows while we're iterating
-        dataUpdates.addAll(this.pendingDataUpdates.entrySet());
-        dataUpdates.forEach(update -> this.pendingDataUpdates.remove(update.getKey(), update.getValue())); //atomically remove the corresponding entries from the pending update queue
+        for (Iterator<POS> itr = this.pendingDataUpdates.keySet().iterator(); dataUpdates.size() < 128 && itr.hasNext(); ) {
+            this.pendingDataUpdates.compute(itr.next(), (pos, output) -> {
+                dataUpdates.add(new AbstractMap.SimpleEntry<>(pos, output));
+                return null;
+            });
+        }
 
         int renderableUpdatesSize = this.pendingRenderableUpdates.size();
         List<Map.Entry<POS, Boolean>> renderableUpdates = new ArrayList<>(renderableUpdatesSize + (renderableUpdatesSize >> 3)); //pre-allocate a bit of extra space in case it grows while we're iterating
@@ -207,5 +218,12 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
         //execute the bulk update
         this.index.update(uncheckedCast(dataUpdates), renderableUpdates);
+
+        //release all bake outputs which are still sitting around in memory
+        dataUpdates.forEach(update -> {
+            if (update.getValue().isPresent()) {
+                update.getValue().get().release();
+            }
+        });
     }
 }

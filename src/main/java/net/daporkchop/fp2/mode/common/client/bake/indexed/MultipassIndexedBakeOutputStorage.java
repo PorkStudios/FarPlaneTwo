@@ -29,8 +29,8 @@ import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuffer;
 import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexLayout;
-import net.daporkchop.fp2.mode.common.client.bake.AbstractBakeOutputStorage;
-import net.daporkchop.fp2.mode.common.client.bake.IBakeOutputStorage;
+import net.daporkchop.fp2.mode.common.client.bake.AbstractMultipassBakeOutputStorage;
+import net.daporkchop.fp2.mode.common.client.bake.IMultipassBakeOutputStorage;
 import net.daporkchop.fp2.util.alloc.Allocator;
 import net.daporkchop.fp2.util.alloc.SequentialFixedSizeAllocator;
 import net.daporkchop.fp2.util.alloc.SequentialVariableSizedAllocator;
@@ -41,11 +41,11 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL15.*;
 
 /**
- * Implementation of {@link IBakeOutputStorage} which contains indexed geometry in multiple render passes.
+ * Implementation of {@link IMultipassBakeOutputStorage} which contains indexed geometry in multiple render passes.
  *
  * @author DaPorkchop_
  */
-public class MultipassIndexedBakeOutputStorage extends AbstractBakeOutputStorage<MultipassIndexedBakeOutput, DrawElementsCommand> {
+public class MultipassIndexedBakeOutputStorage extends AbstractMultipassBakeOutputStorage<MultipassIndexedBakeOutput, DrawElementsCommand> {
     /*
      * struct Slot {
      *   int baseVertex;

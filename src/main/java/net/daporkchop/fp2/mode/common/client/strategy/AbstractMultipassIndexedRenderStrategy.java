@@ -33,7 +33,7 @@ import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.common.client.bake.IBakeOutputStorage;
+import net.daporkchop.fp2.mode.common.client.bake.IMultipassBakeOutputStorage;
 import net.daporkchop.fp2.mode.common.client.bake.indexed.MultipassIndexedBakeOutput;
 import net.daporkchop.fp2.mode.common.client.bake.indexed.MultipassIndexedBakeOutputStorage;
 import net.daporkchop.fp2.mode.common.client.index.CPUCulledRenderIndex;
@@ -64,7 +64,7 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
     }
 
     @Override
-    public IBakeOutputStorage<MultipassIndexedBakeOutput, DrawElementsCommand> createBakeOutputStorage() {
+    public IMultipassBakeOutputStorage<MultipassIndexedBakeOutput, DrawElementsCommand> createBakeOutputStorage() {
         return new MultipassIndexedBakeOutputStorage(this.alloc, this.vertexLayout, ElementType.UNSIGNED_SHORT, RENDER_PASS_COUNT);
     }
 

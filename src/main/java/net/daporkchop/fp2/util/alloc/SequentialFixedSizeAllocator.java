@@ -57,8 +57,6 @@ public final class SequentialFixedSizeAllocator extends BitSet implements Alloca
         this.blockSize = positive(blockSize, "blockSize");
         this.manager = manager;
         this.growFunction = growFunction;
-
-        this.manager.brk(this.capacity = this.growFunction.grow(0L, blockSize << 4L));
     }
 
     @Override

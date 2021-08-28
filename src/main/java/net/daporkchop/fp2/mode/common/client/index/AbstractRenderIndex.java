@@ -34,7 +34,7 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
-import net.daporkchop.fp2.mode.common.client.bake.IBakeOutputStorage;
+import net.daporkchop.fp2.mode.common.client.bake.IMultipassBakeOutputStorage;
 import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.util.alloc.Allocator;
 import net.daporkchop.fp2.util.alloc.DirectMemoryAllocator;
@@ -151,7 +151,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
 
         protected long storageHandlesAddr;
 
-        protected final IBakeOutputStorage<B, C> storage;
+        protected final IMultipassBakeOutputStorage<B, C> storage;
         protected final IMultipassDrawCommandBuffer<C> commandBuffer;
 
         protected final VertexArrayObject[] vaos = new VertexArrayObject[RENDER_PASS_COUNT];

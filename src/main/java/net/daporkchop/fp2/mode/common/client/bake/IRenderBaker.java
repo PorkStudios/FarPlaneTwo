@@ -27,7 +27,7 @@ import net.daporkchop.fp2.mode.api.IFarTile;
 import java.util.stream.Stream;
 
 /**
- * Converts uncompressed tile contents to renderable data which can be stored in an {@link IBakeOutputStorage}.
+ * Converts uncompressed tile contents to renderable data which can be stored in an {@link IMultipassBakeOutputStorage}.
  *
  * @author DaPorkchop_
  */

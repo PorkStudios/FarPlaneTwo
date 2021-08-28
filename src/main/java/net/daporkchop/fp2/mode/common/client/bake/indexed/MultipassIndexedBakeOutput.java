@@ -47,6 +47,9 @@ public class MultipassIndexedBakeOutput extends AbstractBakeOutput {
     @Override
     protected void doRelease() {
         this.verts.release();
+        for (ByteBuf buf : this.indices) {
+            buf.release();
+        }
     }
 
     @Override

@@ -71,7 +71,7 @@ public interface Allocator {
      */
     @FunctionalInterface
     interface GrowFunction {
-        GrowFunction DEFAULT = sqrt2(1 << 24L); // 16MiB
+        GrowFunction DEFAULT = sqrt2(4L << 10L); // 4Ki
 
         /**
          * Gets a simple {@link GrowFunction} which grows the heap by multiples of {@code sqrt(2)}, rounded up to a given step.

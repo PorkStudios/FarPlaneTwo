@@ -27,11 +27,11 @@ import net.daporkchop.lib.common.misc.refcount.RefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 /**
- * Stores data contained in a {@link IBakeOutputStorage}.
+ * Stores data contained in multiple {@link IBakeOutput}.
  *
  * @author DaPorkchop_
  */
-public interface IBakeOutputStorage<B extends IBakeOutput, C extends IDrawCommand> extends RefCounted {
+public interface IMultipassBakeOutputStorage<B extends IBakeOutput, C extends IDrawCommand> extends RefCounted {
     /**
      * @return the number of render passes
      */
@@ -46,7 +46,7 @@ public interface IBakeOutputStorage<B extends IBakeOutput, C extends IDrawComman
     int add(@NonNull B output);
 
     /**
-     * Deletes the resources allocated by a previously allocated
+     * Deletes the resources allocated by a previously allocated handle.
      *
      * @param handle the handle returned by {@link #add(IBakeOutput)}
      */
@@ -64,7 +64,7 @@ public interface IBakeOutputStorage<B extends IBakeOutput, C extends IDrawComman
      * Configures a {@link VertexArrayObject} for rendering the given render pass.
      *
      * @param vao  the (already bound) {@link VertexArrayObject} to configure
-     * @param pass the index of the render pass to configure for {@link VertexArrayObject} for
+     * @param pass the index of the render pass to configure the {@link VertexArrayObject} for
      */
     void configureVAO(@NonNull VertexArrayObject vao, int pass);
 
@@ -72,7 +72,7 @@ public interface IBakeOutputStorage<B extends IBakeOutput, C extends IDrawComman
     int refCnt();
 
     @Override
-    IBakeOutputStorage<B, C> retain() throws AlreadyReleasedException;
+    IMultipassBakeOutputStorage<B, C> retain() throws AlreadyReleasedException;
 
     @Override
     boolean release() throws AlreadyReleasedException;
