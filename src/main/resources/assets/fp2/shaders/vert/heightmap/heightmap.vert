@@ -24,6 +24,8 @@
 //
 //
 
+layout(location = 0) in ivec3 in_tile_position;
+
 layout(location = 1) in int in_state;
 layout(location = 2) in vec2 in_light;
 layout(location = 3) in vec3 in_color;
@@ -42,6 +44,7 @@ vec3 getLowOffsetPost() {
 
 void main() {
     //convert position to vec3 afterwards to minimize precision loss
+    ivec4 tile_position = ivec4(in_tile_position.x, 0, in_tile_position.yz);
     ivec3 relative_tile_position = (tile_position.xyz << tile_position.w << T_SHIFT) - glState.camera.position_floor;
     vec3 relativePos = vec3(relative_tile_position + getLowOffsetPre(tile_position.w)) + getLowOffsetPost() - glState.camera.position_fract;
 

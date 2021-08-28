@@ -48,9 +48,14 @@ bool select(uint index) { //implements method in comp/command_buffer_selection.c
 
     ivec2 position_absolute = ivec2(pos.x, pos.z) << (T_SHIFT + pos.level);
     ivec2 position_relative = position_absolute - glState.camera.position_floor.xz;
-    int side = T_VOXELS << pos.level;
 
-    return isBoxInFrustum(
-            vec3(ivec3(position_relative.x, -2147483648.0, position_relative.y)) - glState.camera.position_fract,
-            vec3(ivec3(position_relative.x + side, 2147483647.0, position_relative.y + side)) - glState.camera.position_fract);
+    vec2 origin = vec2(position_relative) - glState.camera.position_fract.xz;
+    vec3 min = origin.xxy;
+    vec3 max = origin.xxy + vec2((T_VOXELS + 1) << pos.level, 0.0).xyx;
+
+    min.y = -2147483648.0;
+    max.y = 2147483647.0;
+
+    //TODO: this always returns true???
+    return isBoxInFrustum(min, max);
 }

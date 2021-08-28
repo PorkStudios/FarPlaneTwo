@@ -24,12 +24,10 @@
 //
 //
 
-layout(location = 0) in ivec4 tile_position;
-
-layout(std430, binding = 3) readonly buffer POSITIONS {
+/*layout(std430, binding = 3) readonly buffer POSITIONS {
     ivec4 positions[];
 } in_positions;
-//#define tile_position (in_positions.positions[gl_DrawID])
+#define tile_position (in_positions.positions[gl_DrawID])*/
 
 //
 //

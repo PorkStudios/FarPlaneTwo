@@ -39,7 +39,7 @@ layout(std430, binding = 3) readonly buffer POSITIONS {
 bool select(uint index) { //implements method in comp/command_buffer_selection.comp
     ivec4 pos = positions[index];
 
-    ivec3 position_absolute = ivec3(pos.x, pos.y, pos.z) << (T_SHIFT + pos.w);
+    ivec3 position_absolute = pos.xyz << (T_SHIFT + pos.w);
     ivec3 position_relative = position_absolute - glState.camera.position_floor;
 
     return
@@ -48,5 +48,5 @@ bool select(uint index) { //implements method in comp/command_buffer_selection.c
 #endif
         isBoxInFrustum(
             vec3(position_relative) - glState.camera.position_fract,
-            vec3(position_relative + ivec3(T_VOXELS << pos.w)) - glState.camera.position_fract);
+            vec3(position_relative + ivec3((T_VOXELS + 1) << pos.w)) - glState.camera.position_fract);
 }

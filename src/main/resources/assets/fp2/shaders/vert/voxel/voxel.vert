@@ -24,6 +24,8 @@
 //
 //
 
+layout(location = 0) in ivec4 tile_position;
+
 layout(location = 1) in int in_state;
 layout(location = 2) in vec2 in_light;
 layout(location = 3) in vec3 in_color;
