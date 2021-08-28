@@ -27,10 +27,8 @@ import net.daporkchop.fp2.client.gl.ElementType;
 import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
-import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
 import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuffer;
 import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexLayout;
-import net.daporkchop.fp2.client.gl.vertex.buffer.interleaved.InterleavedVertexBuffer;
 import net.daporkchop.fp2.mode.common.client.bake.AbstractBakeOutputStorage;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutputStorage;
 import net.daporkchop.fp2.util.alloc.Allocator;
@@ -38,6 +36,7 @@ import net.daporkchop.fp2.util.alloc.SequentialFixedSizeAllocator;
 import net.daporkchop.fp2.util.alloc.SequentialVariableSizedAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL15.*;
 
@@ -47,23 +46,67 @@ import static org.lwjgl.opengl.GL15.*;
  * @author DaPorkchop_
  */
 public class MultipassIndexedBakeOutputStorage extends AbstractBakeOutputStorage<MultipassIndexedBakeOutput, DrawElementsCommand> {
-    protected final Allocator alloc;
-    protected final ElementType type;
-
     /*
      * struct Slot {
-     *   int verts_base;
-     *   int indices_base[PASSES];
-     *   int indices_counts[PASSES];
+     *   int baseVertex;
+     *   Pass passes[PASSES];
+     * };
+     *
+     * struct Pass {
+     *   int firstIndex;
+     *   int count;
      * };
      */
+
+    protected static final long _SLOT_BASEVERTEX_OFFSET = 0L;
+    protected static final long _SLOT_PASSES_OFFSET = _SLOT_BASEVERTEX_OFFSET + INT_SIZE;
+
+    protected static final long _PASS_FIRSTINDEX_OFFSET = 0L;
+    protected static final long _PASS_COUNT_OFFSET = _PASS_FIRSTINDEX_OFFSET + INT_SIZE;
+    protected static final long _PASS_SIZE = _PASS_COUNT_OFFSET + INT_SIZE;
+
+    protected static int _slot_baseVertex(long slot) {
+        return PUnsafe.getInt(slot + _SLOT_BASEVERTEX_OFFSET);
+    }
+
+    protected static void _slot_baseVertex(long slot, int baseVertex) {
+        PUnsafe.putInt(slot + _SLOT_BASEVERTEX_OFFSET, baseVertex);
+    }
+
+    protected static long _slot_pass(long slot, int pass) {
+        return slot + _SLOT_PASSES_OFFSET + pass * _PASS_SIZE;
+    }
+
+    protected static long _SLOT_SIZE(int PASSES) {
+        return _SLOT_PASSES_OFFSET + PASSES * _PASS_SIZE;
+    }
+
+    protected static int _pass_firstIndex(long pass) {
+        return PUnsafe.getInt(pass + _PASS_FIRSTINDEX_OFFSET);
+    }
+
+    protected static void _pass_firstIndex(long pass, int firstIndex) {
+        PUnsafe.putInt(pass + _PASS_FIRSTINDEX_OFFSET, firstIndex);
+    }
+
+    protected static int _pass_count(long pass) {
+        return PUnsafe.getInt(pass + _PASS_COUNT_OFFSET);
+    }
+
+    protected static void _pass_count(long pass, int count) {
+        PUnsafe.putInt(pass + _PASS_COUNT_OFFSET, count);
+    }
+
+    protected final Allocator alloc;
+
     protected final Allocator slotAlloc;
-    protected final long slotStride;
+    protected final long slotSize;
     protected long slotsAddr;
 
     protected final Allocator vertexAlloc;
     protected final IVertexBuffer vertexBuffer;
 
+    protected final int indexSize;
     protected final Allocator[] indexAllocs;
     protected final GLBuffer[] indexBuffers;
 
@@ -72,11 +115,11 @@ public class MultipassIndexedBakeOutputStorage extends AbstractBakeOutputStorage
 
     public MultipassIndexedBakeOutputStorage(@NonNull Allocator alloc, @NonNull IVertexLayout vertexLayout, @NonNull ElementType type, int passes) {
         this.alloc = alloc;
-        this.type = type;
         this.passes = positive(passes, "passes");
+        this.indexSize = type.size();
 
-        this.slotStride = (passes * 2L + 1L) * Integer.BYTES;
-        this.slotAlloc = new SequentialFixedSizeAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> this.slotsAddr = this.alloc.realloc(this.slotsAddr, capacity * this.slotStride)));
+        this.slotSize = _SLOT_SIZE(passes);
+        this.slotAlloc = new SequentialFixedSizeAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> this.slotsAddr = this.alloc.realloc(this.slotsAddr, capacity * this.slotSize)));
 
         this.vertexBuffer = vertexLayout.createBuffer();
         this.vertexAlloc = new SequentialVariableSizedAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> this.vertexBuffer.resize(toInt(capacity))));
@@ -87,7 +130,7 @@ public class MultipassIndexedBakeOutputStorage extends AbstractBakeOutputStorage
             GLBuffer indexBuffer = this.indexBuffers[pass] = new GLBuffer(GL_DYNAMIC_DRAW);
             this.indexAllocs[pass] = new SequentialVariableSizedAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> {
                 try (GLBuffer buffer = indexBuffer.bind(GL_ELEMENT_ARRAY_BUFFER)) {
-                    buffer.resize(toInt(capacity));
+                    buffer.resize(capacity);
                 }
             }));
         }
@@ -110,64 +153,72 @@ public class MultipassIndexedBakeOutputStorage extends AbstractBakeOutputStorage
     @Override
     public int add(@NonNull MultipassIndexedBakeOutput output) {
         //allocate a slot
-        int slot = toInt(this.slotAlloc.alloc(1L));
-        long slotAddr = this.slotsAddr + slot * this.slotStride;
+        int handle = toInt(this.slotAlloc.alloc(1L));
+        long slot = this.slotsAddr + handle * this.slotSize;
 
         //allocate and upload vertex data
-        int vertsBase = toInt(this.vertexAlloc.alloc(output.verts.size()));
-        this.vertexBuffer.set(vertsBase, output.verts);
-        PUnsafe.putInt(slotAddr, vertsBase);
+        int baseVertex = toInt(this.vertexAlloc.alloc(output.verts.size()));
+        _slot_baseVertex(slot, baseVertex);
+        this.vertexBuffer.set(baseVertex, output.verts);
 
         //for each pass, allocate and upload index data if needed
-        for (int pass = 0; pass < this.passes; pass++) {
-            ByteBuf indices = output.indices[pass];
+        for (int i = 0; i < this.passes; i++) {
+            long pass = _slot_pass(slot, i);
+            int count = 0;
+            int firstIndex = 0;
+
+            ByteBuf indices = output.indices[i];
             if (indices.isReadable()) {
-                int count = indices.readableBytes() / this.type.size();
-                int indexBase = toInt(this.indexAllocs[pass].alloc(count));
-                try (GLBuffer buffer = this.indexBuffers[pass].bind(GL_ELEMENT_ARRAY_BUFFER)) {
-                    buffer.uploadRange(indexBase + (long) this.type.size(), indices);
+                int readableBytes = indices.readableBytes();
+                long offset = this.indexAllocs[i].alloc(readableBytes);
+
+                count = readableBytes / this.indexSize;
+                firstIndex = toInt(offset / this.indexSize);
+
+                try (GLBuffer buffer = this.indexBuffers[i].bind(GL_ELEMENT_ARRAY_BUFFER)) {
+                    buffer.uploadRange(offset, indices);
                 }
-                PUnsafe.putInt(slotAddr + (pass + 1L) * Integer.BYTES, indexBase);
-                PUnsafe.putInt(slotAddr + (pass + 1L + this.passes) * Integer.BYTES, count);
-            } else {
-                PUnsafe.putInt(slotAddr + (pass + 1L) * Integer.BYTES, 0);
-                PUnsafe.putInt(slotAddr + (pass + 1L + this.passes) * Integer.BYTES, 0);
             }
+
+            _pass_firstIndex(pass, firstIndex);
+            _pass_count(pass, count);
         }
 
-        return slot;
+        return handle;
     }
 
     @Override
     public void delete(int handle) {
         //free slot
         this.slotAlloc.free(handle);
-        long slotAddr = this.slotsAddr + handle * this.slotStride;
+        long slot = this.slotsAddr + handle * this.slotSize;
 
         //free vertex data
-        this.vertexAlloc.free(PUnsafe.getInt(slotAddr));
+        this.vertexAlloc.free(_slot_baseVertex(slot));
 
         //for each pass, free index data if needed
-        for (int pass = 0; pass < this.passes; pass++) {
-            if (PUnsafe.getInt(slotAddr + (pass + 1L + this.passes) * Integer.BYTES) > 0) {
-                this.indexAllocs[pass].free(PUnsafe.getInt(slotAddr + (pass + 1L) * Integer.BYTES));
+        for (int i = 0; i < this.passes; i++) {
+            long pass = _slot_pass(slot, i);
+
+            if (_pass_count(pass) > 0) {
+                this.indexAllocs[i].free(_pass_firstIndex(pass) * (long) this.indexSize);
             }
         }
+
+        //no need to zero out slot memory or whatever, it'll be initialized later if re-allocated
     }
 
     @Override
     public void toDrawCommands(int handle, @NonNull DrawElementsCommand[] commands) {
-        long slotAddr = this.slotsAddr + handle * this.slotStride;
+        long slot = this.slotsAddr + handle * this.slotSize;
 
-        int baseVertex = PUnsafe.getInt(slotAddr);
-        for (int pass = 0; pass < this.passes; pass++) {
-            int indexBase = PUnsafe.getInt(slotAddr + (pass + 1L) * Integer.BYTES);
-            int count = PUnsafe.getInt(slotAddr + (pass + 1L + this.passes) * Integer.BYTES);
-            if (count > 0) {
-                commands[pass].baseVertex(baseVertex).firstIndex(indexBase).count(count);
-            } else {
-                commands[pass].clear();
-            }
+        int baseVertex = _slot_baseVertex(slot);
+        for (int i = 0; i < this.passes; i++) {
+            long pass = _slot_pass(slot, i);
+
+            commands[i].baseVertex(baseVertex)
+                    .firstIndex(_pass_firstIndex(pass))
+                    .count(_pass_count(pass));
         }
     }
 }
