@@ -27,7 +27,8 @@ import net.daporkchop.fp2.client.gl.DrawMode;
 import net.daporkchop.fp2.client.gl.ElementType;
 import net.daporkchop.fp2.client.gl.command.IMultipassDrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
-import net.daporkchop.fp2.client.gl.command.elements.IndirectMultipassDrawElementsCommandBuffer;
+import net.daporkchop.fp2.client.gl.command.elements.buffer.MultidrawIndirectMultipassDrawElementsCommandBuffer;
+import net.daporkchop.fp2.client.gl.command.elements.buffer.SingleDrawIndirectMultipassDrawElementsCommandBuffer;
 import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
@@ -43,6 +44,7 @@ import net.daporkchop.lib.common.util.PArrays;
 
 import java.util.function.Supplier;
 
+import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 
 /**
@@ -55,7 +57,9 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
 
     @Override
     public IRenderIndex<POS, MultipassIndexedBakeOutput, DrawElementsCommand> createIndex() {
-        return FP2Config.performance.gpuFrustumCulling ? new GPUCulledRenderIndex<>(this) : new CPUCulledRenderIndex<>(this);
+        return FP2Config.performance.gpuFrustumCulling
+                ? new GPUCulledRenderIndex<>(this)
+                : new CPUCulledRenderIndex<>(this);
     }
 
     @Override
@@ -70,6 +74,8 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
 
     @Override
     public IMultipassDrawCommandBuffer<DrawElementsCommand> createCommandBuffer() {
-        return new IndirectMultipassDrawElementsCommandBuffer(this.alloc, RENDER_PASS_COUNT, DrawMode.QUADS, ElementType.UNSIGNED_SHORT);
+        return WORKAROUND_INTEL_MULTIDRAW_NOT_WORKING
+                ? new SingleDrawIndirectMultipassDrawElementsCommandBuffer(this.alloc, RENDER_PASS_COUNT, DrawMode.QUADS, ElementType.UNSIGNED_SHORT)
+                : new MultidrawIndirectMultipassDrawElementsCommandBuffer(this.alloc, RENDER_PASS_COUNT, DrawMode.QUADS, ElementType.UNSIGNED_SHORT);
     }
 }

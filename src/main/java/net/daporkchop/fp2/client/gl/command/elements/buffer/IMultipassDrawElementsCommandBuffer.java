@@ -18,9 +18,10 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.command.elements;
+package net.daporkchop.fp2.client.gl.command.elements.buffer;
 
 import net.daporkchop.fp2.client.gl.command.IMultipassDrawCommandBuffer;
+import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
 
 /**
  * @author DaPorkchop_

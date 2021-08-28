@@ -18,13 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.command.elements;
+package net.daporkchop.fp2.client.gl.command.elements.buffer;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.DrawMode;
 import net.daporkchop.fp2.client.gl.ElementType;
 import net.daporkchop.fp2.client.gl.command.AbstractMultipassDrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.command.IMultipassDrawCommandBuffer;
+import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
+import net.daporkchop.fp2.client.gl.command.elements.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
@@ -41,11 +43,11 @@ import static org.lwjgl.opengl.GL42.*;
 import static org.lwjgl.opengl.GL43.*;
 
 /**
- * Implementation of {@link IMultipassDrawCommandBuffer} which buffers {@link DrawElementsCommand}s and executes them using indirect multidraw.
+ * Base implementation of {@link IMultipassDrawCommandBuffer} which buffers {@link DrawElementsCommand}s and executes them using indirect draw commands.
  *
  * @author DaPorkchop_
  */
-public class IndirectMultipassDrawElementsCommandBuffer extends AbstractMultipassDrawCommandBuffer<DrawElementsCommand> implements IMultipassDrawElementsCommandBuffer {
+public abstract class AbstractIndirectMultipassDrawElementsCommandBuffer extends AbstractMultipassDrawCommandBuffer<DrawElementsCommand> implements IMultipassDrawElementsCommandBuffer {
     protected final ElementType type;
     protected final GLBuffer buffer = new GLBuffer(GL_STREAM_DRAW);
 
@@ -55,7 +57,7 @@ public class IndirectMultipassDrawElementsCommandBuffer extends AbstractMultipas
 
     protected boolean needsBarrier;
 
-    public IndirectMultipassDrawElementsCommandBuffer(@NonNull Allocator alloc, int passes, @NonNull DrawMode mode, @NonNull ElementType type) {
+    public AbstractIndirectMultipassDrawElementsCommandBuffer(@NonNull Allocator alloc, int passes, @NonNull DrawMode mode, @NonNull ElementType type) {
         super(alloc, passes, mode);
 
         this.type = type;
@@ -140,9 +142,11 @@ public class IndirectMultipassDrawElementsCommandBuffer extends AbstractMultipas
                 glMemoryBarrier(GL_COMMAND_BARRIER_BIT);
             }
 
-            glMultiDrawElementsIndirect(this.mode.gl(), this.type.gl(), pass * DrawElementsIndirectCommand._SIZE, this.capacity, toInt(this.stride));
+            this.draw0(this.mode.gl(), this.type.gl(), pass * DrawElementsIndirectCommand._SIZE, this.capacity, toInt(this.stride));
         }
     }
+
+    protected abstract void draw0(int mode, int type, long offset, int count, int stride);
 
     @Override
     public <B extends ShaderManager.AbstractShaderBuilder<B, S>, S extends ShaderProgram<S>> B configureShader(@NonNull B builder) {
