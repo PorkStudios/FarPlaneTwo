@@ -25,16 +25,13 @@ import net.daporkchop.fp2.asm.interfaz.client.renderer.IMixinRenderGlobal;
 import net.daporkchop.fp2.client.VanillaRenderabilityTracker;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.command.IDrawCommand;
-import net.daporkchop.fp2.client.gl.object.IGLBuffer;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
+import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.util.alloc.Allocator;
 
-import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -44,29 +41,24 @@ import static net.daporkchop.fp2.util.Constants.*;
  *
  * @author DaPorkchop_
  */
-public class CPUCulledRenderIndex<POS extends IFarPos, C extends IDrawCommand> extends AbstractRenderIndex<POS, C, CPUCulledRenderIndex<POS, C>, CPUCulledRenderIndex.Level<POS, C>> {
-    public <T extends IFarTile> CPUCulledRenderIndex(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T, C> strategy, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray, @NonNull ICullingStrategy<POS> cullingStrategy) {
-        super(mode, strategy, vaoInitializer, elementArray, cullingStrategy);
+public class CPUCulledRenderIndex<POS extends IFarPos, B extends IBakeOutput, C extends IDrawCommand> extends AbstractRenderIndex<POS, B, C> {
+    protected static final Allocator.GrowFunction GROW_FUNCTION = Allocator.GrowFunction.pow2(1L);
+
+    public <T extends IFarTile> CPUCulledRenderIndex(@NonNull IFarRenderStrategy<POS, T, B, C> strategy) {
+        super(strategy);
     }
 
     @Override
-    protected Level<POS, C> createLevel(int level, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray) {
-        return new Level<>(this, vao -> {
-            vaoInitializer.accept(vao);
-            vao.putElementArray(elementArray);
-        }, Allocator.GrowFunction.pow2(1L), level);
+    protected AbstractRenderIndex<POS, B, C>.Level createLevel(int level) {
+        return new Level(level);
     }
 
     /**
      * @author DaPorkchop_
      */
-    protected static class Level<POS extends IFarPos, C extends IDrawCommand> extends AbstractRenderIndex.Level<POS, C, CPUCulledRenderIndex<POS, C>, Level<POS, C>> {
-        protected final int level;
-
-        public Level(@NonNull CPUCulledRenderIndex<POS, C> parent, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull Allocator.GrowFunction growFunction, int level) {
-            super(parent, vaoInitializer, growFunction);
-
-            this.level = level;
+    protected class Level extends AbstractRenderIndex<POS, B, C>.Level {
+        public Level(int level) {
+            super(level, GROW_FUNCTION);
         }
 
         @Override
@@ -76,7 +68,7 @@ public class CPUCulledRenderIndex<POS extends IFarPos, C extends IDrawCommand> e
 
         protected IntPredicate cull(@NonNull IFrustum frustum) {
             if (this.level == 0) { //level-0 is tested for vanilla terrain intersection AND frustum intersection
-                ICullingStrategy<POS> cullingStrategy = this.parent.cullingStrategy;
+                ICullingStrategy<POS> cullingStrategy = CPUCulledRenderIndex.this.cullingStrategy;
                 VanillaRenderabilityTracker vanillaRenderabilityTracker = ((IMixinRenderGlobal) MC.renderGlobal).fp2_vanillaRenderabilityTracker();
                 return slot -> {
                     long posAddr = this.positionsAddr + slot * this.positionSize;

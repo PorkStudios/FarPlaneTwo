@@ -20,35 +20,50 @@
 
 package net.daporkchop.fp2.mode.common.client.strategy;
 
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
+import net.daporkchop.fp2.client.gl.command.IDrawCommand;
 import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
+import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexLayout;
+import net.daporkchop.fp2.client.gl.vertex.buffer.interleaved.InterleavedVertexLayout;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.util.alloc.Allocator;
-
-import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
+import net.daporkchop.fp2.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
+import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 /**
+ * Base implementation of {@link IFarRenderStrategy}.
+ *
  * @author DaPorkchop_
  */
-public abstract class IndexedMultidrawRenderStrategy<POS extends IFarPos, T extends IFarTile> extends IndexedRenderStrategy<POS, T> implements IIndexedMultipassRenderStrategy<POS, T> {
-    public IndexedMultidrawRenderStrategy(@NonNull Allocator alloc, @NonNull VertexFormat vertexFormat) {
-        super(alloc, vertexFormat);
+public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFarTile, B extends IBakeOutput, C extends IDrawCommand> extends AbstractRefCounted implements IFarRenderStrategy<POS, T, B, C> {
+    protected final Allocator alloc = new DirectMemoryAllocator();
+
+    @Getter
+    protected final IFarRenderMode<POS, T> mode;
+
+    protected final VertexFormat vertexFormat;
+    protected final IVertexLayout vertexLayout;
+
+    public AbstractRenderStrategy(@NonNull IFarRenderMode<POS, T> mode, @NonNull VertexFormat vertexFormat) {
+        this.mode = mode;
+
+        this.vertexFormat = vertexFormat;
+        this.vertexLayout = new InterleavedVertexLayout(this.alloc, vertexFormat);
     }
 
     @Override
-    public void toDrawCommands(long renderData, @NonNull DrawElementsCommand[] commands) {
-        int baseVertex = toInt(_renderdata_vertexOffset(renderData));
-        int firstIndex = toInt(_renderdata_indexOffset(renderData));
+    public IFarRenderStrategy<POS, T, B, C> retain() throws AlreadyReleasedException {
+        super.retain();
+        return this;
+    }
 
-        for (int i = 0; i < RENDER_PASS_COUNT; i++) {
-            int count = _renderdata_indexCount(renderData, i);
-            commands[i].baseVertex(baseVertex)
-                    .firstIndex(firstIndex)
-                    .count(count);
-            firstIndex += count;
-        }
+    @Override
+    protected void doRelease() {
+        this.vertexLayout.release();
     }
 }

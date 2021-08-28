@@ -29,6 +29,11 @@ import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
  * @author DaPorkchop_
  */
 public interface IBakeOutput extends RefCounted {
+    /**
+     * @return whether or not this bake output is empty (contains no data)
+     */
+    boolean isEmpty();
+
     @Override
     int refCnt();
 

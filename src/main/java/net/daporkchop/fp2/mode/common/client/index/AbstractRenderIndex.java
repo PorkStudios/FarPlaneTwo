@@ -27,30 +27,28 @@ import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.command.IDrawCommand;
 import net.daporkchop.fp2.client.gl.command.IMultipassDrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
-import net.daporkchop.fp2.client.gl.object.IGLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
-import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
+import net.daporkchop.fp2.mode.common.client.bake.IBakeOutputStorage;
+import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.util.alloc.Allocator;
 import net.daporkchop.fp2.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.util.alloc.SequentialFixedSizeAllocator;
 import net.daporkchop.fp2.util.datastructure.SimpleSet;
 import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
-import net.daporkchop.lib.common.util.GenericMatcher;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.lang.reflect.Array;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
 import static net.daporkchop.fp2.debug.FP2Debug.*;
@@ -64,8 +62,7 @@ import static org.lwjgl.opengl.GL15.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOutput, C extends IDrawCommand> extends AbstractRefCounted implements IRenderIndex<POS, B, C> {
-    protected final IFarDirectPosAccess<POS> directPosAccess;
-    protected final IFarRenderStrategy<POS, ?, C> strategy;
+    protected final IFarRenderStrategy<POS, ?, B, C> strategy;
     protected final ICullingStrategy<POS> cullingStrategy;
 
     protected final Allocator directMemoryAlloc = new DirectMemoryAllocator(true);
@@ -73,20 +70,18 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
     protected final SimpleSet<POS> renderablePositions;
     protected final Level[] levels;
 
-    public <T extends IFarTile> AbstractRenderIndex(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T, C> strategy, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray, @NonNull ICullingStrategy<POS> cullingStrategy) {
-        this.directPosAccess = mode.directPosAccess();
+    public <T extends IFarTile> AbstractRenderIndex(@NonNull IFarRenderStrategy<POS, T, B, C> strategy) {
         this.strategy = strategy;
-        this.cullingStrategy = cullingStrategy;
+        this.cullingStrategy = this.strategy.cullingStrategy();
+        this.renderablePositions = this.strategy.mode().directPosAccess().newPositionSet();
 
-        this.renderablePositions = this.directPosAccess.newPositionSet();
-
-        this.levels = uncheckedCast(Array.newInstance(GenericMatcher.find(this.getClass(), AbstractRenderIndex.class, "L"), MAX_LODS));
+        this.levels = uncheckedCast(Array.newInstance(Level.class, MAX_LODS));
         for (int level = 0; level < MAX_LODS; level++) {
-            this.levels[level] = this.createLevel(level, vaoInitializer, elementArray);
+            this.levels[level] = this.createLevel(level);
         }
     }
 
-    protected abstract Level createLevel(int level, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray);
+    protected abstract Level createLevel(int level);
 
     @Override
     public IRenderIndex<POS, B, C> retain() throws AlreadyReleasedException {
@@ -141,9 +136,9 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
     /**
      * @author DaPorkchop_
      */
-    protected abstract class Level implements Allocator.SequentialHeapManager, AutoCloseable {
+    protected abstract class Level implements AutoCloseable {
         protected final IFarDirectPosAccess<POS> directPosAccess;
-        protected final VertexArrayObject vao = new VertexArrayObject();
+        protected final int level;
 
         protected final Allocator slotAllocator;
         protected final Object2LongMap<POS> positionsToSlots = new Object2LongOpenHashMap<>();
@@ -154,35 +149,52 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
         protected final GLBuffer positionsBuffer = new GLBuffer(GL_STREAM_DRAW);
         protected long positionsAddr;
 
-        protected final long dataSize;
-        protected long datasAddr;
+        protected long storageHandlesAddr;
 
+        protected final IBakeOutputStorage<B, C> storage;
         protected final IMultipassDrawCommandBuffer<C> commandBuffer;
+
+        protected final VertexArrayObject[] vaos = new VertexArrayObject[RENDER_PASS_COUNT];
 
         protected final C[] tempCommands;
 
         protected boolean dirty = false;
 
-        public Level(@NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull Allocator.GrowFunction growFunction) {
-            this.commandBuffer = AbstractRenderIndex.this.strategy.createCommandBufferFactory().multipassCommandBuffer(AbstractRenderIndex.this.directMemoryAlloc, RENDER_PASS_COUNT);
+        public Level(int level, @NonNull Allocator.GrowFunction growFunction) {
+            this.level = level;
 
-            this.directPosAccess = AbstractRenderIndex.this.directPosAccess;
+            this.directPosAccess = AbstractRenderIndex.this.strategy.mode().directPosAccess();
             this.positionSize = PMath.roundUp(this.directPosAccess.posSize(), EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT);
-            this.dataSize = AbstractRenderIndex.this.strategy.renderDataSize();
 
             this.positionsToSlots.defaultReturnValue(-1L);
 
+            this.commandBuffer = AbstractRenderIndex.this.strategy.createCommandBuffer();
+            this.storage = AbstractRenderIndex.this.strategy.createBakeOutputStorage();
+
+            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                this.vaos[pass] = new VertexArrayObject();
+                try (VertexArrayObject vao = this.vaos[pass].bindForChange()) {
+                    this.directPosAccess.configureVAO(vao, this.positionsBuffer, toInt(this.positionSize), 0, 1);
+                    this.storage.configureVAO(vao, pass);
+                }
+            }
+
             this.tempCommands = uncheckedCast(Array.newInstance(this.commandBuffer.commandClass(), RENDER_PASS_COUNT));
-            for (int i = 0; i < RENDER_PASS_COUNT; i++) {
-                this.tempCommands[i] = this.commandBuffer.newCommand();
+            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                this.tempCommands[pass] = this.commandBuffer.newCommand();
             }
 
-            try (VertexArrayObject vao = this.vao.bindForChange()) {
-                this.directPosAccess.configureVAO(vao, this.positionsBuffer, toInt(this.positionSize), 0, 1);
-                vaoInitializer.accept(vao);
-            }
+            this.slotAllocator = new SequentialFixedSizeAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> {
+                checkArg(capacity > this.capacity, "newCapacity (%d) must be greater than current capacity (%d)", capacity, this.capacity);
+                this.capacity = capacity;
 
-            this.slotAllocator = new SequentialFixedSizeAllocator(1L, this, growFunction);
+                //resize memory blocks
+                this.positionsAddr = AbstractRenderIndex.this.directMemoryAlloc.realloc(this.positionsAddr, capacity * this.positionSize);
+                this.storageHandlesAddr = AbstractRenderIndex.this.directMemoryAlloc.realloc(this.storageHandlesAddr, capacity * Integer.BYTES);
+                this.commandBuffer.resize(toInt(capacity));
+
+                this.dirty = true;
+            }), growFunction);
         }
 
         public void put(@NonNull POS pos, B output) {
@@ -198,8 +210,6 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
                     return;
                 }
             } else { //insertion
-                checkArg(output.size == this.dataSize, "bake output has %d bytes, we require %d!", output.size, this.dataSize);
-
                 if (slot >= 0L) { //slot already exists, delete old data so we can replace it
                     this.delete(slot);
                 } else { //slot doesn't exist, allocate a new one for this position
@@ -209,12 +219,12 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
                     this.directPosAccess.storePos(pos, this.positionsAddr + slot * this.positionSize);
                 }
 
-                //execute bake output
+                //add bake output to storage
                 //  doing this now that any old render data's been deleted minimizes resource wastage (e.g. allowing VBO space to be re-used by the new data)
-                output.execute();
+                int handle = this.storage.add(output);
 
-                //copy renderData to storage buffer
-                PUnsafe.copyMemory(output.renderData, this.datasAddr + slot * this.dataSize, this.dataSize);
+                //save handle
+                PUnsafe.putInt(this.storageHandlesAddr + slot * (long) Integer.BYTES, handle);
 
                 //if the node is selectable, set its render outputs
                 if (pos.level() == 0 || AbstractRenderIndex.this.renderablePositions.contains(pos)) {
@@ -242,13 +252,16 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
         }
 
         protected void delete(long slot) {
-            AbstractRenderIndex.this.strategy.deleteRenderData(this.datasAddr + slot * this.dataSize);
+            //delete the bake output from the storage using the saved handle
+            this.storage.delete(PUnsafe.getInt(this.storageHandlesAddr + slot * (long) Integer.BYTES));
+
+            //erase draw commands from the command buffer
             this.eraseDrawCommands(slot);
         }
 
         protected void addDrawCommands(long slot) {
-            //initialize draw commands from renderData
-            AbstractRenderIndex.this.strategy.toDrawCommands(this.datasAddr + slot * this.dataSize, uncheckedCast(this.tempCommands));
+            //initialize draw commands from bake output storage
+            this.storage.toDrawCommands(PUnsafe.getInt(this.storageHandlesAddr + slot * (long) Integer.BYTES), this.tempCommands);
 
             //store in command buffer
             this.commandBuffer.store(this.tempCommands, toInt(slot, "slot"));
@@ -275,7 +288,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
                 return;
             }
 
-            try (VertexArrayObject vao = this.vao.bind()) {
+            try (VertexArrayObject vao = this.vaos[pass].bind()) {
                 this.commandBuffer.draw(pass);
             }
         }
@@ -291,39 +304,13 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
         }
 
         @Override
-        public void brk(long capacity) {
-            checkState(this.capacity == -1L, "heap already initialized?!?");
-            this.capacity = capacity;
-
-            //allocate memory blocks
-            this.positionsAddr = AbstractRenderIndex.this.directMemoryAlloc.alloc(capacity * this.positionSize);
-            this.datasAddr = AbstractRenderIndex.this.directMemoryAlloc.alloc(capacity * this.dataSize);
-            this.commandBuffer.resize(toInt(capacity));
-
-            this.dirty = true;
-        }
-
-        @Override
-        public void sbrk(long newCapacity) {
-            checkArg(newCapacity > this.capacity, "newCapacity (%d) must be greater than current capacity (%d)", newCapacity, this.capacity);
-            this.capacity = newCapacity;
-
-            //resize memory blocks
-            this.positionsAddr = AbstractRenderIndex.this.directMemoryAlloc.realloc(this.positionsAddr, newCapacity * this.positionSize);
-            this.datasAddr = AbstractRenderIndex.this.directMemoryAlloc.realloc(this.datasAddr, newCapacity * this.dataSize);
-            this.commandBuffer.resize(toInt(newCapacity));
-
-            this.dirty = true;
-        }
-
-        @Override
         public void close() {
             //free all direct memory allocations
             AbstractRenderIndex.this.directMemoryAlloc.free(this.positionsAddr);
-            AbstractRenderIndex.this.directMemoryAlloc.free(this.datasAddr);
+            AbstractRenderIndex.this.directMemoryAlloc.free(this.storageHandlesAddr);
 
             //delete all opengl objects
-            this.vao.delete();
+            Stream.of(this.vaos).forEach(VertexArrayObject::delete);
             this.positionsBuffer.delete();
             this.commandBuffer.release();
         }

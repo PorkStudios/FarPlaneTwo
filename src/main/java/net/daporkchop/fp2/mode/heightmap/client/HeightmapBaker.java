@@ -20,18 +20,16 @@
 
 package net.daporkchop.fp2.mode.heightmap.client;
 
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.TexUVs;
-import net.daporkchop.fp2.client.gl.object.IGLBuffer;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.vertex.attribute.IVertexAttribute;
 import net.daporkchop.fp2.client.gl.vertex.attribute.VertexAttributeInterpretation;
 import net.daporkchop.fp2.client.gl.vertex.attribute.VertexAttributeType;
 import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
 import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
 import net.daporkchop.fp2.mode.common.client.RenderConstants;
+import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
+import net.daporkchop.fp2.mode.common.client.bake.indexed.MultipassIndexedBakeOutput;
 import net.daporkchop.fp2.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
@@ -40,19 +38,19 @@ import net.minecraft.util.math.BlockPos;
 
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.mode.heightmap.HeightmapTile.*;
 import static net.daporkchop.fp2.util.BlockType.*;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * Shared code for baking heightmap geometry.
  *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class HeightmapBake {
+public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile, MultipassIndexedBakeOutput> {
     protected static final IVertexAttribute.Int1 ATTRIB_STATE = IVertexAttribute.Int1.builder()
             .name("state")
             .type(VertexAttributeType.UNSIGNED_INT)
@@ -96,16 +94,49 @@ public class HeightmapBake {
         return (x * T_VERTS + z) * MAX_LAYERS + layer;
     }
 
-    public void bakeForShaderDraw(@NonNull HeightmapPos dstPos, @NonNull HeightmapTile[] srcs, @NonNull IVertexBuilder verts, @NonNull ByteBuf[] indices) {
+    @Override
+    public Stream<HeightmapPos> bakeOutputs(@NonNull HeightmapPos srcPos) {
+        int x = srcPos.x();
+        int z = srcPos.z();
+        int level = srcPos.level();
+
+        HeightmapPos[] arr = new HeightmapPos[4];
+        int i = 0;
+        for (int dx = -1; dx <= 0; dx++) {
+            for (int dz = -1; dz <= 0; dz++) {
+                arr[i++] = new HeightmapPos(level, x + dx, z + dz);
+            }
+        }
+        return Arrays.stream(arr, 0, i);
+    }
+
+    @Override
+    public Stream<HeightmapPos> bakeInputs(@NonNull HeightmapPos dstPos) {
+        int x = dstPos.x();
+        int z = dstPos.z();
+        int level = dstPos.level();
+
+        HeightmapPos[] arr = new HeightmapPos[4];
+        int i = 0;
+        for (int dx = 0; dx <= 1; dx++) {
+            for (int dz = 0; dz <= 1; dz++) {
+                arr[i++] = new HeightmapPos(level, x + dx, z + dz);
+            }
+        }
+        return Arrays.stream(arr, 0, i);
+    }
+
+    @Override
+    public void bake(@NonNull HeightmapPos pos, @NonNull HeightmapTile[] srcs, @NonNull MultipassIndexedBakeOutput output) {
         if (srcs[0] == null) {
             return;
         }
 
-        final int level = dstPos.level();
-        final int blockX = dstPos.blockX();
-        final int blockZ = dstPos.blockZ();
+        final int level = pos.level();
+        final int blockX = pos.blockX();
+        final int blockZ = pos.blockZ();
 
-        final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        final BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos();
         final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
         final HeightmapData data = new HeightmapData();
 
@@ -132,7 +163,7 @@ public class HeightmapBake {
                         int x = dx + (((i >> 1) & 1) << T_SHIFT);
                         int z = dz + ((i & 1) << T_SHIFT);
 
-                        writeVertex(blockX, blockZ, level, src, x, z, layer, verts, pos, biomeAccess, data);
+                        writeVertex(blockX, blockZ, level, src, x, z, layer, output.verts(), blockPos, biomeAccess, data);
                         map[vertexMapIndex(x, z, layer)] = indexCounter++;
                     }
                 }
@@ -158,7 +189,7 @@ public class HeightmapBake {
                         continue; //skip if any of the vertices are missing
                     }
 
-                    RenderConstants.emitQuad(indices[renderType(data.state)], oppositeCorner, c1, c0, provoking);
+                    RenderConstants.emitQuad(output.indices()[renderType(data.state)], oppositeCorner, c1, c0, provoking);
                     rendered.set(vertexMapIndex(x, z, layer));
                 }
             }
@@ -192,7 +223,7 @@ public class HeightmapBake {
                                 continue; //skip if any of the vertices are missing
                             }
 
-                            RenderConstants.emitQuad(indices[renderType(data.state)], oppositeCorner, c1, c0, provoking);
+                            RenderConstants.emitQuad(output.indices()[renderType(data.state)], oppositeCorner, c1, c0, provoking);
                         }
                     }
                 }

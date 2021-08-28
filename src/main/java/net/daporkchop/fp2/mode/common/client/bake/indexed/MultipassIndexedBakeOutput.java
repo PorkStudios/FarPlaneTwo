@@ -21,11 +21,14 @@
 package net.daporkchop.fp2.mode.common.client.bake.indexed;
 
 import io.netty.buffer.ByteBuf;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
 import net.daporkchop.fp2.mode.common.client.bake.AbstractBakeOutput;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
+
+import java.util.stream.Stream;
 
 /**
  * Implementation of {@link IBakeOutput} which contains indexed geometry in multiple render passes.
@@ -33,6 +36,7 @@ import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
+@Getter
 public class MultipassIndexedBakeOutput extends AbstractBakeOutput {
     @NonNull
     protected final IVertexBuilder verts;
@@ -43,5 +47,10 @@ public class MultipassIndexedBakeOutput extends AbstractBakeOutput {
     @Override
     protected void doRelease() {
         this.verts.release();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return this.verts.size() == 0 || Stream.of(this.indices).noneMatch(ByteBuf::isReadable);
     }
 }

@@ -36,6 +36,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.util.BlockRenderLayer;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.lwjgl.opengl.GL15.*;
 
 /**
@@ -52,7 +53,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
 
     protected final GLBuffer drawCommandBuffer = new GLBuffer(GL_STREAM_DRAW);
 
-    protected final IFarRenderStrategy<POS, T, ?> strategy;
+    protected final IFarRenderStrategy<POS, T, ?, ?> strategy;
 
     public AbstractFarRenderer(@NonNull IFarClientContext<POS, T> context) {
         this.context = context;
@@ -65,7 +66,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
     /**
      * @return the {@link IFarRenderStrategy} used by this renderer
      */
-    protected abstract IFarRenderStrategy<POS, T, ?> strategy0();
+    protected abstract IFarRenderStrategy<POS, T, ?, ?> strategy0();
 
     /**
      * @return a new {@link BakeManager}
@@ -87,7 +88,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
     public void render(@NonNull Minecraft mc, @NonNull BlockRenderLayer layer, boolean pre) {
         checkGLError("pre fp2 render");
 
-        this.strategy.render(this.bakeManager.index, layer, pre);
+        this.strategy.render(uncheckedCast(this.bakeManager.index), layer, pre);
 
         checkGLError("post fp2 render");
     }

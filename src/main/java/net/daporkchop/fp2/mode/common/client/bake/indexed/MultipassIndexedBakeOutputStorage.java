@@ -21,12 +21,15 @@
 package net.daporkchop.fp2.mode.common.client.bake.indexed;
 
 import io.netty.buffer.ByteBuf;
+import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.ElementType;
 import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
+import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
 import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuffer;
+import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexLayout;
 import net.daporkchop.fp2.client.gl.vertex.buffer.interleaved.InterleavedVertexBuffer;
 import net.daporkchop.fp2.mode.common.client.bake.AbstractBakeOutputStorage;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutputStorage;
@@ -45,7 +48,6 @@ import static org.lwjgl.opengl.GL15.*;
  */
 public class MultipassIndexedBakeOutputStorage extends AbstractBakeOutputStorage<MultipassIndexedBakeOutput, DrawElementsCommand> {
     protected final Allocator alloc;
-    protected final VertexFormat format;
     protected final ElementType type;
 
     /*
@@ -65,25 +67,29 @@ public class MultipassIndexedBakeOutputStorage extends AbstractBakeOutputStorage
     protected final Allocator[] indexAllocs;
     protected final GLBuffer[] indexBuffers;
 
+    @Getter
     protected final int passes;
 
-    public MultipassIndexedBakeOutputStorage(@NonNull Allocator alloc, @NonNull VertexFormat format, @NonNull ElementType type, int passes) {
+    public MultipassIndexedBakeOutputStorage(@NonNull Allocator alloc, @NonNull IVertexLayout vertexLayout, @NonNull ElementType type, int passes) {
         this.alloc = alloc;
-        this.format = format;
         this.type = type;
         this.passes = positive(passes, "passes");
 
         this.slotStride = (passes * 2L + 1L) * Integer.BYTES;
         this.slotAlloc = new SequentialFixedSizeAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> this.slotsAddr = this.alloc.realloc(this.slotsAddr, capacity * this.slotStride)));
 
-        this.vertexBuffer = new InterleavedVertexBuffer(alloc, format);
+        this.vertexBuffer = vertexLayout.createBuffer();
         this.vertexAlloc = new SequentialVariableSizedAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> this.vertexBuffer.resize(toInt(capacity))));
 
         this.indexAllocs = new Allocator[passes];
         this.indexBuffers = new GLBuffer[passes];
         for (int pass = 0; pass < passes; pass++) {
             GLBuffer indexBuffer = this.indexBuffers[pass] = new GLBuffer(GL_DYNAMIC_DRAW);
-            this.indexAllocs[pass] = new SequentialVariableSizedAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> indexBuffer.resize(toInt(capacity))));
+            this.indexAllocs[pass] = new SequentialVariableSizedAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> {
+                try (GLBuffer buffer = indexBuffer.bind(GL_ELEMENT_ARRAY_BUFFER)) {
+                    buffer.resize(toInt(capacity));
+                }
+            }));
         }
     }
 
@@ -93,6 +99,12 @@ public class MultipassIndexedBakeOutputStorage extends AbstractBakeOutputStorage
         for (GLBuffer indexBuffer : this.indexBuffers) {
             indexBuffer.delete();
         }
+    }
+
+    @Override
+    public void configureVAO(@NonNull VertexArrayObject vao, int pass) {
+        this.vertexBuffer.configureVAO(vao);
+        vao.putElementArray(this.indexBuffers[pass]);
     }
 
     @Override
@@ -112,7 +124,9 @@ public class MultipassIndexedBakeOutputStorage extends AbstractBakeOutputStorage
             if (indices.isReadable()) {
                 int count = indices.readableBytes() / this.type.size();
                 int indexBase = toInt(this.indexAllocs[pass].alloc(count));
-                this.indexBuffers[pass].uploadRange(indexBase + (long) this.type.size(), indices);
+                try (GLBuffer buffer = this.indexBuffers[pass].bind(GL_ELEMENT_ARRAY_BUFFER)) {
+                    buffer.uploadRange(indexBase + (long) this.type.size(), indices);
+                }
                 PUnsafe.putInt(slotAddr + (pass + 1L) * Integer.BYTES, indexBase);
                 PUnsafe.putInt(slotAddr + (pass + 1L + this.passes) * Integer.BYTES, count);
             } else {
@@ -151,6 +165,8 @@ public class MultipassIndexedBakeOutputStorage extends AbstractBakeOutputStorage
             int count = PUnsafe.getInt(slotAddr + (pass + 1L + this.passes) * Integer.BYTES);
             if (count > 0) {
                 commands[pass].baseVertex(baseVertex).firstIndex(indexBase).count(count);
+            } else {
+                commands[pass].clear();
             }
         }
     }

@@ -33,6 +33,14 @@ import java.util.stream.Stream;
  */
 public interface IRenderBaker<POS extends IFarPos, T extends IFarTile, B extends IBakeOutput> {
     /**
+     * Gets the positions of the tiles which use the tile at the given position as a bake input.
+     *
+     * @param pos the position of the tile
+     * @return Gets the positions of the tiles which use the tile at the given position as a bake input
+     */
+    Stream<POS> bakeOutputs(@NonNull POS pos);
+
+    /**
      * Gets the positions of the tiles required in order to bake the tile at the given position.
      *
      * @param pos the position of the tile to bake
@@ -43,10 +51,10 @@ public interface IRenderBaker<POS extends IFarPos, T extends IFarTile, B extends
     /**
      * Bakes the tile data at the given position.
      *
-     * @param pos  the position of the tile to bake
-     * @param srcs the uncompressed source tiles. Tiles are provided in the same order as they were contained in the stream returned by {@link #bakeInputs(IFarPos)}, and will
-     *             be {@code null} if not loaded
-     * @return the bake output, or {@code null} if none/empty
+     * @param pos    the position of the tile to bake
+     * @param srcs   the uncompressed source tiles. Tiles are provided in the same order as they were contained in the stream returned by {@link #bakeInputs(IFarPos)}, and will
+     *               be {@code null} if not loaded
+     * @param output the {@link IBakeOutput} to write to
      */
-    B bake(@NonNull POS pos, @NonNull T[] srcs);
+    void bake(@NonNull POS pos, @NonNull T[] srcs, @NonNull B output);
 }

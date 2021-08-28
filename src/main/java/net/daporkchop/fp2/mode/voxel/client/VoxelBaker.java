@@ -22,10 +22,7 @@ package net.daporkchop.fp2.mode.voxel.client;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.TexUVs;
-import net.daporkchop.fp2.client.gl.object.IGLBuffer;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.vertex.attribute.IVertexAttribute;
 import net.daporkchop.fp2.client.gl.vertex.attribute.VertexAttributeInterpretation;
 import net.daporkchop.fp2.client.gl.vertex.attribute.VertexAttributeType;
@@ -33,6 +30,8 @@ import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
 import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.mode.common.client.RenderConstants;
+import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
+import net.daporkchop.fp2.mode.common.client.bake.indexed.MultipassIndexedBakeOutput;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
@@ -44,6 +43,7 @@ import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.Arrays;
+import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
@@ -55,8 +55,7 @@ import static net.daporkchop.fp2.util.math.MathUtil.*;
  *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class VoxelBake {
+public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, MultipassIndexedBakeOutput> {
     protected static final IVertexAttribute.Int1 ATTRIB_STATE = IVertexAttribute.Int1.builder()
             .name("state")
             .type(VertexAttributeType.UNSIGNED_INT)
@@ -92,15 +91,49 @@ public class VoxelBake {
         return ((ddx * T_VERTS + ddy) * T_VERTS + ddz) * EDGE_COUNT + edge;
     }
 
-    public void bakeForShaderDraw(@NonNull VoxelPos dstPos, @NonNull VoxelTile[] srcs, @NonNull IVertexBuilder verts, @NonNull ByteBuf[] indices) {
+    @Override
+    public Stream<VoxelPos> bakeOutputs(@NonNull VoxelPos srcPos) {
+        int x = srcPos.x();
+        int y = srcPos.y();
+        int z = srcPos.z();
+        int level = srcPos.level();
+
+        VoxelPos[] arr = new VoxelPos[8];
+        int i = 0;
+        for (int dx = -1; dx <= 0; dx++) {
+            for (int dy = -1; dy <= 0; dy++) {
+                for (int dz = -1; dz <= 0; dz++) {
+                    arr[i++] = new VoxelPos(level, x + dx, y + dy, z + dz);
+                }
+            }
+        }
+        return Stream.of(arr);
+    }
+
+    @Override
+    public Stream<VoxelPos> bakeInputs(@NonNull VoxelPos dstPos) {
+        int x = dstPos.x();
+        int y = dstPos.y();
+        int z = dstPos.z();
+        int level = dstPos.level();
+
+        VoxelPos[] arr = new VoxelPos[8];
+        int i = 0;
+        for (int dx = 0; dx <= 1; dx++) {
+            for (int dy = 0; dy <= 1; dy++) {
+                for (int dz = 0; dz <= 1; dz++) {
+                    arr[i++] = new VoxelPos(level, x + dx, y + dy, z + dz);
+                }
+            }
+        }
+        return Stream.of(arr);
+    }
+
+    @Override
+    public void bake(@NonNull VoxelPos pos, @NonNull VoxelTile[] srcs, @NonNull MultipassIndexedBakeOutput output) {
         if (srcs[0] == null) {
             return;
         }
-
-        final int level = dstPos.level();
-        final int blockX = dstPos.blockX();
-        final int blockY = dstPos.blockY();
-        final int blockZ = dstPos.blockZ();
 
         ArrayAllocator<int[]> alloc = ALLOC_INT.get();
         int[] map = alloc.atLeast(cb(T_VERTS) * EDGE_COUNT);
@@ -108,10 +141,10 @@ public class VoxelBake {
 
         try {
             //step 1: write vertices for all source tiles, and assign indices
-            writeVertices(srcs, blockX, blockY, blockZ, level, map, verts);
+            this.writeVertices(srcs, pos.blockX(), pos.blockY(), pos.blockZ(), pos.level(), map, output.verts());
 
             //step 2: write indices to actually connect the vertices and build the mesh
-            writeIndices(srcs[0], map, indices);
+            this.writeIndices(srcs[0], map, output.indices());
         } finally {
             alloc.release(map);
         }
@@ -139,7 +172,7 @@ public class VoxelBake {
                             continue;
                         }
 
-                        indexCounter = writeVertex(blockX, blockY, blockZ, level, dx + (((i >> 2) & 1) << T_SHIFT), dy + (((i >> 1) & 1) << T_SHIFT), dz + ((i & 1) << T_SHIFT), data, verts, pos, biomeAccess, map, indexCounter);
+                        indexCounter = this.writeVertex(blockX, blockY, blockZ, level, dx + (((i >> 2) & 1) << T_SHIFT), dy + (((i >> 1) & 1) << T_SHIFT), dz + ((i & 1) << T_SHIFT), data, verts, pos, biomeAccess, map, indexCounter);
                     }
                 }
             }

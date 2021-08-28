@@ -44,8 +44,8 @@ public abstract class HeightmapRenderer extends AbstractFarRenderer<HeightmapPos
         }
 
         @Override
-        protected IFarRenderStrategy<HeightmapPos, HeightmapTile, ?> strategy0() {
-            return new ShaderBasedIndexedMultidrawHeightmapRenderStrategy();
+        protected IFarRenderStrategy<HeightmapPos, HeightmapTile, ?, ?> strategy0() {
+            return new ShaderBasedHeightmapRenderStrategy(this.mode);
         }
     }
 }

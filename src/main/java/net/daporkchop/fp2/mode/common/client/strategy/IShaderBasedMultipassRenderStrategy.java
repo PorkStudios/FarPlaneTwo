@@ -25,35 +25,36 @@ import net.daporkchop.fp2.client.gl.command.IDrawCommand;
 import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.common.client.index.AbstractRenderIndex;
+import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
+import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
 
 /**
  * @author DaPorkchop_
  */
-public interface IShaderBasedMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile, C extends IDrawCommand> extends IMultipassRenderStrategy<POS, T, C> {
+public interface IShaderBasedMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile, B extends IBakeOutput, C extends IDrawCommand> extends IMultipassRenderStrategy<POS, T, B, C> {
     @Override
-    default void renderSolid(@NonNull AbstractRenderIndex<POS, ?, ?, ?> index, int level) {
+    default void renderSolid(@NonNull IRenderIndex<POS, B, C> index, int level) {
         try (RenderShaderProgram program = this.blockShader().use()) {
             IMultipassRenderStrategy.super.renderSolid(index, level);
         }
     }
 
     @Override
-    default void renderCutout(@NonNull AbstractRenderIndex<POS, ?, ?, ?> index, int level) {
+    default void renderCutout(@NonNull IRenderIndex<POS, B, C> index, int level) {
         try (RenderShaderProgram program = this.blockShader().use()) {
             IMultipassRenderStrategy.super.renderCutout(index, level);
         }
     }
 
     @Override
-    default void renderTransparentStencilPass(@NonNull AbstractRenderIndex<POS, ?, ?, ?> index) {
+    default void renderTransparentStencilPass(@NonNull IRenderIndex<POS, B, C> index) {
         try (RenderShaderProgram program = this.stencilShader().use()) {
             IMultipassRenderStrategy.super.renderTransparentStencilPass(index);
         }
     }
 
     @Override
-    default void renderTransparentFragmentPass(@NonNull AbstractRenderIndex<POS, ?, ?, ?> index) {
+    default void renderTransparentFragmentPass(@NonNull IRenderIndex<POS, B, C> index) {
         try (RenderShaderProgram program = this.blockShaderTransparent().use()) {
             IMultipassRenderStrategy.super.renderTransparentFragmentPass(index);
         }

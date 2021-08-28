@@ -22,8 +22,11 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.command.IDrawCommand;
+import net.daporkchop.fp2.client.gl.command.IMultipassDrawCommandBuffer;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutputStorage;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
@@ -36,6 +39,10 @@ import net.minecraft.util.BlockRenderLayer;
  * @author DaPorkchop_
  */
 public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, B extends IBakeOutput, C extends IDrawCommand> extends RefCounted {
+    IFarRenderMode<POS, T> mode();
+
+    ICullingStrategy<POS> cullingStrategy();
+
     IRenderIndex<POS, B, C> createIndex();
 
     IRenderBaker<POS, T, B> createBaker();
@@ -43,6 +50,8 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, B e
     B createBakeOutput();
 
     IBakeOutputStorage<B, C> createBakeOutputStorage();
+
+    IMultipassDrawCommandBuffer<C> createCommandBuffer();
 
     void render(@NonNull IRenderIndex<POS, B, C> index, @NonNull BlockRenderLayer layer, boolean pre);
 

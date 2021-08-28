@@ -26,18 +26,13 @@ import net.daporkchop.fp2.client.ShaderClippingStateHelper;
 import net.daporkchop.fp2.client.gl.WorkGroupSize;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.command.IDrawCommand;
-import net.daporkchop.fp2.client.gl.object.IGLBuffer;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.shader.ComputeShaderBuilder;
 import net.daporkchop.fp2.client.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
+import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.util.alloc.Allocator;
-
-import java.util.function.Consumer;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
@@ -50,7 +45,7 @@ import static org.lwjgl.opengl.GL43.*;
  *
  * @author DaPorkchop_
  */
-public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawCommand> extends AbstractRenderIndex<POS, C, GPUCulledRenderIndex<POS, C>, GPUCulledRenderIndex.Level<POS, C>> {
+public class GPUCulledRenderIndex<POS extends IFarPos, B extends IBakeOutput, C extends IDrawCommand> extends AbstractRenderIndex<POS, B, C> {
     /**
      * The maximum permitted compute work group size.
      * <p>
@@ -67,21 +62,18 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawCommand> e
     protected static final long MIN_CAPACITY = 1024L;
 
     protected static final WorkGroupSize WORK_GROUP_SIZE = getOptimalComputeWorkSizePow2(null, MAX_COMPUTE_WORK_GROUP_SIZE);
+    protected static final Allocator.GrowFunction GROW_FUNCTION = Allocator.GrowFunction.pow2(max(WORK_GROUP_SIZE.totalSize(), MIN_CAPACITY));
 
     protected static final int POSITIONS_BUFFER_BINDING_INDEX = 3;
     protected static final int COMMANDS_BUFFER_BINDING_INDEX = 4;
 
-    public <T extends IFarTile> GPUCulledRenderIndex(@NonNull IFarRenderMode<POS, T> mode, @NonNull IFarRenderStrategy<POS, T, C> strategy, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray, @NonNull ICullingStrategy<POS> cullingStrategy) {
-        super(mode, strategy, vaoInitializer, elementArray, cullingStrategy);
+    public <T extends IFarTile> GPUCulledRenderIndex(@NonNull IFarRenderStrategy<POS, T, B, C> strategy) {
+        super(strategy);
     }
 
     @Override
-    protected Level<POS, C> createLevel(int level, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull IGLBuffer elementArray) {
-        return new Level<>(this, vao -> {
-            vaoInitializer.accept(vao);
-
-            vao.putElementArray(elementArray);
-        }, Allocator.GrowFunction.pow2(max(WORK_GROUP_SIZE.totalSize(), MIN_CAPACITY)), level);
+    protected AbstractRenderIndex<POS, B, C>.Level createLevel(int level) {
+        return new Level(level);
     }
 
     @Override
@@ -89,7 +81,7 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawCommand> e
         ShaderClippingStateHelper.update(frustum);
         ShaderClippingStateHelper.bind();
 
-        for (Level level : this.levels) {
+        for (AbstractRenderIndex.Level level : this.levels) {
             level.select(frustum, partialTicks);
         }
 
@@ -100,16 +92,13 @@ public class GPUCulledRenderIndex<POS extends IFarPos, C extends IDrawCommand> e
     /**
      * @author DaPorkchop_
      */
-    protected static class Level<POS extends IFarPos, C extends IDrawCommand> extends AbstractRenderIndex.Level<POS, C, GPUCulledRenderIndex<POS, C>, Level<POS, C>> {
+    protected class Level extends AbstractRenderIndex<POS, B, C>.Level {
         protected final ComputeShaderProgram cullShader;
-        protected final int level;
 
-        public Level(@NonNull GPUCulledRenderIndex<POS, C> parent, @NonNull Consumer<VertexArrayObject> vaoInitializer, @NonNull Allocator.GrowFunction growFunction, int level) {
-            super(parent, vaoInitializer, growFunction);
+        public Level(int level) {
+            super(level, GROW_FUNCTION);
 
-            this.level = level;
-
-            ComputeShaderBuilder cullShaderBuilder = parent.cullingStrategy.cullShaderBuilder()
+            ComputeShaderBuilder cullShaderBuilder = GPUCulledRenderIndex.this.cullingStrategy.cullShaderBuilder()
                     .withWorkGroupSize(WORK_GROUP_SIZE);
             if (this.level == 0) {
                 cullShaderBuilder = cullShaderBuilder.define("LEVEL_0");

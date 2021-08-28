@@ -21,52 +21,42 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.command.IDrawCommand;
-import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
+import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
+import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
+import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
+import net.daporkchop.fp2.mode.common.client.bake.indexed.MultipassIndexedBakeOutput;
+import net.daporkchop.fp2.mode.common.client.strategy.IShaderBasedMultipassRenderStrategy;
+import net.daporkchop.fp2.mode.common.client.strategy.AbstractMultipassIndexedRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
-
-import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
  */
-public interface IVoxelRenderStrategy<C extends IDrawCommand> extends IFarRenderStrategy<VoxelPos, VoxelTile, C> {
-    @Override
-    default Stream<VoxelPos> bakeOutputs(@NonNull VoxelPos srcPos) {
-        int x = srcPos.x();
-        int y = srcPos.y();
-        int z = srcPos.z();
-        int level = srcPos.level();
-
-        VoxelPos[] arr = new VoxelPos[8];
-        int i = 0;
-        for (int dx = -1; dx <= 0; dx++) {
-            for (int dy = -1; dy <= 0; dy++) {
-                for (int dz = -1; dz <= 0; dz++) {
-                    arr[i++] = new VoxelPos(level, x + dx, y + dy, z + dz);
-                }
-            }
-        }
-        return Stream.of(arr);
+public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRenderStrategy<VoxelPos, VoxelTile> implements IShaderBasedMultipassRenderStrategy<VoxelPos, VoxelTile, MultipassIndexedBakeOutput, DrawElementsCommand> {
+    public ShaderBasedVoxelRenderStrategy(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
+        super(mode, VoxelBaker.VERTEX_FORMAT);
     }
 
     @Override
-    default Stream<VoxelPos> bakeInputs(@NonNull VoxelPos dstPos) {
-        int x = dstPos.x();
-        int y = dstPos.y();
-        int z = dstPos.z();
-        int level = dstPos.level();
+    public ICullingStrategy<VoxelPos> cullingStrategy() {
+        return VoxelCullingStrategy.INSTANCE;
+    }
 
-        VoxelPos[] arr = new VoxelPos[8];
-        int i = 0;
-        for (int dx = 0; dx <= 1; dx++) {
-            for (int dy = 0; dy <= 1; dy++) {
-                for (int dz = 0; dz <= 1; dz++) {
-                    arr[i++] = new VoxelPos(level, x + dx, y + dy, z + dz);
-                }
-            }
-        }
-        return Stream.of(arr);
+    @Override
+    public IRenderBaker<VoxelPos, VoxelTile, MultipassIndexedBakeOutput> createBaker() {
+        return new VoxelBaker();
+    }
+
+    @Override
+    public RenderShaderProgram blockShader() {
+        return VoxelShaders.BLOCK_SHADER;
+    }
+
+    @Override
+    public RenderShaderProgram stencilShader() {
+        return VoxelShaders.STENCIL_SHADER;
     }
 }

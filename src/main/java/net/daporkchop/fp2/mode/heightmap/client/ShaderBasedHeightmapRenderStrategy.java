@@ -21,30 +21,42 @@
 package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.DrawMode;
 import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
-import net.daporkchop.fp2.mode.common.client.index.AbstractRenderIndex;
+import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
+import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
+import net.daporkchop.fp2.mode.common.client.bake.indexed.MultipassIndexedBakeOutput;
+import net.daporkchop.fp2.mode.common.client.strategy.IShaderBasedMultipassRenderStrategy;
+import net.daporkchop.fp2.mode.common.client.strategy.AbstractMultipassIndexedRenderStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.minecraft.client.renderer.texture.AbstractTexture;
-import net.minecraft.client.renderer.texture.TextureMap;
-import net.minecraft.util.BlockRenderLayer;
-
-import static net.daporkchop.fp2.util.Constants.*;
+import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 
 /**
  * @author DaPorkchop_
  */
-public class ShaderBasedIndexedMultidrawHeightmapRenderStrategy extends AbstractIndexedMultidrawHeightmapRenderStrategy implements IShaderBasedMultipassHeightmapRenderStrategy<DrawElementsCommand> {
+public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexedRenderStrategy<HeightmapPos, HeightmapTile> implements IShaderBasedMultipassRenderStrategy<HeightmapPos, HeightmapTile, MultipassIndexedBakeOutput, DrawElementsCommand> {
+    public ShaderBasedHeightmapRenderStrategy(@NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
+        super(mode, HeightmapBaker.VERTEX_FORMAT);
+    }
+
     @Override
-    public void render(@NonNull AbstractRenderIndex<HeightmapPos, ?, ?, ?> index, @NonNull BlockRenderLayer layer, boolean pre) {
-        if (layer == BlockRenderLayer.CUTOUT && !pre) {
-            ((AbstractTexture) MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE)).setBlurMipmapDirect(false, MC.gameSettings.mipmapLevels > 0);
+    public ICullingStrategy<HeightmapPos> cullingStrategy() {
+        return HeightmapCullingStrategy.INSTANCE;
+    }
 
-            try (DrawMode mode = DrawMode.SHADER.begin()) {
-                this.render(index);
-            }
+    @Override
+    public IRenderBaker<HeightmapPos, HeightmapTile, MultipassIndexedBakeOutput> createBaker() {
+        return new HeightmapBaker();
+    }
 
-            MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
-        }
+    @Override
+    public RenderShaderProgram blockShader() {
+        return HeightmapShaders.BLOCK_SHADER;
+    }
+
+    @Override
+    public RenderShaderProgram stencilShader() {
+        return HeightmapShaders.STENCIL_SHADER;
     }
 }

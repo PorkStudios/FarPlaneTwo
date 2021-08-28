@@ -55,7 +55,7 @@ public class InterleavedVertexBuilder extends AbstractVertexBuilder<InterleavedV
 
     @Override
     public long addressFor(@NonNull IVertexAttribute attribute, int vertIndex) {
-        return this.vertexAddr + checkIndex(this.size, vertIndex) * this.vertexSize + PUnsafe.getInt(this.offsets + vertIndex * (long) Integer.BYTES);
+        return this.vertexAddr + checkIndex(this.size, vertIndex) * this.vertexSize + PUnsafe.getInt(this.offsets + attribute.index() * (long) Integer.BYTES);
     }
 
     @Override
