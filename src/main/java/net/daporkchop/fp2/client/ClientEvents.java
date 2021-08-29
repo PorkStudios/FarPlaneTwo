@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.client;
 
+import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.asm.core.client.gui.IGuiScreen;
 import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
@@ -28,6 +29,7 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiVideoSettings;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
@@ -36,11 +38,28 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
+
 /**
  * @author DaPorkchop_
  */
+@UtilityClass
 @SideOnly(Side.CLIENT)
 public class ClientEvents {
+    private boolean REGISTERED = false;
+
+    public synchronized void register() {
+        checkState(!REGISTERED, "already registered!");
+        REGISTERED = true;
+
+        MinecraftForge.EVENT_BUS.register(ClientEvents.class);
+
+        if (CC) {
+            MinecraftForge.EVENT_BUS.register(_CC.class);
+        }
+    }
+
     @SubscribeEvent
     public void worldUnload(WorldEvent.Unload event) {
         if (event.getWorld().isRemote) {
@@ -66,5 +85,14 @@ public class ClientEvents {
     @SubscribeEvent
     public void renderWorldLast(RenderWorldLastEvent event) {
         ReversedZ.disable();
+    }
+
+    /**
+     * Forge event listeners for Cubic Chunks' events used on the client.
+     *
+     * @author DaPorkchop_
+     */
+    @UtilityClass
+    public static class _CC {
     }
 }

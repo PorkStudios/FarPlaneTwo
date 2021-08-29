@@ -46,7 +46,7 @@ public final class SequentialFixedSizeAllocator extends BitSet implements Alloca
     protected final long blockSize;
     protected final GrowFunction growFunction;
     protected final SequentialHeapManager manager;
-    protected long capacity;
+    protected long capacity = 0L;
     protected int fromIndex = 0;
 
     public SequentialFixedSizeAllocator(long blockSize, @NonNull SequentialHeapManager manager) {
@@ -57,8 +57,6 @@ public final class SequentialFixedSizeAllocator extends BitSet implements Alloca
         this.blockSize = positive(blockSize, "blockSize");
         this.manager = manager;
         this.growFunction = growFunction;
-
-        this.manager.brk(this.capacity = this.growFunction.grow(0L, blockSize << 4L));
     }
 
     @Override
@@ -70,7 +68,14 @@ public final class SequentialFixedSizeAllocator extends BitSet implements Alloca
 
         long addr = slot * this.blockSize;
         if (addr >= this.capacity) {
-            this.manager.sbrk(this.capacity = this.growFunction.grow(this.capacity, this.blockSize));
+            long oldCapacity = this.capacity;
+            this.capacity = this.growFunction.grow(this.capacity, this.blockSize);
+
+            if (oldCapacity == 0L) {
+                this.manager.brk(this.capacity);
+            } else {
+                this.manager.sbrk(this.capacity);
+            }
         }
         return addr;
     }

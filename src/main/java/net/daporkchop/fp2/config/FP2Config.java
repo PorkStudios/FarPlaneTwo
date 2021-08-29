@@ -20,6 +20,8 @@
 
 package net.daporkchop.fp2.config;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraftforge.common.config.Config;
@@ -168,6 +170,22 @@ public class FP2Config {
         @Config.LangKey("config.fp2.performance.lowResolutionEnable")
         @Config.RequiresWorldRestart
         public boolean lowResolutionEnable = true;
+
+        @Config.Comment({
+                "Allows frustum culling to be done on the GPU instead of the CPU.",
+                "This can have major performance benefits, but may cause visual glitches or even crashes."
+        })
+        @Config.LangKey("config.fp2.performance.gpuFrustumCulling")
+        @Config.RequiresWorldRestart
+        public boolean gpuFrustumCulling = true;
+
+        @Config.Comment({
+                "Whether or not frustum culling should be done on multiple threads.",
+                "Only makes a difference if GPU frustum culling is disabled.",
+                "This will likely hurt performance except for specific scenarios."
+        })
+        @Config.LangKey("config.fp2.performance.multithreadedFrustumCulling")
+        public boolean multithreadedFrustumCulling = false;
     }
 
     /**
@@ -181,8 +199,22 @@ public class FP2Config {
         @Config.LangKey("config.fp2.compatibility.reversedZ")
         public boolean reversedZ = true;
 
+        @Config.Comment({
+                "A workaround for an issue with AMD's official GPU driver which results in horrible performance when a vertex attribute",
+                "doesn't have a 4-byte alignment."
+        })
+        @Config.LangKey("config.fp2.compatibility.workaroundAmdVertexPadding")
         @Config.RequiresMcRestart
         public WorkaroundState workaroundAmdVertexPadding = WorkaroundState.AUTO;
+
+        @Config.Comment({
+                "A workaround for an issue with Intel's official GPU driver which results in multidraw drawing commands being so horrifically buggy",
+                "that they might as well not work at all. (more specifically: flickering, things being rendered in the wrong positions, memory corruption,",
+                "driver segfaults, the whole deal)"
+        })
+        @Config.LangKey("config.fp2.compatibility.workaroundIntelMultidrawNotWorking")
+        @Config.RequiresMcRestart
+        public WorkaroundState workaroundIntelMultidrawNotWorking = WorkaroundState.AUTO;
 
         /**
          * @author DaPorkchop_
@@ -268,5 +300,25 @@ public class FP2Config {
         })
         @Config.LangKey("config.fp2.debug.disableBackfaceCull")
         public boolean disableBackfaceCull = false;
+
+        @Config.Comment({
+                "The debug color mode to enable."
+        })
+        @Config.LangKey("config.fp2.debug.debugShadingMode")
+        public DebugColorMode debugColorMode = DebugColorMode.DISABLED;
+
+        /**
+         * @author DaPorkchop_
+         */
+        @RequiredArgsConstructor
+        @Getter
+        public enum DebugColorMode {
+            DISABLED(false),
+            DISTANCE(true),
+            POSITIONS(true),
+            FACE_NORMAL(true);
+
+            protected final boolean enable;
+        }
     }
 }

@@ -272,7 +272,7 @@ publishing {
 task preIntellijRuns {
     doFirst {
         StreamSupport.stream(configurations.annotationProcessor.spliterator(), false).filter({
-            it.name.contains("mixin")
+            java.nio.file.Paths.get(it.absolutePath).getFileName().toString().matches("mixin-\\d+(\\.\\d+)*\\.jar")
         }).findAny().ifPresent({
             minecraft.clientJvmArgs += "-javaagent:" + it.absolutePath
             minecraft.serverJvmArgs += "-javaagent:" + it.absolutePath

@@ -23,17 +23,25 @@ package net.daporkchop.fp2.mode.heightmap;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
+import net.daporkchop.fp2.client.gl.object.IGLBuffer;
+import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
+import net.daporkchop.fp2.util.datastructure.Datastructures;
+import net.daporkchop.fp2.util.datastructure.NDimensionalIntSet;
+import net.daporkchop.fp2.util.datastructure.SimpleSet;
 import net.daporkchop.fp2.util.math.geometry.Volume;
+import net.daporkchop.lib.common.util.PArrays;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static org.lwjgl.opengl.GL11.*;
 
 /**
  * Implementation of {@link IFarDirectPosAccess} for {@link HeightmapPos}.
@@ -83,6 +91,11 @@ public class HeightmapDirectPosAccess implements IFarDirectPosAccess<HeightmapPo
     }
 
     @Override
+    public int axisCount() {
+        return 2;
+    }
+
+    @Override
     public long posSize() {
         return _SIZE;
     }
@@ -100,11 +113,6 @@ public class HeightmapDirectPosAccess implements IFarDirectPosAccess<HeightmapPo
     }
 
     @Override
-    public int axisCount() {
-        return 2;
-    }
-
-    @Override
     public int getAxisHeap(@NonNull HeightmapPos pos, int axis) {
         switch (axis) {
             case 0:
@@ -119,6 +127,23 @@ public class HeightmapDirectPosAccess implements IFarDirectPosAccess<HeightmapPo
     @Override
     public int getAxisDirect(long addr, int axis) {
         return PUnsafe.getInt(addr + (long) checkIndex(2, axis) * INT_SIZE);
+    }
+
+    @Override
+    public boolean equalsPos(long addr1, long addr2) {
+        return _x(addr1) == _x(addr2)
+               && _z(addr1) == _z(addr2)
+               && _level(addr1) == _level(addr2);
+    }
+
+    @Override
+    public int hashPos(long addr) {
+        return _x(addr) * 1317194159 + _z(addr) * 1656858407 + _level(addr);
+    }
+
+    @Override
+    public long localHashPos(long addr) {
+        return interleaveBits(_x(addr), _z(addr));
     }
 
     @Override
@@ -154,7 +179,63 @@ public class HeightmapDirectPosAccess implements IFarDirectPosAccess<HeightmapPo
 
     @SideOnly(Side.CLIENT)
     @Override
-    public boolean isVanillaRenderable(long addr) {
-        return ClientConstants.isVanillaRenderable(_x(addr), _z(addr));
+    public void configureVAO(@NonNull VertexArrayObject vao, @NonNull IGLBuffer buffer, int stride, int offset, int divisor) {
+        vao.attrI(buffer, 3, GL_INT, stride, offset, divisor);
+    }
+
+    @Override
+    public SimpleSet<HeightmapPos> newPositionSet() {
+        return new SimpleSet<HeightmapPos>() {
+            final NDimensionalIntSet[] delegate = PArrays.filled(MAX_LODS, NDimensionalIntSet[]::new, () -> Datastructures.INSTANCE.nDimensionalIntSet()
+                    .dimensions(2).threadSafe(false)
+                    .build());
+
+            @Override
+            public int refCnt() {
+                return this.delegate[0].refCnt();
+            }
+
+            @Override
+            public SimpleSet<HeightmapPos> retain() throws AlreadyReleasedException {
+                this.delegate[0].retain();
+                return this;
+            }
+
+            @Override
+            public boolean release() throws AlreadyReleasedException {
+                return this.delegate[0].release();
+            }
+
+            @Override
+            public long count() {
+                long total = 0L;
+                for (int level = 0; level < MAX_LODS; level++) {
+                    total += this.delegate[level].count();
+                }
+                return total;
+            }
+
+            @Override
+            public void clear() {
+                for (int level = 0; level < MAX_LODS; level++) {
+                    this.delegate[level].clear();
+                }
+            }
+
+            @Override
+            public boolean add(@NonNull HeightmapPos pos) {
+                return this.delegate[pos.level()].add(pos.x(), pos.z());
+            }
+
+            @Override
+            public boolean remove(@NonNull HeightmapPos pos) {
+                return this.delegate[pos.level()].remove(pos.x(), pos.z());
+            }
+
+            @Override
+            public boolean contains(@NonNull HeightmapPos pos) {
+                return this.delegate[pos.level()].contains(pos.x(), pos.z());
+            }
+        };
     }
 }

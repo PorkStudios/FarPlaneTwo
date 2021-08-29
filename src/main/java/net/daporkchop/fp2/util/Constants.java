@@ -43,6 +43,7 @@ import net.daporkchop.lib.compression.zstd.ZstdDeflater;
 import net.daporkchop.lib.compression.zstd.ZstdInflater;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.client.Minecraft;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
@@ -54,6 +55,7 @@ import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.simple.SimpleLogger;
@@ -124,6 +126,9 @@ public class Constants {
     public static final Ref<ArrayAllocator<int[]>> ALLOC_INT = ThreadRef.soft(() -> ArrayAllocator.pow2(int[]::new, ReferenceType.STRONG, 32));
     public static final Ref<ArrayAllocator<float[]>> ALLOC_FLOAT = ThreadRef.soft(() -> ArrayAllocator.pow2(float[]::new, ReferenceType.STRONG, 32));
     public static final Ref<ArrayAllocator<double[]>> ALLOC_DOUBLE = ThreadRef.soft(() -> ArrayAllocator.pow2(double[]::new, ReferenceType.STRONG, 32));
+
+    @SideOnly(Side.CLIENT)
+    public static final Minecraft MC = Minecraft.getMinecraft();
 
     public static void bigWarning(String format, Object... data) {
         StackTraceElement[] trace = Thread.currentThread().getStackTrace();

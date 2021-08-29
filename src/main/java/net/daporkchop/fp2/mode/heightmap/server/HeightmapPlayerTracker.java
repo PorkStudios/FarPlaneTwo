@@ -54,7 +54,7 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos> 
         HeightmapPos[] positions = new HeightmapPos[sq(d * 2 + 1) * levels];
         int i = 0;
 
-        for (int lvl = FP2_DEBUG && FP2Config.debug.skipLevel0 ? 1 : 0; lvl < levels; lvl++) {
+        for (int lvl = 0; lvl < levels; lvl++) {
             final int baseX = asrRound(playerX, T_SHIFT + lvl);
             final int baseZ = asrRound(playerZ, T_SHIFT + lvl);
 

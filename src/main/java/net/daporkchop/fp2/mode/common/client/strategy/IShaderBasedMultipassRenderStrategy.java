@@ -21,57 +21,59 @@
 package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.commandbuffer.IDrawCommandBuffer;
-import net.daporkchop.fp2.client.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.client.gl.command.IDrawCommand;
+import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
+import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
 
 /**
  * @author DaPorkchop_
  */
-public interface IShaderBasedMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile> extends IMultipassRenderStrategy<POS, T> {
+public interface IShaderBasedMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile, B extends IBakeOutput, C extends IDrawCommand> extends IMultipassRenderStrategy<POS, T, B, C> {
     @Override
-    default void renderSolid(@NonNull IDrawCommandBuffer draw, int level) {
-        try (ShaderProgram program = this.blockShader().use()) {
-            IMultipassRenderStrategy.super.renderSolid(draw, level);
+    default void renderSolid(@NonNull IRenderIndex<POS, B, C> index, int level) {
+        try (RenderShaderProgram program = this.blockShader().use()) {
+            IMultipassRenderStrategy.super.renderSolid(index, level);
         }
     }
 
     @Override
-    default void renderCutout(@NonNull IDrawCommandBuffer draw, int level) {
-        try (ShaderProgram program = this.blockShader().use()) {
-            IMultipassRenderStrategy.super.renderCutout(draw, level);
+    default void renderCutout(@NonNull IRenderIndex<POS, B, C> index, int level) {
+        try (RenderShaderProgram program = this.blockShader().use()) {
+            IMultipassRenderStrategy.super.renderCutout(index, level);
         }
     }
 
     @Override
-    default void renderTransparentStencilPass(@NonNull IDrawCommandBuffer[] draw) {
-        try (ShaderProgram program = this.stencilShader().use()) {
-            IMultipassRenderStrategy.super.renderTransparentStencilPass(draw);
+    default void renderTransparentStencilPass(@NonNull IRenderIndex<POS, B, C> index) {
+        try (RenderShaderProgram program = this.stencilShader().use()) {
+            IMultipassRenderStrategy.super.renderTransparentStencilPass(index);
         }
     }
 
     @Override
-    default void renderTransparentFragmentPass(@NonNull IDrawCommandBuffer[] draw) {
-        try (ShaderProgram program = this.blockShaderTransparent().use()) {
-            IMultipassRenderStrategy.super.renderTransparentFragmentPass(draw);
+    default void renderTransparentFragmentPass(@NonNull IRenderIndex<POS, B, C> index) {
+        try (RenderShaderProgram program = this.blockShaderTransparent().use()) {
+            IMultipassRenderStrategy.super.renderTransparentFragmentPass(index);
         }
     }
 
     /**
      * @return the shader used for rendering blocks
      */
-    ShaderProgram blockShader();
+    RenderShaderProgram blockShader();
 
     /**
      * @return the shader used for rendering blocks
      */
-    default ShaderProgram blockShaderTransparent() {
+    default RenderShaderProgram blockShaderTransparent() {
         return this.blockShader();
     }
 
     /**
      * @return the shader used for preparing the stencil buffer
      */
-    ShaderProgram stencilShader();
+    RenderShaderProgram stencilShader();
 }

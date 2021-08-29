@@ -23,7 +23,7 @@ package net.daporkchop.fp2.client;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
 
-import static net.daporkchop.fp2.client.ClientConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
 
@@ -40,8 +40,8 @@ public enum DrawMode implements AutoCloseable {
 
             TexUVs.bind();
 
-            ShaderGlStateHelper.update(mc.getRenderPartialTicks(), mc);
-            ShaderFP2StateHelper.update(mc.getRenderPartialTicks(), mc);
+            ShaderGlStateHelper.update(MC.getRenderPartialTicks(), MC);
+            ShaderFP2StateHelper.update(MC.getRenderPartialTicks(), MC);
 
             ShaderGlStateHelper.bind();
             ShaderFP2StateHelper.bind();
@@ -95,14 +95,14 @@ public enum DrawMode implements AutoCloseable {
         ACTIVE_RENDER_MODE = this;
 
         GlStateManager.depthFunc(GL_LESS);
-        mc.entityRenderer.enableLightmap();
+        MC.entityRenderer.enableLightmap();
 
         return this;
     }
 
     @Override
     public void close() {
-        mc.entityRenderer.disableLightmap();
+        MC.entityRenderer.disableLightmap();
         GlStateManager.depthFunc(GL_LEQUAL);
 
         ACTIVE_RENDER_MODE = null;

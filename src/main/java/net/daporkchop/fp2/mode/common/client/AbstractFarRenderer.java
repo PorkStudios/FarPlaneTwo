@@ -30,12 +30,13 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.util.datastructure.DirectLongStack;
+import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.BlockRenderLayer;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.lwjgl.opengl.GL15.*;
 
 /**
@@ -52,8 +53,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
 
     protected final GLBuffer drawCommandBuffer = new GLBuffer(GL_STREAM_DRAW);
 
-    protected final DirectLongStack index = new DirectLongStack();
-    protected final IFarRenderStrategy<POS, T> strategy;
+    protected final IFarRenderStrategy<POS, T, ?, ?> strategy;
 
     public AbstractFarRenderer(@NonNull IFarClientContext<POS, T> context) {
         this.context = context;
@@ -66,7 +66,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
     /**
      * @return the {@link IFarRenderStrategy} used by this renderer
      */
-    protected abstract IFarRenderStrategy<POS, T> strategy0();
+    protected abstract IFarRenderStrategy<POS, T, ?, ?> strategy0();
 
     /**
      * @return a new {@link BakeManager}
@@ -77,26 +77,19 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
 
     @Override
     public void prepare(float partialTicks, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
-        checkGLError("pre fp2 build index");
+        checkGLError("pre fp2 select");
 
-        this.index.clear();
-        this.bakeManager.tree.select(frustum, this.index);
+        this.bakeManager.index.select(frustum, partialTicks);
 
-        if (this.index.isEmpty()) {
-            return; //nothing to render...
-        }
-
-        this.index.doWithValues(this.strategy::prepareRender);
-        checkGLError("post fp2 prepare");
+        checkGLError("post fp2 select");
     }
 
     @Override
     public void render(@NonNull Minecraft mc, @NonNull BlockRenderLayer layer, boolean pre) {
-        if (this.index.isEmpty()) {
-            return; //nothing to render...
-        }
+        checkGLError("pre fp2 render");
 
-        this.strategy.render(layer, pre);
+        this.strategy.render(uncheckedCast(this.bakeManager.index), layer, pre);
+
         checkGLError("post fp2 render");
     }
 

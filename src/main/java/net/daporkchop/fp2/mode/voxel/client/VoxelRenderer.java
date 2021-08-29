@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.voxel.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
-import net.daporkchop.fp2.mode.common.client.IFarRenderStrategy;
+import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 
@@ -41,19 +41,8 @@ public abstract class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelT
         }
 
         @Override
-        protected IFarRenderStrategy<VoxelPos, VoxelTile> strategy0() {
-            return new ShaderBasedIndexedMultidrawVoxelRenderStrategy();
-        }
-    }
-
-    public static class TransformFeedback extends VoxelRenderer {
-        public TransformFeedback(@NonNull IFarClientContext<VoxelPos, VoxelTile> context) {
-            super(context);
-        }
-
-        @Override
-        protected IFarRenderStrategy<VoxelPos, VoxelTile> strategy0() {
-            return new TransformFeedbackVoxelRenderStrategy();
+        protected IFarRenderStrategy<VoxelPos, VoxelTile, ?, ?> strategy0() {
+            return new ShaderBasedVoxelRenderStrategy(this.mode);
         }
     }
 }

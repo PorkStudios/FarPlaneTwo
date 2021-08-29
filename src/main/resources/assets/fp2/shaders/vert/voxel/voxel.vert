@@ -24,6 +24,8 @@
 //
 //
 
+layout(location = 0) in ivec4 tile_position;
+
 layout(location = 1) in int in_state;
 layout(location = 2) in vec2 in_light;
 layout(location = 3) in vec3 in_color;
@@ -39,7 +41,7 @@ void main() {
     fog_out.depth = length(relativePos);
 
     //vertex position is detail mixed
-    gl_Position = cameraTransform(relativePos) + glState.camera.anti_flicker_offset * vec4(31. - float(tile_position.w));
+    gl_Position = cameraTransform(relativePos);
 
     //pass relative position to fragment shader (used to compute face normal)
     vs_out.pos = vs_out.base_pos = vec3(relativePos);

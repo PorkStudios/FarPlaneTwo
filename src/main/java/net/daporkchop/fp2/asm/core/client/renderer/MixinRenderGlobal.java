@@ -20,40 +20,79 @@
 
 package net.daporkchop.fp2.asm.core.client.renderer;
 
+import net.daporkchop.fp2.asm.interfaz.client.renderer.IMixinRenderGlobal;
+import net.daporkchop.fp2.client.VanillaRenderabilityTracker;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
+import net.daporkchop.fp2.util.alloc.DirectMemoryAllocator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.RenderGlobal;
 import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.BlockRenderLayer;
+import org.objectweb.asm.Opcodes;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import static net.daporkchop.lib.common.util.PorkUtil.*;
+
 /**
  * @author DaPorkchop_
  */
 @Mixin(RenderGlobal.class)
-public abstract class MixinRenderGlobal {
+public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
     @Shadow
     public WorldClient world;
+
+    @Shadow
+    @Final
+    public Minecraft mc;
+
+    @Unique
+    protected VanillaRenderabilityTracker vanillaRenderabilityTracker;
+
+    @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;setWorldAndLoadRenderers(Lnet/minecraft/client/multiplayer/WorldClient;)V",
+            at = @At(value = "FIELD",
+                    target = "Lnet/minecraft/client/renderer/RenderGlobal;viewFrustum:Lnet/minecraft/client/renderer/ViewFrustum;",
+                    opcode = Opcodes.PUTFIELD,
+                    shift = At.Shift.AFTER),
+            require = 1)
+    private void fp2_loadRenderers_onDestroyViewFrustum(CallbackInfo ci) {
+        this.vanillaRenderabilityTracker.release();
+        this.vanillaRenderabilityTracker = null;
+    }
+
+    @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;loadRenderers()V",
+            at = @At(value = "FIELD",
+                    target = "Lnet/minecraft/client/renderer/RenderGlobal;viewFrustum:Lnet/minecraft/client/renderer/ViewFrustum;",
+                    opcode = Opcodes.PUTFIELD,
+                    shift = At.Shift.BEFORE),
+            require = 1)
+    private void fp2_loadRenderers_onCreateViewFrustum(CallbackInfo ci) {
+        if (this.vanillaRenderabilityTracker != null) {
+            this.vanillaRenderabilityTracker.release();
+        }
+        this.vanillaRenderabilityTracker = new VanillaRenderabilityTracker(new DirectMemoryAllocator());
+    }
 
     @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;setupTerrain(Lnet/minecraft/entity/Entity;DLnet/minecraft/client/renderer/culling/ICamera;IZ)V",
             at = @At("HEAD"))
     private void fp2_setupTerrain_prepare(Entity viewEntity, double partialTicks, ICamera camera, int frameCount, boolean playerSpectator, CallbackInfo ci) {
         IFarClientContext<?, ?> context = ((IFarWorldClient) this.world).activeContext();
         if (context != null) {
-            Minecraft mc = Minecraft.getMinecraft();
+            this.vanillaRenderabilityTracker.update(uncheckedCast(this));
 
-            mc.profiler.startSection("fp2_prepare");
-            context.renderer().prepare((float) partialTicks, mc, (IFrustum) camera);
-            mc.profiler.endSection();
+            this.mc.profiler.startSection("fp2_prepare");
+            context.renderer().prepare((float) partialTicks, this.mc, (IFrustum) camera);
+            this.mc.profiler.endSection();
         }
     }
 
@@ -85,5 +124,10 @@ public abstract class MixinRenderGlobal {
             context.renderer().render(mc, layer, false);
             mc.profiler.endSection();
         }
+    }
+
+    @Override
+    public VanillaRenderabilityTracker fp2_vanillaRenderabilityTracker() {
+        return this.vanillaRenderabilityTracker;
     }
 }

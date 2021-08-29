@@ -170,6 +170,11 @@ public class HeightmapPos implements IFarPos {
     }
 
     @Override
+    public long localHash() {
+        return interleaveBits(this.x, this.z);
+    }
+
+    @Override
     public int compareTo(IFarPos posIn) {
         int d = Integer.compare(this.level, posIn.level());
         if (d == 0) {

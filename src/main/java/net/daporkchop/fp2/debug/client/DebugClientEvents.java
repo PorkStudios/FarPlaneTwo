@@ -21,10 +21,10 @@
 package net.daporkchop.fp2.debug.client;
 
 import net.daporkchop.fp2.asm.core.client.gui.IGuiScreen;
-import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
-import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.debug.util.DebugUtils;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.net.client.CPacketDropAllTiles;
@@ -52,7 +52,7 @@ public class DebugClientEvents {
     @SubscribeEvent
     public void keyInput(InputEvent.KeyInputEvent event) {
         if (DebugKeyBindings.RELOAD_SHADERS.isPressed()) {
-            ShaderManager.reload();
+            ShaderManager.reload(true);
         }
         if (DebugKeyBindings.DROP_TILES.isPressed()) {
             NETWORK_WRAPPER.sendToServer(new CPacketDropAllTiles());
@@ -80,6 +80,16 @@ public class DebugClientEvents {
         if (DebugKeyBindings.TOGGLE_LEVEL_0.isPressed()) {
             FP2Config.debug.skipLevel0 ^= true;
             DebugUtils.clientMsg((FP2Config.debug.skipLevel0 ? "§cDisabled" : "§aEnabled") + " level 0 rendering.");
+        }
+        if (DebugKeyBindings.TOGGLE_DEBUG_COLORS.isPressed()) {
+            FP2Config.Debug.DebugColorMode[] modes = FP2Config.Debug.DebugColorMode.values();
+            FP2Config.Debug.DebugColorMode oldMode = FP2Config.debug.debugColorMode;
+            FP2Config.Debug.DebugColorMode newMode = FP2Config.debug.debugColorMode = modes[(oldMode.ordinal() + 1) % modes.length];
+            ShaderManager.changeDefines()
+                    .undefine("USE_DEBUG_COLORS_" + oldMode)
+                    .define("USE_DEBUG_COLORS_" + newMode)
+                    .apply();
+            DebugUtils.clientMsg("§aSwitched debug color mode to §7" + FP2Config.debug.debugColorMode);
         }
     }
 
