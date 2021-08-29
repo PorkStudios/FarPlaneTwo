@@ -65,7 +65,7 @@ vec3(0., .5, 1.), vec3(.5, 0., 1.), vec3(5., 1., .5), vec3(5., 1., .5)
 //
 //
 
-vec3 computeVertexColor(vec3 va_color) {
+vec3 computeVertexColor(vec3 va_color, ivec4 tile_position) {
 #if defined(USE_DEBUG_COLORS_DISTANCE)
     return DEBUG_COLORS[tile_position.w];
 #elif defined(USE_DEBUG_COLORS_POSITIONS)

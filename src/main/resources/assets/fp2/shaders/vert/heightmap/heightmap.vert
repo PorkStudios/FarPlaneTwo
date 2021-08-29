@@ -60,5 +60,5 @@ void main() {
     //copy trivial attributes
     vs_out.light = in_light;
     vs_out.state = in_state;
-    vs_out.color = computeVertexColor(in_color.rgb);
+    vs_out.color = computeVertexColor(in_color.rgb, ivec4(in_tile_position.x, 0, in_tile_position.yz));
 }
