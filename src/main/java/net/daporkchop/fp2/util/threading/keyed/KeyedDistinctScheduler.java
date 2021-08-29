@@ -37,9 +37,12 @@ public class KeyedDistinctScheduler<K> extends AbstractRefCounted {
     protected final Map<K, Task> map = new ObjObjConcurrentHashMap<>(); //ObjObjConcurrentHashMap has a faster computeIfAbsent implementation
     protected final Consumer<K> task;
 
-    public KeyedDistinctScheduler(@NonNull KeyedExecutor<? super K> executor, @NonNull Consumer<K> task) {
+    protected final int priority;
+
+    public KeyedDistinctScheduler(@NonNull KeyedExecutor<? super K> executor, @NonNull Consumer<K> task, int priority) {
         this.executor = executor.retain();
         this.task = task;
+        this.priority = priority;
     }
 
     /**
@@ -76,7 +79,7 @@ public class KeyedDistinctScheduler<K> extends AbstractRefCounted {
             this.key = key;
 
             //enqueue self
-            KeyedDistinctScheduler.this.executor.submit(this.key, this);
+            KeyedDistinctScheduler.this.executor.submit(this.key, this, KeyedDistinctScheduler.this.priority);
         }
 
         @Override

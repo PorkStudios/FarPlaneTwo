@@ -37,22 +37,22 @@ public class SortedKeyedScheduler<K extends Comparable<? super K>> extends Defau
     }
 
     @Override
-    protected BlockingQueue<DefaultKeyedExecutor<K>.TaskQueue> createQueue() {
+    protected BlockingQueue<DefaultKeyedExecutor.TaskQueue<K>> createQueue() {
         return new ConcurrentUnboundedPriorityBlockingQueue<>();
     }
 
     @Override
-    protected DefaultKeyedExecutor<K>.TaskQueue createQueue(@NonNull K key, @NonNull Runnable task) {
+    protected DefaultKeyedExecutor.TaskQueue<K> createQueue(@NonNull K key, @NonNull Runnable task) {
         return new TaskQueue(key, task);
     }
 
-    protected class TaskQueue extends DefaultKeyedExecutor<K>.TaskQueue implements Comparable<TaskQueue> {
+    protected static class TaskQueue<K extends Comparable<? super K>> extends DefaultKeyedExecutor.TaskQueue<K> implements Comparable<TaskQueue<K>> {
         public TaskQueue(@NonNull K key, @NonNull Runnable task) {
             super(key, task);
         }
 
         @Override
-        public int compareTo(TaskQueue o) {
+        public int compareTo(TaskQueue<K> o) {
             return this.key.compareTo(o.key);
         }
     }

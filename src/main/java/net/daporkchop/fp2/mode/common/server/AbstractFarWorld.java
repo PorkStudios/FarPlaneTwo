@@ -61,6 +61,9 @@ import static net.daporkchop.fp2.util.Constants.*;
  */
 @Getter
 public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> implements IFarWorld<POS, T>, IWorldChangeListener {
+    protected static final int PRIORITY_UPDATE = 1;
+    protected static final int PRIORITY_LOAD = -1;
+
     protected final WorldServer world;
     protected final IFarRenderMode<POS, T> mode;
     protected final File root;
@@ -111,8 +114,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
                 .threadFactory(PThreadFactories.builder().daemon().minPriority()
                         .collapsingId().name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build()),
                 Comparator.comparingInt(POS::level));
-        this.loader = new KeyedReferencingFutureScheduler<>(this.executor, worker::roughGetTile);
-        this.updater = new KeyedDistinctScheduler<>(this.executor, worker::updateTile);
+        this.loader = new KeyedReferencingFutureScheduler<>(this.executor, worker::roughGetTile, PRIORITY_LOAD);
+        this.updater = new KeyedDistinctScheduler<>(this.executor, worker::updateTile, PRIORITY_UPDATE);
 
         //add all dirty tiles to update queue
         this.storage.dirtyTracker().forEachDirtyPos((pos, timestamp) -> this.enqueueUpdate(pos));

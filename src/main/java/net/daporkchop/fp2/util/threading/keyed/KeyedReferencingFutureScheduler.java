@@ -54,9 +54,12 @@ public class KeyedReferencingFutureScheduler<K, V> extends AbstractRefCounted {
     protected final Map<K, Task> map = new ConcurrentHashMap<>();
     protected final Function<K, V> task;
 
-    public KeyedReferencingFutureScheduler(@NonNull KeyedExecutor<? super K> executor, @NonNull Function<K, V> task) {
+    protected final int priority;
+
+    public KeyedReferencingFutureScheduler(@NonNull KeyedExecutor<? super K> executor, @NonNull Function<K, V> task, int priority) {
         this.executor = executor.retain();
         this.task = task;
+        this.priority = priority;
     }
 
     public CompletableFuture<V> retain(@NonNull K key) {
@@ -176,7 +179,7 @@ public class KeyedReferencingFutureScheduler<K, V> extends AbstractRefCounted {
             this.refCnt = 1;
 
             //schedule self for execution
-            KeyedReferencingFutureScheduler.this.executor.submit(key, this);
+            KeyedReferencingFutureScheduler.this.executor.submit(key, this, KeyedReferencingFutureScheduler.this.priority);
         }
 
         @Override

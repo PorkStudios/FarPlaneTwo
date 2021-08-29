@@ -295,7 +295,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         private void fillLoadQueue() {
             this.assertOnTrackerThread();
 
-            for (POS pos; this.waitingPositions.size() < FP2Config.generationThreads && (pos = this.queuedPositions.poll()) != null; ) {
+            for (POS pos; this.waitingPositions.size() < (FP2Config.generationThreads << 2) && (pos = this.queuedPositions.poll()) != null; ) {
                 checkState(this.waitingPositions.add(pos), "position already queued?!?");
                 AbstractPlayerTracker.this.beginTracking(this, pos);
             }

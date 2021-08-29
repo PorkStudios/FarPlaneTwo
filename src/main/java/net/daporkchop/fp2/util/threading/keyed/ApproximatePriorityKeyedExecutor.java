@@ -21,14 +21,15 @@
 package net.daporkchop.fp2.util.threading.keyed;
 
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.util.datastructure.ConcurrentUnboundedPriorityBlockingQueue;
 import net.daporkchop.fp2.util.threading.workergroup.WorkerGroupBuilder;
-import net.minecraft.world.World;
+import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.Comparator;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -50,32 +51,56 @@ public class ApproximatePriorityKeyedExecutor<K> extends DefaultKeyedExecutor<K>
     }
 
     @Override
-    protected BlockingQueue<DefaultKeyedExecutor<K>.TaskQueue> createQueue() {
+    protected BlockingQueue<DefaultKeyedExecutor.TaskQueue<K>> createQueue() {
         return new ConcurrentUnboundedPriorityBlockingQueue<>();
     }
 
     @Override
-    protected DefaultKeyedExecutor<K>.TaskQueue createQueue(@NonNull K key, @NonNull Runnable task) {
+    protected DefaultKeyedExecutor.TaskQueue<K> createQueue(@NonNull K key, @NonNull Runnable task) {
         return new TaskQueue(key, task);
     }
 
     @Override
-    public boolean updatePriorityFor(@NonNull K keyIn, int priority) {
-        super.updatePriorityFor(keyIn, priority);
-        this.queues.computeIfPresent(keyIn, (key, q) -> {
-            TaskQueue queue = (TaskQueue) q;
-            if (queue.priority != priority && this.queue.remove(queue)) {
-                queue.priority = priority;
-                checkState(this.queue.add(queue), "unable to re-insert task?!?");
-            }
-            return queue;
-        });
-        return true;
+    public void submit(@NonNull K key, @NonNull Runnable task) {
+        this.submit(key, task, 0);
     }
 
-    protected class TaskQueue extends DefaultKeyedExecutor<K>.TaskQueue implements Comparable<TaskQueue> {
-        protected final long tieBreak = ApproximatePriorityKeyedExecutor.this.ctr.getAndIncrement();
-        protected int priority = Integer.MAX_VALUE;
+    @Override
+    public void submitExclusive(@NonNull K key, @NonNull Runnable task) {
+        super.submitExclusive(key, new PrioritizedRunnable(task, this.ctr.getAndIncrement(), 0));
+    }
+
+    @Override
+    public void submit(@NonNull K key, @NonNull Runnable task, int priority) {
+        super.submit(key, new PrioritizedRunnable(task, this.ctr.getAndIncrement(), priority));
+    }
+
+    @RequiredArgsConstructor
+    protected static class PrioritizedRunnable implements Runnable, Comparable<PrioritizedRunnable> {
+        @NonNull
+        protected final Runnable delegate;
+        protected final long tieBreak;
+        protected final int priority;
+
+        @Override
+        public void run() {
+            this.delegate.run();
+        }
+
+        @Override
+        public int compareTo(PrioritizedRunnable o) {
+            int d;
+            if ((d = Integer.compare(this.priority, o.priority)) != 0
+                || (d = Long.compare(this.tieBreak, o.tieBreak)) != 0) {
+                return d;
+            }
+            return 0;
+        }
+    }
+
+    protected class TaskQueue extends DefaultKeyedExecutor.TaskQueue<K> implements Comparable<TaskQueue> {
+        protected long tieBreak;
+        protected int priority;
 
         public TaskQueue(@NonNull K key, @NonNull Runnable task) {
             super(key, task);
@@ -94,9 +119,49 @@ public class ApproximatePriorityKeyedExecutor<K> extends DefaultKeyedExecutor<K>
             return 0;
         }
 
+        //all of the following methods are safe because they are never called without holding the lock on this queue
+
+        protected void recheckPriority() {
+            if (this.isEmpty()) { //no tasks in queue, nothing to do!
+                return;
+            }
+
+            boolean shouldAdd = ApproximatePriorityKeyedExecutor.this.queue.remove(this);
+
+            //find the best task, then remove it so we can place it at the front of the queue
+            PrioritizedRunnable bestTask = PorkUtil.<Stream<PrioritizedRunnable>>uncheckedCast(this.stream()).min(Comparator.naturalOrder()).get();
+            checkState(super.remove(bestTask));
+            this.addFirst(bestTask);
+
+            this.tieBreak = bestTask.tieBreak;
+            this.priority = bestTask.priority;
+
+            if (shouldAdd) {
+                super.schedule(ApproximatePriorityKeyedExecutor.this.queue);
+            }
+        }
+
         @Override
-        public String toString() {
-            return this.key + "@" + this.priority;
+        public DefaultKeyedExecutor.TaskQueue schedule(@NonNull BlockingQueue<DefaultKeyedExecutor.TaskQueue<K>> queue) {
+            this.recheckPriority();
+            return super.schedule(queue);
+        }
+
+        @Override
+        public boolean add(@NonNull Runnable runnable) {
+            super.add(runnable);
+            this.recheckPriority();
+            return true;
+        }
+
+        @Override
+        public boolean remove(Object o) {
+            if (super.remove(o)) {
+                this.recheckPriority();
+                return true;
+            } else {
+                return false;
+            }
         }
     }
 }

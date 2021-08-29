@@ -129,16 +129,10 @@ public final class Compressed<POS extends IFarPos, V extends IReusablePersistent
      *
      * @param dst the {@link ByteBuf} to write to
      */
-    public void write(@NonNull ByteBuf dst) {
-        long extra;
-        long timestamp;
-        long data;
-
-        synchronized (this) { //lock to ensure we get a consistent view of the data
-            extra = this.extra;
-            timestamp = this.timestamp;
-            data = this.data;
-        }
+    public synchronized void write(@NonNull ByteBuf dst) {
+        long extra = this.extra;
+        long timestamp = this.timestamp;
+        long data = this.data;
 
         writeVarLong(dst, extra);
         writeVarLongZigZag(dst, timestamp);
@@ -197,25 +191,19 @@ public final class Compressed<POS extends IFarPos, V extends IReusablePersistent
     /**
      * @return the inflated, parsed value
      */
-    public V inflateValue(@NonNull SimpleRecycler<V> recycler) {
+    public synchronized V inflateValue(@NonNull SimpleRecycler<V> recycler) {
         return this.inflateValue0(recycler, this.data);
     }
 
     /**
      * @return the inflated, parsed value
      */
-    public Handle<POS, V> inflateHandle(@NonNull SimpleRecycler<V> recycler) {
-        long extra;
-        long timestamp;
-        long data;
+    public synchronized Handle<POS, V> inflateHandle(@NonNull SimpleRecycler<V> recycler) {
+        checkState(this.isGenerated(), "value hasn't been generated!");
 
-        synchronized (this) { //lock to ensure we get a consistent view of the data
-            checkState(this.isGenerated(), "value hasn't been generated!");
-
-            extra = this.extra;
-            timestamp = this.timestamp;
-            data = this.data;
-        }
+        long extra = this.extra;
+        long timestamp = this.timestamp;
+        long data = this.data;
 
         return new Handle<>(this.pos, this.inflateValue0(recycler, data), extra, timestamp, recycler);
     }

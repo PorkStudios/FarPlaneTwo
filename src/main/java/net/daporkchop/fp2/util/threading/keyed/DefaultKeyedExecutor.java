@@ -21,13 +21,12 @@
 package net.daporkchop.fp2.util.threading.keyed;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.util.threading.workergroup.WorkerGroupBuilder;
 import net.daporkchop.fp2.util.threading.workergroup.WorldWorkerGroup;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
-import net.minecraft.world.World;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -35,7 +34,6 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -46,8 +44,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 //nothing here needs to be manually synchronized - it's all accessed from inside (ObjObj)ConcurrentHashMap#compute, which synchronizes on the bucket
 public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements KeyedExecutor<K>, Runnable {
-    protected final Map<K, TaskQueue> queues;
-    protected final BlockingQueue<TaskQueue> queue;
+    protected final Map<K, TaskQueue<K>> queues;
+    protected final BlockingQueue<TaskQueue<K>> queue;
 
     protected final WorldWorkerGroup group;
     protected volatile boolean running = true;
@@ -60,16 +58,16 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
         this.group = builder.build(this);
     }
 
-    protected Map<K, TaskQueue> createQueues() {
+    protected Map<K, TaskQueue<K>> createQueues() {
         return new ConcurrentHashMap<>();
     }
 
-    protected BlockingQueue<TaskQueue> createQueue() {
+    protected BlockingQueue<TaskQueue<K>> createQueue() {
         return new LinkedBlockingQueue<>();
     }
 
-    protected TaskQueue createQueue(@NonNull K key, @NonNull Runnable task) {
-        return new TaskQueue(key, task);
+    protected TaskQueue<K> createQueue(@NonNull K key, @NonNull Runnable task) {
+        return new TaskQueue<>(key, task);
     }
 
     @Override
@@ -77,7 +75,7 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
         this.ensureNotReleased();
         this.queues.compute(keyIn, (key, queue) -> {
             if (queue == null) { //create new queue
-                queue = this.createQueue(key, task).schedule();
+                queue = this.createQueue(key, task).schedule(this.queue);
             } else { //add to existing queue
                 queue.add(task);
             }
@@ -90,7 +88,7 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
         this.ensureNotReleased();
         this.queues.compute(keyIn, (key, queue) -> {
             if (queue == null) { //create new queue
-                queue = this.createQueue(key, task).schedule();
+                queue = this.createQueue(key, task).schedule(this.queue);
             } else { //replace contents of existing queue
                 queue.clear();
                 queue.add(task);
@@ -122,12 +120,6 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
     }
 
     @Override
-    public boolean updatePriorityFor(@NonNull K key, int priority) {
-        this.ensureNotReleased();
-        return false; //not supported
-    }
-
-    @Override
     public KeyedExecutor<K> retain() throws AlreadyReleasedException {
         super.retain();
         return this;
@@ -154,9 +146,45 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
             try {
                 //poll the queue, but don't wait indefinitely because we need to be able to exit if the executor stops running.
                 // we don't want to use interrupts, because they can cause unwanted side-effects (such as closing NIO channels).
-                TaskQueue queue = this.queue.poll(1L, TimeUnit.SECONDS);
+                TaskQueue<K> queue = this.queue.poll(1L, TimeUnit.SECONDS);
                 if (queue != null) {
-                    queue.run(taskBuffer);
+                    this.queues.compute(queue.key, (key, q) -> {
+                        checkState(queue == q, "task queue has been replaced?!?");
+
+                        if (q.isEmpty()) { //all tasks in the queue have been cancelled, so we can remove it
+                            return null;
+                        } else {
+                            //move all tasks from queue into temporary task buffer
+                            taskBuffer.add(q.poll());
+
+                            return q;
+                        }
+                    });
+
+                    if (taskBuffer.isEmpty()) { //all the tasks were cancelled before we got around to handling this key, so nothing needs to be processed
+                        continue;
+                    }
+
+                    Exception t0 = null;
+                    try {
+                        taskBuffer.poll().run();
+                    } catch (Exception t1) {
+                        t0 = t1;
+                    }
+
+                    this.queues.compute(queue.key, (key, q) -> {
+                        checkState(queue == q, "task queue has been replaced?!?");
+
+                        if (q.isEmpty()) { //no new tasks have been added to this queue, so we can remove it
+                            return null;
+                        } else { //re-schedule this queue to be run again
+                            return q.schedule(this.queue);
+                        }
+                    });
+
+                    if (t0 != null) {
+                        throw t0;
+                    }
                 }
             } catch (Exception e) {
                 FP2_LOG.error(Thread.currentThread().getName(), e);
@@ -166,7 +194,7 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
         }
     }
 
-    protected class TaskQueue extends ArrayDeque<Runnable> {
+    protected static class TaskQueue<K> extends ArrayDeque<Runnable> {
         protected final K key;
 
         public TaskQueue(@NonNull K key, @NonNull Runnable task) {
@@ -174,62 +202,11 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
             this.add(task);
         }
 
-        public TaskQueue schedule() {
+        public TaskQueue schedule(@NonNull BlockingQueue<TaskQueue<K>> queue) {
             //schedule this queue to be run
-            checkState(DefaultKeyedExecutor.this.queue.add(this), "failed to add queue for %s to execution queue!", this.key);
+            checkState(queue.add(this), "failed to add queue for %s to execution queue!", this.key);
 
             return this;
-        }
-
-        public void run(@NonNull Deque<Runnable> taskBuffer) {
-            DefaultKeyedExecutor.this.queues.compute(this.key, (key, queue) -> {
-                checkState(this == queue, "task queue has been replaced?!?");
-
-                if (queue.isEmpty()) { //all tasks in the queue have been cancelled, so we can remove it
-                    return null;
-                } else {
-                    //move all tasks from queue into temporary task buffer
-                    taskBuffer.addAll(queue);
-                    queue.clear();
-
-                    return queue;
-                }
-            });
-
-            if (taskBuffer.isEmpty()) { //all the tasks were cancelled before we got around to handling this key, so nothing needs to be processed
-                return;
-            }
-
-            Throwable t0 = null;
-            for (Runnable r : taskBuffer) {
-                if (!DefaultKeyedExecutor.this.running) { //executor is no longer running, exit ASAP by skipping remaining tasks
-                    break;
-                }
-
-                try {
-                    r.run();
-                } catch (Throwable t1) {
-                    if (t0 == null) {
-                        t0 = t1;
-                    } else {
-                        t0.addSuppressed(t1);
-                    }
-                }
-            }
-
-            DefaultKeyedExecutor.this.queues.compute(this.key, (key, queue) -> {
-                checkState(this == queue, "task queue has been replaced?!?");
-
-                if (queue.isEmpty()) { //no new tasks have been added to this queue, so we can remove it
-                    return null;
-                } else { //re-schedule this queue to be run again
-                    return queue.schedule();
-                }
-            });
-
-            if (t0 != null) {
-                PUnsafe.throwException(t0);
-            }
         }
     }
 }
