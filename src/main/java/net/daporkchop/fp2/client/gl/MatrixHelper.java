@@ -27,8 +27,10 @@ import net.daporkchop.fp2.util.DirectBufferReuse;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
@@ -42,14 +44,14 @@ import static org.lwjgl.opengl.GL11.*;
  */
 @UtilityClass
 public class MatrixHelper {
-    private final long MATRIX = PUnsafe.allocateMemory(MAT4_SIZE);
+    private final long TEMP_MATRIX = PUnsafe.allocateMemory(DMAT4_SIZE);
 
     public int matrixIndex(int x, int y) {
         return x * 4 + y;
     }
 
     public long matrixOffset(int x, int y) {
-        return matrixIndex(x, y) << 2L;
+        return (long) matrixIndex(x, y) << 2L;
     }
 
     public void reversedZ(float fovy, float aspect, float zNear) {
@@ -57,52 +59,65 @@ public class MatrixHelper {
         float radians = (float) Math.toRadians(fovy);
         float f = 1.0f / (float) Math.tan(radians * 0.5f);
 
-        PUnsafe.setMemory(MATRIX, MAT4_SIZE, (byte) 0);
+        PUnsafe.setMemory(TEMP_MATRIX, MAT4_SIZE, (byte) 0);
 
         if (ReversedZ.REVERSED) { //we are currently rendering the world, so we need to reverse the depth buffer
-            PUnsafe.putFloat(MATRIX + matrixOffset(0, 0), f / aspect);
-            PUnsafe.putFloat(MATRIX + matrixOffset(1, 1), f);
-            PUnsafe.putFloat(MATRIX + matrixOffset(3, 2), zNear);
-            PUnsafe.putFloat(MATRIX + matrixOffset(2, 3), -1.0f);
+            PUnsafe.putFloat(TEMP_MATRIX + matrixOffset(0, 0), f / aspect);
+            PUnsafe.putFloat(TEMP_MATRIX + matrixOffset(1, 1), f);
+            PUnsafe.putFloat(TEMP_MATRIX + matrixOffset(3, 2), zNear);
+            PUnsafe.putFloat(TEMP_MATRIX + matrixOffset(2, 3), -1.0f);
         } else { //otherwise, use normal perspective projection - but with infinite zFar
-            PUnsafe.putFloat(MATRIX + matrixOffset(0, 0), f / aspect);
-            PUnsafe.putFloat(MATRIX + matrixOffset(1, 1), f);
-            PUnsafe.putFloat(MATRIX + matrixOffset(2, 2), -1.0f);
-            PUnsafe.putFloat(MATRIX + matrixOffset(3, 2), -zNear);
-            PUnsafe.putFloat(MATRIX + matrixOffset(2, 3), -1.0f);
+            PUnsafe.putFloat(TEMP_MATRIX + matrixOffset(0, 0), f / aspect);
+            PUnsafe.putFloat(TEMP_MATRIX + matrixOffset(1, 1), f);
+            PUnsafe.putFloat(TEMP_MATRIX + matrixOffset(2, 2), -1.0f);
+            PUnsafe.putFloat(TEMP_MATRIX + matrixOffset(3, 2), -zNear);
+            PUnsafe.putFloat(TEMP_MATRIX + matrixOffset(2, 3), -1.0f);
         }
 
-        glMultMatrix(DirectBufferReuse.wrapFloat(MATRIX, MAT4_ELEMENTS));
+        glMultMatrix(DirectBufferReuse.wrapFloat(TEMP_MATRIX, MAT4_ELEMENTS));
     }
 
-    public FloatBuffer get(int id) {
-        FloatBuffer buffer = DirectBufferReuse.wrapFloat(MATRIX, MAT4_ELEMENTS);
-        get(id, buffer);
+    public FloatBuffer getFloatMatrixFromGL(int id) {
+        FloatBuffer buffer = DirectBufferReuse.wrapFloat(TEMP_MATRIX, MAT4_ELEMENTS);
+        glGetFloat(id, buffer);
         return buffer;
     }
 
-    public void get(int id, FloatBuffer dst) {
-        glGetFloat(id, dst);
+    public void getFloatMatrixFromGL(int id, @NonNull float[] dst) {
+        getFloatMatrixFromGL(id).get(dst);
+    }
+
+    public DoubleBuffer getDoubleMatrixFromGL(int id) {
+        DoubleBuffer buffer = DirectBufferReuse.wrapDouble(TEMP_MATRIX, MAT4_ELEMENTS);
+        glGetDouble(id, buffer);
+        return buffer;
+    }
+
+    public void getDoubleMatrixFromGL(int id, @NonNull double[] dst) {
+        getDoubleMatrixFromGL(id).get(dst);
     }
 
     public void getModelViewProjectionMatrix(long dst) {
         ArrayAllocator<float[]> alloc = ALLOC_FLOAT.get();
 
-        float[] modelView = alloc.atLeast(sq(4));
-        float[] projection = alloc.atLeast(sq(4));
-        float[] modelViewProjection = alloc.atLeast(sq(4));
+        float[] modelView = alloc.atLeast(MAT4_ELEMENTS);
+        float[] projection = alloc.atLeast(MAT4_ELEMENTS);
+        float[] modelViewProjection = alloc.atLeast(MAT4_ELEMENTS);
         try {
             //load modelView matrix into array
-            get(GL_MODELVIEW_MATRIX).get(modelView);
+            getFloatMatrixFromGL(GL_MODELVIEW_MATRIX).get(modelView);
 
             //load projection matrix into array
-            get(GL_PROJECTION_MATRIX).get(projection);
+            getFloatMatrixFromGL(GL_PROJECTION_MATRIX).get(projection);
 
             //multiply matrices
             multiply4x4(projection, modelView, modelViewProjection);
 
+            float offset = ReversedZ.REVERSED ? -0.00001f : 0.00001f;
+            modelViewProjection[14] += offset * abs(modelViewProjection[3] + modelViewProjection[7] + modelViewProjection[11] + modelViewProjection[15]);
+
             //copy result to destination address
-            PUnsafe.copyMemory(modelViewProjection, PUnsafe.ARRAY_FLOAT_BASE_OFFSET, null, dst, (long) sq(4) * FLOAT_SIZE);
+            PUnsafe.copyMemory(modelViewProjection, PUnsafe.ARRAY_FLOAT_BASE_OFFSET, null, dst, (long) MAT4_ELEMENTS * FLOAT_SIZE);
         } finally {
             alloc.release(modelViewProjection);
             alloc.release(projection);
@@ -112,7 +127,7 @@ public class MatrixHelper {
 
     public void multiply4x4(@NonNull float[] a, @NonNull float[] b, @NonNull float[] dst) {
         //check array length at head to allow JIT to optimize array bounds checks out in method body
-        checkArg(a.length >= sq(4) && b.length >= sq(4) && dst.length >= sq(4));
+        checkArg(a.length >= MAT4_ELEMENTS && b.length >= MAT4_ELEMENTS && dst.length >= MAT4_ELEMENTS);
 
         //parentheses are to allow out-of-order execution to make more of a difference due to the JVM's strict floating-point precision rules
         dst[0] = (b[0] * a[0] + b[1] * a[4]) + (b[2] * a[8] + b[3] * a[12]);
@@ -135,7 +150,7 @@ public class MatrixHelper {
 
     public void multiply4x4(@NonNull double[] a, @NonNull double[] b, @NonNull double[] dst) {
         //check array length at head to allow JIT to optimize array bounds checks out in method body
-        checkArg(a.length >= sq(4) && b.length >= sq(4) && dst.length >= sq(4));
+        checkArg(a.length >= MAT4_ELEMENTS && b.length >= MAT4_ELEMENTS && dst.length >= MAT4_ELEMENTS);
 
         //parentheses are to allow out-of-order execution to make more of a difference due to the JVM's strict floating-point precision rules
         dst[0] = (b[0] * a[0] + b[1] * a[4]) + (b[2] * a[8] + b[3] * a[12]);
@@ -154,5 +169,14 @@ public class MatrixHelper {
         dst[13] = (b[12] * a[1] + b[13] * a[5]) + (b[14] * a[9] + b[15] * a[13]);
         dst[14] = (b[12] * a[2] + b[13] * a[6]) + (b[14] * a[10] + b[15] * a[14]);
         dst[15] = (b[12] * a[3] + b[13] * a[7]) + (b[14] * a[11] + b[15] * a[15]);
+    }
+
+    public void offsetDepth(@NonNull float[] mat, float offset) {
+        //check array length at head to allow JIT to optimize array bounds checks out in method body
+        checkArg(mat.length >= MAT4_ELEMENTS);
+
+        //multiply offset by w to work around division by w on GPU
+        float w = (mat[3] + mat[7]) + (mat[11] + mat[15]);
+        mat[14] += offset * abs(w);
     }
 }

@@ -136,6 +136,11 @@ public interface IFarPos extends Comparable<IFarPos> {
     int manhattanDistance(@NonNull IFarPos posIn);
 
     /**
+     * @return a locality-sensitive hash of this position
+     */
+    long localHash();
+
+    /**
      * Compares two positions in some arbitrary manner.
      * <p>
      * The function may be implemented in any way, but must be consistent and must only return {@code 0} for positions that are also considered

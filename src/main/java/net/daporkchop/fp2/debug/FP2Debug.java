@@ -21,6 +21,9 @@
 package net.daporkchop.fp2.debug;
 
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.daporkchop.fp2.config.ConfigListenerManager;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.debug.client.DebugClientEvents;
 import net.daporkchop.fp2.debug.client.DebugKeyBindings;
 import net.minecraftforge.common.MinecraftForge;
@@ -54,6 +57,15 @@ public class FP2Debug {
         bigWarning("FarPlaneTwo debug mode enabled!");
 
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
+            ConfigListenerManager.add(() -> {
+                ShaderManager.DefinesChangeBatch batch = ShaderManager.changeDefines();
+                for (FP2Config.Debug.DebugColorMode colorMode : FP2Config.Debug.DebugColorMode.values()) {
+                    batch.undefine("USE_DEBUG_COLORS_" + colorMode);
+                }
+                batch.define("USE_DEBUG_COLORS_" + FP2Config.debug.debugColorMode)
+                        .apply();
+            });
+
             MinecraftForge.EVENT_BUS.register(new DebugClientEvents());
         }
     }

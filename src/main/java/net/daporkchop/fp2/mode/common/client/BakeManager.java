@@ -27,14 +27,30 @@ import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
+import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
+import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
+import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
+import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.keyed.DefaultKeyedExecutor;
 import net.daporkchop.fp2.util.threading.keyed.KeyedExecutor;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
+import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.World;
+
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -42,23 +58,29 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public class BakeManager<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarTileCache.Listener<POS, T> {
+public class BakeManager<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarTileCache.Listener<POS, T>, Runnable {
     protected final AbstractFarRenderer<POS, T> renderer;
-    protected final IFarRenderStrategy<POS, T> strategy;
+    protected final IFarRenderStrategy<POS, T, ?, ?> strategy;
 
     protected final IFarTileCache<POS, T> tileCache;
 
-    protected final FarRenderTree<POS, T> tree;
+    protected final IRenderIndex<POS, ?, ?> index;
+    protected final IRenderBaker<POS, T, ?> baker;
 
     protected final KeyedExecutor<POS> bakeExecutor;
     protected final World world;
+
+    protected final Map<POS, Optional<IBakeOutput>> pendingDataUpdates = new ConcurrentHashMap<>();
+    protected final Map<POS, Boolean> pendingRenderableUpdates = new ConcurrentHashMap<>();
+    protected final AtomicBoolean isBulkUpdateQueued = new AtomicBoolean();
 
     public BakeManager(@NonNull AbstractFarRenderer<POS, T> renderer, @NonNull IFarTileCache<POS, T> tileCache) {
         this.renderer = renderer;
         this.strategy = renderer.strategy();
         this.tileCache = tileCache;
 
-        this.tree = new FarRenderTree<>(renderer.mode(), this.strategy, renderer.maxLevel());
+        this.index = this.strategy.createIndex();
+        this.baker = this.strategy.createBaker();
         this.world = Minecraft.getMinecraft().world;
 
         this.bakeExecutor = new DefaultKeyedExecutor<>(ThreadingHelper.workerGroupBuilder()
@@ -89,11 +111,16 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     @Override
     public void tileRemoved(@NonNull POS pos) {
         //make sure that any in-progress bake tasks are finished before the tile is removed
-        this.bakeExecutor.submitExclusive(pos, () -> ThreadingHelper.scheduleTaskInWorldThread(this.world, () -> this.tree.removeNode(pos)));
+        this.bakeExecutor.submitExclusive(pos, () -> {
+            this.updateRenderable(pos, false);
+            this.checkParentsRenderable(pos);
+
+            this.updateData(pos, Optional.empty());
+        });
     }
 
     protected void notifyOutputs(@NonNull POS pos) {
-        this.strategy.bakeOutputs(pos).forEach(outputPos -> {
+        this.baker.bakeOutputs(pos).forEach(outputPos -> {
             if (outputPos.level() < 0 || outputPos.level() > this.renderer.maxLevel) { //output tile is at an invalid zoom level, skip it
                 return;
             }
@@ -104,13 +131,16 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     }
 
     protected void bake(@NonNull POS pos) { //this function is called from inside of RENDER_WORKERS, which holds a lock on the position
-        Compressed<POS, T>[] compressedInputTiles = uncheckedCast(this.tileCache.getTilesCached(this.strategy.bakeInputs(pos)).toArray(Compressed[]::new));
+        this.checkSelfRenderable(pos);
+        this.checkParentsRenderable(pos);
+
+        Compressed<POS, T>[] compressedInputTiles = uncheckedCast(this.tileCache.getTilesCached(this.baker.bakeInputs(pos)).toArray(Compressed[]::new));
         if (compressedInputTiles[0] == null) { //the tile isn't cached any more
             return;
         }
 
         if (compressedInputTiles[0].isEmpty()) { //tile has no data, we "bake" it by deleting it if it exists
-            this.scheduleEmptyTile(pos);
+            this.updateData(pos, Optional.empty());
             return;
         }
 
@@ -123,13 +153,13 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
                 }
             }
 
-            BakeOutput output = new BakeOutput(this.strategy.renderDataSize());
-            boolean nonEmpty = this.strategy.bake(pos, srcs, output);
+            IBakeOutput output = this.strategy.createBakeOutput();
+            try {
+                this.baker.bake(pos, srcs, uncheckedCast(output));
 
-            if (nonEmpty) {
-                ThreadingHelper.scheduleTaskInWorldThread(this.world, () -> this.tree.putRenderData(pos, output));
-            } else { //remove tile from render tree
-                this.scheduleEmptyTile(pos);
+                this.updateData(pos, !output.isEmpty() ? Optional.of(output.retain()) : Optional.empty());
+            } finally {
+                output.release();
             }
         } finally { //release tiles again
             for (T src : srcs) {
@@ -140,7 +170,65 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         }
     }
 
-    protected void scheduleEmptyTile(@NonNull POS pos) {
-        ThreadingHelper.scheduleTaskInWorldThread(this.world, () -> this.tree.putRenderData(pos, null));
+    protected void checkParentsRenderable(@NonNull POS posIn) {
+        PorkUtil.<Stream<POS>>uncheckedCast(posIn.up().allPositionsInBB(1, 1)).forEach(this::checkSelfRenderable);
+    }
+
+    protected void checkSelfRenderable(@NonNull POS pos) {
+        this.updateRenderable(pos, this.tileCache.getTilesCached(uncheckedCast(pos.down().allPositionsInBB(1, 3))).anyMatch(Objects::isNull));
+    }
+
+    protected void updateData(@NonNull POS pos, @NonNull Optional<IBakeOutput> optionalBakeOutput) {
+        this.pendingDataUpdates.merge(pos, optionalBakeOutput, (oldOutput, newOutput) -> {
+            if (oldOutput.isPresent()) { //release old bake output to avoid potential memory leak when silently replacing entries
+                oldOutput.get().release();
+            }
+            return newOutput;
+        });
+
+        if (this.isBulkUpdateQueued.compareAndSet(false, true)) { //we won the race to enqueue a bulk update!
+            ThreadingHelper.scheduleTaskInWorldThread(this.world, this);
+        }
+    }
+
+    protected void updateRenderable(@NonNull POS pos, boolean renderable) {
+        this.pendingRenderableUpdates.put(pos, renderable);
+
+        if (this.isBulkUpdateQueued.compareAndSet(false, true)) { //we won the race to enqueue a bulk update!
+            ThreadingHelper.scheduleTaskInWorldThread(this.world, this);
+        }
+    }
+
+    /**
+     * @deprecated internal API, do not touch!
+     */
+    @Override
+    @Deprecated
+    public void run() { //executes a bulk update on the client thread
+        this.isBulkUpdateQueued.set(false);
+
+        int dataUpdatesSize = this.pendingDataUpdates.size();
+        List<Map.Entry<POS, Optional<IBakeOutput>>> dataUpdates = new ArrayList<>(dataUpdatesSize + (dataUpdatesSize >> 3)); //pre-allocate a bit of extra space in case it grows while we're iterating
+        for (Iterator<POS> itr = this.pendingDataUpdates.keySet().iterator(); dataUpdates.size() < 128 && itr.hasNext(); ) {
+            this.pendingDataUpdates.compute(itr.next(), (pos, output) -> {
+                dataUpdates.add(new AbstractMap.SimpleEntry<>(pos, output));
+                return null;
+            });
+        }
+
+        int renderableUpdatesSize = this.pendingRenderableUpdates.size();
+        List<Map.Entry<POS, Boolean>> renderableUpdates = new ArrayList<>(renderableUpdatesSize + (renderableUpdatesSize >> 3)); //pre-allocate a bit of extra space in case it grows while we're iterating
+        renderableUpdates.addAll(this.pendingRenderableUpdates.entrySet());
+        renderableUpdates.forEach(update -> this.pendingRenderableUpdates.remove(update.getKey(), update.getValue())); //atomically remove the corresponding entries from the pending update queue
+
+        //execute the bulk update
+        this.index.update(uncheckedCast(dataUpdates), renderableUpdates);
+
+        //release all bake outputs which are still sitting around in memory
+        dataUpdates.forEach(update -> {
+            if (update.getValue().isPresent()) {
+                update.getValue().get().release();
+            }
+        });
     }
 }

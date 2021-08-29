@@ -1,0 +1,13 @@
+{
+  "globalEnableAxes": [
+    "X",
+    "Y"
+  ],
+  "comp": [
+    "common.glsl",
+    "comp/common.comp",
+    "comp/frustum.comp",
+    "comp/command_buffer_selection.comp",
+    "comp/voxel/voxel_frustum_culling.comp"
+  ]
+}

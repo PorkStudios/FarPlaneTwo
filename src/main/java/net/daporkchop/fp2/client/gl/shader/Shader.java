@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,8 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.minecraft.client.Minecraft;
 
-import java.util.Arrays;
-
+import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL20.*;
 
 /**
@@ -42,6 +41,8 @@ class Shader {
     protected Shader(@NonNull ShaderType type, @NonNull String[] names, @NonNull String[] code) {
         this.type = type;
 
+        FP2_LOG.debug("compiling {} shader with source:\n{}", type, String.join("", code));
+
         //allocate shader
         this.id = glCreateShader(type.id);
 
@@ -54,6 +55,6 @@ class Shader {
 
         //compile and validate shader
         glCompileShader(id);
-        ShaderManager.validateShaderCompile(Arrays.toString(names), this.id);
+        ShaderManager.validateShaderCompile(this.id, names);
     }
 }

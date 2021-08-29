@@ -17,7 +17,7 @@ export HEADERFILES	:=	$(wildcard $(NATIVE_DIR)/*.h) $(wildcard $(NATIVE_DIR)/fp2
 export INCLUDES		:=	$(NATIVE_DIR) $(JAVA_HOME)/include $(JAVA_HOME)/include/linux
 
 export ARCHS		:=	x86_64-linux-gnu x86_64-w64-mingw32
-export MODULES_STD	:=  compat/x86
+export MODULES_STD	:=  compat/x86 client/gl/func/c
 export MODULES_SIMD	:=  compat/cwg/noise compat/vanilla/biome/layer/c
 
 export LIBS			:=  vectorclass-2.01.03

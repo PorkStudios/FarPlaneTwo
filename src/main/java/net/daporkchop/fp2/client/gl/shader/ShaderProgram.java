@@ -28,6 +28,7 @@ import net.minecraft.client.Minecraft;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
 
@@ -37,7 +38,7 @@ import static org.lwjgl.opengl.GL30.*;
  * @author DaPorkchop_
  */
 @Getter
-public final class ShaderProgram implements AutoCloseable {
+public abstract class ShaderProgram<I extends ShaderProgram<I>> implements AutoCloseable {
     protected final String name;
     protected int id;
 
@@ -46,14 +47,15 @@ public final class ShaderProgram implements AutoCloseable {
     protected final AtomicInteger idReference = new AtomicInteger();
 
     /**
-     * Creates a new shader program by attaching the given vertex shader with the given fragment shader.
+     * Creates a new shader program by linking the given shaders with each other.
      *
-     * @param name     the program's name
-     * @param vert   the vertex shader
+     * @param name the program's name
+     * @param vert the vertex shader
      * @param geom the geometry shader
-     * @param frag fragment shader
+     * @param frag the fragment shader
+     * @param comp the compute shader
      */
-    protected ShaderProgram(@NonNull String name, @NonNull Shader vert, Shader geom, Shader frag, String[] xfb_varying) {
+    protected ShaderProgram(@NonNull String name, Shader vert, Shader geom, Shader frag, Shader comp, String[] xfb_varying) {
         this.name = name;
 
         //allocate program
@@ -63,25 +65,35 @@ public final class ShaderProgram implements AutoCloseable {
         AtomicInteger idReference = this.idReference;
         PCleaner.cleaner(this, () -> Minecraft.getMinecraft().addScheduledTask(() -> glDeleteProgram(idReference.get())));
 
-        this.link(this.id, vert, geom, frag, xfb_varying);
+        this.link(this.id, vert, geom, frag, comp, xfb_varying);
     }
 
-    private void link(int id, @NonNull Shader vert, Shader geom, Shader frag, String[] xfb_varying)   {
-        checkArg(vert.type == ShaderType.VERTEX, "vert must be a VERTEX shader (%s)", vert.type);
-        if (geom != null)   {
+    private void link(int id, Shader vert, Shader geom, Shader frag, Shader comp, String[] xfb_varying) {
+        if (vert != null) {
+            checkArg(vert.type == ShaderType.VERTEX, "vert must be a VERTEX shader (%s)", vert.type);
+        }
+        if (geom != null) {
             checkArg(geom.type == ShaderType.GEOMETRY, "geom must be a GEOMETRY shader (%s)", geom.type);
         }
         if (frag != null) {
             checkArg(frag.type == ShaderType.FRAGMENT, "frag must be a FRAGMENT shader (%s)", frag.type);
         }
+        if (comp != null) {
+            checkArg(comp.type == ShaderType.COMPUTE, "comp must be a COMPUTE shader (%s)", comp.type);
+        }
 
         //attach shaders
-        glAttachShader(id, vert.id);
+        if (vert != null) {
+            glAttachShader(id, vert.id);
+        }
         if (geom != null) {
             glAttachShader(id, geom.id);
         }
         if (frag != null) {
             glAttachShader(id, frag.id);
+        }
+        if (comp != null) {
+            glAttachShader(id, comp.id);
         }
 
         //register transform feedback varyings
@@ -96,12 +108,12 @@ public final class ShaderProgram implements AutoCloseable {
         ShaderManager.validateProgramValidate(this.name, id);
     }
 
-    protected void reload(@NonNull Shader vert, Shader geom, Shader frag, String[] xfb_varying)    {
+    protected void reload(Shader vert, Shader geom, Shader frag, Shader comp, String[] xfb_varying) {
         //attempt to link new code
         int newId = glCreateProgram();
         try {
-            this.link(newId, vert, geom, frag, xfb_varying);
-        } catch (Exception e)   {
+            this.link(newId, vert, geom, frag, comp, xfb_varying);
+        } catch (Exception e) {
             glDeleteProgram(newId);
             throw e;
         }
@@ -129,9 +141,9 @@ public final class ShaderProgram implements AutoCloseable {
      * <p>
      * This method returns itself, for use in a try-with-resources block.
      */
-    public ShaderProgram use() {
+    public I use() {
         glUseProgram(this.id);
-        return this;
+        return uncheckedCast(this);
     }
 
     @Override

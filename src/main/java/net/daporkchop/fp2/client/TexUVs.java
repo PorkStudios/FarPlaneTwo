@@ -51,7 +51,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static net.daporkchop.fp2.client.ClientConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.compat.of.OFHelper.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL43.*;
@@ -109,20 +109,20 @@ public class TexUVs {
         StateFaceQuadRenderer waterRenderer = (state, face, model) -> {
             String spriteName = face.getHorizontalIndex() < 0 ? "minecraft:blocks/water_still" : "minecraft:blocks/water_flow";
             double spriteFactor = face.getHorizontalIndex() < 0 ? 16.0d : 8.0d;
-            TextureAtlasSprite sprite = mc.getTextureMapBlocks().getAtlasSprite(spriteName);
+            TextureAtlasSprite sprite = MC.getTextureMapBlocks().getAtlasSprite(spriteName);
             return Collections.singletonList(new PackedBakedQuad(sprite.getInterpolatedU(0.0d), sprite.getInterpolatedV(0.0d), sprite.getInterpolatedU(spriteFactor), sprite.getInterpolatedV(spriteFactor), 0.0f));
         };
         putRenderer(Blocks.WATER, waterRenderer);
         putRenderer(Blocks.FLOWING_WATER, waterRenderer);
         putRenderer(Blocks.LAVA, (state, face, model) ->
-                Collections.singletonList(new PackedBakedQuad(mc.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/lava_still"), -1)));
+                Collections.singletonList(new PackedBakedQuad(MC.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/lava_still"), -1)));
         putRenderer(Blocks.FLOWING_LAVA, (state, face, model) ->
-                Collections.singletonList(new PackedBakedQuad(mc.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/lava_flow"), -1)));
+                Collections.singletonList(new PackedBakedQuad(MC.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/lava_flow"), -1)));
 
         //grass renders in two layers, which is somewhat expensive to simulate with shaders. we render the sides as dirt, you can't tell the difference
         // from far away anyway
         putRenderer(Blocks.GRASS, (state, face, model) -> {
-            if (OF && PUnsafe.getInt(mc.gameSettings, OF_BETTERGRASS_OFFSET) != OF_OFF) {
+            if (OF && PUnsafe.getInt(MC.gameSettings, OF_BETTERGRASS_OFFSET) != OF_OFF) {
                 if (face != EnumFacing.DOWN) {
                     return DEFAULT_RENDERER.render(state, EnumFacing.UP, model); //use the top texture for the sides
                 }
@@ -135,7 +135,7 @@ public class TexUVs {
     }
 
     public static void reloadUVs() {
-        if (mc.getTextureMapBlocks() == null) { //texture map hasn't been initialized yet, meaning the game is still starting
+        if (MC.getTextureMapBlocks() == null) { //texture map hasn't been initialized yet, meaning the game is still starting
             return;
         }
 
@@ -148,27 +148,35 @@ public class TexUVs {
         Reference2IntMap<IBlockState> stateIdToIndexId = new Reference2IntOpenHashMap<>();
 
         List<PackedBakedQuad> missingTextureQuads = new ArrayList<>();
-        missingTextureQuads.add(new PackedBakedQuad(mc.getTextureMapBlocks().getMissingSprite(), -1));
+        missingTextureQuads.add(new PackedBakedQuad(MC.getTextureMapBlocks().getMissingSprite(), -1));
 
-        BlockModelShapes shapes = mc.getBlockRendererDispatcher().getBlockModelShapes();
+        List<IBlockState> erroredStates = new ArrayList<>();
+
+        BlockModelShapes shapes = MC.getBlockRendererDispatcher().getBlockModelShapes();
         for (Block block : Block.REGISTRY) {
             for (IBlockState state : block.getBlockState().getValidStates()) {
                 int[] faceIds = new int[6];
 
-                StateFaceReplacer replacer = STATE_TO_REPLACER.getOrDefault(state, DEFAULT_REPLACER);
-                StateFaceQuadRenderer renderer = STATE_TO_RENDERER.getOrDefault(state, DEFAULT_RENDERER);
-                for (EnumFacing face : EnumFacing.VALUES) {
-                    IBlockState replacedState = replacer.replace(state, face);
-                    IBakedModel model = shapes.getModelForState(replacedState);
-                    List<PackedBakedQuad> quads = PorkUtil.fallbackIfNull(renderer.render(replacedState, face, model), missingTextureQuads);
+                try {
+                    StateFaceReplacer replacer = STATE_TO_REPLACER.getOrDefault(state, DEFAULT_REPLACER);
+                    StateFaceQuadRenderer renderer = STATE_TO_RENDERER.getOrDefault(state, DEFAULT_RENDERER);
+                    for (EnumFacing face : EnumFacing.VALUES) {
+                        IBlockState replacedState = replacer.replace(state, face);
+                        IBakedModel model = shapes.getModelForState(replacedState);
+                        List<PackedBakedQuad> quads = PorkUtil.fallbackIfNull(renderer.render(replacedState, face, model), missingTextureQuads);
 
-                    int id = distinctQuadsToId.getOrDefault(quads, -1);
-                    if (id < 0) { //allocate new ID
-                        distinctQuadsToId.put(quads, id = distinctQuadsToId.size());
-                        distinctQuadsById.add(quads);
+                        int id = distinctQuadsToId.getOrDefault(quads, -1);
+                        if (id < 0) { //allocate new ID
+                            distinctQuadsToId.put(quads, id = distinctQuadsToId.size());
+                            distinctQuadsById.add(quads);
+                        }
+
+                        faceIds[face.getIndex()] = id;
                     }
-
-                    faceIds[face.getIndex()] = id;
+                } catch (Exception e) { //we couldn't process the state (likely a buggy mod block), so let's just ignore it for now
+                    FP2_LOG.error("exception while generating texture UVs for " + state, e);
+                    erroredStates.add(state);
+                    continue;
                 }
 
                 int id = distinctIndicesToId.get(faceIds);
@@ -179,6 +187,14 @@ public class TexUVs {
 
                 stateIdToIndexId.put(state, id);
             }
+        }
+
+        if (!erroredStates.isEmpty()) { //some block states failed!
+            FP2_LOG.error("failed to generate texture UVs for {} block states, they will be replaced with missing textures:", erroredStates.size());
+            erroredStates.forEach(FP2_LOG::error);
+
+            int id = stateIdToIndexId.getInt(Blocks.AIR.getDefaultState());
+            erroredStates.forEach(state -> stateIdToIndexId.put(state, id));
         }
 
         STATEID_TO_INDEXID = stateIdToIndexId;

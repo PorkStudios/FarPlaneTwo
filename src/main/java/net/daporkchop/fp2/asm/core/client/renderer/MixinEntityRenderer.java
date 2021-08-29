@@ -20,10 +20,9 @@
 
 package net.daporkchop.fp2.asm.core.client.renderer;
 
-import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.client.ClientConstants;
 import net.daporkchop.fp2.client.ReversedZ;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
@@ -57,8 +56,6 @@ public abstract class MixinEntityRenderer {
             at = @At("HEAD"))
     private void fp2_renderWorldPass_pre(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
         ReversedZ.enable();
-
-        ClientConstants.update();
     }
 
     //use reversed-z projection with infinite zFar everywhere

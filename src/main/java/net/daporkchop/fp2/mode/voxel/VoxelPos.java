@@ -26,7 +26,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.minecraft.util.math.AxisAlignedBB;
 
 import static java.lang.Math.*;
@@ -195,6 +194,11 @@ public class VoxelPos implements IFarPos {
     @Override
     public int hashCode() {
         return this.x * 1317194159 + this.y * 1964379643 + this.z * 1656858407 + this.level;
+    }
+
+    @Override
+    public long localHash() {
+        return interleaveBits(this.x, this.y, this.z);
     }
 
     @Override

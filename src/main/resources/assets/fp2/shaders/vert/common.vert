@@ -24,7 +24,10 @@
 //
 //
 
-layout(location = 0) in ivec4 tile_position;
+/*layout(std430, binding = 3) readonly buffer POSITIONS {
+    ivec4 positions[];
+} in_positions;
+#define tile_position (in_positions.positions[gl_DrawID])*/
 
 //
 //
@@ -47,16 +50,8 @@ out VS_OUT {
 //
 //
 
-#if defined(USE_DEBUG_COLORS_DISTANCE)
-const vec3[][3] DEBUG_COLORS_DISTANCE = vec3[][](
-vec3[3](vec3(0., 1., 0.), vec3(1., 1., 0.), vec3(1., 0., 0.)),
-vec3[3](vec3(0., 0., 1.), vec3(1., 0., 1.), vec3(0., 1., 1.)),
-vec3[3](vec3(0.), vec3(.5), vec3(1.))
-);
-#endif
-
-#if defined(USE_DEBUG_COLORS_POSITIONS)
-const vec3[16] DEBUG_COLORS_POSITIONS = vec3[](
+#if defined(USE_DEBUG_COLORS_DISTANCE) || defined(USE_DEBUG_COLORS_POSITIONS)
+const vec3[16] DEBUG_COLORS = vec3[](
 vec3(0., 1., 0.), vec3(1., 1., 0.), vec3(1., 0., 0.), vec3(0., 0., 1.),
 vec3(1., 0., 1.), vec3(0., 1., 1.), vec3(.5), vec3(1.),
 vec3(.5, 1., 0.), vec3(0., 1., .5), vec3(1., .5, 0.), vec3(1., 0., .5),
@@ -70,18 +65,12 @@ vec3(0., .5, 1.), vec3(.5, 0., 1.), vec3(5., 1., .5), vec3(5., 1., .5)
 //
 //
 
-vec3 computeVertexColor(vec3 va_color, float start, float end, float depth) {
+vec3 computeVertexColor(vec3 va_color) {
 #if defined(USE_DEBUG_COLORS_DISTANCE)
-    if (depth < start) {
-        return DEBUG_COLORS_DISTANCE[tile_position.w][0];
-    } else if (depth > end) {
-        return DEBUG_COLORS_DISTANCE[tile_position.w][2];
-    } else {
-        return DEBUG_COLORS_DISTANCE[tile_position.w][1];
-    }
+    return DEBUG_COLORS[tile_position.w];
 #elif defined(USE_DEBUG_COLORS_POSITIONS)
     ivec4 i = (tile_position & 1) << ivec4(3, 2, 1, 0);
-    return DEBUG_COLORS_POSITIONS[(i.x | i.y) | (i.z | i.w)];
+    return DEBUG_COLORS[(i.x | i.y) | (i.z | i.w)];
 #else
     return va_color;
 #endif

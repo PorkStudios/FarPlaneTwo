@@ -23,23 +23,33 @@ package net.daporkchop.fp2.client.gl.shader;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.debug.util.DebugUtils;
 import net.daporkchop.lib.binary.oio.StreamUtil;
-import net.daporkchop.lib.binary.oio.reader.UTF8FileReader;
-import net.daporkchop.lib.common.function.io.IOBiConsumer;
-import net.daporkchop.lib.common.function.io.IOFunction;
 import net.daporkchop.lib.common.misc.string.PStrings;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Collections;
+import java.util.ConcurrentModificationException;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 
@@ -52,32 +62,29 @@ import static org.lwjgl.opengl.GL20.*;
 public class ShaderManager {
     protected final String BASE_PATH = "/assets/fp2/shaders";
 
-    protected final LoadingCache<String, ShaderProgram> SHADER_CACHE = CacheBuilder.newBuilder()
+    protected final LoadingCache<AbstractShaderBuilder, ShaderProgram> SHADER_CACHE = CacheBuilder.newBuilder()
             .weakValues()
-            .build(new CacheLoader<String, ShaderProgram>() {
-                @Override
-                public ShaderProgram load(String programName) throws Exception {
-                    ProgramMeta meta;
-                    try (InputStream in = ShaderManager.class.getResourceAsStream(PStrings.fastFormat("%s/prog/%s.json", BASE_PATH, programName))) {
-                        checkArg(in != null, "Unable to find shader meta file: \"%s/prog/%s.json\"!", BASE_PATH, programName);
-                        meta = GSON.fromJson(new UTF8FileReader(in), ProgramMeta.class);
-                    }
+            .build(CacheLoader.from(AbstractShaderBuilder::supply));
 
-                    checkState(meta.vert != null, "Program \"%s\" has no vertex shaders!", programName);
-                    if (meta.xfb_varying != null) {
-                        checkState(meta.frag == null, "Program \"%s\" has both fragment shaders and transform feedback outputs!", programName);
-                    } else {
-                        checkState(meta.frag != null, "Program \"%s\" has no fragment shaders!", programName);
-                    }
+    protected Map<String, Object> GLOBAL_DEFINES = Collections.emptyMap();
 
-                    return new ShaderProgram(
-                            programName,
-                            get(meta.vert, ShaderType.VERTEX),
-                            meta.geom != null ? get(meta.geom, ShaderType.GEOMETRY) : null,
-                            meta.frag != null ? get(meta.frag, ShaderType.FRAGMENT) : null,
-                            meta.xfb_varying);
-                }
-            });
+    protected String headers(@NonNull Map<String, Object> defines, @NonNull String... lines) {
+        return Stream.concat(
+                Stream.concat(GLOBAL_DEFINES.entrySet().stream(), defines.entrySet().stream())
+                        .map(e -> PStrings.fastFormat("#define %s (%s)", e.getKey(),
+                                e.getValue() instanceof Boolean
+                                        ? ((Boolean) e.getValue() ? 1 : 0)
+                                        : e.getValue())),
+                Stream.of(lines)).collect(Collectors.joining("\n", "#line 1 0\n", "\n"));
+    }
+
+    public RenderShaderBuilder renderShaderBuilder(@NonNull String programName) {
+        return new RenderShaderBuilder(programName, Collections.emptyMap());
+    }
+
+    public ComputeShaderBuilder computeShaderBuilder(@NonNull String programName) {
+        return new ComputeShaderBuilder(programName, Collections.emptyMap(), null);
+    }
 
     /**
      * Obtains a shader program with the given name.
@@ -85,27 +92,36 @@ public class ShaderManager {
      * @param programName the name of the shader to get
      * @return the shader program with the given name
      */
-    public ShaderProgram get(@NonNull String programName) {
-        return SHADER_CACHE.getUnchecked(programName);
+    @Deprecated
+    public RenderShaderProgram get(@NonNull String programName) {
+        return renderShaderBuilder(programName).link();
     }
 
-    protected Shader get(@NonNull String[] names, @NonNull ShaderType type) {
+    protected Shader get(@NonNull String[] names, @NonNull String headers, @NonNull ShaderType type) {
         return new Shader(type, names, Stream.concat(
-                Stream.of("#version 430 core\n"), //add version prefix
-                Arrays.stream(names)
-                        .map((IOFunction<String, String>) fileName -> {
+                Stream.of(
+                        "#version 430 core\n", //add version prefix
+                        headers),
+                IntStream.range(0, names.length)
+                        .mapToObj(idx -> {
+                            String fileName = names[idx];
                             try (InputStream in = ShaderManager.class.getResourceAsStream(BASE_PATH + '/' + fileName)) {
                                 checkState(in != null, "Unable to find shader file: \"%s\"!", fileName);
-                                return new String(StreamUtil.toByteArray(in), StandardCharsets.UTF_8);
+                                String prefix = "#line 1 " + (idx + 1) + '\n';
+                                String code = new String(StreamUtil.toByteArray(in), StandardCharsets.UTF_8);
+                                return prefix + code;
+                            } catch (IOException e) {
+                                throw new UncheckedIOException(e);
                             }
                         }))
                 .toArray(String[]::new));
     }
 
-    protected void validateShaderCompile(@NonNull String name, int id) {
+    protected void validateShaderCompile(int id, @NonNull String... names) {
         if (glGetShaderi(id, GL_COMPILE_STATUS) == GL_FALSE) {
-            int size = glGetShaderi(id, GL_INFO_LOG_LENGTH);
-            String error = PStrings.fastFormat("Couldn't compile shader \"%s\":\n%s", name, glGetShaderInfoLog(id, size));
+            String error = PStrings.fastFormat("Couldn't compile shader \"%s\":\n%s",
+                    Arrays.toString(names),
+                    formatInfoLog(glGetShaderInfoLog(id, glGetShaderi(id, GL_INFO_LOG_LENGTH)), names));
             System.err.println(error);
             throw new IllegalStateException(error);
         }
@@ -113,8 +129,7 @@ public class ShaderManager {
 
     protected void validateProgramLink(@NonNull String name, int id) {
         if (glGetProgrami(id, GL_LINK_STATUS) == GL_FALSE) {
-            int size = glGetProgrami(id, GL_INFO_LOG_LENGTH);
-            String error = PStrings.fastFormat("Couldn't compile shader \"%s\":\n%s", name, glGetProgramInfoLog(id, size));
+            String error = PStrings.fastFormat("Couldn't link program \"%s\":\n%s", name, glGetProgramInfoLog(id, glGetProgrami(id, GL_INFO_LOG_LENGTH)));
             System.err.println(error);
             throw new IllegalStateException(error);
         }
@@ -122,41 +137,93 @@ public class ShaderManager {
 
     protected void validateProgramValidate(@NonNull String name, int id) {
         if (glGetProgrami(id, GL_VALIDATE_STATUS) == GL_FALSE) {
-            int size = glGetProgrami(id, GL_INFO_LOG_LENGTH);
-            String error = PStrings.fastFormat("Couldn't compile shader \"%s\":\n%s", name, glGetProgramInfoLog(id, size));
+            String error = PStrings.fastFormat("Couldn't validate program \"%s\":\n%s", name, glGetProgramInfoLog(id, glGetProgrami(id, GL_INFO_LOG_LENGTH)));
             System.err.println(error);
             throw new IllegalStateException(error);
         }
     }
 
-    public void reload() {
+    protected String formatInfoLog(@NonNull String origText, @NonNull String... names) {
+        Matcher matcher = Pattern.compile("^(-?\\d+)\\((-?\\d+)\\) (: .+)", Pattern.MULTILINE).matcher(origText);
+        StringBuffer buffer = new StringBuffer();
+        while (matcher.find()) {
+            int nameIndex = Integer.parseInt(matcher.group(1)) - 1;
+            String name = nameIndex < 0 || nameIndex >= names.length ? "<unknown source>" : names[nameIndex];
+            matcher.appendReplacement(buffer, Matcher.quoteReplacement('(' + name + ':' + matcher.group(2) + ')' + matcher.group(3)));
+        }
+        matcher.appendTail(buffer);
+
+        return buffer.toString();
+    }
+
+    public DefinesChangeBatch changeDefines() {
+        return new DefinesChangeBatch();
+    }
+
+    @SuppressWarnings("unchecked")
+    public void reload(boolean message) {
         try {
-            AtomicInteger shaderCount = new AtomicInteger();
-            SHADER_CACHE.asMap().forEach((IOBiConsumer<String, ShaderProgram>) (programName, program) -> {
-                ProgramMeta meta;
-                try (InputStream in = ShaderManager.class.getResourceAsStream(PStrings.fastFormat("%s/prog/%s.json", BASE_PATH, programName))) {
-                    checkArg(in != null, "Unable to find shader meta file: \"%s/prog/%s.json\"!", BASE_PATH, programName);
-                    meta = GSON.fromJson(new UTF8FileReader(in), ProgramMeta.class);
-                }
-
-                checkState(meta.vert != null, "Program \"%s\" has no vertex shaders!", programName);
-                if (meta.xfb_varying != null) {
-                    checkState(meta.frag == null, "Program \"%s\" has both fragment shaders and transform feedback outputs!", programName);
-                } else {
-                    checkState(meta.frag != null, "Program \"%s\" has no fragment shaders!", programName);
-                }
-
-                program.reload(
-                        get(meta.vert, ShaderType.VERTEX),
-                        meta.geom != null ? get(meta.geom, ShaderType.GEOMETRY) : null,
-                        meta.frag != null ? get(meta.frag, ShaderType.FRAGMENT) : null,
-                        meta.xfb_varying);
-                shaderCount.incrementAndGet();
-            });
-            DebugUtils.clientMsg("§a" + shaderCount.get() + " shaders successfully reloaded.");
+            SHADER_CACHE.asMap().forEach(AbstractShaderBuilder::reload);
+            if (message) {
+                DebugUtils.clientMsg("§a" + SHADER_CACHE.size() + " shaders successfully reloaded.");
+            }
         } catch (Exception e) {
             FP2_LOG.error("shader reload failed", e);
-            DebugUtils.clientMsg("§cshaders reload failed (check console).");
+            if (message) {
+                DebugUtils.clientMsg("§cshaders reload failed (check console).");
+            }
+        }
+    }
+
+    public static abstract class AbstractShaderBuilder<B extends AbstractShaderBuilder<B, S>, S extends ShaderProgram<S>> {
+        public S link() {
+            return uncheckedCast(SHADER_CACHE.getUnchecked(this));
+        }
+
+        public B define(@NonNull String name) {
+            return this.define(name, "");
+        }
+
+        public abstract B define(@NonNull String name, @NonNull Object value);
+
+        public abstract B undefine(@NonNull String name);
+
+        protected abstract S supply();
+
+        protected abstract void reload(@NonNull S program);
+
+        @Override
+        public abstract int hashCode();
+
+        @Override
+        public abstract boolean equals(Object obj);
+    }
+
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
+    public static final class DefinesChangeBatch {
+        protected final Map<String, Object> originals = GLOBAL_DEFINES;
+        protected final Map<String, Object> updated = new Object2ObjectOpenHashMap<>(this.originals);
+
+        public DefinesChangeBatch undefine(@NonNull String name) {
+            this.updated.remove(name);
+            return this;
+        }
+
+        public DefinesChangeBatch define(@NonNull String name) {
+            return this.define(name, "");
+        }
+
+        public DefinesChangeBatch define(@NonNull String name, @NonNull Object value) {
+            this.updated.put(name, value);
+            return this;
+        }
+
+        public void apply() {
+            if (GLOBAL_DEFINES != this.originals) {
+                throw new ConcurrentModificationException();
+            }
+            GLOBAL_DEFINES = ImmutableMap.copyOf(this.updated);
+            reload(false);
         }
     }
 }

@@ -28,6 +28,7 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
@@ -50,8 +51,9 @@ public class DirectBufferReuse {
     public final long BUFFER_ADDRESS_OFFSET = PUnsafe.pork_getOffset(Buffer.class, "address");
 
     public final ByteBuffer _BYTE = PUnsafe.allocateInstance(PorkUtil.classForName("java.nio.DirectByteBuffer"));
-    public final FloatBuffer _FLOAT = PUnsafe.allocateInstance(PorkUtil.classForName("java.nio.DirectFloatBufferU"));
     public final IntBuffer _INT = PUnsafe.allocateInstance(PorkUtil.classForName("java.nio.DirectIntBufferU"));
+    public final FloatBuffer _FLOAT = PUnsafe.allocateInstance(PorkUtil.classForName("java.nio.DirectFloatBufferU"));
+    public final DoubleBuffer _DOUBLE = PUnsafe.allocateInstance(PorkUtil.classForName("java.nio.DirectDoubleBufferU"));
 
     public void _resetBuffer(@NonNull Buffer buffer, long address, int capacity) {
         checkState(buffer.isDirect(), "buffer isn't direct! %s", buffer);
@@ -67,14 +69,20 @@ public class DirectBufferReuse {
         return buffer;
     }
 
+    public static IntBuffer wrapInt(long address, int capacity) {
+        IntBuffer buffer = _INT;
+        _resetBuffer(buffer, address, capacity);
+        return buffer;
+    }
+
     public static FloatBuffer wrapFloat(long address, int capacity) {
         FloatBuffer buffer = _FLOAT;
         _resetBuffer(buffer, address, capacity);
         return buffer;
     }
 
-    public static IntBuffer wrapInt(long address, int capacity) {
-        IntBuffer buffer = _INT;
+    public static DoubleBuffer wrapDouble(long address, int capacity) {
+        DoubleBuffer buffer = _DOUBLE;
         _resetBuffer(buffer, address, capacity);
         return buffer;
     }
