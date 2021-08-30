@@ -49,5 +49,5 @@ void main() {
     //copy trivial attributes
     vs_out.light = in_light;
     vs_out.state = in_state;
-    vs_out.color = computeVertexColor(in_color);
+    vs_out.color = computeVertexColor(in_color, tile_position);
 }
