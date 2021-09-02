@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.mode.heightmap.server;
 
+import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
@@ -31,6 +32,7 @@ import net.daporkchop.fp2.mode.heightmap.server.scale.HeightmapScalerMinMax;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.chunk.Chunk;
 
 /**
  * @author DaPorkchop_
@@ -56,7 +58,7 @@ public abstract class HeightmapWorld extends AbstractFarWorld<HeightmapPos, Heig
     }
 
     @Override
-    public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
+    public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt, @NonNull Chunk column) {
         this.scheduleForUpdate(new HeightmapPos(0, columnX, columnZ));
     }
 
@@ -66,7 +68,7 @@ public abstract class HeightmapWorld extends AbstractFarWorld<HeightmapPos, Heig
         }
 
         @Override
-        public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt) {
+        public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt, @NonNull ICube cube) {
             throw new UnsupportedOperationException();
         }
     }
@@ -77,8 +79,10 @@ public abstract class HeightmapWorld extends AbstractFarWorld<HeightmapPos, Heig
         }
 
         @Override
-        public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt) {
-            this.scheduleForUpdate(new HeightmapPos(0, cubeX, cubeZ));
+        public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt, @NonNull ICube cube) {
+            if (cube.isFullyPopulated()) {
+                this.scheduleForUpdate(new HeightmapPos(0, cubeX, cubeZ));
+            }
         }
     }
 }

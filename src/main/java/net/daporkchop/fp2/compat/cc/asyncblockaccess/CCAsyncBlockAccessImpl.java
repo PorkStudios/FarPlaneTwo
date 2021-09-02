@@ -164,13 +164,13 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
     }
 
     @Override
-    public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
+    public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt, @NonNull Chunk column) {
         this.columnsExistCache.add(columnX, columnZ);
         this.columns.notifyUpdate(new ChunkPos(columnX, columnZ), nbt);
     }
 
     @Override
-    public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt) {
+    public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt, @NonNull ICube cube) {
         this.cubesExistCache.add(cubeX, cubeY, cubeZ);
         this.cubes.notifyUpdate(new CubePos(cubeX, cubeY, cubeZ), nbt);
     }

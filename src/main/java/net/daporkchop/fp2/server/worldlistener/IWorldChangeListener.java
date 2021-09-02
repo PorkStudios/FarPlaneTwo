@@ -20,9 +20,11 @@
 
 package net.daporkchop.fp2.server.worldlistener;
 
+import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.NonNull;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 
 /**
  * Listens for events in a world.
@@ -37,8 +39,9 @@ public interface IWorldChangeListener {
      * @param columnX the column's X coordinate
      * @param columnZ the column's Z coordinate
      * @param nbt     the column's NBT data
+     * @param column  the column
      */
-    void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt);
+    void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt, @NonNull Chunk column);
 
     /**
      * Fired immediately before a cube is saved.
@@ -48,8 +51,9 @@ public interface IWorldChangeListener {
      * @param cubeY the cube's Y coordinate
      * @param cubeZ the cube's Z coordinate
      * @param nbt   the cube's NBT data
+     * @param cube  the cube
      */
-    void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt);
+    void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt, @NonNull ICube cube);
 
     /**
      * Fired after a world tick is completed.

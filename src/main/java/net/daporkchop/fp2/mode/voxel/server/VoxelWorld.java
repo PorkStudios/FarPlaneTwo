@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.mode.voxel.server;
 
+import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
@@ -31,6 +32,7 @@ import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerIntersection;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.chunk.Chunk;
 
 /**
  * @author DaPorkchop_
@@ -64,18 +66,20 @@ public abstract class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelTile> {
         }
 
         @Override
-        public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
-            //schedule entire column to be updated
-            int height = this.world.getHeight() >> 4;
-            VoxelPos[] positions = new VoxelPos[height];
-            for (int y = 0; y < height; y++) {
-                positions[y] = new VoxelPos(0, columnX, y, columnZ);
+        public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt, @NonNull Chunk column) {
+            if (column.isPopulated()) { //TODO: we want to check if the chunk is FULLY populated
+                //schedule entire column to be updated
+                int height = this.world.getHeight() >> 4;
+                VoxelPos[] positions = new VoxelPos[height];
+                for (int y = 0; y < height; y++) {
+                    positions[y] = new VoxelPos(0, columnX, y, columnZ);
+                }
+                this.scheduleForUpdate(positions);
             }
-            this.scheduleForUpdate(positions);
         }
 
         @Override
-        public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt) {
+        public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt, @NonNull ICube cube) {
             throw new UnsupportedOperationException();
         }
     }
@@ -89,13 +93,15 @@ public abstract class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelTile> {
         }
 
         @Override
-        public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
+        public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt, @NonNull Chunk column) {
             //no-op
         }
 
         @Override
-        public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt) {
-            this.scheduleForUpdate(new VoxelPos(0, cubeX, cubeY, cubeZ));
+        public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt, @NonNull ICube cube) {
+            if (cube.isFullyPopulated()) {
+                this.scheduleForUpdate(new VoxelPos(0, cubeX, cubeY, cubeZ));
+            }
         }
     }
 }

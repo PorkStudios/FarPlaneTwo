@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.compat.vanilla.asyncblockaccess;
 
+import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
@@ -110,7 +111,7 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
     }
 
     @Override
-    public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt) {
+    public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt, @NonNull Chunk column) {
         this.chunksExistCache.add(columnX, columnZ);
         this.chunks.notifyUpdate(new ChunkPos(columnX, columnZ), nbt);
     }
@@ -126,7 +127,7 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
     }
 
     @Override
-    public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt) {
+    public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt, @NonNull ICube cube) {
         throw new UnsupportedOperationException("vanilla world shouldn't have cubes!");
     }
 
