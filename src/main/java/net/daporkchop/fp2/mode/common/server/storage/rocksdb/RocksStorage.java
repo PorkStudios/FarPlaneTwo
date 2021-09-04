@@ -20,17 +20,23 @@
 
 package net.daporkchop.fp2.mode.common.server.storage.rocksdb;
 
+import com.google.common.collect.ImmutableList;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
-import net.daporkchop.fp2.util.IReusablePersistent;
+import net.daporkchop.fp2.mode.api.tile.ITileHandle;
+import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
+import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
+import net.daporkchop.fp2.mode.common.tile.AbstractTileHandle;
 import net.daporkchop.lib.common.misc.file.PFiles;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
@@ -41,6 +47,7 @@ import org.rocksdb.FlushOptions;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
+import org.rocksdb.Transaction;
 import org.rocksdb.TransactionDB;
 import org.rocksdb.TransactionDBOptions;
 import org.rocksdb.WriteOptions;
@@ -54,12 +61,11 @@ import java.util.Arrays;
 import java.util.List;
 
 import static net.daporkchop.fp2.debug.FP2Debug.*;
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
-public final class RocksStorage<POS extends IFarPos, V extends IReusablePersistent> implements IFarStorage<POS, V> {
+public final class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IFarStorage<POS, T> {
     protected static final DBOptions DB_OPTIONS = new DBOptions()
             .setCreateIfMissing(true)
             .setCreateMissingColumnFamilies(true)
@@ -75,29 +81,19 @@ public final class RocksStorage<POS extends IFarPos, V extends IReusablePersiste
     protected static final WriteOptions WRITE_OPTIONS = new WriteOptions();
     protected static final FlushOptions FLUSH_OPTIONS = new FlushOptions().setWaitForFlush(true).setAllowWriteStall(true);
 
-    protected static final byte[] COLUMN_NAME_TILES = "tiles".getBytes(StandardCharsets.UTF_8);
+    protected static final byte[] COLUMN_NAME_TILE_TIMESTAMP = "tile_timestamp".getBytes(StandardCharsets.UTF_8);
+    protected static final byte[] COLUMN_NAME_TILE_DATA = "tile_data".getBytes(StandardCharsets.UTF_8);
     protected static final byte[] COLUMN_NAME_DIRTY = "dirty".getBytes(StandardCharsets.UTF_8);
-
-    protected static void writeInterleavedBits(@NonNull ByteBuf dst, @NonNull int... coords) {
-        for (int bit = 0; bit < coords.length * 32; ) {
-            int b = 0;
-            for (int i = 7; i >= 0; i--, bit++) {
-                b |= ((coords[bit % coords.length] >>> (bit / coords.length)) & 1) << i;
-            }
-            dst.writeByte(b);
-        }
-    }
 
     //
     // rocksdb helper methods
     //
 
     @SneakyThrows(RocksDBException.class)
-    protected static ByteBuf get(@NonNull RocksDB db, @NonNull ColumnFamilyHandle handle, @NonNull ByteBuf key) {
+    protected static ByteBuf get(@NonNull RocksDB db, @NonNull ColumnFamilyHandle handle, @NonNull ByteBuf key, int preallocateBytes) {
         ByteBuffer keyNioBuffer = key.nioBuffer();
 
-        //pre-allocate 64KiB for initial buffer
-        ByteBuf value = ByteBufAllocator.DEFAULT.directBuffer(1 << 16);
+        ByteBuf value = ByteBufAllocator.DEFAULT.directBuffer(preallocateBytes);
 
         int len = db.get(handle, READ_OPTIONS, keyNioBuffer, value.nioBuffer(value.readerIndex(), value.capacity()));
 
@@ -129,7 +125,8 @@ public final class RocksStorage<POS extends IFarPos, V extends IReusablePersiste
     protected final TransactionDB db;
     protected final List<ColumnFamilyHandle> handles;
 
-    protected final ColumnFamilyHandle cfTiles;
+    protected final ColumnFamilyHandle cfTileTimestamp;
+    protected final ColumnFamilyHandle cfTileData;
     protected final ColumnFamilyHandle cfDirty;
 
     protected final int version;
@@ -142,7 +139,7 @@ public final class RocksStorage<POS extends IFarPos, V extends IReusablePersiste
         this.mode = mode;
         this.version = mode.storageVersion();
 
-        File markerFile = new File(storageRoot, "v2");
+        File markerFile = new File(storageRoot, "v3");
         if (PFiles.checkDirectoryExists(storageRoot) && !PFiles.checkFileExists(markerFile)) { //it's an old storage
             PFiles.rmContentsParallel(storageRoot);
         }
@@ -150,14 +147,16 @@ public final class RocksStorage<POS extends IFarPos, V extends IReusablePersiste
 
         List<ColumnFamilyDescriptor> descriptors = Arrays.asList(
                 new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, CF_OPTIONS),
-                new ColumnFamilyDescriptor(COLUMN_NAME_TILES, CF_OPTIONS),
+                new ColumnFamilyDescriptor(COLUMN_NAME_TILE_TIMESTAMP, CF_OPTIONS),
+                new ColumnFamilyDescriptor(COLUMN_NAME_TILE_DATA, CF_OPTIONS),
                 new ColumnFamilyDescriptor(COLUMN_NAME_DIRTY, CF_OPTIONS));
         this.handles = new ArrayList<>(descriptors.size());
 
         this.db = TransactionDB.open(DB_OPTIONS, TX_DB_OPTIONS, storageRoot.getPath(), descriptors, this.handles);
 
-        this.cfTiles = this.handles.get(1);
-        this.cfDirty = this.handles.get(2);
+        this.cfTileTimestamp = this.handles.get(1);
+        this.cfTileData = this.handles.get(2);
+        this.cfDirty = this.handles.get(3);
 
         PFiles.ensureFileExists(markerFile); //create marker file
 
@@ -165,61 +164,85 @@ public final class RocksStorage<POS extends IFarPos, V extends IReusablePersiste
     }
 
     @Override
-    public Compressed<POS, V> load(@NonNull POS pos) {
-        if (FP2_DEBUG && (FP2Config.debug.disableRead || FP2Config.debug.disablePersistence)) {
-            return null;
-        }
+    public ITileHandle<POS, T> handleFor(@NonNull POS pos) {
+        return new AbstractTileHandle<POS, T>(pos) {
+            @Override
+            @SneakyThrows(RocksDBException.class)
+            public long timestamp() {
+                if (FP2_DEBUG && (FP2Config.debug.disableRead || FP2Config.debug.disablePersistence)) {
+                    return TIMESTAMP_BLANK;
+                }
 
-        //read from db
-        ByteBuf key = ByteBufAllocator.DEFAULT.directBuffer();
-        ByteBuf packed;
-        try {
-            key.writeInt(pos.level()); //encode position
-            writeInterleavedBits(key, pos.coordinates());
-
-            packed = get(this.db, this.cfTiles, key);
-        } finally {
-            key.release();
-        }
-
-        if (packed == null) { //the data doesn't exist on disk
-            return null;
-        }
-
-        //unpack
-        try {
-            int packedVersion = readVarInt(packed);
-            if (packedVersion == this.version) {
-                return new Compressed<>(pos, packed);
+                byte[] timestampBytes = RocksStorage.this.db.get(RocksStorage.this.cfTileTimestamp, this.pos.toBytes());
+                return timestampBytes != null
+                        ? Unpooled.wrappedBuffer(timestampBytes).readLongLE() //timestamp for this tile exists, extract it from the byte array
+                        : TIMESTAMP_BLANK;
             }
-            return null;
-        } finally {
-            packed.release();
-        }
-    }
 
-    @Override
-    public void store(@NonNull POS pos, @NonNull Compressed<POS, V> value) {
-        if (FP2_DEBUG && (FP2Config.debug.disableWrite || FP2Config.debug.disablePersistence)) {
-            return;
-        }
+            @Override
+            @SneakyThrows(RocksDBException.class)
+            public TileSnapshot<POS, T> snapshot() {
+                if (FP2_DEBUG && (FP2Config.debug.disableRead || FP2Config.debug.disablePersistence)) {
+                    return null;
+                }
 
-        ByteBuf key = ByteBufAllocator.DEFAULT.directBuffer();
-        ByteBuf packed = ByteBufAllocator.DEFAULT.directBuffer();
-        try {
-            key.writeInt(pos.level()); //encode position
-            writeInterleavedBits(key, pos.coordinates());
+                byte[] keyBytes = this.pos.toBytes();
 
-            //write value
-            writeVarInt(packed, this.version); //prefix with version
-            value.write(packed);
+                //read timestamp and tile bytes using multiGet to ensure coherency
+                List<byte[]> valueBytes = RocksStorage.this.db.multiGetAsList(
+                        ImmutableList.of(RocksStorage.this.cfTileTimestamp, RocksStorage.this.cfTileData),
+                        ImmutableList.of(keyBytes, keyBytes));
 
-            //write to db
-            put(this.db, this.cfTiles, key, packed);
-        } finally {
-            packed.release();
-            key.release();
-        }
+                byte[] timestampBytes = valueBytes.get(0);
+                byte[] tileBytes = valueBytes.get(1);
+
+                return timestampBytes != null
+                        ? new TileSnapshot<>(this.pos, Unpooled.wrappedBuffer(timestampBytes).readLongLE(), tileBytes)
+                        : null;
+            }
+
+            @Override
+            @SneakyThrows(RocksDBException.class)
+            public boolean set(@NonNull ITileMetadata metadata, @NonNull T tile) {
+                if (FP2_DEBUG && (FP2Config.debug.disableWrite || FP2Config.debug.disablePersistence)) {
+                    return false;
+                }
+
+                try (Transaction txn = RocksStorage.this.db.beginTransaction(WRITE_OPTIONS)) {
+                    byte[] keyBytes = this.pos.toBytes();
+
+                    //obtain an exclusive lock on the key to ensure coherency
+                    byte[] timestampBytes = txn.getForUpdate(READ_OPTIONS, RocksStorage.this.cfTileTimestamp, keyBytes, true);
+                    long timestamp = timestampBytes != null
+                            ? Unpooled.wrappedBuffer(timestampBytes).readLongLE() //timestamp for this tile exists, extract it from the byte array
+                            : TIMESTAMP_BLANK;
+
+                    if (metadata.timestamp() <= timestamp) { //the new timestamp isn't newer than the existing one, so we can't replace it
+                        //exit without committing the transaction
+                        return false;
+                    }
+
+                    //store new timestamp in db
+                    txn.put(RocksStorage.this.cfTileTimestamp, keyBytes, UnpooledByteBufAllocator.DEFAULT.heapBuffer(Long.BYTES, Long.BYTES).writeLongLE(metadata.timestamp()).array());
+
+                    //encode tile and store it in db
+                    ByteBuf buf = ByteBufAllocator.DEFAULT.heapBuffer();
+                    try {
+                        if (tile.write(buf)) { //the tile was empty, remove it from the db!
+                            txn.delete(RocksStorage.this.cfTileData, keyBytes);
+                        } else { //the tile was non-empty, store it in the db
+                            txn.put(RocksStorage.this.cfTileData, keyBytes, Arrays.copyOfRange(buf.array(), buf.arrayOffset(), buf.arrayOffset() + buf.writerIndex()));
+                        }
+                    } finally {
+                        buf.release();
+                    }
+
+                    //commit transaction and report that a change was made
+                    txn.commit();
+                    return true;
+                }
+            }
+        };
     }
 
     @Override

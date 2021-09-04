@@ -21,11 +21,13 @@
 package net.daporkchop.fp2.mode.voxel;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.util.math.MathUtil;
 import net.minecraft.util.math.AxisAlignedBB;
 
 import static java.lang.Math.*;
@@ -50,7 +52,27 @@ public class VoxelPos implements IFarPos {
     protected final int z;
 
     public VoxelPos(@NonNull ByteBuf buf) {
-        this(buf.readInt(), buf.readInt(), buf.readInt(), buf.readInt());
+        this.level = buf.readUnsignedByte();
+
+        int interleavedHigh = buf.readInt();
+        long interleavedLow = buf.readLong();
+        this.x = MathUtil.uninterleave3_0(interleavedLow, interleavedHigh);
+        this.y = MathUtil.uninterleave3_1(interleavedLow, interleavedHigh);
+        this.z = MathUtil.uninterleave3_2(interleavedLow, interleavedHigh);
+    }
+
+    @Override
+    public void writePos(@NonNull ByteBuf dst) {
+        dst.writeByte(toByte(this.level))
+                .writeInt(MathUtil.interleaveBitsHigh(this.x, this.y, this.z))
+                .writeLong(MathUtil.interleaveBits(this.x, this.y, this.z));
+    }
+
+    @Override
+    public byte[] toBytes() {
+        byte[] arr = new byte[13];
+        this.writePos(Unpooled.wrappedBuffer(arr).clear());
+        return arr;
     }
 
     public int blockX() {
@@ -75,16 +97,6 @@ public class VoxelPos implements IFarPos {
 
     public int flooredChunkZ() {
         return this.blockZ() >> 4;
-    }
-
-    @Override
-    public void writePosNoLevel(@NonNull ByteBuf dst) {
-        dst.writeInt(this.x).writeInt(this.y).writeInt(this.z);
-    }
-
-    @Override
-    public int[] coordinates() {
-        return new int[]{ this.x, this.y, this.z };
     }
 
     @Override

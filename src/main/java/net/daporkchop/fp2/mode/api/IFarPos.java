@@ -74,22 +74,16 @@ public interface IFarPos extends Comparable<IFarPos> {
      *
      * @param dst the {@link ByteBuf} to write to
      */
-    default void writePos(@NonNull ByteBuf dst) {
-        dst.writeInt(this.level());
-        this.writePosNoLevel(dst);
-    }
+    void writePos(@NonNull ByteBuf dst);
 
     /**
-     * @return the coordinates of this position (excluding the detail level)
-     */
-    int[] coordinates();
-
-    /**
-     * Writes this position to the given {@link ByteBuf}, without including the detail level
+     * Converts this position to a {@code byte[]}.
+     * <p>
+     * The resulting {@code byte[]}'s contents are identical to the data written by {@link #writePos(ByteBuf)}.
      *
-     * @param dst the {@link ByteBuf} to write to
+     * @return the encoded position
      */
-    void writePosNoLevel(@NonNull ByteBuf dst);
+    byte[] toBytes();
 
     /**
      * Checks whether or not this position contains the given {@link IFarPos}.

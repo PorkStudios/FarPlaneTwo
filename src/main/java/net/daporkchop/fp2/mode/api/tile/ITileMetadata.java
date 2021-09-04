@@ -18,25 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.server;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.api.tile.ITileHandle;
-import net.minecraft.entity.player.EntityPlayerMP;
+package net.daporkchop.fp2.mode.api.tile;
 
 /**
+ * Additional information stored alongside tile data.
+ *
  * @author DaPorkchop_
  */
-public interface IFarPlayerTracker<POS extends IFarPos, T extends IFarTile> {
-    void playerAdd(@NonNull EntityPlayerMP player);
+public interface ITileMetadata {
+    static ITileMetadata ofTimestamp(long timestamp) {
+        return () -> timestamp;
+    }
 
-    void playerRemove(@NonNull EntityPlayerMP player);
+    /**
+     * Timestamp indicating that the tile has not yet been generated.
+     */
+    long TIMESTAMP_BLANK = Long.MIN_VALUE;
 
-    void playerMove(@NonNull EntityPlayerMP player);
+    /**
+     * Timestamp indicating that the tile's rough generation has been completed.
+     */
+    long TIMESTAMP_GENERATED = 0L;
 
-    void tileChanged(@NonNull ITileHandle<POS, T> handle);
+    /**
+     * @return the tile's timestamp
+     */
+    long timestamp();
 
-    void debug_dropAllTiles();
+    /**
+     * @return whether or not the tile's data has been initialized
+     */
+    default boolean isInitialized() {
+        return this.timestamp() != TIMESTAMP_BLANK;
+    }
 }

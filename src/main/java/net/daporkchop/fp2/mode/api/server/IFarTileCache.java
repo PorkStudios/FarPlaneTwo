@@ -24,19 +24,25 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
-import net.minecraft.entity.player.EntityPlayerMP;
 
 /**
+ * A cache for {@link ITileHandle} instances by position, in order to ensure that there is never more than one live handle at a time for a given position.
+ *
  * @author DaPorkchop_
  */
-public interface IFarPlayerTracker<POS extends IFarPos, T extends IFarTile> {
-    void playerAdd(@NonNull EntityPlayerMP player);
+public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> {
+    /**
+     * Retains and gets the handle at the given position.
+     *
+     * @param pos the position of the handle to retain
+     * @return the handle at the given position
+     */
+    ITileHandle<POS, T> retain(@NonNull POS pos);
 
-    void playerRemove(@NonNull EntityPlayerMP player);
-
-    void playerMove(@NonNull EntityPlayerMP player);
-
-    void tileChanged(@NonNull ITileHandle<POS, T> handle);
-
-    void debug_dropAllTiles();
+    /**
+     * Releases a reference to the handle at the given position.
+     *
+     * @param pos the position of the handle to release
+     */
+    void release(@NonNull POS pos);
 }

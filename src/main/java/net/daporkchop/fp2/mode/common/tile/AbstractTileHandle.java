@@ -18,53 +18,42 @@
  *
  */
 
-package net.daporkchop.fp2.net.server;
+package net.daporkchop.fp2.mode.common.tile;
 
-import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
-import net.daporkchop.fp2.util.Constants;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-import static net.daporkchop.lib.common.util.PorkUtil.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
+ * Base implementation of {@link ITileHandle}.
+ *
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
 @Getter
-@Setter
-public class SPacketTileData implements IMessage {
+public abstract class AbstractTileHandle<POS extends IFarPos, T extends IFarTile> extends CopyOnWriteArrayList<ITileHandle.Listener<POS, T>> implements ITileHandle<POS, T> {
     @NonNull
-    protected IFarRenderMode<?, ?> mode;
-    @NonNull
-    protected TileSnapshot<?, ?> tile;
+    protected final POS pos;
 
     @Override
-    public void fromBytes(ByteBuf buf) {
-        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
-        this.tile = new TileSnapshot<>(buf, this.mode);
+    public void addListener(@NonNull Listener<POS, T> listener) {
+        checkState(super.addIfAbsent(listener), "listener already added: %s", listener);
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
-        Constants.writeString(buf, this.mode.name());
-        this.tile.write(buf);
+    public void removeListener(@NonNull Listener<POS, T> listener) {
+        checkState(super.remove(listener), "listener not present: %s", listener);
     }
 
-    public static class Handler implements IMessageHandler<SPacketTileData, IMessage> {
-        @Override
-        public IMessage onMessage(SPacketTileData message, MessageContext ctx) {
-            IFarWorldClient world = (IFarWorldClient) ctx.getClientHandler().world;
-            IFarClientContext<?, ?> context = world.contextFor(message.mode);
-            context.tileCache().receiveTile(uncheckedCast(message.tile));
-            return null;
-        }
+    protected void fireListeners(@NonNull TileSnapshot<POS, T> snapshot) {
+        super.forEach(listener -> listener.tileChanged(this, snapshot));
     }
 }

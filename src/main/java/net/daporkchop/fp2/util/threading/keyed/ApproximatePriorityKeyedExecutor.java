@@ -142,7 +142,7 @@ public class ApproximatePriorityKeyedExecutor<K> extends DefaultKeyedExecutor<K>
         }
 
         @Override
-        public DefaultKeyedExecutor.TaskQueue schedule(@NonNull BlockingQueue<DefaultKeyedExecutor.TaskQueue<K>> queue) {
+        public DefaultKeyedExecutor.TaskQueue<K> schedule(@NonNull BlockingQueue<DefaultKeyedExecutor.TaskQueue<K>> queue) {
             this.recheckPriority();
             return super.schedule(queue);
         }

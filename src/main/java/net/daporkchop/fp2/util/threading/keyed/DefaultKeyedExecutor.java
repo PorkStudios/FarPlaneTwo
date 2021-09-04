@@ -202,7 +202,7 @@ public class DefaultKeyedExecutor<K> extends AbstractRefCounted implements Keyed
             this.add(task);
         }
 
-        public TaskQueue schedule(@NonNull BlockingQueue<TaskQueue<K>> queue) {
+        public TaskQueue<K> schedule(@NonNull BlockingQueue<TaskQueue<K>> queue) {
             //schedule this queue to be run
             checkState(queue.add(this), "failed to add queue for %s to execution queue!", this.key);
 

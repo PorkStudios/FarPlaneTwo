@@ -21,11 +21,13 @@
 package net.daporkchop.fp2.mode.heightmap;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.util.math.MathUtil;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.ChunkPos;
 
@@ -50,7 +52,23 @@ public class HeightmapPos implements IFarPos {
     protected final int z;
 
     public HeightmapPos(@NonNull ByteBuf buf) {
-        this(buf.readInt(), buf.readInt(), buf.readInt());
+        this.level = buf.readUnsignedByte();
+
+        long interleaved = buf.readLong();
+        this.x = MathUtil.uninterleave2_0(interleaved);
+        this.z = MathUtil.uninterleave2_1(interleaved);
+    }
+
+    @Override
+    public void writePos(@NonNull ByteBuf dst) {
+        dst.writeByte(toByte(this.level)).writeLong(MathUtil.interleaveBits(this.x, this.z));
+    }
+
+    @Override
+    public byte[] toBytes() {
+        byte[] arr = new byte[9];
+        this.writePos(Unpooled.wrappedBuffer(arr).clear());
+        return arr;
     }
 
     public int blockX() {
@@ -71,16 +89,6 @@ public class HeightmapPos implements IFarPos {
 
     public ChunkPos flooredChunkPos() {
         return new ChunkPos(this.flooredChunkX(), this.flooredChunkZ());
-    }
-
-    @Override
-    public void writePosNoLevel(@NonNull ByteBuf dst) {
-        dst.writeInt(this.x).writeInt(this.z);
-    }
-
-    @Override
-    public int[] coordinates() {
-        return new int[]{ this.x, this.z };
     }
 
     @Override

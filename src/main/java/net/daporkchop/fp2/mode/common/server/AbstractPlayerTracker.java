@@ -28,11 +28,11 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
+import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.net.server.SPacketTileData;
 import net.daporkchop.fp2.net.server.SPacketUnloadTile;
 import net.daporkchop.fp2.net.server.SPacketUnloadTiles;
@@ -148,15 +148,13 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
     }
 
     @Override
-    public void tileChanged(@NonNull Compressed<POS, T> tile) {
-        if (tile.isGenerated()) {
-            this.entries.computeIfPresent(tile.pos(), (pos, entry) -> {
-                //notify entry that the tile has been changed
-                entry.tileChanged(tile);
+    public void tileChanged(@NonNull ITileHandle<POS, T> handle) {
+        this.entries.computeIfPresent(handle.pos(), (pos, entry) -> {
+            //notify entry that the tile has been changed
+            entry.tileChanged(handle);
 
-                return entry;
-            });
-        }
+            return entry;
+        });
     }
 
     @Override
@@ -303,35 +301,33 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
         /**
          * Enqueues the given tile to be sent to the player.
-         *
-         * @param tile the tile to be sent
          */
-        public void notifyChanged(@NonNull Compressed<POS, ?> tile) {
+        public void notifyChanged(@NonNull ITileHandle<POS, T> handle) {
             if (this.executor.inEventLoop()) {
-                this.notifyChangedSync(tile);
+                this.notifyChangedSync(handle);
             } else {
-                this.executor.submit(() -> this.notifyChangedSync(tile));
+                this.executor.submit(() -> this.notifyChangedSync(handle));
             }
         }
 
-        private void notifyChangedSync(@NonNull Compressed<POS, ?> tile) {
+        private void notifyChangedSync(@NonNull ITileHandle<POS, T> handle) {
             try {
                 this.assertOnTrackerThread();
 
                 STATE lastState = this.lastState;
                 if (this.isReleased() //context is released, ignore update
-                    || !AbstractPlayerTracker.this.isVisible(this.player, lastState, tile.pos())) { //the position has been unloaded since the task was enqueued, we can assume it's safe to ignore
+                    || !AbstractPlayerTracker.this.isVisible(this.player, lastState, handle.pos())) { //the position has been unloaded since the task was enqueued, we can assume it's safe to ignore
                     return;
                 }
 
-                NETWORK_WRAPPER.sendTo(new SPacketTileData().mode(AbstractPlayerTracker.this.world.mode()).tile(tile), this.player);
-                if (this.waitingPositions.remove(tile.pos())) { //we were waiting to load this tile, and now it's loaded!
-                    checkState(this.loadedPositions.add(tile.pos()), "position already loaded?!?");
+                NETWORK_WRAPPER.sendTo(new SPacketTileData().mode(AbstractPlayerTracker.this.world.mode()).tile(handle.snapshot()), this.player);
+                if (this.waitingPositions.remove(handle.pos())) { //we were waiting to load this tile, and now it's loaded!
+                    checkState(this.loadedPositions.add(handle.pos()), "position already loaded?!?");
 
                     //make sure as many tiles as possible are queued for loading
                     this.fillLoadQueue();
                 } else {
-                    checkState(this.loadedPositions.contains(tile.pos()), "position loaded but not in queue?!?");
+                    checkState(this.loadedPositions.contains(handle.pos()), "position loaded but not in queue?!?");
                 }
             } catch (Exception e) {
                 ThreadingHelper.handle(AbstractPlayerTracker.this.world.world(), e);
@@ -426,19 +422,21 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
         protected final POS pos;
 
-        protected Compressed<POS, T> tile;
+        protected final ITileHandle<POS, T> handle;
 
         public Entry(@NonNull POS pos) {
             this.pos = pos;
+            this.handle = AbstractPlayerTracker.this.world.cache().retain(pos);
 
-            AbstractPlayerTracker.this.world.retainTileFuture(pos).thenAcceptAsync(AbstractPlayerTracker.this::tileChanged, TRACKER_THREADS);
+            //request that the tile be generated
+            AbstractPlayerTracker.this.world.retainForLoad(pos);
         }
 
         public Entry addContext(@NonNull Context ctx) {
             checkState(super.add(ctx), "player %s was already added to entry %s!", ctx, this);
 
-            if (this.tile != null) { //the tile has already been loaded, let's send it to the player
-                ctx.notifyChanged(this.tile);
+            if (this.handle.isInitialized()) { //the tile has already been initialized, let's send it to the player
+                ctx.notifyChanged(this.handle);
             }
 
             return this;
@@ -447,13 +445,16 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         public Entry removePlayer(@NonNull Context ctx) {
             checkState(super.remove(ctx), "player %s did not belong to entry %s!", ctx, this);
 
-            if (this.tile != null) { //the tile has already been sent to the player, so it needs to be unloaded on their end
+            if (this.handle.isInitialized()) { //the tile has already been sent to the player, so it needs to be unloaded on their end
                 ctx.notifyUnload(this.pos);
             }
 
             if (super.isEmpty()) { //no more players are tracking this entry, so it can be removed
                 //release the tile load future (potentially removing it from the load/generation queue)
-                AbstractPlayerTracker.this.world.releaseTileFuture(this.pos);
+                AbstractPlayerTracker.this.world.releaseForLoad(this.pos);
+
+                //release the tile handle
+                AbstractPlayerTracker.this.world.cache().release(this.pos);
 
                 //this entry should be replaced with null
                 return null;
@@ -462,11 +463,12 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
             }
         }
 
-        public void tileChanged(@NonNull Compressed<POS, T> tile) {
-            this.tile = tile;
+        public void tileChanged(@NonNull ITileHandle<POS, T> handle) {
+            checkState(handle.isInitialized(), "handle at %s hasn't been initialized yet!", this.pos);
+            checkState(this.handle == handle, "mismatched handles at %s!", this.pos);
 
             //notify all players which have this tile loaded
-            super.forEach(ctx -> ctx.notifyChanged(tile));
+            super.forEach(ctx -> ctx.notifyChanged(handle));
         }
     }
 }

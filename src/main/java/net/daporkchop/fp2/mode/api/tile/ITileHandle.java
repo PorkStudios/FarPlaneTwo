@@ -18,25 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.server;
+package net.daporkchop.fp2.mode.api.tile;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.api.tile.ITileHandle;
-import net.minecraft.entity.player.EntityPlayerMP;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarPlayerTracker<POS extends IFarPos, T extends IFarTile> {
-    void playerAdd(@NonNull EntityPlayerMP player);
+public interface ITileHandle<POS extends IFarPos, T extends IFarTile> extends ITileMetadata {
+    /**
+     * @return the tile's position
+     */
+    POS pos();
 
-    void playerRemove(@NonNull EntityPlayerMP player);
+    /**
+     * @return a snapshot of this tile's current data and metadata, or {@code null} if the tile hasn't been initialized
+     */
+    TileSnapshot<POS, T> snapshot();
 
-    void playerMove(@NonNull EntityPlayerMP player);
+    boolean set(@NonNull ITileMetadata metadata, @NonNull T tile);
 
-    void tileChanged(@NonNull ITileHandle<POS, T> handle);
+    void addListener(@NonNull Listener<POS, T> listener);
 
-    void debug_dropAllTiles();
+    void removeListener(@NonNull Listener<POS, T> listener);
+
+    /**
+     * @author DaPorkchop_
+     */
+    @FunctionalInterface
+    interface Listener<POS extends IFarPos, T extends IFarTile> {
+        void tileChanged(@NonNull ITileHandle<POS, T> handle, @NonNull TileSnapshot<POS, T> snapshot);
+    }
 }

@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.mode.api.server;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -33,7 +32,6 @@ import net.daporkchop.fp2.util.threading.keyed.KeyedExecutor;
 import net.minecraft.world.WorldServer;
 
 import java.io.Closeable;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * @author DaPorkchop_
@@ -45,9 +43,9 @@ public interface IFarWorld<POS extends IFarPos, T extends IFarTile> extends Clos
 
     KeyedExecutor<POS> executor();
 
-    CompletableFuture<Compressed<POS, T>> retainTileFuture(@NonNull POS pos);
+    void retainForLoad(@NonNull POS pos);
 
-    void releaseTileFuture(@NonNull POS pos);
+    void releaseForLoad(@NonNull POS pos);
 
     /**
      * @return the (possibly {@code null}) {@link IFarGeneratorRough} used for rough generation of far terrain
@@ -68,6 +66,11 @@ public interface IFarWorld<POS extends IFarPos, T extends IFarTile> extends Clos
      * @return the {@link IFarPlayerTracker} used by this world
      */
     IFarPlayerTracker<POS, T> tracker();
+
+    /**
+     * @return the {@link IFarTileCache} used by this world
+     */
+    IFarTileCache<POS, T> cache();
 
     /**
      * @return the {@link IFarRenderMode} that this world is used by

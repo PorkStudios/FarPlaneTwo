@@ -24,16 +24,17 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
+import net.daporkchop.fp2.mode.api.server.IFarTileCache;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
+import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.common.server.storage.rocksdb.RocksStorage;
 import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
@@ -51,7 +52,6 @@ import net.minecraft.world.WorldServer;
 import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -73,12 +73,13 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
     protected final IFarScaler<POS, T> scaler;
 
     protected final IFarStorage<POS, T> storage;
+    protected final IFarTileCache<POS, T> cache;
 
     protected final IFarPlayerTracker<POS, T> tracker;
 
     @Getter
     protected final KeyedExecutor<POS> executor; //TODO: make these global rather than per-dimension
-    protected final KeyedReferencingFutureScheduler<POS, Compressed<POS, T>> loader;
+    protected final KeyedReferencingFutureScheduler<POS, ITileHandle<POS, T>> loader;
     protected final KeyedDistinctScheduler<POS> updater;
 
     protected final boolean lowResolution;
@@ -121,6 +122,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.storage.dirtyTracker().forEachDirtyPos((pos, timestamp) -> this.enqueueUpdate(pos));
 
         WorldChangeListenerManager.add(this.world, this);
+
+        this.cache = new HashTileCache<>(this.storage::handleFor);
     }
 
     protected abstract IFarScaler<POS, T> createScaler();
@@ -130,43 +133,29 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
     protected abstract boolean anyVanillaTerrainExistsAt(@NonNull POS pos);
 
     @Override
-    public CompletableFuture<Compressed<POS, T>> retainTileFuture(@NonNull POS pos) {
-        return this.loader.retain(pos);
+    public void retainForLoad(@NonNull POS pos) {
+        this.loader.retain(pos);
     }
 
     @Override
-    public void releaseTileFuture(@NonNull POS pos) {
+    public void releaseForLoad(@NonNull POS pos) {
         this.loader.release(pos);
     }
 
-    public Compressed<POS, T> loadTile(@NonNull POS pos) {
-        Compressed<POS, T> compressedTile = this.storage.load(pos);
-        //create new value if absent
-        return compressedTile == null ? new Compressed<>(pos) : compressedTile;
+    public void tileAvailable(@NonNull ITileHandle<POS, T> handle) {
+        this.notifyPlayerTracker(handle);
     }
 
-    public void saveTile(@NonNull Compressed<POS, T> tile) {
-        //this is non-blocking (unless the rocksdb write-ahead log fills up)
-        this.storage.store(tile.pos(), tile);
-    }
+    public void tileChanged(@NonNull ITileHandle<POS, T> handle, boolean allowScale) {
+        this.tileAvailable(handle);
 
-    public void tileAvailable(@NonNull Compressed<POS, T> tile) {
-        this.notifyPlayerTracker(tile);
-    }
-
-    public void tileChanged(@NonNull Compressed<POS, T> tile, boolean allowScale) {
-        this.tileAvailable(tile);
-
-        //save the tile
-        this.saveTile(tile);
-
-        if (allowScale && tile.pos().level() < FP2Config.maxLevels - 1) {
-            this.scheduleForUpdate(this.scaler.outputs(tile.pos()));
+        if (allowScale && handle.pos().level() < FP2Config.maxLevels - 1) {
+            this.scheduleForUpdate(this.scaler.outputs(handle.pos()));
         }
     }
 
-    public void notifyPlayerTracker(@NonNull Compressed<POS, T> tile) {
-        this.tracker.tileChanged(tile);
+    public void notifyPlayerTracker(@NonNull ITileHandle<POS, T> handle) {
+        this.tracker.tileChanged(handle);
     }
 
     public boolean canGenerateRough(@NonNull POS pos) {

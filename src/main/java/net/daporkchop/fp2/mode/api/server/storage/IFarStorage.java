@@ -21,35 +21,20 @@
 package net.daporkchop.fp2.mode.api.server.storage;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.util.IReusablePersistent;
+import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.function.Consumer;
 
 /**
  * Handles reading and writing of far terrain data.
  *
  * @author DaPorkchop_
  */
-public interface IFarStorage<POS extends IFarPos, V extends IReusablePersistent> extends Closeable {
-    /**
-     * Loads the value at the given position.
-     *
-     * @param pos the position of the value to load
-     * @return the loaded value, or {@code null} if it doesn't exist
-     */
-    Compressed<POS, V> load(@NonNull POS pos);
-
-    /**
-     * Stores the given value at the given position, atomically replacing any existing value.
-     *
-     * @param pos   the position to save the data at
-     * @param value the value to save
-     */
-    void store(@NonNull POS pos, @NonNull Compressed<POS, V> value);
+public interface IFarStorage<POS extends IFarPos, T extends IFarTile> extends Closeable {
+    ITileHandle<POS, T> handleFor(@NonNull POS pos);
 
     /**
      * @return the {@link IFarDirtyTracker} used by this storage
