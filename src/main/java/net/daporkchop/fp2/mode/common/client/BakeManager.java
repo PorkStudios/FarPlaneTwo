@@ -26,7 +26,7 @@ import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
-import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
+import net.daporkchop.fp2.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
@@ -99,12 +99,12 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     }
 
     @Override
-    public void tileAdded(@NonNull TileSnapshot<POS, T> tile) {
+    public void tileAdded(@NonNull ITileSnapshot<POS, T> tile) {
         this.notifyOutputs(tile.pos());
     }
 
     @Override
-    public void tileModified(@NonNull TileSnapshot<POS, T> tile) {
+    public void tileModified(@NonNull ITileSnapshot<POS, T> tile) {
         this.notifyOutputs(tile.pos());
     }
 
@@ -134,7 +134,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         this.checkSelfRenderable(pos);
         this.checkParentsRenderable(pos);
 
-        TileSnapshot<POS, T>[] compressedInputTiles = uncheckedCast(this.tileCache.getTilesCached(this.baker.bakeInputs(pos)).toArray(TileSnapshot[]::new));
+        ITileSnapshot<POS, T>[] compressedInputTiles = uncheckedCast(this.tileCache.getTilesCached(this.baker.bakeInputs(pos)).toArray(ITileSnapshot[]::new));
         if (compressedInputTiles[0] == null) { //the tile isn't cached any more
             return;
         }
@@ -149,7 +149,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         try {
             for (int i = 0; i < srcs.length; i++) { //inflate tiles
                 if (compressedInputTiles[i] != null) {
-                    srcs[i] = compressedInputTiles[i].readTile(recycler);
+                    srcs[i] = compressedInputTiles[i].loadTile(recycler);
                 }
             }
 

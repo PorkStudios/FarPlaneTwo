@@ -18,31 +18,39 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.server;
+package net.daporkchop.fp2.mode.api.tile;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.api.tile.ITileHandle;
+import net.daporkchop.fp2.util.SimpleRecycler;
 
 /**
- * A cache for {@link ITileHandle} instances by position, in order to ensure that there is never more than one live handle at a time for a given position.
+ * A snapshot of the data stored at a given tile position.
  *
  * @author DaPorkchop_
  */
-public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> {
+public interface ITileSnapshot<POS extends IFarPos, T extends IFarTile> extends ITileMetadata {
     /**
-     * Retains and gets the handle at the given position.
-     *
-     * @param pos the position of the handle to retain
-     * @return the handle at the given position
+     * @return the tile's position
      */
-    ITileHandle<POS, T> retain(@NonNull POS pos);
+    POS pos();
 
     /**
-     * Releases a reference to the handle at the given position.
+     * Allocates a {@link T} using the given {@link SimpleRecycler} and initializes it using the data stored in this snapshot.
      *
-     * @param pos the position of the handle to release
+     * @param recycler a {@link SimpleRecycler} to use for allocating instances of {@link T}
+     * @return the loaded {@link T}, or {@code null} if this snapshot is empty
      */
-    void release(@NonNull POS pos);
+    T loadTile(@NonNull SimpleRecycler<T> recycler);
+
+    /**
+     * @return whether or not this snapshot's tile data is empty
+     */
+    boolean isEmpty();
+
+    /**
+     * @return this snapshot as a {@link CompressedTileSnapshot}
+     */
+    ITileSnapshot<POS, T> compressed();
 }

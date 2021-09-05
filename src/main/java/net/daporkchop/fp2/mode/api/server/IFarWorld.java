@@ -27,6 +27,7 @@ import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
+import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.keyed.KeyedExecutor;
 import net.minecraft.world.WorldServer;
@@ -68,9 +69,9 @@ public interface IFarWorld<POS extends IFarPos, T extends IFarTile> extends Clos
     IFarPlayerTracker<POS, T> tracker();
 
     /**
-     * @return the {@link IFarTileCache} used by this world
+     * @return the {@link IFarStorage} used by this world
      */
-    IFarTileCache<POS, T> cache();
+    IFarStorage<POS, T> storage();
 
     /**
      * @return the {@link IFarRenderMode} that this world is used by

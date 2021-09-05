@@ -60,7 +60,7 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
     //
 
     public ITileHandle<POS, T> roughGetTile(POS pos) {
-        ITileHandle<POS, T> handle = this.world.cache().retain(pos); //TODO: this is never released!
+        ITileHandle<POS, T> handle = this.world.storage().handleFor(pos);
         try {
             if (handle.isInitialized()) {
                 return handle;
@@ -237,7 +237,7 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
             SimpleRecycler<T> tileRecycler = this.world.mode().tileRecycler();
             T[] srcs = this.world.mode().tileArray(compressedSrcs.size());
             for (int i = 0; i < compressedSrcs.size(); i++) {
-                srcs[i] = compressedSrcs.get(i).snapshot().readTile(tileRecycler);
+                srcs[i] = compressedSrcs.get(i).snapshot().loadTile(tileRecycler);
             }
 
             T dst = tileRecycler.allocate();

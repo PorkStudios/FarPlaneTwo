@@ -20,6 +20,9 @@
 
 package net.daporkchop.fp2.mode.common.server.storage.rocksdb;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -134,6 +137,11 @@ public final class RocksStorage<POS extends IFarPos, T extends IFarTile> impleme
     @Getter
     protected final RocksDirtyTracker<POS> dirtyTracker;
 
+    protected final LoadingCache<POS, ITileHandle<POS, T>> handleCache = CacheBuilder.newBuilder()
+            .concurrencyLevel(FP2Config.generationThreads)
+            .weakValues()
+            .build(CacheLoader.from(pos -> new RocksTileHandle<>(pos, this)));
+
     @SneakyThrows(RocksDBException.class)
     public RocksStorage(@NonNull IFarRenderMode<POS, ?> mode, @NonNull File storageRoot) {
         this.mode = mode;
@@ -165,84 +173,7 @@ public final class RocksStorage<POS extends IFarPos, T extends IFarTile> impleme
 
     @Override
     public ITileHandle<POS, T> handleFor(@NonNull POS pos) {
-        return new AbstractTileHandle<POS, T>(pos) {
-            @Override
-            @SneakyThrows(RocksDBException.class)
-            public long timestamp() {
-                if (FP2_DEBUG && (FP2Config.debug.disableRead || FP2Config.debug.disablePersistence)) {
-                    return TIMESTAMP_BLANK;
-                }
-
-                byte[] timestampBytes = RocksStorage.this.db.get(RocksStorage.this.cfTileTimestamp, this.pos.toBytes());
-                return timestampBytes != null
-                        ? Unpooled.wrappedBuffer(timestampBytes).readLongLE() //timestamp for this tile exists, extract it from the byte array
-                        : TIMESTAMP_BLANK;
-            }
-
-            @Override
-            @SneakyThrows(RocksDBException.class)
-            public TileSnapshot<POS, T> snapshot() {
-                if (FP2_DEBUG && (FP2Config.debug.disableRead || FP2Config.debug.disablePersistence)) {
-                    return null;
-                }
-
-                byte[] keyBytes = this.pos.toBytes();
-
-                //read timestamp and tile bytes using multiGet to ensure coherency
-                List<byte[]> valueBytes = RocksStorage.this.db.multiGetAsList(
-                        ImmutableList.of(RocksStorage.this.cfTileTimestamp, RocksStorage.this.cfTileData),
-                        ImmutableList.of(keyBytes, keyBytes));
-
-                byte[] timestampBytes = valueBytes.get(0);
-                byte[] tileBytes = valueBytes.get(1);
-
-                return timestampBytes != null
-                        ? new TileSnapshot<>(this.pos, Unpooled.wrappedBuffer(timestampBytes).readLongLE(), tileBytes)
-                        : null;
-            }
-
-            @Override
-            @SneakyThrows(RocksDBException.class)
-            public boolean set(@NonNull ITileMetadata metadata, @NonNull T tile) {
-                if (FP2_DEBUG && (FP2Config.debug.disableWrite || FP2Config.debug.disablePersistence)) {
-                    return false;
-                }
-
-                try (Transaction txn = RocksStorage.this.db.beginTransaction(WRITE_OPTIONS)) {
-                    byte[] keyBytes = this.pos.toBytes();
-
-                    //obtain an exclusive lock on the key to ensure coherency
-                    byte[] timestampBytes = txn.getForUpdate(READ_OPTIONS, RocksStorage.this.cfTileTimestamp, keyBytes, true);
-                    long timestamp = timestampBytes != null
-                            ? Unpooled.wrappedBuffer(timestampBytes).readLongLE() //timestamp for this tile exists, extract it from the byte array
-                            : TIMESTAMP_BLANK;
-
-                    if (metadata.timestamp() <= timestamp) { //the new timestamp isn't newer than the existing one, so we can't replace it
-                        //exit without committing the transaction
-                        return false;
-                    }
-
-                    //store new timestamp in db
-                    txn.put(RocksStorage.this.cfTileTimestamp, keyBytes, UnpooledByteBufAllocator.DEFAULT.heapBuffer(Long.BYTES, Long.BYTES).writeLongLE(metadata.timestamp()).array());
-
-                    //encode tile and store it in db
-                    ByteBuf buf = ByteBufAllocator.DEFAULT.heapBuffer();
-                    try {
-                        if (tile.write(buf)) { //the tile was empty, remove it from the db!
-                            txn.delete(RocksStorage.this.cfTileData, keyBytes);
-                        } else { //the tile was non-empty, store it in the db
-                            txn.put(RocksStorage.this.cfTileData, keyBytes, Arrays.copyOfRange(buf.array(), buf.arrayOffset(), buf.arrayOffset() + buf.writerIndex()));
-                        }
-                    } finally {
-                        buf.release();
-                    }
-
-                    //commit transaction and report that a change was made
-                    txn.commit();
-                    return true;
-                }
-            }
-        };
+        return this.handleCache.getUnchecked(pos);
     }
 
     @Override

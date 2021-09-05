@@ -28,7 +28,6 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
-import net.daporkchop.fp2.mode.api.server.IFarTileCache;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
@@ -73,7 +72,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
     protected final IFarScaler<POS, T> scaler;
 
     protected final IFarStorage<POS, T> storage;
-    protected final IFarTileCache<POS, T> cache;
 
     protected final IFarPlayerTracker<POS, T> tracker;
 
@@ -122,8 +120,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.storage.dirtyTracker().forEachDirtyPos((pos, timestamp) -> this.enqueueUpdate(pos));
 
         WorldChangeListenerManager.add(this.world, this);
-
-        this.cache = new HashTileCache<>(this.storage::handleFor);
     }
 
     protected abstract IFarScaler<POS, T> createScaler();

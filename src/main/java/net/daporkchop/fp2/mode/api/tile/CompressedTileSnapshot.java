@@ -21,22 +21,26 @@
 package net.daporkchop.fp2.mode.api.tile;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.util.SimpleRecycler;
+import net.daporkchop.lib.compression.zstd.Zstd;
+
+import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
+ * Implementation of {@link ITileSnapshot} whose tile data is compressed when not in use.
+ *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Getter
-public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements ITileSnapshot<POS, T> {
+public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> implements ITileSnapshot<POS, T> {
     @NonNull
     protected final POS pos;
     protected final long timestamp;
@@ -44,36 +48,45 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements IT
     @Getter(AccessLevel.NONE)
     protected final byte[] data;
 
-    public TileSnapshot(@NonNull ByteBuf src, @NonNull IFarRenderMode<POS, T> mode) {
-        this.pos = mode.readPos(src);
-        this.timestamp = src.readLongLE();
+    public CompressedTileSnapshot(@NonNull TileSnapshot<POS, T> src) {
+        this.pos = src.pos();
+        this.timestamp = src.timestamp();
 
-        int len = src.readIntLE();
-        if (len < 0) { //no data!
+        if (src.data == null) { //no data
             this.data = null;
-        } else { //tile data is non-empty, read it
-            this.data = new byte[len];
-            src.readBytes(this.data);
-        }
-    }
+        } else { //source snapshot has some data, let's compress it
+            ByteBuf compressed = ByteBufAllocator.DEFAULT.buffer(Zstd.PROVIDER.compressBound(src.data.length));
+            try {
+                //compress data
+                checkState(ZSTD_DEF.get().compress(Unpooled.wrappedBuffer(src.data), compressed));
 
-    public void write(@NonNull ByteBuf dst) {
-        this.pos.writePos(dst);
-        dst.writeLongLE(this.timestamp);
-
-        if (this.data == null) { //no data!
-            dst.writeIntLE(-1);
-        } else { //tile data is present, write it to the buffer
-            dst.writeIntLE(this.data.length).writeBytes(this.data);
+                //copy compressed data into a byte array
+                this.data = new byte[compressed.readableBytes()];
+                compressed.readBytes(this.data);
+            } finally {
+                compressed.release();
+            }
         }
     }
 
     @Override
     public T loadTile(@NonNull SimpleRecycler<T> recycler) {
         if (this.data != null) {
-            T tile = recycler.allocate();
-            tile.read(Unpooled.wrappedBuffer(this.data));
-            return tile;
+            //allocate buffers
+            ByteBuf compressed = Unpooled.wrappedBuffer(this.data);
+            ByteBuf uncompressed = ByteBufAllocator.DEFAULT.buffer(Zstd.PROVIDER.frameContentSize(compressed));
+            try {
+                //uncompress data
+                checkState(ZSTD_INF.get().decompress(compressed, uncompressed));
+
+                //initialize tile from uncompressed data
+                T tile = recycler.allocate();
+                tile.read(uncompressed);
+                return tile;
+            } finally {
+                uncompressed.release();
+                //no need to release compressed buffer, since it's just wrapping a byte[]
+            }
         } else {
             return null;
         }
@@ -86,6 +99,6 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements IT
 
     @Override
     public ITileSnapshot<POS, T> compressed() {
-        return new CompressedTileSnapshot<>(this);
+        return this; //we're already compressed!
     }
 }

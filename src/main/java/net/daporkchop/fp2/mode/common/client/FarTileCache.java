@@ -22,9 +22,9 @@ package net.daporkchop.fp2.mode.common.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
+import net.daporkchop.fp2.mode.api.client.IFarTileCache;
+import net.daporkchop.fp2.mode.api.tile.ITileSnapshot;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -46,12 +46,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @SideOnly(Side.CLIENT)
 //TODO: this still has some race conditions - it's possible that addListener/removeListener might cause the listener to be notified twice for tiles that are
 // received/unloaded during the initial notification pass
-public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarTileCache<POS, T>, Function<POS, TileSnapshot<POS, T>> {
-    protected final Map<POS, TileSnapshot<POS, T>> tiles = new ConcurrentHashMap<>();
+public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarTileCache<POS, T>, Function<POS, ITileSnapshot<POS, T>> {
+    protected final Map<POS, ITileSnapshot<POS, T>> tiles = new ConcurrentHashMap<>();
     protected final Collection<Listener<POS, T>> listeners = new CopyOnWriteArraySet<>();
 
     @Override
-    public void receiveTile(@NonNull TileSnapshot<POS, T> tile) {
+    public void receiveTile(@NonNull ITileSnapshot<POS, T> tile) {
         this.assertNotReleased();
         this.tiles.compute(tile.pos(), (pos, old) -> {
             if (old == null) {
@@ -91,13 +91,13 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
     }
 
     @Override
-    public TileSnapshot<POS, T> getTileCached(@NonNull POS position) {
+    public ITileSnapshot<POS, T> getTileCached(@NonNull POS position) {
         this.assertNotReleased();
         return this.tiles.get(position);
     }
 
     @Override
-    public Stream<TileSnapshot<POS, T>> getTilesCached(@NonNull Stream<POS> position) {
+    public Stream<ITileSnapshot<POS, T>> getTilesCached(@NonNull Stream<POS> position) {
         this.assertNotReleased();
         return position.map(this);
     }
@@ -107,7 +107,7 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
      */
     @Override
     @Deprecated
-    public TileSnapshot<POS, T> apply(@NonNull POS pos) {
+    public ITileSnapshot<POS, T> apply(@NonNull POS pos) {
         return this.tiles.get(pos);
     }
 
