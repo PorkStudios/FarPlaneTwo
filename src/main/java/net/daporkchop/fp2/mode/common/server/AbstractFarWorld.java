@@ -40,17 +40,15 @@ import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
-import net.daporkchop.fp2.util.threading.keyed.ApproximatePriorityKeyedExecutor;
-import net.daporkchop.fp2.util.threading.keyed.KeyedDistinctScheduler;
-import net.daporkchop.fp2.util.threading.keyed.KeyedExecutor;
-import net.daporkchop.fp2.util.threading.keyed.KeyedReferencingFutureScheduler;
+import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
+import net.daporkchop.fp2.util.threading.scheduler.SharedFutureScheduler;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.minecraft.world.WorldServer;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Comparator;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -75,10 +73,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
     protected final IFarPlayerTracker<POS, T> tracker;
 
-    @Getter
-    protected final KeyedExecutor<POS> executor; //TODO: make these global rather than per-dimension
-    protected final KeyedReferencingFutureScheduler<POS, ITileHandle<POS, T>> loader;
-    protected final KeyedDistinctScheduler<POS> updater;
+    protected final Scheduler<PriorityTask<POS>, ITileHandle<POS, T>> scheduler; //TODO: make this global rather than per-dimension
 
     protected final boolean lowResolution;
 
@@ -105,16 +100,13 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.root = new File(world.getChunkSaveLocation(), "fp2/" + this.mode().name().toLowerCase());
         this.storage = new RocksStorage<>(mode, this.root);
 
-        FarServerWorker<POS, T> worker = new FarServerWorker<>(this);
-
-        this.executor = new ApproximatePriorityKeyedExecutor<>(ThreadingHelper.workerGroupBuilder()
-                .world(this.world)
-                .threads(FP2Config.generationThreads)
-                .threadFactory(PThreadFactories.builder().daemon().minPriority()
-                        .collapsingId().name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build()),
-                Comparator.comparingInt(POS::level));
-        this.loader = new KeyedReferencingFutureScheduler<>(this.executor, worker::roughGetTile, PRIORITY_LOAD);
-        this.updater = new KeyedDistinctScheduler<>(this.executor, worker::updateTile, PRIORITY_UPDATE);
+        this.scheduler = new SharedFutureScheduler<>(
+                scheduler -> new FarServerWorker<>(this, scheduler),
+                ThreadingHelper.workerGroupBuilder()
+                        .world(this.world)
+                        .threads(FP2Config.generationThreads)
+                        .threadFactory(PThreadFactories.builder().daemon().minPriority()
+                                .collapsingId().name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build()));
 
         //add all dirty tiles to update queue
         this.storage.dirtyTracker().forEachDirtyPos((pos, timestamp) -> this.enqueueUpdate(pos));
@@ -129,13 +121,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
     protected abstract boolean anyVanillaTerrainExistsAt(@NonNull POS pos);
 
     @Override
-    public void retainForLoad(@NonNull POS pos) {
-        this.loader.retain(pos);
-    }
-
-    @Override
-    public void releaseForLoad(@NonNull POS pos) {
-        this.loader.release(pos);
+    public CompletableFuture<ITileHandle<POS, T>> requestLoad(@NonNull POS pos) {
+        return this.scheduler.schedule(new PriorityTask<>(TaskStage.LOAD, pos));
     }
 
     public void tileAvailable(@NonNull ITileHandle<POS, T> handle) {
@@ -159,12 +146,10 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
     }
 
     protected void enqueueUpdate(@NonNull POS pos) {
-        this.updater.submit(pos);
+        //TODO: this.scheduler.schedule(new PriorityTask<>(TaskStage.UPDATE, pos));
     }
 
     protected void scheduleForUpdate(@NonNull Stream<POS> positions) {
-        //if (this.exactActive.put(pos, newTimestamp) < 0L) {
-
         this.storage.dirtyTracker()
                 .markDirty(positions, this.currentTime)
                 .forEach(this::enqueueUpdate);
@@ -190,9 +175,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         WorldChangeListenerManager.remove(this.world, this);
         this.onTickEnd();
 
-        this.updater.release();
-        this.loader.release();
-        this.executor.release();
+        this.scheduler.close();
 
         FP2_LOG.trace("Shutting down storage in DIM{}", this.world.provider.getDimension());
         this.storage.close();

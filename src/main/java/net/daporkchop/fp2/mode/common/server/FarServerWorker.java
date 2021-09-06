@@ -31,9 +31,10 @@ import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
+import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
 
-import java.util.Collections;
-import java.util.function.Consumer;
+import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static net.daporkchop.fp2.debug.FP2Debug.*;
@@ -44,13 +45,22 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements Consumer<PriorityTask<POS>> {
+public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements Function<PriorityTask<POS>, ITileHandle<POS, T>> {
     @NonNull
     protected final AbstractFarWorld<POS, T> world;
+    @NonNull
+    protected final Scheduler<PriorityTask<POS>, ITileHandle<POS, T>> scheduler;
 
     @Override
-    public void accept(PriorityTask<POS> task) {
-        throw new UnsupportedOperationException();
+    public ITileHandle<POS, T> apply(@NonNull PriorityTask<POS> task) {
+        switch (task.stage) {
+            case LOAD:
+                return this.roughGetTile(task.pos);
+            case UPDATE:
+                return this.updateTile(task.pos);
+            default:
+                throw new IllegalArgumentException(task.stage.name());
+        }
     }
 
     //
@@ -147,11 +157,37 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
     }
 
     public ITileHandle<POS, T> roughScaleTile(POS pos, ITileHandle<POS, T> handle) {
-        if (handle.isInitialized()) { //break out early if tile is already done or newer
-            return handle;
+        //generate scale inputs
+        List<ITileHandle<POS, T>> srcHandles = this.scheduler.scatterGather(this.world.scaler().inputs(pos).map(p -> new PriorityTask<>(TaskStage.LOAD, p)).collect(Collectors.toList()));
+
+        //inflate sources
+        SimpleRecycler<T> tileRecycler = this.world.mode().tileRecycler();
+        T[] srcs = this.world.mode().tileArray(srcHandles.size());
+        for (int i = 0; i < srcHandles.size(); i++) {
+            srcs[i] = srcHandles.get(i).snapshot().loadTile(tileRecycler);
         }
 
-        return this.scaleTile0(pos, handle, ITileMetadata.TIMESTAMP_GENERATED, false);
+        T dst = tileRecycler.allocate();
+        try {
+            if (handle.isInitialized()) { //break out early if tile is already done or newer
+                return handle;
+            }
+
+            //actually do scaling
+            this.world.scaler().scale(srcs, dst);
+            if (handle.set(ITileMetadata.ofTimestamp(ITileMetadata.TIMESTAMP_GENERATED), dst)) {
+                this.world.tileChanged(handle, false);
+            }
+        } finally {
+            tileRecycler.release(dst);
+            for (T src : srcs) {
+                if (src != null) {
+                    tileRecycler.release(src);
+                }
+            }
+        }
+
+        return handle;
     }
 
     //
@@ -160,30 +196,22 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
     //
     //
 
-    public void updateTile(POS pos) {
+    public ITileHandle<POS, T> updateTile(POS pos) {
+        ITileHandle<POS, T> handle = this.world.storage().handleFor(pos);
+
         long newTimestamp = this.world.storage.dirtyTracker().dirtyTimestamp(pos);
         if (newTimestamp < 0L) {
             FP2_LOG.warn("Duplicate update task scheduled for tile at {}!", pos);
-            return;
+            return handle;
         }
 
         try {
             if (FP2_DEBUG && FP2Config.debug.disableExactGeneration) { //updates will always use the exact generator, so don't use them
-                return;
+                return handle;
             }
 
-            this.updateTile(pos, newTimestamp);
-        } finally {
-            //remove tile from tracker again
-            this.world.storage.dirtyTracker().clearDirty(pos, newTimestamp);
-        }
-    }
-
-    public void updateTile(POS pos, long newTimestamp) {
-        this.world.loader.doWith(Collections.singletonList(pos), compressedSrcs -> {
-            ITileHandle<POS, T> handle = compressedSrcs.get(0);
             if (handle.timestamp() >= newTimestamp) { //break out early if tile is already done or newer
-                return;
+                return handle;
             }
 
             if (pos.level() == 0) {
@@ -191,7 +219,12 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
             } else {
                 this.updateTileScale(pos, handle, newTimestamp);
             }
-        });
+
+            return handle;
+        } finally {
+            //remove tile from tracker again
+            this.world.storage.dirtyTracker().clearDirty(pos, newTimestamp);
+        }
     }
 
     protected void updateTileExact(POS pos, ITileHandle<POS, T> handle, long newTimestamp) {
@@ -221,42 +254,34 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
     }
 
     protected void updateTileScale(POS pos, ITileHandle<POS, T> handle, long newTimestamp) {
-        this.scaleTile0(pos, handle, newTimestamp, true);
-    }
-
-    //
-    //
-    // helpers
-    //
-    //
-
-    public ITileHandle<POS, T> scaleTile0(POS pos, ITileHandle<POS, T> handle, long newTimestamp, boolean allowScale) {
         //generate scale inputs
-        this.world.loader.doWith(this.world.scaler().inputs(pos).collect(Collectors.toList()), compressedSrcs -> {
-            //inflate sources
-            SimpleRecycler<T> tileRecycler = this.world.mode().tileRecycler();
-            T[] srcs = this.world.mode().tileArray(compressedSrcs.size());
-            for (int i = 0; i < compressedSrcs.size(); i++) {
-                srcs[i] = compressedSrcs.get(i).snapshot().loadTile(tileRecycler);
+        List<ITileHandle<POS, T>> srcHandles = this.scheduler.scatterGather(this.world.scaler().inputs(pos).map(p -> new PriorityTask<>(TaskStage.UPDATE, p)).collect(Collectors.toList()));
+
+        //inflate sources
+        SimpleRecycler<T> tileRecycler = this.world.mode().tileRecycler();
+        T[] srcs = this.world.mode().tileArray(srcHandles.size());
+        for (int i = 0; i < srcHandles.size(); i++) {
+            srcs[i] = srcHandles.get(i).snapshot().loadTile(tileRecycler);
+        }
+
+        T dst = tileRecycler.allocate();
+        try {
+            if (handle.timestamp() >= newTimestamp) { //break out early if tile is already done or newer
+                return;
             }
 
-            T dst = tileRecycler.allocate();
-            try {
-                //actually do scaling
-                long extra = this.world.scaler().scale(srcs, dst);
-                if (handle.set(ITileMetadata.ofTimestamp(newTimestamp), dst)) {
-                    this.world.tileChanged(handle, allowScale);
-                }
-            } finally {
-                tileRecycler.release(dst);
-                for (T src : srcs) {
-                    if (src != null) {
-                        tileRecycler.release(src);
-                    }
+            //actually do scaling
+            this.world.scaler().scale(srcs, dst);
+            if (handle.set(ITileMetadata.ofTimestamp(newTimestamp), dst)) {
+                this.world.tileChanged(handle, true);
+            }
+        } finally {
+            tileRecycler.release(dst);
+            for (T src : srcs) {
+                if (src != null) {
+                    tileRecycler.release(src);
                 }
             }
-        });
-
-        return handle;
+        }
     }
 }

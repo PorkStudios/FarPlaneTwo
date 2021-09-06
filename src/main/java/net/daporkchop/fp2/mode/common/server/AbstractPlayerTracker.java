@@ -52,6 +52,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
@@ -422,19 +423,20 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
         protected final POS pos;
 
+        protected CompletableFuture<ITileHandle<POS, T>> loadFuture;
         protected ITileHandle<POS, T> handle;
 
         public Entry(@NonNull POS pos) {
             this.pos = pos;
 
             //request that the tile be generated
-            AbstractPlayerTracker.this.world.retainForLoad(pos);
+            this.loadFuture = AbstractPlayerTracker.this.world.requestLoad(pos);
         }
 
         public Entry addContext(@NonNull Context ctx) {
             checkState(super.add(ctx), "player %s was already added to entry %s!", ctx, this);
 
-            if (this.handle != null && this.handle.isInitialized()) { //the tile has already been initialized, let's send it to the player
+            if (this.handle != null) { //the tile has already been initialized, let's send it to the player
                 ctx.notifyChanged(this.handle);
             }
 
@@ -444,13 +446,13 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         public Entry removePlayer(@NonNull Context ctx) {
             checkState(super.remove(ctx), "player %s did not belong to entry %s!", ctx, this);
 
-            if (this.handle != null && this.handle.isInitialized()) { //the tile has already been sent to the player, so it needs to be unloaded on their end
+            if (this.handle != null) { //the tile has already been sent to the player, so it needs to be unloaded on their end
                 ctx.notifyUnload(this.pos);
             }
 
             if (super.isEmpty()) { //no more players are tracking this entry, so it can be removed
                 //release the tile load future (potentially removing it from the load/generation queue)
-                AbstractPlayerTracker.this.world.releaseForLoad(this.pos);
+                this.discardLoadFuture();
 
                 //this entry should be replaced with null
                 return null;
@@ -467,8 +469,17 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
                 checkState(this.handle == handle, "mismatched handles at %s!", this.pos);
             }
 
+            this.discardLoadFuture();
+
             //notify all players which have this tile loaded
             super.forEach(ctx -> ctx.notifyChanged(handle));
+        }
+
+        protected void discardLoadFuture() {
+            if (this.loadFuture != null) {
+                this.loadFuture.cancel(false);
+                this.loadFuture = null;
+            }
         }
     }
 }

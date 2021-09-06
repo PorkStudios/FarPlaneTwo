@@ -28,11 +28,13 @@ import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
+import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.keyed.KeyedExecutor;
 import net.minecraft.world.WorldServer;
 
 import java.io.Closeable;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @author DaPorkchop_
@@ -42,11 +44,7 @@ public interface IFarWorld<POS extends IFarPos, T extends IFarTile> extends Clos
 
     IAsyncBlockAccess blockAccess();
 
-    KeyedExecutor<POS> executor();
-
-    void retainForLoad(@NonNull POS pos);
-
-    void releaseForLoad(@NonNull POS pos);
+    CompletableFuture<ITileHandle<POS, T>> requestLoad(@NonNull POS pos);
 
     /**
      * @return the (possibly {@code null}) {@link IFarGeneratorRough} used for rough generation of far terrain
