@@ -23,8 +23,10 @@ package net.daporkchop.fp2.compat.vanilla.biome.weight;
 import lombok.Getter;
 import lombok.NonNull;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelperCached.*;
+import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -44,10 +46,10 @@ public class VanillaBiomeWeightHelper implements BiomeWeightHelper {
     public VanillaBiomeWeightHelper(double depthOffset, double depthFactor, double scaleOffset, double scaleFactor, int smoothRadius) {
         this.smoothRadius = notNegative(smoothRadius, "smoothRadius");
         this.smoothDiameter = smoothRadius * 2 + 1;
-        this.smoothWeights = new double[this.smoothDiameter * this.smoothDiameter];
+        this.smoothWeights = new double[sq(this.smoothDiameter)];
         for (int i = 0, x = -this.smoothRadius; x <= this.smoothRadius; x++) {
             for (int z = -this.smoothRadius; z <= this.smoothRadius; z++) {
-                this.smoothWeights[i++] = 10.0d / Math.sqrt(z * z + x * x + 0.2d);
+                this.smoothWeights[i++] = 10.0d / sqrt(z * z + x * x + 0.2d);
             }
         }
 
@@ -64,9 +66,8 @@ public class VanillaBiomeWeightHelper implements BiomeWeightHelper {
     @Override
     public void compute(@NonNull int[] biomesIn, int inOffset, int inScaleX, @NonNull double[] heightsOut, @NonNull double[] variationsOut, int outIdx) {
         final int smoothRadius = this.smoothRadius;
-        final int smoothDiameter = this.smoothDiameter;
 
-        final double centerBiomeRawHeight = getBiomeBaseHeight(biomesIn[inOffset + smoothRadius * smoothDiameter + smoothRadius]);
+        final double centerBiomeRawHeight = getBiomeBaseHeight(biomesIn[inOffset + smoothRadius * inScaleX + smoothRadius]);
 
         double smoothHeight = 0.0d;
         double smoothVariation = 0.0d;
