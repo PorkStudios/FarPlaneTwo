@@ -30,8 +30,10 @@ import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.util.SimpleRecycler;
+import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.List;
 import java.util.function.Function;
@@ -99,6 +101,10 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
                 //this will generate the tile and all tiles below it down to level 0 until the tile can be "generated" from scaled data
                 return this.roughScaleTile(pos, handle);
             }
+        } catch (Throwable t) {
+            ThreadingHelper.handle(this.world.world, t);
+            PUnsafe.throwException(t);
+            throw new AssertionError();
         } finally {
             this.world.tileAvailable(handle);
         }

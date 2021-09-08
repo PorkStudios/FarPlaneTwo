@@ -24,7 +24,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.util.threading.ThreadingHelper;
-import net.daporkchop.fp2.util.threading.keyed.KeyedReferencingFutureScheduler;
 import net.daporkchop.fp2.util.threading.workergroup.WorkerGroupBuilder;
 import net.daporkchop.fp2.util.threading.workergroup.WorldWorkerGroup;
 import net.daporkchop.lib.common.misc.string.PStrings;
@@ -48,7 +47,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -169,13 +167,15 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
 
             @Override
             public Task apply(@NonNull P param, Task task) {
-                if (task != expectedTask//tasks don't match, do nothing
+                if (task != expectedTask //tasks don't match, do nothing
                     || task.refCnt < 0) { //task is currently being executed, we can't start executing it
                     this.started = false;
                 } else {
                     //set reference count to -1 to indicate that it's started execution
                     task.refCnt = -1;
                     this.started = true;
+
+                    SharedFutureScheduler.this.unqueue(task);
                 }
                 return task;
             }
@@ -190,22 +190,25 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
         checkState(this.tasks.remove(task.param, task), "unable to delete task for %s?!?", task.param);
     }
 
-    @SneakyThrows(InterruptedException.class)
-    protected void pollSingleTask() {
+    protected void pollAndExecuteSingleTask() {
         if (!this.running) {
             throw new SchedulerClosedError();
         }
 
-        //poll the queue, but don't wait indefinitely because we need to be able to exit if the executor stops running.
-        // we don't want to use interrupts, because they can cause unwanted side-effects (such as closing NIO channels).
-        Task task = this.queue.poll(1L, TimeUnit.SECONDS);
-
+        Task task = this.pollSingleTask();
         if (task == null //queue is empty
             || !this.beginTask(task)) { //we lost the "race" to begin executing the task
             return;
         }
 
         this.executeTask(task);
+    }
+
+    @SneakyThrows(InterruptedException.class)
+    protected Task pollSingleTask() {
+        //poll the queue, but don't wait indefinitely because we need to be able to exit if the executor stops running.
+        // we don't want to use interrupts because they can cause unwanted side-effects (such as closing NIO channels).
+        return this.queue.poll(1L, TimeUnit.SECONDS);
     }
 
     protected void executeTask(@NonNull Task task) {
@@ -222,9 +225,8 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
             task.cancel(true); //cancel the future to make sure it has a return value
             throw e;
         } catch (Throwable t) {
-            FP2_LOG.error(Thread.currentThread().getName(), t);
             task.completeExceptionally(t);
-            throw t;
+            ThreadingHelper.handle(this.group.world(), t);
         } finally { //the task's been executed, remove it from the map
             this.deleteTask(task);
 
@@ -240,20 +242,22 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
     public void run() {
         try {
             while (true) {
-                this.pollSingleTask();
+                this.pollAndExecuteSingleTask();
             }
         } catch (SchedulerClosedError e) {
             //swallow error and exit quietly
         }
     }
 
-    protected void stealWorkUntilDone(@NonNull Task task) {
+    protected void awaitJoin(@NonNull Task task) {
+        //we don't want to actually BLOCK the worker thread while waiting for a task to complete! that would be stupid, let's make it do some actual work instead.
+
         //it would be best if we could start by executing the task we want to wait for, so let's start by trying to begin it now
         if (this.beginTask(task)) { //we won the race to execute the task! actually execute it and return immediately, nothing else remains to be done
             this.executeTask(task);
         } else { //keep ourselves occupied by doing other tasks until the one we're waiting for is completed
             while (!task.isDone()) {
-                this.pollSingleTask();
+                this.pollAndExecuteSingleTask();
             }
         }
     }
@@ -338,7 +342,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
             if (SharedFutureScheduler.this.group.threads().contains(Thread.currentThread())) {
                 //we're on a worker thread, which means this task is being waited on recursively!
                 //  let's steal work from the execution queue until this task is completed.
-                SharedFutureScheduler.this.stealWorkUntilDone(this);
+                SharedFutureScheduler.this.awaitJoin(this);
                 return super.join();
             } else { //not recursive, block normally
                 return ThreadingHelper.managedBlock(this);

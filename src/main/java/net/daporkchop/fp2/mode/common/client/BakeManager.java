@@ -33,12 +33,11 @@ import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
 import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.ThreadingHelper;
-import net.daporkchop.fp2.util.threading.keyed.DefaultKeyedExecutor;
-import net.daporkchop.fp2.util.threading.keyed.KeyedExecutor;
+import net.daporkchop.fp2.util.threading.scheduler.NoFutureScheduler;
+import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
-import net.minecraft.client.Minecraft;
 import net.minecraft.world.World;
 
 import java.util.AbstractMap;
@@ -50,15 +49,17 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public class BakeManager<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarTileCache.Listener<POS, T>, Runnable {
+public class BakeManager<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarTileCache.Listener<POS, T>, Consumer<POS>, Runnable {
     protected final AbstractFarRenderer<POS, T> renderer;
     protected final IFarRenderStrategy<POS, T, ?, ?> strategy;
 
@@ -67,7 +68,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     protected final IRenderIndex<POS, ?, ?> index;
     protected final IRenderBaker<POS, T, ?> baker;
 
-    protected final KeyedExecutor<POS> bakeExecutor;
+    protected final Scheduler<POS, Void> bakeScheduler;
     protected final World world;
 
     protected final Map<POS, Optional<IBakeOutput>> pendingDataUpdates = new ConcurrentHashMap<>();
@@ -81,9 +82,9 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
         this.index = this.strategy.createIndex();
         this.baker = this.strategy.createBaker();
-        this.world = Minecraft.getMinecraft().world;
+        this.world = MC.world;
 
-        this.bakeExecutor = new DefaultKeyedExecutor<>(ThreadingHelper.workerGroupBuilder()
+        this.bakeScheduler = new NoFutureScheduler<>(this, ThreadingHelper.workerGroupBuilder()
                 .world(this.world)
                 .threads(FP2Config.client.renderThreads)
                 .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build()));
@@ -95,7 +96,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     protected void doRelease() {
         this.tileCache.removeListener(this, false);
 
-        this.bakeExecutor.release();
+        this.bakeScheduler.close();
     }
 
     @Override
@@ -110,36 +111,36 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
     @Override
     public void tileRemoved(@NonNull POS pos) {
-        //make sure that any in-progress bake tasks are finished before the tile is removed
-        this.bakeExecutor.submitExclusive(pos, () -> {
-            this.updateRenderable(pos, false);
-            this.checkParentsRenderable(pos);
-
-            this.updateData(pos, Optional.empty());
-        });
+        //schedule the tile itself for re-bake
+        this.bakeScheduler.schedule(pos);
     }
 
     protected void notifyOutputs(@NonNull POS pos) {
+        //schedule all of the positions affected by the tile for re-bake
         this.baker.bakeOutputs(pos).forEach(outputPos -> {
             if (outputPos.level() < 0 || outputPos.level() > this.renderer.maxLevel) { //output tile is at an invalid zoom level, skip it
                 return;
             }
 
             //schedule tile for baking
-            this.bakeExecutor.submitExclusive(outputPos, () -> this.bake(outputPos));
+            this.bakeScheduler.schedule(outputPos);
         });
     }
 
-    protected void bake(@NonNull POS pos) { //this function is called from inside of RENDER_WORKERS, which holds a lock on the position
+    /**
+     * Bakes the tile at the given position.
+     *
+     * @deprecated internal API, do not touch!
+     */
+    @Override
+    @Deprecated
+    public void accept(@NonNull POS pos) { //this function is called from inside of bakeScheduler, which doesn't execute the task multiple times on the same position
         this.checkSelfRenderable(pos);
         this.checkParentsRenderable(pos);
 
         ITileSnapshot<POS, T>[] compressedInputTiles = uncheckedCast(this.tileCache.getTilesCached(this.baker.bakeInputs(pos)).toArray(ITileSnapshot[]::new));
-        if (compressedInputTiles[0] == null) { //the tile isn't cached any more
-            return;
-        }
-
-        if (compressedInputTiles[0].isEmpty()) { //tile has no data, we "bake" it by deleting it if it exists
+        if (compressedInputTiles[0] == null //tile isn't cached any more
+            || compressedInputTiles[0].isEmpty()) { //tile data is empty
             this.updateData(pos, Optional.empty());
             return;
         }
@@ -175,7 +176,8 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     }
 
     protected void checkSelfRenderable(@NonNull POS pos) {
-        this.updateRenderable(pos, this.tileCache.getTilesCached(uncheckedCast(pos.down().allPositionsInBB(1, 3))).anyMatch(Objects::isNull));
+        this.updateRenderable(pos, this.tileCache.getTileCached(pos) != null
+                                   && this.tileCache.getTilesCached(uncheckedCast(pos.down().allPositionsInBB(1, 3))).anyMatch(Objects::isNull));
     }
 
     protected void updateData(@NonNull POS pos, @NonNull Optional<IBakeOutput> optionalBakeOutput) {

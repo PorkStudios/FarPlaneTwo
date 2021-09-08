@@ -42,6 +42,7 @@ import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
 import net.daporkchop.fp2.util.threading.scheduler.SharedFutureScheduler;
+import net.daporkchop.fp2.util.threading.scheduler.SortedSharedFutureScheduler;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.minecraft.world.WorldServer;
@@ -100,7 +101,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.root = new File(world.getChunkSaveLocation(), "fp2/" + this.mode().name().toLowerCase());
         this.storage = new RocksStorage<>(mode, this.root);
 
-        this.scheduler = new SharedFutureScheduler<>(
+        this.scheduler = new SortedSharedFutureScheduler<>(
                 scheduler -> new FarServerWorker<>(this, scheduler),
                 ThreadingHelper.workerGroupBuilder()
                         .world(this.world)
