@@ -28,6 +28,8 @@ import net.minecraft.world.biome.Biome;
 
 import java.util.Arrays;
 
+import static net.daporkchop.fp2.util.math.MathUtil.*;
+
 /**
  * Implementation of {@link IBiomeProvider} which uses a constant, fixed biome.
  *
@@ -43,19 +45,19 @@ public class FixedBiomeProvider implements IBiomeProvider {
 
     @Override
     public void generateBiomes(int x, int z, int level, int size, @NonNull int[] biomes) {
-        Arrays.fill(biomes, 0, size * size, this.biomeId);
+        Arrays.fill(biomes, 0, sq(size), this.biomeId);
     }
 
     @Override
     public void generateBiomesAndWeightedHeightsVariations(int x, int z, int level, int size, @NonNull int[] biomes, @NonNull double[] heights, @NonNull double[] variations, @NonNull BiomeWeightHelper weightHelper) {
-        Arrays.fill(biomes, 0, size * size, this.biomeId);
+        Arrays.fill(biomes, 0, sq(size), this.biomeId);
 
         //compute weighted height+variation for single point, then copy it to all points
         int[] tempBiomeIds = new int[weightHelper.smoothDiameter()];
         Arrays.fill(tempBiomeIds, this.biomeId);
-        weightHelper.compute(tempBiomeIds, weightHelper.smoothRadius(), 0, heights, variations, 0);
+        weightHelper.compute(tempBiomeIds, 0, 0, heights, variations, 0);
 
-        Arrays.fill(heights, 0, size * size, heights[0]);
-        Arrays.fill(variations, 0, size * size, variations[0]);
+        Arrays.fill(heights, 0, sq(size), heights[0]);
+        Arrays.fill(variations, 0, sq(size), variations[0]);
     }
 }
