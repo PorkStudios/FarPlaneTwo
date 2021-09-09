@@ -44,7 +44,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -264,11 +263,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
 
     @Override
     public List<V> scatterGather(@NonNull List<P> params) {
-        //get all tasks
-        List<Task> tasks = new ArrayList<>(params.size());
-        for (P param : params) {
-            tasks.add(this.retainTask(param));
-        }
+        List<Task> tasks = this.scatter(params);
 
         Deque<Task> recursionStack = this.recursionStack.get();
         Task parent = recursionStack.peek();
@@ -279,15 +274,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
             }
 
             try {
-                //race to complete each task
-                for (Task task : tasks) {
-                    if (this.beginTask(task)) {
-                        this.executeTask(task);
-                    }
-                }
-
-                //join all the tasks, which will block if necessary
-                return tasks.stream().map(Task::join).collect(Collectors.toList());
+                return this.gather(tasks);
             } finally {
                 if (PUnsafe.compareAndSwapObject(parent, TASK_DEPENDENCIES_OFFSET, tasks, null)) { //don't release dependencies if they've already been released from
                     //  another thread (due to this task's cancellation)
@@ -296,19 +283,35 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
             }
         } else { //top-level task, do a simple scatter/gather
             try {
-                //race to complete each task
-                for (Task task : tasks) {
-                    if (this.beginTask(task)) {
-                        this.executeTask(task);
-                    }
-                }
-
-                //join all the tasks, which will block if necessary
-                return tasks.stream().map(Task::join).collect(Collectors.toList());
+                return this.gather(tasks);
             } finally {
                 tasks.forEach(this::releaseTask);
             }
         }
+    }
+
+    protected List<Task> scatter(@NonNull List<P> params) {
+        List<Task> tasks = new ArrayList<>(params.size());
+        for (P param : params) {
+            tasks.add(this.retainTask(param));
+        }
+        return tasks;
+    }
+
+    protected List<V> gather(@NonNull List<Task> tasks) {
+        //race to complete each task
+        for (Task task : tasks) {
+            if (this.beginTask(task)) {
+                this.executeTask(task);
+            }
+        }
+
+        //join all the tasks, which will block if necessary
+        List<V> values = new ArrayList<>(tasks.size());
+        for (SharedFutureScheduler<P, V>.Task task : tasks) {
+            values.add(task.join());
+        }
+        return values;
     }
 
     /**
@@ -347,6 +350,11 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
             } else { //not recursive, block normally
                 return ThreadingHelper.managedBlock(this);
             }
+        }
+
+        @Override
+        public String toString() {
+            return this.param.toString();
         }
     }
 }

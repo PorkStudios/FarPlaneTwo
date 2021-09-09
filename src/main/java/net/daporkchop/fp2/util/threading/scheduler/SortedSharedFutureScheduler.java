@@ -26,12 +26,12 @@ import net.daporkchop.fp2.util.threading.workergroup.WorkerGroupBuilder;
 import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.ArrayDeque;
-import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -50,7 +50,7 @@ public class SortedSharedFutureScheduler<P extends Comparable<? super P>, V> ext
         return () -> new ArrayDeque<SharedFutureScheduler<P, V>.Task>() {
             @Override
             public void push(SharedFutureScheduler<P, V>.Task task) {
-                checkState(this.isEmpty() || PorkUtil.<Comparator<SharedFutureScheduler<P, V>.Task>>uncheckedCast(Comparator.naturalOrder()).compare(this.peekFirst(), task) > 0);
+                checkState(this.isEmpty() || PorkUtil.<Task>uncheckedCast(this.peekFirst()).compareTo(uncheckedCast(task)) > 0);
                 super.push(task);
             }
         };
@@ -73,6 +73,12 @@ public class SortedSharedFutureScheduler<P extends Comparable<? super P>, V> ext
 
     @Override
     protected void awaitJoin(@NonNull SharedFutureScheduler<P, V>.Task task) {
+        Deque<SharedFutureScheduler<P, V>.Task> recursionStack = this.recursionStack.get();
+        Task parent = uncheckedCast(recursionStack.peekFirst());
+        if (parent != null) { //this is a recursive task! we should make sure that the child task is less than the current one
+            checkArg(parent.compareTo(uncheckedCast(task)) > 0, "task at %s tried to recurse upwards to %s!", parent, task);
+        }
+
         while (!task.isDone()) {
             this.pollAndExecuteSingleTask();
         }
@@ -83,8 +89,7 @@ public class SortedSharedFutureScheduler<P extends Comparable<? super P>, V> ext
         Deque<SharedFutureScheduler<P, V>.Task> recursionStack = this.recursionStack.get();
         Task parent = uncheckedCast(recursionStack.peekFirst());
         if (parent != null) { //this is a recursive task! we should make sure that the task we get is less than the current one
-            ConcurrentUnboundedPriorityBlockingQueue<Task> queue = uncheckedCast(this.queue);
-            return queue.popIfMatches(task -> parent.compareTo(task) > 0); //TODO: this doesn't block!
+            return PorkUtil.<ConcurrentUnboundedPriorityBlockingQueue<Task>>uncheckedCast(this.queue).pollLess(parent, 1L, TimeUnit.SECONDS);
         } else {
             return super.pollSingleTask();
         }
@@ -96,11 +101,22 @@ public class SortedSharedFutureScheduler<P extends Comparable<? super P>, V> ext
         Task parent = uncheckedCast(recursionStack.peekFirst());
         if (parent != null) { //this is a recursive task! we should make sure that all of the child tasks are less than the current one
             for (P param : params) {
-                checkArg(parent.param.compareTo(param) < 0, "task at %s tried to recurse upwards to %s!", parent.param, param);
+                checkArg(parent.param.compareTo(param) > 0, "task %s tried to recurse upwards to %s!", parent.param, param);
             }
         }
 
         return super.scatterGather(params);
+    }
+
+    @Override
+    protected List<V> gather(@NonNull List<SharedFutureScheduler<P, V>.Task> tasks) {
+        //we don't want to race to begin each task before joining: the tasks are higher-priority than the current task, so we only have to join them
+        //  which will guarantee they'll be started as long as no tasks with even higher priority are in the queue
+        List<V> values = new ArrayList<>(tasks.size());
+        for (SharedFutureScheduler<P, V>.Task task : tasks) {
+            values.add(task.join());
+        }
+        return values;
     }
 
     /**
