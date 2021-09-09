@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.util.datastructure;
 
 import lombok.NonNull;
-import lombok.SneakyThrows;
 
 import java.util.AbstractQueue;
 import java.util.Collection;
@@ -165,31 +164,6 @@ public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E
                 return null;
             }
         }
-        return null;
-    }
-
-    @SneakyThrows(InterruptedException.class)
-    public E pollLess(@NonNull E curr, long timeout, TimeUnit unit) {
-        if (timeout <= 0L) { //non-blocking
-            return this.pollLess(curr);
-        }
-
-        long startNanos = System.nanoTime();
-        long endNanos = startNanos + unit.toNanos(timeout);
-
-        do {
-            if (this.lock.tryAcquire(endNanos - startNanos, TimeUnit.NANOSECONDS)) {
-                Map.Entry<E, Boolean> entry = ((NavigableMap<E, Boolean>) this.map.headMap(curr)).pollFirstEntry();
-                if (entry != null) {
-                    return entry.getKey();
-                } else { //nothing was available, release lock and spin
-                    this.lock.release();
-                }
-            } else { //timed out without acquiring a lock
-                return null;
-            }
-        } while ((startNanos = System.nanoTime()) < endNanos); //spin until the timeout is reached
-
         return null;
     }
 }

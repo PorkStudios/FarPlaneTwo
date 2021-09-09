@@ -27,7 +27,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import lombok.NonNull;
 import lombok.SneakyThrows;
-import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
@@ -39,7 +38,6 @@ import org.rocksdb.Transaction;
 import java.util.Arrays;
 import java.util.List;
 
-import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.mode.common.server.storage.rocksdb.RocksStorage.*;
 
 /**
@@ -57,10 +55,6 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> extends Ab
     @Override
     @SneakyThrows(RocksDBException.class)
     public long timestamp() {
-        if (FP2_DEBUG && (FP2Config.debug.disableRead || FP2Config.debug.disablePersistence)) {
-            return TIMESTAMP_BLANK;
-        }
-
         byte[] timestampBytes = this.storage.db.get(this.storage.cfTileTimestamp, this.pos.toBytes());
         return timestampBytes != null
                 ? Unpooled.wrappedBuffer(timestampBytes).readLongLE() //timestamp for this tile exists, extract it from the byte array
@@ -70,10 +64,6 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> extends Ab
     @Override
     @SneakyThrows(RocksDBException.class)
     public TileSnapshot<POS, T> snapshot() {
-        if (FP2_DEBUG && (FP2Config.debug.disableRead || FP2Config.debug.disablePersistence)) {
-            return null;
-        }
-
         byte[] keyBytes = this.pos.toBytes();
 
         //read timestamp and tile bytes using multiGet to ensure coherency
@@ -92,10 +82,6 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> extends Ab
     @Override
     @SneakyThrows(RocksDBException.class)
     public boolean set(@NonNull ITileMetadata metadata, @NonNull T tile) {
-        if (FP2_DEBUG && (FP2Config.debug.disableWrite || FP2Config.debug.disablePersistence)) {
-            return false;
-        }
-
         try (Transaction txn = this.storage.db.beginTransaction(WRITE_OPTIONS)) {
             byte[] keyBytes = this.pos.toBytes();
 

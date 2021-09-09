@@ -112,7 +112,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     @Override
     public void tileRemoved(@NonNull POS pos) {
         //schedule the tile itself for re-bake
-        this.bakeScheduler.schedule(pos);
+        this.notifyOutputs(pos);
     }
 
     protected void notifyOutputs(@NonNull POS pos) {

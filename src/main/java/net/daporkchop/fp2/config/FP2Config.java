@@ -253,30 +253,6 @@ public class FP2Config {
      */
     public static class Debug {
         @Config.Comment({
-                "If true, disables reading of heightmap tiles from disk.",
-                "Overridden by disablePersistence.",
-                "Default: false"
-        })
-        @Config.LangKey("config.fp2.debug.disableRead")
-        public boolean disableRead = false;
-
-        @Config.Comment({
-                "If true, disables writing of heightmap tiles to disk.",
-                "Overridden by disablePersistence.",
-                "Default: false"
-        })
-        @Config.LangKey("config.fp2.debug.disableWrite")
-        public boolean disableWrite = false;
-
-        @Config.Comment({
-                "If true, completely disables disk persistence.",
-                "Far terrain data will never be written to or read from disk.",
-                "Default: false"
-        })
-        @Config.LangKey("config.fp2.debug.disablePersistence")
-        public boolean disablePersistence = false;
-
-        @Config.Comment({
                 "If true, the vanilla world will not be rendered."
         })
         @Config.LangKey("config.fp2.debug.skipRenderWorld")

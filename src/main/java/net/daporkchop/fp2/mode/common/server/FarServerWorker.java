@@ -30,10 +30,8 @@ import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.util.SimpleRecycler;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
-import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.List;
 import java.util.function.Function;
@@ -73,40 +71,32 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
 
     public ITileHandle<POS, T> roughGetTile(POS pos) {
         ITileHandle<POS, T> handle = this.world.storage().handleFor(pos);
-        try {
-            if (handle.isInitialized()) {
-                return handle;
-            }
+        if (handle.isInitialized()) {
+            return handle;
+        }
 
-            if (!(FP2_DEBUG && FP2Config.debug.disableExactGeneration) && this.world.anyVanillaTerrainExistsAt(pos)) {
-                //there's some terrain at the given position, let's try to generate something with it
-                if (pos.level() == 0) {
-                    //the position is at detail level 0, do exact generation
-                    try {
-                        return this.attemptRoughWithExact(pos, handle, this.world.currentTime - 1L);
-                    } catch (GenerationNotAllowedException e) {
-                        //the terrain existed, but wasn't populated so we don't want to use it
-                    }
-                } else {
-                    //force the tile to be scaled, which will cause this to be executed recursively
-                    return this.roughScaleTile(pos, handle);
+        if (!(FP2_DEBUG && FP2Config.debug.disableExactGeneration) && this.world.anyVanillaTerrainExistsAt(pos)) {
+            //there's some terrain at the given position, let's try to generate something with it
+            if (pos.level() == 0) {
+                //the position is at detail level 0, do exact generation
+                try {
+                    return this.attemptRoughWithExact(pos, handle, this.world.currentTime - 1L);
+                } catch (GenerationNotAllowedException e) {
+                    //the terrain existed, but wasn't populated so we don't want to use it
                 }
-            }
-
-            if (pos.level() == 0 || this.world.canGenerateRough(pos)) {
-                //the tile can be generated using the rough generator
-                return this.roughGenerateTile(pos, handle);
             } else {
-                //the tile cannot be generated using the rough generator
-                //this will generate the tile and all tiles below it down to level 0 until the tile can be "generated" from scaled data
+                //force the tile to be scaled, which will cause this to be executed recursively
                 return this.roughScaleTile(pos, handle);
             }
-        } catch (Throwable t) {
-            ThreadingHelper.handle(this.world.world, t);
-            PUnsafe.throwException(t);
-            throw new AssertionError();
-        } finally {
-            this.world.tileAvailable(handle);
+        }
+
+        if (pos.level() == 0 || this.world.canGenerateRough(pos)) {
+            //the tile can be generated using the rough generator
+            return this.roughGenerateTile(pos, handle);
+        } else {
+            //the tile cannot be generated using the rough generator
+            //this will generate the tile and all tiles below it down to level 0 until the tile can be "generated" from scaled data
+            return this.roughScaleTile(pos, handle);
         }
     }
 

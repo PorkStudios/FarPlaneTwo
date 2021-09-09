@@ -37,6 +37,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -116,7 +117,8 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
 
                     //add task to execution queue
                     SharedFutureScheduler.this.enqueue(task);
-                } else if (task.refCnt < 0) { //task is currently being executed, we don't need to retain it
+                } else if (task.refCnt < 0) { //task is currently being executed, we want to replace it to force it to be re-enqueued later
+                    task = SharedFutureScheduler.this.createTask(param);
                 } else { //retain existing task
                     task.refCnt = incrementExact(task.refCnt);
                 }
@@ -133,31 +135,49 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
 
     protected boolean releaseTask(@NonNull Task expectedTask) {
         class State implements BiFunction<P, Task, Task> {
+            Task task;
             boolean released;
 
             @Override
             public Task apply(@NonNull P param, Task task) {
-                if (task != expectedTask //tasks don't match, do nothing
-                    || task.refCnt < 0) { //task is currently being executed, we can't release it
+                if (task != expectedTask) { //tasks don't match, do nothing
                     this.released = false;
                     return task;
                 } else {
                     this.released = true;
                 }
 
-                if (--task.refCnt != 0) { //reference count is non-zero, the task is still live
+                if (task.refCnt > 0 //the task isn't being actively executed
+                    && --task.refCnt != 0) { //reference count is non-zero, the task is still live
                     return task;
-                } else { //reference count reached zero! cancel the task, unqueue it and remove it from the map
-                    task.cancel(false);
+                } else { //task is being executed, or the reference count reached zero! cancel the task, unqueue it and remove it from the map
                     SharedFutureScheduler.this.unqueue(task);
+                    task.cancel0();
+                    this.task = task; //save the task so we can cancel its dependents later (without holding a lock on the map entry)
                     return null;
                 }
+            }
+
+            boolean finish() {
+                if (this.task != null) { //the task was removed, cancel it
+                    //we cancel the task here so that it doesn't happen inside of the ConcurrentHashMap#compute function, which doesn't like being
+                    //  called multiple times from the same thread.
+                    List<Task> dependencies = PUnsafe.pork_swapObject(this.task, TASK_DEPENDENCIES_OFFSET, null);
+                    if (dependencies != null) { //the task was recursive and had some dependencies, let's release them since they aren't actually needed by this task any more
+                        int i = 0;
+
+                        for (Task dependency : dependencies) {
+                            SharedFutureScheduler.this.releaseTask(dependency);
+                        }
+                    }
+                }
+                return this.released;
             }
         }
 
         State state = new State();
         this.tasks.compute(expectedTask.param, state);
-        return state.released;
+        return state.finish();
     }
 
     protected boolean beginTask(@NonNull Task expectedTask) {
@@ -185,8 +205,17 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
         return state.started;
     }
 
-    protected void deleteTask(@NonNull Task task) {
-        checkState(this.tasks.remove(task.param, task), "unable to delete task for %s?!?", task.param);
+    protected void deleteTask(@NonNull Task expectedTask) {
+        this.tasks.compute(expectedTask.param, (param, task) -> {
+            if (task == expectedTask //task remains unchanged, delete it
+                || task == null) { //task was cancelled during execution, keep it deleted
+                return null;
+            } else { //tasks don't match, meaning the task has been re-scheduled
+                //enqueue the new task and leave it in the map
+                SharedFutureScheduler.this.enqueue(task);
+                return task;
+            }
+        });
     }
 
     protected void pollAndExecuteSingleTask() {
@@ -221,8 +250,13 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
         try { //execute the task and complete future accordingly
             task.complete(this.function.apply(task.param));
         } catch (SchedulerClosedError e) { //catch and rethrow this separately to prevent it from being used to complete the future
-            task.cancel(true); //cancel the future to make sure it has a return value
+            task.cancel0(); //cancel the future to make sure it has a return value
             throw e;
+        } catch (RecursiveTaskCancelledError e) { //a dependent task was cancelled, which likely means this one was too (but we need to make sure of it)
+            if (!task.isCancelled()) { //this should be impossible
+                task.completeExceptionally(e);
+                ThreadingHelper.handle(this.group.world(), e);
+            }
         } catch (Throwable t) {
             task.completeExceptionally(t);
             ThreadingHelper.handle(this.group.world(), t);
@@ -315,6 +349,28 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
     }
 
     /**
+     * Thrown when a child task is cancelled during recursive execution in order to immediately break out of the parent task.
+     *
+     * @author DaPorkchop_
+     */
+    protected static class RecursiveTaskCancelledError extends Error {
+        public RecursiveTaskCancelledError(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    /**
+     * Thrown when a child task throws an exception during recursive execution.
+     *
+     * @author DaPorkchop_
+     */
+    protected static class RecursiveTaskException extends RuntimeException {
+        public RecursiveTaskException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    /**
      * Thrown when the scheduler has closed in order to immediately terminate worker threads.
      *
      * @author DaPorkchop_
@@ -333,11 +389,15 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
         protected int refCnt = 1;
 
         //list of tasks whose results are required for the successful execution of the current task
-        protected volatile Task[] dependencies = null;
+        protected volatile List<Task> dependencies = null;
 
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
             return SharedFutureScheduler.this.releaseTask(this);
+        }
+
+        protected void cancel0() {
+            super.cancel(false);
         }
 
         @Override
@@ -346,7 +406,19 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                 //we're on a worker thread, which means this task is being waited on recursively!
                 //  let's steal work from the execution queue until this task is completed.
                 SharedFutureScheduler.this.awaitJoin(this);
-                return super.join();
+
+                Task parent = SharedFutureScheduler.this.recursionStack.get().peekFirst();
+                if (parent != null) { //this is a recursive job, we want special handling for exceptions
+                    try {
+                        return super.join();
+                    } catch (CancellationException e) {
+                        throw new RecursiveTaskCancelledError(PStrings.fastFormat("task %s (dependency of %s) was cancelled", this.param, parent.param), e);
+                    } catch (Throwable t) {
+                        throw new RecursiveTaskException(PStrings.fastFormat("task %s (dependency of %s) threw an exception", this.param, parent.param), t);
+                    }
+                } else {
+                    return super.join();
+                }
             } else { //not recursive, block normally
                 return ThreadingHelper.managedBlock(this);
             }

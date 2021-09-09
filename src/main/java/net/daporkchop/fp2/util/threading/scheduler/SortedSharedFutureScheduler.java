@@ -31,6 +31,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -89,7 +90,14 @@ public class SortedSharedFutureScheduler<P extends Comparable<? super P>, V> ext
         Deque<SharedFutureScheduler<P, V>.Task> recursionStack = this.recursionStack.get();
         Task parent = uncheckedCast(recursionStack.peekFirst());
         if (parent != null) { //this is a recursive task! we should make sure that the task we get is less than the current one
-            return PorkUtil.<ConcurrentUnboundedPriorityBlockingQueue<Task>>uncheckedCast(this.queue).pollLess(parent, 1L, TimeUnit.SECONDS);
+            Task polledTask = PorkUtil.<ConcurrentUnboundedPriorityBlockingQueue<Task>>uncheckedCast(this.queue).pollLess(parent);
+            if (polledTask == null) {
+                //sleep to avoid high CPU while spinning...
+                //this is actually pretty yucky, but unfortunately i don't see any way to avoid having to spin here other than making some kind of semaphore which
+                //  is somehow aware of key ranges somehow.
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1L));
+            }
+            return polledTask;
         } else {
             return super.pollSingleTask();
         }

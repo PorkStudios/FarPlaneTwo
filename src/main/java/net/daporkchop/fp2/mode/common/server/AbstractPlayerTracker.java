@@ -152,7 +152,16 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
     public void tileChanged(@NonNull ITileHandle<POS, T> handle) {
         this.entries.computeIfPresent(handle.pos(), (pos, entry) -> {
             //notify entry that the tile has been changed
-            entry.tileChanged(handle);
+            entry.tileChanged(handle, false);
+
+            return entry;
+        });
+    }
+
+    public void tileChangedCallback(@NonNull ITileHandle<POS, T> handle) {
+        this.entries.computeIfPresent(handle.pos(), (pos, entry) -> {
+            //notify entry that the tile has been changed
+            entry.tileChanged(handle, true);
 
             return entry;
         });
@@ -431,6 +440,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
             //request that the tile be generated
             this.loadFuture = AbstractPlayerTracker.this.world.requestLoad(pos);
+            this.loadFuture.thenAcceptAsync(AbstractPlayerTracker.this::tileChangedCallback, TRACKER_THREADS);
         }
 
         public Entry addContext(@NonNull Context ctx) {
@@ -452,7 +462,10 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
             if (super.isEmpty()) { //no more players are tracking this entry, so it can be removed
                 //release the tile load future (potentially removing it from the load/generation queue)
-                this.discardLoadFuture();
+                if (this.loadFuture != null) {
+                    this.loadFuture.cancel(false);
+                    this.loadFuture = null;
+                }
 
                 //this entry should be replaced with null
                 return null;
@@ -461,25 +474,23 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
             }
         }
 
-        public void tileChanged(@NonNull ITileHandle<POS, T> handle) {
+        public void tileChanged(@NonNull ITileHandle<POS, T> handle, boolean loadCallback) {
             checkState(handle.isInitialized(), "handle at %s hasn't been initialized yet!", this.pos);
-            if (this.handle == null) {
+
+            if (loadCallback) {
+                checkState(this.handle == null, "already loaded handle at %s?!?", this.pos);
+                this.loadFuture = null;
                 this.handle = handle;
             } else {
-                checkState(this.handle == handle, "mismatched handles at %s!", this.pos);
+                if (this.handle == null) { //we don't care about any potential modifications to a tile if it hasn't been loaded yet
+                    return;
+                } else {
+                    checkState(this.handle == handle, "mismatched handles at %s!", this.pos);
+                }
             }
-
-            this.discardLoadFuture();
 
             //notify all players which have this tile loaded
             super.forEach(ctx -> ctx.notifyChanged(handle));
-        }
-
-        protected void discardLoadFuture() {
-            if (this.loadFuture != null) {
-                this.loadFuture.cancel(false);
-                this.loadFuture = null;
-            }
         }
     }
 }
