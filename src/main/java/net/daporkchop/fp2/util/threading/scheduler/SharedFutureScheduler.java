@@ -50,6 +50,12 @@ import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
+ * Implementation of {@link Scheduler} whose {@link CompletableFuture}s are shared for all occurrences of the same parameter value.
+ * <p>
+ * This implementation supports all features defined by {@link Scheduler}. However, recursive tasks can cause deadlocks if the dependency chain has a loop, and
+ * large volumes of recursive tasks can quickly run the system out of memory or cause the worker threads' stacks to overflow. It is therefore recommended to use
+ * {@link ApproximatelyPrioritizedSharedFutureScheduler} where possible.
+ *
  * @author DaPorkchop_
  */
 public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
@@ -164,8 +170,6 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                     //  called multiple times from the same thread.
                     List<Task> dependencies = PUnsafe.pork_swapObject(this.task, TASK_DEPENDENCIES_OFFSET, null);
                     if (dependencies != null) { //the task was recursive and had some dependencies, let's release them since they aren't actually needed by this task any more
-                        int i = 0;
-
                         for (Task dependency : dependencies) {
                             SharedFutureScheduler.this.releaseTask(dependency);
                         }

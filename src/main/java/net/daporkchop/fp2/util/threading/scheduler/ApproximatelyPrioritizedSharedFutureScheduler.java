@@ -27,10 +27,13 @@ import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -39,11 +42,25 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
+ * Implementation of {@link Scheduler} whose {@link CompletableFuture}s are shared for all occurrences of the same parameter value, and whose tasks are executed approximately
+ * in priority.
+ * <p>
+ * This functions similarly to {@link SharedFutureScheduler}, but is initialized with a {@link Comparator}. The {@link Comparator} does not have to provide accurate comparison
+ * across all possible parameter values, but only needs to partition parameters into smaller parameter spaces. Tasks are executed in comparison order as much as reasonably
+ * possible (i.e. it may not be perfect). Accuracy can be improved by reducing the duration of an individual task and splitting tasks up into multiple sub-tasks which can
+ * be executed recursively or using {@link #scatterGather(List)}, although this is not recommended as the overhead imposed by each task is fairly substantial. Recursive
+ * tasks are only permitted to recurse into parameters which are strictly less than the current one, attempts to do otherwise will throw an exception.
+ *
  * @author DaPorkchop_
  */
-public class SortedSharedFutureScheduler<P extends Comparable<? super P>, V> extends SharedFutureScheduler<P, V> {
-    public SortedSharedFutureScheduler(@NonNull Function<Scheduler<P, V>, Function<P, V>> functionFactory, @NonNull WorkerGroupBuilder builder) {
+public class ApproximatelyPrioritizedSharedFutureScheduler<P, V> extends SharedFutureScheduler<P, V> {
+    protected final AtomicLong ctr = new AtomicLong(Long.MIN_VALUE); //we assume this will never overflow - a perhaps naïve assumption, but still, 2⁶⁴ IS a very large number...
+    protected final Comparator<P> initialComparator;
+
+    public ApproximatelyPrioritizedSharedFutureScheduler(@NonNull Function<Scheduler<P, V>, Function<P, V>> functionFactory, @NonNull WorkerGroupBuilder builder, @NonNull Comparator<P> initialComparator) {
         super(functionFactory, builder);
+
+        this.initialComparator = initialComparator;
     }
 
     @Override
@@ -109,7 +126,7 @@ public class SortedSharedFutureScheduler<P extends Comparable<? super P>, V> ext
         Task parent = uncheckedCast(recursionStack.peekFirst());
         if (parent != null) { //this is a recursive task! we should make sure that all of the child tasks are less than the current one
             for (P param : params) {
-                checkArg(parent.param.compareTo(param) > 0, "task %s tried to recurse upwards to %s!", parent.param, param);
+                checkArg(this.initialComparator.compare(parent.param, param) > 0, "task %s tried to recurse upwards to %s!", parent.param, param);
             }
         }
 
@@ -131,13 +148,22 @@ public class SortedSharedFutureScheduler<P extends Comparable<? super P>, V> ext
      * @author DaPorkchop_
      */
     protected class Task extends SharedFutureScheduler<P, V>.Task implements Comparable<Task> {
+        protected final long tieBreak = ApproximatelyPrioritizedSharedFutureScheduler.this.ctr.getAndIncrement();
+
         public Task(@NonNull P param) {
             super(param);
         }
 
         @Override
         public int compareTo(Task o) {
-            return this.param.compareTo(o.param);
+            int d;
+            if ((d = ApproximatelyPrioritizedSharedFutureScheduler.this.initialComparator.compare(this.param, o.param)) != 0
+                || (d = Long.compare(this.tieBreak, o.tieBreak)) != 0) {
+                return d;
+            }
+
+            checkState(this.param.equals(o.param), "%s != %s", this.param, o.param);
+            return 0;
         }
     }
 }

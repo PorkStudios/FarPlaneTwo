@@ -41,14 +41,14 @@ import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
-import net.daporkchop.fp2.util.threading.scheduler.SharedFutureScheduler;
-import net.daporkchop.fp2.util.threading.scheduler.SortedSharedFutureScheduler;
+import net.daporkchop.fp2.util.threading.scheduler.ApproximatelyPrioritizedSharedFutureScheduler;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.minecraft.world.WorldServer;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
@@ -101,13 +101,14 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.root = new File(world.getChunkSaveLocation(), "fp2/" + this.mode().name().toLowerCase());
         this.storage = new RocksStorage<>(mode, this.root);
 
-        this.scheduler = new SortedSharedFutureScheduler<>(
+        this.scheduler = new ApproximatelyPrioritizedSharedFutureScheduler<>(
                 scheduler -> new FarServerWorker<>(this, scheduler),
                 ThreadingHelper.workerGroupBuilder()
                         .world(this.world)
                         .threads(FP2Config.generationThreads)
                         .threadFactory(PThreadFactories.builder().daemon().minPriority()
-                                .collapsingId().name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build()));
+                                .collapsingId().name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build()),
+                Comparator.<PriorityTask<POS>, TaskStage>comparing(PriorityTask::stage).thenComparingInt(task -> task.pos().level()));
 
         //add all dirty tiles to update queue
         this.storage.dirtyTracker().forEachDirtyPos((pos, timestamp) -> this.enqueueUpdate(pos));

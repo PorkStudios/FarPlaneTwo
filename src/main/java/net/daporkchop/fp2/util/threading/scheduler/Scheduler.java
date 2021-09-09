@@ -36,6 +36,8 @@ import java.util.stream.Collectors;
  * If a parameter which is already queued for execution is submitted again, that parameter will <i>not</i> be enqueued a second time. A {@link CompletableFuture}
  * will be returned which references the original task, and the task will not be removed from the queue until it's completed or <i>all</i> of the
  * {@link CompletableFuture}s referencing it have been cancelled.<br>
+ * If a parameter which has already begun execution is submitted again, that parameter <i>will</i> be enqueued a second time and a new {@link CompletableFuture}
+ * returned. It is also guaranteed that the newly submitted task will not begin execution until the previous one is complete.<br>
  * As implementations are free to re-use the same {@link CompletableFuture} instance for all occurrences of the given parameter value, attempting to invoke
  * {@link CompletableFuture#cancel(boolean)} on the {@link CompletableFuture} returned by {@link #schedule(Object)} more than once will result in undefined behavior.
  * <p>
