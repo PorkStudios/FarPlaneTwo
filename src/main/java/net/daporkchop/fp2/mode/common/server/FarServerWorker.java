@@ -29,6 +29,7 @@ import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
+import net.daporkchop.fp2.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
@@ -53,13 +54,13 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
 
     @Override
     public ITileHandle<POS, T> apply(@NonNull PriorityTask<POS> task) {
-        switch (task.stage) {
+        switch (task.stage()) {
             case LOAD:
-                return this.roughGetTile(task.pos);
+                return this.roughGetTile(task.pos());
             case UPDATE:
-                return this.updateTile(task.pos);
+                return this.updateTile(task.pos());
             default:
-                throw new IllegalArgumentException(task.stage.name());
+                throw new IllegalArgumentException("unknown or stage in task: " + task);
         }
     }
 
@@ -154,7 +155,7 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
 
     public ITileHandle<POS, T> roughScaleTile(POS pos, ITileHandle<POS, T> handle) {
         //generate scale inputs
-        List<ITileHandle<POS, T>> srcHandles = this.scheduler.scatterGather(this.world.scaler().inputs(pos).map(p -> new PriorityTask<>(TaskStage.LOAD, p)).collect(Collectors.toList()));
+        List<ITileHandle<POS, T>> srcHandles = this.scheduler.scatterGather(this.world.scaler().inputs(pos).map(this.world::loadTaskFor).collect(Collectors.toList()));
 
         //inflate sources
         SimpleRecycler<T> tileRecycler = this.world.mode().tileRecycler();
@@ -202,12 +203,13 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
         }
 
         try {
-            if (FP2_DEBUG && FP2Config.debug.disableExactGeneration) { //updates will always use the exact generator, so don't use them
+            if ((FP2_DEBUG && FP2Config.debug.disableExactGeneration) //updates will always use the exact generator, so don't use them
+                || handle.timestamp() >= newTimestamp) { //break out early if tile is newer than the requested timestamp
                 return handle;
             }
 
-            if (handle.timestamp() >= newTimestamp) { //break out early if tile is already done or newer
-                return handle;
+            if (!this.world.anyVanillaTerrainExistsAt(pos)) {
+                //TODO: something
             }
 
             if (pos.level() == 0) {
@@ -251,7 +253,7 @@ public class FarServerWorker<POS extends IFarPos, T extends IFarTile> implements
 
     protected void updateTileScale(POS pos, ITileHandle<POS, T> handle, long newTimestamp) {
         //generate scale inputs
-        List<ITileHandle<POS, T>> srcHandles = this.scheduler.scatterGather(this.world.scaler().inputs(pos).map(p -> new PriorityTask<>(TaskStage.UPDATE, p)).collect(Collectors.toList()));
+        List<ITileHandle<POS, T>> srcHandles = this.scheduler.scatterGather(this.world.scaler().inputs(pos).map(this.world::updateTaskFor).collect(Collectors.toList()));
 
         //inflate sources
         SimpleRecycler<T> tileRecycler = this.world.mode().tileRecycler();

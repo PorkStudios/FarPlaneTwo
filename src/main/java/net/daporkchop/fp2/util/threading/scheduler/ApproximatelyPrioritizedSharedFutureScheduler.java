@@ -50,6 +50,9 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * possible (i.e. it may not be perfect). Accuracy can be improved by reducing the duration of an individual task and splitting tasks up into multiple sub-tasks which can
  * be executed recursively or using {@link #scatterGather(List)}, although this is not recommended as the overhead imposed by each task is fairly substantial. Recursive
  * tasks are only permitted to recurse into parameters which are strictly less than the current one, attempts to do otherwise will throw an exception.
+ * <p>
+ * It is, of course, possible to use a {@link Comparator} which does accurate comparisons between all distinct parameter values. However, this will likely result in
+ * an undesirable bias towards a certain keys when doing recursive actions.
  *
  * @author DaPorkchop_
  */

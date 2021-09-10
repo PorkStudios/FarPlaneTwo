@@ -20,39 +20,89 @@
 
 package net.daporkchop.fp2.mode.common.server;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
 import net.daporkchop.fp2.mode.api.IFarPos;
 
-import java.util.function.Predicate;
+import java.util.Comparator;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
+ * A combination of a {@link TaskStage} and a {@link POS}, representing a request to do some operation at a given tile position.
+ *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-@ToString
-@EqualsAndHashCode
-public class PriorityTask<POS extends IFarPos> implements Comparable<PriorityTask<POS>>, Predicate<PriorityTask<POS>> {
-    @NonNull
-    protected final TaskStage stage;
-    @NonNull
-    protected final POS pos;
-
-    @Override
-    public int compareTo(PriorityTask<POS> task) {
-        int d = Integer.compare(this.stage.ordinal(), task.stage.ordinal());
-        if (d == 0) {
-            d = this.pos.compareTo(task.pos);
+public interface PriorityTask<POS extends IFarPos> {
+    /**
+     * @deprecated internal API, do not touch!
+     */
+    @Deprecated
+    Comparator<PriorityTask<?>> _APPROX_COMPARATOR = (a, b) -> {
+        int d;
+        if ((d = a.stage().compareTo(b.stage())) == 0) {
+            d = Integer.compare(a.pos().level(), b.pos().level());
         }
         return d;
+    };
+
+    /**
+     * @return a {@link Comparator} which is able to do approximate comparisons between {@link PriorityTask}s
+     */
+    @SuppressWarnings("Deprecation")
+    static <POS extends IFarPos> Comparator<PriorityTask<POS>> approxComparator() {
+        return uncheckedCast(_APPROX_COMPARATOR);
     }
 
-    @Override
-    public boolean test(PriorityTask<POS> task) {
-        return task.stage.ordinal() < this.stage.ordinal() || task.pos.level() < this.pos.level();
+    /**
+     * Gets a {@link PriorityTask} using the given {@link TaskStage} and {@link POS}.
+     *
+     * @param stage the {@link TaskStage}
+     * @param pos   the {@link POS}
+     * @return a {@link PriorityTask}
+     */
+    static <POS extends IFarPos> PriorityTask<POS> forStageAndPosition(@NonNull TaskStage stage, @NonNull POS pos) {
+        return new PriorityTask<POS>() {
+            @Override
+            public TaskStage stage() {
+                return stage;
+            }
+
+            @Override
+            public POS pos() {
+                return pos;
+            }
+
+            @Override
+            public int hashCode() {
+                return this.stage().hashCode() * 31 + pos.hashCode();
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                if (obj == this) {
+                    return true;
+                } else if (obj instanceof PriorityTask) {
+                    PriorityTask<?> o = uncheckedCast(obj);
+                    return stage.equals(o.stage()) && pos.equals(o.pos());
+                } else {
+                    return false;
+                }
+            }
+
+            @Override
+            public String toString() {
+                return stage.toString() + '@' + pos;
+            }
+        };
     }
+
+    /**
+     * @return the {@link TaskStage} which this task is at
+     */
+    TaskStage stage();
+
+    /**
+     * @return the tile position where the task is to be executed
+     */
+    POS pos();
 }

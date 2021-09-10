@@ -47,6 +47,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -60,6 +61,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
     protected static final long TASK_DEPENDENCIES_OFFSET = PUnsafe.pork_getOffset(SharedFutureScheduler.Task.class, "dependencies");
+
+    protected static final boolean DEBUG_PRINTS_ENABLED = Boolean.parseBoolean(System.getProperty("fp2.SharedFutureScheduler.debugPrintsEnabled", "false"));
 
     protected final Map<P, Task> tasks = new ConcurrentHashMap<>();
     protected final BlockingQueue<Task> queue = this.createTaskQueue();
@@ -119,14 +122,30 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
             @Override
             public Task apply(@NonNull P param, Task task) {
                 if (task == null) { //task doesn't exist, create new one
+                    if (DEBUG_PRINTS_ENABLED) {
+                        FP2_LOG.info("creating new task at {}, was previously null", param);
+                    }
+
                     task = SharedFutureScheduler.this.createTask(param);
 
                     //add task to execution queue
                     SharedFutureScheduler.this.enqueue(task);
                 } else if (task.refCnt < 0) { //task is currently being executed, we want to replace it to force it to be re-enqueued later
+                    if (DEBUG_PRINTS_ENABLED) {
+                        FP2_LOG.info("creating new task at {}, was previously {}", param, task);
+                    }
+
+                    Task previousTask = task;
                     task = SharedFutureScheduler.this.createTask(param);
+
+                    //remember the previous task instance for later
+                    task.previous = previousTask;
                 } else { //retain existing task
                     task.refCnt = incrementExact(task.refCnt);
+
+                    if (DEBUG_PRINTS_ENABLED) {
+                        FP2_LOG.info("retaining existing task at {}, reference count is now {}", param, task.refCnt);
+                    }
                 }
 
                 this.task = task;
@@ -147,20 +166,39 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
             @Override
             public Task apply(@NonNull P param, Task task) {
                 if (task != expectedTask) { //tasks don't match, do nothing
+                    if (DEBUG_PRINTS_ENABLED) {
+                        FP2_LOG.info("failed to release task at {}, {} != {}", param, task, expectedTask);
+                    }
+
                     this.released = false;
                     return task;
                 } else {
                     this.released = true;
                 }
 
-                if (task.refCnt > 0 //the task isn't being actively executed
-                    && --task.refCnt != 0) { //reference count is non-zero, the task is still live
+                if (task.refCnt > 0) { //the task isn't being actively executed
+                    if (--task.refCnt != 0) { //reference count is non-zero, the task is still live
+                        if (DEBUG_PRINTS_ENABLED) {
+                            FP2_LOG.info("partially released task at {}, reference count is now {}", param, task.refCnt);
+                        }
+                        return task;
+                    } else { //the reference count reached zero! cancel the task, unqueue it and remove it from the map
+                        if (DEBUG_PRINTS_ENABLED) {
+                            FP2_LOG.info("totally released task at {}, replacing with {}", param, task.previous);
+                        }
+
+                        SharedFutureScheduler.this.unqueue(task);
+                        task.cancel0();
+
+                        //save the task so we can cancel its dependents later (without holding a lock on the map entry)
+                        this.task = task;
+
+                        //restore the previous task, which will generally be null but could be non-null if this is a re-scheduled task which was cancelled again
+                        //  before the original task was finished
+                        return task.previous;
+                    }
+                } else { //task is already being executed, it can't be cancelled now so we just do nothing
                     return task;
-                } else { //task is being executed, or the reference count reached zero! cancel the task, unqueue it and remove it from the map
-                    SharedFutureScheduler.this.unqueue(task);
-                    task.cancel0();
-                    this.task = task; //save the task so we can cancel its dependents later (without holding a lock on the map entry)
-                    return null;
                 }
             }
 
@@ -192,8 +230,22 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
             public Task apply(@NonNull P param, Task task) {
                 if (task != expectedTask //tasks don't match, do nothing
                     || task.refCnt < 0) { //task is currently being executed, we can't start executing it
+                    if (DEBUG_PRINTS_ENABLED) {
+                        if (task != expectedTask) {
+                            FP2_LOG.info("couldn't begin task at {} (mismatch)", param);
+                        } else {
+                            FP2_LOG.info("couldn't begin task at {} (already executing)", param);
+                        }
+                    }
+
                     this.started = false;
                 } else {
+                    checkState(task.refCnt != 0);
+
+                    if (DEBUG_PRINTS_ENABLED) {
+                        FP2_LOG.info("began executing task at {}", param);
+                    }
+
                     //set reference count to -1 to indicate that it's started execution
                     task.refCnt = -1;
                     this.started = true;
@@ -211,10 +263,22 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
 
     protected void deleteTask(@NonNull Task expectedTask) {
         this.tasks.compute(expectedTask.param, (param, task) -> {
-            if (task == expectedTask //task remains unchanged, delete it
-                || task == null) { //task was cancelled during execution, keep it deleted
+            checkState(task != null);
+
+            if (task == expectedTask) { //task remains unchanged, delete it
+                if (DEBUG_PRINTS_ENABLED) {
+                    FP2_LOG.info("removed completed task at {}", param);
+                }
                 return null;
             } else { //tasks don't match, meaning the task has been re-scheduled
+                if (DEBUG_PRINTS_ENABLED) {
+                    FP2_LOG.info("task at {} ({}) was re-scheduled during execution, adding {} to queue", param, expectedTask, task);
+                }
+
+                //new task must reference the task which was completed, let's clear that reference
+                checkState(task.previous == expectedTask);
+                task.previous = null;
+
                 //enqueue the new task and leave it in the map
                 SharedFutureScheduler.this.enqueue(task);
                 return task;
@@ -392,6 +456,8 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
 
         protected int refCnt = 1;
 
+        protected Task previous; //if this task was created while a previous one was being executed, this field contains a reference to the previous one
+
         //list of tasks whose results are required for the successful execution of the current task
         protected volatile List<Task> dependencies = null;
 
@@ -430,7 +496,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
 
         @Override
         public String toString() {
-            return this.param.toString();
+            return this.getClass().getCanonicalName() + '@' + Integer.toHexString(this.hashCode()) + ",param=" + this.param;
         }
     }
 }

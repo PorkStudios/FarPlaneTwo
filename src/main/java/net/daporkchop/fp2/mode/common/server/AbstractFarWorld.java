@@ -48,7 +48,6 @@ import net.minecraft.world.WorldServer;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
@@ -108,7 +107,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
                         .threads(FP2Config.generationThreads)
                         .threadFactory(PThreadFactories.builder().daemon().minPriority()
                                 .collapsingId().name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build()),
-                Comparator.<PriorityTask<POS>, TaskStage>comparing(PriorityTask::stage).thenComparingInt(task -> task.pos().level()));
+                PriorityTask.approxComparator());
 
         //add all dirty tiles to update queue
         this.storage.dirtyTracker().forEachDirtyPos((pos, timestamp) -> this.enqueueUpdate(pos));
@@ -122,9 +121,21 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
     protected abstract boolean anyVanillaTerrainExistsAt(@NonNull POS pos);
 
+    protected PriorityTask<POS> taskFor(@NonNull TaskStage stage, @NonNull POS pos) {
+        return PriorityTask.forStageAndPosition(stage, pos);
+    }
+
+    protected PriorityTask<POS> loadTaskFor(@NonNull POS pos) {
+        return this.taskFor(TaskStage.LOAD, pos);
+    }
+
+    protected PriorityTask<POS> updateTaskFor(@NonNull POS pos) {
+        return this.taskFor(TaskStage.UPDATE, pos);
+    }
+
     @Override
     public CompletableFuture<ITileHandle<POS, T>> requestLoad(@NonNull POS pos) {
-        return this.scheduler.schedule(new PriorityTask<>(TaskStage.LOAD, pos));
+        return this.scheduler.schedule(this.loadTaskFor(pos));
     }
 
     public void tileAvailable(@NonNull ITileHandle<POS, T> handle) {
@@ -148,7 +159,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
     }
 
     protected void enqueueUpdate(@NonNull POS pos) {
-        //TODO: this.scheduler.schedule(new PriorityTask<>(TaskStage.UPDATE, pos));
+        //TODO: this.scheduler.schedule(this.updateTaskFor(pos));
     }
 
     protected void scheduleForUpdate(@NonNull Stream<POS> positions) {
