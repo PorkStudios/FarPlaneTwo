@@ -43,8 +43,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * Due to the lack of {@link CompletableFuture}s, there are a number of major restrictions:<ul>
  * <li>it is impossible to cancel an already scheduled task</li>
  * <li>it is impossible to block until a given task is complete</li>
- * <li>recursive execution is impossible, since there's no way of knowing when a child task is complete</li>
- * <li>{@link #scatterGather(List)} doesn't work for the same reason</li>
+ * <li>recursive execution and all use of {@link #scatterGather(List)} is impossible, since there's no way of knowing when a task is complete</li>
  * </ul>
  *
  * @author DaPorkchop_
@@ -75,6 +74,10 @@ public class NoFutureScheduler<P> implements Scheduler<P, Void>, Runnable {
         return new LinkedBlockingQueue<>();
     }
 
+    protected void enqueue(@NonNull P param) {
+        checkState(this.queue.add(param), "unable to add %s to queue!", param);
+    }
+
     @Override
     public CompletableFuture<Void> schedule(@NonNull P param) {
         //race to insert the parameter into the map with a value of ADDED. there are 3 possible return values:
@@ -83,7 +86,7 @@ public class NoFutureScheduler<P> implements Scheduler<P, Void>, Runnable {
         //  - RUNNING: a worker has already started processing this parameter. we don't want to add it to the queue (to prevent the same parameter being executed
         //             multiple times at once), but the worker will notice the state change to ADDED and re-add it to the queue once processing is complete.
         if (this.parameterStates.put(param, ADDED_STATE) == null) {
-            this.queue.add(param);
+            this.enqueue(param);
         }
 
         return null; //always return null lol
@@ -122,11 +125,11 @@ public class NoFutureScheduler<P> implements Scheduler<P, Void>, Runnable {
                     //if the parameter was re-scheduled while running the function, it'll have been mapped to ADDED again and this removal will fail. it's our
                     //  responsibility to add it to the queue again now that execution has finished.
                     if (!this.parameterStates.remove(param, RUNNING_STATE)) {
-                        this.queue.add(param);
+                        this.enqueue(param);
                     }
                 }
             }
-        } catch (InterruptedException e) { //should be impossible, but whatever
+        } catch (Exception e) { //should be impossible, but whatever
             FP2_LOG.error(Thread.currentThread().getName(), e);
         }
     }

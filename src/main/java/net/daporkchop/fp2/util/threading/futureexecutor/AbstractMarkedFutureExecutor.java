@@ -23,6 +23,7 @@ package net.daporkchop.fp2.util.threading.futureexecutor;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.Iterator;
@@ -137,7 +138,9 @@ public abstract class AbstractMarkedFutureExecutor implements MarkedFutureExecut
         checkState(this.running, "not running");
         this.running = false;
 
-        checkState(this.queue.isEmpty());
+        if (!this.queue.isEmpty()) {
+            Constants.bigWarning("%s: %d elements left in the queue after shutdown!", this, this.queue.size());
+        }
     }
 
     /**

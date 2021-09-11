@@ -30,7 +30,6 @@ import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
-import net.daporkchop.fp2.util.threading.keyed.KeyedExecutor;
 import net.minecraft.world.WorldServer;
 
 import java.io.Closeable;

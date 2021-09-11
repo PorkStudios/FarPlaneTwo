@@ -24,7 +24,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.RunnableFuture;
@@ -47,16 +46,6 @@ public abstract class LazyFutureTask<V> extends CompletableFuture<V> implements 
 
         //second pass: gather all results into a list
         return Stream.of(tasks).map(LazyFutureTask::join).collect(Collectors.toList());
-    }
-
-    public static <V> List<V> scatterGather(@NonNull Collection<? extends LazyFutureTask<V>> tasks) {
-        //first pass: invoke all tasks that haven't been invoked yet
-        for (LazyFutureTask<V> task : tasks) {
-            task.run();
-        }
-
-        //second pass: gather all results into a list
-        return tasks.stream().map(LazyFutureTask::join).collect(Collectors.toList());
     }
 
     protected volatile int started = 0;

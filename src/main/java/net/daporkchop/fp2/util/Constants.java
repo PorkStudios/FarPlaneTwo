@@ -52,6 +52,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.gen.IChunkGenerator;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
@@ -132,14 +133,20 @@ public class Constants {
     @SideOnly(Side.CLIENT)
     public static final Minecraft MC = Minecraft.getMinecraft();
 
-    public static void bigWarning(String format, Object... data) {
+    /**
+     * Copypasta of {@link FMLLog#bigWarning(String, Object...)} with support for multi-line error messages.
+     * <p>
+     * Note that formatting is done using {@link PStrings#fastFormat(String, Object...)}, not Log4j's {@code {}}-style formatting.
+     */
+    public static void bigWarning(@NonNull String format, Object... params) {
         StackTraceElement[] trace = Thread.currentThread().getStackTrace();
+
         FP2_LOG.warn("****************************************");
-        for (String line : format.split("\n")) {
-            FP2_LOG.warn("* " + line, data);
+        for (String line : PStrings.fastFormat(format, params).split("\n")) {
+            FP2_LOG.warn("* " + line);
         }
-        for (int i = 2; i < 8 && i < trace.length; i++) {
-            FP2_LOG.warn("*  at {}{}", trace[i].toString(), i == 7 ? "..." : "");
+        for (int i = 2; i < 10 && i < trace.length; i++) {
+            FP2_LOG.warn("*  at {}{}", trace[i].toString(), i == 9 ? "..." : "");
         }
         FP2_LOG.warn("****************************************");
     }
