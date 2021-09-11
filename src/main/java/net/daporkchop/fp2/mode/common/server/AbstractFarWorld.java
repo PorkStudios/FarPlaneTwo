@@ -51,10 +51,13 @@ import net.minecraft.world.WorldServer;
 import java.io.File;
 import java.io.IOException;
 import java.util.Set;
+import java.util.Spliterators;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
+import static java.util.Spliterator.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -85,6 +88,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
     protected Set<POS> updatesPending = new ObjectRBTreeSet<>();
     protected long lastCompletedTick = -1L;
+    protected boolean restoredPendingUpdates = false;
 
     public AbstractFarWorld(@NonNull WorldServer world, @NonNull IFarRenderMode<POS, T> mode) {
         this.world = world;
@@ -126,20 +130,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
                 PriorityTask.approxComparator());
 
         WorldChangeListenerManager.add(this.world, this);
-
-        //add all dirty tiles to update queue
-        class Adder implements Consumer<POS> {
-            long count = 0L;
-
-            @Override
-            public void accept(@NonNull POS pos) {
-                this.count++;
-                AbstractFarWorld.this.scheduler.schedule(AbstractFarWorld.this.updateTaskFor(pos));
-            }
-        }
-        Adder adder = new Adder();
-        this.storage.forEachDirtyPos(adder);
-        FP2_LOG.info("restored {} dirty tiles in DIM{}", adder.count, world.provider.getDimension());
     }
 
     protected abstract IFarScaler<POS, T> createScaler();
@@ -200,8 +190,36 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
     @Override
     public void onTickEnd() {
         this.lastCompletedTick = this.world.getTotalWorldTime();
+        checkState(this.lastCompletedTick >= 0L, "lastCompletedTick (%d) < 0?!?", this.lastCompletedTick);
+
+        if (!this.restoredPendingUpdates) {
+            this.restoredPendingUpdates = true;
+            this.restorePendingUpdates();
+        }
 
         this.flushUpdateQueue();
+    }
+
+    @Synchronized("updatesPending")
+    protected void restorePendingUpdates() {
+        //add all dirty tiles to update queue
+        class Adder implements Consumer<POS> {
+            long addedCount = 0L;
+            long skippedCount = 0L;
+
+            @Override
+            public void accept(@NonNull POS pos) {
+                if (pos.level() < FP2Config.maxLevels) {
+                    this.addedCount++;
+                    AbstractFarWorld.this.scheduler.schedule(AbstractFarWorld.this.updateTaskFor(pos));
+                } else {
+                    this.skippedCount++;
+                }
+            }
+        }
+        Adder adder = new Adder();
+        this.storage.forEachDirtyPos(adder);
+        FP2_LOG.info("restored {} dirty tiles in DIM{} (skipped {})", adder.addedCount, this.world.provider.getDimension(), adder.skippedCount);
     }
 
     @Synchronized("updatesPending")
@@ -209,8 +227,12 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         checkState(this.lastCompletedTick >= 0L, "flushed update queue before any game ticks were completed?!?");
 
         if (!this.updatesPending.isEmpty()) {
-            this.storage.markAllDirty(this.updatesPending.stream(), this.lastCompletedTick)
-                    .forEach(pos -> this.scheduler.schedule(this.updateTaskFor(pos)));
+            this.storage.markAllDirty(StreamSupport.stream(Spliterators.spliterator(this.updatesPending, DISTINCT | NONNULL), false), this.lastCompletedTick)
+                    .forEach(pos -> {
+                        if (pos.level() < FP2Config.maxLevels) {
+                            this.scheduler.schedule(this.updateTaskFor(pos));
+                        }
+                    });
             this.updatesPending.clear();
         }
     }

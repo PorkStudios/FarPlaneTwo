@@ -23,12 +23,10 @@ package net.daporkchop.fp2.mode.common.server;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.util.SimpleRecycler;
@@ -44,7 +42,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.debug.FP2Debug.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -232,7 +229,8 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
         public Update(@NonNull AbstractFarWorld<POS, T> world, @NonNull Scheduler<PriorityTask<POS>, ITileHandle<POS, T>> scheduler, @NonNull POS pos) {
             super(world, scheduler, pos);
 
-            this.minimumTimestamp = this.handle.dirtyTimestamp();
+            long minimumTimestamp = this.handle.dirtyTimestamp();
+            this.minimumTimestamp = minimumTimestamp == ITileMetadata.TIMESTAMP_BLANK ? ITileMetadata.TIMESTAMP_GENERATED : minimumTimestamp;
         }
 
         @Override
@@ -243,16 +241,6 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
         @Override
         protected PriorityTask<POS> taskFor(@NonNull POS pos) {
             return this.world.updateTaskFor(pos);
-        }
-
-        @Override
-        public ITileHandle<POS, T> get() {
-            if (this.minimumTimestamp == ITileMetadata.TIMESTAMP_BLANK) {
-                FP2_LOG.warn("update was scheduled for tile at {}, but it wasn't dirty?!?", this.pos);
-                return this.handle;
-            }
-
-            return super.get();
         }
     }
 }

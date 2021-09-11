@@ -36,10 +36,31 @@ import java.util.stream.Stream;
  * @author DaPorkchop_
  */
 public interface IFarStorage<POS extends IFarPos, T extends IFarTile> extends Closeable {
+    /**
+     * Gets an {@link ITileHandle} for accessing the tile data at the given position.
+     *
+     * @param pos the position
+     * @return an {@link ITileHandle}
+     */
     ITileHandle<POS, T> handleFor(@NonNull POS pos);
 
     void forEachDirtyPos(@NonNull Consumer<POS> callback);
 
+    /**
+     * Atomically marks multiple positions as dirty as of the given timestamp.
+     * <p>
+     * Conceptually implemented by
+     * <blockquote><pre>{@code
+     * return positions.distinct()
+     *         .filter(pos -> this.handleFor(pos).markDirty(dirtyTimestamp));
+     * }</pre></blockquote>
+     * except the implementation has the opportunity to optimize this beyond what the user could write.
+     *
+     * @param positions      the positions to mark as dirty
+     * @param dirtyTimestamp the new dirty timestamp
+     * @return the positions for which the operation was able to be applied
+     * @see ITileHandle#markDirty(long)
+     */
     default Stream<POS> markAllDirty(@NonNull Stream<POS> positions, long dirtyTimestamp) {
         return positions.distinct()
                 .filter(pos -> this.handleFor(pos).markDirty(dirtyTimestamp));
@@ -49,6 +70,9 @@ public interface IFarStorage<POS extends IFarPos, T extends IFarTile> extends Cl
      * Closes this storage.
      * <p>
      * If write operations are queued, this method will block until they are completed.
+     * <p>
+     * After this method has completed, attempting to invoke any methods on this {@link IFarStorage} instance or any {@link ITileHandle}s returned by {@link #handleFor(IFarPos)}
+     * will result in undefined behavior.
      */
     @Override
     void close() throws IOException;

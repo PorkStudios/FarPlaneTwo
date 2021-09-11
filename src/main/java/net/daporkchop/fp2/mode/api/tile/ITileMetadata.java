@@ -38,7 +38,7 @@ public interface ITileMetadata {
     /**
      * Timestamp indicating that the tile's rough generation has been completed.
      */
-    long TIMESTAMP_GENERATED = 0L;
+    long TIMESTAMP_GENERATED = -1L;
 
     /**
      * @return the tile's timestamp

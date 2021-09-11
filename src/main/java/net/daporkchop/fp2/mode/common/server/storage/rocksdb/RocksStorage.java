@@ -26,7 +26,7 @@ import com.google.common.cache.LoadingCache;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
-import lombok.Getter;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.config.FP2Config;
@@ -46,6 +46,7 @@ import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
+import org.rocksdb.Transaction;
 import org.rocksdb.TransactionDB;
 import org.rocksdb.TransactionDBOptions;
 import org.rocksdb.WriteOptions;
@@ -57,8 +58,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static java.lang.Math.*;
+import static net.daporkchop.fp2.mode.api.tile.ITileMetadata.*;
 
 /**
  * @author DaPorkchop_
@@ -172,6 +177,83 @@ public final class RocksStorage<POS extends IFarPos, T extends IFarTile> impleme
             for (itr.seekToFirst(); itr.isValid(); itr.next()) {
                 byte[] key = itr.key();
                 callback.accept(this.mode.readPos(Unpooled.wrappedBuffer(key)));
+            }
+        }
+    }
+
+    @Override
+    @SneakyThrows(RocksDBException.class)
+    public Stream<POS> markAllDirty(@NonNull Stream<POS> positionsIn, long dirtyTimestamp) {
+        //we'll buffer all the positions, lock all of them at once, compare each one and then commit as many as needed. the logic here is identical to
+        //  RocksTileHandle#markDirty(long), but in bulk, and since RocksTileHandle doesn't cache anything internally, we don't need to get any instances
+        //  of RocksTileHandle or do any additional synchronization.
+
+        List<POS> positions = positionsIn.distinct().collect(Collectors.toList());
+        int length = positions.size();
+
+        if (length == 0) { //nothing to do!
+            return Stream.empty();
+        }
+
+        try (Transaction txn = this.db.beginTransaction(WRITE_OPTIONS)) {
+            //convert positions to key bytes
+            byte[][] allKeyBytes = positions.stream().map(POS::toBytes).toArray(byte[][]::new);
+
+            byte[][] get;
+            {
+                //double up the keys and column families to pass them to multiGetForUpdate
+                int doubleLength = multiplyExact(length, 2);
+                ColumnFamilyHandle[] handles = new ColumnFamilyHandle[doubleLength];
+                byte[][] keys = new byte[doubleLength][];
+
+                for (int i = 0; i < doubleLength; ) {
+                    byte[] keyBytes = allKeyBytes[i >> 1];
+
+                    handles[i] = this.cfTileTimestamp;
+                    keys[i++] = keyBytes;
+                    handles[i] = this.cfTileDirtyTimestamp;
+                    keys[i++] = keyBytes;
+                }
+
+                //obtain an exclusive lock on both timestamp keys to ensure coherency
+                get = txn.multiGetForUpdate(READ_OPTIONS, Arrays.asList(handles), keys);
+            }
+
+            //iterate through positions, updating the dirty timestamps as needed
+            List<POS> out = new ArrayList<>(length);
+
+            ByteBuf dirtyTimestampBuf = UnpooledByteBufAllocator.DEFAULT.heapBuffer(Long.BYTES, Long.BYTES);
+            byte[] dirtyTimestampArray = dirtyTimestampBuf.array();
+
+            for (int i = 0; i < length; i++) {
+                byte[] timestampBytes = get[(i << 1) + 0];
+                long timestamp = timestampBytes != null
+                        ? Unpooled.wrappedBuffer(timestampBytes).readLongLE() //timestamp for this tile exists, extract it from the byte array
+                        : TIMESTAMP_BLANK;
+
+                byte[] dirtyTimestampBytes = get[(i << 1) + 1];
+                long existingDirtyTimestamp = dirtyTimestampBytes != null
+                        ? Unpooled.wrappedBuffer(dirtyTimestampBytes).readLongLE() //dirty timestamp for this tile exists, extract it from the byte array
+                        : TIMESTAMP_BLANK;
+
+                if (dirtyTimestamp <= timestamp || dirtyTimestamp <= existingDirtyTimestamp) { //the new dirty timestamp isn't newer than the existing one, so we can't replace it
+                    //skip this position
+                    continue;
+                }
+
+                //store new dirty timestamp in db
+                dirtyTimestampBuf.setLongLE(0, dirtyTimestamp);
+                txn.put(this.cfTileDirtyTimestamp, allKeyBytes[i], dirtyTimestampArray);
+
+                //save the position to return it as part of the result stream
+                out.add(positions.get(i));
+            }
+
+            if (!out.isEmpty()) { //non-empty list indicates that at least some positions were modified, so we should commit the transaction
+                txn.commit();
+                return out.stream();
+            } else { //no positions were modified...
+                return Stream.empty();
             }
         }
     }

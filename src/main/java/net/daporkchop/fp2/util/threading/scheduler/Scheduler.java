@@ -63,8 +63,6 @@ public interface Scheduler<P, V> extends AutoCloseable {
     /**
      * Schedules multiple parameters for execution, then blocks until all results are available.
      * <p>
-     * This is the only method
-     * <p>
      * Conceptually implemented by
      * <blockquote><pre>{@code
      * List<CompletableFuture<V>> futures = params.stream().map(scheduler::schedule).collect(Collectors.toList());
