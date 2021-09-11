@@ -107,7 +107,7 @@ public final class DirectMemoryAllocator implements Allocator {
                 return;
             }
 
-            bigWarning("{} memory blocks allocated by {} (totalling {} bytes) were not freed!",
+            bigWarning("%d memory blocks allocated by %s (totalling %d bytes) were not freed!",
                     this.allocations.size(), DirectMemoryAllocator.class.getCanonicalName(), this.allocations.values().stream().mapToLong(Long::longValue).sum());
             this.allocations.keySet().forEach(PUnsafe::freeMemory);
         }

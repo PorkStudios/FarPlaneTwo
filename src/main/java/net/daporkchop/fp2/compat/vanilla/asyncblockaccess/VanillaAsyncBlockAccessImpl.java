@@ -123,7 +123,7 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
 
     @Override
     public boolean anyCubeIntersects(int tileX, int tileY, int tileZ, int level) {
-        return tileZ < 16 && level >= 0 && this.anyColumnIntersects(tileX, tileY, level);
+        return tileY < 16 && level >= 0 && this.anyColumnIntersects(tileX, tileZ, level);
     }
 
     @Override

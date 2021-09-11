@@ -25,33 +25,33 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
-import net.daporkchop.fp2.mode.common.tile.AbstractTileHandle;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Transaction;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.OptionalLong;
 
 import static net.daporkchop.fp2.mode.common.server.storage.rocksdb.RocksStorage.*;
 
 /**
  * @author DaPorkchop_
  */
-public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> extends AbstractTileHandle<POS, T> {
+@RequiredArgsConstructor
+public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> implements ITileHandle<POS, T> {
+    @Getter
+    @NonNull
+    protected final POS pos;
+    @NonNull
     protected final RocksStorage<POS, T> storage;
-
-    public RocksTileHandle(@NonNull POS pos, @NonNull RocksStorage<POS, T> storage) {
-        super(pos);
-
-        this.storage = storage;
-    }
 
     @Override
     @SneakyThrows(RocksDBException.class)
