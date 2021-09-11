@@ -85,10 +85,19 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> extends Ab
         try (Transaction txn = this.storage.db.beginTransaction(WRITE_OPTIONS)) {
             byte[] keyBytes = this.pos.toBytes();
 
-            //obtain an exclusive lock on the key to ensure coherency
-            byte[] timestampBytes = txn.getForUpdate(READ_OPTIONS, this.storage.cfTileTimestamp, keyBytes, true);
+            //obtain an exclusive lock on both timestamp keys to ensure coherency
+            byte[][] get = txn.multiGetForUpdate(READ_OPTIONS,
+                    ImmutableList.of(this.storage.cfTileTimestamp, this.storage.cfTileDirtyTimestamp),
+                    new byte[][]{ keyBytes, keyBytes });
+
+            byte[] timestampBytes = get[0];
             long timestamp = timestampBytes != null
                     ? Unpooled.wrappedBuffer(timestampBytes).readLongLE() //timestamp for this tile exists, extract it from the byte array
+                    : TIMESTAMP_BLANK;
+
+            byte[] dirtyTimestampBytes = get[1];
+            long dirtyTimestamp = dirtyTimestampBytes != null
+                    ? Unpooled.wrappedBuffer(dirtyTimestampBytes).readLongLE() //dirty timestamp for this tile exists, extract it from the byte array
                     : TIMESTAMP_BLANK;
 
             if (metadata.timestamp() <= timestamp) { //the new timestamp isn't newer than the existing one, so we can't replace it
@@ -98,6 +107,11 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> extends Ab
 
             //store new timestamp in db
             txn.put(this.storage.cfTileTimestamp, keyBytes, UnpooledByteBufAllocator.DEFAULT.heapBuffer(Long.BYTES, Long.BYTES).writeLongLE(metadata.timestamp()).array());
+
+            //clear dirty timestamp if needed
+            if (metadata.timestamp() >= dirtyTimestamp) {
+                txn.delete(this.storage.cfTileDirtyTimestamp, keyBytes);
+            }
 
             //encode tile and store it in db
             ByteBuf buf = ByteBufAllocator.DEFAULT.heapBuffer();
@@ -110,6 +124,50 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> extends Ab
             } finally {
                 buf.release();
             }
+
+            //commit transaction and report that a change was made
+            txn.commit();
+            return true;
+        }
+    }
+
+    @Override
+    @SneakyThrows(RocksDBException.class)
+    public long dirtyTimestamp() {
+        byte[] dirtyTimestampBytes = this.storage.db.get(this.storage.cfTileDirtyTimestamp, this.pos.toBytes());
+        return dirtyTimestampBytes != null
+                ? Unpooled.wrappedBuffer(dirtyTimestampBytes).readLongLE() //dirty timestamp for this tile exists, extract it from the byte array
+                : TIMESTAMP_BLANK;
+    }
+
+    @Override
+    @SneakyThrows(RocksDBException.class)
+    public boolean markDirty(long dirtyTimestamp) {
+        try (Transaction txn = this.storage.db.beginTransaction(WRITE_OPTIONS)) {
+            byte[] keyBytes = this.pos.toBytes();
+
+            //obtain an exclusive lock on both timestamp keys to ensure coherency
+            byte[][] get = txn.multiGetForUpdate(READ_OPTIONS,
+                    ImmutableList.of(this.storage.cfTileTimestamp, this.storage.cfTileDirtyTimestamp),
+                    new byte[][]{ keyBytes, keyBytes });
+
+            byte[] timestampBytes = get[0];
+            long timestamp = timestampBytes != null
+                    ? Unpooled.wrappedBuffer(timestampBytes).readLongLE() //timestamp for this tile exists, extract it from the byte array
+                    : TIMESTAMP_BLANK;
+
+            byte[] dirtyTimestampBytes = get[1];
+            long existingDirtyTimestamp = dirtyTimestampBytes != null
+                    ? Unpooled.wrappedBuffer(dirtyTimestampBytes).readLongLE() //dirty timestamp for this tile exists, extract it from the byte array
+                    : TIMESTAMP_BLANK;
+
+            if (dirtyTimestamp <= timestamp || dirtyTimestamp <= existingDirtyTimestamp) { //the new dirty timestamp isn't newer than the existing one, so we can't replace it
+                //exit without committing the transaction
+                return false;
+            }
+
+            //store new dirty timestamp in db
+            txn.put(this.storage.cfTileDirtyTimestamp, keyBytes, UnpooledByteBufAllocator.DEFAULT.heapBuffer(Long.BYTES, Long.BYTES).writeLongLE(dirtyTimestamp).array());
 
             //commit transaction and report that a change was made
             txn.commit();

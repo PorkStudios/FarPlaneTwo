@@ -20,9 +20,11 @@
 
 package net.daporkchop.fp2.mode.common.server;
 
+import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import lombok.Synchronized;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
@@ -40,18 +42,22 @@ import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
-import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
 import net.daporkchop.fp2.util.threading.scheduler.ApproximatelyPrioritizedSharedFutureScheduler;
+import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.minecraft.world.WorldServer;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -77,7 +83,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
     protected final boolean lowResolution;
 
-    protected long currentTime = -1L;
+    protected Set<POS> updatesPending = new ObjectRBTreeSet<>();
+    protected long lastCompletedTick = -1L;
 
     public AbstractFarWorld(@NonNull WorldServer world, @NonNull IFarRenderMode<POS, T> mode) {
         this.world = world;
@@ -101,7 +108,16 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.storage = new RocksStorage<>(mode, this.root);
 
         this.scheduler = new ApproximatelyPrioritizedSharedFutureScheduler<>(
-                scheduler -> new FarServerWorker<>(this, scheduler),
+                scheduler -> task -> {
+                    switch (task.stage()) {
+                        case LOAD:
+                            return new AbstractTileTask.Load<>(this, scheduler, task.pos()).get();
+                        case UPDATE:
+                            return new AbstractTileTask.Update<>(this, scheduler, task.pos()).get();
+                        default:
+                            throw new IllegalArgumentException("unknown or stage in task: " + task);
+                    }
+                },
                 ThreadingHelper.workerGroupBuilder()
                         .world(this.world)
                         .threads(FP2Config.generationThreads)
@@ -109,10 +125,21 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
                                 .collapsingId().name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build()),
                 PriorityTask.approxComparator());
 
-        //add all dirty tiles to update queue
-        this.storage.dirtyTracker().forEachDirtyPos((pos, timestamp) -> this.enqueueUpdate(pos));
-
         WorldChangeListenerManager.add(this.world, this);
+
+        //add all dirty tiles to update queue
+        class Adder implements Consumer<POS> {
+            long count = 0L;
+
+            @Override
+            public void accept(@NonNull POS pos) {
+                this.count++;
+                AbstractFarWorld.this.scheduler.schedule(AbstractFarWorld.this.updateTaskFor(pos));
+            }
+        }
+        Adder adder = new Adder();
+        this.storage.forEachDirtyPos(adder);
+        FP2_LOG.info("restored {} dirty tiles in DIM{}", adder.count, world.provider.getDimension());
     }
 
     protected abstract IFarScaler<POS, T> createScaler();
@@ -158,23 +185,40 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         return this.generatorRough != null && (pos.level() == 0 || this.lowResolution);
     }
 
-    protected void enqueueUpdate(@NonNull POS pos) {
-        //TODO: this.scheduler.schedule(this.updateTaskFor(pos));
-    }
-
-    protected void scheduleForUpdate(@NonNull Stream<POS> positions) {
-        this.storage.dirtyTracker()
-                .markDirty(positions, this.currentTime)
-                .forEach(this::enqueueUpdate);
-    }
-
     protected void scheduleForUpdate(@NonNull POS... positions) {
         this.scheduleForUpdate(Stream.of(positions));
     }
 
+    @Synchronized("updatesPending")
+    protected void scheduleForUpdate(@NonNull Stream<POS> positions) {
+        positions.forEach(pos -> {
+            for (; this.updatesPending.add(pos) && pos.level() < MAX_LODS; pos = uncheckedCast(pos.up())) {
+            }
+        });
+    }
+
     @Override
     public void onTickEnd() {
-        this.currentTime = this.world.getTotalWorldTime();
+        this.lastCompletedTick = this.world.getTotalWorldTime();
+
+        this.flushUpdateQueue();
+    }
+
+    @Synchronized("updatesPending")
+    protected void flushUpdateQueue() {
+        checkState(this.lastCompletedTick >= 0L, "flushed update queue before any game ticks were completed?!?");
+
+        if (!this.updatesPending.isEmpty()) {
+            this.storage.markAllDirty(this.updatesPending.stream(), this.lastCompletedTick)
+                    .forEach(pos -> this.scheduler.schedule(this.updateTaskFor(pos)));
+            this.updatesPending.clear();
+        }
+    }
+
+    @Synchronized("updatesPending")
+    protected void shutdownUpdateQueue() {
+        this.flushUpdateQueue();
+        this.updatesPending = null;
     }
 
     @Override
@@ -186,9 +230,11 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
     @SneakyThrows(IOException.class)
     public void close() {
         WorldChangeListenerManager.remove(this.world, this);
-        this.onTickEnd();
 
         this.scheduler.close();
+
+        this.onTickEnd();
+        this.shutdownUpdateQueue();
 
         FP2_LOG.trace("Shutting down storage in DIM{}", this.world.provider.getDimension());
         this.storage.close();

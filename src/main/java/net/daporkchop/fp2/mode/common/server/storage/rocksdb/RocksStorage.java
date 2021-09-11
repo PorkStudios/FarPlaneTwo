@@ -23,11 +23,9 @@ package net.daporkchop.fp2.mode.common.server.storage.rocksdb;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableList;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
-import io.netty.buffer.UnpooledByteBufAllocator;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -37,9 +35,6 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
-import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
-import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
-import net.daporkchop.fp2.mode.common.tile.AbstractTileHandle;
 import net.daporkchop.lib.common.misc.file.PFiles;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
@@ -50,7 +45,7 @@ import org.rocksdb.FlushOptions;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
-import org.rocksdb.Transaction;
+import org.rocksdb.RocksIterator;
 import org.rocksdb.TransactionDB;
 import org.rocksdb.TransactionDBOptions;
 import org.rocksdb.WriteOptions;
@@ -62,8 +57,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import static net.daporkchop.fp2.debug.FP2Debug.*;
+import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * @author DaPorkchop_
@@ -85,8 +80,8 @@ public final class RocksStorage<POS extends IFarPos, T extends IFarTile> impleme
     protected static final FlushOptions FLUSH_OPTIONS = new FlushOptions().setWaitForFlush(true).setAllowWriteStall(true);
 
     protected static final byte[] COLUMN_NAME_TILE_TIMESTAMP = "tile_timestamp".getBytes(StandardCharsets.UTF_8);
+    protected static final byte[] COLUMN_NAME_TILE_DIRTY_TIMESTAMP = "tile_dirty_timestamp".getBytes(StandardCharsets.UTF_8);
     protected static final byte[] COLUMN_NAME_TILE_DATA = "tile_data".getBytes(StandardCharsets.UTF_8);
-    protected static final byte[] COLUMN_NAME_DIRTY = "dirty".getBytes(StandardCharsets.UTF_8);
 
     //
     // rocksdb helper methods
@@ -129,13 +124,10 @@ public final class RocksStorage<POS extends IFarPos, T extends IFarTile> impleme
     protected final List<ColumnFamilyHandle> handles;
 
     protected final ColumnFamilyHandle cfTileTimestamp;
+    protected final ColumnFamilyHandle cfTileDirtyTimestamp;
     protected final ColumnFamilyHandle cfTileData;
-    protected final ColumnFamilyHandle cfDirty;
 
     protected final int version;
-
-    @Getter
-    protected final RocksDirtyTracker<POS> dirtyTracker;
 
     protected final LoadingCache<POS, ITileHandle<POS, T>> handleCache = CacheBuilder.newBuilder()
             .concurrencyLevel(FP2Config.generationThreads)
@@ -147,7 +139,7 @@ public final class RocksStorage<POS extends IFarPos, T extends IFarTile> impleme
         this.mode = mode;
         this.version = mode.storageVersion();
 
-        File markerFile = new File(storageRoot, "v3");
+        File markerFile = new File(storageRoot, "v4");
         if (PFiles.checkDirectoryExists(storageRoot) && !PFiles.checkFileExists(markerFile)) { //it's an old storage
             PFiles.rmContentsParallel(storageRoot);
         }
@@ -156,24 +148,32 @@ public final class RocksStorage<POS extends IFarPos, T extends IFarTile> impleme
         List<ColumnFamilyDescriptor> descriptors = Arrays.asList(
                 new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, CF_OPTIONS),
                 new ColumnFamilyDescriptor(COLUMN_NAME_TILE_TIMESTAMP, CF_OPTIONS),
-                new ColumnFamilyDescriptor(COLUMN_NAME_TILE_DATA, CF_OPTIONS),
-                new ColumnFamilyDescriptor(COLUMN_NAME_DIRTY, CF_OPTIONS));
+                new ColumnFamilyDescriptor(COLUMN_NAME_TILE_DIRTY_TIMESTAMP, CF_OPTIONS),
+                new ColumnFamilyDescriptor(COLUMN_NAME_TILE_DATA, CF_OPTIONS));
         this.handles = new ArrayList<>(descriptors.size());
 
         this.db = TransactionDB.open(DB_OPTIONS, TX_DB_OPTIONS, storageRoot.getPath(), descriptors, this.handles);
 
         this.cfTileTimestamp = this.handles.get(1);
-        this.cfTileData = this.handles.get(2);
-        this.cfDirty = this.handles.get(3);
+        this.cfTileDirtyTimestamp = this.handles.get(2);
+        this.cfTileData = this.handles.get(3);
 
         PFiles.ensureFileExists(markerFile); //create marker file
-
-        this.dirtyTracker = new RocksDirtyTracker<>(this);
     }
 
     @Override
     public ITileHandle<POS, T> handleFor(@NonNull POS pos) {
         return this.handleCache.getUnchecked(pos);
+    }
+
+    @Override
+    public void forEachDirtyPos(@NonNull Consumer<POS> callback) {
+        try (RocksIterator itr = this.db.newIterator(this.cfTileDirtyTimestamp)) {
+            for (itr.seekToFirst(); itr.isValid(); itr.next()) {
+                byte[] key = itr.key();
+                callback.accept(this.mode.readPos(Unpooled.wrappedBuffer(key)));
+            }
+        }
     }
 
     @Override

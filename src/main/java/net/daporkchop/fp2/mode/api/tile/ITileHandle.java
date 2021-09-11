@@ -38,17 +38,32 @@ public interface ITileHandle<POS extends IFarPos, T extends IFarTile> extends IT
      */
     TileSnapshot<POS, T> snapshot();
 
+    /**
+     * Atomically sets this tile's contents to the given data.
+     * <p>
+     * If the new timestamp is less than or equal to the current timestamp, nothing will be modified and the method will return {@code false}.
+     * <p>
+     * If the new timestamp is greater than or equal to the current dirty timestamp, the dirty timestamp will be cleared.
+     *
+     * @param metadata the tile's new metadata
+     * @param tile     an instance of {@link T} containing the new tile data
+     * @return whether or not the operation was able to be applied
+     */
     boolean set(@NonNull ITileMetadata metadata, @NonNull T tile);
 
-    void addListener(@NonNull Listener<POS, T> listener);
-
-    void removeListener(@NonNull Listener<POS, T> listener);
+    /**
+     * @return the timestamp at which this tile was last marked as dirty, or {@link #TIMESTAMP_BLANK} if it isn't
+     */
+    long dirtyTimestamp();
 
     /**
-     * @author DaPorkchop_
+     * Atomically marks this tile as dirty as of the given timestamp.
+     * <p>
+     * If the new dirty timestamp is less than or equal to the current timestamp or the current dirty timestamp, nothing will be modified and the method will
+     * return {@code false}.
+     *
+     * @param dirtyTimestamp the new dirty timestamp
+     * @return whether or not the operation was able to be applied
      */
-    @FunctionalInterface
-    interface Listener<POS extends IFarPos, T extends IFarTile> {
-        void tileChanged(@NonNull ITileHandle<POS, T> handle, @NonNull TileSnapshot<POS, T> snapshot);
-    }
+    boolean markDirty(long dirtyTimestamp);
 }

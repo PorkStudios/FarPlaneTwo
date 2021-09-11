@@ -27,6 +27,8 @@ import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Handles reading and writing of far terrain data.
@@ -36,10 +38,12 @@ import java.io.IOException;
 public interface IFarStorage<POS extends IFarPos, T extends IFarTile> extends Closeable {
     ITileHandle<POS, T> handleFor(@NonNull POS pos);
 
-    /**
-     * @return the {@link IFarDirtyTracker} used by this storage
-     */
-    IFarDirtyTracker<POS> dirtyTracker();
+    void forEachDirtyPos(@NonNull Consumer<POS> callback);
+
+    default Stream<POS> markAllDirty(@NonNull Stream<POS> positions, long dirtyTimestamp) {
+        return positions.distinct()
+                .filter(pos -> this.handleFor(pos).markDirty(dirtyTimestamp));
+    }
 
     /**
      * Closes this storage.
