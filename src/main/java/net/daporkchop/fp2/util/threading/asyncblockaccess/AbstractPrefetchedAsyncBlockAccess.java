@@ -25,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
@@ -32,6 +34,7 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
 
+import javax.annotation.Nullable;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -44,41 +47,12 @@ import java.util.stream.Stream;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public abstract class AbstractPrefetchedAsyncBlockAccess<P extends IAsyncBlockAccess> implements IAsyncBlockAccess {
+public abstract class AbstractPrefetchedAsyncBlockAccess<P extends IAsyncBlockAccess> implements IBlockHeightAccess {
     @NonNull
     protected final P parent;
     @NonNull
     protected final WorldServer world;
-
-    @Override
-    public final IBlockHeightAccess prefetch(@NonNull Stream<ChunkPos> columns) {
-        return this.parent.prefetch(columns);
-    }
-
-    @Override
-    public IBlockHeightAccess prefetchWithoutGenerating(@NonNull Stream<ChunkPos> columns) throws GenerationNotAllowedException {
-        return this.parent.prefetchWithoutGenerating(columns);
-    }
-
-    @Override
-    public final IBlockHeightAccess prefetch(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) {
-        return this.parent.prefetch(columns, cubesMappingFunction);
-    }
-
-    @Override
-    public IBlockHeightAccess prefetchWithoutGenerating(@NonNull Stream<ChunkPos> columns, @NonNull Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction) throws GenerationNotAllowedException {
-        return this.parent.prefetchWithoutGenerating(columns, cubesMappingFunction);
-    }
-
-    @Override
-    public boolean anyColumnIntersects(int tileX, int tileZ, int level) {
-        return this.parent.anyColumnIntersects(tileX, tileZ, level);
-    }
-
-    @Override
-    public boolean anyCubeIntersects(int tileX, int tileY, int tileZ, int level) {
-        return this.parent.anyCubeIntersects(tileX, tileY, tileZ, level);
-    }
+    protected final boolean allowGeneration;
 
     @Override
     public final WorldType getWorldType() {
@@ -87,36 +61,58 @@ public abstract class AbstractPrefetchedAsyncBlockAccess<P extends IAsyncBlockAc
 
     @Override
     public int getTopBlockY(int blockX, int blockZ) {
-        return this.parent.getTopBlockY(blockX, blockZ);
+        return this.parent.getTopBlockY(blockX, blockZ, this.allowGeneration);
     }
 
     @Override
     public int getTopBlockYBelow(int blockX, int blockY, int blockZ) {
-        return this.parent.getTopBlockYBelow(blockX, blockY, blockZ);
+        return this.parent.getTopBlockYBelow(blockX, blockY, blockZ, this.allowGeneration);
     }
 
     @Override
     public int getCombinedLight(BlockPos pos, int defaultBlockLightValue) {
-        return this.parent.getCombinedLight(pos, defaultBlockLightValue);
+        return this.parent.getCombinedLight(pos, defaultBlockLightValue, this.allowGeneration);
     }
 
     @Override
     public int getBlockLight(BlockPos pos) {
-        return this.parent.getBlockLight(pos);
+        return this.parent.getBlockLight(pos, this.allowGeneration);
     }
 
     @Override
     public int getSkyLight(BlockPos pos) {
-        return this.parent.getSkyLight(pos);
+        return this.parent.getSkyLight(pos, this.allowGeneration);
     }
 
     @Override
     public IBlockState getBlockState(BlockPos pos) {
-        return this.parent.getBlockState(pos);
+        return this.parent.getBlockState(pos, this.allowGeneration);
     }
 
     @Override
     public Biome getBiome(BlockPos pos) {
-        return this.parent.getBiome(pos);
+        return this.parent.getBiome(pos, this.allowGeneration);
+    }
+
+    @Override
+    public boolean isSideSolid(BlockPos pos, EnumFacing side, boolean _default) {
+        IBlockState state = this.getBlockState(pos);
+        return state.getBlock().isAir(state, this, pos);
+    }
+
+    @Override
+    public int getStrongPower(BlockPos pos, EnumFacing direction) {
+        return this.getBlockState(pos).getStrongPower(this, pos, direction);
+    }
+
+    @Override
+    public boolean isAirBlock(BlockPos pos) {
+        IBlockState state = this.getBlockState(pos);
+        return state.getBlock().isAir(state, this, pos);
+    }
+
+    @Override
+    public TileEntity getTileEntity(BlockPos pos) {
+        throw new UnsupportedOperationException();
     }
 }

@@ -125,7 +125,7 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
         //collect all futures into a list first in order to issue all tasks at once before blocking, thus ensuring maximum parallelism
         LazyFutureTask<IColumn>[] columnFutures = uncheckedCast(columns.map(pos -> this.columns.get(pos, true)).toArray(LazyFutureTask[]::new));
 
-        return new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, LazyFutureTask.scatterGather(columnFutures).stream());
+        return new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, true, LazyFutureTask.scatterGather(columnFutures).stream());
     }
 
     @Override
@@ -133,7 +133,7 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
         //collect all futures into a list first in order to issue all tasks at once before blocking, thus ensuring maximum parallelism
         LazyFutureTask<IColumn>[] columnFutures = uncheckedCast(columns.map(pos -> this.columns.get(pos, false)).toArray(LazyFutureTask[]::new));
 
-        return new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, LazyFutureTask.scatterGather(columnFutures).stream()
+        return new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, false, LazyFutureTask.scatterGather(columnFutures).stream()
                 .peek(GenerationNotAllowedException.throwIfNull()));
     }
 
@@ -143,10 +143,10 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
         LazyFutureTask<IColumn>[] columnFutures = uncheckedCast(columns.map(pos -> this.columns.get(pos, true)).toArray(LazyFutureTask[]::new));
         List<IColumn> columnList = LazyFutureTask.scatterGather(columnFutures);
 
-        LazyFutureTask<ICube>[] cubeFutures = uncheckedCast(cubesMappingFunction.apply(new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, columnList.stream()))
+        LazyFutureTask<ICube>[] cubeFutures = uncheckedCast(cubesMappingFunction.apply(new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, true, columnList.stream()))
                 .map(vec -> new CubePos(vec.getX(), vec.getY(), vec.getZ())).map(pos -> this.cubes.get(pos, true)).toArray(LazyFutureTask[]::new));
 
-        return new PrefetchedCubesCCAsyncBlockAccess(this, this.world, columnList.stream(), LazyFutureTask.scatterGather(cubeFutures).stream());
+        return new PrefetchedCubesCCAsyncBlockAccess(this, this.world, true, columnList.stream(), LazyFutureTask.scatterGather(cubeFutures).stream());
     }
 
     @Override
@@ -156,10 +156,10 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
         List<IColumn> columnList = LazyFutureTask.scatterGather(columnFutures);
         columnList.forEach(GenerationNotAllowedException.throwIfNull());
 
-        LazyFutureTask<ICube>[] cubeFutures = uncheckedCast(cubesMappingFunction.apply(new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, columnList.stream()))
+        LazyFutureTask<ICube>[] cubeFutures = uncheckedCast(cubesMappingFunction.apply(new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, false, columnList.stream()))
                 .map(vec -> new CubePos(vec.getX(), vec.getY(), vec.getZ())).map(pos -> this.cubes.get(pos, false)).toArray(LazyFutureTask[]::new));
 
-        return new PrefetchedCubesCCAsyncBlockAccess(this, this.world, columnList.stream(), LazyFutureTask.scatterGather(cubeFutures).stream()
+        return new PrefetchedCubesCCAsyncBlockAccess(this, this.world, false, columnList.stream(), LazyFutureTask.scatterGather(cubeFutures).stream()
                 .peek(GenerationNotAllowedException.throwIfNull()));
     }
 
@@ -185,52 +185,53 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
         return this.cubesExistCache.containsAny(level, tileX, tileY, tileZ);
     }
 
-    protected IColumn getColumn(int columnX, int columnZ) {
-        return this.columns.get(new ChunkPos(columnX, columnZ), true).join();
+    protected IColumn getColumn(int columnX, int columnZ, boolean allowGeneration) {
+        return GenerationNotAllowedException.throwIfNull(this.columns.get(new ChunkPos(columnX, columnZ), allowGeneration).join());
     }
 
     @Override
-    public int getTopBlockY(int blockX, int blockZ) {
-        return this.getColumn(blockX >> 4, blockZ >> 4).getOpacityIndex().getTopBlockY(blockX & 0xF, blockZ & 0xF);
+    public int getTopBlockY(int blockX, int blockZ, boolean allowGeneration) {
+        return this.getColumn(blockX >> 4, blockZ >> 4, allowGeneration).getOpacityIndex().getTopBlockY(blockX & 0xF, blockZ & 0xF);
     }
 
     @Override
-    public int getTopBlockYBelow(int blockX, int blockY, int blockZ) {
-        return this.getColumn(blockX >> 4, blockZ >> 4).getOpacityIndex().getTopBlockYBelow(blockX & 0xF, blockZ & 0xF, blockY);
+    @SuppressWarnings("Deprecation")
+    public int getTopBlockYBelow(int blockX, int blockY, int blockZ, boolean allowGeneration) {
+        return this.getColumn(blockX >> 4, blockZ >> 4, allowGeneration).getOpacityIndex().getTopBlockYBelow(blockX & 0xF, blockZ & 0xF, blockY);
     }
 
-    protected ICube getCube(int cubeX, int cubeY, int cubeZ) {
-        return this.cubes.get(new CubePos(cubeX, cubeY, cubeZ), true).join();
+    protected ICube getCube(int cubeX, int cubeY, int cubeZ, boolean allowGeneration) {
+        return GenerationNotAllowedException.throwIfNull(this.cubes.get(new CubePos(cubeX, cubeY, cubeZ), allowGeneration).join());
     }
 
     @Override
-    public int getBlockLight(BlockPos pos) {
+    public int getBlockLight(BlockPos pos, boolean allowGeneration) {
         if (!this.world.isValid(pos)) {
             return 0;
         } else {
-            return this.getCube(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4).getLightFor(EnumSkyBlock.BLOCK, pos);
+            return this.getCube(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4, allowGeneration).getLightFor(EnumSkyBlock.BLOCK, pos);
         }
     }
 
     @Override
-    public int getSkyLight(BlockPos pos) {
+    public int getSkyLight(BlockPos pos, boolean allowGeneration) {
         if (!this.world.provider.hasSkyLight()) {
             return 0;
         } else if (!this.world.isValid(pos)) {
             return 15;
         } else {
-            return this.getCube(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4).getLightFor(EnumSkyBlock.SKY, pos);
+            return this.getCube(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4, allowGeneration).getLightFor(EnumSkyBlock.SKY, pos);
         }
     }
 
     @Override
-    public IBlockState getBlockState(BlockPos pos) {
-        return this.getCube(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4).getBlockState(pos);
+    public IBlockState getBlockState(BlockPos pos, boolean allowGeneration) {
+        return this.getCube(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4, allowGeneration).getBlockState(pos);
     }
 
     @Override
-    public Biome getBiome(BlockPos pos) {
-        return this.getCube(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4).getBiome(pos);
+    public Biome getBiome(BlockPos pos, boolean allowGeneration) {
+        return this.getCube(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4, allowGeneration).getBiome(pos);
     }
 
     @Override

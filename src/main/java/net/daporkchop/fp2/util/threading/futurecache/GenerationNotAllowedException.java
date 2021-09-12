@@ -65,4 +65,18 @@ public final class GenerationNotAllowedException extends Exception {
     public static <T> Consumer<T> throwIfNull() {
         return uncheckedCast(THROW_IF_NULL);
     }
+
+    /**
+     * Throws {@link GenerationNotAllowedException} if the given value is null.
+     *
+     * @param value the value
+     * @return the value
+     */
+    @SneakyThrows(GenerationNotAllowedException.class)
+    public static <T> T throwIfNull(T value) {
+        if (value == null) {
+            throw get();
+        }
+        return value;
+    }
 }

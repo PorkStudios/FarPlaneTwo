@@ -68,7 +68,7 @@ import static net.daporkchop.fp2.mode.api.tile.ITileMetadata.*;
 /**
  * @author DaPorkchop_
  */
-public final class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IFarStorage<POS, T> {
+public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IFarStorage<POS, T> {
     protected static final DBOptions DB_OPTIONS = new DBOptions()
             .setCreateIfMissing(true)
             .setCreateMissingColumnFamilies(true)
@@ -236,7 +236,8 @@ public final class RocksStorage<POS extends IFarPos, T extends IFarTile> impleme
                         ? Unpooled.wrappedBuffer(dirtyTimestampBytes).readLongLE() //dirty timestamp for this tile exists, extract it from the byte array
                         : TIMESTAMP_BLANK;
 
-                if (dirtyTimestamp <= timestamp || dirtyTimestamp <= existingDirtyTimestamp) { //the new dirty timestamp isn't newer than the existing one, so we can't replace it
+                if (timestamp == TIMESTAMP_BLANK //the tile doesn't exist, so we can't mark it as dirty
+                    || dirtyTimestamp <= timestamp || dirtyTimestamp <= existingDirtyTimestamp) { //the new dirty timestamp isn't newer than the existing one, so we can't replace it
                     //skip this position
                     continue;
                 }

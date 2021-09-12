@@ -53,6 +53,7 @@ import java.io.IOException;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -88,7 +89,7 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
         //collect all futures into a list first in order to issue all tasks at once before blocking, thus ensuring maximum parallelism
         LazyFutureTask<Chunk>[] chunkFutures = uncheckedCast(columns.map(pos -> this.chunks.get(pos, true)).toArray(LazyFutureTask[]::new));
 
-        return new PrefetchedColumnsVanillaAsyncBlockAccess(this, this.world, LazyFutureTask.scatterGather(chunkFutures).stream());
+        return new PrefetchedColumnsVanillaAsyncBlockAccess(this, this.world, true, LazyFutureTask.scatterGather(chunkFutures).stream());
     }
 
     @Override
@@ -96,7 +97,7 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
         //collect all futures into a list first in order to issue all tasks at once before blocking, thus ensuring maximum parallelism
         LazyFutureTask<Chunk>[] chunkFutures = uncheckedCast(columns.map(pos -> this.chunks.get(pos, false)).toArray(LazyFutureTask[]::new));
 
-        return new PrefetchedColumnsVanillaAsyncBlockAccess(this, this.world, LazyFutureTask.scatterGather(chunkFutures).stream()
+        return new PrefetchedColumnsVanillaAsyncBlockAccess(this, this.world, false, LazyFutureTask.scatterGather(chunkFutures).stream()
                 .peek(GenerationNotAllowedException.throwIfNull()));
     }
 
@@ -131,48 +132,48 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
         throw new UnsupportedOperationException("vanilla world shouldn't have cubes!");
     }
 
-    protected Chunk getChunk(int chunkX, int chunkZ) {
-        return this.chunks.get(new ChunkPos(chunkX, chunkZ), true).join();
+    protected Chunk getChunk(int chunkX, int chunkZ, boolean allowGeneration) {
+        return GenerationNotAllowedException.throwIfNull(this.chunks.get(new ChunkPos(chunkX, chunkZ), allowGeneration).join());
     }
 
     @Override
-    public int getTopBlockY(int blockX, int blockZ) {
-        return this.getChunk(blockX >> 4, blockZ >> 4).getHeightValue(blockX & 0xF, blockZ & 0xF) - 1;
+    public int getTopBlockY(int blockX, int blockZ, boolean allowGeneration) {
+        return this.getChunk(blockX >> 4, blockZ >> 4, allowGeneration).getHeightValue(blockX & 0xF, blockZ & 0xF) - 1;
     }
 
     @Override
-    public int getTopBlockYBelow(int blockX, int blockY, int blockZ) {
+    public int getTopBlockYBelow(int blockX, int blockY, int blockZ, boolean allowGeneration) {
         throw new UnsupportedOperationException("Not implemented"); //TODO: i could actually write an implementation for this
     }
 
     @Override
-    public int getBlockLight(BlockPos pos) {
+    public int getBlockLight(BlockPos pos, boolean allowGeneration) {
         if (!this.world.isValid(pos)) {
             return 0;
         } else {
-            return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4).getLightFor(EnumSkyBlock.BLOCK, pos);
+            return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4, allowGeneration).getLightFor(EnumSkyBlock.BLOCK, pos);
         }
     }
 
     @Override
-    public int getSkyLight(BlockPos pos) {
+    public int getSkyLight(BlockPos pos, boolean allowGeneration) {
         if (!this.world.provider.hasSkyLight()) {
             return 0;
         } else if (!this.world.isValid(pos)) {
             return 15;
         } else {
-            return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4).getLightFor(EnumSkyBlock.SKY, pos);
+            return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4, allowGeneration).getLightFor(EnumSkyBlock.SKY, pos);
         }
     }
 
     @Override
-    public IBlockState getBlockState(BlockPos pos) {
-        return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4).getBlockState(pos);
+    public IBlockState getBlockState(BlockPos pos, boolean allowGeneration) {
+        return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4, allowGeneration).getBlockState(pos);
     }
 
     @Override
-    public Biome getBiome(BlockPos pos) {
-        return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4).getBiome(pos, null); //provider is not used on client
+    public Biome getBiome(BlockPos pos, boolean allowGeneration) {
+        return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4, allowGeneration).getBiome(pos, null); //provider is not used on client
     }
 
     @Override
@@ -204,6 +205,8 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
 
         @Override
         protected void triggerGeneration(@NonNull ChunkPos key, @NonNull Object param) {
+            FP2_LOG.info("generating vanilla chunk at {}", key);
+
             ThreadingHelper.scheduleTaskInWorldThread(VanillaAsyncBlockAccessImpl.this.world, (ERunnable) () -> {
                 int x = key.x;
                 int z = key.z;

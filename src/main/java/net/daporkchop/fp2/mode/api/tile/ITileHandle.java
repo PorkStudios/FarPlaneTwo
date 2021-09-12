@@ -59,8 +59,8 @@ public interface ITileHandle<POS extends IFarPos, T extends IFarTile> extends IT
     /**
      * Atomically marks this tile as dirty as of the given timestamp.
      * <p>
-     * If the new dirty timestamp is less than or equal to the current timestamp or the current dirty timestamp, nothing will be modified and the method will
-     * return {@code false}.
+     * If the new dirty timestamp is less than or equal to the current timestamp or the current dirty timestamp, or the tile hasn't been initialized yet, nothing will be
+     * modified and the method will return {@code false}.
      *
      * @param dirtyTimestamp the new dirty timestamp
      * @return whether or not the operation was able to be applied

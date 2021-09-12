@@ -29,6 +29,7 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
+import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
@@ -64,7 +65,7 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
 
     protected abstract long minimumTimestamp();
 
-    protected abstract boolean allowAnyGeneration();
+    protected abstract boolean allowNewGeneration();
 
     protected abstract PriorityTask<POS> taskFor(@NonNull POS pos);
 
@@ -73,8 +74,6 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
         long minimumTimestamp = this.minimumTimestamp();
         long worldTimestamp = this.world.lastCompletedTick;
         checkState(worldTimestamp >= minimumTimestamp, "worldTimestamp (%d) is less than minimumTimestamp (%d)?!?", worldTimestamp, minimumTimestamp);
-
-        boolean allowAnyGeneration = this.allowAnyGeneration();
 
         if (this.handle.timestamp() >= minimumTimestamp) { //break out early if already new enough
             return this.handle;
@@ -97,6 +96,10 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
             }
         }
 
+        if (!this.allowNewGeneration()) { //we aren't allowed to generate any new tiles
+            return this.handle;
+        }
+
         if (this.world.canGenerateRough(this.pos)) { //the tile can be generated using the rough generator
             this.generateRough(worldTimestamp);
             return this.handle;
@@ -105,8 +108,6 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
         //rough generation isn't available...
         if (this.pos.level() == 0) {
             //do exact generation, allowing it to generate vanilla terrain if needed
-            //TODO: this will generate vanilla terrain even if allowAnyGeneration==false (for updates)...
-
             try {
                 this.generateExact(worldTimestamp, true);
                 return this.handle;
@@ -182,7 +183,7 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
             //actually do scaling
             this.world.scaler().scale(srcs, dst);
 
-            if (this.handle.set(ITileMetadata.ofTimestamp(ITileMetadata.TIMESTAMP_GENERATED), dst)) {
+            if (this.handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), dst)) {
                 this.world.tileChanged(this.handle, false);
             }
         } finally {
@@ -209,7 +210,7 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
         }
 
         @Override
-        protected boolean allowAnyGeneration() {
+        protected boolean allowNewGeneration() {
             return true;
         }
 
@@ -234,7 +235,7 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
         }
 
         @Override
-        protected boolean allowAnyGeneration() {
+        protected boolean allowNewGeneration() {
             return false;
         }
 

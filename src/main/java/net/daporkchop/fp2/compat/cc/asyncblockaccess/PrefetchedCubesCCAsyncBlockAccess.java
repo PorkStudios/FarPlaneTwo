@@ -23,6 +23,7 @@ package net.daporkchop.fp2.compat.cc.asyncblockaccess;
 import io.github.opencubicchunks.cubicchunks.api.util.XYZMap;
 import io.github.opencubicchunks.cubicchunks.api.world.IColumn;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
+import lombok.NonNull;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
@@ -43,8 +44,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class PrefetchedCubesCCAsyncBlockAccess extends PrefetchedColumnsCCAsyncBlockAccess {
     protected final XYZMap<ICube> cubes = new XYZMap<>(0.75f, 16);
 
-    public PrefetchedCubesCCAsyncBlockAccess(CCAsyncBlockAccessImpl parent, WorldServer world, Stream<IColumn> columns, Stream<ICube> cubes) {
-        super(parent, world, columns);
+    public PrefetchedCubesCCAsyncBlockAccess(CCAsyncBlockAccessImpl parent, WorldServer world, boolean allowGeneration, Stream<IColumn> columns, @NonNull Stream<ICube> cubes) {
+        super(parent, world, allowGeneration, columns);
 
         cubes.forEach(cube -> {
             checkArg(this.cubes.put(cube) == null, "duplicate cube at (%d, %d, %d)", cube.getX(), cube.getY(), cube.getZ());
@@ -53,7 +54,7 @@ public class PrefetchedCubesCCAsyncBlockAccess extends PrefetchedColumnsCCAsyncB
 
     @Override
     public int getCombinedLight(BlockPos pos, int defaultBlockLightValue) {
-        if (!this.world.isValid(pos))    {
+        if (!this.world.isValid(pos)) {
             return this.world.provider.hasSkyLight() ? 0xF << 20 : 0;
         } else {
             ICube cube = this.cubes.get(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4);
@@ -68,7 +69,7 @@ public class PrefetchedCubesCCAsyncBlockAccess extends PrefetchedColumnsCCAsyncB
 
     @Override
     public int getBlockLight(BlockPos pos) {
-        if (!this.world.isValid(pos))    {
+        if (!this.world.isValid(pos)) {
             return 0;
         } else {
             ICube cube = this.cubes.get(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4);
@@ -83,7 +84,7 @@ public class PrefetchedCubesCCAsyncBlockAccess extends PrefetchedColumnsCCAsyncB
     public int getSkyLight(BlockPos pos) {
         if (!this.world.provider.hasSkyLight()) {
             return 0;
-        } else if (!this.world.isValid(pos))    {
+        } else if (!this.world.isValid(pos)) {
             return 15;
         } else {
             ICube cube = this.cubes.get(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4);

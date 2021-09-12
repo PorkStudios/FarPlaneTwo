@@ -162,7 +162,8 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> implements
                     ? Unpooled.wrappedBuffer(dirtyTimestampBytes).readLongLE() //dirty timestamp for this tile exists, extract it from the byte array
                     : TIMESTAMP_BLANK;
 
-            if (dirtyTimestamp <= timestamp || dirtyTimestamp <= existingDirtyTimestamp) { //the new dirty timestamp isn't newer than the existing one, so we can't replace it
+            if (timestamp == TIMESTAMP_BLANK //the tile doesn't exist, so we can't mark it as dirty
+                    || dirtyTimestamp <= timestamp || dirtyTimestamp <= existingDirtyTimestamp) { //the new dirty timestamp isn't newer than the existing one, so we can't replace it
                 //exit without committing the transaction
                 return false;
             }
