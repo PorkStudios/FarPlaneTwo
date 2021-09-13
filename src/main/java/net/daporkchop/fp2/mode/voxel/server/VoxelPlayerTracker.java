@@ -63,20 +63,18 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
         final int playerY = floorI(state.y());
         final int playerZ = floorI(state.z());
 
-        final int d = asrRound(FP2Config.levelCutoffDistance, T_SHIFT) + TILE_PRELOAD_PADDING_RADIUS;
-
         for (int lvl = state.minLevel(); lvl < state.maxLevel(); lvl++) {
             final int baseX = asrRound(playerX, T_SHIFT + lvl);
             final int baseY = asrRound(playerY, T_SHIFT + lvl);
             final int baseZ = asrRound(playerZ, T_SHIFT + lvl);
 
             IntAxisAlignedBB limits = this.coordLimits[lvl];
-            int minX = limits.clampX(baseX - d);
-            int minY = limits.clampY(baseY - d);
-            int minZ = limits.clampZ(baseZ - d);
-            int maxX = limits.clampX(baseX + d);
-            int maxY = limits.clampY(baseY + d);
-            int maxZ = limits.clampZ(baseZ + d);
+            int minX = limits.clampX(baseX - state.cutoff());
+            int minY = limits.clampY(baseY - state.cutoff());
+            int minZ = limits.clampZ(baseZ - state.cutoff());
+            int maxX = limits.clampX(baseX + state.cutoff());
+            int maxY = limits.clampY(baseY + state.cutoff());
+            int maxZ = limits.clampZ(baseZ + state.cutoff());
 
             for (int x = minX; x <= maxX; x++) {
                 for (int y = minY; y <= maxY; y++) {

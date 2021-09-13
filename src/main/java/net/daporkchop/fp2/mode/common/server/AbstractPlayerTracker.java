@@ -75,13 +75,6 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
      */
     protected static final double UPDATE_TRIGGER_DISTANCE_SQUARED = sq(T_VOXELS >> 1);
 
-    /**
-     * An additional radius (in tiles) to load around players in order to prevent visible artifacts when moving.
-     * <p>
-     * TODO: this should be removed after merging dev/fix-holes-with-stencil-hackery
-     */
-    protected static final int TILE_PRELOAD_PADDING_RADIUS = 3;
-
     //TODO: consider using a KeyedExecutor for this
     protected static final EventExecutorGroup TRACKER_THREADS = new DefaultEventLoopGroup(
             FP2Config.performance.trackingThreads,

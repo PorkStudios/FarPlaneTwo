@@ -44,7 +44,7 @@ import static net.daporkchop.fp2.util.math.MathUtil.*;
 public class TrackingState {
     public static TrackingState createDefault(@NonNull EntityPlayerMP player) {
         return new TrackingState(player.posX, player.posY, player.posZ,
-                asrRound(FP2Config.levelCutoffDistance, T_SHIFT) + AbstractPlayerTracker.TILE_PRELOAD_PADDING_RADIUS,
+                asrRound(FP2Config.levelCutoffDistance, T_SHIFT),
                 FP2_DEBUG && FP2Config.debug.skipLevel0 ? 1 : 0,
                 FP2Config.maxLevels);
     }
