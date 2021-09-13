@@ -109,7 +109,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.tracker = this.createTracker();
 
         this.root = new File(world.getChunkSaveLocation(), "fp2/" + this.mode().name().toLowerCase());
-        this.storage = new RocksStorage<>(mode, this.root);
+        this.storage = new RocksStorage<>(this, this.root);
 
         this.scheduler = new ApproximatelyPrioritizedSharedFutureScheduler<>(
                 scheduler -> task -> {
@@ -155,19 +155,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         return this.scheduler.schedule(this.loadTaskFor(pos));
     }
 
-    public void tileAvailable(@NonNull ITileHandle<POS, T> handle) {
-        this.notifyPlayerTracker(handle);
-    }
-
-    public void tileChanged(@NonNull ITileHandle<POS, T> handle, boolean allowScale) {
-        this.tileAvailable(handle);
-
-        if (allowScale && handle.pos().level() < FP2Config.maxLevels - 1) {
-            this.scheduleForUpdate(this.scaler.outputs(handle.pos()));
-        }
-    }
-
-    public void notifyPlayerTracker(@NonNull ITileHandle<POS, T> handle) {
+    public void tileChanged(@NonNull ITileHandle<POS, T> handle) {
         this.tracker.tileChanged(handle);
     }
 

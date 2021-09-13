@@ -29,7 +29,6 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
@@ -96,12 +95,12 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
             }
         }
 
-        if (!this.allowNewGeneration()) { //we aren't allowed to generate any new tiles
+        if (this.world.canGenerateRough(this.pos)) { //the tile can be generated using the rough generator
+            this.generateRough(worldTimestamp);
             return this.handle;
         }
 
-        if (this.world.canGenerateRough(this.pos)) { //the tile can be generated using the rough generator
-            this.generateRough(worldTimestamp);
+        if (!this.allowNewGeneration()) { //we aren't allowed to generate any new tiles
             return this.handle;
         }
 
@@ -129,7 +128,7 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
             this.world.generatorRough().generate(this.pos, tile);
 
             if (this.handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), tile)) { //only notify world if the tile was changed
-                this.world.tileChanged(this.handle, false);
+                this.world.tileChanged(this.handle);
             }
         } finally {
             tileRecycler.release(tile);
@@ -152,7 +151,7 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
             this.world.generatorExact().generate(access, this.pos, tile);
 
             if (this.handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), tile)) { //only notify world if the tile was changed
-                this.world.tileChanged(this.handle, false);
+                this.world.tileChanged(this.handle);
             }
         } finally {
             tileRecycler.release(tile);
@@ -184,7 +183,7 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
             this.world.scaler().scale(srcs, dst);
 
             if (this.handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), dst)) {
-                this.world.tileChanged(this.handle, false);
+                this.world.tileChanged(this.handle);
             }
         } finally {
             tileRecycler.release(dst);

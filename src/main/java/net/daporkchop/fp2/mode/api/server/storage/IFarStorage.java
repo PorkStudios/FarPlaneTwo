@@ -66,6 +66,8 @@ public interface IFarStorage<POS extends IFarPos, T extends IFarTile> extends Cl
                 .filter(pos -> this.handleFor(pos).markDirty(dirtyTimestamp));
     }
 
+    //void markVanillaRenderable(@NonNull Stream<POS> positions);
+
     /**
      * Closes this storage.
      * <p>

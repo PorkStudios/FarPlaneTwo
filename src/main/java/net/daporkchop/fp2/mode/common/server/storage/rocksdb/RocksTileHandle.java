@@ -176,4 +176,10 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> implements
             return true;
         }
     }
+
+    @Override
+    @SneakyThrows(RocksDBException.class)
+    public boolean anyVanillaExists() {
+        return this.storage.db.get(this.storage.cfAnyVanillaExists, this.pos.toBytes()) != null;
+    }
 }

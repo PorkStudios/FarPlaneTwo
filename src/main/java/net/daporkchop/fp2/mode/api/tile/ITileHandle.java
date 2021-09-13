@@ -66,4 +66,9 @@ public interface ITileHandle<POS extends IFarPos, T extends IFarTile> extends IT
      * @return whether or not the operation was able to be applied
      */
     boolean markDirty(long dirtyTimestamp);
+
+    /**
+     * @return whether or not any vanilla terrain which could affect the contents of this tile exists
+     */
+    boolean anyVanillaExists();
 }

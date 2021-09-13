@@ -35,6 +35,7 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
+import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.lib.common.misc.file.PFiles;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
@@ -64,6 +65,8 @@ import java.util.stream.Stream;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.mode.api.tile.ITileMetadata.*;
+import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -87,6 +90,7 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
     protected static final byte[] COLUMN_NAME_TILE_TIMESTAMP = "tile_timestamp".getBytes(StandardCharsets.UTF_8);
     protected static final byte[] COLUMN_NAME_TILE_DIRTY_TIMESTAMP = "tile_dirty_timestamp".getBytes(StandardCharsets.UTF_8);
     protected static final byte[] COLUMN_NAME_TILE_DATA = "tile_data".getBytes(StandardCharsets.UTF_8);
+    protected static final byte[] COLUMN_NAME_ANY_VANILLA_EXISTS = "tile_any_vanilla_terrain_exists".getBytes(StandardCharsets.UTF_8);
 
     //
     // rocksdb helper methods
@@ -123,7 +127,7 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
         db.delete(handle, WRITE_OPTIONS, key.nioBuffer());
     }
 
-    protected final IFarRenderMode<POS, ?> mode;
+    protected final AbstractFarWorld<POS, T> world;
 
     protected final TransactionDB db;
     protected final List<ColumnFamilyHandle> handles;
@@ -131,6 +135,7 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
     protected final ColumnFamilyHandle cfTileTimestamp;
     protected final ColumnFamilyHandle cfTileDirtyTimestamp;
     protected final ColumnFamilyHandle cfTileData;
+    protected final ColumnFamilyHandle cfAnyVanillaExists;
 
     protected final int version;
 
@@ -140,9 +145,9 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
             .build(CacheLoader.from(pos -> new RocksTileHandle<>(pos, this)));
 
     @SneakyThrows(RocksDBException.class)
-    public RocksStorage(@NonNull IFarRenderMode<POS, ?> mode, @NonNull File storageRoot) {
-        this.mode = mode;
-        this.version = mode.storageVersion();
+    public RocksStorage(@NonNull AbstractFarWorld<POS, T> world, @NonNull File storageRoot) {
+        this.world = world;
+        this.version = world.mode().storageVersion();
 
         File markerFile = new File(storageRoot, "v4");
         if (PFiles.checkDirectoryExists(storageRoot) && !PFiles.checkFileExists(markerFile)) { //it's an old storage
@@ -154,7 +159,8 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
                 new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, CF_OPTIONS),
                 new ColumnFamilyDescriptor(COLUMN_NAME_TILE_TIMESTAMP, CF_OPTIONS),
                 new ColumnFamilyDescriptor(COLUMN_NAME_TILE_DIRTY_TIMESTAMP, CF_OPTIONS),
-                new ColumnFamilyDescriptor(COLUMN_NAME_TILE_DATA, CF_OPTIONS));
+                new ColumnFamilyDescriptor(COLUMN_NAME_TILE_DATA, CF_OPTIONS),
+                new ColumnFamilyDescriptor(COLUMN_NAME_ANY_VANILLA_EXISTS, CF_OPTIONS));
         this.handles = new ArrayList<>(descriptors.size());
 
         this.db = TransactionDB.open(DB_OPTIONS, TX_DB_OPTIONS, storageRoot.getPath(), descriptors, this.handles);
@@ -162,6 +168,7 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
         this.cfTileTimestamp = this.handles.get(1);
         this.cfTileDirtyTimestamp = this.handles.get(2);
         this.cfTileData = this.handles.get(3);
+        this.cfAnyVanillaExists = this.handles.get(4);
 
         PFiles.ensureFileExists(markerFile); //create marker file
     }
@@ -173,10 +180,12 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
 
     @Override
     public void forEachDirtyPos(@NonNull Consumer<POS> callback) {
+        IFarRenderMode<POS, T> mode = this.world.mode();
+
         try (RocksIterator itr = this.db.newIterator(this.cfTileDirtyTimestamp)) {
             for (itr.seekToFirst(); itr.isValid(); itr.next()) {
                 byte[] key = itr.key();
-                callback.accept(this.mode.readPos(Unpooled.wrappedBuffer(key)));
+                callback.accept(mode.readPos(Unpooled.wrappedBuffer(key)));
             }
         }
     }
@@ -258,6 +267,60 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
             }
         }
     }
+
+    /*@Override
+    @SneakyThrows(RocksDBException.class)
+    public void markVanillaRenderable(@NonNull Stream<POS> positionsIn) {
+        List<POS> positions = positionsIn.distinct()
+                .peek(pos -> checkArg(pos.level() == 0, "%s is not at level 0!", pos))
+                .collect(Collectors.toList());
+        int length = positions.size();
+
+        if (length == 0) { //nothing to do!
+            return;
+        }
+
+        try (Transaction txn = this.db.beginTransaction(WRITE_OPTIONS)) {
+            {
+                byte[][] keys = positions.stream().map(POS::toBytes).toArray(byte[][]::new);
+
+                ColumnFamilyHandle[] handles = new ColumnFamilyHandle[length];
+                Arrays.fill(handles, this.cfAnyVanillaExists);
+
+                byte[][] get = txn.multiGetForUpdate(READ_OPTIONS, Arrays.asList(handles), keys);
+
+                List<POS> oldPositions = positions;
+                positions = new ArrayList<>(length);
+                for (int i = 0; i < length; i++) {
+                    if (get[i] == null) {
+                        positions.add(oldPositions.get(i));
+                        txn.put(this.cfAnyVanillaExists, keys[i], new byte[0]);
+                    }
+                }
+            }
+
+            for (int lvl = 1; lvl < MAX_LODS; lvl++) {
+                positions = positions.stream().flatMap(this.world.scaler()::outputs).distinct().collect(Collectors.toList());
+                length = positions.size();
+
+                byte[][] keys = positions.stream().map(POS::toBytes).toArray(byte[][]::new);
+
+                ColumnFamilyHandle[] handles = new ColumnFamilyHandle[length];
+                Arrays.fill(handles, this.cfAnyVanillaExists);
+
+                byte[][] get = txn.multiGetForUpdate(READ_OPTIONS, Arrays.asList(handles), keys);
+
+                List<POS> oldPositions = positions;
+                positions = new ArrayList<>(length);
+                for (int i = 0; i < length; i++) {
+                    if (get[i] == null) {
+                        positions.add(oldPositions.get(i));
+                        txn.put(this.cfAnyVanillaExists, keys[i], new byte[0]);
+                    }
+                }
+            }
+        }
+    }*/
 
     @Override
     public void close() throws IOException {
