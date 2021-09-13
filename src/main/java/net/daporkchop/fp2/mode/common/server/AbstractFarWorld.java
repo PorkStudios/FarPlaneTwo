@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.mode.common.server;
 
+import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 import lombok.Getter;
 import lombok.NonNull;
@@ -46,7 +47,10 @@ import net.daporkchop.fp2.util.threading.scheduler.ApproximatelyPrioritizedShare
 import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.chunk.Chunk;
 
 import java.io.File;
 import java.io.IOException;
@@ -88,7 +92,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
     protected Set<POS> updatesPending = new ObjectRBTreeSet<>();
     protected long lastCompletedTick = -1L;
-    protected boolean restoredPendingUpdates = false;
 
     public AbstractFarWorld(@NonNull WorldServer world, @NonNull IFarRenderMode<POS, T> mode) {
         this.world = world;
@@ -156,6 +159,11 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         return this.scheduler.schedule(this.loadTaskFor(pos));
     }
 
+    @Override
+    public CompletableFuture<ITileHandle<POS, T>> requestUpdate(@NonNull POS pos) {
+        return this.scheduler.schedule(this.updateTaskFor(pos));
+    }
+
     public boolean canGenerateRough(@NonNull POS pos) {
         return this.generatorRough != null && (pos.level() == 0 || this.lowResolution);
     }
@@ -177,34 +185,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.lastCompletedTick = this.world.getTotalWorldTime();
         checkState(this.lastCompletedTick >= 0L, "lastCompletedTick (%d) < 0?!?", this.lastCompletedTick);
 
-        if (!this.restoredPendingUpdates) {
-            this.restoredPendingUpdates = true;
-            this.restorePendingUpdates();
-        }
-
         this.flushUpdateQueue();
-    }
-
-    @Synchronized("updatesPending")
-    protected void restorePendingUpdates() {
-        //add all dirty tiles to update queue
-        class Adder implements Consumer<POS> {
-            long addedCount = 0L;
-            long skippedCount = 0L;
-
-            @Override
-            public void accept(@NonNull POS pos) {
-                if (pos.level() < FP2Config.maxLevels) {
-                    this.addedCount++;
-                    AbstractFarWorld.this.scheduler.schedule(AbstractFarWorld.this.updateTaskFor(pos));
-                } else {
-                    this.skippedCount++;
-                }
-            }
-        }
-        Adder adder = new Adder();
-        this.storage.forEachDirtyPos(adder);
-        FP2_LOG.info("restored {} dirty {} tiles in DIM{} (skipped {})", adder.addedCount, this.mode.name(), this.world.provider.getDimension(), adder.skippedCount);
     }
 
     @Synchronized("updatesPending")

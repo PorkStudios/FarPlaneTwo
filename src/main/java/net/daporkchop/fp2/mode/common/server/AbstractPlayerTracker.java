@@ -35,6 +35,7 @@ import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
+import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.net.server.SPacketTileData;
 import net.daporkchop.fp2.net.server.SPacketUnloadTile;
 import net.daporkchop.fp2.net.server.SPacketUnloadTiles;
@@ -170,6 +171,15 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         };
 
         positions.forEach(pos -> this.entries.computeIfPresent(pos, func));
+    }
+
+    protected void recheckDirty(@NonNull ITileHandle<POS, T> handle) {
+        this.entries.computeIfPresent(handle.pos(), (pos, entry) -> {
+            //notify entry that the tile has been loaded
+            entry.checkDirty();
+
+            return entry;
+        });
     }
 
     @Override
@@ -437,15 +447,15 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
         protected final POS pos;
 
-        protected CompletableFuture<ITileHandle<POS, T>> loadFuture;
+        protected CompletableFuture<ITileHandle<POS, T>> future;
         protected ITileHandle<POS, T> handle;
 
         public Entry(@NonNull POS pos) {
             this.pos = pos;
 
             //request that the tile be generated
-            this.loadFuture = AbstractPlayerTracker.this.world.requestLoad(pos);
-            this.loadFuture.thenAcceptAsync(AbstractPlayerTracker.this::tileLoaded, TRACKER_THREADS);
+            this.future = AbstractPlayerTracker.this.world.requestLoad(pos);
+            this.future.thenAcceptAsync(AbstractPlayerTracker.this::tileLoaded, TRACKER_THREADS);
         }
 
         public Entry addContext(@NonNull Context ctx) {
@@ -466,10 +476,10 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
             }
 
             if (super.isEmpty()) { //no more players are tracking this entry, so it can be removed
-                //release the tile load future (potentially removing it from the load/generation queue)
-                if (this.loadFuture != null) {
-                    this.loadFuture.cancel(false);
-                    this.loadFuture = null;
+                //release the tile load/update future (potentially removing it from the scheduler)
+                if (this.future != null) {
+                    this.future.cancel(false);
+                    this.future = null;
                 }
 
                 //this entry should be replaced with null
@@ -481,16 +491,20 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
         public void tileLoaded(@NonNull ITileHandle<POS, T> handle) {
             checkState(this.handle == null, "already loaded handle at %s?!?", this.pos);
-            this.loadFuture = null;
+            this.future = null;
             this.handle = handle;
 
             this.notifyPlayers();
+            this.checkDirty();
         }
 
         public void tileChanged() {
-            if (this.handle != null) { //we only care about modifications to the tile if it's been loaded
-                this.notifyPlayers();
+            if (this.handle == null) { //tile hasn't been loaded yet, we don't care about any updates
+                return;
             }
+
+            this.notifyPlayers();
+            this.checkDirty();
         }
 
         protected void notifyPlayers() {
@@ -501,7 +515,26 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         }
 
         public void tileDirty() {
-            //TODO: implement this
+            if (this.handle == null) { //tile hasn't been loaded yet, we don't care about any updates
+                return;
+            }
+
+            this.checkDirty();
+        }
+
+        protected void checkDirty() {
+            if (this.future != null && this.future.isDone()) { //an update was previously pending and has been completed
+                this.future = null;
+            }
+
+            if (this.future != null //tile is still being loaded or is already being updated, we shouldn't try to update it again
+                || this.handle.dirtyTimestamp() == ITileMetadata.TIMESTAMP_BLANK) { //tile isn't dirty, no need to update
+                return;
+            }
+
+            //schedule a new update task for this tile
+            this.future = AbstractPlayerTracker.this.world.requestUpdate(this.pos);
+            this.future.thenAccept(AbstractPlayerTracker.this::recheckDirty);
         }
     }
 }

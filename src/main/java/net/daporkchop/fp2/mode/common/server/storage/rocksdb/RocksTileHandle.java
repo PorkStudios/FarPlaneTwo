@@ -184,6 +184,26 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> implements
 
     @Override
     @SneakyThrows(RocksDBException.class)
+    public boolean clearDirty() {
+        try (Transaction txn = this.storage.db.beginTransaction(WRITE_OPTIONS)) {
+            byte[] keyBytes = this.pos.toBytes();
+
+            if (txn.getForUpdate(READ_OPTIONS, this.storage.cfTileDirtyTimestamp, keyBytes, true) == null) { //the tile isn't dirty
+                //exit without committing the transaction
+                return false;
+            }
+
+            //store new dirty timestamp in db
+            txn.delete(this.storage.cfTileDirtyTimestamp, keyBytes);
+
+            //commit transaction and report that a change was made
+            txn.commit();
+            return true;
+        }
+    }
+
+    @Override
+    @SneakyThrows(RocksDBException.class)
     public boolean anyVanillaExists() {
         return this.storage.db.get(this.storage.cfAnyVanillaExists, this.pos.toBytes()) != null;
     }

@@ -101,6 +101,9 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
         }
 
         if (!this.allowNewGeneration()) { //we aren't allowed to generate any new tiles
+            //make sure the tile isn't marked as dirty
+            //TODO: this should be impossible, but we can't do proper vanilla terrain population tests yet. delete this in The Future:tm:!
+            this.handle.clearDirty();
             return this.handle;
         }
 

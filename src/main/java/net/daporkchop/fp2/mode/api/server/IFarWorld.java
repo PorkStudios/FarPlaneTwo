@@ -46,6 +46,8 @@ public interface IFarWorld<POS extends IFarPos, T extends IFarTile> extends Clos
 
     CompletableFuture<ITileHandle<POS, T>> requestLoad(@NonNull POS pos);
 
+    CompletableFuture<ITileHandle<POS, T>> requestUpdate(@NonNull POS pos);
+
     /**
      * @return the (possibly {@code null}) {@link IFarGeneratorRough} used for rough generation of far terrain
      */

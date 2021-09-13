@@ -68,6 +68,15 @@ public interface ITileHandle<POS extends IFarPos, T extends IFarTile> extends IT
     boolean markDirty(long dirtyTimestamp);
 
     /**
+     * Un-marks this position as being dirty.
+     * <p>
+     * If the tile is not already dirty, this method does nothing.
+     *
+     * @return whether or not the operation was able to be applied
+     */
+    boolean clearDirty();
+
+    /**
      * @return whether or not any vanilla terrain which could affect the contents of this tile exists
      */
     boolean anyVanillaExists();
