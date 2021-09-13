@@ -78,4 +78,41 @@ public interface IFarStorage<POS extends IFarPos, T extends IFarTile> extends Cl
      */
     @Override
     void close() throws IOException;
+
+    /**
+     * Adds a new {@link Listener} which will receive all future notifications.
+     *
+     * @param listener the {@link Listener} to add
+     */
+    void addListener(@NonNull Listener<POS, T> listener);
+
+    /**
+     * Removes a previously added {@link Listener}, preventing it from receiving any future notifications.
+     *
+     * @param listener the {@link Listener} to remove
+     */
+    void removeListener(@NonNull Listener<POS, T> listener);
+
+    /**
+     * Listens for changes made to any data stored in a {@link IFarStorage}.
+     *
+     * @author DaPorkchop_
+     */
+    interface Listener<POS extends IFarPos, T extends IFarTile> {
+        /**
+         * Fired when the tiles at the given positions are modified.
+         *
+         * @param positions a distinct {@link Stream} of the modified positions
+         */
+        void tilesChanged(@NonNull Stream<POS> positions);
+
+        /**
+         * Fired when the tiles at the given positions are marked as dirty.
+         * <p>
+         * This includes when an already dirty tile's dirty timestamp is modified.
+         *
+         * @param positions a distinct {@link Stream} of the now dirty positions
+         */
+        void tilesDirty(@NonNull Stream<POS> positions);
+    }
 }

@@ -33,11 +33,11 @@ import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
+import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.net.server.SPacketTileData;
 import net.daporkchop.fp2.net.server.SPacketUnloadTile;
 import net.daporkchop.fp2.net.server.SPacketUnloadTiles;
-import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.datastructure.CompactReferenceArraySet;
 import net.daporkchop.fp2.util.datastructure.RecyclingArrayDeque;
 import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
@@ -55,8 +55,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
@@ -65,7 +66,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarTile, STATE> implements IFarPlayerTracker<POS, T> {
+public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarTile, STATE> implements IFarPlayerTracker<POS, T>, IFarStorage.Listener<POS, T> {
     private static final long ABSTRACTRELEASABLE_RELEASED_OFFSET = PUnsafe.pork_getOffset(AbstractReleasable.class, "released");
 
     /**
@@ -89,6 +90,13 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
     public AbstractPlayerTracker(@NonNull IFarWorld<POS, T> world) {
         this.world = world;
         this.coordLimits = ((IFarWorldServer) world.world()).fp2_IFarWorld_coordLimits();
+
+        world.storage().addListener(this);
+    }
+
+    @Override
+    public void close() {
+        this.world.storage().removeListener(this);
     }
 
     @Override
@@ -119,6 +127,15 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         });
     }
 
+    protected void tileLoaded(@NonNull ITileHandle<POS, T> handle) {
+        this.entries.computeIfPresent(handle.pos(), (pos, entry) -> {
+            //notify entry that the tile has been loaded
+            entry.tileLoaded(handle);
+
+            return entry;
+        });
+    }
+
     @Override
     public void playerMove(@NonNull EntityPlayerMP playerIn) {
         checkState(FMLCommonHandler.instance().getMinecraftServerInstance().isCallingFromMinecraftThread(), "must be called from server thread!");
@@ -132,22 +149,27 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
     }
 
     @Override
-    public void tileChanged(@NonNull ITileHandle<POS, T> handle) {
-        this.entries.computeIfPresent(handle.pos(), (pos, entry) -> {
+    public void tilesChanged(@NonNull Stream<POS> positions) {
+        BiFunction<POS, Entry, Entry> func = (pos, entry) -> {
             //notify entry that the tile has been changed
-            entry.tileChanged(handle, false);
+            entry.tileChanged();
 
             return entry;
-        });
+        };
+
+        positions.forEach(pos -> this.entries.computeIfPresent(pos, func));
     }
 
-    public void tileChangedCallback(@NonNull ITileHandle<POS, T> handle) {
-        this.entries.computeIfPresent(handle.pos(), (pos, entry) -> {
-            //notify entry that the tile has been changed
-            entry.tileChanged(handle, true);
+    @Override
+    public void tilesDirty(@NonNull Stream<POS> positions) {
+        BiFunction<POS, Entry, Entry> func = (pos, entry) -> {
+            //notify entry that the tile is now dirty
+            entry.tileDirty();
 
             return entry;
-        });
+        };
+
+        positions.forEach(pos -> this.entries.computeIfPresent(pos, func));
     }
 
     @Override
@@ -423,7 +445,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
             //request that the tile be generated
             this.loadFuture = AbstractPlayerTracker.this.world.requestLoad(pos);
-            this.loadFuture.thenAcceptAsync(AbstractPlayerTracker.this::tileChangedCallback, TRACKER_THREADS);
+            this.loadFuture.thenAcceptAsync(AbstractPlayerTracker.this::tileLoaded, TRACKER_THREADS);
         }
 
         public Entry addContext(@NonNull Context ctx) {
@@ -457,23 +479,29 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
             }
         }
 
-        public void tileChanged(@NonNull ITileHandle<POS, T> handle, boolean loadCallback) {
-            checkState(handle.isInitialized(), "handle at %s hasn't been initialized yet!", this.pos);
+        public void tileLoaded(@NonNull ITileHandle<POS, T> handle) {
+            checkState(this.handle == null, "already loaded handle at %s?!?", this.pos);
+            this.loadFuture = null;
+            this.handle = handle;
 
-            if (loadCallback) {
-                checkState(this.handle == null, "already loaded handle at %s?!?", this.pos);
-                this.loadFuture = null;
-                this.handle = handle;
-            } else {
-                if (this.handle == null) { //we don't care about any potential modifications to a tile if it hasn't been loaded yet
-                    return;
-                } else {
-                    checkState(this.handle == handle, "mismatched handles at %s!", this.pos);
-                }
+            this.notifyPlayers();
+        }
+
+        public void tileChanged() {
+            if (this.handle != null) { //we only care about modifications to the tile if it's been loaded
+                this.notifyPlayers();
             }
+        }
+
+        protected void notifyPlayers() {
+            checkState(this.handle.isInitialized(), "handle at %s hasn't been initialized yet!", this.pos);
 
             //notify all players which have this tile loaded
-            super.forEach(ctx -> ctx.notifyChanged(handle));
+            super.forEach(ctx -> ctx.notifyChanged(this.handle));
+        }
+
+        public void tileDirty() {
+            //TODO: implement this
         }
     }
 }

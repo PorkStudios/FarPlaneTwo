@@ -59,6 +59,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -136,6 +139,8 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
     protected final ColumnFamilyHandle cfTileDirtyTimestamp;
     protected final ColumnFamilyHandle cfTileData;
     protected final ColumnFamilyHandle cfAnyVanillaExists;
+
+    protected final Set<Listener<POS, T>> listeners = new CopyOnWriteArraySet<>();
 
     protected final int version;
 
@@ -261,6 +266,8 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
 
             if (!out.isEmpty()) { //non-empty list indicates that at least some positions were modified, so we should commit the transaction
                 txn.commit();
+
+                this.listeners.forEach(listener -> listener.tilesDirty(out.stream()));
                 return out.stream();
             } else { //no positions were modified...
                 return Stream.empty();
@@ -331,5 +338,15 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
         } catch (RocksDBException e) {
             throw new IOException(e);
         }
+    }
+
+    @Override
+    public void addListener(@NonNull Listener<POS, T> listener) {
+        checkState(this.listeners.add(listener), "listener %s already added?!?", listener);
+    }
+
+    @Override
+    public void removeListener(@NonNull Listener<POS, T> listener) {
+        checkState(this.listeners.remove(listener), "listener %s not present?!?", listener);
     }
 }

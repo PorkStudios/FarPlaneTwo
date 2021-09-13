@@ -127,9 +127,7 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
         try {
             this.world.generatorRough().generate(this.pos, tile);
 
-            if (this.handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), tile)) { //only notify world if the tile was changed
-                this.world.tileChanged(this.handle);
-            }
+            this.handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), tile);
         } finally {
             tileRecycler.release(tile);
         }
@@ -150,9 +148,7 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
             //generate tile
             this.world.generatorExact().generate(access, this.pos, tile);
 
-            if (this.handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), tile)) { //only notify world if the tile was changed
-                this.world.tileChanged(this.handle);
-            }
+            this.handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), tile);
         } finally {
             tileRecycler.release(tile);
         }
@@ -182,9 +178,7 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
             //actually do scaling
             this.world.scaler().scale(srcs, dst);
 
-            if (this.handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), dst)) {
-                this.world.tileChanged(this.handle);
-            }
+            this.handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), dst);
         } finally {
             tileRecycler.release(dst);
             for (T src : srcs) {

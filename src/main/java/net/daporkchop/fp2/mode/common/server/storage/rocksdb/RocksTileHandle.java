@@ -39,6 +39,7 @@ import org.rocksdb.Transaction;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.mode.common.server.storage.rocksdb.RocksStorage.*;
 
@@ -128,6 +129,8 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> implements
 
             //commit transaction and report that a change was made
             txn.commit();
+
+            this.storage.listeners.forEach(listener -> listener.tilesChanged(Stream.of(this.pos)));
             return true;
         }
     }
@@ -173,6 +176,8 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> implements
 
             //commit transaction and report that a change was made
             txn.commit();
+
+            this.storage.listeners.forEach(listener -> listener.tilesDirty(Stream.of(this.pos)));
             return true;
         }
     }

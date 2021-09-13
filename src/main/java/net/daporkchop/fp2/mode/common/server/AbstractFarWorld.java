@@ -106,7 +106,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.lowResolution = FP2Config.performance.lowResolutionEnable && this.generatorRough != null && this.generatorRough.supportsLowResolution();
 
         this.scaler = this.createScaler();
-        this.tracker = this.createTracker();
 
         this.root = new File(world.getChunkSaveLocation(), "fp2/" + this.mode().name().toLowerCase());
         this.storage = new RocksStorage<>(this, this.root);
@@ -128,6 +127,8 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
                         .threadFactory(PThreadFactories.builder().daemon().minPriority()
                                 .collapsingId().name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build()),
                 PriorityTask.approxComparator());
+
+        this.tracker = this.createTracker();
 
         WorldChangeListenerManager.add(this.world, this);
     }
@@ -153,10 +154,6 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
     @Override
     public CompletableFuture<ITileHandle<POS, T>> requestLoad(@NonNull POS pos) {
         return this.scheduler.schedule(this.loadTaskFor(pos));
-    }
-
-    public void tileChanged(@NonNull ITileHandle<POS, T> handle) {
-        this.tracker.tileChanged(handle);
     }
 
     public boolean canGenerateRough(@NonNull POS pos) {
