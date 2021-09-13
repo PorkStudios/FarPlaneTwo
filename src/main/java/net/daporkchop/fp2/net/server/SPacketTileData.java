@@ -62,7 +62,7 @@ public class SPacketTileData implements IMessage {
         @Override
         public IMessage onMessage(SPacketTileData message, MessageContext ctx) {
             IFarWorldClient world = (IFarWorldClient) ctx.getClientHandler().world;
-            IFarClientContext<?, ?> context = world.contextFor(message.mode);
+            IFarClientContext<?, ?> context = world.fp2_IFarWorldClient_contextFor(message.mode);
             context.tileCache().receiveTile(uncheckedCast(message.tile.compressed()));
             return null;
         }

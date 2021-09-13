@@ -27,15 +27,15 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.util.math.MathUtil;
-import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.ChunkPos;
 
-import static java.lang.Math.*;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -133,11 +133,13 @@ public class HeightmapPos implements IFarPos {
     }
 
     @Override
-    public AxisAlignedBB bounds() {
-        int shift = this.level + T_SHIFT;
-        return new AxisAlignedBB(
-                this.x << shift, Integer.MIN_VALUE, this.z << shift,
-                (this.x + 1) << shift, Integer.MAX_VALUE, (this.z + 1) << shift);
+    public boolean containedBy(@NonNull IntAxisAlignedBB coordLimits) {
+        return coordLimits.contains2d(this.x, this.z);
+    }
+
+    @Override
+    public boolean containedBy(@NonNull IntAxisAlignedBB[] coordLimits) {
+        return coordLimits[this.level].contains2d(this.x, this.z);
     }
 
     @Override

@@ -66,13 +66,13 @@ public class CPacketRenderMode implements IMessage {
                     IFarRenderMode<?, ?> oldMode = ((IFarPlayer) ctx.getServerHandler().player).activeMode();
                     ((IFarPlayer) ctx.getServerHandler().player).activeMode(null);
                     if (oldMode != null) {
-                        ((IFarWorldServer) ctx.getServerHandler().player.world).contextFor(oldMode).world().tracker().playerRemove(ctx.getServerHandler().player);
+                        ((IFarWorldServer) ctx.getServerHandler().player.world).fp2_IFarWorldServer_contextFor(oldMode).world().tracker().playerRemove(ctx.getServerHandler().player);
                     }
 
                     //send the packet here to ensure that it's sent before adding the player to the tracker
                     NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy().mode(IFarRenderMode.REGISTRY.get(FP2Config.renderMode)), ctx.getServerHandler().player);
 
-                    ((IFarWorldServer) ctx.getServerHandler().player.world).contextFor(message.mode).world().tracker().playerAdd(ctx.getServerHandler().player);
+                    ((IFarWorldServer) ctx.getServerHandler().player.world).fp2_IFarWorldServer_contextFor(message.mode).world().tracker().playerAdd(ctx.getServerHandler().player);
                     ((IFarPlayer) ctx.getServerHandler().player).activeMode(message.mode);
                 });
             }

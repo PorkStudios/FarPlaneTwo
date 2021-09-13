@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.api;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.minecraft.util.math.AxisAlignedBB;
+import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
 
 import java.util.stream.Stream;
 
@@ -94,16 +94,22 @@ public interface IFarPos extends Comparable<IFarPos> {
     boolean contains(@NonNull IFarPos posIn);
 
     /**
-     * @return the maximum volume that the tile at this position could possibly occupy
+     * Checks whether or not this tile position is contained by the given tile coordinate limits.
+     *
+     * @param coordLimits the {@link IntAxisAlignedBB} representing the tile coordinate limits
+     * @return whether or not this tile position is contained by the given tile coordinate limits
      */
-    AxisAlignedBB bounds();
+    boolean containedBy(@NonNull IntAxisAlignedBB coordLimits);
 
     /**
-     * @return the maximum volume that the tile at this position could possibly occupy, with an additional padding of 1 unit in the positive direction
+     * Checks whether or not this tile position is contained by the given tile coordinate limits.
+     *
+     * @param coordLimits the {@link IntAxisAlignedBB}s representing the tile coordinate limits, indexed by detail level
+     * @return whether or not this tile position is contained by the given tile coordinate limits
+     * @throws ArrayIndexOutOfBoundsException if this position's {@link #level()} is not a valid index in the given {@code coordLimits} array
      */
-    default AxisAlignedBB paddedBounds() {
-        double padding = 1 << this.level();
-        return this.bounds().expand(padding, padding, padding);
+    default boolean containedBy(@NonNull IntAxisAlignedBB[] coordLimits) {
+        return this.containedBy(coordLimits[this.level()]);
     }
 
     /**

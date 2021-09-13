@@ -26,12 +26,14 @@ import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
 import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.util.SimpleRecycler;
+import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.scheduler.NoFutureScheduler;
 import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
@@ -45,7 +47,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -70,6 +71,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
     protected final Scheduler<POS, Void> bakeScheduler;
     protected final World world;
+    protected final IntAxisAlignedBB[] coordLimits;
 
     protected final Map<POS, Optional<IBakeOutput>> pendingDataUpdates = new ConcurrentHashMap<>();
     protected final Map<POS, Boolean> pendingRenderableUpdates = new ConcurrentHashMap<>();
@@ -83,6 +85,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         this.index = this.strategy.createIndex();
         this.baker = this.strategy.createBaker();
         this.world = MC.world;
+        this.coordLimits = ((IFarWorldClient) this.world).fp2_IFarWorld_coordLimits();
 
         this.bakeScheduler = new NoFutureScheduler<>(this, ThreadingHelper.workerGroupBuilder()
                 .world(this.world)
@@ -176,8 +179,11 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     }
 
     protected void checkSelfRenderable(@NonNull POS pos) {
-        this.updateRenderable(pos, this.tileCache.getTileCached(pos) != null
-                                   && this.tileCache.getTilesCached(uncheckedCast(pos.down().allPositionsInBB(1, 3))).anyMatch(Objects::isNull));
+        this.updateRenderable(pos,
+                pos.containedBy(this.coordLimits)
+                && this.tileCache.getTileCached(pos) != null
+                && (pos.level() == 0 || PorkUtil.<Stream<POS>>uncheckedCast(pos.down().allPositionsInBB(1, 3))
+                        .anyMatch(p -> p.containedBy(this.coordLimits) && this.tileCache.getTileCached(p) == null)));
     }
 
     protected void updateData(@NonNull POS pos, @NonNull Optional<IBakeOutput> optionalBakeOutput) {

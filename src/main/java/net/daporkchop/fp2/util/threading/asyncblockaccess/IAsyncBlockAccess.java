@@ -224,6 +224,6 @@ public interface IAsyncBlockAccess extends IBlockHeightAccess {
      * @author DaPorkchop_
      */
     interface Holder {
-        IAsyncBlockAccess asyncBlockAccess();
+        IAsyncBlockAccess fp2_IAsyncBlockAccess$Holder_asyncBlockAccess();
     }
 }

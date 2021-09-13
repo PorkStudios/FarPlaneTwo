@@ -69,7 +69,7 @@ public class SPacketUnloadTiles implements IMessage {
     public static class Handler implements IMessageHandler<SPacketUnloadTiles, IMessage> {
         @Override
         public IMessage onMessage(SPacketUnloadTiles message, MessageContext ctx) {
-            IFarTileCache<?, ?> tileCache = ((IFarWorldClient) ctx.getClientHandler().world).contextFor(message.mode).tileCache();
+            IFarTileCache<?, ?> tileCache = ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorldClient_contextFor(message.mode).tileCache();
             message.positions.forEach(pos -> tileCache.unloadTile(uncheckedCast(pos)));
             return null;
         }

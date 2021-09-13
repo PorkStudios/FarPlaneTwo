@@ -38,6 +38,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * @author DaPorkchop_
  */
+//TODO: this needs a new name
 public interface IFarWorld<POS extends IFarPos, T extends IFarTile> extends Closeable {
     WorldServer world();
 

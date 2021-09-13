@@ -207,7 +207,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         }
         Adder adder = new Adder();
         this.storage.forEachDirtyPos(adder);
-        FP2_LOG.info("restored {} dirty tiles in DIM{} (skipped {})", adder.addedCount, this.world.provider.getDimension(), adder.skippedCount);
+        FP2_LOG.info("restored {} dirty {} tiles in DIM{} (skipped {})", adder.addedCount, this.mode.name(), this.world.provider.getDimension(), adder.skippedCount);
     }
 
     @Synchronized("updatesPending")
@@ -233,7 +233,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
     @Override
     public IAsyncBlockAccess blockAccess() {
-        return ((IAsyncBlockAccess.Holder) this.world).asyncBlockAccess();
+        return ((IAsyncBlockAccess.Holder) this.world).fp2_IAsyncBlockAccess$Holder_asyncBlockAccess();
     }
 
     @Override

@@ -53,7 +53,7 @@ public class SPacketRenderingStrategy implements IMessage {
     public static class Handler implements IMessageHandler<SPacketRenderingStrategy, IMessage> {
         @Override
         public IMessage onMessage(SPacketRenderingStrategy message, MessageContext ctx) {
-            ((IFarWorldClient) ctx.getClientHandler().world).switchTo(message.mode);
+            ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorldClient_switchTo(message.mode);
             return null;
         }
     }

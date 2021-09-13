@@ -64,14 +64,14 @@ public class ServerEvents {
     @SubscribeEvent
     public void worldLoad(WorldEvent.Load event) {
         if (!event.getWorld().isRemote) {
-            ((IFarWorldServer) event.getWorld()).fp2_init();
+            ((IFarWorldServer) event.getWorld()).fp2_IFarWorld_init();
         }
     }
 
     @SubscribeEvent
     public void worldUnload(WorldEvent.Unload event) {
         if (!event.getWorld().isRemote) {
-            ((IFarWorldServer) event.getWorld()).close();
+            ((IFarWorldServer) event.getWorld()).fp2_IFarWorld_close();
         }
     }
 
@@ -87,7 +87,7 @@ public class ServerEvents {
         Constants.FP2_LOG.debug("Handling logout for player {}", event.player.getName());
         IFarRenderMode<?, ?> mode = ((IFarPlayer) event.player).activeMode();
         if (mode != null) {
-            ((IFarWorldServer) event.player.world).contextFor(mode).world().tracker().playerRemove((EntityPlayerMP) event.player);
+            ((IFarWorldServer) event.player.world).fp2_IFarWorldServer_contextFor(mode).world().tracker().playerRemove((EntityPlayerMP) event.player);
         }
     }
 
@@ -95,8 +95,8 @@ public class ServerEvents {
     public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
         IFarRenderMode<?, ?> mode;
         if (!event.player.world.isRemote && (mode = ((IFarPlayer) event.player).activeMode()) != null) {
-            ((IFarWorldServer) event.player.getServer().getWorld(event.fromDim)).contextFor(mode).world().tracker().playerRemove((EntityPlayerMP) event.player);
-            ((IFarWorldServer) event.player.getServer().getWorld(event.toDim)).contextFor(mode).world().tracker().playerAdd((EntityPlayerMP) event.player);
+            ((IFarWorldServer) event.player.getServer().getWorld(event.fromDim)).fp2_IFarWorldServer_contextFor(mode).world().tracker().playerRemove((EntityPlayerMP) event.player);
+            ((IFarWorldServer) event.player.getServer().getWorld(event.toDim)).fp2_IFarWorldServer_contextFor(mode).world().tracker().playerAdd((EntityPlayerMP) event.player);
         }
     }
 
@@ -110,7 +110,7 @@ public class ServerEvents {
                 event.world.playerEntities.forEach(player -> {
                     IFarRenderMode<?, ?> mode = ((IFarPlayer) player).activeMode();
                     if (mode != null) {
-                        ((IFarWorldServer) event.world).contextFor(mode).world().tracker().playerMove((EntityPlayerMP) player);
+                        ((IFarWorldServer) event.world).fp2_IFarWorldServer_contextFor(mode).world().tracker().playerMove((EntityPlayerMP) player);
                     }
                 });
             }

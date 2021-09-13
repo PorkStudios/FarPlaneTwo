@@ -199,7 +199,7 @@ public class Constants {
      * @param world the {@link WorldServer} to get the Y coordinate limits for
      * @return the coordinate limits
      */
-    public static IntAxisAlignedBB getBounds(@NonNull WorldServer world) {
+    public static IntAxisAlignedBB getBounds(@NonNull World world) {
         int minY = 0;
         int maxY = world.getHeight() - 1;
 

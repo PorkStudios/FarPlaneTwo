@@ -30,6 +30,7 @@ import lombok.ToString;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarWorld;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
@@ -87,25 +88,14 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
             PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Player Tracker #%d").build());
 
     protected final IFarWorld<POS, T> world;
+    protected final IntAxisAlignedBB[] coordLimits;
 
     protected final Map<POS, Entry> entries = new ConcurrentHashMap<>();
     protected final Map<EntityPlayerMP, Context> contexts = new ConcurrentHashMap<>();
 
-    protected final IntAxisAlignedBB[] coordLimits;
-
     public AbstractPlayerTracker(@NonNull IFarWorld<POS, T> world) {
         this.world = world;
-
-        IntAxisAlignedBB bounds = Constants.getBounds(world.world());
-        this.coordLimits = IntStream.range(0, Integer.SIZE)
-                .mapToObj(lvl -> new IntAxisAlignedBB(
-                        asrFloor(bounds.minX(), T_SHIFT + lvl),
-                        asrFloor(bounds.minY(), T_SHIFT + lvl),
-                        asrFloor(bounds.minZ(), T_SHIFT + lvl),
-                        asrCeil(bounds.maxX(), T_SHIFT + lvl),
-                        asrCeil(bounds.maxY(), T_SHIFT + lvl),
-                        asrCeil(bounds.maxZ(), T_SHIFT + lvl)))
-                .toArray(IntAxisAlignedBB[]::new);
+        this.coordLimits = ((IFarWorldServer) world.world()).fp2_IFarWorld_coordLimits();
     }
 
     @Override

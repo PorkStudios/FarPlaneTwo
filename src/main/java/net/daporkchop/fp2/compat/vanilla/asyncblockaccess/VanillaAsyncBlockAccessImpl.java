@@ -53,7 +53,6 @@ import java.io.IOException;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -205,8 +204,6 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
 
         @Override
         protected void triggerGeneration(@NonNull ChunkPos key, @NonNull Object param) {
-            FP2_LOG.info("generating vanilla chunk at {}", key);
-
             ThreadingHelper.scheduleTaskInWorldThread(VanillaAsyncBlockAccessImpl.this.world, (ERunnable) () -> {
                 int x = key.x;
                 int z = key.z;

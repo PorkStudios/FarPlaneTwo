@@ -20,35 +20,27 @@
 
 package net.daporkchop.fp2.mode.api.ctx;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
-import net.minecraft.world.WorldServer;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-
-import java.util.function.Consumer;
+import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
+import net.minecraft.world.World;
 
 /**
- * Provides access to {@link IFarServerContext} instances in a {@link WorldServer}.
+ * Provides access to additional fp2 information in a {@link World}.
  *
  * @author DaPorkchop_
  */
-public interface IFarWorldServer extends IFarWorld, IAsyncBlockAccess.Holder {
+public interface IFarWorld {
     /**
-     * Gets the {@link IFarServerContext} used by the given {@link IFarServerContext} in this world.
-     *
-     * @param mode the {@link IFarRenderMode}
-     * @return the {@link IFarServerContext} used by the given {@link IFarServerContext} in this world
+     * @return the tile coordinate limits in this world, indexed by detail level
      */
-    <POS extends IFarPos, T extends IFarTile> IFarServerContext<POS, T> fp2_IFarWorldServer_contextFor(@NonNull IFarRenderMode<POS, T> mode);
+    IntAxisAlignedBB[] fp2_IFarWorld_coordLimits();
 
     /**
-     * Runs the given action on every {@link IFarServerContext}.
-     *
-     * @param action the action
+     * Called when the world is being loaded.
      */
-    void fp2_IFarWorldServer_forEachContext(@NonNull Consumer<IFarServerContext<?, ?>> action);
+    void fp2_IFarWorld_init();
+
+    /**
+     * Called when the world is being unloaded.
+     */
+    void fp2_IFarWorld_close();
 }
