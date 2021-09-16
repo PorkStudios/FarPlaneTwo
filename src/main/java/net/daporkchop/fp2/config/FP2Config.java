@@ -181,10 +181,21 @@ public class FP2Config {
         @Config.Comment({
                 "Whether or not frustum culling should be done on multiple threads.",
                 "Only makes a difference if GPU frustum culling is disabled.",
-                "This will likely hurt performance except for specific scenarios."
+                "This will likely hurt performance except for specific scenarios.",
+                "Currently unimplemented."
         })
         @Config.LangKey("config.fp2.performance.multithreadedFrustumCulling")
         public boolean multithreadedFrustumCulling = false;
+
+        @Config.Comment({
+                "The maximum number of tile bake outputs to process per frame.",
+                "Increasing this value will increase the rate at which the client can process terrain data from the server, at the cost",
+                "of more stutters when loading terrain. Lowering this value will reduce or eliminate stutters, but may cause artificially increased tile",
+                "update latency and client memory usage."
+        })
+        @Config.LangKey("config.fp2.performance.maxBakesProcessedPerFrame")
+        @Config.RangeInt(min = 1)
+        public int maxBakesProcessedPerFrame = 128;
     }
 
     /**

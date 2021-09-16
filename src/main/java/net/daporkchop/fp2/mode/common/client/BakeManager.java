@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -76,6 +77,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     protected final Map<POS, Optional<IBakeOutput>> pendingDataUpdates = new ConcurrentHashMap<>();
     protected final Map<POS, Boolean> pendingRenderableUpdates = new ConcurrentHashMap<>();
     protected final AtomicBoolean isBulkUpdateQueued = new AtomicBoolean();
+    protected final Semaphore dataUpdatesLock = new Semaphore(FP2Config.performance.maxBakesProcessedPerFrame);
 
     public BakeManager(@NonNull AbstractFarRenderer<POS, T> renderer, @NonNull IFarTileCache<POS, T> tileCache) {
         this.renderer = renderer;
@@ -98,6 +100,13 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     @Override
     protected void doRelease() {
         this.tileCache.removeListener(this, false);
+
+        //prevent workers from scheduling tasks on the client thread
+        this.isBulkUpdateQueued.set(true);
+
+        //reset permit count to maximum possible to prevent infinite blocking while shutting down executor
+        this.dataUpdatesLock.drainPermits();
+        this.dataUpdatesLock.release(Integer.MAX_VALUE);
 
         this.bakeScheduler.close();
     }
@@ -187,6 +196,8 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     }
 
     protected void updateData(@NonNull POS pos, @NonNull Optional<IBakeOutput> optionalBakeOutput) {
+        this.dataUpdatesLock.acquireUninterruptibly();
+
         this.pendingDataUpdates.merge(pos, optionalBakeOutput, (oldOutput, newOutput) -> {
             if (oldOutput.isPresent()) { //release old bake output to avoid potential memory leak when silently replacing entries
                 oldOutput.get().release();
@@ -217,12 +228,16 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
         int dataUpdatesSize = this.pendingDataUpdates.size();
         List<Map.Entry<POS, Optional<IBakeOutput>>> dataUpdates = new ArrayList<>(dataUpdatesSize + (dataUpdatesSize >> 3)); //pre-allocate a bit of extra space in case it grows while we're iterating
-        for (Iterator<POS> itr = this.pendingDataUpdates.keySet().iterator(); dataUpdates.size() < 128 && itr.hasNext(); ) {
+        for (Iterator<POS> itr = this.pendingDataUpdates.keySet().iterator(); itr.hasNext(); ) {
             this.pendingDataUpdates.compute(itr.next(), (pos, output) -> {
                 dataUpdates.add(new AbstractMap.SimpleEntry<>(pos, output));
                 return null;
             });
         }
+
+        //this is the best we can do of resetting a semaphore to its initial permit count
+        this.dataUpdatesLock.drainPermits();
+        this.dataUpdatesLock.release(FP2Config.performance.maxBakesProcessedPerFrame);
 
         int renderableUpdatesSize = this.pendingRenderableUpdates.size();
         List<Map.Entry<POS, Boolean>> renderableUpdates = new ArrayList<>(renderableUpdatesSize + (renderableUpdatesSize >> 3)); //pre-allocate a bit of extra space in case it grows while we're iterating
