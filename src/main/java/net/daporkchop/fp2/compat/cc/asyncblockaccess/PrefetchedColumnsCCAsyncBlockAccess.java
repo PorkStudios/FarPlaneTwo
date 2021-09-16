@@ -41,8 +41,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class PrefetchedColumnsCCAsyncBlockAccess extends AbstractPrefetchedAsyncBlockAccess<CCAsyncBlockAccessImpl> {
     protected final LongObjMap<IColumn> columns = new LongObjOpenHashMap<>();
 
-    public PrefetchedColumnsCCAsyncBlockAccess(CCAsyncBlockAccessImpl parent, WorldServer world, @NonNull Stream<IColumn> columns) {
-        super(parent, world);
+    public PrefetchedColumnsCCAsyncBlockAccess(CCAsyncBlockAccessImpl parent, WorldServer world, boolean allowGeneration, @NonNull Stream<IColumn> columns) {
+        super(parent, world, allowGeneration);
 
         columns.forEach(column -> {
             long key = ChunkPos.asLong(column.getX(), column.getZ());
@@ -56,7 +56,7 @@ public class PrefetchedColumnsCCAsyncBlockAccess extends AbstractPrefetchedAsync
         if (column != null) {
             return column.getOpacityIndex().getTopBlockY(blockX & 0xF, blockZ & 0xF);
         }
-        return this.parent.getTopBlockY(blockX, blockZ);
+        return super.getTopBlockY(blockX, blockZ);
     }
 
     @Override
@@ -65,7 +65,7 @@ public class PrefetchedColumnsCCAsyncBlockAccess extends AbstractPrefetchedAsync
         if (chunk != null) {
             return chunk.getOpacityIndex().getTopBlockYBelow(blockX & 0xF, blockZ & 0xF, blockY);
         }
-        return this.parent.getTopBlockYBelow(blockX, blockY, blockZ);
+        return super.getTopBlockYBelow(blockX, blockY, blockZ);
     }
 
     //leave all other implementations blank because IColumn can't access them directly

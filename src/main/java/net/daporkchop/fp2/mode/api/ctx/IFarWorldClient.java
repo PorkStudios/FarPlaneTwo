@@ -34,29 +34,24 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public interface IFarWorldClient {
+public interface IFarWorldClient extends IFarWorld {
     /**
      * Gets the {@link IFarClientContext} used by the given {@link IFarRenderMode} in this world.
      *
      * @param mode the {@link IFarRenderMode}
      * @return the {@link IFarClientContext} used by the given {@link IFarRenderMode} in this world
      */
-    <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> contextFor(@NonNull IFarRenderMode<POS, T> mode);
+    <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> fp2_IFarWorldClient_contextFor(@NonNull IFarRenderMode<POS, T> mode);
 
     /**
      * Makes the given render mode the active one for this world.
      *
      * @param mode the new mode. If {@code null}, rendering will be disabled
      */
-    void switchTo(IFarRenderMode<?, ?> mode);
+    void fp2_IFarWorldClient_switchTo(IFarRenderMode<?, ?> mode);
 
     /**
      * @return the currently active render context, or {@code null} if none are active
      */
-    <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> activeContext();
-
-    /**
-     * Called when the world is being unloaded.
-     */
-    void close();
+    <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> fp2_IFarWorldClient_activeContext();
 }

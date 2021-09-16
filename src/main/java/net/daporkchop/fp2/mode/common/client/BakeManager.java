@@ -23,40 +23,45 @@ package net.daporkchop.fp2.mode.common.client;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
+import net.daporkchop.fp2.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
 import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.util.SimpleRecycler;
-import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
-import net.daporkchop.fp2.util.threading.keyed.KeyedTaskScheduler;
-import net.daporkchop.fp2.util.threading.keyed.PriorityKeyedTaskScheduler;
+import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.util.threading.ThreadingHelper;
+import net.daporkchop.fp2.util.threading.scheduler.NoFutureScheduler;
+import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
+import net.minecraft.world.World;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public class BakeManager<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarTileCache.Listener<POS, T>, Runnable {
+public class BakeManager<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarTileCache.Listener<POS, T>, Consumer<POS>, Runnable {
     protected final AbstractFarRenderer<POS, T> renderer;
     protected final IFarRenderStrategy<POS, T, ?, ?> strategy;
 
@@ -65,11 +70,14 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     protected final IRenderIndex<POS, ?, ?> index;
     protected final IRenderBaker<POS, T, ?> baker;
 
-    protected final KeyedTaskScheduler<POS> bakeExecutor;
+    protected final Scheduler<POS, Void> bakeScheduler;
+    protected final World world;
+    protected final IntAxisAlignedBB[] coordLimits;
 
     protected final Map<POS, Optional<IBakeOutput>> pendingDataUpdates = new ConcurrentHashMap<>();
     protected final Map<POS, Boolean> pendingRenderableUpdates = new ConcurrentHashMap<>();
     protected final AtomicBoolean isBulkUpdateQueued = new AtomicBoolean();
+    protected final Semaphore dataUpdatesLock = new Semaphore(FP2Config.performance.maxBakesProcessedPerFrame);
 
     public BakeManager(@NonNull AbstractFarRenderer<POS, T> renderer, @NonNull IFarTileCache<POS, T> tileCache) {
         this.renderer = renderer;
@@ -78,10 +86,13 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
         this.index = this.strategy.createIndex();
         this.baker = this.strategy.createBaker();
+        this.world = MC.world;
+        this.coordLimits = ((IFarWorldClient) this.world).fp2_IFarWorld_coordLimits();
 
-        this.bakeExecutor = uncheckedCast(new PriorityKeyedTaskScheduler<>(
-                FP2Config.client.renderThreads,
-                PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build()));
+        this.bakeScheduler = new NoFutureScheduler<>(this, ThreadingHelper.workerGroupBuilder()
+                .world(this.world)
+                .threads(FP2Config.client.renderThreads)
+                .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build()));
 
         this.tileCache.addListener(this, true);
     }
@@ -90,51 +101,58 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     protected void doRelease() {
         this.tileCache.removeListener(this, false);
 
-        this.bakeExecutor.release();
+        //prevent workers from scheduling tasks on the client thread
+        this.isBulkUpdateQueued.set(true);
+
+        //reset permit count to maximum possible to prevent infinite blocking while shutting down executor
+        this.dataUpdatesLock.drainPermits();
+        this.dataUpdatesLock.release(Integer.MAX_VALUE);
+
+        this.bakeScheduler.close();
     }
 
     @Override
-    public void tileAdded(@NonNull Compressed<POS, T> tile) {
+    public void tileAdded(@NonNull ITileSnapshot<POS, T> tile) {
         this.notifyOutputs(tile.pos());
     }
 
     @Override
-    public void tileModified(@NonNull Compressed<POS, T> tile) {
+    public void tileModified(@NonNull ITileSnapshot<POS, T> tile) {
         this.notifyOutputs(tile.pos());
     }
 
     @Override
     public void tileRemoved(@NonNull POS pos) {
-        //make sure that any in-progress bake tasks are finished before the tile is removed
-        this.bakeExecutor.submitExclusive(pos, () -> {
-            this.updateRenderable(pos, false);
-            this.checkParentsRenderable(pos);
-
-            this.updateData(pos, Optional.empty());
-        });
+        //schedule the tile itself for re-bake
+        this.notifyOutputs(pos);
     }
 
     protected void notifyOutputs(@NonNull POS pos) {
+        //schedule all of the positions affected by the tile for re-bake
         this.baker.bakeOutputs(pos).forEach(outputPos -> {
             if (outputPos.level() < 0 || outputPos.level() > this.renderer.maxLevel) { //output tile is at an invalid zoom level, skip it
                 return;
             }
 
             //schedule tile for baking
-            this.bakeExecutor.submitExclusive(outputPos, () -> this.bake(outputPos));
+            this.bakeScheduler.schedule(outputPos);
         });
     }
 
-    protected void bake(@NonNull POS pos) { //this function is called from inside of RENDER_WORKERS, which holds a lock on the position
+    /**
+     * Bakes the tile at the given position.
+     *
+     * @deprecated internal API, do not touch!
+     */
+    @Override
+    @Deprecated
+    public void accept(@NonNull POS pos) { //this function is called from inside of bakeScheduler, which doesn't execute the task multiple times on the same position
         this.checkSelfRenderable(pos);
         this.checkParentsRenderable(pos);
 
-        Compressed<POS, T>[] compressedInputTiles = uncheckedCast(this.tileCache.getTilesCached(this.baker.bakeInputs(pos)).toArray(Compressed[]::new));
-        if (compressedInputTiles[0] == null) { //the tile isn't cached any more
-            return;
-        }
-
-        if (compressedInputTiles[0].isEmpty()) { //tile has no data, we "bake" it by deleting it if it exists
+        ITileSnapshot<POS, T>[] compressedInputTiles = uncheckedCast(this.tileCache.getTilesCached(this.baker.bakeInputs(pos)).toArray(ITileSnapshot[]::new));
+        if (compressedInputTiles[0] == null //tile isn't cached any more
+            || compressedInputTiles[0].isEmpty()) { //tile data is empty
             this.updateData(pos, Optional.empty());
             return;
         }
@@ -144,7 +162,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         try {
             for (int i = 0; i < srcs.length; i++) { //inflate tiles
                 if (compressedInputTiles[i] != null) {
-                    srcs[i] = compressedInputTiles[i].inflate(recycler);
+                    srcs[i] = compressedInputTiles[i].loadTile(recycler);
                 }
             }
 
@@ -157,9 +175,9 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
                 output.release();
             }
         } finally { //release tiles again
-            for (int i = 0; i < srcs.length; i++) {
-                if (srcs[i] != null) {
-                    recycler.release(srcs[i]);
+            for (T src : srcs) {
+                if (src != null) {
+                    recycler.release(src);
                 }
             }
         }
@@ -170,10 +188,16 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     }
 
     protected void checkSelfRenderable(@NonNull POS pos) {
-        this.updateRenderable(pos, this.tileCache.getTilesCached(uncheckedCast(pos.down().allPositionsInBB(1, 3))).anyMatch(Objects::isNull));
+        this.updateRenderable(pos,
+                pos.containedBy(this.coordLimits)
+                && this.tileCache.getTileCached(pos) != null
+                && (pos.level() == 0 || PorkUtil.<Stream<POS>>uncheckedCast(pos.down().allPositionsInBB(1, 3))
+                        .anyMatch(p -> p.containedBy(this.coordLimits) && this.tileCache.getTileCached(p) == null)));
     }
 
     protected void updateData(@NonNull POS pos, @NonNull Optional<IBakeOutput> optionalBakeOutput) {
+        this.dataUpdatesLock.acquireUninterruptibly();
+
         this.pendingDataUpdates.merge(pos, optionalBakeOutput, (oldOutput, newOutput) -> {
             if (oldOutput.isPresent()) { //release old bake output to avoid potential memory leak when silently replacing entries
                 oldOutput.get().release();
@@ -182,7 +206,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         });
 
         if (this.isBulkUpdateQueued.compareAndSet(false, true)) { //we won the race to enqueue a bulk update!
-            ClientThreadExecutor.INSTANCE.execute(this);
+            ThreadingHelper.scheduleTaskInWorldThread(this.world, this);
         }
     }
 
@@ -190,7 +214,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         this.pendingRenderableUpdates.put(pos, renderable);
 
         if (this.isBulkUpdateQueued.compareAndSet(false, true)) { //we won the race to enqueue a bulk update!
-            ClientThreadExecutor.INSTANCE.execute(this);
+            ThreadingHelper.scheduleTaskInWorldThread(this.world, this);
         }
     }
 
@@ -204,12 +228,16 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
         int dataUpdatesSize = this.pendingDataUpdates.size();
         List<Map.Entry<POS, Optional<IBakeOutput>>> dataUpdates = new ArrayList<>(dataUpdatesSize + (dataUpdatesSize >> 3)); //pre-allocate a bit of extra space in case it grows while we're iterating
-        for (Iterator<POS> itr = this.pendingDataUpdates.keySet().iterator(); dataUpdates.size() < 128 && itr.hasNext(); ) {
+        for (Iterator<POS> itr = this.pendingDataUpdates.keySet().iterator(); itr.hasNext(); ) {
             this.pendingDataUpdates.compute(itr.next(), (pos, output) -> {
                 dataUpdates.add(new AbstractMap.SimpleEntry<>(pos, output));
                 return null;
             });
         }
+
+        //this is the best we can do of resetting a semaphore to its initial permit count
+        this.dataUpdatesLock.drainPermits();
+        this.dataUpdatesLock.release(FP2Config.performance.maxBakesProcessedPerFrame);
 
         int renderableUpdatesSize = this.pendingRenderableUpdates.size();
         List<Map.Entry<POS, Boolean>> renderableUpdates = new ArrayList<>(renderableUpdatesSize + (renderableUpdatesSize >> 3)); //pre-allocate a bit of extra space in case it grows while we're iterating

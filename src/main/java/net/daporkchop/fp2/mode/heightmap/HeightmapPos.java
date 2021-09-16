@@ -21,18 +21,21 @@
 package net.daporkchop.fp2.mode.heightmap;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.minecraft.util.math.AxisAlignedBB;
+import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.util.math.MathUtil;
 import net.minecraft.util.math.ChunkPos;
 
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -49,7 +52,23 @@ public class HeightmapPos implements IFarPos {
     protected final int z;
 
     public HeightmapPos(@NonNull ByteBuf buf) {
-        this(buf.readInt(), buf.readInt(), buf.readInt());
+        this.level = buf.readUnsignedByte();
+
+        long interleaved = buf.readLong();
+        this.x = MathUtil.uninterleave2_0(interleaved);
+        this.z = MathUtil.uninterleave2_1(interleaved);
+    }
+
+    @Override
+    public void writePos(@NonNull ByteBuf dst) {
+        dst.writeByte(toByte(this.level)).writeLong(MathUtil.interleaveBits(this.x, this.z));
+    }
+
+    @Override
+    public byte[] toBytes() {
+        byte[] arr = new byte[9];
+        this.writePos(Unpooled.wrappedBuffer(arr).clear());
+        return arr;
     }
 
     public int blockX() {
@@ -70,16 +89,6 @@ public class HeightmapPos implements IFarPos {
 
     public ChunkPos flooredChunkPos() {
         return new ChunkPos(this.flooredChunkX(), this.flooredChunkZ());
-    }
-
-    @Override
-    public void writePosNoLevel(@NonNull ByteBuf dst) {
-        dst.writeInt(this.x).writeInt(this.z);
-    }
-
-    @Override
-    public int[] coordinates() {
-        return new int[]{ this.x, this.z };
     }
 
     @Override
@@ -124,11 +133,13 @@ public class HeightmapPos implements IFarPos {
     }
 
     @Override
-    public AxisAlignedBB bounds() {
-        int shift = this.level + T_SHIFT;
-        return new AxisAlignedBB(
-                this.x << shift, Integer.MIN_VALUE, this.z << shift,
-                (this.x + 1) << shift, Integer.MAX_VALUE, (this.z + 1) << shift);
+    public boolean containedBy(@NonNull IntAxisAlignedBB coordLimits) {
+        return coordLimits.contains2d(this.x, this.z);
+    }
+
+    @Override
+    public boolean containedBy(@NonNull IntAxisAlignedBB[] coordLimits) {
+        return coordLimits[this.level].contains2d(this.x, this.z);
     }
 
     @Override
@@ -149,6 +160,22 @@ public class HeightmapPos implements IFarPos {
                     .mapToObj(x -> IntStream.rangeClosed(this.z - offsetMin, this.z + offsetMax)
                             .mapToObj(z -> new HeightmapPos(this.level, x, z)))
                     .flatMap(Function.identity());
+        }
+    }
+
+    @Override
+    public int manhattanDistance(@NonNull IFarPos posIn) {
+        HeightmapPos pos = (HeightmapPos) posIn;
+        if (this.level == pos.level) {
+            return abs(this.x - pos.x) + abs(this.z - pos.z);
+        } else {
+            int l0 = this.level;
+            int l1 = pos.level;
+            int s0 = max(l1 - l0, 0);
+            int s1 = max(l0 - l1, 0);
+            int s2 = max(s0, s1);
+            return (abs((this.x >> s0) - (pos.x >> s1)) << s2)
+                   + (abs((this.z >> s0) - (pos.z >> s1)) << s2);
         }
     }
 

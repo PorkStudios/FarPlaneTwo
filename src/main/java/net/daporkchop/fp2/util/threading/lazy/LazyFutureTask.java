@@ -20,16 +20,12 @@
 
 package net.daporkchop.fp2.util.threading.lazy;
 
-import io.netty.util.concurrent.EventExecutor;
 import lombok.NonNull;
-import lombok.SneakyThrows;
-import net.daporkchop.lib.concurrent.PExecutors;
-import net.daporkchop.lib.concurrent.future.DefaultPFuture;
+import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RunnableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -71,6 +67,12 @@ public abstract class LazyFutureTask<V> extends CompletableFuture<V> implements 
         }
     }
 
+    @Override
+    public boolean cancel(boolean mayInterruptIfRunning) {
+        this.started = 1; //mark the task as "started", regardless of whether or not it's actually been started
+        return super.cancel(mayInterruptIfRunning);
+    }
+
     protected abstract V compute();
 
     @Override
@@ -79,6 +81,6 @@ public abstract class LazyFutureTask<V> extends CompletableFuture<V> implements 
             this.run();
         }
 
-        return super.join();
+        return ThreadingHelper.managedBlock(this);
     }
 }

@@ -97,13 +97,13 @@ public class WorldChangeListenerManager {
     }
 
     /**
-     * @see IWorldChangeListener#onColumnSaved(World, int, int, NBTTagCompound)
+     * @see IWorldChangeListener#onColumnSaved(World, int, int, NBTTagCompound, Chunk)
      */
     public void fireColumnSave(@NonNull Chunk column, @NonNull NBTTagCompound nbt) {
         Consumer<ListenerWrapper> callback = wrapper -> {
             IWorldChangeListener listener = wrapper.get();
             if (listener != null) { //listener wasn't garbage collected
-                listener.onColumnSaved(column.getWorld(), column.x, column.z, nbt);
+                listener.onColumnSaved(column.getWorld(), column.x, column.z, nbt, column);
             }
         };
 
@@ -115,13 +115,13 @@ public class WorldChangeListenerManager {
     }
 
     /**
-     * @see IWorldChangeListener#onCubeSaved(World, int, int, int, NBTTagCompound)
+     * @see IWorldChangeListener#onCubeSaved(World, int, int, int, NBTTagCompound, ICube)
      */
     public void fireCubeSave(@NonNull ICube cube, @NonNull NBTTagCompound nbt) {
         Consumer<ListenerWrapper> callback = wrapper -> {
             IWorldChangeListener listener = wrapper.get();
             if (listener != null) { //listener wasn't garbage collected
-                listener.onCubeSaved(cube.getWorld(), cube.getX(), cube.getY(), cube.getZ(), nbt);
+                listener.onCubeSaved(cube.getWorld(), cube.getX(), cube.getY(), cube.getZ(), nbt, cube);
             }
         };
 

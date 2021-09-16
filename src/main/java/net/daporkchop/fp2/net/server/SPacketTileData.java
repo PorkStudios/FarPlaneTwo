@@ -24,10 +24,10 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
+import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
 import net.daporkchop.fp2.util.Constants;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -44,26 +44,26 @@ public class SPacketTileData implements IMessage {
     @NonNull
     protected IFarRenderMode<?, ?> mode;
     @NonNull
-    protected Compressed<?, ?> tile;
+    protected TileSnapshot<?, ?> tile;
 
     @Override
     public void fromBytes(ByteBuf buf) {
         this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
-        this.tile = new Compressed<>(buf, this.mode);
+        this.tile = new TileSnapshot<>(buf, this.mode);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
         Constants.writeString(buf, this.mode.name());
-        this.tile.writeWithPos(buf);
+        this.tile.write(buf);
     }
 
     public static class Handler implements IMessageHandler<SPacketTileData, IMessage> {
         @Override
         public IMessage onMessage(SPacketTileData message, MessageContext ctx) {
             IFarWorldClient world = (IFarWorldClient) ctx.getClientHandler().world;
-            IFarClientContext<?, ?> context = world.contextFor(message.mode);
-            context.tileCache().receiveTile(uncheckedCast(message.tile));
+            IFarClientContext<?, ?> context = world.fp2_IFarWorldClient_contextFor(message.mode);
+            context.tileCache().receiveTile(uncheckedCast(message.tile.compressed()));
             return null;
         }
     }

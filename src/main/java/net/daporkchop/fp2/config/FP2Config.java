@@ -71,23 +71,13 @@ public class FP2Config {
     public static int levelCutoffDistance = 256;
 
     @Config.Comment({
-            "The number of threads that will be used for generating far plane terrain data.",
+            "The number of threads that will be used on the server for loading and generating fp2 terrain data.",
             "Default: <cpu count> - 1 (and at least 1)"
     })
     @Config.RangeInt(min = 1)
     @Config.LangKey("config.fp2.generationThreads")
     @Config.RequiresWorldRestart
     public static int generationThreads = max(PorkUtil.CPU_COUNT - 1, 1);
-
-    @Config.Comment({
-            "The number of threads that will be used for saving far plane terrain data.",
-            "Default: <cpu count> / 4 (and at least 1)"
-    })
-    @Config.RangeInt(min = 1)
-    @Config.LangKey("config.fp2.ioThreads")
-    @Config.RequiresWorldRestart
-    @Deprecated
-    public static int ioThreads = max(PorkUtil.CPU_COUNT >> 2, 1);
 
     @Config.Comment({
             "Config options available only on the client."
@@ -172,6 +162,15 @@ public class FP2Config {
         public boolean lowResolutionEnable = true;
 
         @Config.Comment({
+                "The number of threads to be used for tracking the tiles loaded by a given player.",
+                "You shouldn't need to change this unless you have huge player counts.",
+                "Default: 2"
+        })
+        @Config.LangKey("config.fp2.performance.trackingThreads")
+        @Config.RequiresMcRestart
+        public int trackingThreads = min(PorkUtil.CPU_COUNT, 2);
+
+        @Config.Comment({
                 "Allows frustum culling to be done on the GPU instead of the CPU.",
                 "This can have major performance benefits, but may cause visual glitches or even crashes."
         })
@@ -182,10 +181,21 @@ public class FP2Config {
         @Config.Comment({
                 "Whether or not frustum culling should be done on multiple threads.",
                 "Only makes a difference if GPU frustum culling is disabled.",
-                "This will likely hurt performance except for specific scenarios."
+                "This will likely hurt performance except for specific scenarios.",
+                "Currently unimplemented."
         })
         @Config.LangKey("config.fp2.performance.multithreadedFrustumCulling")
         public boolean multithreadedFrustumCulling = false;
+
+        @Config.Comment({
+                "The maximum number of tile bake outputs to process per frame.",
+                "Increasing this value will increase the rate at which the client can process terrain data from the server, at the cost",
+                "of more stutters when loading terrain. Lowering this value will reduce or eliminate stutters, but may cause artificially increased tile",
+                "update latency and client memory usage."
+        })
+        @Config.LangKey("config.fp2.performance.maxBakesProcessedPerFrame")
+        @Config.RangeInt(min = 1)
+        public int maxBakesProcessedPerFrame = 128;
     }
 
     /**
@@ -253,30 +263,6 @@ public class FP2Config {
      * @author DaPorkchop_
      */
     public static class Debug {
-        @Config.Comment({
-                "If true, disables reading of heightmap tiles from disk.",
-                "Overridden by disablePersistence.",
-                "Default: false"
-        })
-        @Config.LangKey("config.fp2.debug.disableRead")
-        public boolean disableRead = false;
-
-        @Config.Comment({
-                "If true, disables writing of heightmap tiles to disk.",
-                "Overridden by disablePersistence.",
-                "Default: false"
-        })
-        @Config.LangKey("config.fp2.debug.disableWrite")
-        public boolean disableWrite = false;
-
-        @Config.Comment({
-                "If true, completely disables disk persistence.",
-                "Far terrain data will never be written to or read from disk.",
-                "Default: false"
-        })
-        @Config.LangKey("config.fp2.debug.disablePersistence")
-        public boolean disablePersistence = false;
-
         @Config.Comment({
                 "If true, the vanilla world will not be rendered."
         })

@@ -23,7 +23,7 @@ package net.daporkchop.fp2.net.client;
 import io.netty.buffer.ByteBuf;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.ServerThreadExecutor;
+import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -50,10 +50,9 @@ public class CPacketDropAllTiles implements IMessage {
                 ctx.getServerHandler().disconnect(new TextComponentTranslation("fp2.debug.debugModeNotEnabled"));
                 return null;
             }
-            IFarWorldServer world = (IFarWorldServer) ctx.getServerHandler().player.world;
-            ServerThreadExecutor.INSTANCE.execute(() -> {
+            ThreadingHelper.scheduleTaskInWorldThread(ctx.getServerHandler().player.world, () -> {
                 Constants.FP2_LOG.info("Dropping all tiles");
-                world.forEachContext(context -> context.world().tracker().debug_dropAllTiles());
+                ((IFarWorldServer) ctx.getServerHandler().player.world).fp2_IFarWorldServer_forEachContext(context -> context.world().tracker().debug_dropAllTiles());
             });
             return null;
         }

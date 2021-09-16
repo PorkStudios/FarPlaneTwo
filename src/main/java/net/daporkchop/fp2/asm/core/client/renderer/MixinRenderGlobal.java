@@ -86,7 +86,7 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
     @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;setupTerrain(Lnet/minecraft/entity/Entity;DLnet/minecraft/client/renderer/culling/ICamera;IZ)V",
             at = @At("HEAD"))
     private void fp2_setupTerrain_prepare(Entity viewEntity, double partialTicks, ICamera camera, int frameCount, boolean playerSpectator, CallbackInfo ci) {
-        IFarClientContext<?, ?> context = ((IFarWorldClient) this.world).activeContext();
+        IFarClientContext<?, ?> context = ((IFarWorldClient) this.world).fp2_IFarWorldClient_activeContext();
         if (context != null) {
             this.vanillaRenderabilityTracker.update(uncheckedCast(this));
 
@@ -102,7 +102,7 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
                     shift = At.Shift.AFTER),
             allow = 1, require = 1)
     private void fp2_renderBlockLayer_pre(BlockRenderLayer layer, double partialTicks, int pass, Entity entity, CallbackInfoReturnable<Integer> ci) {
-        IFarClientContext<?, ?> context = ((IFarWorldClient) this.world).activeContext();
+        IFarClientContext<?, ?> context = ((IFarWorldClient) this.world).fp2_IFarWorldClient_activeContext();
         if (context != null) {
             Minecraft mc = Minecraft.getMinecraft();
 
@@ -116,7 +116,7 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
             at = @At(value = "RETURN"),
             allow = 2, require = 1)
     private void fp2_renderBlockLayer_post(BlockRenderLayer layer, double partialTicks, int pass, Entity entity, CallbackInfoReturnable<Integer> ci) {
-        IFarClientContext<?, ?> context = ((IFarWorldClient) this.world).activeContext();
+        IFarClientContext<?, ?> context = ((IFarWorldClient) this.world).fp2_IFarWorldClient_activeContext();
         if (context != null) {
             Minecraft mc = Minecraft.getMinecraft();
 

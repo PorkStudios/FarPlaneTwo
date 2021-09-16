@@ -95,7 +95,7 @@ public abstract class MixinEntityRenderer {
                     target = "Lnet/minecraft/client/renderer/EntityRenderer;farPlaneDistance:F",
                     opcode = Opcodes.PUTFIELD))
     private void fp2_setupCameraTransform_increaseFarPlaneDistance(EntityRenderer renderer, float farPlaneDistance) {
-        if (((IFarWorldClient) this.mc.world).activeContext() != null) {
+        if (((IFarWorldClient) this.mc.world).fp2_IFarWorldClient_activeContext() != null) {
             //farPlaneDistance = FP2Config.renderDistance;
             farPlaneDistance = FP2Config.levelCutoffDistance << FP2Config.maxLevels >> 1;
             //TODO: i need a better system for computing this

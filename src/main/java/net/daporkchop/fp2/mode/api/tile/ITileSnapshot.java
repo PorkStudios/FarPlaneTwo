@@ -18,37 +18,39 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.keyed;
+package net.daporkchop.fp2.mode.api.tile;
 
 import lombok.NonNull;
-import net.daporkchop.lib.unsafe.capability.Releasable;
-
-import java.util.concurrent.Executor;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.util.SimpleRecycler;
 
 /**
- * An executor which organizes submitted tasks based on a key.
- * <p>
- * It is guaranteed that no two tasks with the same key will be executed at once.
+ * A snapshot of the data stored at a given tile position.
  *
  * @author DaPorkchop_
  */
-public interface KeyedTaskScheduler<K> extends Releasable {
+public interface ITileSnapshot<POS extends IFarPos, T extends IFarTile> extends ITileMetadata {
     /**
-     * Submits a task using the given key.
-     *
-     * @param key  the key
-     * @param task the task
+     * @return the tile's position
      */
-    void submit(@NonNull K key, @NonNull Runnable task);
+    POS pos();
 
     /**
-     * Submits a task using the given key.
-     * <p>
-     * This method may cause some number of pending tasks with an identical key to be discarded entirely. As a result, it should be considered unsafe, as
-     * it can very easily cause unexpected behavior to occur.
+     * Allocates a {@link T} using the given {@link SimpleRecycler} and initializes it using the data stored in this snapshot.
      *
-     * @param key  the key
-     * @param task the task
+     * @param recycler a {@link SimpleRecycler} to use for allocating instances of {@link T}
+     * @return the loaded {@link T}, or {@code null} if this snapshot is empty
      */
-    void submitExclusive(@NonNull K key, @NonNull Runnable task);
+    T loadTile(@NonNull SimpleRecycler<T> recycler);
+
+    /**
+     * @return whether or not this snapshot's tile data is empty
+     */
+    boolean isEmpty();
+
+    /**
+     * @return this snapshot as a {@link CompressedTileSnapshot}
+     */
+    ITileSnapshot<POS, T> compressed();
 }

@@ -20,17 +20,22 @@
 
 package net.daporkchop.fp2.mode.common.server.storage.rocksdb;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import lombok.Getter;
+import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
-import net.daporkchop.fp2.util.IReusablePersistent;
+import net.daporkchop.fp2.mode.api.tile.ITileHandle;
+import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
 import net.daporkchop.lib.common.misc.file.PFiles;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
@@ -41,6 +46,8 @@ import org.rocksdb.FlushOptions;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
+import org.rocksdb.RocksIterator;
+import org.rocksdb.Transaction;
 import org.rocksdb.TransactionDB;
 import org.rocksdb.TransactionDBOptions;
 import org.rocksdb.WriteOptions;
@@ -52,14 +59,22 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.debug.FP2Debug.*;
+import static java.lang.Math.*;
+import static net.daporkchop.fp2.mode.api.tile.ITileMetadata.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-public final class RocksStorage<POS extends IFarPos, V extends IReusablePersistent> implements IFarStorage<POS, V> {
+public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IFarStorage<POS, T> {
     protected static final DBOptions DB_OPTIONS = new DBOptions()
             .setCreateIfMissing(true)
             .setCreateMissingColumnFamilies(true)
@@ -75,29 +90,20 @@ public final class RocksStorage<POS extends IFarPos, V extends IReusablePersiste
     protected static final WriteOptions WRITE_OPTIONS = new WriteOptions();
     protected static final FlushOptions FLUSH_OPTIONS = new FlushOptions().setWaitForFlush(true).setAllowWriteStall(true);
 
-    protected static final byte[] COLUMN_NAME_TILES = "tiles".getBytes(StandardCharsets.UTF_8);
-    protected static final byte[] COLUMN_NAME_DIRTY = "dirty".getBytes(StandardCharsets.UTF_8);
-
-    protected static void writeInterleavedBits(@NonNull ByteBuf dst, @NonNull int... coords) {
-        for (int bit = 0; bit < coords.length * 32; ) {
-            int b = 0;
-            for (int i = 7; i >= 0; i--, bit++) {
-                b |= ((coords[bit % coords.length] >>> (bit / coords.length)) & 1) << i;
-            }
-            dst.writeByte(b);
-        }
-    }
+    protected static final byte[] COLUMN_NAME_TILE_TIMESTAMP = "tile_timestamp".getBytes(StandardCharsets.UTF_8);
+    protected static final byte[] COLUMN_NAME_TILE_DIRTY_TIMESTAMP = "tile_dirty_timestamp".getBytes(StandardCharsets.UTF_8);
+    protected static final byte[] COLUMN_NAME_TILE_DATA = "tile_data".getBytes(StandardCharsets.UTF_8);
+    protected static final byte[] COLUMN_NAME_ANY_VANILLA_EXISTS = "tile_any_vanilla_terrain_exists".getBytes(StandardCharsets.UTF_8);
 
     //
     // rocksdb helper methods
     //
 
     @SneakyThrows(RocksDBException.class)
-    protected static ByteBuf get(@NonNull RocksDB db, @NonNull ColumnFamilyHandle handle, @NonNull ByteBuf key) {
+    protected static ByteBuf get(@NonNull RocksDB db, @NonNull ColumnFamilyHandle handle, @NonNull ByteBuf key, int preallocateBytes) {
         ByteBuffer keyNioBuffer = key.nioBuffer();
 
-        //pre-allocate 64KiB for initial buffer
-        ByteBuf value = ByteBufAllocator.DEFAULT.directBuffer(1 << 16);
+        ByteBuf value = ByteBufAllocator.DEFAULT.directBuffer(preallocateBytes);
 
         int len = db.get(handle, READ_OPTIONS, keyNioBuffer, value.nioBuffer(value.readerIndex(), value.capacity()));
 
@@ -124,25 +130,31 @@ public final class RocksStorage<POS extends IFarPos, V extends IReusablePersiste
         db.delete(handle, WRITE_OPTIONS, key.nioBuffer());
     }
 
-    protected final IFarRenderMode<POS, ?> mode;
+    protected final AbstractFarWorld<POS, T> world;
 
     protected final TransactionDB db;
     protected final List<ColumnFamilyHandle> handles;
 
-    protected final ColumnFamilyHandle cfTiles;
-    protected final ColumnFamilyHandle cfDirty;
+    protected final ColumnFamilyHandle cfTileTimestamp;
+    protected final ColumnFamilyHandle cfTileDirtyTimestamp;
+    protected final ColumnFamilyHandle cfTileData;
+    protected final ColumnFamilyHandle cfAnyVanillaExists;
+
+    protected final Set<Listener<POS, T>> listeners = new CopyOnWriteArraySet<>();
 
     protected final int version;
 
-    @Getter
-    protected final RocksDirtyTracker<POS> dirtyTracker;
+    protected final LoadingCache<POS, ITileHandle<POS, T>> handleCache = CacheBuilder.newBuilder()
+            .concurrencyLevel(FP2Config.generationThreads)
+            .weakValues()
+            .build(CacheLoader.from(pos -> new RocksTileHandle<>(pos, this)));
 
     @SneakyThrows(RocksDBException.class)
-    public RocksStorage(@NonNull IFarRenderMode<POS, ?> mode, @NonNull File storageRoot) {
-        this.mode = mode;
-        this.version = mode.storageVersion();
+    public RocksStorage(@NonNull AbstractFarWorld<POS, T> world, @NonNull File storageRoot) {
+        this.world = world;
+        this.version = world.mode().storageVersion();
 
-        File markerFile = new File(storageRoot, "v2");
+        File markerFile = new File(storageRoot, "v4");
         if (PFiles.checkDirectoryExists(storageRoot) && !PFiles.checkFileExists(markerFile)) { //it's an old storage
             PFiles.rmContentsParallel(storageRoot);
         }
@@ -150,77 +162,172 @@ public final class RocksStorage<POS extends IFarPos, V extends IReusablePersiste
 
         List<ColumnFamilyDescriptor> descriptors = Arrays.asList(
                 new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, CF_OPTIONS),
-                new ColumnFamilyDescriptor(COLUMN_NAME_TILES, CF_OPTIONS),
-                new ColumnFamilyDescriptor(COLUMN_NAME_DIRTY, CF_OPTIONS));
+                new ColumnFamilyDescriptor(COLUMN_NAME_TILE_TIMESTAMP, CF_OPTIONS),
+                new ColumnFamilyDescriptor(COLUMN_NAME_TILE_DIRTY_TIMESTAMP, CF_OPTIONS),
+                new ColumnFamilyDescriptor(COLUMN_NAME_TILE_DATA, CF_OPTIONS),
+                new ColumnFamilyDescriptor(COLUMN_NAME_ANY_VANILLA_EXISTS, CF_OPTIONS));
         this.handles = new ArrayList<>(descriptors.size());
 
         this.db = TransactionDB.open(DB_OPTIONS, TX_DB_OPTIONS, storageRoot.getPath(), descriptors, this.handles);
 
-        this.cfTiles = this.handles.get(1);
-        this.cfDirty = this.handles.get(2);
+        this.cfTileTimestamp = this.handles.get(1);
+        this.cfTileDirtyTimestamp = this.handles.get(2);
+        this.cfTileData = this.handles.get(3);
+        this.cfAnyVanillaExists = this.handles.get(4);
 
         PFiles.ensureFileExists(markerFile); //create marker file
-
-        this.dirtyTracker = new RocksDirtyTracker<>(this);
     }
 
     @Override
-    public Compressed<POS, V> load(@NonNull POS pos) {
-        if (FP2_DEBUG && (FP2Config.debug.disableRead || FP2Config.debug.disablePersistence)) {
-            return null;
-        }
+    public ITileHandle<POS, T> handleFor(@NonNull POS pos) {
+        return this.handleCache.getUnchecked(pos);
+    }
 
-        //read from db
-        ByteBuf key = ByteBufAllocator.DEFAULT.directBuffer();
-        ByteBuf packed;
-        try {
-            key.writeInt(pos.level()); //encode position
-            writeInterleavedBits(key, pos.coordinates());
+    @Override
+    public void forEachDirtyPos(@NonNull Consumer<POS> callback) {
+        IFarRenderMode<POS, T> mode = this.world.mode();
 
-            packed = get(this.db, this.cfTiles, key);
-        } finally {
-            key.release();
-        }
-
-        if (packed == null) { //the data doesn't exist on disk
-            return null;
-        }
-
-        //unpack
-        try {
-            int packedVersion = readVarInt(packed);
-            if (packedVersion == this.version) {
-                return new Compressed<>(pos, packed);
+        try (RocksIterator itr = this.db.newIterator(this.cfTileDirtyTimestamp)) {
+            for (itr.seekToFirst(); itr.isValid(); itr.next()) {
+                byte[] key = itr.key();
+                callback.accept(mode.readPos(Unpooled.wrappedBuffer(key)));
             }
-            return null;
-        } finally {
-            packed.release();
         }
     }
 
     @Override
-    public void store(@NonNull POS pos, @NonNull Compressed<POS, V> value) {
-        if (FP2_DEBUG && (FP2Config.debug.disableWrite || FP2Config.debug.disablePersistence)) {
+    @SneakyThrows(RocksDBException.class)
+    public Stream<POS> markAllDirty(@NonNull Stream<POS> positionsIn, long dirtyTimestamp) {
+        //we'll buffer all the positions, lock all of them at once, compare each one and then commit as many as needed. the logic here is identical to
+        //  RocksTileHandle#markDirty(long), but in bulk, and since RocksTileHandle doesn't cache anything internally, we don't need to get any instances
+        //  of RocksTileHandle or do any additional synchronization.
+
+        List<POS> positions = positionsIn.distinct().collect(Collectors.toList());
+        int length = positions.size();
+
+        if (length == 0) { //nothing to do!
+            return Stream.empty();
+        }
+
+        try (Transaction txn = this.db.beginTransaction(WRITE_OPTIONS)) {
+            //convert positions to key bytes
+            byte[][] allKeyBytes = positions.stream().map(POS::toBytes).toArray(byte[][]::new);
+
+            byte[][] get;
+            {
+                //double up the keys and column families to pass them to multiGetForUpdate
+                int doubleLength = multiplyExact(length, 2);
+                ColumnFamilyHandle[] handles = new ColumnFamilyHandle[doubleLength];
+                byte[][] keys = new byte[doubleLength][];
+
+                for (int i = 0; i < doubleLength; ) {
+                    byte[] keyBytes = allKeyBytes[i >> 1];
+
+                    handles[i] = this.cfTileTimestamp;
+                    keys[i++] = keyBytes;
+                    handles[i] = this.cfTileDirtyTimestamp;
+                    keys[i++] = keyBytes;
+                }
+
+                //obtain an exclusive lock on both timestamp keys to ensure coherency
+                get = txn.multiGetForUpdate(READ_OPTIONS, Arrays.asList(handles), keys);
+            }
+
+            //iterate through positions, updating the dirty timestamps as needed
+            List<POS> out = new ArrayList<>(length);
+
+            ByteBuf dirtyTimestampBuf = UnpooledByteBufAllocator.DEFAULT.heapBuffer(Long.BYTES, Long.BYTES);
+            byte[] dirtyTimestampArray = dirtyTimestampBuf.array();
+
+            for (int i = 0; i < length; i++) {
+                byte[] timestampBytes = get[(i << 1) + 0];
+                long timestamp = timestampBytes != null
+                        ? Unpooled.wrappedBuffer(timestampBytes).readLongLE() //timestamp for this tile exists, extract it from the byte array
+                        : TIMESTAMP_BLANK;
+
+                byte[] dirtyTimestampBytes = get[(i << 1) + 1];
+                long existingDirtyTimestamp = dirtyTimestampBytes != null
+                        ? Unpooled.wrappedBuffer(dirtyTimestampBytes).readLongLE() //dirty timestamp for this tile exists, extract it from the byte array
+                        : TIMESTAMP_BLANK;
+
+                if (timestamp == TIMESTAMP_BLANK //the tile doesn't exist, so we can't mark it as dirty
+                    || dirtyTimestamp <= timestamp || dirtyTimestamp <= existingDirtyTimestamp) { //the new dirty timestamp isn't newer than the existing one, so we can't replace it
+                    //skip this position
+                    continue;
+                }
+
+                //store new dirty timestamp in db
+                dirtyTimestampBuf.setLongLE(0, dirtyTimestamp);
+                txn.put(this.cfTileDirtyTimestamp, allKeyBytes[i], dirtyTimestampArray);
+
+                //save the position to return it as part of the result stream
+                out.add(positions.get(i));
+            }
+
+            if (!out.isEmpty()) { //non-empty list indicates that at least some positions were modified, so we should commit the transaction
+                txn.commit();
+
+                this.listeners.forEach(listener -> listener.tilesDirty(out.stream()));
+                return out.stream();
+            } else { //no positions were modified...
+                return Stream.empty();
+            }
+        }
+    }
+
+    /*@Override
+    @SneakyThrows(RocksDBException.class)
+    public void markVanillaRenderable(@NonNull Stream<POS> positionsIn) {
+        List<POS> positions = positionsIn.distinct()
+                .peek(pos -> checkArg(pos.level() == 0, "%s is not at level 0!", pos))
+                .collect(Collectors.toList());
+        int length = positions.size();
+
+        if (length == 0) { //nothing to do!
             return;
         }
 
-        ByteBuf key = ByteBufAllocator.DEFAULT.directBuffer();
-        ByteBuf packed = ByteBufAllocator.DEFAULT.directBuffer();
-        try {
-            key.writeInt(pos.level()); //encode position
-            writeInterleavedBits(key, pos.coordinates());
+        try (Transaction txn = this.db.beginTransaction(WRITE_OPTIONS)) {
+            {
+                byte[][] keys = positions.stream().map(POS::toBytes).toArray(byte[][]::new);
 
-            //write value
-            writeVarInt(packed, this.version); //prefix with version
-            value.write(packed);
+                ColumnFamilyHandle[] handles = new ColumnFamilyHandle[length];
+                Arrays.fill(handles, this.cfAnyVanillaExists);
 
-            //write to db
-            put(this.db, this.cfTiles, key, packed);
-        } finally {
-            packed.release();
-            key.release();
+                byte[][] get = txn.multiGetForUpdate(READ_OPTIONS, Arrays.asList(handles), keys);
+
+                List<POS> oldPositions = positions;
+                positions = new ArrayList<>(length);
+                for (int i = 0; i < length; i++) {
+                    if (get[i] == null) {
+                        positions.add(oldPositions.get(i));
+                        txn.put(this.cfAnyVanillaExists, keys[i], new byte[0]);
+                    }
+                }
+            }
+
+            for (int lvl = 1; lvl < MAX_LODS; lvl++) {
+                positions = positions.stream().flatMap(this.world.scaler()::outputs).distinct().collect(Collectors.toList());
+                length = positions.size();
+
+                byte[][] keys = positions.stream().map(POS::toBytes).toArray(byte[][]::new);
+
+                ColumnFamilyHandle[] handles = new ColumnFamilyHandle[length];
+                Arrays.fill(handles, this.cfAnyVanillaExists);
+
+                byte[][] get = txn.multiGetForUpdate(READ_OPTIONS, Arrays.asList(handles), keys);
+
+                List<POS> oldPositions = positions;
+                positions = new ArrayList<>(length);
+                for (int i = 0; i < length; i++) {
+                    if (get[i] == null) {
+                        positions.add(oldPositions.get(i));
+                        txn.put(this.cfAnyVanillaExists, keys[i], new byte[0]);
+                    }
+                }
+            }
         }
-    }
+    }*/
 
     @Override
     public void close() throws IOException {
@@ -231,5 +338,15 @@ public final class RocksStorage<POS extends IFarPos, V extends IReusablePersiste
         } catch (RocksDBException e) {
             throw new IOException(e);
         }
+    }
+
+    @Override
+    public void addListener(@NonNull Listener<POS, T> listener) {
+        checkState(this.listeners.add(listener), "listener %s already added?!?", listener);
+    }
+
+    @Override
+    public void removeListener(@NonNull Listener<POS, T> listener) {
+        checkState(this.listeners.remove(listener), "listener %s not present?!?", listener);
     }
 }

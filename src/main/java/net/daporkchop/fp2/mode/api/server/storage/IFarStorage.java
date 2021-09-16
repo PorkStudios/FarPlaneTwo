@@ -21,46 +21,98 @@
 package net.daporkchop.fp2.mode.api.server.storage;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.util.IReusablePersistent;
+import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Handles reading and writing of far terrain data.
  *
  * @author DaPorkchop_
  */
-public interface IFarStorage<POS extends IFarPos, V extends IReusablePersistent> extends Closeable {
+public interface IFarStorage<POS extends IFarPos, T extends IFarTile> extends Closeable {
     /**
-     * Loads the value at the given position.
+     * Gets an {@link ITileHandle} for accessing the tile data at the given position.
      *
-     * @param pos the position of the value to load
-     * @return the loaded value, or {@code null} if it doesn't exist
+     * @param pos the position
+     * @return an {@link ITileHandle}
      */
-    Compressed<POS, V> load(@NonNull POS pos);
+    ITileHandle<POS, T> handleFor(@NonNull POS pos);
+
+    void forEachDirtyPos(@NonNull Consumer<POS> callback);
 
     /**
-     * Stores the given value at the given position, atomically replacing any existing value.
+     * Atomically marks multiple positions as dirty as of the given timestamp.
+     * <p>
+     * Conceptually implemented by
+     * <blockquote><pre>{@code
+     * return positions.distinct()
+     *         .filter(pos -> this.handleFor(pos).markDirty(dirtyTimestamp));
+     * }</pre></blockquote>
+     * except the implementation has the opportunity to optimize this beyond what the user could write.
      *
-     * @param pos   the position to save the data at
-     * @param value the value to save
+     * @param positions      the positions to mark as dirty
+     * @param dirtyTimestamp the new dirty timestamp
+     * @return the positions for which the operation was able to be applied
+     * @see ITileHandle#markDirty(long)
      */
-    void store(@NonNull POS pos, @NonNull Compressed<POS, V> value);
+    default Stream<POS> markAllDirty(@NonNull Stream<POS> positions, long dirtyTimestamp) {
+        return positions.distinct()
+                .filter(pos -> this.handleFor(pos).markDirty(dirtyTimestamp));
+    }
 
-    /**
-     * @return the {@link IFarDirtyTracker} used by this storage
-     */
-    IFarDirtyTracker<POS> dirtyTracker();
+    //void markVanillaRenderable(@NonNull Stream<POS> positions);
 
     /**
      * Closes this storage.
      * <p>
      * If write operations are queued, this method will block until they are completed.
+     * <p>
+     * After this method has completed, attempting to invoke any methods on this {@link IFarStorage} instance or any {@link ITileHandle}s returned by {@link #handleFor(IFarPos)}
+     * will result in undefined behavior.
      */
     @Override
     void close() throws IOException;
+
+    /**
+     * Adds a new {@link Listener} which will receive all future notifications.
+     *
+     * @param listener the {@link Listener} to add
+     */
+    void addListener(@NonNull Listener<POS, T> listener);
+
+    /**
+     * Removes a previously added {@link Listener}, preventing it from receiving any future notifications.
+     *
+     * @param listener the {@link Listener} to remove
+     */
+    void removeListener(@NonNull Listener<POS, T> listener);
+
+    /**
+     * Listens for changes made to any data stored in a {@link IFarStorage}.
+     *
+     * @author DaPorkchop_
+     */
+    interface Listener<POS extends IFarPos, T extends IFarTile> {
+        /**
+         * Fired when the tiles at the given positions are modified.
+         *
+         * @param positions a distinct {@link Stream} of the modified positions
+         */
+        void tilesChanged(@NonNull Stream<POS> positions);
+
+        /**
+         * Fired when the tiles at the given positions are marked as dirty.
+         * <p>
+         * This includes when an already dirty tile's dirty timestamp is modified.
+         *
+         * @param positions a distinct {@link Stream} of the now dirty positions
+         */
+        void tilesDirty(@NonNull Stream<POS> positions);
+    }
 }

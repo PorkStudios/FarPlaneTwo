@@ -18,25 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading;
+package net.daporkchop.fp2.util.datastructure;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.EqualsTieBreakComparator;
 
 import java.util.AbstractQueue;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.NavigableSet;
+import java.util.Map;
+import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 
 import static java.util.Objects.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Alternative to {@link UnboundedPriorityBlockingQueue} with better performance under high concurrency.
@@ -45,29 +43,29 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E> implements BlockingQueue<E> {
     protected final Semaphore lock = new Semaphore(0);
-    protected final NavigableSet<E> set;
+    protected final NavigableMap<E, Boolean> map;
 
     public ConcurrentUnboundedPriorityBlockingQueue() {
-        this.set = new ConcurrentSkipListSet<>();
+        this.map = new ConcurrentSkipListMap<>();
     }
 
     public ConcurrentUnboundedPriorityBlockingQueue(@NonNull Comparator<E> comparator) {
-        this.set = new ConcurrentSkipListSet<>(comparator);
+        this.map = new ConcurrentSkipListMap<>(comparator);
     }
 
     @Override
     public Iterator<E> iterator() {
-        return this.set.iterator();
+        return this.map.keySet().iterator();
     }
 
     @Override
     public boolean isEmpty() {
-        return this.set.isEmpty();
+        return this.map.isEmpty();
     }
 
     @Override
     public int size() {
-        return this.set.size();
+        return this.lock.availablePermits();
     }
 
     @Override
@@ -77,7 +75,7 @@ public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E
 
     @Override
     public boolean add(E e) {
-        if (this.set.add(e)) {
+        if (this.map.putIfAbsent(e, Boolean.TRUE) == null) {
             this.lock.release();
             return true;
         } else {
@@ -86,19 +84,30 @@ public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E
     }
 
     @Override
+    public boolean remove(Object o) {
+        if (this.lock.tryAcquire()) {
+            if (this.map.remove(o, Boolean.TRUE)) {
+                return true;
+            }
+            this.lock.release();
+        }
+        return false;
+    }
+
+    @Override
     public E poll() {
-        return this.lock.tryAcquire() ? requireNonNull(this.set.pollFirst()) : null;
+        return this.lock.tryAcquire() ? requireNonNull(this.map.pollFirstEntry().getKey()) : null;
     }
 
     @Override
     public E poll(long timeout, TimeUnit unit) throws InterruptedException {
-        return this.lock.tryAcquire(timeout, unit) ? requireNonNull(this.set.pollFirst()) : null;
+        return this.lock.tryAcquire(timeout, unit) ? requireNonNull(this.map.pollFirstEntry().getKey()) : null;
     }
 
     @Override
     public E take() throws InterruptedException {
         this.lock.acquire();
-        return this.set.pollFirst();
+        return this.map.pollFirstEntry().getKey();
     }
 
     @Override
@@ -118,7 +127,7 @@ public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E
     @Override
     public E peek() {
         try {
-            return this.set.first();
+            return this.map.firstKey();
         } catch (NoSuchElementException e) { //set is empty
             return null;
         }
@@ -145,17 +154,15 @@ public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E
 
     //custom methods
 
-    public E popIfMatches(@NonNull Predicate<E> condition) {
+    public E pollLess(@NonNull E curr) {
         if (this.lock.tryAcquire()) {
-            E value;
-            do {
-                value = this.set.first();
-                if (!condition.test(value)) {
-                    this.lock.release();
-                    return null;
-                }
-            } while (!this.set.remove(value));
-            return value;
+            Map.Entry<E, Boolean> entry = ((NavigableMap<E, Boolean>) this.map.headMap(curr)).pollFirstEntry();
+            if (entry != null) {
+                return entry.getKey();
+            } else {
+                this.lock.release();
+                return null;
+            }
         }
         return null;
     }

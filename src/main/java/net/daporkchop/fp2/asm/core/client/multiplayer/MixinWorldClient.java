@@ -21,22 +21,21 @@
 package net.daporkchop.fp2.asm.core.client.multiplayer;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.asm.core.world.MixinWorld;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
-import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
+import net.daporkchop.lib.common.function.throwing.EFunction;
 import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.World;
-import org.spongepowered.asm.mixin.Implements;
-import org.spongepowered.asm.mixin.Interface;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -46,42 +45,35 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Mixin(WorldClient.class)
-@Implements({
-        @Interface(iface = IFarWorldClient.class, prefix = "fp2_world$", unique = true)
-})
-public abstract class MixinWorldClient extends World implements IFarWorldClient {
+public abstract class MixinWorldClient extends MixinWorld implements IFarWorldClient {
     @Unique
     private final Map<IFarRenderMode, IFarClientContext> contexts = new ObjObjConcurrentHashMap<>();
     @Unique
-    private final Function<IFarRenderMode, IFarClientContext> computeFunction = m ->
+    private final Function<IFarRenderMode, IFarClientContext> computeFunction = (EFunction<IFarRenderMode, IFarClientContext>) m ->
             //always create context on client thread
-            CompletableFuture.supplyAsync(() -> m.clientContext(uncheckedCast(this)), ClientThreadExecutor.INSTANCE).join();
+            Minecraft.getMinecraft().addScheduledTask(() -> m.clientContext(uncheckedCast(this))).get();
 
     @Unique
     private IFarClientContext active;
 
-    protected MixinWorldClient() {
-        super(null, null, null, null, false);
-    }
-
     @Override
-    public <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> contextFor(@NonNull IFarRenderMode<POS, T> mode) {
+    public <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> fp2_IFarWorldClient_contextFor(@NonNull IFarRenderMode<POS, T> mode) {
         return uncheckedCast(this.contexts.computeIfAbsent(mode, this.computeFunction));
     }
 
     @Override
-    public void switchTo(IFarRenderMode<?, ?> mode) {
+    public void fp2_IFarWorldClient_switchTo(IFarRenderMode<?, ?> mode) {
         FP2_LOG.info("switching render mode to {}", mode != null ? mode.name() : null);
-        this.active = mode != null ? this.contextFor(mode) : null;
+        this.active = mode != null ? this.fp2_IFarWorldClient_contextFor(mode) : null;
     }
 
     @Override
-    public <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> activeContext() {
+    public <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> fp2_IFarWorldClient_activeContext() {
         return uncheckedCast(this.active);
     }
 
     @Override
-    public void close() {
+    public void fp2_IFarWorld_close() {
         this.contexts.forEach((mode, context) -> context.close());
         this.contexts.clear();
     }

@@ -63,7 +63,7 @@ public class ClientEvents {
     @SubscribeEvent
     public void worldUnload(WorldEvent.Unload event) {
         if (event.getWorld().isRemote) {
-            ((IFarWorldClient) event.getWorld()).close();
+            ((IFarWorldClient) event.getWorld()).fp2_IFarWorld_close();
         }
     }
 

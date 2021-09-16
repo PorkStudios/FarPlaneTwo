@@ -20,14 +20,10 @@
 
 package net.daporkchop.fp2.asm.core.client;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.util.threading.ClientThreadExecutor;
-import net.daporkchop.lib.unsafe.PUnsafe;
+import net.daporkchop.fp2.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.profiler.Profiler;
 import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Implements;
-import org.spongepowered.asm.mixin.Interface;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -35,39 +31,34 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Makes {@link Minecraft} implement {@link ClientThreadExecutor.MixinExecutor}.
+ * Makes {@link Minecraft} implement {@link ClientThreadMarkedFutureExecutor.Holder}.
  * <p>
- * I do this because {@link Minecraft#addScheduledTask(Runnable)} has significant overhead of allocating a wrapping future, and also suppresses
- * any exceptions thrown by said scheduled tasks.
+ * I do this because {@link Minecraft#addScheduledTask(Runnable)} suppresses any exceptions thrown by scheduled tasks.
  *
  * @author DaPorkchop_
  */
 @Mixin(Minecraft.class)
-@Implements({
-        @Interface(iface = ClientThreadExecutor.MixinExecutor.class, prefix = "fp2_executor$", unique = true)
-})
-public abstract class MixinMinecraft implements ClientThreadExecutor.MixinExecutor {
+@SuppressWarnings("deprecation")
+public abstract class MixinMinecraft implements ClientThreadMarkedFutureExecutor.Holder {
     @Unique
-    private final Queue<Runnable> taskQueue = new ConcurrentLinkedQueue<>();
+    private ClientThreadMarkedFutureExecutor executor;
 
     @Shadow
     @Final
     public Profiler profiler;
 
-    @Shadow
-    public abstract boolean isCallingFromMinecraftThread();
+    @Inject(method = "Lnet/minecraft/client/Minecraft;<init>*",
+            at = @At("RETURN"))
+    private void fp2_$init$_constructMarkedExecutor(CallbackInfo ci) {
+        this.executor = new ClientThreadMarkedFutureExecutor(uncheckedCast(this));
+    }
 
     @Override
-    public void execute(@NonNull Runnable task) {
-        if (this.isCallingFromMinecraftThread()) {
-            task.run();
-        } else {
-            this.taskQueue.add(task);
-        }
+    public ClientThreadMarkedFutureExecutor fp2_ClientThreadMarkedFutureExecutor$Holder_get() {
+        return this.executor;
     }
 
     @Inject(method = "Lnet/minecraft/client/Minecraft;runGameLoop()V",
@@ -76,24 +67,9 @@ public abstract class MixinMinecraft implements ClientThreadExecutor.MixinExecut
                     ordinal = 1,
                     shift = At.Shift.BEFORE),
             allow = 1)
-    public void fp2_runScheduledClientTasks(CallbackInfo ci) {
+    private void fp2_runGameLoop_runScheduledClientTasks(CallbackInfo ci) {
         this.profiler.startSection("fp2_scheduled_tasks");
-        try {
-            for (Runnable task; (task = this.taskQueue.poll()) != null; ) {
-                task.run();
-            }
-        } catch (Throwable t0) {
-            //we caught an exception... attempt to run as many remaining tasks as possible
-            for (Runnable task; (task = this.taskQueue.poll()) != null; ) {
-                try {
-                    task.run();
-                } catch (Throwable t1) {
-                    t0.addSuppressed(t1);
-                }
-            }
-            PUnsafe.throwException(t0);
-        } finally {
-            this.profiler.endSection();
-        }
+        this.executor.doAllWork();
+        this.profiler.endSection();
     }
 }

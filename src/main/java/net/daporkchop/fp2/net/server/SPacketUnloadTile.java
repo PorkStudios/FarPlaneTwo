@@ -60,7 +60,7 @@ public class SPacketUnloadTile implements IMessage {
     public static class Handler implements IMessageHandler<SPacketUnloadTile, IMessage> {
         @Override
         public IMessage onMessage(SPacketUnloadTile message, MessageContext ctx) {
-            ((IFarWorldClient) ctx.getClientHandler().world).contextFor(message.mode).tileCache().unloadTile(uncheckedCast(message.pos));
+            ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorldClient_contextFor(message.mode).tileCache().unloadTile(uncheckedCast(message.pos));
             return null;
         }
     }

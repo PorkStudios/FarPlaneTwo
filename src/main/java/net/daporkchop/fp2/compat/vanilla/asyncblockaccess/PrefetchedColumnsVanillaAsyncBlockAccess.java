@@ -45,8 +45,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class PrefetchedColumnsVanillaAsyncBlockAccess extends AbstractPrefetchedAsyncBlockAccess<VanillaAsyncBlockAccessImpl> {
     protected final LongObjMap<Chunk> chunks = new LongObjOpenHashMap<>();
 
-    public PrefetchedColumnsVanillaAsyncBlockAccess(VanillaAsyncBlockAccessImpl parent, WorldServer world, @NonNull Stream<Chunk> chunks) {
-        super(parent, world);
+    public PrefetchedColumnsVanillaAsyncBlockAccess(VanillaAsyncBlockAccessImpl parent, WorldServer world, boolean allowGeneration, @NonNull Stream<Chunk> chunks) {
+        super(parent, world, allowGeneration);
 
         chunks.forEach(chunk -> {
             long key = ChunkPos.asLong(chunk.x, chunk.z);

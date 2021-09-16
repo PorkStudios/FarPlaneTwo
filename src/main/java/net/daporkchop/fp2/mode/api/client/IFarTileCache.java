@@ -21,9 +21,10 @@
 package net.daporkchop.fp2.mode.api.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.api.tile.ITileSnapshot;
+import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
 import net.daporkchop.lib.unsafe.capability.Releasable;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -37,7 +38,7 @@ import java.util.stream.Stream;
  */
 @SideOnly(Side.CLIENT)
 public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> extends Releasable {
-    void receiveTile(@NonNull Compressed<POS, T> tile);
+    void receiveTile(@NonNull ITileSnapshot<POS, T> tile);
 
     void unloadTile(@NonNull POS pos);
 
@@ -45,7 +46,7 @@ public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> extends 
      * Adds a new {@link Listener} that will be notified when tiles change.
      *
      * @param listener          the {@link Listener}
-     * @param notifyForExisting whether or not to call {@link Listener#tileAdded(Compressed)} for tiles that were already cached before
+     * @param notifyForExisting whether or not to call {@link Listener#tileAdded(ITileSnapshot)} for tiles that were already cached before
      *                          the listener was added
      */
     void addListener(@NonNull Listener<POS, T> listener, boolean notifyForExisting);
@@ -64,7 +65,7 @@ public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> extends 
      * @param position the position
      * @return the tile at the given position, or {@code null} if the tile wasn't present in the cache
      */
-    Compressed<POS, T> getTileCached(@NonNull POS position);
+    ITileSnapshot<POS, T> getTileCached(@NonNull POS position);
 
     /**
      * Gets the given tiles at the given positions from the cache.
@@ -72,7 +73,7 @@ public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> extends 
      * @param positions the positions
      * @return the tiles at the given positions. Tiles that were not present in the cache will be {@code null}
      */
-    Stream<Compressed<POS, T>> getTilesCached(@NonNull Stream<POS> positions);
+    Stream<ITileSnapshot<POS, T>> getTilesCached(@NonNull Stream<POS> positions);
 
     /**
      * Receives notifications when a tile is updated in a {@link IFarTileCache}.
@@ -86,14 +87,14 @@ public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> extends 
          *
          * @param tile the tile
          */
-        void tileAdded(@NonNull Compressed<POS, T> tile);
+        void tileAdded(@NonNull ITileSnapshot<POS, T> tile);
 
         /**
          * Fired when a tile's contents are changed.
          *
          * @param tile the tile
          */
-        void tileModified(@NonNull Compressed<POS, T> tile);
+        void tileModified(@NonNull ITileSnapshot<POS, T> tile);
 
         /**
          * Fired when a tile is removed from the cache.

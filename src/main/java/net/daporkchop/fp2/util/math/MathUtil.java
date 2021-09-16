@@ -33,6 +33,11 @@ import static java.lang.Math.*;
  */
 @UtilityClass
 public class MathUtil {
+    public static int asrFloor(int val, int shift) {
+        //lol this is totally useless, i'm just adding it here because it keeps the code cleaner when asrRound()/asrCeil() are used alongside it
+        return val >> shift;
+    }
+
     public static int asrRound(int val, int shift) {
         return shift == 0
                 ? val
@@ -106,16 +111,108 @@ public class MathUtil {
     }
 
     /**
-     * Interleaves the bits of 3 {@code int}s.
+     * Extracts the {@code i0} parameter from the value returned by {@link #interleaveBits(int, int)}.
+     *
+     * @param interleaved the interleaved bits
+     * @return {@code i0}
+     */
+    public static int uninterleave2_0(long interleaved) {
+        return (int) gatherBits1(interleaved);
+    }
+
+    /**
+     * Extracts the {@code i1} parameter from the value returned by {@link #interleaveBits(int, int)}.
+     *
+     * @param interleaved the interleaved bits
+     * @return {@code i1}
+     */
+    public static int uninterleave2_1(long interleaved) {
+        return (int) gatherBits1(interleaved >>> 1L);
+    }
+
+    /**
+     * Interleaves the lower bits of 3 {@code int}s.
      * <p>
-     * Note that this will discard the upper 11 bits of all parameters.
-     * <p>
-     * Based on <a href="https://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN">Bit Twiddling Hacks - Interleave bits by Binary Magic Numbers</a>.
+     * Note that this will discard the upper 10 bits of {@code i0}, and 11 bits of {@code i1} and {@code i2}.
      *
      * @return the interleaved bits
      */
     public static long interleaveBits(int i0, int i1, int i2) {
         return spreadBits2(i0) | (spreadBits2(i1) << 1L) | (spreadBits2(i2) << 2L);
+    }
+
+    /**
+     * Interleaves the upper bits of 3 {@code int}s.
+     * <p>
+     * Note that this will discard the lower 22 bits of {@code i0}, and 21 bits of {@code i1} and {@code i2}.
+     *
+     * @return the interleaved bits
+     */
+    public static int interleaveBitsHigh(int i0, int i1, int i2) {
+        return (int) ((spreadBits2(i0 >>> 22) << 2L) | spreadBits2(i1 >>> 21) | (spreadBits2(i2 >>> 21) << 1L));
+    }
+
+    /**
+     * Extracts the {@code i0} parameter from the value returned by {@link #interleaveBits(int, int, int)}.
+     *
+     * @param interleavedLow  the low interleaved bits
+     * @return {@code i0}
+     */
+    public static int uninterleave3_0(long interleavedLow) {
+        return (int) gatherBits2(interleavedLow);
+    }
+
+    /**
+     * Extracts the {@code i1} parameter from the value returned by {@link #interleaveBits(int, int, int)}.
+     *
+     * @param interleavedLow  the low interleaved bits
+     * @return {@code i1}
+     */
+    public static int uninterleave3_1(long interleavedLow) {
+        return (int) gatherBits2(interleavedLow >>> 1L);
+    }
+
+    /**
+     * Extracts the {@code i2} parameter from the value returned by {@link #interleaveBits(int, int, int)}.
+     *
+     * @param interleavedLow  the low interleaved bits
+     * @return {@code i2}
+     */
+    public static int uninterleave3_2(long interleavedLow) {
+        return (int) gatherBits2(interleavedLow >>> 2L);
+    }
+
+    /**
+     * Extracts the {@code i0} parameter from the values returned by {@link #interleaveBits(int, int, int)} and {@link #interleaveBitsHigh(int, int, int)}.
+     *
+     * @param interleavedLow  the low interleaved bits
+     * @param interleavedHigh the high interleaved bits
+     * @return {@code i0}
+     */
+    public static int uninterleave3_0(long interleavedLow, int interleavedHigh) {
+        return (int) (gatherBits2(interleavedLow) | (gatherBits2(interleavedHigh >>> 2L) << 22L));
+    }
+
+    /**
+     * Extracts the {@code i1} parameter from the values returned by {@link #interleaveBits(int, int, int)} and {@link #interleaveBitsHigh(int, int, int)}.
+     *
+     * @param interleavedLow  the low interleaved bits
+     * @param interleavedHigh the high interleaved bits
+     * @return {@code i1}
+     */
+    public static int uninterleave3_1(long interleavedLow, int interleavedHigh) {
+        return (int) (gatherBits2(interleavedLow >>> 1L) | (gatherBits2(interleavedHigh) << 21L));
+    }
+
+    /**
+     * Extracts the {@code i2} parameter from the values returned by {@link #interleaveBits(int, int, int)} and {@link #interleaveBitsHigh(int, int, int)}.
+     *
+     * @param interleavedLow  the low interleaved bits
+     * @param interleavedHigh the high interleaved bits
+     * @return {@code i2}
+     */
+    public static int uninterleave3_2(long interleavedLow, int interleavedHigh) {
+        return (int) (gatherBits2(interleavedLow >>> 2L) | (gatherBits2(interleavedHigh >>> 1L) << 21L));
     }
 
     /**
@@ -129,7 +226,7 @@ public class MathUtil {
      */
     public static long spreadBits1(long l) {
         //clear upper bits
-        l &= (1L << 32L) - 1L;
+        l &= 0x00000000FFFFFFFFL;
 
         //basically magic
         l = (l | (l << 16L)) & 0x0000FFFF0000FFFFL;
@@ -137,6 +234,24 @@ public class MathUtil {
         l = (l | (l << 4L)) & 0x0F0F0F0F0F0F0F0FL;
         l = (l | (l << 2L)) & 0x3333333333333333L;
         l = (l | (l << 1L)) & 0x5555555555555555L;
+        return l;
+    }
+
+    /**
+     * Discards a single bit between every bit in the input parameter.
+     *
+     * @return the gathered bits
+     */
+    public static long gatherBits1(long l) {
+        //clear unneeded bits
+        l &= 0x5555555555555555L;
+
+        //basically magic
+        l = (l | (l >>> 1L)) & 0x3333333333333333L;
+        l = (l | (l >>> 2L)) & 0x0F0F0F0F0F0F0F0FL;
+        l = (l | (l >>> 4L)) & 0x00FF00FF00FF00FFL;
+        l = (l | (l >>> 8L)) & 0x0000FFFF0000FFFFL;
+        l = (l | (l >>> 16L)) & 0x00000000FFFFFFFFL;
         return l;
     }
 
@@ -151,14 +266,32 @@ public class MathUtil {
      */
     public static long spreadBits2(long l) {
         //clear upper bits
-        l &= (1L << 21L) - 1L;
+        l &= 0x00000000003FFFFFL;
 
         //basically magic
-        l = (l | (l << 32L)) & 0x1F00000000FFFFL;
-        l = (l | (l << 16L)) & 0x1F0000FF0000FFL;
-        l = (l | (l << 8L)) & 0x100F00F00F00F00FL;
-        l = (l | (l << 4L)) & 0x10C30C30C30C30C3L;
-        l = (l | (l << 2L)) & 0x1249249249249249L;
+        l = (l | (l << 32L)) & 0x003F00000000FFFFL;
+        l = (l | (l << 16L)) & 0x003F0000FF0000FFL;
+        l = (l | (l << 8L)) & 0x300F00F00F00F00FL;
+        l = (l | (l << 4L)) & 0x30C30C30C30C30C3L;
+        l = (l | (l << 2L)) & 0x9249249249249249L;
+        return l;
+    }
+
+    /**
+     * Discards two bits between every bit in the input parameter.
+     *
+     * @return the gathered bits
+     */
+    public static long gatherBits2(long l) {
+        //clear unneeded bits
+        l &= 0x9249249249249249L;
+
+        //basically magic
+        l = (l | (l >>> 2L)) & 0x30C30C30C30C30C3L;
+        l = (l | (l >>> 4L)) & 0x300F00F00F00F00FL;
+        l = (l | (l >>> 8L)) & 0x003F0000FF0000FFL;
+        l = (l | (l >>> 16L)) & 0x003F00000000FFFFL;
+        l = (l | (l >>> 32L)) & 0x00000000003FFFFFL;
         return l;
     }
 

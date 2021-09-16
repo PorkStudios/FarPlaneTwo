@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.api;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.minecraft.util.math.AxisAlignedBB;
+import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
 
 import java.util.stream.Stream;
 
@@ -74,22 +74,16 @@ public interface IFarPos extends Comparable<IFarPos> {
      *
      * @param dst the {@link ByteBuf} to write to
      */
-    default void writePos(@NonNull ByteBuf dst) {
-        dst.writeInt(this.level());
-        this.writePosNoLevel(dst);
-    }
+    void writePos(@NonNull ByteBuf dst);
 
     /**
-     * @return the coordinates of this position (excluding the detail level)
-     */
-    int[] coordinates();
-
-    /**
-     * Writes this position to the given {@link ByteBuf}, without including the detail level
+     * Converts this position to a {@code byte[]}.
+     * <p>
+     * The resulting {@code byte[]}'s contents are identical to the data written by {@link #writePos(ByteBuf)}.
      *
-     * @param dst the {@link ByteBuf} to write to
+     * @return the encoded position
      */
-    void writePosNoLevel(@NonNull ByteBuf dst);
+    byte[] toBytes();
 
     /**
      * Checks whether or not this position contains the given {@link IFarPos}.
@@ -100,16 +94,22 @@ public interface IFarPos extends Comparable<IFarPos> {
     boolean contains(@NonNull IFarPos posIn);
 
     /**
-     * @return the maximum volume that the tile at this position could possibly occupy
+     * Checks whether or not this tile position is contained by the given tile coordinate limits.
+     *
+     * @param coordLimits the {@link IntAxisAlignedBB} representing the tile coordinate limits
+     * @return whether or not this tile position is contained by the given tile coordinate limits
      */
-    AxisAlignedBB bounds();
+    boolean containedBy(@NonNull IntAxisAlignedBB coordLimits);
 
     /**
-     * @return the maximum volume that the tile at this position could possibly occupy, with an additional padding of 1 unit in the positive direction
+     * Checks whether or not this tile position is contained by the given tile coordinate limits.
+     *
+     * @param coordLimits the {@link IntAxisAlignedBB}s representing the tile coordinate limits, indexed by detail level
+     * @return whether or not this tile position is contained by the given tile coordinate limits
+     * @throws ArrayIndexOutOfBoundsException if this position's {@link #level()} is not a valid index in the given {@code coordLimits} array
      */
-    default AxisAlignedBB paddedBounds() {
-        double padding = 1 << this.level();
-        return this.bounds().expand(padding, padding, padding);
+    default boolean containedBy(@NonNull IntAxisAlignedBB[] coordLimits) {
+        return this.containedBy(coordLimits[this.level()]);
     }
 
     /**
@@ -120,6 +120,20 @@ public interface IFarPos extends Comparable<IFarPos> {
      * Both corners are inclusive.
      */
     Stream<? extends IFarPos> allPositionsInBB(int offsetMin, int offsetMax);
+
+    /**
+     * Gets the Manhattan distance to the given {@link IFarPos}.
+     * <p>
+     * If the positions are at different detail levels, the distance is approximate.
+     * <p>
+     * Note that the distance may not be returned in blocks, but rather in arbitrary units. The only constraint is that it must remain consistent across
+     * levels (such that the distance between any two positions at the same level is always twice the distance between the positions with the same axis
+     * values one level lower).
+     *
+     * @param posIn the {@link IFarPos} to get the distance to
+     * @return the Manhattan distance to the given {@link IFarPos}
+     */
+    int manhattanDistance(@NonNull IFarPos posIn);
 
     /**
      * @return a locality-sensitive hash of this position

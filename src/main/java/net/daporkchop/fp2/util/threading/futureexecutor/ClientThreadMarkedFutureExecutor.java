@@ -18,40 +18,44 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.keyed;
+package net.daporkchop.fp2.util.threading.futureexecutor;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.threading.ConcurrentUnboundedPriorityBlockingQueue;
-
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ThreadFactory;
+import net.minecraft.client.Minecraft;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 /**
  * @author DaPorkchop_
  */
-public class PriorityKeyedTaskScheduler<K extends Comparable<K>> extends DefaultKeyedTaskScheduler<K> {
-    public PriorityKeyedTaskScheduler(int threads, @NonNull ThreadFactory threadFactory) {
-        super(threads, threadFactory);
+@SideOnly(Side.CLIENT)
+public class ClientThreadMarkedFutureExecutor extends AbstractMarkedFutureExecutor {
+    /**
+     * Gets the {@link ClientThreadMarkedFutureExecutor} for the given {@link Minecraft} instance.
+     *
+     * @param mc the {@link Minecraft} instance
+     * @return the corresponding {@link ClientThreadMarkedFutureExecutor}
+     */
+    public static ClientThreadMarkedFutureExecutor getFor(@NonNull Minecraft mc) {
+        return ((Holder) mc).fp2_ClientThreadMarkedFutureExecutor$Holder_get();
     }
 
-    @Override
-    protected BlockingQueue<DefaultKeyedTaskScheduler<K>.TaskQueue> createQueue() {
-        return new ConcurrentUnboundedPriorityBlockingQueue<>();
+    /**
+     * @deprecated internal API, do not touch!
+     */
+    @Deprecated
+    public ClientThreadMarkedFutureExecutor(@NonNull Minecraft mc) {
+        super(mc.thread);
+        this.start();
     }
 
-    @Override
-    protected DefaultKeyedTaskScheduler<K>.TaskQueue createQueue(@NonNull K key, @NonNull Runnable task) {
-        return new TaskQueue(key, task);
-    }
-
-    protected class TaskQueue extends DefaultKeyedTaskScheduler<K>.TaskQueue implements Comparable<TaskQueue> {
-        public TaskQueue(@NonNull K key, @NonNull Runnable task) {
-            super(key, task);
-        }
-
-        @Override
-        public int compareTo(TaskQueue o) {
-            return this.key.compareTo(o.key);
-        }
+    /**
+     * @author DaPorkchop_
+     * @deprecated internal API, do not touch!
+     */
+    @SideOnly(Side.CLIENT)
+    @Deprecated
+    public interface Holder {
+        ClientThreadMarkedFutureExecutor fp2_ClientThreadMarkedFutureExecutor$Holder_get();
     }
 }

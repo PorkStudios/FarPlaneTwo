@@ -21,35 +21,32 @@
 package net.daporkchop.fp2.mode.api.server;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
+import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
+import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.minecraft.world.WorldServer;
 
 import java.io.Closeable;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @author DaPorkchop_
  */
+//TODO: this needs a new name
 public interface IFarWorld<POS extends IFarPos, T extends IFarTile> extends Closeable {
     WorldServer world();
 
     IAsyncBlockAccess blockAccess();
 
-    /**
-     * Gets the {@link IFarTile} at the given position.
-     * <p>
-     * If the tile is already loaded, it will be returned. Otherwise, it will be queued for loading and this method will return {@code null}.
-     *
-     * @param pos the position of the tile to get
-     * @return the tile, or {@code null} if it isn't loaded yet
-     */
-    Compressed<POS, T> getTileLazy(@NonNull POS pos);
+    CompletableFuture<ITileHandle<POS, T>> requestLoad(@NonNull POS pos);
+
+    CompletableFuture<ITileHandle<POS, T>> requestUpdate(@NonNull POS pos);
 
     /**
      * @return the (possibly {@code null}) {@link IFarGeneratorRough} used for rough generation of far terrain
@@ -69,7 +66,12 @@ public interface IFarWorld<POS extends IFarPos, T extends IFarTile> extends Clos
     /**
      * @return the {@link IFarPlayerTracker} used by this world
      */
-    IFarPlayerTracker<POS> tracker();
+    IFarPlayerTracker<POS, T> tracker();
+
+    /**
+     * @return the {@link IFarStorage} used by this world
+     */
+    IFarStorage<POS, T> storage();
 
     /**
      * @return the {@link IFarRenderMode} that this world is used by

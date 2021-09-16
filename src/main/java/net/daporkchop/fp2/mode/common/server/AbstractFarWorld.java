@@ -20,13 +20,13 @@
 
 package net.daporkchop.fp2.mode.common.server;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import io.github.opencubicchunks.cubicchunks.api.world.ICube;
+import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import lombok.Synchronized;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.Compressed;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -36,31 +36,44 @@ import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
+import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.common.server.storage.rocksdb.RocksStorage;
 import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.PriorityRecursiveExecutor;
+import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
+import net.daporkchop.fp2.util.threading.scheduler.ApproximatelyPrioritizedSharedFutureScheduler;
+import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
-import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.chunk.Chunk;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
+import java.util.Set;
+import java.util.Spliterators;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
+import static java.util.Spliterator.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
 public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> implements IFarWorld<POS, T>, IWorldChangeListener {
+    protected static final int PRIORITY_UPDATE = 1;
+    protected static final int PRIORITY_LOAD = -1;
+
     protected final WorldServer world;
     protected final IFarRenderMode<POS, T> mode;
     protected final File root;
@@ -71,20 +84,14 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
 
     protected final IFarStorage<POS, T> storage;
 
-    protected final IFarPlayerTracker<POS> tracker;
+    protected final IFarPlayerTracker<POS, T> tracker;
 
-    //TODO: somehow merge tileCache and notDone
-    protected final Cache<POS, Compressed<POS, T>> tileCache = CacheBuilder.newBuilder() //cache for loaded tiles
-            .concurrencyLevel(FP2Config.generationThreads)
-            .weakValues()
-            .build();
-    protected final Map<POS, Boolean> notDone = new ConcurrentHashMap<>(); //contains positions of all tiles that aren't done
-
-    protected final PriorityRecursiveExecutor<PriorityTask<POS>> executor; //TODO: make these global rather than per-dimension
+    protected final Scheduler<PriorityTask<POS>, ITileHandle<POS, T>> scheduler; //TODO: make this global rather than per-dimension
 
     protected final boolean lowResolution;
 
-    protected long currentTime = -1L;
+    protected Set<POS> updatesPending = new ObjectRBTreeSet<>();
+    protected long lastCompletedTick = -1L;
 
     public AbstractFarWorld(@NonNull WorldServer world, @NonNull IFarRenderMode<POS, T> mode) {
         this.world = world;
@@ -94,7 +101,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.generatorExact = this.mode().exactGenerator(world);
 
         if (this.generatorRough == null) {
-            FP2_LOG.warn("vo rough {} generator exists for world {} (type={}, generator={})! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.provider.getDimension(), world.getWorldType(), Constants.getTerrainGenerator(world));
+            FP2_LOG.warn("no rough {} generator exists for world {} (type={}, generator={})! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.provider.getDimension(), world.getWorldType(), Constants.getTerrainGenerator(world));
             //TODO: make the fallback generator smart! rather than simply getting the chunks from the world, do generation and population in
             // a volatile, in-memory world clone to prevent huge numbers of chunks/cubes from potentially being generated (and therefore saved)
         }
@@ -102,120 +109,121 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         this.lowResolution = FP2Config.performance.lowResolutionEnable && this.generatorRough != null && this.generatorRough.supportsLowResolution();
 
         this.scaler = this.createScaler();
-        this.tracker = this.createTracker();
 
         this.root = new File(world.getChunkSaveLocation(), "fp2/" + this.mode().name().toLowerCase());
-        this.storage = new RocksStorage<>(mode, this.root);
+        this.storage = new RocksStorage<>(this, this.root);
 
-        this.executor = new PriorityRecursiveExecutor<>(
-                FP2Config.generationThreads,
-                PThreadFactories.builder().daemon().minPriority()
-                        .collapsingId().name(PStrings.fastFormat("FP2 DIM%d Generation Thread #%%d", world.provider.getDimension())).build(),
-                new FarServerWorker<>(this));
+        this.scheduler = new ApproximatelyPrioritizedSharedFutureScheduler<>(
+                scheduler -> task -> {
+                    switch (task.stage()) {
+                        case LOAD:
+                            return new AbstractTileTask.Load<>(this, scheduler, task.pos()).get();
+                        case UPDATE:
+                            return new AbstractTileTask.Update<>(this, scheduler, task.pos()).get();
+                        default:
+                            throw new IllegalArgumentException("unknown or stage in task: " + task);
+                    }
+                },
+                ThreadingHelper.workerGroupBuilder()
+                        .world(this.world)
+                        .threads(FP2Config.generationThreads)
+                        .threadFactory(PThreadFactories.builder().daemon().minPriority()
+                                .collapsingId().name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build()),
+                PriorityTask.approxComparator());
 
-        //add all dirty tiles to update queue
-        this.storage.dirtyTracker().forEachDirtyPos((pos, timestamp) -> this.enqueueUpdate(pos));
+        this.tracker = this.createTracker();
 
         WorldChangeListenerManager.add(this.world, this);
     }
 
     protected abstract IFarScaler<POS, T> createScaler();
 
-    protected abstract IFarPlayerTracker<POS> createTracker();
+    protected abstract IFarPlayerTracker<POS, T> createTracker();
 
     protected abstract boolean anyVanillaTerrainExistsAt(@NonNull POS pos);
 
+    protected PriorityTask<POS> taskFor(@NonNull TaskStage stage, @NonNull POS pos) {
+        return PriorityTask.forStageAndPosition(stage, pos);
+    }
+
+    protected PriorityTask<POS> loadTaskFor(@NonNull POS pos) {
+        return this.taskFor(TaskStage.LOAD, pos);
+    }
+
+    protected PriorityTask<POS> updateTaskFor(@NonNull POS pos) {
+        return this.taskFor(TaskStage.UPDATE, pos);
+    }
+
     @Override
-    public Compressed<POS, T> getTileLazy(@NonNull POS pos) {
-        Compressed<POS, T> tile = this.tileCache.getIfPresent(pos);
-        if (tile == null || !tile.isGenerated()) {
-            if (this.notDone.putIfAbsent(pos, Boolean.TRUE) != Boolean.TRUE) {
-                //tile is not in cache and was newly marked as queued
-                this.executor.submit(new PriorityTask<>(TaskStage.LOAD, pos));
-            }
-            return null;
-        }
-        return tile;
+    public CompletableFuture<ITileHandle<POS, T>> requestLoad(@NonNull POS pos) {
+        return this.scheduler.schedule(this.loadTaskFor(pos));
     }
 
-    public Compressed<POS, T> getTileCachedOrLoad(@NonNull POS pos) {
-        try {
-            return this.tileCache.get(pos, () -> {
-                Compressed<POS, T> compressedTile = this.storage.load(pos);
-                //create new value if absent
-                return compressedTile == null ? new Compressed<>(pos) : compressedTile;
-            });
-        } catch (ExecutionException e) {
-            PUnsafe.throwException(e);
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void saveTile(@NonNull Compressed<POS, T> tile) {
-        //this is non-blocking (unless the leveldb write buffer fills up)
-        this.storage.store(tile.pos(), tile);
-    }
-
-    public void tileAvailable(@NonNull Compressed<POS, T> tile) {
-        //unmark tile as being incomplete
-        this.notDone.remove(tile.pos());
-
-        this.notifyPlayerTracker(tile);
-    }
-
-    public void tileChanged(@NonNull Compressed<POS, T> tile, boolean allowScale) {
-        this.tileAvailable(tile);
-
-        //save the tile
-        this.saveTile(tile);
-
-        if (allowScale && tile.pos().level() < FP2Config.maxLevels - 1) {
-            this.scheduleForUpdate(this.scaler.outputs(tile.pos()));
-        }
-    }
-
-    public void notifyPlayerTracker(@NonNull Compressed<POS, T> tile) {
-        this.tracker.tileChanged(tile);
+    @Override
+    public CompletableFuture<ITileHandle<POS, T>> requestUpdate(@NonNull POS pos) {
+        return this.scheduler.schedule(this.updateTaskFor(pos));
     }
 
     public boolean canGenerateRough(@NonNull POS pos) {
         return this.generatorRough != null && (pos.level() == 0 || this.lowResolution);
     }
 
-    protected void enqueueUpdate(@NonNull POS pos) {
-        this.executor.submit(new PriorityTask<>(TaskStage.UPDATE, pos));
-    }
-
-    protected void scheduleForUpdate(@NonNull Stream<POS> positions) {
-        //if (this.exactActive.put(pos, newTimestamp) < 0L) {
-
-        this.storage.dirtyTracker()
-                .markDirty(positions, this.currentTime)
-                .forEach(this::enqueueUpdate);
-    }
-
     protected void scheduleForUpdate(@NonNull POS... positions) {
         this.scheduleForUpdate(Stream.of(positions));
     }
 
+    @Synchronized("updatesPending")
+    protected void scheduleForUpdate(@NonNull Stream<POS> positions) {
+        positions.forEach(pos -> {
+            for (; this.updatesPending.add(pos) && pos.level() < MAX_LODS; pos = uncheckedCast(pos.up())) {
+            }
+        });
+    }
+
     @Override
     public void onTickEnd() {
-        this.currentTime = this.world.getTotalWorldTime();
+        this.lastCompletedTick = this.world.getTotalWorldTime();
+        checkState(this.lastCompletedTick >= 0L, "lastCompletedTick (%d) < 0?!?", this.lastCompletedTick);
+
+        this.flushUpdateQueue();
+    }
+
+    @Synchronized("updatesPending")
+    protected void flushUpdateQueue() {
+        checkState(this.lastCompletedTick >= 0L, "flushed update queue before any game ticks were completed?!?");
+
+        if (!this.updatesPending.isEmpty()) {
+            this.storage.markAllDirty(StreamSupport.stream(Spliterators.spliterator(this.updatesPending, DISTINCT | NONNULL), false), this.lastCompletedTick)
+                    .forEach(pos -> {
+                        if (pos.level() < FP2Config.maxLevels) {
+                            this.scheduler.schedule(this.updateTaskFor(pos));
+                        }
+                    });
+            this.updatesPending.clear();
+        }
+    }
+
+    @Synchronized("updatesPending")
+    protected void shutdownUpdateQueue() {
+        this.flushUpdateQueue();
+        this.updatesPending = null;
     }
 
     @Override
     public IAsyncBlockAccess blockAccess() {
-        return ((IAsyncBlockAccess.Holder) this.world).asyncBlockAccess();
+        return ((IAsyncBlockAccess.Holder) this.world).fp2_IAsyncBlockAccess$Holder_asyncBlockAccess();
     }
 
     @Override
     @SneakyThrows(IOException.class)
     public void close() {
         WorldChangeListenerManager.remove(this.world, this);
-        this.onTickEnd();
 
-        FP2_LOG.trace("Shutting down generation workers in DIM{}", this.world.provider.getDimension());
-        this.executor.shutdown();
+        this.scheduler.close();
+
+        this.onTickEnd();
+        this.shutdownUpdateQueue();
+
         FP2_LOG.trace("Shutting down storage in DIM{}", this.world.provider.getDimension());
         this.storage.close();
     }

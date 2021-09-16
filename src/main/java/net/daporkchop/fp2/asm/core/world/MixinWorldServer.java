@@ -21,8 +21,9 @@
 package net.daporkchop.fp2.asm.core.world;
 
 import com.google.common.collect.ImmutableMap;
-import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.cc.asyncblockaccess.CCAsyncBlockAccessImpl;
+import net.daporkchop.fp2.compat.vanilla.asyncblockaccess.VanillaAsyncBlockAccessImpl;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -30,12 +31,8 @@ import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
-import net.daporkchop.fp2.compat.cc.asyncblockaccess.CCAsyncBlockAccessImpl;
-import net.daporkchop.fp2.compat.vanilla.asyncblockaccess.VanillaAsyncBlockAccessImpl;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
-import org.spongepowered.asm.mixin.Implements;
-import org.spongepowered.asm.mixin.Interface;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
@@ -49,41 +46,31 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Mixin(WorldServer.class)
-@Implements({
-        @Interface(iface = IFarWorldServer.class, prefix = "fp2_world$", unique = true),
-        @Interface(iface = IAsyncBlockAccess.Holder.class, prefix = "fp2_asyncBlockAccess$", unique = true)
-})
-public abstract class MixinWorldServer extends World implements IFarWorldServer, IAsyncBlockAccess.Holder {
+public abstract class MixinWorldServer extends MixinWorld implements IFarWorldServer {
     @Unique
     protected Map<IFarRenderMode, IFarServerContext> contextsByMode;
     @Unique
     protected IFarServerContext[] contexts;
 
-    @Getter
     @Unique
     protected IAsyncBlockAccess asyncBlockAccess;
 
-    protected MixinWorldServer() {
-        super(null, null, null, null, false);
-    }
-
     @Override
-    public void forEachContext(@NonNull Consumer<IFarServerContext<?, ?>> action) {
+    public void fp2_IFarWorldServer_forEachContext(@NonNull Consumer<IFarServerContext<?, ?>> action) {
         for (IFarServerContext context : this.contexts) {
             action.accept(uncheckedCast(context));
         }
     }
 
     @Override
-    public void fp2_init() {
-        checkState(this.contextsByMode == null, "already initialized!");
+    public void fp2_IFarWorld_init() {
+        super.fp2_IFarWorld_init();
 
-        this.asyncBlockAccess = Constants.isCubicWorld(this)
+        this.asyncBlockAccess = Constants.isCubicWorld(uncheckedCast(this))
                 ? new CCAsyncBlockAccessImpl(uncheckedCast(this))
                 : new VanillaAsyncBlockAccessImpl(uncheckedCast(this));
 
         ImmutableMap.Builder<IFarRenderMode, IFarServerContext> builder = ImmutableMap.builder();
-
         IFarRenderMode.REGISTRY.forEachEntry((name, mode) -> builder.put(mode, mode.serverContext(uncheckedCast(this))));
 
         this.contextsByMode = builder.build();
@@ -91,14 +78,19 @@ public abstract class MixinWorldServer extends World implements IFarWorldServer,
     }
 
     @Override
-    public void close() {
-        this.forEachContext(IFarServerContext::close);
+    public void fp2_IFarWorld_close() {
+        this.fp2_IFarWorldServer_forEachContext(IFarServerContext::close);
     }
 
     @Override
-    public <POS extends IFarPos, T extends IFarTile> IFarServerContext<POS, T> contextFor(@NonNull IFarRenderMode<POS, T> mode) {
+    public <POS extends IFarPos, T extends IFarTile> IFarServerContext<POS, T> fp2_IFarWorldServer_contextFor(@NonNull IFarRenderMode<POS, T> mode) {
         IFarServerContext<POS, T> context = uncheckedCast(this.contextsByMode.get(mode));
         checkArg(context != null, "cannot find context for unknown render mode: %s", mode);
         return context;
+    }
+
+    @Override
+    public IAsyncBlockAccess fp2_IAsyncBlockAccess$Holder_asyncBlockAccess() {
+        return this.asyncBlockAccess;
     }
 }

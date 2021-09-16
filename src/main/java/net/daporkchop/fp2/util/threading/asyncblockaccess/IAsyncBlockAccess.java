@@ -29,6 +29,7 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
+import net.minecraft.world.biome.Biome;
 
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -105,20 +106,107 @@ public interface IAsyncBlockAccess extends IBlockHeightAccess {
      */
     boolean anyCubeIntersects(int tileX, int tileY, int tileZ, int level);
 
+    /**
+     * @see io.github.opencubicchunks.cubicchunks.api.world.IHeightMap#isOccluded(int, int, int)
+     */
+    default boolean isOccluded(int blockX, int blockY, int blockZ, boolean allowGeneration)  {
+        return blockY < this.getTopBlockY(blockX, blockZ, allowGeneration);
+    }
+
     @Override
+    @Deprecated
+    default int getTopBlockY(int blockX, int blockZ) {
+        return this.getTopBlockY(blockX, blockZ, true);
+    }
+
+    /**
+     * @see io.github.opencubicchunks.cubicchunks.api.world.IHeightMap#getTopBlockY(int, int)
+     */
+    int getTopBlockY(int blockX, int blockZ, boolean allowGeneration);
+
+    @Override
+    @Deprecated
+    default int getTopBlockYBelow(int blockX, int blockY, int blockZ) {
+        return this.getTopBlockYBelow(blockX, blockY, blockZ, true);
+    }
+
+    /**
+     * @see io.github.opencubicchunks.cubicchunks.api.world.IHeightMap#getTopBlockYBelow(int, int, int)
+     */
+    int getTopBlockYBelow(int blockX, int blockY, int blockZ, boolean allowGeneration);
+
+    @Override
+    @Deprecated
+    default IBlockState getBlockState(BlockPos pos) {
+        return this.getBlockState(pos, true);
+    }
+
+    IBlockState getBlockState(BlockPos pos, boolean allowGeneration);
+
+    @Override
+    @Deprecated
+    default Biome getBiome(BlockPos pos) {
+        return this.getBiome(pos, true);
+    }
+
+    Biome getBiome(BlockPos pos, boolean allowGeneration);
+
+    @Override
+    @Deprecated
+    default int getSkyLight(BlockPos pos) {
+        return this.getSkyLight(pos, true);
+    }
+
+    int getSkyLight(BlockPos pos, boolean allowGeneration);
+
+    @Override
+    @Deprecated
+    default int getBlockLight(BlockPos pos) {
+        return this.getBlockLight(pos, true);
+    }
+
+    int getBlockLight(BlockPos pos, boolean allowGeneration);
+
+    @Override
+    @Deprecated
+    default int getCombinedLight(BlockPos pos, int defaultBlockLightValue) {
+        return this.getCombinedLight(pos, defaultBlockLightValue, true);
+    }
+
+    default int getCombinedLight(BlockPos pos, int defaultBlockLightValue, boolean allowGeneration) {
+        return (this.getSkyLight(pos, allowGeneration) << 20)
+               | (Math.max(this.getBlockLight(pos, allowGeneration), defaultBlockLightValue) << 4);
+    }
+
+    @Override
+    @Deprecated
     default boolean isAirBlock(BlockPos pos) {
-        IBlockState state = this.getBlockState(pos);
+        return this.isAirBlock(pos, true);
+    }
+
+    default boolean isAirBlock(BlockPos pos, boolean allowGeneration) {
+        IBlockState state = this.getBlockState(pos, allowGeneration);
         return state.getBlock().isAir(state, this, pos);
     }
 
     @Override
+    @Deprecated
     default int getStrongPower(BlockPos pos, EnumFacing direction) {
-        return this.getBlockState(pos).getStrongPower(this, pos, direction);
+        return this.getStrongPower(pos, direction, true);
+    }
+
+    default int getStrongPower(BlockPos pos, EnumFacing direction, boolean allowGeneration) {
+        return this.getBlockState(pos, allowGeneration).getStrongPower(this, pos, direction);
     }
 
     @Override
+    @Deprecated
     default boolean isSideSolid(BlockPos pos, EnumFacing side, boolean _default) {
-        return this.getBlockState(pos).isSideSolid(this, pos, side);
+        return this.isSideSolid(pos, side, _default, true);
+    }
+
+    default boolean isSideSolid(BlockPos pos, EnumFacing side, boolean _default, boolean allowGeneration) {
+        return this.getBlockState(pos, allowGeneration).isSideSolid(this, pos, side);
     }
 
     /**
@@ -136,6 +224,6 @@ public interface IAsyncBlockAccess extends IBlockHeightAccess {
      * @author DaPorkchop_
      */
     interface Holder {
-        IAsyncBlockAccess asyncBlockAccess();
+        IAsyncBlockAccess fp2_IAsyncBlockAccess$Holder_asyncBlockAccess();
     }
 }
