@@ -18,23 +18,17 @@
  *
  */
 
-package net.daporkchop.fp2.asm.core.client.settings;
-
-import net.daporkchop.fp2.config.listener.ConfigListenerManager;
-import net.minecraft.client.settings.GameSettings;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+package net.daporkchop.fp2.config.listener;
 
 /**
+ * A listener for configuration change events.
+ *
  * @author DaPorkchop_
  */
-@Mixin(GameSettings.class)
-public abstract class MixinGameSettings {
-    @Inject(method = "Lnet/minecraft/client/settings/GameSettings;saveOptions()V",
-            at = @At("TAIL"))
-    private void fp2_saveOptions_notifyConfigListenerManager(CallbackInfo ci) {
-        ConfigListenerManager.fire();
-    }
+@FunctionalInterface
+public interface IConfigListener {
+    /**
+     * Fired whenever the config is changed.
+     */
+    void configChanged();
 }

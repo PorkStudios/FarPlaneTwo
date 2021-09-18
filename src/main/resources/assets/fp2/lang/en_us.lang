@@ -18,6 +18,9 @@ key.fp2.debug.rebuildUVs=Rebuild far texture UVs
 # Config options
 #
 
+fp2.config.boolean.true=%s: §aEnabled
+fp2.config.boolean.false=%s: §cDisabled
+
 config.fp2.renderMode=Render mode
 config.fp2.renderDistance=Render distance (currently unused)
 config.fp2.maxLevels=Max LoD levels

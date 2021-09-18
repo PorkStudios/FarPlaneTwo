@@ -18,23 +18,32 @@
  *
  */
 
-package net.daporkchop.fp2.asm.core.client.settings;
+package net.daporkchop.fp2.config.gui.element;
 
-import net.daporkchop.fp2.config.listener.ConfigListenerManager;
-import net.minecraft.client.settings.GameSettings;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import lombok.NonNull;
+import net.daporkchop.fp2.config.gui.IGuiContext;
+import net.minecraft.client.resources.I18n;
+
+import java.lang.reflect.Field;
+
+import static net.daporkchop.fp2.FP2.*;
 
 /**
  * @author DaPorkchop_
  */
-@Mixin(GameSettings.class)
-public abstract class MixinGameSettings {
-    @Inject(method = "Lnet/minecraft/client/settings/GameSettings;saveOptions()V",
-            at = @At("TAIL"))
-    private void fp2_saveOptions_notifyConfigListenerManager(CallbackInfo ci) {
-        ConfigListenerManager.fire();
+public class GuiToggleButton extends GuiButton<Boolean> {
+    public GuiToggleButton(@NonNull IGuiContext context, @NonNull Object instance, @NonNull Field field) {
+        super(context, instance, field);
+    }
+
+    @Override
+    protected String buttonText() {
+        return I18n.format(MODID + ".config.boolean." + this.get(), this.localizedName());
+    }
+
+    @Override
+    protected boolean handleClick(int button) {
+        this.set(!this.get()); //invert value
+        return true;
     }
 }

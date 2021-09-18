@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,6 +22,8 @@ package net.daporkchop.fp2.client.gui;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2;
+import net.daporkchop.fp2.config.ConfigHelper;
+import net.daporkchop.fp2.config.TestConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
@@ -46,13 +48,14 @@ public class GuiButtonFP2Options extends GuiButton {
     @Override
     public boolean mousePressed(Minecraft mc, int mouseX, int mouseY) {
         if (super.mousePressed(mc, mouseX, mouseY)) {
-            try {
+            /*try {
                 IModGuiFactory guiFactory = FMLClientHandler.instance().getGuiFactoryFor(Loader.instance().getActiveModList().stream().filter(c -> c.getModId().equals(FP2.MODID)).findAny().orElseThrow(IllegalStateException::new));
                 GuiScreen newScreen = guiFactory.createConfigGui(this.parent);
                 this.parent.mc.displayGuiScreen(newScreen);
             } catch (Exception e) {
                 FMLLog.log.error("There was a critical issue trying to build the config GUI for {}", FP2.MODID, e);
-            }
+            }*/
+            ConfigHelper.createAndDisplayGuiContext("menu", new TestConfig());
             return true;
         } else {
             return false;

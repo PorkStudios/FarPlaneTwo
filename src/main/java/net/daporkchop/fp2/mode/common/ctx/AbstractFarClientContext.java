@@ -22,8 +22,8 @@ package net.daporkchop.fp2.mode.common.ctx;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.config.IConfigListener;
-import net.daporkchop.fp2.config.ConfigListenerManager;
+import net.daporkchop.fp2.config.listener.IConfigListener;
+import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;

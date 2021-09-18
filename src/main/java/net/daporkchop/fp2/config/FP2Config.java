@@ -23,6 +23,7 @@ package net.daporkchop.fp2.config;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.FP2;
+import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.common.config.ConfigManager;

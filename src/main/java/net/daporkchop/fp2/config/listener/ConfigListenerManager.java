@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.config;
+package net.daporkchop.fp2.config.listener;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;

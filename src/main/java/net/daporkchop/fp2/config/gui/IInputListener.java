@@ -18,23 +18,17 @@
  *
  */
 
-package net.daporkchop.fp2.asm.core.client.settings;
-
-import net.daporkchop.fp2.config.listener.ConfigListenerManager;
-import net.minecraft.client.settings.GameSettings;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+package net.daporkchop.fp2.config.gui;
 
 /**
  * @author DaPorkchop_
  */
-@Mixin(GameSettings.class)
-public abstract class MixinGameSettings {
-    @Inject(method = "Lnet/minecraft/client/settings/GameSettings;saveOptions()V",
-            at = @At("TAIL"))
-    private void fp2_saveOptions_notifyConfigListenerManager(CallbackInfo ci) {
-        ConfigListenerManager.fire();
-    }
+public interface IInputListener {
+    void mouseDown(int mouseX, int mouseY, int button);
+
+    void mouseUp(int mouseX, int mouseY, int button);
+
+    void mouseDragged(int oldMouseX, int oldMouseY, int newMouseX, int newMouseY, int button);
+
+    void keyPressed(char typedChar, int keyCode);
 }

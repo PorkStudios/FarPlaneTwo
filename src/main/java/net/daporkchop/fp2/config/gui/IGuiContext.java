@@ -18,17 +18,17 @@
  *
  */
 
-package net.daporkchop.fp2.config;
+package net.daporkchop.fp2.config.gui;
+
+import lombok.NonNull;
 
 /**
- * A listener for configuration change events.
- *
  * @author DaPorkchop_
  */
-@FunctionalInterface
-public interface IConfigListener {
-    /**
-     * Fired whenever the config is changed.
-     */
-    void configChanged();
+public interface IGuiContext {
+    String localeKeyBase();
+
+    void pushSubmenu(@NonNull String name, @NonNull Object instance);
+
+    void pop();
 }
