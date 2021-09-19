@@ -22,12 +22,16 @@ package net.daporkchop.fp2.config.gui.element;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.config.gui.AbstractConfigGuiElement;
+import net.daporkchop.fp2.config.gui.ElementDimensions;
 import net.daporkchop.fp2.config.gui.IGuiContext;
 import net.daporkchop.lib.math.vector.i.Vec2i;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
 
 import java.lang.reflect.Field;
+import java.util.stream.Stream;
 
+import static java.lang.Math.*;
+import static net.daporkchop.fp2.config.gui.GuiConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -43,8 +47,8 @@ public abstract class GuiButton<V> extends AbstractConfigGuiElement<V> {
     }
 
     @Override
-    public Vec2i minDimensions() {
-        return new Vec2i(20, 20);
+    public Stream<ElementDimensions> possibleDimensions(int totalSizeX, int totalSizeY) {
+        return Stream.of(new ElementDimensions(min(totalSizeX, BUTTON_WIDTH), min(totalSizeY, BUTTON_HEIGHT)));
     }
 
     @Override
@@ -82,6 +86,11 @@ public abstract class GuiButton<V> extends AbstractConfigGuiElement<V> {
 
     @Override
     public void mouseDragged(int oldMouseX, int oldMouseY, int newMouseX, int newMouseY, int button) {
+        //no-op
+    }
+
+    @Override
+    public void mouseScroll(int mouseX, int mouseY, int dWheel) {
         //no-op
     }
 

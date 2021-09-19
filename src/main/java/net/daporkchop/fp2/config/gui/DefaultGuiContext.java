@@ -23,10 +23,15 @@ package net.daporkchop.fp2.config.gui;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.config.ConfigHelper;
+import net.daporkchop.lib.math.vector.i.Vec2i;
 import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.ScaledResolution;
+import net.minecraftforge.fml.client.config.GuiUtils;
 import org.lwjgl.input.Mouse;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.function.Function;
 
 import static net.daporkchop.fp2.util.Constants.*;
 
@@ -55,18 +60,18 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
         MC.displayGuiScreen(this);
     }
 
-    protected DefaultGuiContext(@NonNull DefaultGuiContext parentContext, @NonNull String name, @NonNull Object instance) {
+    protected DefaultGuiContext(@NonNull DefaultGuiContext parentContext, @NonNull String name, @NonNull Function<IGuiContext, IConfigGuiScreen> screenFactory) {
         this.topContext = parentContext.topContext;
         this.parentScreen = parentContext;
-        this.instance = instance;
+        this.instance = null;
 
         this.localeKeyBase = parentContext.localeKeyBase() + name + '.';
-        this.screen = ConfigHelper.createConfigGuiScreen(this, instance);
+        this.screen = screenFactory.apply(this);
     }
 
     @Override
-    public void pushSubmenu(@NonNull String name, @NonNull Object instance) {
-        MC.displayGuiScreen(new DefaultGuiContext(this, name, instance));
+    public void pushSubmenu(@NonNull String name, @NonNull Function<IGuiContext, IConfigGuiScreen> screenFactory) {
+        MC.displayGuiScreen(new DefaultGuiContext(this, name, screenFactory));
     }
 
     @Override
@@ -76,6 +81,11 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
         }
 
         MC.displayGuiScreen(this.parentScreen);
+    }
+
+    @Override
+    public void drawTooltip(int mouseX, int mouseY, @NonNull String... lines) {
+        GuiUtils.drawHoveringText(Arrays.asList(lines), mouseX, mouseY, this.width, this.height, -1, MC.fontRenderer);
     }
 
     @Override
@@ -100,11 +110,41 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
 
     @Override
     protected void mouseClickMove(int mouseX, int mouseY, int clickedMouseButton, long timeSinceLastClick) {
-        this.screen.mouseDragged(mouseX - Mouse.getEventDX(), mouseY - Mouse.getEventDY(), mouseX, mouseY, clickedMouseButton);
+        ScaledResolution scaledResolution = new ScaledResolution(this.mc);
+
+        int oldX = this.scaleMouseX(scaledResolution, Mouse.getEventX() - Mouse.getEventDX());
+        int oldY = this.scaleMouseY(scaledResolution, Mouse.getEventY() - Mouse.getEventDY());
+
+        this.screen.mouseDragged(oldX, oldY, mouseX, mouseY, clickedMouseButton);
+    }
+
+    @Override
+    public void handleMouseInput() throws IOException {
+        super.handleMouseInput();
+
+        int dWheel = Mouse.getEventDWheel();
+        if (dWheel != 0) {
+            ScaledResolution scaledResolution = new ScaledResolution(this.mc);
+            int x = this.scaleMouseX(scaledResolution, Mouse.getX());
+            int y = this.scaleMouseY(scaledResolution, Mouse.getY());
+            this.screen.mouseScroll(x, y, this.scaleDWheel(scaledResolution, dWheel));
+        }
     }
 
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws IOException {
         this.screen.keyPressed(typedChar, keyCode);
+    }
+
+    protected int scaleMouseX(@NonNull ScaledResolution scaledResolution, int mouseX) {
+        return mouseX * scaledResolution.getScaledWidth() / this.mc.displayWidth;
+    }
+
+    protected int scaleMouseY(@NonNull ScaledResolution scaledResolution, int mouseY) {
+        return scaledResolution.getScaledHeight() - mouseY * scaledResolution.getScaledHeight() / this.mc.displayHeight - 1;
+    }
+
+    protected int scaleDWheel(@NonNull ScaledResolution scaledResolution, int dWheel) {
+        return -dWheel * scaledResolution.getScaledHeight() / this.mc.displayHeight;
     }
 }

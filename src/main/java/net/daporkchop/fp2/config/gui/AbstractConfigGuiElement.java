@@ -45,6 +45,11 @@ public abstract class AbstractConfigGuiElement<V> implements IConfigGuiElement {
     @Getter(lazy = true)
     private final String localizedName = I18n.format(this.context.localeKeyBase() + this.field.getName());
 
+    @Getter(lazy = true)
+    private final String[] tooltipText = I18n.hasKey(this.context.localeKeyBase() + this.field.getName() + ".tooltip")
+            ? I18n.format(this.context.localeKeyBase() + this.field.getName() + ".tooltip").split("\n")
+            : null;
+
     protected int x;
     protected int y;
     protected int sizeX;
@@ -70,5 +75,15 @@ public abstract class AbstractConfigGuiElement<V> implements IConfigGuiElement {
     @SneakyThrows(IllegalAccessException.class)
     protected void set(@NonNull V value) {
         this.field.set(this.instance, value);
+    }
+
+    @Override
+    public void renderOverlay(int mouseX, int mouseY, float partialTicks) {
+        if (mouseX >= this.x && mouseX <= this.x + this.sizeX && mouseY >= this.y && mouseY <= this.y + this.sizeY) {
+            String[] tooltipText = this.tooltipText();
+            if (tooltipText != null && tooltipText.length != 0) {
+                this.context.drawTooltip(mouseX, mouseY, this.tooltipText());
+            }
+        }
     }
 }

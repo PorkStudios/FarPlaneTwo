@@ -23,11 +23,37 @@ package net.daporkchop.fp2.config;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 /**
  * @author DaPorkchop_
  */
 @ToString
 @EqualsAndHashCode
 public class TestConfig {
-    public boolean boolOption = true;
+    public Submenu submenu = new Submenu();
+
+    public boolean boolOption0 = ThreadLocalRandom.current().nextBoolean();
+    public boolean boolOption1 = ThreadLocalRandom.current().nextBoolean();
+    public boolean boolOption2 = ThreadLocalRandom.current().nextBoolean();
+    public boolean boolOption3 = ThreadLocalRandom.current().nextBoolean();
+    public boolean boolOption4 = ThreadLocalRandom.current().nextBoolean();
+    public boolean boolOption5 = ThreadLocalRandom.current().nextBoolean();
+    public boolean boolOption6 = ThreadLocalRandom.current().nextBoolean();
+    public boolean boolOption7 = ThreadLocalRandom.current().nextBoolean();
+    public boolean boolOption8 = ThreadLocalRandom.current().nextBoolean();
+    public boolean boolOption9 = ThreadLocalRandom.current().nextBoolean();
+    public boolean boolOptionA = ThreadLocalRandom.current().nextBoolean();
+    public boolean boolOptionB = ThreadLocalRandom.current().nextBoolean();
+    public boolean boolOptionC = ThreadLocalRandom.current().nextBoolean();
+    public boolean boolOptionD = ThreadLocalRandom.current().nextBoolean();
+    public boolean boolOptionE = ThreadLocalRandom.current().nextBoolean();
+    public boolean boolOptionF = ThreadLocalRandom.current().nextBoolean();
+
+    @ToString
+    @EqualsAndHashCode
+    public class Submenu {
+        public boolean boolOption0 = false;
+        public boolean boolOption1 = true;
+    }
 }

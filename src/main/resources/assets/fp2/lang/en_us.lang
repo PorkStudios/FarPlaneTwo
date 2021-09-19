@@ -1,3 +1,5 @@
+#PARSE_ESCAPES
+
 #
 # GUI
 #
@@ -18,8 +20,10 @@ key.fp2.debug.rebuildUVs=Rebuild far texture UVs
 # Config options
 #
 
-fp2.config.boolean.true=%s: §aEnabled
-fp2.config.boolean.false=%s: §cDisabled
+fp2.config.boolean.true=%s: §aEnabled§r
+fp2.config.boolean.false=%s: §cDisabled§r
+
+fp2.config.menu.title=FarPlaneTwo Options
 
 config.fp2.renderMode=Render mode
 config.fp2.renderDistance=Render distance (currently unused)

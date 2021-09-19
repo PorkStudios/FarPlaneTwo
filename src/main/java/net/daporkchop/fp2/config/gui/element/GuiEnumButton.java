@@ -18,19 +18,36 @@
  *
  */
 
-package net.daporkchop.fp2.config.gui;
+package net.daporkchop.fp2.config.gui.element;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.config.gui.IGuiContext;
+import net.daporkchop.lib.common.util.PorkUtil;
+
+import java.lang.reflect.Field;
 
 /**
  * @author DaPorkchop_
  */
-public interface IInputListener {
-    void mouseDown(int mouseX, int mouseY, int button);
+public class GuiEnumButton extends GuiButton<Enum> {
+    protected final Enum[] values;
 
-    void mouseUp(int mouseX, int mouseY, int button);
+    public GuiEnumButton(@NonNull IGuiContext context, @NonNull Object instance, @NonNull Field field) {
+        super(context, instance, field);
 
-    void mouseScroll(int mouseX, int mouseY, int dWheel);
+        this.values = PorkUtil.<Class<Enum>>uncheckedCast(this.get().getDeclaringClass()).getEnumConstants();
+    }
 
-    void mouseDragged(int oldMouseX, int oldMouseY, int newMouseX, int newMouseY, int button);
+    @Override
+    protected String buttonText() {
+        return this.localizedName();
+    }
 
-    void keyPressed(char typedChar, int keyCode);
+    @Override
+    protected boolean handleClick(int button) {
+        if (button == 0) { //left-click
+            this.context.pushSubmenu(this.field.getName(), this.get());
+        }
+        return false;
+    }
 }

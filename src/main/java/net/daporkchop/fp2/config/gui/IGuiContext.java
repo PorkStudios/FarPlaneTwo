@@ -21,6 +21,9 @@
 package net.daporkchop.fp2.config.gui;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.config.ConfigHelper;
+
+import java.util.function.Function;
 
 /**
  * @author DaPorkchop_
@@ -28,7 +31,15 @@ import lombok.NonNull;
 public interface IGuiContext {
     String localeKeyBase();
 
-    void pushSubmenu(@NonNull String name, @NonNull Object instance);
+    default void pushSubmenu(@NonNull String name, @NonNull Object instance) {
+        this.pushSubmenu(name, context -> ConfigHelper.createConfigGuiScreen(context, instance));
+    }
+
+    void pushSubmenu(@NonNull String name, @NonNull Function<IGuiContext, IConfigGuiScreen> screenFactory);
 
     void pop();
+
+    void drawDefaultBackground();
+
+    void drawTooltip(int mouseX, int mouseY, @NonNull String... lines);
 }

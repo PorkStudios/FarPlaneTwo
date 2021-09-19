@@ -18,19 +18,31 @@
  *
  */
 
-package net.daporkchop.fp2.config.gui;
+package net.daporkchop.fp2.config.gui.element;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.config.gui.IGuiContext;
+
+import java.lang.reflect.Field;
 
 /**
  * @author DaPorkchop_
  */
-public interface IInputListener {
-    void mouseDown(int mouseX, int mouseY, int button);
+public class GuiSubmenuButton extends GuiButton<Object> {
+    public GuiSubmenuButton(@NonNull IGuiContext context, @NonNull Object instance, @NonNull Field field) {
+        super(context, instance, field);
+    }
 
-    void mouseUp(int mouseX, int mouseY, int button);
+    @Override
+    protected String buttonText() {
+        return this.localizedName();
+    }
 
-    void mouseScroll(int mouseX, int mouseY, int dWheel);
-
-    void mouseDragged(int oldMouseX, int oldMouseY, int newMouseX, int newMouseY, int button);
-
-    void keyPressed(char typedChar, int keyCode);
+    @Override
+    protected boolean handleClick(int button) {
+        if (button == 0) { //left-click
+            this.context.pushSubmenu(this.field.getName(), this.get());
+        }
+        return false;
+    }
 }

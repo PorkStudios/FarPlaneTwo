@@ -20,13 +20,13 @@
 
 package net.daporkchop.fp2.config.gui;
 
-import net.daporkchop.lib.math.vector.i.Vec2i;
+import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
  */
 public interface IConfigGuiElement extends IInputListener {
-    Vec2i minDimensions();
+    Stream<ElementDimensions> possibleDimensions(int totalSizeX, int totalSizeY);
 
     default void setPositionAndDimensions(int x, int y, int sizeX, int sizeY) {
         this.setPosition(x, y);
@@ -39,5 +39,5 @@ public interface IConfigGuiElement extends IInputListener {
 
     void render(int mouseX, int mouseY, float partialTicks);
 
-    String localizedName();
+    void renderOverlay(int mouseX, int mouseY, float partialTicks);
 }

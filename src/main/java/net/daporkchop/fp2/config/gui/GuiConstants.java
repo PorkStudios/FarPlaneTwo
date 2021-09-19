@@ -20,17 +20,41 @@
 
 package net.daporkchop.fp2.config.gui;
 
+import lombok.experimental.UtilityClass;
+
 /**
+ * Constant values used throughout the GUI code.
+ *
  * @author DaPorkchop_
  */
-public interface IInputListener {
-    void mouseDown(int mouseX, int mouseY, int button);
+@UtilityClass
+public class GuiConstants {
+    //
+    // sizes
+    //
 
-    void mouseUp(int mouseX, int mouseY, int button);
+    /**
+     * The padding around all components (vertical and horizontal).
+     */
+    public static final int PADDING = 2;
 
-    void mouseScroll(int mouseX, int mouseY, int dWheel);
+    /**
+     * The height of the title in a GUI header.
+     */
+    public static final int HEADER_TITLE_HEIGHT = 30;
 
-    void mouseDragged(int oldMouseX, int oldMouseY, int newMouseX, int newMouseY, int button);
+    /**
+     * The width of a scrollbar.
+     */
+    public static final int SCROLLBAR_WIDTH = 5;
 
-    void keyPressed(char typedChar, int keyCode);
+    /**
+     * The width of a standard button.
+     */
+    public static final int BUTTON_WIDTH = 200;
+
+    /**
+     * The height of a button.
+     */
+    public static final int BUTTON_HEIGHT = 20;
 }

@@ -24,15 +24,18 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.config.gui.DefaultGuiContext;
+import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.IConfigGuiScreen;
 import net.daporkchop.fp2.config.gui.IGuiContext;
-import net.daporkchop.fp2.config.gui.IConfigGuiElement;
+import net.daporkchop.fp2.config.gui.element.GuiEnumButton;
+import net.daporkchop.fp2.config.gui.element.GuiSubmenuButton;
 import net.daporkchop.fp2.config.gui.element.GuiToggleButton;
 import net.daporkchop.fp2.config.gui.screen.DefaultConfigGuiScreen;
 import net.daporkchop.lib.common.misc.Tuple;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -40,7 +43,6 @@ import java.lang.reflect.Modifier;
 
 import static net.daporkchop.fp2.FP2.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -105,25 +107,42 @@ public class ConfigHelper {
     }
 
     @SideOnly(Side.CLIENT)
+    @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
     public IConfigGuiScreen createConfigGuiScreen(@NonNull IGuiContext context, @NonNull Object instance) {
+        Setting.GuiScreenClass guiScreenAnnotation = instance.getClass().getAnnotation(Setting.GuiScreenClass.class);
+        if (guiScreenAnnotation != null) { //a specific gui screen class was requested, so let's use it
+            Constructor<? extends IConfigGuiScreen> constructor = guiScreenAnnotation.value().getDeclaredConstructor(IGuiContext.class, Object.class);
+            constructor.setAccessible(true);
+            return constructor.newInstance(context, instance);
+        }
+
         return new DefaultConfigGuiScreen(context, instance);
     }
 
     @SideOnly(Side.CLIENT)
+    @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
     public IConfigGuiElement createConfigGuiElement(@NonNull IGuiContext context, @NonNull Object instance, @NonNull Field field) {
-        Class<?> type = field.getType();
+        Setting.GuiElementClass guiElementAnnotation = field.getAnnotation(Setting.GuiElementClass.class);
+        if (guiElementAnnotation != null) { //a specific gui element class was requested, so let's use it
+            Constructor<? extends IConfigGuiElement> constructor = guiElementAnnotation.value().getDeclaredConstructor(IGuiContext.class, Object.class, Field.class);
+            constructor.setAccessible(true);
+            return constructor.newInstance(context, instance, field);
+        }
 
+        Class<?> type = field.getType();
         checkArg(type != char.class && type != Character.class
                  && type != byte.class && type != Byte.class
                  && type != short.class && type != Short.class
-                 && (type.isPrimitive() || (type.getModifiers() & Modifier.ABSTRACT) == 0)
+                 && (type.isPrimitive() || type.isEnum() || (type.getModifiers() & Modifier.ABSTRACT) == 0)
                  && !type.isInterface() && !type.isAnonymousClass(),
                 "unsupported type for field: %s", field);
 
-        if (type == boolean.class || type == Boolean.class) {
-            return new GuiToggleButton(context, instance, uncheckedCast(field));
+        if (type.isEnum()) {
+            return new GuiEnumButton(context, instance, field);
+        } else if (type == boolean.class || type == Boolean.class) {
+            return new GuiToggleButton(context, instance, field);
         } else {
-            throw new IllegalStateException();
+            return new GuiSubmenuButton(context, instance, field);
         }
     }
 }

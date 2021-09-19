@@ -20,17 +20,21 @@
 
 package net.daporkchop.fp2.config.gui;
 
+import lombok.Data;
+
 /**
  * @author DaPorkchop_
  */
-public interface IInputListener {
-    void mouseDown(int mouseX, int mouseY, int button);
+@Data
+public class ElementDimensions {
+    protected final int sizeX;
+    protected final int sizeY;
 
-    void mouseUp(int mouseX, int mouseY, int button);
+    public ElementDimensions pad(int padding) {
+        return this.pad(padding, padding);
+    }
 
-    void mouseScroll(int mouseX, int mouseY, int dWheel);
-
-    void mouseDragged(int oldMouseX, int oldMouseY, int newMouseX, int newMouseY, int button);
-
-    void keyPressed(char typedChar, int keyCode);
+    public ElementDimensions pad(int paddingX, int paddingY) {
+        return new ElementDimensions(this.sizeX + paddingX, this.sizeY + paddingY);
+    }
 }

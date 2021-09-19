@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.config;
 
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
+import net.daporkchop.fp2.config.gui.IConfigGuiScreen;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -37,10 +38,30 @@ import static java.lang.annotation.RetentionPolicy.*;
 @Target({ FIELD, TYPE })
 public @interface Setting {
     /**
-     * @return the class type of the {@link IConfigGuiElement} to use for this setting, or {@link IConfigGuiElement} if it should be left as default
+     * @author DaPorkchop_
      */
+    @Retention(RUNTIME)
+    @Target(TYPE)
     @SideOnly(Side.CLIENT)
-    Class<? extends IConfigGuiElement> guiElementClass() default IConfigGuiElement.class;
+    @interface GuiScreenClass {
+        /**
+         * @return the class type of the {@link IConfigGuiScreen} to use for this object
+         */
+        Class<? extends IConfigGuiScreen> value();
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Retention(RUNTIME)
+    @Target(FIELD)
+    @SideOnly(Side.CLIENT)
+    @interface GuiElementClass {
+        /**
+         * @return the class type of the {@link IConfigGuiElement} to use for this setting
+         */
+        Class<? extends IConfigGuiElement> value();
+    }
 
     /**
      * @author DaPorkchop_
