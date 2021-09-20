@@ -21,6 +21,9 @@
 package net.daporkchop.fp2.config.gui.util;
 
 import lombok.Data;
+import lombok.NonNull;
+
+import static java.lang.Math.*;
 
 /**
  * @author DaPorkchop_
@@ -38,5 +41,9 @@ public final class ComponentDimensions {
 
     public ComponentDimensions pad(int paddingX, int paddingY) {
         return new ComponentDimensions(this.sizeX + paddingX, this.sizeY + paddingY);
+    }
+
+    public ComponentDimensions union(@NonNull ComponentDimensions other) {
+        return new ComponentDimensions(max(this.sizeX, other.sizeX), max(this.sizeY, other.sizeY));
     }
 }

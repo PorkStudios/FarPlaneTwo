@@ -77,7 +77,16 @@ public abstract class AbstractConfigGuiContainer implements IConfigGuiElement {
         glTranslatef(-this.offsetX(0), -this.offsetY(0), 0.0f);
 
         try {
-            this.elements.forEach(element -> element.render(this.offsetX(mouseX), this.offsetY(mouseY), partialTicks));
+            if (this.bounds.contains(mouseX, mouseY)) {
+                mouseX = this.offsetX(mouseX);
+                mouseY = this.offsetY(mouseY);
+            } else {
+                mouseX = mouseY = Integer.MIN_VALUE;
+            }
+
+            for (IConfigGuiElement element : this.elements) {
+                element.render(mouseX, mouseY, partialTicks);
+            }
         } finally {
             glPopMatrix();
         }
@@ -101,26 +110,44 @@ public abstract class AbstractConfigGuiContainer implements IConfigGuiElement {
 
     @Override
     public void mouseDown(int mouseX, int mouseY, int button) {
-        this.elements.forEach(element -> element.mouseDown(this.offsetX(mouseX), this.offsetY(mouseY), button));
+        if (this.bounds.contains(mouseX, mouseY)) {
+            for (IConfigGuiElement element : this.elements) {
+                element.mouseDown(this.offsetX(mouseX), this.offsetY(mouseY), button);
+            }
+        }
     }
 
     @Override
     public void mouseUp(int mouseX, int mouseY, int button) {
-        this.elements.forEach(element -> element.mouseUp(this.offsetX(mouseX), this.offsetY(mouseY), button));
+        if (this.bounds.contains(mouseX, mouseY)) {
+            for (IConfigGuiElement element : this.elements) {
+                element.mouseUp(this.offsetX(mouseX), this.offsetY(mouseY), button);
+            }
+        }
     }
 
     @Override
     public void mouseDragged(int oldMouseX, int oldMouseY, int newMouseX, int newMouseY, int button) {
-        this.elements.forEach(element -> element.mouseDragged(this.offsetX(oldMouseX), this.offsetY(oldMouseY), this.offsetX(newMouseX), this.offsetY(newMouseY), button));
+        if (this.bounds.contains(oldMouseX, oldMouseY) || this.bounds.contains(newMouseX, newMouseY)) {
+            for (IConfigGuiElement element : this.elements) {
+                element.mouseDragged(this.offsetX(oldMouseX), this.offsetY(oldMouseY), this.offsetX(newMouseX), this.offsetY(newMouseY), button);
+            }
+        }
     }
 
     @Override
     public void mouseScroll(int mouseX, int mouseY, int dWheel) {
-        this.elements.forEach(element -> element.mouseScroll(this.offsetX(mouseX), this.offsetY(mouseY), dWheel));
+        if (this.bounds.contains(mouseX, mouseY)) {
+            for (IConfigGuiElement element : this.elements) {
+                element.mouseScroll(this.offsetX(mouseX), this.offsetY(mouseY), dWheel);
+            }
+        }
     }
 
     @Override
     public void keyPressed(char typedChar, int keyCode) {
-        this.elements.forEach(element -> element.keyPressed(typedChar, keyCode));
+        for (IConfigGuiElement element : this.elements) {
+            element.keyPressed(typedChar, keyCode);
+        }
     }
 }

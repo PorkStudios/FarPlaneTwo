@@ -41,7 +41,6 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 public abstract class AbstractConfigGuiElement<V> implements IConfigGuiElement {
     @NonNull
     protected final IGuiContext context;
-    @NonNull
     protected final Object instance;
     @NonNull
     protected final Field field;
@@ -53,9 +52,13 @@ public abstract class AbstractConfigGuiElement<V> implements IConfigGuiElement {
     private final String localizedName = I18n.format(this.context.localeKeyBase() + this.field.getName());
 
     @Getter(lazy = true)
-    private final Optional<String[]> tooltipText = I18n.hasKey(this.context.localeKeyBase() + this.field.getName() + ".tooltip")
-            ? Optional.of(I18n.format(this.context.localeKeyBase() + this.field.getName() + ".tooltip").split("\n"))
+    private final Optional<String[]> tooltipText = I18n.hasKey(this.langKey() + ".tooltip")
+            ? Optional.of(I18n.format(this.langKey() + ".tooltip").split("\n"))
             : Optional.empty();
+
+    protected String langKey() {
+        return this.context.localeKeyBase() + this.field.getName();
+    }
 
     @Override
     public void bounds(@NonNull ElementBounds bounds) {
@@ -66,11 +69,13 @@ public abstract class AbstractConfigGuiElement<V> implements IConfigGuiElement {
 
     @SneakyThrows(IllegalAccessException.class)
     protected V get() {
+        this.field.setAccessible(true);
         return uncheckedCast(this.field.get(this.instance));
     }
 
     @SneakyThrows(IllegalAccessException.class)
     protected void set(@NonNull V value) {
+        this.field.setAccessible(true);
         this.field.set(this.instance, value);
     }
 

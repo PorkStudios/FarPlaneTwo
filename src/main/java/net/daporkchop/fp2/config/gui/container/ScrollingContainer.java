@@ -20,9 +20,7 @@
 
 package net.daporkchop.fp2.config.gui.container;
 
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.util.ElementBounds;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
@@ -32,7 +30,6 @@ import net.minecraft.client.gui.ScaledResolution;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,6 +44,9 @@ import static org.lwjgl.opengl.GL11.*;
  * @author DaPorkchop_
  */
 public class ScrollingContainer extends AbstractConfigGuiContainer {
+    protected static final Comparator<ComponentDimensions> COMPARATOR_LOWY_HIGHX = Comparator.comparingInt(ComponentDimensions::sizeY)
+            .thenComparing(Comparator.comparingInt(ComponentDimensions::sizeX).reversed());
+
     protected int deltaY;
     protected int totalHeight;
 
@@ -62,11 +62,12 @@ public class ScrollingContainer extends AbstractConfigGuiContainer {
 
         { //without scrollbar (height does make a difference here)
             List<ComponentDimensions> shortestDimensions = this.elements.stream()
-                    .map(elem -> elem.possibleDimensions(totalSizeX, totalSizeY).min(Comparator.comparingInt(ComponentDimensions::sizeY)).get())
+                    .map(elem -> elem.possibleDimensions(totalSizeX, totalSizeY).min(COMPARATOR_LOWY_HIGHX))
+                    .filter(Optional::isPresent).map(Optional::get)
                     .collect(Collectors.toList());
 
             int height = shortestDimensions.stream().mapToInt(ComponentDimensions::sizeY).reduce(0, (a, b) -> a + PADDING + b);
-            if (height <= totalSizeY) { //removing the scrollbar is only possible if the total height is small enough
+            if (!shortestDimensions.isEmpty() && height <= totalSizeY) { //removing the scrollbar is only possible if the total height is small enough
                 possibleDimensions.add(new ComponentDimensions(
                         shortestDimensions.stream().mapToInt(ComponentDimensions::sizeX).max().getAsInt(),
                         height));
@@ -75,15 +76,23 @@ public class ScrollingContainer extends AbstractConfigGuiContainer {
 
         { //with scrollbar (needs to be a bit narrower because of it, but height is irrelevant)
             List<ComponentDimensions> shortestDimensions = this.elements.stream()
-                    .map(elem -> elem.possibleDimensions(totalSizeX - PADDING - SCROLLBAR_WIDTH, Integer.MAX_VALUE).min(Comparator.comparingInt(ComponentDimensions::sizeY)).get())
+                    .map(elem -> elem.possibleDimensions(totalSizeX - PADDING - SCROLLBAR_WIDTH, Integer.MAX_VALUE).min(COMPARATOR_LOWY_HIGHX).get())
                     .collect(Collectors.toList());
 
             possibleDimensions.add(new ComponentDimensions(
-                    shortestDimensions.stream().mapToInt(ComponentDimensions::sizeX).max().getAsInt(),
+                    shortestDimensions.stream().mapToInt(ComponentDimensions::sizeX).max().getAsInt() + PADDING + SCROLLBAR_WIDTH,
                     min(shortestDimensions.stream().mapToInt(ComponentDimensions::sizeY).reduce(0, (a, b) -> a + PADDING + b), totalSizeY)));
         }
 
         return possibleDimensions.stream();
+    }
+
+    @Override
+    public ComponentDimensions preferredMinimumDimensions() {
+        return this.elements.stream()
+                .map(IConfigGuiElement::preferredMinimumDimensions)
+                .reduce((a, b) -> new ComponentDimensions(max(a.sizeX(), b.sizeX()), a.sizeY() + PADDING + b.sizeY()))
+                .get();
     }
 
     @Override
@@ -98,11 +107,12 @@ public class ScrollingContainer extends AbstractConfigGuiContainer {
 
         if (elementDimensions == null) { //without scrollbar (height does make a difference here)
             List<ComponentDimensions> shortestDimensions = this.elements.stream()
-                    .map(elem -> elem.possibleDimensions(this.bounds.sizeX(), this.bounds.sizeY()).min(Comparator.comparingInt(ComponentDimensions::sizeY)).get())
+                    .map(elem -> elem.possibleDimensions(this.bounds.sizeX(), this.bounds.sizeY()).min(COMPARATOR_LOWY_HIGHX))
+                    .filter(Optional::isPresent).map(Optional::get)
                     .collect(Collectors.toList());
 
             int height = shortestDimensions.stream().mapToInt(ComponentDimensions::sizeY).reduce(0, (a, b) -> a + PADDING + b);
-            if (height <= this.bounds.sizeY()) { //removing the scrollbar is only possible if the total height is small enough
+            if (!shortestDimensions.isEmpty() && height <= this.bounds.sizeY()) { //removing the scrollbar is only possible if the total height is small enough
                 elementDimensions = shortestDimensions;
                 totalHeight = this.bounds.sizeY(); //no scrollbar is needed
             }
@@ -110,7 +120,7 @@ public class ScrollingContainer extends AbstractConfigGuiContainer {
 
         if (elementDimensions == null) { //with scrollbar (needs to be a bit narrower because of it, but height is irrelevant)
             List<ComponentDimensions> shortestDimensions = this.elements.stream()
-                    .map(elem -> elem.possibleDimensions(this.bounds.sizeX() - PADDING - SCROLLBAR_WIDTH, Integer.MAX_VALUE).min(Comparator.comparingInt(ComponentDimensions::sizeY)).get())
+                    .map(elem -> elem.possibleDimensions(this.bounds.sizeX() - PADDING - SCROLLBAR_WIDTH, Integer.MAX_VALUE).min(COMPARATOR_LOWY_HIGHX).get())
                     .collect(Collectors.toList());
 
             elementDimensions = shortestDimensions;

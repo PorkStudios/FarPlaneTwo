@@ -23,10 +23,19 @@ key.fp2.debug.rebuildUVs=Rebuild far texture UVs
 fp2.config.boolean.true=%s: §aEnabled§r
 fp2.config.boolean.false=%s: §cDisabled§r
 
+fp2.config.enum.format=%s: %s
+fp2.config.enum.selected.true=%s §o(selected)§r
+fp2.config.enum.selected.false=%s
+
 fp2.config.menu.title=FarPlaneTwo Options
 
 fp2.config.menu.submenu=Sub-Menu
 fp2.config.menu.submenu.tooltip=This is tooltip text which will appear on the sub-menu.\n\n§lIt's pretty cool, I guess...
+
+net.daporkchop.fp2.config.TestConfig.TestEnum.FIRST=First
+net.daporkchop.fp2.config.TestConfig.TestEnum.SECOND=Second
+net.daporkchop.fp2.config.TestConfig.TestEnum.SECOND.tooltip=the second option has a tooltip!
+net.daporkchop.fp2.config.TestConfig.TestEnum.THIRD=Third
 
 config.fp2.renderMode=Render mode
 config.fp2.renderDistance=Render distance (currently unused)

@@ -43,15 +43,17 @@ public class GuiConstants {
      */
     public static final int HEADER_TITLE_HEIGHT = 30;
 
+    public static final int FOOTER_HEIGHT = 27;
+
     /**
      * The width of a scrollbar.
      */
     public static final int SCROLLBAR_WIDTH = 5;
 
     /**
-     * The width of a standard button.
+     * The maximum number of columns to use.
      */
-    public static final int BUTTON_WIDTH = 50;
+    public static final int MAX_COLUMNS = 2;
 
     /**
      * The height of a button.

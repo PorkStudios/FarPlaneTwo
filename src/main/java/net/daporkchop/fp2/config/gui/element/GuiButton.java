@@ -21,8 +21,9 @@
 package net.daporkchop.fp2.config.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
 import net.daporkchop.fp2.config.gui.IGuiContext;
+import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
+import net.minecraft.client.resources.I18n;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
 
 import java.lang.reflect.Field;
@@ -38,12 +39,10 @@ import static net.daporkchop.lib.common.math.PMath.*;
  * @author DaPorkchop_
  */
 public abstract class GuiButton<V> extends AbstractConfigGuiElement<V> {
-    protected GuiButtonExt button;
+    protected GuiButtonExt button = new GuiButtonExt(0, 0, 0, "");
 
-    public GuiButton(@NonNull IGuiContext context, @NonNull Object instance, @NonNull Field field) {
+    public GuiButton(@NonNull IGuiContext context, Object instance, @NonNull Field field) {
         super(context, instance, field);
-
-        this.button = new GuiButtonExt(0, 0, 0, "");
     }
 
     @Override
@@ -53,11 +52,15 @@ public abstract class GuiButton<V> extends AbstractConfigGuiElement<V> {
 
     @Override
     public Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY) {
-        int textWidth = roundUp(MC.fontRenderer.getStringWidth(this.button.displayString) + BUTTON_INTERNAL_PADDING_HORIZONTAL, BUTTON_WIDTH);
+        int textWidth = MC.fontRenderer.getStringWidth(this.button.displayString) + BUTTON_INTERNAL_PADDING_HORIZONTAL;
         return textWidth >= totalSizeX
                 ? Stream.of(new ComponentDimensions(totalSizeX, min(totalSizeY, BUTTON_HEIGHT))) //not enough space for the full text width
-                : IntStream.rangeClosed(textWidth / BUTTON_WIDTH, totalSizeX / BUTTON_WIDTH).mapToObj(
-                        i -> new ComponentDimensions(i * BUTTON_WIDTH, min(totalSizeY, BUTTON_HEIGHT)));
+                : IntStream.rangeClosed(textWidth, totalSizeX).mapToObj(i -> new ComponentDimensions(i, min(totalSizeY, BUTTON_HEIGHT)));
+    }
+
+    @Override
+    public ComponentDimensions preferredMinimumDimensions() {
+        return new ComponentDimensions(200, BUTTON_HEIGHT);
     }
 
     @Override
@@ -100,7 +103,9 @@ public abstract class GuiButton<V> extends AbstractConfigGuiElement<V> {
         //no-op
     }
 
-    protected abstract String buttonText();
+    protected String buttonText() {
+        return I18n.format(this.langKey());
+    }
 
     protected abstract void handleClick(int button);
 }

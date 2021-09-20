@@ -32,6 +32,8 @@ import java.util.stream.Stream;
 public interface IConfigGuiElement extends IConfigGuiComponent {
     Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY);
 
+    ComponentDimensions preferredMinimumDimensions();
+
     /**
      * @return this element's bounds
      */

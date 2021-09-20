@@ -32,7 +32,7 @@ import static net.daporkchop.fp2.FP2.*;
  * @author DaPorkchop_
  */
 public class GuiToggleButton extends GuiButton<Boolean> {
-    public GuiToggleButton(@NonNull IGuiContext context, @NonNull Object instance, @NonNull Field field) {
+    public GuiToggleButton(@NonNull IGuiContext context, Object instance, @NonNull Field field) {
         super(context, instance, field);
     }
 

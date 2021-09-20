@@ -29,7 +29,7 @@ import java.lang.reflect.Field;
  * @author DaPorkchop_
  */
 public class GuiSubmenuButton extends GuiButton<Object> {
-    public GuiSubmenuButton(@NonNull IGuiContext context, @NonNull Object instance, @NonNull Field field) {
+    public GuiSubmenuButton(@NonNull IGuiContext context, Object instance, @NonNull Field field) {
         super(context, instance, field);
     }
 

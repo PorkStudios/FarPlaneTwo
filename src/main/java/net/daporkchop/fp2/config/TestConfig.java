@@ -32,6 +32,7 @@ import java.util.concurrent.ThreadLocalRandom;
 @EqualsAndHashCode
 public class TestConfig {
     public Submenu submenu = new Submenu();
+    public TestEnum e = TestEnum.FIRST;
 
     public boolean boolOption0 = ThreadLocalRandom.current().nextBoolean();
     public boolean boolOption1 = ThreadLocalRandom.current().nextBoolean();
@@ -49,6 +50,12 @@ public class TestConfig {
     public boolean boolOptionD = ThreadLocalRandom.current().nextBoolean();
     public boolean boolOptionE = ThreadLocalRandom.current().nextBoolean();
     public boolean boolOptionF = ThreadLocalRandom.current().nextBoolean();
+
+    enum TestEnum {
+        FIRST,
+        SECOND,
+        THIRD;
+    }
 
     @ToString
     @EqualsAndHashCode

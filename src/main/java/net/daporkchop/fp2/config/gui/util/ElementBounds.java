@@ -21,6 +21,9 @@
 package net.daporkchop.fp2.config.gui.util;
 
 import lombok.Data;
+import lombok.NonNull;
+
+import static java.lang.Math.*;
 
 /**
  * @author DaPorkchop_
@@ -33,6 +36,27 @@ public final class ElementBounds {
     protected final int y;
     protected final int sizeX;
     protected final int sizeY;
+
+    public int maxX() {
+        return this.x + this.sizeX;
+    }
+
+    public int maxY() {
+        return this.y + this.sizeY;
+    }
+
+    public ElementBounds union(@NonNull ElementBounds other) {
+        int x = min(this.x, other.x);
+        int y = min(this.y, other.y);
+        int maxX = max(this.maxX(), other.maxX());
+        int maxY = max(this.maxY(), other.maxY());
+
+        return new ElementBounds(x, y, maxX - x, maxY - y);
+    }
+
+    public ComponentDimensions dimensions() {
+        return new ComponentDimensions(this.sizeX, this.sizeY);
+    }
 
     public ElementBounds withPos(int x, int y) {
         return x != this.x || y != this.y ? new ElementBounds(x, y, this.sizeX, this.sizeY) : this;
