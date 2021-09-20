@@ -18,15 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.config.gui;
+package net.daporkchop.fp2.config.gui.element;
 
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import net.daporkchop.fp2.config.gui.IConfigGuiElement;
+import net.daporkchop.fp2.config.gui.IGuiContext;
+import net.daporkchop.fp2.config.gui.util.ElementBounds;
 import net.minecraft.client.resources.I18n;
 
 import java.lang.reflect.Field;
+import java.util.Optional;
 
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -42,29 +46,22 @@ public abstract class AbstractConfigGuiElement<V> implements IConfigGuiElement {
     @NonNull
     protected final Field field;
 
+    @Getter
+    protected ElementBounds bounds = ElementBounds.ZERO;
+
     @Getter(lazy = true)
     private final String localizedName = I18n.format(this.context.localeKeyBase() + this.field.getName());
 
     @Getter(lazy = true)
-    private final String[] tooltipText = I18n.hasKey(this.context.localeKeyBase() + this.field.getName() + ".tooltip")
-            ? I18n.format(this.context.localeKeyBase() + this.field.getName() + ".tooltip").split("\n")
-            : null;
-
-    protected int x;
-    protected int y;
-    protected int sizeX;
-    protected int sizeY;
+    private final Optional<String[]> tooltipText = I18n.hasKey(this.context.localeKeyBase() + this.field.getName() + ".tooltip")
+            ? Optional.of(I18n.format(this.context.localeKeyBase() + this.field.getName() + ".tooltip").split("\n"))
+            : Optional.empty();
 
     @Override
-    public void setPosition(int x, int y) {
-        this.x = x;
-        this.y = y;
-    }
+    public void bounds(@NonNull ElementBounds bounds) {
+        this.bounds = bounds;
 
-    @Override
-    public void setDimensions(int sizeX, int sizeY) {
-        this.sizeX = sizeX;
-        this.sizeY = sizeY;
+        this.pack();
     }
 
     @SneakyThrows(IllegalAccessException.class)
@@ -78,12 +75,7 @@ public abstract class AbstractConfigGuiElement<V> implements IConfigGuiElement {
     }
 
     @Override
-    public void renderOverlay(int mouseX, int mouseY, float partialTicks) {
-        if (mouseX >= this.x && mouseX <= this.x + this.sizeX && mouseY >= this.y && mouseY <= this.y + this.sizeY) {
-            String[] tooltipText = this.tooltipText();
-            if (tooltipText != null && tooltipText.length != 0) {
-                this.context.drawTooltip(mouseX, mouseY, this.tooltipText());
-            }
-        }
+    public Optional<String[]> getTooltip(int mouseX, int mouseY) {
+        return this.bounds.contains(mouseX, mouseY) ? this.tooltipText() : Optional.empty();
     }
 }

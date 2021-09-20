@@ -22,15 +22,17 @@ package net.daporkchop.fp2.config.gui.screen;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.config.ConfigHelper;
-import net.daporkchop.fp2.config.gui.ElementDimensions;
+import net.daporkchop.fp2.config.gui.util.ElementBounds;
+import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.IConfigGuiScreen;
 import net.daporkchop.fp2.config.gui.IGuiContext;
-import net.daporkchop.fp2.config.gui.ScrollingContainer;
+import net.daporkchop.fp2.config.gui.container.ScrollingContainer;
 import net.minecraft.client.resources.I18n;
 
 import java.lang.reflect.Modifier;
 import java.util.Comparator;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -47,8 +49,7 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
 
     protected final IConfigGuiElement container;
 
-    protected int sizeX;
-    protected int sizeY;
+    protected ComponentDimensions dimensions = ComponentDimensions.ZERO;
 
     public DefaultConfigGuiScreen(@NonNull IGuiContext context, @NonNull Object instance) {
         this.context = context;
@@ -61,34 +62,35 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
     }
 
     @Override
-    public void setDimensions(int sizeX, int sizeY) {
-        this.sizeX = sizeX;
-        this.sizeY = sizeY;
+    public void init() {
+        this.container.init();
+    }
 
-        ElementDimensions dimensions = this.container.possibleDimensions(sizeX - (PADDING << 1), sizeY - HEADER_TITLE_HEIGHT - PADDING)
-                .min(Comparator.comparingInt(ElementDimensions::sizeY)).get(); //find the shortest possible dimensions
-        this.container.setPositionAndDimensions((sizeX - dimensions.sizeX()) >> 1, HEADER_TITLE_HEIGHT, dimensions.sizeX(), dimensions.sizeY());
+    @Override
+    public void setDimensions(@NonNull ComponentDimensions dimensions) {
+        this.dimensions = dimensions;
 
-        /*int rowWidth = this.elements.stream().map(IConfigGuiElement::possibleDimensions).mapToInt(ElementDimensions::minSizeX).max().getAsInt();
-        int rowHeight = this.elements.stream().map(IConfigGuiElement::possibleDimensions).mapToInt(ElementDimensions::minSizeY).max().getAsInt();
+        this.pack();
+    }
 
-        for (int i = 0; i < this.elements.size(); i++) {
-            this.elements.get(i).setPositionAndDimensions(
-                    ((sizeX + PADDING) >> 1) - (rowWidth + PADDING) * (~i & 1),
-                    HEADER_TITLE_HEIGHT + (rowHeight + PADDING) * (i >> 1),
-                    rowWidth, rowHeight);
-        }*/
+    @Override
+    public void pack() {
+        ComponentDimensions dimensions = this.container.possibleDimensions(this.dimensions.sizeX() - (PADDING << 1), this.dimensions.sizeY() - HEADER_TITLE_HEIGHT - PADDING)
+                .min(Comparator.comparingInt(ComponentDimensions::sizeY)).get(); //find the shortest possible dimensions
+        this.container.bounds(new ElementBounds((this.dimensions.sizeX() - dimensions.sizeX()) >> 1, HEADER_TITLE_HEIGHT, dimensions.sizeX(), dimensions.sizeY()));
     }
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
-        this.context.drawDefaultBackground();
-
         String titleString = I18n.format(this.context.localeKeyBase() + "title");
-        MC.fontRenderer.drawStringWithShadow(titleString, (this.sizeX - MC.fontRenderer.getStringWidth(titleString)) >> 1, 15, -1);
+        MC.fontRenderer.drawStringWithShadow(titleString, (this.dimensions.sizeX() - MC.fontRenderer.getStringWidth(titleString)) >> 1, 15, -1);
 
         this.container.render(mouseX, mouseY, partialTicks);
-        this.container.renderOverlay(mouseX, mouseY, partialTicks);
+    }
+
+    @Override
+    public Optional<String[]> getTooltip(int mouseX, int mouseY) {
+        return this.container.getTooltip(mouseX, mouseY);
     }
 
     @Override

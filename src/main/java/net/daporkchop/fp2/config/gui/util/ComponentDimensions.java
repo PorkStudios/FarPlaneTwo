@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.config.gui;
+package net.daporkchop.fp2.config.gui.util;
 
 import lombok.Data;
 
@@ -26,15 +26,17 @@ import lombok.Data;
  * @author DaPorkchop_
  */
 @Data
-public class ElementDimensions {
+public final class ComponentDimensions {
+    public static final ComponentDimensions ZERO = new ComponentDimensions(0, 0);
+
     protected final int sizeX;
     protected final int sizeY;
 
-    public ElementDimensions pad(int padding) {
+    public ComponentDimensions pad(int padding) {
         return this.pad(padding, padding);
     }
 
-    public ElementDimensions pad(int paddingX, int paddingY) {
-        return new ElementDimensions(this.sizeX + paddingX, this.sizeY + paddingY);
+    public ComponentDimensions pad(int paddingX, int paddingY) {
+        return new ComponentDimensions(this.sizeX + paddingX, this.sizeY + paddingY);
     }
 }

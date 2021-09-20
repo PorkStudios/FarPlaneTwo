@@ -21,18 +21,18 @@
 package net.daporkchop.fp2.config.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.gui.AbstractConfigGuiElement;
-import net.daporkchop.fp2.config.gui.ElementDimensions;
+import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
 import net.daporkchop.fp2.config.gui.IGuiContext;
-import net.daporkchop.lib.math.vector.i.Vec2i;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
 
 import java.lang.reflect.Field;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.config.gui.GuiConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
  * @author DaPorkchop_
@@ -43,28 +43,29 @@ public abstract class GuiButton<V> extends AbstractConfigGuiElement<V> {
     public GuiButton(@NonNull IGuiContext context, @NonNull Object instance, @NonNull Field field) {
         super(context, instance, field);
 
-        this.button = new GuiButtonExt(0, 0, 0, this.buttonText());
+        this.button = new GuiButtonExt(0, 0, 0, "");
     }
 
     @Override
-    public Stream<ElementDimensions> possibleDimensions(int totalSizeX, int totalSizeY) {
-        return Stream.of(new ElementDimensions(min(totalSizeX, BUTTON_WIDTH), min(totalSizeY, BUTTON_HEIGHT)));
+    public void init() {
+        this.button.displayString = this.buttonText();
     }
 
     @Override
-    public void setPosition(int x, int y) {
-        super.setPosition(x, y);
-
-        this.button.x = x;
-        this.button.y = y;
+    public Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY) {
+        int textWidth = roundUp(MC.fontRenderer.getStringWidth(this.button.displayString) + BUTTON_INTERNAL_PADDING_HORIZONTAL, BUTTON_WIDTH);
+        return textWidth >= totalSizeX
+                ? Stream.of(new ComponentDimensions(totalSizeX, min(totalSizeY, BUTTON_HEIGHT))) //not enough space for the full text width
+                : IntStream.rangeClosed(textWidth / BUTTON_WIDTH, totalSizeX / BUTTON_WIDTH).mapToObj(
+                        i -> new ComponentDimensions(i * BUTTON_WIDTH, min(totalSizeY, BUTTON_HEIGHT)));
     }
 
     @Override
-    public void setDimensions(int sizeX, int sizeY) {
-        super.setDimensions(sizeX, sizeY);
-
-        this.button.width = sizeX;
-        this.button.height = sizeY;
+    public void pack() {
+        this.button.x = this.bounds.x();
+        this.button.y = this.bounds.y();
+        this.button.width = this.bounds.sizeX();
+        this.button.height = this.bounds.sizeY();
     }
 
     @Override
@@ -74,8 +75,8 @@ public abstract class GuiButton<V> extends AbstractConfigGuiElement<V> {
 
     @Override
     public void mouseDown(int mouseX, int mouseY, int button) {
-        if (this.button.mousePressed(MC, mouseX, mouseY) && this.handleClick(button)) {
-            this.button.displayString = this.buttonText();
+        if (button == 0 && this.button.mousePressed(MC, mouseX, mouseY)) {
+            this.handleClick(button);
         }
     }
 
@@ -101,5 +102,5 @@ public abstract class GuiButton<V> extends AbstractConfigGuiElement<V> {
 
     protected abstract String buttonText();
 
-    protected abstract boolean handleClick(int button);
+    protected abstract void handleClick(int button);
 }

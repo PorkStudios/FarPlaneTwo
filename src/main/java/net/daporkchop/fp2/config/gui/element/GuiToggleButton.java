@@ -42,11 +42,10 @@ public class GuiToggleButton extends GuiButton<Boolean> {
     }
 
     @Override
-    protected boolean handleClick(int button) {
+    protected void handleClick(int button) {
         if (button == 0) { //left-click
             this.set(!this.get()); //invert value
-            return true;
+            this.context.pack();
         }
-        return false;
     }
 }

@@ -25,6 +25,9 @@ fp2.config.boolean.false=%s: §cDisabled§r
 
 fp2.config.menu.title=FarPlaneTwo Options
 
+fp2.config.menu.submenu=Sub-Menu
+fp2.config.menu.submenu.tooltip=This is tooltip text which will appear on the sub-menu.\n\n§lIt's pretty cool, I guess...
+
 config.fp2.renderMode=Render mode
 config.fp2.renderDistance=Render distance (currently unused)
 config.fp2.maxLevels=Max LoD levels

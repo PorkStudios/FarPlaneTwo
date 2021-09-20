@@ -44,10 +44,9 @@ public class GuiEnumButton extends GuiButton<Enum> {
     }
 
     @Override
-    protected boolean handleClick(int button) {
+    protected void handleClick(int button) {
         if (button == 0) { //left-click
             this.context.pushSubmenu(this.field.getName(), this.get());
         }
-        return false;
     }
 }

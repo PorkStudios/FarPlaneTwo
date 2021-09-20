@@ -23,7 +23,7 @@ package net.daporkchop.fp2.config.gui;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.config.ConfigHelper;
-import net.daporkchop.lib.math.vector.i.Vec2i;
+import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraftforge.fml.client.config.GuiUtils;
@@ -84,18 +84,23 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
     }
 
     @Override
-    public void drawTooltip(int mouseX, int mouseY, @NonNull String... lines) {
-        GuiUtils.drawHoveringText(Arrays.asList(lines), mouseX, mouseY, this.width, this.height, -1, MC.fontRenderer);
+    public void initGui() {
+        this.screen.init();
+        this.screen.setDimensions(new ComponentDimensions(this.width, this.height));
     }
 
     @Override
-    public void initGui() {
-        this.screen.setDimensions(this.width, this.height);
+    public void pack() {
+        this.screen.init();
+        this.screen.pack();
     }
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+        this.drawDefaultBackground();
+
         this.screen.render(mouseX, mouseY, partialTicks);
+        this.screen.getTooltip(mouseX, mouseY).ifPresent(lines -> GuiUtils.drawHoveringText(Arrays.asList(lines), mouseX, mouseY, this.width, this.height, -1, MC.fontRenderer));
     }
 
     @Override

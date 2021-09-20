@@ -18,31 +18,38 @@
  *
  */
 
-package net.daporkchop.fp2.config.gui;
+package net.daporkchop.fp2.config.gui.util;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.config.gui.util.ElementBounds;
-import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
-
-import java.util.stream.Stream;
+import lombok.Data;
 
 /**
  * @author DaPorkchop_
  */
-public interface IConfigGuiElement extends IConfigGuiComponent {
-    Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY);
+@Data
+public final class ElementBounds {
+    public static final ElementBounds ZERO = new ElementBounds(0, 0, 0, 0);
+
+    protected final int x;
+    protected final int y;
+    protected final int sizeX;
+    protected final int sizeY;
+
+    public ElementBounds withPos(int x, int y) {
+        return x != this.x || y != this.y ? new ElementBounds(x, y, this.sizeX, this.sizeY) : this;
+    }
+
+    public ElementBounds withSize(int sizeX, int sizeY) {
+        return sizeX != this.sizeX || sizeY != this.sizeY ? new ElementBounds(this.x, this.y, sizeX, sizeY) : this;
+    }
 
     /**
-     * @return this element's bounds
-     */
-    ElementBounds bounds();
-
-    /**
-     * Sets this element's bounds.
-     * <p>
-     * Implicitly calls {@link #pack()} after the bounds are updated.
+     * Checks whether or not the given point is contained within this element's bounds.
      *
-     * @param bounds the new bounds
+     * @param x the X coordinate
+     * @param y the Y coordinate
+     * @return whether or not the given point is contained within this element's bounds
      */
-    void bounds(@NonNull ElementBounds bounds);
+    public boolean contains(int x, int y) {
+        return x >= this.x && x <= this.x + this.sizeX && y >= this.y && y <= this.y + this.sizeY;
+    }
 }

@@ -51,10 +51,12 @@ public class GuiConstants {
     /**
      * The width of a standard button.
      */
-    public static final int BUTTON_WIDTH = 200;
+    public static final int BUTTON_WIDTH = 50;
 
     /**
      * The height of a button.
      */
     public static final int BUTTON_HEIGHT = 20;
+
+    public static final int BUTTON_INTERNAL_PADDING_HORIZONTAL = 6;
 }

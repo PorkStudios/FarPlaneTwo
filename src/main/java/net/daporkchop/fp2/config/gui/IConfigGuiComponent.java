@@ -20,10 +20,26 @@
 
 package net.daporkchop.fp2.config.gui;
 
+import java.util.Optional;
+
 /**
  * @author DaPorkchop_
  */
-public interface IInputListener {
+public interface IConfigGuiComponent {
+    /**
+     * Initializes this component's contents.
+     */
+    void init();
+
+    /**
+     * Re-evaluates and updates this component's contents.
+     */
+    void pack();
+
+    void render(int mouseX, int mouseY, float partialTicks);
+
+    Optional<String[]> getTooltip(int mouseX, int mouseY);
+
     void mouseDown(int mouseX, int mouseY, int button);
 
     void mouseUp(int mouseX, int mouseY, int button);

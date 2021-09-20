@@ -20,11 +20,19 @@
 
 package net.daporkchop.fp2.config.gui;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
+
 /**
  * @author DaPorkchop_
  */
-public interface IConfigGuiScreen extends IInputListener {
-    void setDimensions(int sizeX, int sizeY);
-
-    void render(int mouseX, int mouseY, float partialTicks);
+public interface IConfigGuiScreen extends IConfigGuiComponent {
+    /**
+     * Sets this screen's dimensions.
+     * <p>
+     * Implicitly calls {@link #pack()} after the dimensions are updated.
+     *
+     * @param dimensions the new dimensions
+     */
+    void setDimensions(@NonNull ComponentDimensions dimensions);
 }

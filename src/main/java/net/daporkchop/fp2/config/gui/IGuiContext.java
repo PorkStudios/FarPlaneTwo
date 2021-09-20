@@ -39,7 +39,5 @@ public interface IGuiContext {
 
     void pop();
 
-    void drawDefaultBackground();
-
-    void drawTooltip(int mouseX, int mouseY, @NonNull String... lines);
+    void pack();
 }
