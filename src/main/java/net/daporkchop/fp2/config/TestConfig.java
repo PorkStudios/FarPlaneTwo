@@ -30,8 +30,16 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 @ToString
 @EqualsAndHashCode
+@Setting.GuiCategories({
+        @Setting.CategoryMeta(name = "default"),
+        @Setting.CategoryMeta(name = "second"),
+})
 public class TestConfig {
+    @Setting.GuiCategory("second")
+    @Setting.RestartRequired(Setting.Requirement.WORLD)
     public Submenu submenu = new Submenu();
+    @Setting.GuiCategory("second")
+    @Setting.RestartRequired(Setting.Requirement.GAME)
     public TestEnum e = TestEnum.FIRST;
 
     public boolean boolOption0 = ThreadLocalRandom.current().nextBoolean();
@@ -59,7 +67,7 @@ public class TestConfig {
 
     @ToString
     @EqualsAndHashCode
-    public class Submenu {
+    public static class Submenu {
         public boolean boolOption0 = false;
         public boolean boolOption1 = true;
     }

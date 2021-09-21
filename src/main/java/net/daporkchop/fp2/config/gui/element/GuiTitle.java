@@ -24,10 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.config.gui.IGuiContext;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
 import net.minecraft.client.resources.I18n;
-import net.minecraftforge.fml.client.config.GuiButtonExt;
 
-import java.lang.reflect.Field;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
@@ -37,74 +34,65 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class GuiButton<V> extends AbstractReflectiveConfigGuiElement<V> {
-    protected GuiButtonExt button = new GuiButtonExt(0, 0, 0, "");
+public class GuiTitle extends AbstractConfigGuiElement {
+    protected final String name;
 
-    public GuiButton(@NonNull IGuiContext context, Object instance, @NonNull Field field) {
-        super(context, instance, field);
+    protected String text;
+    protected int textWidth;
+
+    public GuiTitle(@NonNull IGuiContext context, @NonNull String name) {
+        super(context);
+
+        this.name = name;
+    }
+
+    @Override
+    protected String langKey() {
+        return this.context.localeKeyBase() + this.name;
     }
 
     @Override
     public void init() {
-        this.button.displayString = this.buttonText();
+        this.text = I18n.format(this.langKey());
+        this.textWidth = MC.fontRenderer.getStringWidth(this.text);
     }
 
     @Override
     public Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY) {
-        int textWidth = MC.fontRenderer.getStringWidth(this.button.displayString) + BUTTON_INTERNAL_PADDING_HORIZONTAL;
-        return textWidth >= totalSizeX
-                ? Stream.of(new ComponentDimensions(totalSizeX, min(totalSizeY, BUTTON_HEIGHT))) //not enough space for the full text width
-                : IntStream.rangeClosed(textWidth, totalSizeX).mapToObj(i -> new ComponentDimensions(i, min(totalSizeY, BUTTON_HEIGHT)));
+        return Stream.of(new ComponentDimensions(totalSizeX, min((MC.fontRenderer.FONT_HEIGHT << 1) + PADDING, totalSizeY)));
     }
 
     @Override
     public ComponentDimensions preferredMinimumDimensions() {
-        return new ComponentDimensions(200, BUTTON_HEIGHT);
+        return new ComponentDimensions(this.textWidth, (MC.fontRenderer.FONT_HEIGHT << 1) + PADDING);
     }
 
     @Override
     public void pack() {
-        this.button.x = this.bounds.x();
-        this.button.y = this.bounds.y();
-        this.button.width = this.bounds.sizeX();
-        this.button.height = this.bounds.sizeY();
     }
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
-        this.button.drawButton(MC, mouseX, mouseY, partialTicks);
+        MC.fontRenderer.drawStringWithShadow(this.text, this.bounds.x() + (this.bounds.sizeX() - this.textWidth) >> 1, this.bounds.y() + MC.fontRenderer.FONT_HEIGHT + PADDING, -1);
     }
 
     @Override
     public void mouseDown(int mouseX, int mouseY, int button) {
-        if (button == 0 && this.button.mousePressed(MC, mouseX, mouseY)) {
-            this.handleClick(button);
-        }
     }
 
     @Override
     public void mouseUp(int mouseX, int mouseY, int button) {
-        //no-op
-    }
-
-    @Override
-    public void mouseDragged(int oldMouseX, int oldMouseY, int newMouseX, int newMouseY, int button) {
-        //no-op
     }
 
     @Override
     public void mouseScroll(int mouseX, int mouseY, int dWheel) {
-        //no-op
+    }
+
+    @Override
+    public void mouseDragged(int oldMouseX, int oldMouseY, int newMouseX, int newMouseY, int button) {
     }
 
     @Override
     public void keyPressed(char typedChar, int keyCode) {
-        //no-op
     }
-
-    protected String buttonText() {
-        return I18n.format(this.langKey());
-    }
-
-    protected abstract void handleClick(int button);
 }

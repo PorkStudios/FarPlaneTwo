@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.config;
 
+import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -31,7 +32,9 @@ import net.daporkchop.fp2.config.gui.element.GuiEnumButton;
 import net.daporkchop.fp2.config.gui.element.GuiSubmenuButton;
 import net.daporkchop.fp2.config.gui.element.GuiToggleButton;
 import net.daporkchop.fp2.config.gui.screen.DefaultConfigGuiScreen;
+import net.daporkchop.lib.common.function.throwing.ESupplier;
 import net.daporkchop.lib.common.misc.Tuple;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -40,15 +43,29 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.FP2.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @UtilityClass
 public class ConfigHelper {
+    protected static final long FIELD_MODIFIERS_OFFSET = ((ESupplier<Long>) () -> PUnsafe.objectFieldOffset(Field.class.getDeclaredField("modifiers"))).get();
+
+    protected static final Set<Class<?>> BOXED_PRIMITIVE_TYPES = ImmutableSet.of(
+            Boolean.class,
+            Byte.class, Short.class, Character.class, Integer.class, Long.class,
+            Float.class, Double.class);
+
     protected Tuple<Class<?>, String> parseMemberId(@NonNull String id) {
         try {
             String[] split = id.split("#");
@@ -119,6 +136,23 @@ public class ConfigHelper {
         return new DefaultConfigGuiScreen(context, instance);
     }
 
+    public Stream<Field> getConfigPropertyFields(@NonNull Class<?> clazz) {
+        List<Field> fields = new ArrayList<>();
+        for (Class<?> curr = clazz; curr != Object.class; curr = curr.getSuperclass()) {
+            fields.addAll(Arrays.asList(curr.getDeclaredFields()));
+        }
+
+        return fields.stream()
+                .filter(field -> (field.getModifiers() & Modifier.STATIC) == 0)
+                .peek(field -> {
+                    checkValidPropertyType(field);
+
+                    //make the field accessible and writeable
+                    field.setAccessible(true);
+                    PUnsafe.putInt(field, FIELD_MODIFIERS_OFFSET, field.getModifiers() & ~Modifier.FINAL);
+                });
+    }
+
     @SideOnly(Side.CLIENT)
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
     public IConfigGuiElement createConfigGuiElement(@NonNull IGuiContext context, @NonNull Object instance, @NonNull Field field) {
@@ -128,6 +162,8 @@ public class ConfigHelper {
             constructor.setAccessible(true);
             return constructor.newInstance(context, instance, field);
         }
+
+        checkValidPropertyType(field);
 
         Class<?> type = field.getType();
         checkArg(type != char.class && type != Character.class
@@ -144,5 +180,63 @@ public class ConfigHelper {
         } else {
             return new GuiSubmenuButton(context, instance, field);
         }
+    }
+
+    @SideOnly(Side.CLIENT)
+    @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
+    public IConfigGuiElement createConfigGuiContainer(@NonNull Setting.CategoryMeta categoryMeta, @NonNull List<IConfigGuiElement> elements) {
+        Constructor<? extends IConfigGuiElement> constructor = categoryMeta.containerClass().getDeclaredConstructor(List.class);
+        constructor.setAccessible(true);
+        return constructor.newInstance(elements);
+    }
+
+    @SneakyThrows(IllegalAccessException.class)
+    public <T> T cloneConfigObject(T srcInstance) {
+        if (srcInstance == null) { //nothing to do if the value is already null
+            return srcInstance;
+        }
+
+        T dstInstance = uncheckedCast(PUnsafe.allocateInstance(srcInstance.getClass()));
+        for (Field field : getConfigPropertyFields(srcInstance.getClass()).toArray(Field[]::new)) {
+            Object value = field.get(srcInstance);
+            field.set(dstInstance, value == null || isSimpleCopyableType(field.getType()) ? value : cloneConfigObject(value));
+        }
+        return dstInstance;
+    }
+
+    @SneakyThrows(IllegalAccessException.class)
+    public Setting.Requirement restartRequirement(@NonNull Object oldInstance, @NonNull Object newInstance) {
+        checkArg(oldInstance.getClass() == newInstance.getClass(), "%s != %s", oldInstance.getClass(), newInstance.getClass());
+
+        Setting.Requirement requirement = Setting.Requirement.NONE;
+        for (Field field : getConfigPropertyFields(oldInstance.getClass()).toArray(Field[]::new)) {
+            Object oldValue = field.get(oldInstance);
+            Object newValue = field.get(newInstance);
+
+            if (!Objects.equals(oldValue, newValue)) {
+                Setting.RestartRequired restartRequiredAnnotation = field.getAnnotation(Setting.RestartRequired.class);
+                if (restartRequiredAnnotation != null && restartRequiredAnnotation.value().ordinal() > requirement.ordinal()) {
+                    requirement = restartRequiredAnnotation.value();
+                }
+
+                if (!isSimpleCopyableType(field.getType())) {
+                    Setting.Requirement subRequirement = restartRequirement(oldValue, newValue);
+                    if (subRequirement.ordinal() > requirement.ordinal()) {
+                        requirement = subRequirement;
+                    }
+                }
+            }
+        }
+
+        return requirement;
+    }
+
+    protected void checkValidPropertyType(@NonNull Field field) {
+        checkState((field.getModifiers() & Modifier.TRANSIENT) == 0, "transient field not allowed in config class: %s", field);
+        checkState(!field.isSynthetic(), "synthetic field not allowed in config class: %s", field);
+    }
+
+    protected boolean isSimpleCopyableType(@NonNull Class<?> type) {
+        return type.isEnum() || type.isPrimitive() || BOXED_PRIMITIVE_TYPES.contains(type);
     }
 }

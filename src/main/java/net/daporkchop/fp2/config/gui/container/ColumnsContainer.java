@@ -66,7 +66,7 @@ public class ColumnsContainer extends AbstractConfigGuiContainer {
         return commonPossibleSizeX.isEmpty() ? OptionalInt.empty() : OptionalInt.of(commonPossibleSizeX.length() - 1);
     }
 
-    protected List<ElementBounds> fillColumns(int x, int y, int columns, int columnSizeX) {
+    protected List<ElementBounds> fillColumns(int columns, int columnSizeX) {
         List<ElementBounds> out = new ArrayList<>(this.elements.size());
         int[] heights = new int[positive(columns, "columns")];
 
@@ -76,7 +76,7 @@ public class ColumnsContainer extends AbstractConfigGuiContainer {
                     .min(Comparator.comparingInt(ComponentDimensions::sizeY)).get();
 
             int column = PArrays.indexOf(heights, IntStream.of(heights).min().getAsInt());
-            out.add(new ElementBounds(x + column * (columnSizeX + PADDING), y + heights[column], columnSizeX, dimensions.sizeY()));
+            out.add(new ElementBounds(column * (columnSizeX + PADDING), heights[column], columnSizeX, dimensions.sizeY()));
             heights[column] += dimensions.sizeY() + PADDING;
         }
 
@@ -114,7 +114,7 @@ public class ColumnsContainer extends AbstractConfigGuiContainer {
                         return -Integer.compare(a.columnSizeX, b.columnSizeX);
                     }
                 })
-                .map(configuration -> this.fillColumns(0, 0, configuration.columns, configuration.columnSizeX).stream()
+                .map(configuration -> this.fillColumns(configuration.columns, configuration.columnSizeX).stream()
                         .reduce(ElementBounds::union)
                         .map(ElementBounds::dimensions)
                         .get())
@@ -137,9 +137,9 @@ public class ColumnsContainer extends AbstractConfigGuiContainer {
                 continue;
             }
 
-            List<ElementBounds> elementBounds = this.fillColumns(this.bounds.x(), this.bounds.y(), columns, columnSizeX.getAsInt());
-            int totalHeight = elementBounds.stream().mapToInt(bounds -> bounds.y() + bounds.sizeY()).max().getAsInt();
-            if (totalHeight > this.bounds.y() + this.bounds.sizeY()) {
+            List<ElementBounds> elementBounds = this.fillColumns(columns, columnSizeX.getAsInt());
+            int totalHeight = elementBounds.stream().mapToInt(ElementBounds::maxY).max().getAsInt();
+            if (totalHeight > this.bounds.sizeY()) {
                 continue;
             }
 

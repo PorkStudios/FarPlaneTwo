@@ -23,26 +23,40 @@ package net.daporkchop.fp2.config.gui.screen;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.config.ConfigHelper;
+import net.daporkchop.fp2.config.Setting;
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.IConfigGuiScreen;
 import net.daporkchop.fp2.config.gui.IGuiContext;
 import net.daporkchop.fp2.config.gui.container.ColumnsContainer;
 import net.daporkchop.fp2.config.gui.container.ScrollingContainer;
+import net.daporkchop.fp2.config.gui.element.GuiTitle;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
 import net.daporkchop.fp2.config.gui.util.ElementBounds;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.client.renderer.BufferBuilder;
+import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.resources.I18n;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
-import java.util.Collections;
+import java.util.AbstractMap;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.config.gui.GuiConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.input.Keyboard.*;
+import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author DaPorkchop_
@@ -58,10 +72,67 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
     protected GuiButtonExt doneButton = new GuiButtonExt(0, 0, 0, I18n.format("gui.done"));
 
     public DefaultConfigGuiScreen(@NonNull IGuiContext context, @NonNull Object instance) {
-        this(context, new ScrollingContainer(Collections.singletonList(new ColumnsContainer(Stream.of(instance.getClass().getFields())
-                .filter(field -> (field.getModifiers() & Modifier.STATIC) == 0)
-                .map(field -> ConfigHelper.createConfigGuiElement(context, instance, field))
-                .collect(Collectors.toList())))));
+        this.context = context;
+
+        Setting.GuiCategories categories = instance.getClass().getAnnotation(Setting.GuiCategories.class);
+        if (categories == null) { //create default categories
+            categories = new Setting.GuiCategories() {
+                @Override
+                public Setting.CategoryMeta[] value() {
+                    return new Setting.CategoryMeta[]{
+                            new Setting.CategoryMeta() {
+                                @Override
+                                public String name() {
+                                    return "default";
+                                }
+
+                                @Override
+                                public Class<? extends IConfigGuiElement> containerClass() {
+                                    return ColumnsContainer.class;
+                                }
+
+                                @Override
+                                public Class<? extends Annotation> annotationType() {
+                                    return Setting.CategoryMeta.class;
+                                }
+                            }
+                    };
+                }
+
+                @Override
+                public Class<? extends Annotation> annotationType() {
+                    return Setting.GuiCategories.class;
+                }
+            };
+        }
+
+        checkArg(categories.value().length != 0, "%s has no GUI categories!", instance.getClass());
+        Map<String, Setting.CategoryMeta> categoriesByName = Stream.of(categories.value())
+                .reduce(new LinkedHashMap<>(),
+                        (map, meta) -> {
+                            checkState(map.putIfAbsent(meta.name(), meta) == null, "duplicate category name: %s", meta.name());
+                            return map;
+                        },
+                        (a, b) -> null);
+
+        Map<Setting.CategoryMeta, List<IConfigGuiElement>> elementsByCategory = ConfigHelper.getConfigPropertyFields(instance.getClass())
+                .collect(Collectors.groupingBy(
+                        field -> {
+                            String categoryName = Optional.ofNullable(field.getAnnotation(Setting.GuiCategory.class)).map(Setting.GuiCategory::value).orElse("default");
+                            Setting.CategoryMeta meta = categoriesByName.get(categoryName);
+                            checkArg(meta != null, "no such category: %s", meta);
+                            return meta;
+                        },
+                        Collectors.mapping(field -> ConfigHelper.createConfigGuiElement(context, instance, field), Collectors.toList())));
+
+        this.element = new ScrollingContainer(categoriesByName.values().stream()
+                .map(meta -> new AbstractMap.SimpleEntry<>(meta, elementsByCategory.get(meta)))
+                .filter(entry -> entry.getValue() != null && !entry.getValue().isEmpty())
+                .flatMap(entry -> Stream.of(
+                        elementsByCategory.size() == 1 ? null : new GuiTitle(context, entry.getKey().name() + ".category"),
+                        ConfigHelper.createConfigGuiContainer(entry.getKey(), entry.getValue())))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList()));
     }
 
     @Override
@@ -91,9 +162,51 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
         String titleString = I18n.format(this.context.localeKeyBase() + "title");
         MC.fontRenderer.drawStringWithShadow(titleString, (this.dimensions.sizeX() - MC.fontRenderer.getStringWidth(titleString)) >> 1, 15, -1);
 
+        this.renderBackground();
         this.element.render(mouseX, mouseY, partialTicks);
 
         this.doneButton.drawButton(MC, mouseX, mouseY, partialTicks);
+    }
+
+    protected void renderBackground() {
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder buffer = tessellator.getBuffer();
+
+        MC.getTextureManager().bindTexture(Gui.OPTIONS_BACKGROUND);
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+        
+        int left = 0;
+        int right = this.dimensions.sizeX();
+        int top = HEADER_TITLE_HEIGHT;
+        int bottom = this.dimensions.sizeY() - FOOTER_HEIGHT - PADDING;
+
+        buffer.begin(GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR);
+        buffer.pos(left, bottom, 0.0d).tex(left / 32.0d, bottom / 32.0d).color(32, 32, 32, 255).endVertex();
+        buffer.pos(right, bottom, 0.0d).tex(right / 32.0d, bottom / 32.0d).color(32, 32, 32, 255).endVertex();
+        buffer.pos(right, top, 0.0d).tex(right / 32.0d, top / 32.0d).color(32, 32, 32, 255).endVertex();
+        buffer.pos(left, top, 0.0d).tex(left / 32.0d, top / 32.0d).color(32, 32, 32, 255).endVertex();
+        tessellator.draw();
+
+        GlStateManager.enableBlend();
+        GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
+        GlStateManager.disableAlpha();
+        GlStateManager.shadeModel(7425);
+        GlStateManager.disableTexture2D();
+        buffer.begin(GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR);
+        buffer.pos(left, (top + 4), 0.0d).tex(0.0d, 1.0d).color(0, 0, 0, 0).endVertex();
+        buffer.pos(right, (top + 4), 0.0d).tex(1.0d, 1.0d).color(0, 0, 0, 0).endVertex();
+        buffer.pos(right, top, 0.0d).tex(1.0d, 0.0d).color(0, 0, 0, 255).endVertex();
+        buffer.pos(left, top, 0.0d).tex(0.0d, 0.0d).color(0, 0, 0, 255).endVertex();
+        buffer.pos(left, bottom, 0.0d).tex(0.0d, 1.0d).color(0, 0, 0, 255).endVertex();
+        buffer.pos(right, bottom, 0.0d).tex(1.0d, 1.0d).color(0, 0, 0, 255).endVertex();
+        buffer.pos(right, (bottom - 4), 0.0d).tex(1.0d, 0.0d).color(0, 0, 0, 0).endVertex();
+        buffer.pos(left, (bottom - 4), 0.0d).tex(0.0d, 0.0d).color(0, 0, 0, 0).endVertex();
+        tessellator.draw();
+
+        GlStateManager.enableTexture2D();
+        GlStateManager.shadeModel(7424);
+        GlStateManager.enableAlpha();
+        GlStateManager.disableBlend();
     }
 
     @Override

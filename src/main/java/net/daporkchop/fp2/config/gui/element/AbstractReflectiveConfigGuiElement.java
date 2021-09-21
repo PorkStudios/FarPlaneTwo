@@ -20,46 +20,43 @@
 
 package net.daporkchop.fp2.config.gui.element;
 
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.config.gui.IConfigGuiElement;
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.config.gui.IGuiContext;
-import net.daporkchop.fp2.config.gui.util.ElementBounds;
-import net.minecraft.client.resources.I18n;
 
-import java.util.Optional;
+import java.lang.reflect.Field;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public abstract class AbstractConfigGuiElement implements IConfigGuiElement {
+public abstract class AbstractReflectiveConfigGuiElement<V> extends AbstractConfigGuiElement {
+    protected final Object instance;
     @NonNull
-    protected final IGuiContext context;
+    protected final Field field;
 
-    @Getter
-    protected ElementBounds bounds = ElementBounds.ZERO;
+    public AbstractReflectiveConfigGuiElement(@NonNull IGuiContext context, Object instance, @NonNull Field field) {
+        super(context);
 
-    @Getter(lazy = true)
-    private final String localizedName = I18n.format(this.langKey());
-
-    @Getter(lazy = true)
-    private final Optional<String[]> tooltipText = I18n.hasKey(this.langKey() + ".tooltip")
-            ? Optional.of(I18n.format(this.langKey() + ".tooltip").split("\n"))
-            : Optional.empty();
-
-    protected abstract String langKey();
-
-    @Override
-    public void bounds(@NonNull ElementBounds bounds) {
-        this.bounds = bounds;
-
-        this.pack();
+        this.instance = instance;
+        this.field = field;
     }
 
     @Override
-    public Optional<String[]> getTooltip(int mouseX, int mouseY) {
-        return this.bounds.contains(mouseX, mouseY) ? this.tooltipText() : Optional.empty();
+    protected String langKey() {
+        return this.context.localeKeyBase() + this.field.getName();
+    }
+
+    @SneakyThrows(IllegalAccessException.class)
+    protected V get() {
+        this.field.setAccessible(true);
+        return uncheckedCast(this.field.get(this.instance));
+    }
+
+    @SneakyThrows(IllegalAccessException.class)
+    protected void set(@NonNull V value) {
+        this.field.setAccessible(true);
+        this.field.set(this.instance, value);
     }
 }

@@ -42,7 +42,8 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
     protected final DefaultGuiContext topContext;
     protected final GuiScreen parentScreen;
 
-    protected final Object instance;
+    protected final Object oldInstance;
+    protected final Object newInstance;
 
     @Getter
     protected final String localeKeyBase;
@@ -52,10 +53,12 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
     public DefaultGuiContext(@NonNull String localeKeyBase, @NonNull Object instance) {
         this.topContext = this;
         this.parentScreen = MC.currentScreen;
-        this.instance = instance;
+
+        this.oldInstance = instance;
+        this.newInstance = ConfigHelper.cloneConfigObject(instance);
 
         this.localeKeyBase = localeKeyBase;
-        this.screen = ConfigHelper.createConfigGuiScreen(this, instance);
+        this.screen = ConfigHelper.createConfigGuiScreen(this, this.newInstance);
 
         MC.displayGuiScreen(this);
     }
@@ -63,7 +66,9 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
     protected DefaultGuiContext(@NonNull DefaultGuiContext parentContext, @NonNull String name, @NonNull Function<IGuiContext, IConfigGuiScreen> screenFactory) {
         this.topContext = parentContext.topContext;
         this.parentScreen = parentContext;
-        this.instance = null;
+
+        this.oldInstance = null;
+        this.newInstance = null;
 
         this.localeKeyBase = parentContext.localeKeyBase() + name + '.';
         this.screen = screenFactory.apply(this);
@@ -77,7 +82,12 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
     @Override
     public void pop() {
         if (this.topContext == this) { //this is the top screen
-            FP2_LOG.info("closed config gui: {}", this.instance);
+            if (this.oldInstance.equals(this.newInstance)) {
+                FP2_LOG.info("closed config gui: unchanged");
+            } else {
+                FP2_LOG.info("closed config gui: {}", this.newInstance);
+                FP2_LOG.info("restart required: {}", ConfigHelper.restartRequirement(this.oldInstance, this.newInstance));
+            }
         }
 
         MC.displayGuiScreen(this.parentScreen);

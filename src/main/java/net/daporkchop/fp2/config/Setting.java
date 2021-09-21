@@ -22,6 +22,7 @@ package net.daporkchop.fp2.config;
 
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.IConfigGuiScreen;
+import net.daporkchop.fp2.config.gui.container.ColumnsContainer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -61,6 +62,59 @@ public @interface Setting {
          * @return the class type of the {@link IConfigGuiElement} to use for this setting
          */
         Class<? extends IConfigGuiElement> value();
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Retention(RUNTIME)
+    @Target(TYPE)
+    @SideOnly(Side.CLIENT)
+    @interface GuiCategories {
+        /**
+         * @return a {@link CategoryMeta} for each available category
+         */
+        CategoryMeta[] value();
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Retention(RUNTIME)
+    @Target({})
+    @SideOnly(Side.CLIENT)
+    @interface CategoryMeta {
+        /**
+         * @return the name of the category
+         */
+        String name();
+
+        /**
+         * @return the class of the container which will store the GUI components used by this category
+         */
+        Class<? extends IConfigGuiElement> containerClass() default ColumnsContainer.class;
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Retention(RUNTIME)
+    @Target(FIELD)
+    @SideOnly(Side.CLIENT)
+    @interface GuiCategory {
+        /**
+         * @return the name of the category which this setting should be added to
+         */
+        String value();
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Retention(RUNTIME)
+    @Target(FIELD)
+    @SideOnly(Side.CLIENT)
+    @interface GuiIgnore {
     }
 
     /**
@@ -110,14 +164,15 @@ public @interface Setting {
         /**
          * @return the requirement for what needs to be restarted
          */
-        Type value();
+        Requirement value();
+    }
 
-        /**
-         * @author DaPorkchop_
-         */
-        enum Type {
-            GAME,
-            WORLD;
-        }
+    /**
+     * @author DaPorkchop_
+     */
+    enum Requirement {
+        NONE,
+        WORLD,
+        GAME;
     }
 }

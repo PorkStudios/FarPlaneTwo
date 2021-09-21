@@ -22,8 +22,8 @@ package net.daporkchop.fp2.config.gui.container;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
-import net.daporkchop.fp2.config.gui.util.ElementBounds;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.config.gui.util.ElementBounds;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
 
@@ -199,7 +199,7 @@ public class ScrollingContainer extends AbstractConfigGuiContainer {
     @Override
     public void mouseScroll(int mouseX, int mouseY, int dWheel) {
         if (this.bounds.contains(mouseX, mouseY)) {
-            this.deltaY = clamp(this.deltaY - dWheel, 0, max(this.totalHeight - this.bounds.sizeY(), 0));
+            this.deltaY = clamp(this.deltaY + dWheel, 0, max(this.totalHeight - this.bounds.sizeY(), 0));
         }
 
         super.mouseScroll(mouseX, mouseY, dWheel);
