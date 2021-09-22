@@ -29,6 +29,7 @@ import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.IConfigGuiScreen;
 import net.daporkchop.fp2.config.gui.IGuiContext;
 import net.daporkchop.fp2.config.gui.element.GuiEnumButton;
+import net.daporkchop.fp2.config.gui.element.GuiSlider;
 import net.daporkchop.fp2.config.gui.element.GuiSubmenuButton;
 import net.daporkchop.fp2.config.gui.element.GuiToggleButton;
 import net.daporkchop.fp2.config.gui.screen.DefaultConfigGuiScreen;
@@ -45,6 +46,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -89,12 +91,9 @@ public class ConfigHelper {
         double value = constant.value();
         String fieldId = constant.field();
         String methodId = constant.method();
-        Class<?> javaType = constant.javaType();
 
         checkArg((Double.isNaN(value) ? 0 : 1) + (fieldId.isEmpty() ? 0 : 1) + (methodId.isEmpty() ? 0 : 1) == 1,
                 "invalid @Constant annotation: exactly one of 'value', 'field' and 'method' must be set!");
-        checkArg(Double.isNaN(value) == (javaType == double.class),
-                "invalid @Constant annotation: 'javaType' may not be used with 'value'!");
 
         if (!Double.isNaN(value)) {
             return value;
@@ -110,7 +109,6 @@ public class ConfigHelper {
             Tuple<Class<?>, String> tuple = parseMemberId(methodId);
 
             Method method = tuple.getA().getDeclaredMethod(tuple.getB());
-            checkState(method.getReturnType() == javaType, "invalid return type for %s: expected %s", methodId, javaType);
             checkState((method.getModifiers() & Modifier.STATIC) != 0, "not a static method: %s", fieldId);
             method.setAccessible(true);
 
@@ -177,6 +175,11 @@ public class ConfigHelper {
             return new GuiEnumButton(context, instance, field);
         } else if (type == boolean.class || type == Boolean.class) {
             return new GuiToggleButton(context, instance, field);
+        } else if (type == int.class || type == Integer.class
+                   || type == long.class || type == Long.class
+                   || type == float.class || type == Float.class
+                   || type == double.class || type == Double.class) {
+            return new GuiSlider(context, instance, field);
         } else {
             return new GuiSubmenuButton(context, instance, field);
         }
@@ -229,6 +232,28 @@ public class ConfigHelper {
         }
 
         return requirement;
+    }
+
+    @SneakyThrows(IllegalAccessException.class)
+    public void validateConfig(@NonNull Object instance) {
+        for (Field field : getConfigPropertyFields(instance.getClass()).toArray(Field[]::new)) {
+            Object value = field.get(instance);
+
+            checkArg(value != null, "invalid value for %s: null", field);
+
+            if (!isSimpleCopyableType(field.getType())) {
+                validateConfig(value);
+            } else if (Number.class.isAssignableFrom(value.getClass())) {
+                Setting.Range range = field.getAnnotation(Setting.Range.class);
+                if (range != null) {
+                    double min = evaluate(range.min()).doubleValue();
+                    double max = evaluate(range.max()).doubleValue();
+                    double number = ((Number) value).doubleValue();
+
+                    checkArg(number >= min && number <= max, "invalid value for %s: %s (min=%s, max=%s)", field, number, min, max);
+                }
+            }
+        }
     }
 
     protected void checkValidPropertyType(@NonNull Field field) {

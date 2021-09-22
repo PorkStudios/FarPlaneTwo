@@ -29,6 +29,7 @@ import net.daporkchop.fp2.config.gui.util.ElementBounds;
 import net.minecraft.client.resources.I18n;
 
 import java.util.Optional;
+import java.util.StringJoiner;
 
 /**
  * @author DaPorkchop_
@@ -45,11 +46,25 @@ public abstract class AbstractConfigGuiElement implements IConfigGuiElement {
     private final String localizedName = I18n.format(this.langKey());
 
     @Getter(lazy = true)
-    private final Optional<String[]> tooltipText = I18n.hasKey(this.langKey() + ".tooltip")
-            ? Optional.of(I18n.format(this.langKey() + ".tooltip").split("\n"))
-            : Optional.empty();
+    private final Optional<String[]> tooltipText = this.computeTooltipText();
 
     protected abstract String langKey();
+
+    protected Optional<String[]> computeTooltipText() {
+        StringJoiner joiner = new StringJoiner("\n\n");
+        this.computeTooltipText0(joiner);
+
+        return joiner.length() == 0 ? Optional.empty() : Optional.of(joiner.toString().split("\n"));
+    }
+
+    protected void computeTooltipText0(@NonNull StringJoiner joiner) {
+        { //tooltip text from locale
+            String tooltipKey = this.langKey() + ".tooltip";
+            if (I18n.hasKey(tooltipKey)) {
+                joiner.add(I18n.format(tooltipKey));
+            }
+        }
+    }
 
     @Override
     public void bounds(@NonNull ElementBounds bounds) {

@@ -123,9 +123,9 @@ public @interface Setting {
     @Retention(RUNTIME)
     @Target(FIELD)
     @interface Range {
-        Constant min() default @Constant;
+        Constant min();
 
-        Constant max() default @Constant;
+        Constant max();
     }
 
     /**

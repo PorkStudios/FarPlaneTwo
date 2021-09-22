@@ -27,6 +27,19 @@ fp2.config.enum.format=%s: %s
 fp2.config.enum.selected.true=%s §o(selected)§r
 fp2.config.enum.selected.false=%s
 
+fp2.config.slider.prefixFormat=%s:\u0020
+fp2.config.slider.suffixFormat=
+
+fp2.config.range.tooltip=Minimum: %1$s\nMaximum: %2$s
+
+fp2.config.restartRequired.tooltip.WORLD=§c§lChanges to this option require a world reload to take effect!
+fp2.config.restartRequired.tooltip.GAME=§c§lChanges to this option require a game restart to take effect!
+fp2.config.restartRequired.dialog.title.WORLD=World Reload Required
+fp2.config.restartRequired.dialog.message.WORLD=One or more changed settings requires that the current world be reloaded before taking effect.
+fp2.config.restartRequired.dialog.title.GAME=Minecraft Restart Required
+fp2.config.restartRequired.dialog.message.GAME=One or more changed settings requires that Minecraft be restarted before taking effect.
+fp2.config.restartRequired.dialog.confirm=I Understand
+
 fp2.config.menu.title=FarPlaneTwo Options
 
 fp2.config.menu.submenu=Sub-Menu

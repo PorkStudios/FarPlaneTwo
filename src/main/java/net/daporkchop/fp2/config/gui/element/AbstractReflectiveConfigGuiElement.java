@@ -22,10 +22,15 @@ package net.daporkchop.fp2.config.gui.element;
 
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import net.daporkchop.fp2.config.ConfigHelper;
+import net.daporkchop.fp2.config.Setting;
 import net.daporkchop.fp2.config.gui.IGuiContext;
+import net.minecraft.client.resources.I18n;
 
 import java.lang.reflect.Field;
+import java.util.StringJoiner;
 
+import static net.daporkchop.fp2.FP2.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -46,6 +51,25 @@ public abstract class AbstractReflectiveConfigGuiElement<V> extends AbstractConf
     @Override
     protected String langKey() {
         return this.context.localeKeyBase() + this.field.getName();
+    }
+
+    @Override
+    protected void computeTooltipText0(@NonNull StringJoiner joiner) {
+        super.computeTooltipText0(joiner);
+
+        { //indicator for this option's value range
+            Setting.Range range = this.field.getAnnotation(Setting.Range.class);
+            if (range != null) {
+                joiner.add(I18n.format(MODID + ".config.range.tooltip", ConfigHelper.evaluate(range.min()), ConfigHelper.evaluate(range.max())));
+            }
+        }
+
+        { //indicator for whether this option requires a restart
+            Setting.RestartRequired restartRequired = this.field.getAnnotation(Setting.RestartRequired.class);
+            if (restartRequired != null) {
+                joiner.add(I18n.format(MODID + ".config.restartRequired.tooltip." + restartRequired.value()));
+            }
+        }
     }
 
     @SneakyThrows(IllegalAccessException.class)

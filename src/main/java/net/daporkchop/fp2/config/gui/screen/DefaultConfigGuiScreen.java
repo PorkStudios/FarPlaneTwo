@@ -76,34 +76,12 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
 
         Setting.GuiCategories categories = instance.getClass().getAnnotation(Setting.GuiCategories.class);
         if (categories == null) { //create default categories
-            categories = new Setting.GuiCategories() {
-                @Override
-                public Setting.CategoryMeta[] value() {
-                    return new Setting.CategoryMeta[]{
-                            new Setting.CategoryMeta() {
-                                @Override
-                                public String name() {
-                                    return "default";
-                                }
+            //dummy class to allow us to access the default value for the {@link Setting.GuiCategories} annotation without needing to implement it manually
+            @Setting.GuiCategories(@Setting.CategoryMeta(name = "default"))
+            class DummyClass {
+            }
 
-                                @Override
-                                public Class<? extends IConfigGuiElement> containerClass() {
-                                    return ColumnsContainer.class;
-                                }
-
-                                @Override
-                                public Class<? extends Annotation> annotationType() {
-                                    return Setting.CategoryMeta.class;
-                                }
-                            }
-                    };
-                }
-
-                @Override
-                public Class<? extends Annotation> annotationType() {
-                    return Setting.GuiCategories.class;
-                }
-            };
+            categories = DummyClass.class.getAnnotation(Setting.GuiCategories.class);
         }
 
         checkArg(categories.value().length != 0, "%s has no GUI categories!", instance.getClass());

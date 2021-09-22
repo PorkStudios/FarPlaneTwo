@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.config;
 
+import lombok.Cleanup;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
@@ -41,6 +42,9 @@ public class TestConfig {
     @Setting.GuiCategory("second")
     @Setting.RestartRequired(Setting.Requirement.GAME)
     public TestEnum e = TestEnum.FIRST;
+
+    @Setting.Range(min = @Setting.Constant(0.0d), max = @Setting.Constant(10.0d))
+    public int i = 3;
 
     public boolean boolOption0 = ThreadLocalRandom.current().nextBoolean();
     public boolean boolOption1 = ThreadLocalRandom.current().nextBoolean();

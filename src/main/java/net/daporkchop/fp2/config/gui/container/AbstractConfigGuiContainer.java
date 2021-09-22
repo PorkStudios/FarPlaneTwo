@@ -29,6 +29,7 @@ import net.daporkchop.fp2.config.gui.util.ElementBounds;
 import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -44,6 +45,8 @@ public abstract class AbstractConfigGuiContainer implements IConfigGuiElement {
 
     @Getter
     protected ElementBounds bounds = ElementBounds.ZERO;
+
+    protected final BitSet mouseButtonsDown = new BitSet();
 
     public AbstractConfigGuiContainer(@NonNull List<IConfigGuiElement> elements) {
         checkArg(!elements.isEmpty(), "cannot create %s with 0 elements!", PorkUtil.className(this));
@@ -77,7 +80,7 @@ public abstract class AbstractConfigGuiContainer implements IConfigGuiElement {
         glTranslatef(-this.offsetX(0), -this.offsetY(0), 0.0f);
 
         try {
-            if (this.bounds.contains(mouseX, mouseY)) {
+            if (!this.mouseButtonsDown.isEmpty() || this.bounds.contains(mouseX, mouseY)) {
                 mouseX = this.offsetX(mouseX);
                 mouseY = this.offsetY(mouseY);
             } else {
@@ -111,6 +114,8 @@ public abstract class AbstractConfigGuiContainer implements IConfigGuiElement {
     @Override
     public void mouseDown(int mouseX, int mouseY, int button) {
         if (this.bounds.contains(mouseX, mouseY)) {
+            this.mouseButtonsDown.set(button);
+
             for (IConfigGuiElement element : this.elements) {
                 element.mouseDown(this.offsetX(mouseX), this.offsetY(mouseY), button);
             }
@@ -119,7 +124,9 @@ public abstract class AbstractConfigGuiContainer implements IConfigGuiElement {
 
     @Override
     public void mouseUp(int mouseX, int mouseY, int button) {
-        if (this.bounds.contains(mouseX, mouseY)) {
+        if (this.mouseButtonsDown.get(button)) {
+            this.mouseButtonsDown.clear(button);
+
             for (IConfigGuiElement element : this.elements) {
                 element.mouseUp(this.offsetX(mouseX), this.offsetY(mouseY), button);
             }
@@ -128,7 +135,7 @@ public abstract class AbstractConfigGuiContainer implements IConfigGuiElement {
 
     @Override
     public void mouseDragged(int oldMouseX, int oldMouseY, int newMouseX, int newMouseY, int button) {
-        if (this.bounds.contains(oldMouseX, oldMouseY) || this.bounds.contains(newMouseX, newMouseY)) {
+        if (this.mouseButtonsDown.get(button)) {
             for (IConfigGuiElement element : this.elements) {
                 element.mouseDragged(this.offsetX(oldMouseX), this.offsetY(oldMouseY), this.offsetX(newMouseX), this.offsetY(newMouseY), button);
             }

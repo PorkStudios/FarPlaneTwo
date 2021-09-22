@@ -23,9 +23,13 @@ package net.daporkchop.fp2.config.gui;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.config.ConfigHelper;
+import net.daporkchop.fp2.config.Setting;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.resources.I18n;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraftforge.fml.client.config.GuiMessageDialog;
 import net.minecraftforge.fml.client.config.GuiUtils;
 import org.lwjgl.input.Mouse;
 
@@ -33,6 +37,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.Function;
 
+import static net.daporkchop.fp2.FP2.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -86,7 +91,25 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
                 FP2_LOG.info("closed config gui: unchanged");
             } else {
                 FP2_LOG.info("closed config gui: {}", this.newInstance);
-                FP2_LOG.info("restart required: {}", ConfigHelper.restartRequirement(this.oldInstance, this.newInstance));
+
+                ConfigHelper.validateConfig(this.newInstance);
+
+                Setting.Requirement restartRequirement = ConfigHelper.restartRequirement(this.oldInstance, this.newInstance);
+                FP2_LOG.info("restart required: {}", restartRequirement);
+
+                switch (restartRequirement) {
+                    case WORLD:
+                        if (MC.world == null) { //the world isn't set, so we don't need to notify the player that a reload is required
+                            break;
+                        }
+                    case GAME:
+                        MC.displayGuiScreen(new GuiMessageDialog(
+                                this.parentScreen,
+                                MODID + ".config.restartRequired.dialog.title." + restartRequirement,
+                                new TextComponentString(I18n.format(MODID + ".config.restartRequired.dialog.message." + restartRequirement)),
+                                MODID + ".config.restartRequired.dialog.confirm"));
+                        return;
+                }
             }
         }
 
