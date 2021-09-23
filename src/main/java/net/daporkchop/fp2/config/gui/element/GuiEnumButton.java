@@ -48,7 +48,7 @@ public class GuiEnumButton extends GuiButton<Enum> {
     @Override
     protected String buttonText() {
         Enum value = this.get();
-        return I18n.format(MODID + ".config.enum.format", super.buttonText(), I18n.format(PorkUtil.className(value) + '.' + value));
+        return I18n.format(MODID + ".config.enum.format", super.buttonText(), I18n.format(value.getDeclaringClass().getTypeName() + '.' + value));
     }
 
     @Override
@@ -77,7 +77,7 @@ public class GuiEnumButton extends GuiButton<Enum> {
         @Override
         protected String langKey() {
             Enum value = this.get();
-            return PorkUtil.className(value) + '.' + value;
+            return value.getDeclaringClass().getTypeName() + '.' + value;
         }
 
         @Override

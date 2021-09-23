@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.common.client;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.config.FP2ConfigOld;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
@@ -77,7 +77,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     protected final Map<POS, Optional<IBakeOutput>> pendingDataUpdates = new ConcurrentHashMap<>();
     protected final Map<POS, Boolean> pendingRenderableUpdates = new ConcurrentHashMap<>();
     protected final AtomicBoolean isBulkUpdateQueued = new AtomicBoolean();
-    protected final Semaphore dataUpdatesLock = new Semaphore(FP2Config.performance.maxBakesProcessedPerFrame);
+    protected final Semaphore dataUpdatesLock = new Semaphore(FP2ConfigOld.performance.maxBakesProcessedPerFrame);
 
     public BakeManager(@NonNull AbstractFarRenderer<POS, T> renderer, @NonNull IFarTileCache<POS, T> tileCache) {
         this.renderer = renderer;
@@ -91,7 +91,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
         this.bakeScheduler = new NoFutureScheduler<>(this, ThreadingHelper.workerGroupBuilder()
                 .world(this.world)
-                .threads(FP2Config.client.renderThreads)
+                .threads(FP2ConfigOld.client.renderThreads)
                 .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build()));
 
         this.tileCache.addListener(this, true);
@@ -237,7 +237,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
         //this is the best we can do of resetting a semaphore to its initial permit count
         this.dataUpdatesLock.drainPermits();
-        this.dataUpdatesLock.release(FP2Config.performance.maxBakesProcessedPerFrame);
+        this.dataUpdatesLock.release(FP2ConfigOld.performance.maxBakesProcessedPerFrame);
 
         int renderableUpdatesSize = this.pendingRenderableUpdates.size();
         List<Map.Entry<POS, Boolean>> renderableUpdates = new ArrayList<>(renderableUpdatesSize + (renderableUpdatesSize >> 3)); //pre-allocate a bit of extra space in case it grows while we're iterating

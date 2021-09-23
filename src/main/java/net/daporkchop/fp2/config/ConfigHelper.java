@@ -46,10 +46,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.FP2.*;
@@ -116,11 +116,25 @@ public class ConfigHelper {
         }
     }
 
+    /**
+     * Creates and displays a new config menu.
+     *
+     * @param menuName the name of the config menu
+     * @param instance the instance of the current configuration values
+     * @param callback a callback function that will be called if the configuration has been modified once the menu is closed
+     */
     @SideOnly(Side.CLIENT)
-    public void createAndDisplayGuiContext(@NonNull String menuName, @NonNull Object instance) {
+    public <V> void createAndDisplayGuiContext(@NonNull String menuName, @NonNull V instance, @NonNull Consumer<V> callback) {
         new DefaultGuiContext(MODID + ".config." + menuName + '.', instance);
     }
 
+    /**
+     * Creates a new {@link IConfigGuiScreen} for a given {@link IGuiContext} and config struct instance.
+     *
+     * @param context  the current {@link IGuiContext}
+     * @param instance the config struct instance
+     * @return a new {@link IConfigGuiScreen}
+     */
     @SideOnly(Side.CLIENT)
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
     public IConfigGuiScreen createConfigGuiScreen(@NonNull IGuiContext context, @NonNull Object instance) {
@@ -134,6 +148,13 @@ public class ConfigHelper {
         return new DefaultConfigGuiScreen(context, instance);
     }
 
+    /**
+     * Gets all of the fields in the given {@link Class} which contain config properties.
+     *
+     * @param clazz the {@link Class}
+     * @return all of the fields in the given {@link Class} which contain properties
+     * @throws IllegalArgumentException if any fields in the given {@link Class} are not valid configuration properties
+     */
     public Stream<Field> getConfigPropertyFields(@NonNull Class<?> clazz) {
         List<Field> fields = new ArrayList<>();
         for (Class<?> curr = clazz; curr != Object.class; curr = curr.getSuperclass()) {
@@ -151,6 +172,14 @@ public class ConfigHelper {
                 });
     }
 
+    /**
+     * Creates a new {@link IConfigGuiElement} for a given {@link IGuiContext}, config struct instance and config property field.
+     *
+     * @param context  the current {@link IGuiContext}
+     * @param instance the config struct instance
+     * @param field    the config property field
+     * @return a new {@link IConfigGuiElement}
+     */
     @SideOnly(Side.CLIENT)
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
     public IConfigGuiElement createConfigGuiElement(@NonNull IGuiContext context, @NonNull Object instance, @NonNull Field field) {
@@ -185,6 +214,13 @@ public class ConfigHelper {
         }
     }
 
+    /**
+     * Creates a new config GUI container for the given configuration category metadata and the {@link IConfigGuiElement}s to be displayed in it.
+     *
+     * @param categoryMeta the configuration category metadata
+     * @param elements     the {@link IConfigGuiElement}s to be displayed
+     * @return a {@link IConfigGuiElement} containing the given {@link IConfigGuiElement}s
+     */
     @SideOnly(Side.CLIENT)
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
     public IConfigGuiElement createConfigGuiContainer(@NonNull Setting.CategoryMeta categoryMeta, @NonNull List<IConfigGuiElement> elements) {
@@ -193,22 +229,31 @@ public class ConfigHelper {
         return constructor.newInstance(elements);
     }
 
+    /**
+     * Duplicates a configuration object.
+     *
+     * @param srcInstance the object to clone
+     * @return the cloned instance
+     */
     @SneakyThrows(IllegalAccessException.class)
-    public <T> T cloneConfigObject(T srcInstance) {
-        if (srcInstance == null) { //nothing to do if the value is already null
-            return srcInstance;
-        }
-
+    public <T> T cloneConfigObject(@NonNull T srcInstance) {
         T dstInstance = uncheckedCast(PUnsafe.allocateInstance(srcInstance.getClass()));
         for (Field field : getConfigPropertyFields(srcInstance.getClass()).toArray(Field[]::new)) {
             Object value = field.get(srcInstance);
-            field.set(dstInstance, value == null || isSimpleCopyableType(field.getType()) ? value : cloneConfigObject(value));
+            field.set(dstInstance, isSimpleCopyableType(field.getType()) ? value : cloneConfigObject(value));
         }
         return dstInstance;
     }
 
+    /**
+     * Computes the difference between the two configuration objects and checks if anything needs to be restarted for the changes to take effect.
+     *
+     * @param oldInstance the old configuration object
+     * @param newInstance the new configuration object
+     * @return the {@link Setting.Requirement}
+     */
     @SneakyThrows(IllegalAccessException.class)
-    public Setting.Requirement restartRequirement(@NonNull Object oldInstance, @NonNull Object newInstance) {
+    public <T> Setting.Requirement restartRequirement(@NonNull T oldInstance, @NonNull T newInstance) {
         checkArg(oldInstance.getClass() == newInstance.getClass(), "%s != %s", oldInstance.getClass(), newInstance.getClass());
 
         Setting.Requirement requirement = Setting.Requirement.NONE;
@@ -234,6 +279,11 @@ public class ConfigHelper {
         return requirement;
     }
 
+    /**
+     * Ensures that the given configuration object's values are valid.
+     *
+     * @param instance the configuration object
+     */
     @SneakyThrows(IllegalAccessException.class)
     public void validateConfig(@NonNull Object instance) {
         for (Field field : getConfigPropertyFields(instance.getClass()).toArray(Field[]::new)) {

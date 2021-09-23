@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.mode.voxel.server;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.common.server.AbstractPlayerTracker;
 import net.daporkchop.fp2.mode.common.server.TrackingState;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;

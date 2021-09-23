@@ -23,6 +23,7 @@ package net.daporkchop.fp2.client.gui;
 import lombok.NonNull;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.config.ConfigHelper;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.config.TestConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
@@ -48,14 +49,7 @@ public class GuiButtonFP2Options extends GuiButton {
     @Override
     public boolean mousePressed(Minecraft mc, int mouseX, int mouseY) {
         if (super.mousePressed(mc, mouseX, mouseY)) {
-            /*try {
-                IModGuiFactory guiFactory = FMLClientHandler.instance().getGuiFactoryFor(Loader.instance().getActiveModList().stream().filter(c -> c.getModId().equals(FP2.MODID)).findAny().orElseThrow(IllegalStateException::new));
-                GuiScreen newScreen = guiFactory.createConfigGui(this.parent);
-                this.parent.mc.displayGuiScreen(newScreen);
-            } catch (Exception e) {
-                FMLLog.log.error("There was a critical issue trying to build the config GUI for {}", FP2.MODID, e);
-            }*/
-            ConfigHelper.createAndDisplayGuiContext("menu", new TestConfig());
+            ConfigHelper.createAndDisplayGuiContext("menu", new FP2Config(), System.out::println);
             return true;
         } else {
             return false;

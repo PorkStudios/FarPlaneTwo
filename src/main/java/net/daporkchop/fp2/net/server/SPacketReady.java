@@ -22,7 +22,7 @@ package net.daporkchop.fp2.net.server;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.GlobalEventExecutor;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.config.FP2ConfigOld;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.net.client.CPacketRenderMode;
@@ -58,7 +58,7 @@ public class SPacketReady implements IMessage {
                 ThreadingHelper.scheduleTaskInWorldThread(ctx.getClientHandler().world, () -> {
                     Constants.FP2_LOG.debug("Server notified us that we are ready to go!");
                     ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorld_init();
-                    NETWORK_WRAPPER.sendToServer(new CPacketRenderMode().mode(IFarRenderMode.REGISTRY.get(FP2Config.renderMode)));
+                    NETWORK_WRAPPER.sendToServer(new CPacketRenderMode().mode(IFarRenderMode.REGISTRY.get(FP2ConfigOld.renderMode)));
                 });
             }, 1L, TimeUnit.SECONDS);
             return null;

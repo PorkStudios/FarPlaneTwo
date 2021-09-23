@@ -24,7 +24,7 @@ import net.daporkchop.fp2.asm.core.client.gui.IGuiScreen;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.config.FP2ConfigOld;
 import net.daporkchop.fp2.debug.util.DebugUtils;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.net.client.CPacketDropAllTiles;
@@ -59,12 +59,12 @@ public class DebugClientEvents {
             DebugUtils.clientMsg("§aReloading all tiles");
         }
         if (DebugKeyBindings.TOGGLE_REVERSED_Z.isPressed()) {
-            FP2Config.compatibility.reversedZ ^= true;
-            DebugUtils.clientMsg((FP2Config.compatibility.reversedZ ? "§aEnabled" : "§cDisabled") + " reversed-Z projection");
+            FP2ConfigOld.compatibility.reversedZ ^= true;
+            DebugUtils.clientMsg((FP2ConfigOld.compatibility.reversedZ ? "§aEnabled" : "§cDisabled") + " reversed-Z projection");
         }
         if (DebugKeyBindings.TOGGLE_VANILLA_RENDER.isPressed()) {
-            FP2Config.debug.skipRenderWorld ^= true;
-            DebugUtils.clientMsg((FP2Config.debug.skipRenderWorld ? "§cDisabled" : "§aEnabled") + " vanilla terrain");
+            FP2ConfigOld.debug.skipRenderWorld ^= true;
+            DebugUtils.clientMsg((FP2ConfigOld.debug.skipRenderWorld ? "§cDisabled" : "§aEnabled") + " vanilla terrain");
         }
         if (DebugKeyBindings.REBUILD_UVS.isPressed()) {
             TexUVs.reloadUVs();
@@ -72,24 +72,24 @@ public class DebugClientEvents {
         }
         if (DebugKeyBindings.TOGGLE_RENDER_MODE.isPressed()) {
             String[] opts = IFarRenderMode.REGISTRY.stream().map(Map.Entry::getKey).toArray(String[]::new);
-            int i = IntStream.range(0, opts.length).filter(j -> FP2Config.renderMode.equals(opts[j])).findFirst().getAsInt();
-            FP2Config.renderMode = opts[(i + 1) % opts.length];
-            NETWORK_WRAPPER.sendToServer(new CPacketRenderMode().mode(IFarRenderMode.REGISTRY.get(FP2Config.renderMode)));
-            DebugUtils.clientMsg("§aSwitched render mode to §7" + FP2Config.renderMode);
+            int i = IntStream.range(0, opts.length).filter(j -> FP2ConfigOld.renderMode.equals(opts[j])).findFirst().getAsInt();
+            FP2ConfigOld.renderMode = opts[(i + 1) % opts.length];
+            NETWORK_WRAPPER.sendToServer(new CPacketRenderMode().mode(IFarRenderMode.REGISTRY.get(FP2ConfigOld.renderMode)));
+            DebugUtils.clientMsg("§aSwitched render mode to §7" + FP2ConfigOld.renderMode);
         }
         if (DebugKeyBindings.TOGGLE_LEVEL_0.isPressed()) {
-            FP2Config.debug.skipLevel0 ^= true;
-            DebugUtils.clientMsg((FP2Config.debug.skipLevel0 ? "§cDisabled" : "§aEnabled") + " level 0 rendering.");
+            FP2ConfigOld.debug.skipLevel0 ^= true;
+            DebugUtils.clientMsg((FP2ConfigOld.debug.skipLevel0 ? "§cDisabled" : "§aEnabled") + " level 0 rendering.");
         }
         if (DebugKeyBindings.TOGGLE_DEBUG_COLORS.isPressed()) {
-            FP2Config.Debug.DebugColorMode[] modes = FP2Config.Debug.DebugColorMode.values();
-            FP2Config.Debug.DebugColorMode oldMode = FP2Config.debug.debugColorMode;
-            FP2Config.Debug.DebugColorMode newMode = FP2Config.debug.debugColorMode = modes[(oldMode.ordinal() + 1) % modes.length];
+            FP2ConfigOld.Debug.DebugColorMode[] modes = FP2ConfigOld.Debug.DebugColorMode.values();
+            FP2ConfigOld.Debug.DebugColorMode oldMode = FP2ConfigOld.debug.debugColorMode;
+            FP2ConfigOld.Debug.DebugColorMode newMode = FP2ConfigOld.debug.debugColorMode = modes[(oldMode.ordinal() + 1) % modes.length];
             ShaderManager.changeDefines()
                     .undefine("USE_DEBUG_COLORS_" + oldMode)
                     .define("USE_DEBUG_COLORS_" + newMode)
                     .apply();
-            DebugUtils.clientMsg("§aSwitched debug color mode to §7" + FP2Config.debug.debugColorMode);
+            DebugUtils.clientMsg("§aSwitched debug color mode to §7" + FP2ConfigOld.debug.debugColorMode);
         }
     }
 

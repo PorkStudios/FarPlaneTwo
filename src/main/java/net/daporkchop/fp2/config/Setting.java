@@ -90,6 +90,11 @@ public @interface Setting {
         String name();
 
         /**
+         * @return whether to add a title to this category if multiple categories are present
+         */
+        boolean title() default true;
+
+        /**
          * @return the class of the container which will store the GUI components used by this category
          */
         Class<? extends IConfigGuiElement> containerClass() default ColumnsContainer.class;
@@ -113,8 +118,10 @@ public @interface Setting {
      */
     @Retention(RUNTIME)
     @Target(FIELD)
-    @SideOnly(Side.CLIENT)
-    @interface GuiIgnore {
+    @interface Range {
+        Constant min();
+
+        Constant max();
     }
 
     /**
@@ -122,7 +129,8 @@ public @interface Setting {
      */
     @Retention(RUNTIME)
     @Target(FIELD)
-    @interface Range {
+    @SideOnly(Side.CLIENT)
+    @interface GuiRange {
         Constant min();
 
         Constant max();
@@ -148,11 +156,6 @@ public @interface Setting {
          * @return a method reference in the form of {@code package.name.ClassName#methodName}, referencing a zero-argument static method which returns this constant field's value
          */
         String method() default "";
-
-        /**
-         * @return the type of {@link #field()} and {@link #method()}. Must be either a numeric primitive type or {@link Number}
-         */
-        Class<?> javaType() default double.class;
     }
 
     /**

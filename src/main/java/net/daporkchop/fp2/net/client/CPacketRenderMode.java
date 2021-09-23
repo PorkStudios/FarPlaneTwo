@@ -24,7 +24,7 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.config.FP2ConfigOld;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
@@ -59,7 +59,7 @@ public class CPacketRenderMode implements IMessage {
     public static class Handler implements IMessageHandler<CPacketRenderMode, IMessage> {
         @Override
         public IMessage onMessage(CPacketRenderMode message, MessageContext ctx) {
-            if (message.mode.equals(IFarRenderMode.REGISTRY.get(FP2Config.renderMode))) {
+            if (message.mode.equals(IFarRenderMode.REGISTRY.get(FP2ConfigOld.renderMode))) {
                 ThreadingHelper.scheduleTaskInWorldThread(ctx.getServerHandler().player.world, () -> {
                     FP2_LOG.debug("Player {} initiated FP2 session with render mode {}", ctx.getServerHandler().player.getName(), message.mode);
 
@@ -70,7 +70,7 @@ public class CPacketRenderMode implements IMessage {
                     }
 
                     //send the packet here to ensure that it's sent before adding the player to the tracker
-                    NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy().mode(IFarRenderMode.REGISTRY.get(FP2Config.renderMode)), ctx.getServerHandler().player);
+                    NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy().mode(IFarRenderMode.REGISTRY.get(FP2ConfigOld.renderMode)), ctx.getServerHandler().player);
 
                     ((IFarWorldServer) ctx.getServerHandler().player.world).fp2_IFarWorldServer_contextFor(message.mode).world().tracker().playerAdd(ctx.getServerHandler().player);
                     ((IFarPlayer) ctx.getServerHandler().player).activeMode(message.mode);

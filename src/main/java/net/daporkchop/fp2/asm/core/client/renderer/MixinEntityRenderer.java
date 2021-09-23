@@ -22,7 +22,7 @@ package net.daporkchop.fp2.asm.core.client.renderer;
 
 import net.daporkchop.fp2.client.ReversedZ;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.config.FP2ConfigOld;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
@@ -97,7 +97,7 @@ public abstract class MixinEntityRenderer {
     private void fp2_setupCameraTransform_increaseFarPlaneDistance(EntityRenderer renderer, float farPlaneDistance) {
         if (((IFarWorldClient) this.mc.world).fp2_IFarWorldClient_activeContext() != null) {
             //farPlaneDistance = FP2Config.renderDistance;
-            farPlaneDistance = FP2Config.levelCutoffDistance << FP2Config.maxLevels >> 1;
+            farPlaneDistance = FP2ConfigOld.levelCutoffDistance << FP2ConfigOld.maxLevels >> 1;
             //TODO: i need a better system for computing this
         }
         this.farPlaneDistance = farPlaneDistance;

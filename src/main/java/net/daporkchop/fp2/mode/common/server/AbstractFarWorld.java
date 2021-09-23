@@ -20,13 +20,12 @@
 
 package net.daporkchop.fp2.mode.common.server;
 
-import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.config.FP2ConfigOld;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -47,17 +46,13 @@ import net.daporkchop.fp2.util.threading.scheduler.ApproximatelyPrioritizedShare
 import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
-import net.minecraft.world.chunk.Chunk;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Set;
 import java.util.Spliterators;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -106,7 +101,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
             // a volatile, in-memory world clone to prevent huge numbers of chunks/cubes from potentially being generated (and therefore saved)
         }
 
-        this.lowResolution = FP2Config.performance.lowResolutionEnable && this.generatorRough != null && this.generatorRough.supportsLowResolution();
+        this.lowResolution = FP2ConfigOld.performance.lowResolutionEnable && this.generatorRough != null && this.generatorRough.supportsLowResolution();
 
         this.scaler = this.createScaler();
 
@@ -126,7 +121,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
                 },
                 ThreadingHelper.workerGroupBuilder()
                         .world(this.world)
-                        .threads(FP2Config.generationThreads)
+                        .threads(FP2ConfigOld.generationThreads)
                         .threadFactory(PThreadFactories.builder().daemon().minPriority()
                                 .collapsingId().name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build()),
                 PriorityTask.approxComparator());
@@ -195,7 +190,7 @@ public abstract class AbstractFarWorld<POS extends IFarPos, T extends IFarTile> 
         if (!this.updatesPending.isEmpty()) {
             this.storage.markAllDirty(StreamSupport.stream(Spliterators.spliterator(this.updatesPending, DISTINCT | NONNULL), false), this.lastCompletedTick)
                     .forEach(pos -> {
-                        if (pos.level() < FP2Config.maxLevels) {
+                        if (pos.level() < FP2ConfigOld.maxLevels) {
                             this.scheduler.schedule(this.updateTaskFor(pos));
                         }
                     });

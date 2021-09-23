@@ -22,7 +22,7 @@ package net.daporkchop.fp2.client;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.config.FP2ConfigOld;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
@@ -52,23 +52,23 @@ public class ShaderFP2StateHelper {
             long addr = ADDR_VIEW;
 
             //int renderDistance
-            PUnsafe.putInt(addr, FP2Config.renderDistance);
+            PUnsafe.putInt(addr, FP2ConfigOld.renderDistance);
             addr += INT_SIZE;
 
             //int maxLevels
-            PUnsafe.putInt(addr, FP2Config.maxLevels);
+            PUnsafe.putInt(addr, FP2ConfigOld.maxLevels);
             addr += INT_SIZE;
 
             //int levelCutoffDistance
-            PUnsafe.putInt(addr, FP2Config.levelCutoffDistance);
+            PUnsafe.putInt(addr, FP2ConfigOld.levelCutoffDistance);
             addr += INT_SIZE;
 
             //float transitionStart
-            PUnsafe.putFloat(addr, (float) lerp(0.5d, 1.0d, FP2Config.client.levelTransitionStart));
+            PUnsafe.putFloat(addr, (float) lerp(0.5d, 1.0d, FP2ConfigOld.client.levelTransitionStart));
             addr += FLOAT_SIZE;
 
             //float transitionEnd
-            PUnsafe.putFloat(addr, (float) lerp(0.5d, 1.0d, FP2Config.client.levelTransitionEnd));
+            PUnsafe.putFloat(addr, (float) lerp(0.5d, 1.0d, FP2ConfigOld.client.levelTransitionEnd));
             addr += FLOAT_SIZE;
         }
 

@@ -49,9 +49,10 @@ public class GuiSlider extends AbstractReflectiveConfigGuiElement<Number> {
         super(context, instance, field);
 
         Setting.Range rangeAnnotation = field.getAnnotation(Setting.Range.class);
-        checkState(rangeAnnotation != null, "cannot create slider for %s which isn't annotated with %s", field, Setting.Range.class);
-        Number minValue = ConfigHelper.evaluate(rangeAnnotation.min());
-        Number maxValue = ConfigHelper.evaluate(rangeAnnotation.max());
+        Setting.GuiRange guiRangeAnnotation = field.getAnnotation(Setting.GuiRange.class);
+        checkState(rangeAnnotation != null || guiRangeAnnotation != null, "cannot create slider for %s which isn't annotated with %s or %s", field, Setting.Range.class, Setting.GuiRange.class);
+        Number minValue = ConfigHelper.evaluate(guiRangeAnnotation != null ? guiRangeAnnotation.min() : rangeAnnotation.min());
+        Number maxValue = ConfigHelper.evaluate(guiRangeAnnotation != null ? guiRangeAnnotation.max() : rangeAnnotation.max());
 
         boolean fp;
         Function<Double, Number> boxFunction;

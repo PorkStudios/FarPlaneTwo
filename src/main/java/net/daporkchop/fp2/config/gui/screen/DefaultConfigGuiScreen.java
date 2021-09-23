@@ -98,7 +98,7 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
                         field -> {
                             String categoryName = Optional.ofNullable(field.getAnnotation(Setting.GuiCategory.class)).map(Setting.GuiCategory::value).orElse("default");
                             Setting.CategoryMeta meta = categoriesByName.get(categoryName);
-                            checkArg(meta != null, "no such category: %s", meta);
+                            checkArg(meta != null, "no such category: %s", categoryName);
                             return meta;
                         },
                         Collectors.mapping(field -> ConfigHelper.createConfigGuiElement(context, instance, field), Collectors.toList())));
@@ -107,7 +107,7 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
                 .map(meta -> new AbstractMap.SimpleEntry<>(meta, elementsByCategory.get(meta)))
                 .filter(entry -> entry.getValue() != null && !entry.getValue().isEmpty())
                 .flatMap(entry -> Stream.of(
-                        elementsByCategory.size() == 1 ? null : new GuiTitle(context, entry.getKey().name() + ".category"),
+                        elementsByCategory.size() == 1 || !entry.getKey().title() ? null : new GuiTitle(context, entry.getKey().name() + ".category"),
                         ConfigHelper.createConfigGuiContainer(entry.getKey(), entry.getValue())))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList()));

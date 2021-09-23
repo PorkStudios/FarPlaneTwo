@@ -25,7 +25,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.config.FP2ConfigOld;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import static net.daporkchop.fp2.debug.FP2Debug.*;
@@ -44,9 +44,9 @@ import static net.daporkchop.fp2.util.math.MathUtil.*;
 public class TrackingState {
     public static TrackingState createDefault(@NonNull EntityPlayerMP player) {
         return new TrackingState(player.posX, player.posY, player.posZ,
-                asrRound(FP2Config.levelCutoffDistance, T_SHIFT),
-                FP2_DEBUG && FP2Config.debug.skipLevel0 ? 1 : 0,
-                FP2Config.maxLevels);
+                asrRound(FP2ConfigOld.levelCutoffDistance, T_SHIFT),
+                FP2_DEBUG && FP2ConfigOld.debug.skipLevel0 ? 1 : 0,
+                FP2ConfigOld.maxLevels);
     }
 
     protected final double x;

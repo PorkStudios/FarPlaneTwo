@@ -59,8 +59,12 @@ public abstract class AbstractReflectiveConfigGuiElement<V> extends AbstractConf
 
         { //indicator for this option's value range
             Setting.Range range = this.field.getAnnotation(Setting.Range.class);
-            if (range != null) {
-                joiner.add(I18n.format(MODID + ".config.range.tooltip", ConfigHelper.evaluate(range.min()), ConfigHelper.evaluate(range.max())));
+            Setting.GuiRange guiRange = this.field.getAnnotation(Setting.GuiRange.class);
+            if (range != null || guiRange != null) {
+                Number min = ConfigHelper.evaluate(guiRange != null ? guiRange.min() : range.min());
+                Number max = ConfigHelper.evaluate(guiRange != null ? guiRange.max() : range.max());
+
+                joiner.add(I18n.format(MODID + ".config.range.tooltip", min, max));
             }
         }
 

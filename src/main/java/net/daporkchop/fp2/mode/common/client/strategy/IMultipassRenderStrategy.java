@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.DrawMode;
 import net.daporkchop.fp2.client.gl.command.IDrawCommand;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.config.FP2ConfigOld;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
@@ -76,7 +76,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
     }
 
     default void preRender() {
-        if (FP2_DEBUG && FP2Config.debug.disableBackfaceCull) {
+        if (FP2_DEBUG && FP2ConfigOld.debug.disableBackfaceCull) {
             GlStateManager.disableCull();
         }
 
@@ -89,7 +89,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
     default void postRender() {
         glDisable(GL_STENCIL_TEST);
 
-        if (FP2_DEBUG && FP2Config.debug.disableBackfaceCull) {
+        if (FP2_DEBUG && FP2ConfigOld.debug.disableBackfaceCull) {
             GlStateManager.enableCull();
         }
     }
