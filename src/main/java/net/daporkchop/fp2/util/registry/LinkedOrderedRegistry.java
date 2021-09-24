@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -119,6 +118,16 @@ public class LinkedOrderedRegistry<T> implements OrderedRegistry<T> {
             }
         }
         throw new IllegalArgumentException(PStrings.fastFormat("unable to find entry with name \"%s\"!", name));
+    }
+
+    @Override
+    public boolean contains(@NonNull String name) {
+        for (Entry<T> entry : this.list) {
+            if (entry.name.equals(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

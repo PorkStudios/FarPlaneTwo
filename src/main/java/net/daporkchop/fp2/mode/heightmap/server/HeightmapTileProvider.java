@@ -25,7 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
-import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
+import net.daporkchop.fp2.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.server.scale.HeightmapScalerMinMax;
@@ -37,8 +37,8 @@ import net.minecraft.world.chunk.Chunk;
 /**
  * @author DaPorkchop_
  */
-public abstract class HeightmapWorld extends AbstractFarWorld<HeightmapPos, HeightmapTile> {
-    public HeightmapWorld(@NonNull WorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
+public abstract class HeightmapTileProvider extends AbstractFarTileProvider<HeightmapPos, HeightmapTile> {
+    public HeightmapTileProvider(@NonNull WorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
         super(world, mode);
     }
 
@@ -62,7 +62,7 @@ public abstract class HeightmapWorld extends AbstractFarWorld<HeightmapPos, Heig
         this.scheduleForUpdate(new HeightmapPos(0, columnX, columnZ));
     }
 
-    public static class Vanilla extends HeightmapWorld {
+    public static class Vanilla extends HeightmapTileProvider {
         public Vanilla(@NonNull WorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
             super(world, mode);
         }
@@ -73,7 +73,7 @@ public abstract class HeightmapWorld extends AbstractFarWorld<HeightmapPos, Heig
         }
     }
 
-    public static class CubicChunks extends HeightmapWorld {
+    public static class CubicChunks extends HeightmapTileProvider {
         public CubicChunks(@NonNull WorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
             super(world, mode);
         }

@@ -25,7 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
-import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
+import net.daporkchop.fp2.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerIntersection;
@@ -37,8 +37,8 @@ import net.minecraft.world.chunk.Chunk;
 /**
  * @author DaPorkchop_
  */
-public abstract class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelTile> {
-    public VoxelWorld(@NonNull WorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
+public abstract class VoxelTileProvider extends AbstractFarTileProvider<VoxelPos, VoxelTile> {
+    public VoxelTileProvider(@NonNull WorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
         super(world, mode);
     }
 
@@ -60,7 +60,7 @@ public abstract class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelTile> {
     /**
      * @author DaPorkchop_
      */
-    public static class Vanilla extends VoxelWorld {
+    public static class Vanilla extends VoxelTileProvider {
         public Vanilla(@NonNull WorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
             super(world, mode);
         }
@@ -87,7 +87,7 @@ public abstract class VoxelWorld extends AbstractFarWorld<VoxelPos, VoxelTile> {
     /**
      * @author DaPorkchop_
      */
-    public static class CubicChunks extends VoxelWorld {
+    public static class CubicChunks extends VoxelTileProvider {
         public CubicChunks(@NonNull WorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
             super(world, mode);
         }

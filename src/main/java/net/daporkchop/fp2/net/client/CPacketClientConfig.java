@@ -18,39 +18,50 @@
  *
  */
 
-package net.daporkchop.fp2.util;
+package net.daporkchop.fp2.net.client;
 
+import io.netty.buffer.ByteBuf;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
+import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.util.IFarPlayer;
+import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
+import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarPlayer {
-    IFarWorldServer fp2_IFarPlayer_world();
+@Setter
+@Getter
+public class CPacketClientConfig implements IMessage {
+    @NonNull
+    protected FP2Config config;
 
-    FP2Config fp2_IFarPlayer_config();
+    @Override
+    public void fromBytes(ByteBuf buf) {
+        this.config = FP2Config.parse(Constants.readString(buf));
+    }
 
-    @CalledFromServerThread
-    void fp2_IFarPlayer_serverConfig(FP2Config serverConfig);
+    @Override
+    public void toBytes(ByteBuf buf) {
+        Constants.writeString(buf, this.config.toString());
+    }
 
-    @CalledFromServerThread
-    void fp2_IFarPlayer_clientConfig(FP2Config clientConfig);
+    public static class Handler implements IMessageHandler<CPacketClientConfig, IMessage> {
+        @Override
+        public IMessage onMessage(CPacketClientConfig message, MessageContext ctx) {
+            ThreadingHelper.scheduleTaskInWorldThread(ctx.getServerHandler().player.world, () -> {
+                FP2_LOG.debug("Player {} initiated FP2 session with config {}", ctx.getServerHandler().player.getName(), message.config);
 
-    @CalledFromServerThread
-    <POS extends IFarPos, T extends IFarTile> IFarServerContext<POS, T> fp2_IFarPlayer_activeContext();
-
-    void fp2_IFarPlayer_sendPacket(@NonNull IMessage packet);
-
-    @CalledFromServerThread
-    void fp2_IFarPlayer_update();
-
-    @CalledFromServerThread
-    void fp2_IFarPlayer_close();
+                ((IFarPlayer) ctx.getServerHandler().player).fp2_IFarPlayer_clientConfig(message.config);
+            });
+            return null;
+        }
+    }
 }

@@ -482,4 +482,8 @@ public class Constants {
         }
         FMLCommonHandler.instance().exitJava(1, true);
     }
+
+    public static <T> T preventInline(T value) {
+        return value;
+    }
 }

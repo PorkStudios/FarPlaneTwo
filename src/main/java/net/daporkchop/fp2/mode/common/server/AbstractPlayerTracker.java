@@ -32,7 +32,7 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
-import net.daporkchop.fp2.mode.api.server.IFarWorld;
+import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
@@ -82,13 +82,13 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
             FP2ConfigOld.performance.trackingThreads,
             PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Player Tracker #%d").build());
 
-    protected final IFarWorld<POS, T> world;
+    protected final IFarTileProvider<POS, T> world;
     protected final IntAxisAlignedBB[] coordLimits;
 
     protected final Map<POS, Entry> entries = new ConcurrentHashMap<>();
     protected final Map<EntityPlayerMP, Context> contexts = new ConcurrentHashMap<>();
 
-    public AbstractPlayerTracker(@NonNull IFarWorld<POS, T> world) {
+    public AbstractPlayerTracker(@NonNull IFarTileProvider<POS, T> world) {
         this.world = world;
         this.coordLimits = ((IFarWorldServer) world.world()).fp2_IFarWorld_coordLimits();
 

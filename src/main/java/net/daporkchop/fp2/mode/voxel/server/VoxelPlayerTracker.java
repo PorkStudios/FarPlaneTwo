@@ -47,7 +47,7 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
         return dx <= radius && dy <= radius && dz <= radius;
     }
 
-    public VoxelPlayerTracker(@NonNull VoxelWorld world) {
+    public VoxelPlayerTracker(@NonNull VoxelTileProvider world) {
         super(world);
     }
 

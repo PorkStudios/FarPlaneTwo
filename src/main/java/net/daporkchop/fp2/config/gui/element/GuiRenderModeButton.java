@@ -18,21 +18,25 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.ctx;
+package net.daporkchop.fp2.config.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.mode.common.ctx.AbstractFarServerContext;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.util.IFarPlayer;
+import net.daporkchop.fp2.config.gui.IGuiContext;
+
+import java.lang.reflect.Field;
 
 /**
  * @author DaPorkchop_
  */
-public class VoxelServerContext extends AbstractFarServerContext<VoxelPos, VoxelTile> {
-    public VoxelServerContext(@NonNull IFarPlayer player, @NonNull IFarWorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
-        super(player, world, mode);
+public class GuiRenderModeButton extends GuiButton<String[]> {
+    public GuiRenderModeButton(@NonNull IGuiContext context, Object instance, @NonNull Field field) {
+        super(context, instance, field);
+    }
+
+    @Override
+    protected void handleClick(int button) {
+        if (button == 0) { //left-click
+            //TODO: something
+        }
     }
 }

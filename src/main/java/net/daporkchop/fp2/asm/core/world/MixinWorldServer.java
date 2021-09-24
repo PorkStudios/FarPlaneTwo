@@ -27,11 +27,10 @@ import net.daporkchop.fp2.compat.vanilla.asyncblockaccess.VanillaAsyncBlockAcces
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
-import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -48,19 +47,12 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @Mixin(WorldServer.class)
 public abstract class MixinWorldServer extends MixinWorld implements IFarWorldServer {
     @Unique
-    protected Map<IFarRenderMode, IFarServerContext> contextsByMode;
+    protected Map<IFarRenderMode, IFarTileProvider> tileProvidersByMode;
     @Unique
-    protected IFarServerContext[] contexts;
+    protected IFarTileProvider[] tileProviders;
 
     @Unique
     protected IAsyncBlockAccess asyncBlockAccess;
-
-    @Override
-    public void fp2_IFarWorldServer_forEachContext(@NonNull Consumer<IFarServerContext<?, ?>> action) {
-        for (IFarServerContext context : this.contexts) {
-            action.accept(uncheckedCast(context));
-        }
-    }
 
     @Override
     public void fp2_IFarWorld_init() {
@@ -70,23 +62,30 @@ public abstract class MixinWorldServer extends MixinWorld implements IFarWorldSe
                 ? new CCAsyncBlockAccessImpl(uncheckedCast(this))
                 : new VanillaAsyncBlockAccessImpl(uncheckedCast(this));
 
-        ImmutableMap.Builder<IFarRenderMode, IFarServerContext> builder = ImmutableMap.builder();
-        IFarRenderMode.REGISTRY.forEachEntry((name, mode) -> builder.put(mode, mode.serverContext(uncheckedCast(this))));
+        ImmutableMap.Builder<IFarRenderMode, IFarTileProvider> builder = ImmutableMap.builder();
+        IFarRenderMode.REGISTRY.forEachEntry((name, mode) -> builder.put(mode, mode.tileProvider(uncheckedCast(this))));
+        this.tileProvidersByMode = builder.build();
 
-        this.contextsByMode = builder.build();
-        this.contexts = this.contextsByMode.values().toArray(new IFarServerContext[0]);
+        this.tileProviders = this.tileProvidersByMode.values().toArray(new IFarTileProvider[0]);
     }
 
     @Override
     public void fp2_IFarWorld_close() {
-        this.fp2_IFarWorldServer_forEachContext(IFarServerContext::close);
+        this.fp2_IFarWorldServer_forEachTileProvider(IFarTileProvider::close);
     }
 
     @Override
-    public <POS extends IFarPos, T extends IFarTile> IFarServerContext<POS, T> fp2_IFarWorldServer_contextFor(@NonNull IFarRenderMode<POS, T> mode) {
-        IFarServerContext<POS, T> context = uncheckedCast(this.contextsByMode.get(mode));
-        checkArg(context != null, "cannot find context for unknown render mode: %s", mode);
+    public <POS extends IFarPos, T extends IFarTile> IFarTileProvider<POS, T> fp2_IFarWorldServer_tileProviderFor(@NonNull IFarRenderMode<POS, T> mode) {
+        IFarTileProvider<POS, T> context = uncheckedCast(this.tileProvidersByMode.get(mode));
+        checkArg(context != null, "cannot find tile provider for unknown render mode: %s", mode);
         return context;
+    }
+
+    @Override
+    public void fp2_IFarWorldServer_forEachTileProvider(@NonNull Consumer<IFarTileProvider<?, ?>> action) {
+        for (IFarTileProvider tileProvider : this.tileProviders) {
+            action.accept(uncheckedCast(tileProvider));
+        }
     }
 
     @Override

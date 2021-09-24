@@ -24,10 +24,13 @@ import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
 import net.daporkchop.fp2.mode.voxel.VoxelRenderMode;
+import net.daporkchop.fp2.util.IFarPlayer;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.event.RegisterRenderModesEvent;
 import net.daporkchop.fp2.util.registry.LinkedOrderedRegistry;
@@ -56,6 +59,14 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
     int storageVersion();
 
     /**
+     * Creates a new {@link IFarTileProvider} for the given vanilla world.
+     *
+     * @param world the vanilla world
+     * @return the new {@link IFarTileProvider}
+     */
+    IFarTileProvider<POS, T> tileProvider(@NonNull WorldServer world);
+
+    /**
      * Creates a new {@link IFarGeneratorExact} for the given world.
      *
      * @param world the world
@@ -72,12 +83,13 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
     IFarGeneratorRough<POS, T> roughGenerator(@NonNull WorldServer world);
 
     /**
-     * Creates a new {@link IFarServerContext} for the given world.
+     * Creates a new {@link IFarServerContext} for the given player in the given world.
      *
-     * @param world the world
+     * @param player the player
+     * @param world  the world
      * @return the new {@link IFarServerContext}
      */
-    IFarServerContext<POS, T> serverContext(@NonNull WorldServer world);
+    IFarServerContext<POS, T> serverContext(@NonNull IFarPlayer player, @NonNull IFarWorldServer world);
 
     /**
      * Creates a new {@link IFarClientContext} for the given world.

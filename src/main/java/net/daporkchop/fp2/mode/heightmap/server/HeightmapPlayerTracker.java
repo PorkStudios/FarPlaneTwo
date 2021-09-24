@@ -46,7 +46,7 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
         return dx <= radius && dz <= radius;
     }
 
-    public HeightmapPlayerTracker(@NonNull HeightmapWorld world) {
+    public HeightmapPlayerTracker(@NonNull HeightmapTileProvider world) {
         super(world);
     }
 

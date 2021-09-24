@@ -22,27 +22,17 @@ package net.daporkchop.fp2.mode.heightmap.ctx;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.server.IFarWorld;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.common.ctx.AbstractFarServerContext;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
-import net.daporkchop.fp2.mode.heightmap.server.HeightmapWorld;
-import net.minecraft.world.WorldServer;
-
-import static net.daporkchop.fp2.util.Constants.*;
+import net.daporkchop.fp2.util.IFarPlayer;
 
 /**
  * @author DaPorkchop_
  */
 public class HeightmapServerContext extends AbstractFarServerContext<HeightmapPos, HeightmapTile> {
-    public HeightmapServerContext(@NonNull WorldServer vanillaWorld, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
-        super(vanillaWorld, mode);
-    }
-
-    @Override
-    protected IFarWorld<HeightmapPos, HeightmapTile> world0(@NonNull WorldServer vanillaWorld) {
-        return isCubicWorld(vanillaWorld)
-                ? new HeightmapWorld.CubicChunks(vanillaWorld, this.mode)
-                : new HeightmapWorld.Vanilla(vanillaWorld, this.mode);
+    public HeightmapServerContext(@NonNull IFarPlayer player, @NonNull IFarWorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
+        super(player, world, mode);
     }
 }

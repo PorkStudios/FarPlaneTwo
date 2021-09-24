@@ -24,31 +24,30 @@ import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.minecraft.world.WorldServer;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.function.Consumer;
 
 /**
- * Provides access to {@link IFarServerContext} instances in a {@link WorldServer}.
+ * Provides access to {@link IFarTileProvider} instances in a {@link WorldServer}.
  *
  * @author DaPorkchop_
  */
 public interface IFarWorldServer extends IFarWorld, IAsyncBlockAccess.Holder {
     /**
-     * Gets the {@link IFarServerContext} used by the given {@link IFarServerContext} in this world.
+     * Gets the {@link IFarTileProvider} used by the given {@link IFarRenderMode} in this world.
      *
      * @param mode the {@link IFarRenderMode}
-     * @return the {@link IFarServerContext} used by the given {@link IFarServerContext} in this world
+     * @return the {@link IFarTileProvider} used by the given {@link IFarRenderMode} in this world
      */
-    <POS extends IFarPos, T extends IFarTile> IFarServerContext<POS, T> fp2_IFarWorldServer_contextFor(@NonNull IFarRenderMode<POS, T> mode);
+    <POS extends IFarPos, T extends IFarTile> IFarTileProvider<POS, T> fp2_IFarWorldServer_tileProviderFor(@NonNull IFarRenderMode<POS, T> mode);
 
     /**
-     * Runs the given action on every {@link IFarServerContext}.
+     * Runs the given action on every {@link IFarTileProvider}.
      *
      * @param action the action
      */
-    void fp2_IFarWorldServer_forEachContext(@NonNull Consumer<IFarServerContext<?, ?>> action);
+    void fp2_IFarWorldServer_forEachTileProvider(@NonNull Consumer<IFarTileProvider<?, ?>> action);
 }

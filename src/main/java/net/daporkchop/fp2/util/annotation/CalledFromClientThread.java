@@ -18,21 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.ctx;
+package net.daporkchop.fp2.util.annotation;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.mode.common.ctx.AbstractFarServerContext;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.util.IFarPlayer;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.*;
 
 /**
+ * Indicates that the annotated method must be called from the client thread.
+ *
  * @author DaPorkchop_
  */
-public class VoxelServerContext extends AbstractFarServerContext<VoxelPos, VoxelTile> {
-    public VoxelServerContext(@NonNull IFarPlayer player, @NonNull IFarWorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
-        super(player, world, mode);
-    }
+@Retention(CLASS)
+@Target(METHOD)
+public @interface CalledFromClientThread {
 }

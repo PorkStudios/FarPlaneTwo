@@ -26,9 +26,7 @@ import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
 import net.daporkchop.fp2.config.FP2ConfigOld;
 import net.daporkchop.fp2.debug.util.DebugUtils;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.net.client.CPacketDropAllTiles;
-import net.daporkchop.fp2.net.client.CPacketRenderMode;
 import net.minecraft.client.gui.GuiIngameMenu;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
@@ -38,9 +36,6 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-
-import java.util.Map;
-import java.util.stream.IntStream;
 
 import static net.daporkchop.fp2.util.Constants.*;
 
@@ -71,11 +66,13 @@ public class DebugClientEvents {
             DebugUtils.clientMsg("§aRebuilt texture UVs");
         }
         if (DebugKeyBindings.TOGGLE_RENDER_MODE.isPressed()) {
-            String[] opts = IFarRenderMode.REGISTRY.stream().map(Map.Entry::getKey).toArray(String[]::new);
+            /*String[] opts = IFarRenderMode.REGISTRY.stream().map(Map.Entry::getKey).toArray(String[]::new);
             int i = IntStream.range(0, opts.length).filter(j -> FP2ConfigOld.renderMode.equals(opts[j])).findFirst().getAsInt();
             FP2ConfigOld.renderMode = opts[(i + 1) % opts.length];
             NETWORK_WRAPPER.sendToServer(new CPacketRenderMode().mode(IFarRenderMode.REGISTRY.get(FP2ConfigOld.renderMode)));
-            DebugUtils.clientMsg("§aSwitched render mode to §7" + FP2ConfigOld.renderMode);
+            DebugUtils.clientMsg("§aSwitched render mode to §7" + FP2ConfigOld.renderMode);*/
+            //TODO: re-implement this
+            throw new IllegalStateException();
         }
         if (DebugKeyBindings.TOGGLE_LEVEL_0.isPressed()) {
             FP2ConfigOld.debug.skipLevel0 ^= true;

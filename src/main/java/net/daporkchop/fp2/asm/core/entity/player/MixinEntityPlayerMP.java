@@ -20,41 +20,139 @@
 
 package net.daporkchop.fp2.asm.core.entity.player;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.util.IFarPlayer;
+import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import org.spongepowered.asm.mixin.Implements;
-import org.spongepowered.asm.mixin.Interface;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
+import java.util.Objects;
+import java.util.stream.Stream;
+
+import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @Mixin(EntityPlayerMP.class)
-@Implements({
-        @Interface(iface = IFarPlayer.class, prefix = "fp2_player$", unique = true)
-})
 public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPlayer {
     @Unique
+    private FP2Config clientConfig;
+    @Unique
+    private FP2Config serverConfig;
+    @Unique
+    private FP2Config mergedConfig;
+
+    @Unique
     private IFarRenderMode activeMode;
+    @Unique
+    private IFarServerContext activeContext;
+
+    @Unique
+    private boolean closed;
 
     public MixinEntityPlayerMP() {
         super(null, null);
     }
 
     @Override
-    public <POS extends IFarPos, T extends IFarTile> IFarRenderMode<POS, T> activeMode() {
-        return uncheckedCast(this.activeMode);
+    public IFarWorldServer fp2_IFarPlayer_world() {
+        return uncheckedCast(this.world);
     }
 
     @Override
-    public void activeMode(IFarRenderMode<?, ?> mode) {
-        this.activeMode = mode;
+    public FP2Config fp2_IFarPlayer_config() {
+        return this.mergedConfig;
+    }
+
+    @CalledFromServerThread
+    @Override
+    public void fp2_IFarPlayer_serverConfig(FP2Config serverConfig) {
+        this.updateConfig(serverConfig, this.clientConfig);
+    }
+
+    @CalledFromServerThread
+    @Override
+    public void fp2_IFarPlayer_clientConfig(FP2Config clientConfig) {
+        this.updateConfig(this.serverConfig, clientConfig);
+    }
+
+    @Unique
+    private void updateConfig(FP2Config serverConfig, FP2Config clientConfig) {
+        checkState(!this.closed, "already closed!");
+
+        this.serverConfig = serverConfig;
+        this.clientConfig = clientConfig;
+        FP2Config mergedConfig = FP2Config.merge(serverConfig, clientConfig);
+        if (Objects.equals(this.mergedConfig, mergedConfig)) { //config hasn't changed, do nothing
+            return;
+        }
+        this.mergedConfig = mergedConfig;
+
+        IFarRenderMode<?, ?> mode = this.mergedConfig == null ? null : Stream.of(this.mergedConfig.renderModes())
+                .filter(IFarRenderMode.REGISTRY::contains)
+                .map(IFarRenderMode.REGISTRY::get)
+                .findFirst().orElse(null);
+
+        if (this.activeMode == mode) { //render mode hasn't changed
+            if (this.activeContext != null) { //render mode is non-null, we should notify the currently active context that the config has changed
+                this.activeContext.notifyConfigChange(this.mergedConfig);
+            }
+        } else {
+            this.activateContext(mode == null ? null : mode.serverContext(this, this.fp2_IFarPlayer_world()));
+        }
+    }
+
+    @Unique
+    private void activateContext(IFarServerContext<?, ?> context) {
+        if (this.activeContext != null) { //an existing context is active, we need to shut it down before it's replaced
+            this.activeContext.deactivate();
+        }
+
+        this.activeContext = context;
+
+        if (this.activeContext != null) { //the new config is non-null, let's activate it!
+            this.activeContext.activate(this.mergedConfig);
+        }
+    }
+
+    @Override
+    public <POS extends IFarPos, T extends IFarTile> IFarServerContext<POS, T> fp2_IFarPlayer_activeContext() {
+        return uncheckedCast(this.activeContext);
+    }
+
+    @Override
+    public void fp2_IFarPlayer_sendPacket(@NonNull IMessage packet) {
+        NETWORK_WRAPPER.sendTo(packet, uncheckedCast(this));
+    }
+
+    @CalledFromServerThread
+    @Override
+    public void fp2_IFarPlayer_update() {
+        checkState(!this.closed, "already closed!");
+
+        if (this.activeContext != null) {
+            this.activeContext.update();
+        }
+    }
+
+    @CalledFromServerThread
+    @Override
+    public void fp2_IFarPlayer_close() {
+        checkState(!this.closed, "already closed!");
+
+        this.updateConfig(null, null);
+        this.closed = true;
     }
 }

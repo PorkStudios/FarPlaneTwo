@@ -35,7 +35,7 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
-import net.daporkchop.fp2.mode.common.server.AbstractFarWorld;
+import net.daporkchop.fp2.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.lib.common.misc.file.PFiles;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
@@ -128,7 +128,7 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
         db.delete(handle, WRITE_OPTIONS, key.nioBuffer());
     }
 
-    protected final AbstractFarWorld<POS, T> world;
+    protected final AbstractFarTileProvider<POS, T> world;
 
     protected final TransactionDB db;
     protected final List<ColumnFamilyHandle> handles;
@@ -148,7 +148,7 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
             .build(CacheLoader.from(pos -> new RocksTileHandle<>(pos, this)));
 
     @SneakyThrows(RocksDBException.class)
-    public RocksStorage(@NonNull AbstractFarWorld<POS, T> world, @NonNull File storageRoot) {
+    public RocksStorage(@NonNull AbstractFarTileProvider<POS, T> world, @NonNull File storageRoot) {
         this.world = world;
         this.version = world.mode().storageVersion();
 

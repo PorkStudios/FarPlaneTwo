@@ -5,6 +5,7 @@
 #
 
 fp2.gui.buttonFP2Options=FP2
+fp2.playerJoinWarningMessage=§c§lFarPlaneTwo pre-pre-pre-alpha build: use at your own risk!
 
 #
 # Keybinds
@@ -56,6 +57,8 @@ fp2.config.menu.terrainThreads=Terrain Threads
 fp2.config.menu.terrainThreads.tooltip=The number of threads to use for loading, saving, generating and simplifying terrain.\nThese threads do most of the work for the mod. You'll probably want to set this a bit lower than your CPU's core count - about 75%% is a reasonable default.
 fp2.config.menu.bakeThreads=Render Threads
 fp2.config.menu.bakeThreads.tooltip=The number of threads to use on the client for preparing terrain data for rendering.
+
+fp2.config.menu.renderModes=Render Modes...
 
 fp2.config.menu.performance=Performance
 fp2.config.menu.performance.title=FarPlaneTwo Performance Options

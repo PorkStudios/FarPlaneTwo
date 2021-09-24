@@ -20,35 +20,73 @@
 
 package net.daporkchop.fp2.mode.api.ctx;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.api.server.IFarWorld;
-import net.minecraft.world.WorldServer;
+import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.util.IFarPlayer;
+import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
 
 /**
- * A client-side context for a specific {@link IFarRenderMode} in a {@link IFarWorldServer}.
+ * A server-side context for a specific {@link IFarPlayer} in a {@link IFarWorldServer} using a specific {@link IFarRenderMode}.
  *
  * @author DaPorkchop_
  */
-public interface IFarServerContext<POS extends IFarPos, T extends IFarTile> extends AutoCloseable {
+public interface IFarServerContext<POS extends IFarPos, T extends IFarTile> {
     /**
-     * @return the {@link IFarWorld} used in this context
+     * @return the player which this context belongs to
      */
-    IFarWorld<POS, T> world();
+    IFarPlayer player();
 
     /**
-     * @return the vanilla {@link WorldServer}
+     * @return the vanilla world
      */
-    WorldServer vanillaWorld();
+    IFarWorldServer world();
 
     /**
      * @return the render mode
      */
     IFarRenderMode<POS, T> mode();
 
-    @Override
-    default void close() {
-        this.world().close();
-    }
+    /**
+     * @return the {@link IFarTileProvider} used in this context
+     */
+    IFarTileProvider<POS, T> tileProvider();
+
+    /**
+     * @return the config currently being used
+     */
+    FP2Config config();
+
+    /**
+     * Activates this context.
+     *
+     * @param config the new config
+     */
+    @CalledFromServerThread
+    void activate(@NonNull FP2Config config);
+
+    /**
+     * Called whenever the player's config is changed.
+     *
+     * @param config the new config
+     */
+    @CalledFromServerThread
+    void notifyConfigChange(@NonNull FP2Config config);
+
+    /**
+     * Deactivates this context, releasing any allocated resources.
+     */
+    @CalledFromServerThread
+    void deactivate();
+
+    /**
+     * Updates this context.
+     * <p>
+     * Called once per tick in order to schedule tracking updates, etc.
+     */
+    @CalledFromServerThread
+    void update();
 }

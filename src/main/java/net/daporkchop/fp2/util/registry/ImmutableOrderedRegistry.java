@@ -81,6 +81,11 @@ public final class ImmutableOrderedRegistry<T> implements OrderedRegistry<T> {
     }
 
     @Override
+    public boolean contains(@NonNull String name) {
+        return this.map.containsKey(name);
+    }
+
+    @Override
     public T get(@NonNull String name) {
         T value = this.map.get(name);
         checkArg(value != null, "unable to find entry with name \"%s\"!", name);

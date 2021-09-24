@@ -24,10 +24,10 @@ import net.daporkchop.fp2.client.FP2Client;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.x86.x86FeatureDetector;
 import net.daporkchop.fp2.debug.FP2Debug;
+import net.daporkchop.fp2.net.client.CPacketClientConfig;
 import net.daporkchop.fp2.net.client.CPacketDropAllTiles;
-import net.daporkchop.fp2.net.client.CPacketRenderMode;
 import net.daporkchop.fp2.net.server.SPacketReady;
-import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
+import net.daporkchop.fp2.net.server.SPacketRenderMode;
 import net.daporkchop.fp2.net.server.SPacketTileData;
 import net.daporkchop.fp2.net.server.SPacketUnloadTile;
 import net.daporkchop.fp2.net.server.SPacketUnloadTiles;
@@ -107,10 +107,10 @@ public class FP2 {
 
     protected void registerPackets() {
         int id = 0;
-        NETWORK_WRAPPER.registerMessage(CPacketRenderMode.Handler.class, CPacketRenderMode.class, id++, Side.SERVER);
+        NETWORK_WRAPPER.registerMessage(CPacketClientConfig.Handler.class, CPacketClientConfig.class, id++, Side.SERVER);
         NETWORK_WRAPPER.registerMessage(CPacketDropAllTiles.Handler.class, CPacketDropAllTiles.class, id++, Side.SERVER);
         NETWORK_WRAPPER.registerMessage(SPacketReady.Handler.class, SPacketReady.class, id++, Side.CLIENT);
-        NETWORK_WRAPPER.registerMessage(SPacketRenderingStrategy.Handler.class, SPacketRenderingStrategy.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(SPacketRenderMode.Handler.class, SPacketRenderMode.class, id++, Side.CLIENT);
         NETWORK_WRAPPER.registerMessage(SPacketTileData.Handler.class, SPacketTileData.class, id++, Side.CLIENT);
         NETWORK_WRAPPER.registerMessage(SPacketUnloadTile.Handler.class, SPacketUnloadTile.class, id++, Side.CLIENT);
         NETWORK_WRAPPER.registerMessage(SPacketUnloadTiles.Handler.class, SPacketUnloadTiles.class, id++, Side.CLIENT);

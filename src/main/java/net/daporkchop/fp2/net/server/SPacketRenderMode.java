@@ -18,31 +18,25 @@
  *
  */
 
-package net.daporkchop.fp2.net.client;
+package net.daporkchop.fp2.net.server;
 
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import net.daporkchop.fp2.config.FP2ConfigOld;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.net.server.SPacketRenderingStrategy;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.IFarPlayer;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
-
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
 @Setter
 @Getter
-public class CPacketRenderMode implements IMessage {
+public class SPacketRenderMode implements IMessage {
     @NonNull
     protected IFarRenderMode<?, ?> mode;
 
@@ -56,26 +50,10 @@ public class CPacketRenderMode implements IMessage {
         Constants.writeString(buf, this.mode.name());
     }
 
-    public static class Handler implements IMessageHandler<CPacketRenderMode, IMessage> {
+    public static class Handler implements IMessageHandler<SPacketRenderMode, IMessage> {
         @Override
-        public IMessage onMessage(CPacketRenderMode message, MessageContext ctx) {
-            if (message.mode.equals(IFarRenderMode.REGISTRY.get(FP2ConfigOld.renderMode))) {
-                ThreadingHelper.scheduleTaskInWorldThread(ctx.getServerHandler().player.world, () -> {
-                    FP2_LOG.debug("Player {} initiated FP2 session with render mode {}", ctx.getServerHandler().player.getName(), message.mode);
-
-                    IFarRenderMode<?, ?> oldMode = ((IFarPlayer) ctx.getServerHandler().player).activeMode();
-                    ((IFarPlayer) ctx.getServerHandler().player).activeMode(null);
-                    if (oldMode != null) {
-                        ((IFarWorldServer) ctx.getServerHandler().player.world).fp2_IFarWorldServer_contextFor(oldMode).world().tracker().playerRemove(ctx.getServerHandler().player);
-                    }
-
-                    //send the packet here to ensure that it's sent before adding the player to the tracker
-                    NETWORK_WRAPPER.sendTo(new SPacketRenderingStrategy().mode(IFarRenderMode.REGISTRY.get(FP2ConfigOld.renderMode)), ctx.getServerHandler().player);
-
-                    ((IFarWorldServer) ctx.getServerHandler().player.world).fp2_IFarWorldServer_contextFor(message.mode).world().tracker().playerAdd(ctx.getServerHandler().player);
-                    ((IFarPlayer) ctx.getServerHandler().player).activeMode(message.mode);
-                });
-            }
+        public IMessage onMessage(SPacketRenderMode message, MessageContext ctx) {
+            ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorldClient_switchTo(message.mode);
             return null;
         }
     }

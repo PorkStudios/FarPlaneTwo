@@ -18,43 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.net.server;
+package net.daporkchop.fp2.util.annotation;
 
-import io.netty.buffer.ByteBuf;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
-import net.daporkchop.fp2.util.Constants;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.*;
 
 /**
+ * Indicates that the annotated method must be called from the server thread.
+ *
  * @author DaPorkchop_
  */
-@Setter
-@Getter
-public class SPacketRenderingStrategy implements IMessage {
-    @NonNull
-    protected IFarRenderMode<?, ?> mode;
-
-    @Override
-    public void fromBytes(ByteBuf buf) {
-        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
-    }
-
-    @Override
-    public void toBytes(ByteBuf buf) {
-        Constants.writeString(buf, this.mode.name());
-    }
-
-    public static class Handler implements IMessageHandler<SPacketRenderingStrategy, IMessage> {
-        @Override
-        public IMessage onMessage(SPacketRenderingStrategy message, MessageContext ctx) {
-            ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorldClient_switchTo(message.mode);
-            return null;
-        }
-    }
+//TODO: runtime code generation of sanity checks
+@Retention(CLASS)
+@Target(METHOD)
+public @interface CalledFromServerThread {
 }
