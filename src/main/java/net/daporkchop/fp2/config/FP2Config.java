@@ -60,13 +60,10 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Setting.GuiCategories({
         @Setting.CategoryMeta(name = "default", title = false),
         @Setting.CategoryMeta(name = FP2Config.CATEGORY_RENDER_DISTANCE),
-        @Setting.CategoryMeta(name = FP2Config.CATEGORY_THREADS),
 })
 public final class FP2Config {
     @SideOnly(Side.CLIENT)
     protected static final String CATEGORY_RENDER_DISTANCE = "renderDistance";
-    @SideOnly(Side.CLIENT)
-    protected static final String CATEGORY_THREADS = "threads";
 
     private static final Path CONFIG_DIR = Loader.instance().getConfigDir().toPath();
     private static final String CONFIG_FILE_NAME = "fp2.json5";
@@ -120,7 +117,7 @@ public final class FP2Config {
         Path realConfigFile = CONFIG_DIR.resolve(CONFIG_FILE_NAME);
 
         //write whole config to temporary file and sync to storage device, then atomically replace the existing one
-        Files.write(tempConfigFile, config.toString().getBytes(StandardCharsets.UTF_8), WRITE, CREATE, TRUNCATE_EXISTING, SYNC);
+        Files.write(tempConfigFile, GSON_PRETTY.toJson(config).getBytes(StandardCharsets.UTF_8), WRITE, CREATE, TRUNCATE_EXISTING, SYNC);
         Files.move(tempConfigFile, realConfigFile, REPLACE_EXISTING, ATOMIC_MOVE);
 
         GLOBAL_CONFIG = config;
@@ -169,27 +166,6 @@ public final class FP2Config {
     private final int cutoffDistance = preventInline(256);
 
     @Builder.Default
-    @Setting.Range(min = @Setting.Constant(1), max = @Setting.Constant(Integer.MAX_VALUE))
-    @Setting.GuiRange(min = @Setting.Constant(1), max = @Setting.Constant(field = "net.daporkchop.lib.common.util.PorkUtil#CPU_COUNT"))
-    @Setting.RestartRequired(Setting.Requirement.GAME)
-    @Setting.GuiCategory(CATEGORY_THREADS)
-    private final int trackingThreads = max(PorkUtil.CPU_COUNT >> 2, 1);
-
-    @Builder.Default
-    @Setting.Range(min = @Setting.Constant(1), max = @Setting.Constant(Integer.MAX_VALUE))
-    @Setting.GuiRange(min = @Setting.Constant(1), max = @Setting.Constant(field = "net.daporkchop.lib.common.util.PorkUtil#CPU_COUNT"))
-    @Setting.RestartRequired(Setting.Requirement.WORLD)
-    @Setting.GuiCategory(CATEGORY_THREADS)
-    private final int terrainThreads = max((PorkUtil.CPU_COUNT >> 1) + (PorkUtil.CPU_COUNT >> 2), 1);
-
-    @Builder.Default
-    @Setting.Range(min = @Setting.Constant(1), max = @Setting.Constant(Integer.MAX_VALUE))
-    @Setting.GuiRange(min = @Setting.Constant(1), max = @Setting.Constant(field = "net.daporkchop.lib.common.util.PorkUtil#CPU_COUNT"))
-    @Setting.RestartRequired(Setting.Requirement.WORLD)
-    @Setting.GuiCategory(CATEGORY_THREADS)
-    private final int bakeThreads = max((PorkUtil.CPU_COUNT >> 1) + (PorkUtil.CPU_COUNT >> 2), 1);
-
-    @Builder.Default
     @Setting.GuiElementClass(GuiRenderModeButton.class)
     @Setting.RestartRequired(Setting.Requirement.WORLD)
     private final String[] renderModes = {
@@ -225,10 +201,13 @@ public final class FP2Config {
     @Setting.GuiCategories({
             @Setting.CategoryMeta(name = "default", title = false),
             @Setting.CategoryMeta(name = Performance.CATEGORY_CLIENT),
+            @Setting.CategoryMeta(name = Performance.CATEGORY_THREADS),
     })
     public static class Performance {
         @SideOnly(Side.CLIENT)
         protected static final String CATEGORY_CLIENT = "client";
+        @SideOnly(Side.CLIENT)
+        protected static final String CATEGORY_THREADS = "threads";
 
         @Builder.Default
         @Setting.RestartRequired(Setting.Requirement.WORLD)
@@ -240,6 +219,27 @@ public final class FP2Config {
         @Setting.GuiRange(min = @Setting.Constant(1), max = @Setting.Constant(1024))
         @Setting.GuiCategory(CATEGORY_CLIENT)
         private final int maxBakesProcessedPerFrame = preventInline(256);
+
+        @Builder.Default
+        @Setting.Range(min = @Setting.Constant(1), max = @Setting.Constant(Integer.MAX_VALUE))
+        @Setting.GuiRange(min = @Setting.Constant(1), max = @Setting.Constant(field = "net.daporkchop.lib.common.util.PorkUtil#CPU_COUNT"))
+        @Setting.RestartRequired(Setting.Requirement.GAME)
+        @Setting.GuiCategory(CATEGORY_THREADS)
+        private final int trackingThreads = max(PorkUtil.CPU_COUNT >> 2, 1);
+
+        @Builder.Default
+        @Setting.Range(min = @Setting.Constant(1), max = @Setting.Constant(Integer.MAX_VALUE))
+        @Setting.GuiRange(min = @Setting.Constant(1), max = @Setting.Constant(field = "net.daporkchop.lib.common.util.PorkUtil#CPU_COUNT"))
+        @Setting.RestartRequired(Setting.Requirement.WORLD)
+        @Setting.GuiCategory(CATEGORY_THREADS)
+        private final int terrainThreads = max((PorkUtil.CPU_COUNT >> 1) + (PorkUtil.CPU_COUNT >> 2), 1);
+
+        @Builder.Default
+        @Setting.Range(min = @Setting.Constant(1), max = @Setting.Constant(Integer.MAX_VALUE))
+        @Setting.GuiRange(min = @Setting.Constant(1), max = @Setting.Constant(field = "net.daporkchop.lib.common.util.PorkUtil#CPU_COUNT"))
+        @Setting.RestartRequired(Setting.Requirement.WORLD)
+        @Setting.GuiCategory(CATEGORY_THREADS)
+        private final int bakeThreads = max((PorkUtil.CPU_COUNT >> 1) + (PorkUtil.CPU_COUNT >> 2), 1);
     }
 
     /**

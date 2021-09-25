@@ -25,6 +25,7 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.config.gui.DefaultGuiContext;
+import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.IConfigGuiScreen;
 import net.daporkchop.fp2.config.gui.IGuiContext;
@@ -39,6 +40,7 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -63,10 +65,11 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 public class ConfigHelper {
     protected static final long FIELD_MODIFIERS_OFFSET = ((ESupplier<Long>) () -> PUnsafe.objectFieldOffset(Field.class.getDeclaredField("modifiers"))).get();
 
-    protected static final Set<Class<?>> BOXED_PRIMITIVE_TYPES = ImmutableSet.of(
+    protected static final Set<Class<?>> SIMPLE_COPYABLE_TYPES = ImmutableSet.of(
             Boolean.class,
             Byte.class, Short.class, Character.class, Integer.class, Long.class,
-            Float.class, Double.class);
+            Float.class, Double.class,
+            String.class);
 
     protected Tuple<Class<?>, String> parseMemberId(@NonNull String id) {
         try {
@@ -120,32 +123,30 @@ public class ConfigHelper {
      * Creates and displays a new config menu.
      *
      * @param menuName the name of the config menu
-     * @param instance the instance of the current configuration values
      * @param callback a callback function that will be called if the configuration has been modified once the menu is closed
      */
     @SideOnly(Side.CLIENT)
-    public <V> void createAndDisplayGuiContext(@NonNull String menuName, @NonNull V instance, @NonNull Consumer<V> callback) {
-        new DefaultGuiContext(MODID + ".config." + menuName + '.', instance);
+    public <V> void createAndDisplayGuiContext(@NonNull String menuName, @NonNull V defaultConfig, @NonNull V currentConfig, @NonNull Consumer<V> callback) {
+        new DefaultGuiContext(MODID + ".config." + menuName + '.', new GuiObjectAccess<>(defaultConfig, currentConfig, cloneConfigObject(currentConfig)), callback);
     }
 
     /**
      * Creates a new {@link IConfigGuiScreen} for a given {@link IGuiContext} and config struct instance.
      *
      * @param context  the current {@link IGuiContext}
-     * @param instance the config struct instance
      * @return a new {@link IConfigGuiScreen}
      */
     @SideOnly(Side.CLIENT)
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
-    public IConfigGuiScreen createConfigGuiScreen(@NonNull IGuiContext context, @NonNull Object instance) {
-        Setting.GuiScreenClass guiScreenAnnotation = instance.getClass().getAnnotation(Setting.GuiScreenClass.class);
+    public IConfigGuiScreen createConfigGuiScreen(@NonNull IGuiContext context, @NonNull GuiObjectAccess<?> access) {
+        Setting.GuiScreenClass guiScreenAnnotation = access.clazz().getAnnotation(Setting.GuiScreenClass.class);
         if (guiScreenAnnotation != null) { //a specific gui screen class was requested, so let's use it
-            Constructor<? extends IConfigGuiScreen> constructor = guiScreenAnnotation.value().getDeclaredConstructor(IGuiContext.class, Object.class);
+            Constructor<? extends IConfigGuiScreen> constructor = guiScreenAnnotation.value().getDeclaredConstructor(IGuiContext.class, GuiObjectAccess.class);
             constructor.setAccessible(true);
-            return constructor.newInstance(context, instance);
+            return constructor.newInstance(context, access);
         }
 
-        return new DefaultConfigGuiScreen(context, instance);
+        return new DefaultConfigGuiScreen(context, access);
     }
 
     /**
@@ -175,19 +176,18 @@ public class ConfigHelper {
     /**
      * Creates a new {@link IConfigGuiElement} for a given {@link IGuiContext}, config struct instance and config property field.
      *
-     * @param context  the current {@link IGuiContext}
-     * @param instance the config struct instance
-     * @param field    the config property field
+     * @param context the current {@link IGuiContext}
+     * @param field   the config property field
      * @return a new {@link IConfigGuiElement}
      */
     @SideOnly(Side.CLIENT)
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
-    public IConfigGuiElement createConfigGuiElement(@NonNull IGuiContext context, @NonNull Object instance, @NonNull Field field) {
+    public IConfigGuiElement createConfigGuiElement(@NonNull IGuiContext context, @NonNull GuiObjectAccess<?> access, @NonNull Field field) {
         Setting.GuiElementClass guiElementAnnotation = field.getAnnotation(Setting.GuiElementClass.class);
         if (guiElementAnnotation != null) { //a specific gui element class was requested, so let's use it
-            Constructor<? extends IConfigGuiElement> constructor = guiElementAnnotation.value().getDeclaredConstructor(IGuiContext.class, Object.class, Field.class);
+            Constructor<? extends IConfigGuiElement> constructor = guiElementAnnotation.value().getDeclaredConstructor(IGuiContext.class, GuiObjectAccess.class, Field.class);
             constructor.setAccessible(true);
-            return constructor.newInstance(context, instance, field);
+            return constructor.newInstance(context, access, field);
         }
 
         checkValidPropertyType(field);
@@ -201,16 +201,16 @@ public class ConfigHelper {
                 "unsupported type for field: %s", field);
 
         if (type.isEnum()) {
-            return new GuiEnumButton(context, instance, field);
+            return new GuiEnumButton<>(context, access, field);
         } else if (type == boolean.class || type == Boolean.class) {
-            return new GuiToggleButton(context, instance, field);
+            return new GuiToggleButton<>(context, access, field);
         } else if (type == int.class || type == Integer.class
                    || type == long.class || type == Long.class
                    || type == float.class || type == Float.class
                    || type == double.class || type == Double.class) {
-            return new GuiSlider(context, instance, field);
+            return new GuiSlider<>(context, access, field);
         } else {
-            return new GuiSubmenuButton(context, instance, field);
+            return new GuiSubmenuButton<>(context, access, field);
         }
     }
 
@@ -223,10 +223,10 @@ public class ConfigHelper {
      */
     @SideOnly(Side.CLIENT)
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
-    public IConfigGuiElement createConfigGuiContainer(@NonNull Setting.CategoryMeta categoryMeta, @NonNull List<IConfigGuiElement> elements) {
-        Constructor<? extends IConfigGuiElement> constructor = categoryMeta.containerClass().getDeclaredConstructor(List.class);
+    public IConfigGuiElement createConfigGuiContainer(@NonNull Setting.CategoryMeta categoryMeta, @NonNull GuiObjectAccess<?> access, @NonNull List<IConfigGuiElement> elements) {
+        Constructor<? extends IConfigGuiElement> constructor = categoryMeta.containerClass().getDeclaredConstructor(GuiObjectAccess.class, List.class);
         constructor.setAccessible(true);
-        return constructor.newInstance(elements);
+        return constructor.newInstance(access, elements);
     }
 
     /**
@@ -237,12 +237,31 @@ public class ConfigHelper {
      */
     @SneakyThrows(IllegalAccessException.class)
     public <T> T cloneConfigObject(@NonNull T srcInstance) {
-        T dstInstance = uncheckedCast(PUnsafe.allocateInstance(srcInstance.getClass()));
-        for (Field field : getConfigPropertyFields(srcInstance.getClass()).toArray(Field[]::new)) {
-            Object value = field.get(srcInstance);
-            field.set(dstInstance, isSimpleCopyableType(field.getType()) ? value : cloneConfigObject(value));
+        Class<?> srcClass = srcInstance.getClass();
+
+        if (isSimpleCopyableType(srcClass)) { //simple copyable type, nothing to do
+            return srcInstance;
+        } else if (srcClass.isArray()) { //array type
+            Class<?> componentType = srcInstance.getClass().getComponentType();
+            int length = Array.getLength(srcInstance);
+
+            T dstInstance = uncheckedCast(Array.newInstance(componentType, length));
+            if (isSimpleCopyableType(componentType)) { //we can just copy the elements
+                System.arraycopy(srcInstance, 0, dstInstance, 0, length);
+            } else { //do a deep copy
+                for (int i = 0; i < length; i++) {
+                    Array.set(dstInstance, i, cloneConfigObject(Array.get(srcInstance, i)));
+                }
+            }
+            return dstInstance;
+        } else { //assume a struct type
+            T dstInstance = uncheckedCast(PUnsafe.allocateInstance(srcInstance.getClass()));
+            for (Field field : getConfigPropertyFields(srcInstance.getClass()).toArray(Field[]::new)) {
+                Object value = field.get(srcInstance);
+                field.set(dstInstance, isSimpleCopyableType(field.getType()) ? value : cloneConfigObject(value));
+            }
+            return dstInstance;
         }
-        return dstInstance;
     }
 
     /**
@@ -312,6 +331,6 @@ public class ConfigHelper {
     }
 
     protected boolean isSimpleCopyableType(@NonNull Class<?> type) {
-        return type.isEnum() || type.isPrimitive() || BOXED_PRIMITIVE_TYPES.contains(type);
+        return type.isEnum() || type.isPrimitive() || SIMPLE_COPYABLE_TYPES.contains(type);
     }
 }

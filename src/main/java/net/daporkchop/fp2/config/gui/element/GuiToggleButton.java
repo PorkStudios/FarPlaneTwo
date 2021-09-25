@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.config.gui.element;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IGuiContext;
 import net.minecraft.client.resources.I18n;
 
@@ -31,14 +32,14 @@ import static net.daporkchop.fp2.FP2.*;
 /**
  * @author DaPorkchop_
  */
-public class GuiToggleButton extends GuiButton<Boolean> {
-    public GuiToggleButton(@NonNull IGuiContext context, Object instance, @NonNull Field field) {
-        super(context, instance, field);
+public class GuiToggleButton<T> extends GuiButton<T, Boolean> {
+    public GuiToggleButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull Field field) {
+        super(context, access, field);
     }
 
     @Override
-    protected String buttonText() {
-        return I18n.format(MODID + ".config.boolean." + this.get(), this.localizedName());
+    protected String localizeValue(Boolean value) {
+        return I18n.format(MODID + ".config.boolean." + value);
     }
 
     @Override

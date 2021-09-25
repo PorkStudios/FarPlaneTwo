@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.config.gui.container;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
 import net.daporkchop.fp2.config.gui.util.ElementBounds;
@@ -43,7 +44,7 @@ import static org.lwjgl.opengl.GL11.*;
 /**
  * @author DaPorkchop_
  */
-public class ScrollingContainer extends AbstractConfigGuiContainer {
+public class ScrollingContainer<T> extends AbstractConfigGuiContainer<T> {
     protected static final Comparator<ComponentDimensions> COMPARATOR_LOWY_HIGHX = Comparator.comparingInt(ComponentDimensions::sizeY)
             .thenComparing(Comparator.comparingInt(ComponentDimensions::sizeX).reversed());
 
@@ -52,8 +53,8 @@ public class ScrollingContainer extends AbstractConfigGuiContainer {
 
     protected boolean draggingScrollbar = false;
 
-    public ScrollingContainer(@NonNull List<IConfigGuiElement> elements) {
-        super(elements);
+    public ScrollingContainer(@NonNull GuiObjectAccess<T> access, @NonNull List<IConfigGuiElement> elements) {
+        super(access, elements);
     }
 
     @Override

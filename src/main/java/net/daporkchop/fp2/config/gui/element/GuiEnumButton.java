@@ -21,13 +21,15 @@
 package net.daporkchop.fp2.config.gui.element;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IGuiContext;
 import net.daporkchop.fp2.config.gui.container.ScrollingContainer;
 import net.daporkchop.fp2.config.gui.screen.DefaultConfigGuiScreen;
-import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.client.resources.I18n;
 
 import java.lang.reflect.Field;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -36,28 +38,35 @@ import static net.daporkchop.fp2.FP2.*;
 /**
  * @author DaPorkchop_
  */
-public class GuiEnumButton extends GuiButton<Enum> {
-    protected final Enum[] values;
+public class GuiEnumButton<T, E extends Enum<E>> extends GuiButton<T, E> {
+    protected final E[] values;
+    protected final Field[] fields;
 
-    public GuiEnumButton(@NonNull IGuiContext context, Object instance, @NonNull Field field) {
-        super(context, instance, field);
+    public GuiEnumButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull Field field) {
+        super(context, access, field);
 
-        this.values = PorkUtil.<Class<Enum>>uncheckedCast(this.get().getDeclaringClass()).getEnumConstants();
+        Class<E> enumClazz = this.get().getDeclaringClass();
+
+        this.values = enumClazz.getEnumConstants();
+        this.fields = Stream.of(this.values)
+                .map(E::name)
+                .map(Stream.of(enumClazz.getDeclaredFields()).collect(Collectors.toMap(Field::getName, Function.identity()))::get)
+                .peek(Objects::requireNonNull)
+                .toArray(Field[]::new);
     }
 
     @Override
-    protected String buttonText() {
-        Enum value = this.get();
-        return I18n.format(MODID + ".config.enum.format", super.buttonText(), I18n.format(value.getDeclaringClass().getTypeName() + '.' + value));
+    protected String localizeValue(E value) {
+        return I18n.format(value.getDeclaringClass().getTypeName() + '#' + value);
     }
 
     @Override
     protected void handleClick(int button) {
         if (button == 0) { //left-click
-            Enum currentValue = this.get();
+            GuiObjectAccess<E> access = GuiObjectAccess.forStatic();
 
-            this.context.pushSubmenu(this.field.getName(), context -> new DefaultConfigGuiScreen(context, new ScrollingContainer(Stream.of(this.values)
-                    .map(value -> new ValueSelectionButton(context, value, value == currentValue))
+            this.context.pushSubmenu(this.field.getName(), access, context -> new DefaultConfigGuiScreen(context, new ScrollingContainer<>(access, Stream.of(this.values)
+                    .map(value -> new ValueSelectionButton(context, value))
                     .collect(Collectors.toList()))));
         }
     }
@@ -65,29 +74,33 @@ public class GuiEnumButton extends GuiButton<Enum> {
     /**
      * @author DaPorkchop_
      */
-    protected class ValueSelectionButton extends GuiButton<Enum> {
-        protected final boolean current;
+    protected class ValueSelectionButton extends GuiButton<E, E> {
+        protected final E value;
 
-        public ValueSelectionButton(@NonNull IGuiContext context, @NonNull Enum value, boolean current) {
-            super(context, null, Stream.of(value.getDeclaringClass().getDeclaredFields()).filter(field -> field.getName().equals(value.name())).findFirst().get());
+        public ValueSelectionButton(@NonNull IGuiContext context, @NonNull E value) {
+            super(context, GuiObjectAccess.forStatic(), GuiEnumButton.this.fields[value.ordinal()]);
 
-            this.current = current;
+            this.value = value;
         }
 
         @Override
         protected String langKey() {
-            Enum value = this.get();
-            return value.getDeclaringClass().getTypeName() + '.' + value;
+            return this.value.getDeclaringClass().getTypeName() + '#' + this.value;
         }
 
         @Override
-        protected String buttonText() {
-            return I18n.format(MODID + ".config.enum.selected." + this.current, super.buttonText());
+        protected String text() {
+            return I18n.format(MODID + ".config.enum.selected." + (this.value == GuiEnumButton.this.get()), this.localizeValue(this.value));
+        }
+
+        @Override
+        protected String localizeValue(E value) {
+            return I18n.format(this.value.getDeclaringClass().getTypeName() + '#' + value);
         }
 
         @Override
         protected void handleClick(int button) {
-            GuiEnumButton.this.set(this.get());
+            GuiEnumButton.this.set(this.value);
             this.context.pop();
         }
     }

@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.config.gui.element;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IGuiContext;
 
 import java.lang.reflect.Field;
@@ -28,20 +29,25 @@ import java.lang.reflect.Field;
 /**
  * @author DaPorkchop_
  */
-public class GuiSubmenuButton extends GuiButton<Object> {
-    public GuiSubmenuButton(@NonNull IGuiContext context, Object instance, @NonNull Field field) {
-        super(context, instance, field);
+public class GuiSubmenuButton<T, V> extends GuiButton<T, V> {
+    public GuiSubmenuButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull Field field) {
+        super(context, access, field);
     }
 
     @Override
-    protected String buttonText() {
+    protected String text() {
         return this.localizedName();
+    }
+
+    @Override
+    protected String localizeValue(V value) {
+        return null;
     }
 
     @Override
     protected void handleClick(int button) {
         if (button == 0) { //left-click
-            this.context.pushSubmenu(this.field.getName(), this.get());
+            this.context.pushSubmenu(this.field.getName(), this.access.child(this.field));
         }
     }
 }

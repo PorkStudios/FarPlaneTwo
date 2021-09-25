@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.config.gui.element;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IGuiContext;
 
 import java.lang.reflect.Field;
@@ -28,9 +29,9 @@ import java.lang.reflect.Field;
 /**
  * @author DaPorkchop_
  */
-public class GuiRenderModeButton extends GuiButton<String[]> {
-    public GuiRenderModeButton(@NonNull IGuiContext context, Object instance, @NonNull Field field) {
-        super(context, instance, field);
+public class GuiRenderModeButton<T> extends GuiSubmenuButton<T, String[]> {
+    public GuiRenderModeButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull Field field) {
+        super(context, access, field);
     }
 
     @Override

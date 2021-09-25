@@ -21,9 +21,9 @@
 package net.daporkchop.fp2.config.gui.element;
 
 import lombok.NonNull;
-import lombok.SneakyThrows;
 import net.daporkchop.fp2.config.ConfigHelper;
 import net.daporkchop.fp2.config.Setting;
+import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IGuiContext;
 import net.minecraft.client.resources.I18n;
 
@@ -36,15 +36,16 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractReflectiveConfigGuiElement<V> extends AbstractConfigGuiElement {
-    protected final Object instance;
+public abstract class AbstractReflectiveConfigGuiElement<T, V> extends AbstractConfigGuiElement {
+    @NonNull
+    protected final GuiObjectAccess<T> access;
     @NonNull
     protected final Field field;
 
-    public AbstractReflectiveConfigGuiElement(@NonNull IGuiContext context, Object instance, @NonNull Field field) {
+    public AbstractReflectiveConfigGuiElement(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull Field field) {
         super(context);
 
-        this.instance = instance;
+        this.access = access;
         this.field = field;
     }
 
@@ -53,18 +54,37 @@ public abstract class AbstractReflectiveConfigGuiElement<V> extends AbstractConf
         return this.context.localeKeyBase() + this.field.getName();
     }
 
+    protected String text() {
+        return I18n.format(MODID + ".config.property.format", this.localizedName(), this.localizeValue(this.get()));
+    }
+
+    protected abstract String localizeValue(V value);
+
     @Override
     protected void computeTooltipText0(@NonNull StringJoiner joiner) {
         super.computeTooltipText0(joiner);
+
+        { //indicator for this option's old/default values
+            String oldValue = this.localizeValue(this.access.getOld(this.field));
+            String defaultValue = this.localizeValue(this.access.getDefault(this.field));
+
+            String key = oldValue == null
+                    ? defaultValue == null ? null : "default"
+                    : defaultValue == null ? "old" : "oldDefault";
+
+            if (key != null) {
+                joiner.add(I18n.format(MODID + ".config." + key + ".tooltip", oldValue, defaultValue));
+            }
+        }
 
         { //indicator for this option's value range
             Setting.Range range = this.field.getAnnotation(Setting.Range.class);
             Setting.GuiRange guiRange = this.field.getAnnotation(Setting.GuiRange.class);
             if (range != null || guiRange != null) {
-                Number min = ConfigHelper.evaluate(guiRange != null ? guiRange.min() : range.min());
-                Number max = ConfigHelper.evaluate(guiRange != null ? guiRange.max() : range.max());
+                V min = uncheckedCast(ConfigHelper.evaluate(guiRange != null ? guiRange.min() : range.min()));
+                V max = uncheckedCast(ConfigHelper.evaluate(guiRange != null ? guiRange.max() : range.max()));
 
-                joiner.add(I18n.format(MODID + ".config.range.tooltip", min, max));
+                joiner.add(I18n.format(MODID + ".config.range.tooltip", this.localizeValue(min), this.localizeValue(max)));
             }
         }
 
@@ -76,15 +96,11 @@ public abstract class AbstractReflectiveConfigGuiElement<V> extends AbstractConf
         }
     }
 
-    @SneakyThrows(IllegalAccessException.class)
     protected V get() {
-        this.field.setAccessible(true);
-        return uncheckedCast(this.field.get(this.instance));
+        return this.access.get(this.field);
     }
 
-    @SneakyThrows(IllegalAccessException.class)
     protected void set(@NonNull V value) {
-        this.field.setAccessible(true);
-        this.field.set(this.instance, value);
+        this.access.set(this.field, value);
     }
 }

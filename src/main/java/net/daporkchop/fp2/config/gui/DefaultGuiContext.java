@@ -35,6 +35,7 @@ import org.lwjgl.input.Mouse;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static net.daporkchop.fp2.FP2.*;
@@ -47,55 +48,61 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
     protected final DefaultGuiContext topContext;
     protected final GuiScreen parentScreen;
 
-    protected final Object oldInstance;
-    protected final Object newInstance;
+    protected final GuiObjectAccess<?> access;
+    protected final Consumer callback;
 
     @Getter
     protected final String localeKeyBase;
 
     protected final IConfigGuiScreen screen;
 
-    public DefaultGuiContext(@NonNull String localeKeyBase, @NonNull Object instance) {
+    public DefaultGuiContext(@NonNull String localeKeyBase, @NonNull GuiObjectAccess<?> access, @NonNull Consumer callback) {
         this.topContext = this;
         this.parentScreen = MC.currentScreen;
 
-        this.oldInstance = instance;
-        this.newInstance = ConfigHelper.cloneConfigObject(instance);
+        this.access = access;
+        this.callback = callback;
 
         this.localeKeyBase = localeKeyBase;
-        this.screen = ConfigHelper.createConfigGuiScreen(this, this.newInstance);
+        this.screen = ConfigHelper.createConfigGuiScreen(this, this.access);
 
         MC.displayGuiScreen(this);
     }
 
-    protected DefaultGuiContext(@NonNull DefaultGuiContext parentContext, @NonNull String name, @NonNull Function<IGuiContext, IConfigGuiScreen> screenFactory) {
+    protected DefaultGuiContext(@NonNull DefaultGuiContext parentContext, @NonNull String name, @NonNull GuiObjectAccess<?> access, @NonNull Function<IGuiContext, IConfigGuiScreen> screenFactory) {
         this.topContext = parentContext.topContext;
         this.parentScreen = parentContext;
 
-        this.oldInstance = null;
-        this.newInstance = null;
+        this.access = access;
+        this.callback = null;
 
         this.localeKeyBase = parentContext.localeKeyBase() + name + '.';
         this.screen = screenFactory.apply(this);
     }
 
     @Override
-    public void pushSubmenu(@NonNull String name, @NonNull Function<IGuiContext, IConfigGuiScreen> screenFactory) {
-        MC.displayGuiScreen(new DefaultGuiContext(this, name, screenFactory));
+    public void pushSubmenu(@NonNull String name, @NonNull GuiObjectAccess<?> access, @NonNull Function<IGuiContext, IConfigGuiScreen> screenFactory) {
+        MC.displayGuiScreen(new DefaultGuiContext(this, name, access, screenFactory));
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void pop() {
         if (this.topContext == this) { //this is the top screen
-            if (this.oldInstance.equals(this.newInstance)) {
+            Object oldInstance = this.access.newInstance;
+            Object newInstance = this.access.oldInstance;
+
+            if (oldInstance.equals(newInstance)) {
                 FP2_LOG.info("closed config gui: unchanged");
             } else {
-                FP2_LOG.info("closed config gui: {}", this.newInstance);
+                FP2_LOG.info("closed config gui: {}", newInstance);
 
-                ConfigHelper.validateConfig(this.newInstance);
+                ConfigHelper.validateConfig(newInstance);
 
-                Setting.Requirement restartRequirement = ConfigHelper.restartRequirement(this.oldInstance, this.newInstance);
+                Setting.Requirement restartRequirement = ConfigHelper.restartRequirement(oldInstance, newInstance);
                 FP2_LOG.info("restart required: {}", restartRequirement);
+
+                this.callback.accept(newInstance);
 
                 switch (restartRequirement) {
                     case WORLD:

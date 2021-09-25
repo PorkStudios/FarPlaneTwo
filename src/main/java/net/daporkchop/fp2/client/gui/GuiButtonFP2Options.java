@@ -21,18 +21,14 @@
 package net.daporkchop.fp2.client.gui;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.config.ConfigHelper;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.config.TestConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.resources.I18n;
-import net.minecraftforge.fml.client.FMLClientHandler;
-import net.minecraftforge.fml.client.IModGuiFactory;
-import net.minecraftforge.fml.common.FMLLog;
-import net.minecraftforge.fml.common.Loader;
+
+import static net.daporkchop.fp2.FP2.*;
 
 /**
  * @author DaPorkchop_
@@ -41,7 +37,7 @@ public class GuiButtonFP2Options extends GuiButton {
     protected final GuiScreen parent;
 
     public GuiButtonFP2Options(int buttonId, int x, int y, @NonNull GuiScreen parent) {
-        super(buttonId, x, y, 40, 20, I18n.format("fp2.gui.buttonFP2Options"));
+        super(buttonId, x, y, 40, 20, I18n.format(MODID + ".gui.buttonFP2Options"));
 
         this.parent = parent;
     }
@@ -49,7 +45,7 @@ public class GuiButtonFP2Options extends GuiButton {
     @Override
     public boolean mousePressed(Minecraft mc, int mouseX, int mouseY) {
         if (super.mousePressed(mc, mouseX, mouseY)) {
-            ConfigHelper.createAndDisplayGuiContext("menu", new FP2Config(), System.out::println);
+            ConfigHelper.createAndDisplayGuiContext("menu", FP2Config.DEFAULT_CONFIG, FP2Config.global(), FP2Config::set);
             return true;
         } else {
             return false;

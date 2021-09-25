@@ -55,11 +55,10 @@ public class SPacketReady implements IMessage {
     public static class Handler implements IMessageHandler<SPacketReady, IMessage> {
         @Override
         public IMessage onMessage(SPacketReady message, MessageContext ctx) {
-            ThreadingHelper.scheduleTaskInWorldThread(ctx.getClientHandler().world,
-                    () -> ctx.getClientHandler().client.player.sendMessage(new TextComponentTranslation(MODID + ".playerJoinWarningMessage")));
-
             GlobalEventExecutor.INSTANCE.schedule(() -> { //TODO: better workaround
                 ThreadingHelper.scheduleTaskInWorldThread(ctx.getClientHandler().world, () -> {
+                    ctx.getClientHandler().client.player.sendMessage(new TextComponentTranslation(MODID + ".playerJoinWarningMessage"));
+
                     Constants.FP2_LOG.debug("server notified us that we are ready to go!");
                     ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorld_init();
 

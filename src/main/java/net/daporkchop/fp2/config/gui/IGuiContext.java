@@ -31,11 +31,11 @@ import java.util.function.Function;
 public interface IGuiContext {
     String localeKeyBase();
 
-    default void pushSubmenu(@NonNull String name, @NonNull Object instance) {
-        this.pushSubmenu(name, context -> ConfigHelper.createConfigGuiScreen(context, instance));
+    default void pushSubmenu(@NonNull String name, @NonNull GuiObjectAccess<?> access) {
+        this.pushSubmenu(name, access, context -> ConfigHelper.createConfigGuiScreen(context, access));
     }
 
-    void pushSubmenu(@NonNull String name, @NonNull Function<IGuiContext, IConfigGuiScreen> screenFactory);
+    void pushSubmenu(@NonNull String name, @NonNull GuiObjectAccess<?> access, @NonNull Function<IGuiContext, IConfigGuiScreen> screenFactory);
 
     void pop();
 

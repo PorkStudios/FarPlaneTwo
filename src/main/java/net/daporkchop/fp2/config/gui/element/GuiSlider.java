@@ -23,6 +23,7 @@ package net.daporkchop.fp2.config.gui.element;
 import lombok.NonNull;
 import net.daporkchop.fp2.config.ConfigHelper;
 import net.daporkchop.fp2.config.Setting;
+import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IGuiContext;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
 import net.daporkchop.lib.common.misc.string.PStrings;
@@ -42,11 +43,11 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class GuiSlider extends AbstractReflectiveConfigGuiElement<Number> {
+public class GuiSlider<T> extends AbstractReflectiveConfigGuiElement<T, Number> {
     protected final net.minecraftforge.fml.client.config.GuiSlider slider;
 
-    public GuiSlider(@NonNull IGuiContext context, Object instance, @NonNull Field field) {
-        super(context, instance, field);
+    public GuiSlider(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull Field field) {
+        super(context, access, field);
 
         Setting.Range rangeAnnotation = field.getAnnotation(Setting.Range.class);
         Setting.GuiRange guiRangeAnnotation = field.getAnnotation(Setting.GuiRange.class);
@@ -75,7 +76,10 @@ public class GuiSlider extends AbstractReflectiveConfigGuiElement<Number> {
         }
 
         this.slider = new net.minecraftforge.fml.client.config.GuiSlider(0, 0, 0, 0, 0, "", "", minValue.doubleValue(), maxValue.doubleValue(), this.get().doubleValue(), fp, true,
-                slider -> this.set(boxFunction.apply(fp ? slider.getValue() : slider.getValueInt())));
+                slider -> {
+                    this.set(boxFunction.apply(fp ? slider.getValue() : slider.getValueInt()));
+                    slider.displayString = this.text();
+                });
     }
 
     @Override
@@ -90,15 +94,15 @@ public class GuiSlider extends AbstractReflectiveConfigGuiElement<Number> {
 
     @Override
     public void init() {
-        String text = I18n.format(this.langKey());
-
-        String prefixFormatKey = this.langKey() + ".prefixFormat";
-        this.slider.dispString = I18n.format(I18n.hasKey(prefixFormatKey) ? prefixFormatKey : MODID + ".config.slider.prefixFormat", text);
-
-        String suffixFormatKey = this.langKey() + ".suffixFormat";
-        this.slider.suffix = I18n.format(I18n.hasKey(suffixFormatKey) ? suffixFormatKey : MODID + ".config.slider.suffixFormat", text);
-
         this.slider.updateSlider();
+    }
+
+    @Override
+    protected String localizeValue(Number value) {
+        String text = this.slider.showDecimal ? String.valueOf(value.doubleValue()) : String.valueOf(value.longValue());
+
+        String formatKey = this.langKey() + ".format";
+        return I18n.format(I18n.hasKey(formatKey) ? formatKey : MODID + ".config.slider.format", text);
     }
 
     @Override

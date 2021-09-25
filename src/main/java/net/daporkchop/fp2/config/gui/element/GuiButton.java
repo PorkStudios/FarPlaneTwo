@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.config.gui.element;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IGuiContext;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
 import net.minecraft.client.resources.I18n;
@@ -37,16 +38,16 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class GuiButton<V> extends AbstractReflectiveConfigGuiElement<V> {
+public abstract class GuiButton<T, V> extends AbstractReflectiveConfigGuiElement<T, V> {
     protected GuiButtonExt button = new GuiButtonExt(0, 0, 0, "");
 
-    public GuiButton(@NonNull IGuiContext context, Object instance, @NonNull Field field) {
-        super(context, instance, field);
+    public GuiButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull Field field) {
+        super(context, access, field);
     }
 
     @Override
     public void init() {
-        this.button.displayString = this.buttonText();
+        this.button.displayString = this.text();
     }
 
     @Override
@@ -100,10 +101,6 @@ public abstract class GuiButton<V> extends AbstractReflectiveConfigGuiElement<V>
     @Override
     public void keyPressed(char typedChar, int keyCode) {
         //no-op
-    }
-
-    protected String buttonText() {
-        return I18n.format(this.langKey());
     }
 
     protected abstract void handleClick(int button);

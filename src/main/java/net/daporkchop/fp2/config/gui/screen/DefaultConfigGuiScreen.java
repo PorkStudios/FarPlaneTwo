@@ -24,6 +24,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.config.ConfigHelper;
 import net.daporkchop.fp2.config.Setting;
+import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.IConfigGuiScreen;
 import net.daporkchop.fp2.config.gui.IGuiContext;
@@ -71,10 +72,10 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
     protected ComponentDimensions dimensions = ComponentDimensions.ZERO;
     protected GuiButtonExt doneButton = new GuiButtonExt(0, 0, 0, I18n.format("gui.done"));
 
-    public DefaultConfigGuiScreen(@NonNull IGuiContext context, @NonNull Object instance) {
+    public DefaultConfigGuiScreen(@NonNull IGuiContext context, @NonNull GuiObjectAccess<?> access) {
         this.context = context;
 
-        Setting.GuiCategories categories = instance.getClass().getAnnotation(Setting.GuiCategories.class);
+        Setting.GuiCategories categories = access.clazz().getAnnotation(Setting.GuiCategories.class);
         if (categories == null) { //create default categories
             //dummy class to allow us to access the default value for the {@link Setting.GuiCategories} annotation without needing to implement it manually
             @Setting.GuiCategories(@Setting.CategoryMeta(name = "default"))
@@ -84,7 +85,7 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
             categories = DummyClass.class.getAnnotation(Setting.GuiCategories.class);
         }
 
-        checkArg(categories.value().length != 0, "%s has no GUI categories!", instance.getClass());
+        checkArg(categories.value().length != 0, "%s has no GUI categories!", access.clazz());
         Map<String, Setting.CategoryMeta> categoriesByName = Stream.of(categories.value())
                 .reduce(new LinkedHashMap<>(),
                         (map, meta) -> {
@@ -93,7 +94,7 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
                         },
                         (a, b) -> null);
 
-        Map<Setting.CategoryMeta, List<IConfigGuiElement>> elementsByCategory = ConfigHelper.getConfigPropertyFields(instance.getClass())
+        Map<Setting.CategoryMeta, List<IConfigGuiElement>> elementsByCategory = ConfigHelper.getConfigPropertyFields(access.clazz())
                 .collect(Collectors.groupingBy(
                         field -> {
                             String categoryName = Optional.ofNullable(field.getAnnotation(Setting.GuiCategory.class)).map(Setting.GuiCategory::value).orElse("default");
@@ -101,14 +102,14 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
                             checkArg(meta != null, "no such category: %s", categoryName);
                             return meta;
                         },
-                        Collectors.mapping(field -> ConfigHelper.createConfigGuiElement(context, instance, field), Collectors.toList())));
+                        Collectors.mapping(field -> ConfigHelper.createConfigGuiElement(context, access, field), Collectors.toList())));
 
-        this.element = new ScrollingContainer(categoriesByName.values().stream()
+        this.element = new ScrollingContainer<>(access, categoriesByName.values().stream()
                 .map(meta -> new AbstractMap.SimpleEntry<>(meta, elementsByCategory.get(meta)))
                 .filter(entry -> entry.getValue() != null && !entry.getValue().isEmpty())
                 .flatMap(entry -> Stream.of(
                         elementsByCategory.size() == 1 || !entry.getKey().title() ? null : new GuiTitle(context, entry.getKey().name() + ".category"),
-                        ConfigHelper.createConfigGuiContainer(entry.getKey(), entry.getValue())))
+                        ConfigHelper.createConfigGuiContainer(entry.getKey(), access, entry.getValue())))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList()));
     }
@@ -129,7 +130,7 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
     public void pack() {
         ComponentDimensions dimensions = this.element.possibleDimensions(this.dimensions.sizeX() - (PADDING << 1), this.dimensions.sizeY() - (HEADER_TITLE_HEIGHT + FOOTER_HEIGHT + (PADDING << 1)))
                 .min(Comparator.comparingInt(ComponentDimensions::sizeY)).get(); //find the shortest possible dimensions
-        this.element.bounds(new ElementBounds((this.dimensions.sizeX() - dimensions.sizeX()) >> 1, HEADER_TITLE_HEIGHT, dimensions.sizeX(), dimensions.sizeY()));
+        this.element.bounds(new ElementBounds((this.dimensions.sizeX() - dimensions.sizeX()) >> 1, HEADER_TITLE_HEIGHT + PADDING, dimensions.sizeX(), dimensions.sizeY()));
 
         this.doneButton.x = (this.dimensions.sizeX() - this.doneButton.width) >> 1;
         this.doneButton.y = this.dimensions.sizeY() - FOOTER_HEIGHT;

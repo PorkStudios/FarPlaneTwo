@@ -21,16 +21,19 @@ key.fp2.debug.rebuildUVs=Rebuild far texture UVs
 # Config options
 #
 
-fp2.config.boolean.true=%s: §aEnabled§r
-fp2.config.boolean.false=%s: §cDisabled§r
+fp2.config.property.format=%s: %s
 
-fp2.config.enum.format=%s: %s
+fp2.config.boolean.true=§aEnabled§r
+fp2.config.boolean.false=§cDisabled§r
+
 fp2.config.enum.selected.true=%s §o(selected)§r
 fp2.config.enum.selected.false=%s
 
-fp2.config.slider.prefixFormat=%s:\u0020
-fp2.config.slider.suffixFormat=
+fp2.config.slider.format=%s
 
+fp2.config.old.tooltip=Current value: %1$s
+fp2.config.default.tooltip=Default value: %2$s
+fp2.config.oldDefault.tooltip=Current value: %1$s\nDefault value: %2$s
 fp2.config.range.tooltip=Minimum: %1$s\nMaximum: %2$s
 
 fp2.config.restartRequired.tooltip.WORLD=§cChanges to this option require a world reload to take effect!
@@ -47,26 +50,28 @@ fp2.config.menu.renderDistance.category=Render Distance
 fp2.config.menu.maxLevels=LoD Levels
 fp2.config.menu.maxLevels.tooltip=The number of detail levels to use.\nThe first detail level has a radius of §o<Cutoff Distance>§r and is rendered with maximum visual quality. Each subsequent detail level has twice the radius and half the quality of the previous level.\nIncreasing this value by 1 will double the radius rendered by FP2.
 fp2.config.menu.cutoffDistance=Cutoff Distance
-fp2.config.menu.cutoffDistance.suffixFormat=\u0020blocks
+fp2.config.menu.cutoffDistance.format=%s blocks
 fp2.config.menu.cutoffDistance.tooltip=The radius (in blocks) of the maximum detail level.\nThis value is doubled for each subsequent level, so a value of 256 will mean a 256 block radius for the maximum detail level, a 512 block radius for the next level, etc.
 
-fp2.config.menu.threads.category=Multithreading
-fp2.config.menu.trackingThreads=Tracking Threads
-fp2.config.menu.trackingThreads.tooltip=The number of threads to use for keeping track of what terrain is visible to players.\nUnless you're running a server with lots of players, this doesn't need to be set very high.
-fp2.config.menu.terrainThreads=Terrain Threads
-fp2.config.menu.terrainThreads.tooltip=The number of threads to use for loading, saving, generating and simplifying terrain.\nThese threads do most of the work for the mod. You'll probably want to set this a bit lower than your CPU's core count - about 75%% is a reasonable default.
-fp2.config.menu.bakeThreads=Render Threads
-fp2.config.menu.bakeThreads.tooltip=The number of threads to use on the client for preparing terrain data for rendering.
-
 fp2.config.menu.renderModes=Render Modes...
+fp2.config.menu.renderModes.tooltip=Can't be configured through the GUI yet!
 
 fp2.config.menu.performance=Performance
 fp2.config.menu.performance.title=FarPlaneTwo Performance Options
 
+fp2.config.menu.performance.client.category=Client
 fp2.config.menu.performance.gpuFrustumCulling=GPU Frustum Culling
 fp2.config.menu.performance.gpuFrustumCulling.tooltip=Allows frustum culling to be done on the GPU instead of the CPU.\nThis can significantly increase FPS, especially on high-end GPUs.
 fp2.config.menu.performance.maxBakesProcessedPerFrame=Max. Bakes/Frame
 fp2.config.menu.performance.maxBakesProcessedPerFrame.tooltip=Limits the maximum number of baked tiles for the client to process per frame.\nIncreasing this value will increase the rate at which the client can process terrain data from the server, at the cost of more stutters when loading terrain. Lowering this value will reduce or eliminate stutters, but may cause higher tile update latency and client memory usage.
+
+fp2.config.menu.performance.threads.category=Multithreading
+fp2.config.menu.performance.trackingThreads=Tracking Threads
+fp2.config.menu.performance.trackingThreads.tooltip=The number of threads to use for keeping track of what terrain is visible to players.\nUnless you're running a server with lots of players, this doesn't need to be set very high.
+fp2.config.menu.performance.terrainThreads=Terrain Threads
+fp2.config.menu.performance.terrainThreads.tooltip=The number of threads to use for loading, saving, generating and simplifying terrain.\nThese threads do most of the work for the mod. You'll probably want to set this a bit lower than your CPU's core count - about 75%% is a reasonable default.
+fp2.config.menu.performance.bakeThreads=Render Threads
+fp2.config.menu.performance.bakeThreads.tooltip=The number of threads to use on the client for preparing terrain data for rendering.
 
 fp2.config.menu.compatibility=Compatibility
 fp2.config.menu.compatibility.title=FarPlaneTwo Compatibility Options
@@ -83,12 +88,12 @@ fp2.config.menu.compatibility.workaroundIntelMultidrawNotWorking=Broken MultiDra
 fp2.config.menu.compatibility.workaroundIntelMultidrawNotWorking.title=Workaround - Broken MultiDraw (Intel)
 fp2.config.menu.compatibility.workaroundIntelMultidrawNotWorking.tooltip=A workaround for an issue with Intel's official GPU driver which results in multidraw drawing commands being so horrifically buggy that they might as well not work at all.\nMore specifically: flickering, things being rendered in the wrong positions, memory corruption, driver segfaults, etc.
 
-net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState.AUTO=§bAuto§r
-net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState.AUTO.tooltip=Automatically determines whether or not this workaround should be enabled based on your detected system information.
-net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState.ENABLED=§aEnable§r
-net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState.ENABLED.tooltip=Forces this workaround to be enabled, regardless of whether or not it would be needed.\nNote that this can needlessly hurt performance on systems where the workaround isn't strictly necessary.
-net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState.DISABLED=§cDisable§r
-net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState.DISABLED.tooltip=Forces this workaround to be disabled, even if it would be needed.\nNote that this can cause things to break unexpectedly on systems where the workaround would be required.
+net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState#AUTO=§bAuto§r
+net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState#AUTO.tooltip=Automatically determines whether or not this workaround should be enabled based on your detected system information.
+net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState#ENABLED=§aEnable§r
+net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState#ENABLED.tooltip=Forces this workaround to be enabled, regardless of whether or not it would be needed.\nNote that this can needlessly hurt performance on systems where the workaround isn't strictly necessary.
+net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState#DISABLED=§cDisable§r
+net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState#DISABLED.tooltip=Forces this workaround to be disabled, even if it would be needed.\nNote that this can cause things to break unexpectedly on systems where the workaround would be required.
 
 fp2.config.menu.debug=Debug
 fp2.config.menu.debug.tooltip=These options are intended to be used while debugging FarPlaneTwo.\n§c§lAll options in this category will do nothing unless debug mode is enabled! To enable debug mode, add §c§o-Dfp2.debug=true §c§lto your JVM launch arguments. If you don't know what that means, you should leave this category alone.
@@ -105,14 +110,14 @@ fp2.config.menu.debug.debugColors=Debug Colors
 fp2.config.menu.debug.debugColors.title=Debug Colors
 fp2.config.menu.debug.debugColors.tooltip=Causes FP2's terrain to be colored differently.
 
-net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode.DISABLED=Disabled
-net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode.DISABLED.tooltip=Debug colors are disabled; FP2 terrain is rendered normally.
-net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode.LEVEL=Tile Level
-net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode.LEVEL.tooltip=Colors tiles based on their detail level.
-net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode.POSITION=Tile Position
-net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode.POSITION.tooltip=Colors tiles in a checkerboard patter based on their position and detail level.
-net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode.FACE_NORMAL=Face Normal
-net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode.FACE_NORMAL.tooltip=Colors individual triangles based on their normal vector.
+net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#DISABLED=Disabled
+net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#DISABLED.tooltip=Debug colors are disabled; FP2 terrain is rendered normally.
+net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#LEVEL=Tile Level
+net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#LEVEL.tooltip=Colors tiles based on their detail level.
+net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#POSITION=Tile Position
+net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#POSITION.tooltip=Colors tiles in a checkerboard patter based on their position and detail level.
+net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#FACE_NORMAL=Face Normal
+net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#FACE_NORMAL.tooltip=Colors individual triangles based on their normal vector.
 
 fp2.config.menu.debug.server.category=Server
 fp2.config.menu.debug.exactGeneration=Exact Generation

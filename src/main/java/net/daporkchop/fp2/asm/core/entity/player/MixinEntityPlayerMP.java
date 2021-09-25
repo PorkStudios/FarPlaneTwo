@@ -110,17 +110,18 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPl
                 this.activeContext.notifyConfigChange(this.mergedConfig);
             }
         } else {
-            this.activateContext(mode == null ? null : mode.serverContext(this, this.fp2_IFarPlayer_world()));
+            this.activateMode(mode);
         }
     }
 
     @Unique
-    private void activateContext(IFarServerContext<?, ?> context) {
+    private void activateMode(IFarRenderMode<?, ?> mode) {
         if (this.activeContext != null) { //an existing context is active, we need to shut it down before it's replaced
             this.activeContext.deactivate();
         }
 
-        this.activeContext = context;
+        this.activeMode = mode;
+        this.activeContext = mode == null ? null : mode.serverContext(this, this.fp2_IFarPlayer_world());
 
         if (this.activeContext != null) { //the new config is non-null, let's activate it!
             this.activeContext.activate(this.mergedConfig);
@@ -134,7 +135,9 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPl
 
     @Override
     public void fp2_IFarPlayer_sendPacket(@NonNull IMessage packet) {
-        NETWORK_WRAPPER.sendTo(packet, uncheckedCast(this));
+        if (!this.closed) {
+            NETWORK_WRAPPER.sendTo(packet, uncheckedCast(this));
+        }
     }
 
     @CalledFromServerThread
