@@ -24,12 +24,14 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
@@ -40,7 +42,6 @@ import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.ref.Ref;
 import net.daporkchop.lib.common.ref.ThreadRef;
-import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -96,11 +97,11 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     public abstract IFarTileProvider<POS, T> tileProvider(@NonNull WorldServer world);
 
     @Override
-    public abstract IFarServerContext<POS, T> serverContext(@NonNull IFarPlayer player, @NonNull IFarWorldServer world);
+    public abstract IFarServerContext<POS, T> serverContext(@NonNull IFarPlayer player, @NonNull IFarWorldServer world, @NonNull FP2Config config);
 
     @SideOnly(Side.CLIENT)
     @Override
-    public abstract IFarClientContext<POS, T> clientContext(@NonNull WorldClient world);
+    public abstract IFarClientContext<POS, T> clientContext(@NonNull IFarWorldClient world, @NonNull FP2Config config);
 
     @Override
     public SimpleRecycler<T> tileRecycler() {

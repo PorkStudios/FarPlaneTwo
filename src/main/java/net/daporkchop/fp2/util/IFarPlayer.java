@@ -22,9 +22,6 @@ package net.daporkchop.fp2.util;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -33,10 +30,6 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
  * @author DaPorkchop_
  */
 public interface IFarPlayer {
-    IFarWorldServer fp2_IFarPlayer_world();
-
-    FP2Config fp2_IFarPlayer_config();
-
     @CalledFromServerThread
     void fp2_IFarPlayer_serverConfig(FP2Config serverConfig);
 
@@ -44,7 +37,10 @@ public interface IFarPlayer {
     void fp2_IFarPlayer_clientConfig(FP2Config clientConfig);
 
     @CalledFromServerThread
-    <POS extends IFarPos, T extends IFarTile> IFarServerContext<POS, T> fp2_IFarPlayer_activeContext();
+    void fp2_IFarPlayer_joinedWorld(@NonNull IFarWorldServer world);
+
+    @CalledFromServerThread
+    void fp2_IFarPlayer_ackInitWorld();
 
     void fp2_IFarPlayer_sendPacket(@NonNull IMessage packet);
 

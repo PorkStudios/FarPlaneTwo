@@ -28,6 +28,7 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
@@ -60,7 +61,9 @@ public class SPacketUnloadTile implements IMessage {
     public static class Handler implements IMessageHandler<SPacketUnloadTile, IMessage> {
         @Override
         public IMessage onMessage(SPacketUnloadTile message, MessageContext ctx) {
-            ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorldClient_contextFor(message.mode).tileCache().unloadTile(uncheckedCast(message.pos));
+            ThreadingHelper.scheduleTaskInWorldThread(ctx.getClientHandler().world, () -> { //TODO: run this on network thread and somehow guarantee that the context will be active
+                ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorldClient_activeContext().tileCache().unloadTile(uncheckedCast(message.pos));
+            });
             return null;
         }
     }

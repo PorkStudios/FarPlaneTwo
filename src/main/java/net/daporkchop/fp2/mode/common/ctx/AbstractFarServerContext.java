@@ -23,19 +23,17 @@ package net.daporkchop.fp2.mode.common.ctx;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.config.FP2ConfigOld;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.net.server.SPacketRenderMode;
+import net.daporkchop.fp2.net.server.SPacketUpdateConfig;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
 import net.minecraft.entity.player.EntityPlayerMP;
 
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -52,32 +50,22 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
 
     protected FP2Config config;
 
-    protected boolean active = false;
+    protected boolean closed = false;
 
-    public AbstractFarServerContext(@NonNull IFarPlayer player, @NonNull IFarWorldServer world, @NonNull IFarRenderMode<POS, T> mode) {
+    public AbstractFarServerContext(@NonNull IFarPlayer player, @NonNull IFarWorldServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<POS, T> mode) {
         this.player = player;
         this.world = world;
         this.mode = mode;
-        this.tileProvider = world.fp2_IFarWorldServer_tileProviderFor(mode);
-    }
-
-    @CalledFromServerThread
-    @Override
-    public void activate(@NonNull FP2Config config) {
-        checkState(!this.active, "already active!");
-        this.active = true;
         this.config = config;
 
-        //tell the client that we're switching render modes before adding them to the tracker to ensure that it arrives before any tile data packets
-        this.player.fp2_IFarPlayer_sendPacket(new SPacketRenderMode().mode(this.mode));
-
+        this.tileProvider = world.fp2_IFarWorldServer_tileProviderFor(mode);
         this.tileProvider.tracker().playerAdd((EntityPlayerMP) this.player);
     }
 
     @CalledFromServerThread
     @Override
     public void notifyConfigChange(@NonNull FP2Config config) {
-        checkState(this.active, "inactive context!");
+        checkState(!this.closed, "already closed!");
         this.config = config;
 
         //no reason to bother scheduling an update immediately, it'll happen on the next server tick anyway
@@ -85,9 +73,9 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
 
     @CalledFromServerThread
     @Override
-    public void deactivate() {
-        checkState(this.active, "inactive context!");
-        this.active = false;
+    public void close() {
+        checkState(!this.closed, "already closed!");
+        this.closed = true;
 
         this.tileProvider.tracker().playerRemove((EntityPlayerMP) this.player);
     }
@@ -95,7 +83,7 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
     @CalledFromServerThread
     @Override
     public void update() {
-        checkState(this.active, "inactive context!");
+        checkState(!this.closed, "already closed!");
 
         this.tileProvider.tracker().playerMove((EntityPlayerMP) this.player);
     }

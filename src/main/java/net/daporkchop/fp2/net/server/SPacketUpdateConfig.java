@@ -22,9 +22,8 @@ package net.daporkchop.fp2.net.server;
 
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.util.Constants;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -36,24 +35,27 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
  */
 @Setter
 @Getter
-public class SPacketRenderMode implements IMessage {
-    @NonNull
-    protected IFarRenderMode<?, ?> mode;
+public class SPacketUpdateConfig implements IMessage {
+    protected FP2Config config;
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
+        this.config = buf.readBoolean() ? FP2Config.parse(Constants.readString(buf)) : null;
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        Constants.writeString(buf, this.mode.name());
+        buf.writeBoolean(this.config != null);
+
+        if (this.config != null) {
+            Constants.writeString(buf, this.config.toString());
+        }
     }
 
-    public static class Handler implements IMessageHandler<SPacketRenderMode, IMessage> {
+    public static class Handler implements IMessageHandler<SPacketUpdateConfig, IMessage> {
         @Override
-        public IMessage onMessage(SPacketRenderMode message, MessageContext ctx) {
-            ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorldClient_switchTo(message.mode);
+        public IMessage onMessage(SPacketUpdateConfig message, MessageContext ctx) {
+            ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorldClient_config(message.config);
             return null;
         }
     }

@@ -21,51 +21,38 @@
 package net.daporkchop.fp2.net.server;
 
 import io.netty.buffer.ByteBuf;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
-import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
-import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
+import net.daporkchop.fp2.net.client.CPacketClientConfig;
+import net.daporkchop.fp2.net.client.CPacketInitWorldACK;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-import static net.daporkchop.lib.common.util.PorkUtil.*;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
+ * Sent by the server to tell the client to initialize its current {@link IFarWorldClient} instance.
+ *
  * @author DaPorkchop_
  */
-@Getter
-@Setter
-public class SPacketTileData implements IMessage {
-    @NonNull
-    protected IFarRenderMode<?, ?> mode;
-    @NonNull
-    protected TileSnapshot<?, ?> tile;
-
+public class SPacketInitWorld implements IMessage {
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
-        this.tile = new TileSnapshot<>(buf, this.mode);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        Constants.writeString(buf, this.mode.name());
-        this.tile.write(buf);
     }
 
-    public static class Handler implements IMessageHandler<SPacketTileData, IMessage> {
+    public static class Handler implements IMessageHandler<SPacketInitWorld, IMessage> {
         @Override
-        public IMessage onMessage(SPacketTileData message, MessageContext ctx) {
-            ThreadingHelper.scheduleTaskInWorldThread(ctx.getClientHandler().world, () -> { //TODO: run this on network thread and somehow guarantee that the context will be active
-                IFarWorldClient world = (IFarWorldClient) ctx.getClientHandler().world;
-                IFarClientContext<?, ?> context = world.fp2_IFarWorldClient_activeContext();
-                context.tileCache().receiveTile(uncheckedCast(message.tile.compressed()));
+        public IMessage onMessage(SPacketInitWorld message, MessageContext ctx) {
+            ctx.getClientHandler().client.addScheduledTask(() -> {
+                ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorld_init();
+
+                NETWORK_WRAPPER.sendToServer(new CPacketInitWorldACK());
+                NETWORK_WRAPPER.sendToServer(new CPacketClientConfig().config(FP2Config.global()));
             });
             return null;
         }

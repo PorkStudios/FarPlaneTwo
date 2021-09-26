@@ -22,11 +22,13 @@ package net.daporkchop.fp2.asm.core.entity.player;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.net.server.SPacketInitWorld;
+import net.daporkchop.fp2.net.server.SPacketSessionBegin;
+import net.daporkchop.fp2.net.server.SPacketSessionEnd;
+import net.daporkchop.fp2.net.server.SPacketUpdateConfig;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
 import net.minecraft.entity.player.EntityPlayer;
@@ -55,25 +57,23 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPl
     private FP2Config mergedConfig;
 
     @Unique
-    private IFarRenderMode activeMode;
+    private IFarWorldServer world;
+
     @Unique
-    private IFarServerContext activeContext;
+    private IFarRenderMode<?, ?> mode;
+    @Unique
+    private IFarServerContext<?, ?> context;
+
+    @Unique
+    private boolean clientWorldInitialized;
+    @Unique
+    private boolean sessionOpen;
 
     @Unique
     private boolean closed;
 
     public MixinEntityPlayerMP() {
         super(null, null);
-    }
-
-    @Override
-    public IFarWorldServer fp2_IFarPlayer_world() {
-        return uncheckedCast(this.world);
-    }
-
-    @Override
-    public FP2Config fp2_IFarPlayer_config() {
-        return this.mergedConfig;
     }
 
     @CalledFromServerThread
@@ -98,39 +98,85 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPl
         if (Objects.equals(this.mergedConfig, mergedConfig)) { //config hasn't changed, do nothing
             return;
         }
-        this.mergedConfig = mergedConfig;
 
-        IFarRenderMode<?, ?> mode = this.mergedConfig == null ? null : Stream.of(this.mergedConfig.renderModes())
+        IFarRenderMode<?, ?> mode = mergedConfig == null ? null : Stream.of(mergedConfig.renderModes())
                 .filter(IFarRenderMode.REGISTRY::contains)
                 .map(IFarRenderMode.REGISTRY::get)
                 .findFirst().orElse(null);
 
-        if (this.activeMode == mode) { //render mode hasn't changed
-            if (this.activeContext != null) { //render mode is non-null, we should notify the currently active context that the config has changed
-                this.activeContext.notifyConfigChange(this.mergedConfig);
+        if (this.mode == mode) { //render mode hasn't changed
+            this.updateMergedConfig(mergedConfig);
+
+            if (this.sessionOpen) { //the session is active, we should notify the currently active context that the config has changed
+                this.context.notifyConfigChange(mergedConfig);
             }
-        } else {
-            this.activateMode(mode);
+        } else { //render mode changed: end current session (if any), then set the current mode and begin a new session
+            if (this.sessionOpen) {
+                this.endSession();
+            }
+
+            this.mode = mode;
+            this.updateMergedConfig(mergedConfig);
+
+            if (this.clientWorldInitialized) {
+                this.beginSession();
+            }
         }
     }
 
     @Unique
-    private void activateMode(IFarRenderMode<?, ?> mode) {
-        if (this.activeContext != null) { //an existing context is active, we need to shut it down before it's replaced
-            this.activeContext.deactivate();
+    protected void updateMergedConfig(FP2Config mergedConfig) {
+        this.mergedConfig = mergedConfig;
+        this.fp2_IFarPlayer_sendPacket(new SPacketUpdateConfig().config(mergedConfig));
+    }
+
+    @CalledFromServerThread
+    @Override
+    public void fp2_IFarPlayer_joinedWorld(@NonNull IFarWorldServer world) {
+        if (this.sessionOpen) { //close any existing session, as it's in a world which is no longer the current one
+            this.endSession();
         }
 
-        this.activeMode = mode;
-        this.activeContext = mode == null ? null : mode.serverContext(this, this.fp2_IFarPlayer_world());
+        this.clientWorldInitialized = false;
+        this.world = world;
 
-        if (this.activeContext != null) { //the new config is non-null, let's activate it!
-            this.activeContext.activate(this.mergedConfig);
+        this.fp2_IFarPlayer_sendPacket(new SPacketInitWorld());
+    }
+
+    @Unique
+    protected void beginSession() {
+        checkState(!this.sessionOpen, "a session is already open!");
+        this.sessionOpen = true;
+
+        if (this.mode != null) {
+            this.fp2_IFarPlayer_sendPacket(new SPacketSessionBegin());
+
+            this.context = this.mode.serverContext(this, this.world, this.mergedConfig);
         }
     }
 
+    @Unique
+    protected void endSession() {
+        checkState(this.sessionOpen, "no session is currently open!");
+        this.sessionOpen = false;
+
+        if (this.context != null) {
+            this.context.close();
+            this.context = null;
+
+            this.fp2_IFarPlayer_sendPacket(new SPacketSessionEnd());
+        }
+    }
+
+    @CalledFromServerThread
     @Override
-    public <POS extends IFarPos, T extends IFarTile> IFarServerContext<POS, T> fp2_IFarPlayer_activeContext() {
-        return uncheckedCast(this.activeContext);
+    public void fp2_IFarPlayer_ackInitWorld() {
+        checkState(!this.clientWorldInitialized, "client world was already initialized!");
+        this.clientWorldInitialized = true;
+
+        if (this.mergedConfig != null) { //the merged config is non-null - we can open a new session!
+            this.beginSession();
+        }
     }
 
     @Override
@@ -145,8 +191,8 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPl
     public void fp2_IFarPlayer_update() {
         checkState(!this.closed, "already closed!");
 
-        if (this.activeContext != null) {
-            this.activeContext.update();
+        if (this.context != null) {
+            this.context.update();
         }
     }
 

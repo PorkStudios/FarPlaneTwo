@@ -21,29 +21,17 @@
 package net.daporkchop.fp2.net.server;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.concurrent.GlobalEventExecutor;
-import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
-import net.daporkchop.fp2.net.client.CPacketClientConfig;
-import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
-import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-import java.util.concurrent.TimeUnit;
-
-import static net.daporkchop.fp2.FP2.*;
-import static net.daporkchop.fp2.util.Constants.*;
-
 /**
- * Notifies the client that the server is ready for the client to send its configuration.
+ * Sent by the server to tell the client to get ready to initiate a new session.
  *
  * @author DaPorkchop_
  */
-//TODO: this still seems to be being received too early sometimes
-public class SPacketReady implements IMessage {
+public class SPacketSessionBegin implements IMessage {
     @Override
     public void fromBytes(ByteBuf buf) {
     }
@@ -52,19 +40,10 @@ public class SPacketReady implements IMessage {
     public void toBytes(ByteBuf buf) {
     }
 
-    public static class Handler implements IMessageHandler<SPacketReady, IMessage> {
+    public static class Handler implements IMessageHandler<SPacketSessionBegin, IMessage> {
         @Override
-        public IMessage onMessage(SPacketReady message, MessageContext ctx) {
-            GlobalEventExecutor.INSTANCE.schedule(() -> { //TODO: better workaround
-                ThreadingHelper.scheduleTaskInWorldThread(ctx.getClientHandler().world, () -> {
-                    ctx.getClientHandler().client.player.sendMessage(new TextComponentTranslation(MODID + ".playerJoinWarningMessage"));
-
-                    Constants.FP2_LOG.debug("server notified us that we are ready to go!");
-                    ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorld_init();
-
-                    NETWORK_WRAPPER.sendToServer(new CPacketClientConfig().config(FP2Config.global()));
-                });
-            }, 1L, TimeUnit.SECONDS);
+        public IMessage onMessage(SPacketSessionBegin message, MessageContext ctx) {
+            ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorldClient_beginSession();
             return null;
         }
     }

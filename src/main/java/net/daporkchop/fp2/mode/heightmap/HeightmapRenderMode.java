@@ -23,10 +23,12 @@ package net.daporkchop.fp2.mode.heightmap;
 import io.github.opencubicchunks.cubicchunks.cubicgen.flat.FlatTerrainProcessor;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
@@ -46,7 +48,6 @@ import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
 import net.daporkchop.fp2.util.registry.LinkedOrderedRegistry;
-import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.gen.ChunkGeneratorFlat;
 import net.minecraftforge.fml.relauncher.Side;
@@ -92,14 +93,14 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
     }
 
     @Override
-    public IFarServerContext<HeightmapPos, HeightmapTile> serverContext(@NonNull IFarPlayer player, @NonNull IFarWorldServer world) {
-        return new HeightmapServerContext(player, world, this);
+    public IFarServerContext<HeightmapPos, HeightmapTile> serverContext(@NonNull IFarPlayer player, @NonNull IFarWorldServer world, @NonNull FP2Config config) {
+        return new HeightmapServerContext(player, world, config, this);
     }
 
     @SideOnly(Side.CLIENT)
     @Override
-    public IFarClientContext<HeightmapPos, HeightmapTile> clientContext(@NonNull WorldClient world) {
-        return new HeightmapClientContext(this);
+    public IFarClientContext<HeightmapPos, HeightmapTile> clientContext(@NonNull IFarWorldClient world, @NonNull FP2Config config) {
+        return new HeightmapClientContext(world, config, this);
     }
 
     @Override

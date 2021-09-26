@@ -23,6 +23,7 @@ package net.daporkchop.fp2.asm.core.client.renderer;
 import net.daporkchop.fp2.asm.interfaz.client.renderer.IMixinRenderGlobal;
 import net.daporkchop.fp2.client.VanillaRenderabilityTracker;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
+import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.util.alloc.DirectMemoryAllocator;
@@ -103,12 +104,11 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
             allow = 1, require = 1)
     private void fp2_renderBlockLayer_pre(BlockRenderLayer layer, double partialTicks, int pass, Entity entity, CallbackInfoReturnable<Integer> ci) {
         IFarClientContext<?, ?> context = ((IFarWorldClient) this.world).fp2_IFarWorldClient_activeContext();
-        if (context != null) {
-            Minecraft mc = Minecraft.getMinecraft();
-
-            mc.profiler.startSection("fp2_render_pre");
-            context.renderer().render(mc, layer, true);
-            mc.profiler.endSection();
+        IFarRenderer renderer;
+        if (context != null && (renderer = context.renderer()) != null) {
+            this.mc.profiler.startSection("fp2_render_pre");
+            renderer.render(this.mc, layer, true);
+            this.mc.profiler.endSection();
         }
     }
 
@@ -118,11 +118,9 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
     private void fp2_renderBlockLayer_post(BlockRenderLayer layer, double partialTicks, int pass, Entity entity, CallbackInfoReturnable<Integer> ci) {
         IFarClientContext<?, ?> context = ((IFarWorldClient) this.world).fp2_IFarWorldClient_activeContext();
         if (context != null) {
-            Minecraft mc = Minecraft.getMinecraft();
-
-            mc.profiler.startSection("fp2_render_post");
-            context.renderer().render(mc, layer, false);
-            mc.profiler.endSection();
+            this.mc.profiler.startSection("fp2_render_post");
+            context.renderer().render(this.mc, layer, false);
+            this.mc.profiler.endSection();
         }
     }
 

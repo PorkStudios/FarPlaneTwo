@@ -21,52 +21,29 @@
 package net.daporkchop.fp2.net.server;
 
 import io.netty.buffer.ByteBuf;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
-import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
-import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-import static net.daporkchop.lib.common.util.PorkUtil.*;
-
 /**
+ * Notifies the client to stop the current session.
+ *
  * @author DaPorkchop_
  */
-@Getter
-@Setter
-public class SPacketTileData implements IMessage {
-    @NonNull
-    protected IFarRenderMode<?, ?> mode;
-    @NonNull
-    protected TileSnapshot<?, ?> tile;
-
+public class SPacketSessionEnd implements IMessage {
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
-        this.tile = new TileSnapshot<>(buf, this.mode);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        Constants.writeString(buf, this.mode.name());
-        this.tile.write(buf);
     }
 
-    public static class Handler implements IMessageHandler<SPacketTileData, IMessage> {
+    public static class Handler implements IMessageHandler<SPacketSessionEnd, IMessage> {
         @Override
-        public IMessage onMessage(SPacketTileData message, MessageContext ctx) {
-            ThreadingHelper.scheduleTaskInWorldThread(ctx.getClientHandler().world, () -> { //TODO: run this on network thread and somehow guarantee that the context will be active
-                IFarWorldClient world = (IFarWorldClient) ctx.getClientHandler().world;
-                IFarClientContext<?, ?> context = world.fp2_IFarWorldClient_activeContext();
-                context.tileCache().receiveTile(uncheckedCast(message.tile.compressed()));
-            });
+        public IMessage onMessage(SPacketSessionEnd message, MessageContext ctx) {
+            ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorldClient_endSession();
             return null;
         }
     }

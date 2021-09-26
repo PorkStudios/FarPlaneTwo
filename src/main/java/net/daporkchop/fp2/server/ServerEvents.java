@@ -24,9 +24,8 @@ import io.github.opencubicchunks.cubicchunks.api.world.CubeDataEvent;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.net.server.SPacketReady;
+import net.daporkchop.fp2.net.server.SPacketInitWorld;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
-import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -79,34 +78,27 @@ public class ServerEvents {
     }
 
     @SubscribeEvent
+    public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.player instanceof EntityPlayerMP) {
+            ((IFarPlayer) event.player).fp2_IFarPlayer_serverConfig(FP2Config.global());
+        }
+    }
+
+    @SubscribeEvent
     public void onPlayerJoinWorld(EntityJoinWorldEvent event) {
         if (!event.getWorld().isRemote && event.getEntity() instanceof EntityPlayerMP) {
             IFarPlayer player = (IFarPlayer) event.getEntity();
 
-            //reset player config to null (will clear any already sent state and close the existing context in the event on a dimension switch)
-            player.fp2_IFarPlayer_clientConfig(null);
-
-            //reset server config
-            player.fp2_IFarPlayer_serverConfig(FP2Config.global());
-
-            //notify the client that we're ready for them to send us their config
-            player.fp2_IFarPlayer_sendPacket(new SPacketReady());
+            //cubic chunks world data information has already been sent
+            player.fp2_IFarPlayer_joinedWorld((IFarWorldServer) event.getWorld());
         }
     }
 
-    /*@SubscribeEvent //TODO: i might need to give this special handling...
-    public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
-        IFarRenderMode<?, ?> mode;
-        if (!event.player.world.isRemote && (mode = ((IFarPlayer) event.player).fp2_IFarPlayer_activeMode()) != null) {
-            ((IFarWorldServer) event.player.getServer().getWorld(event.fromDim)).fp2_IFarWorldServer_tileProviderFor(mode).tracker().playerRemove((EntityPlayerMP) event.player);
-            ((IFarWorldServer) event.player.getServer().getWorld(event.toDim)).fp2_IFarWorldServer_tileProviderFor(mode).tracker().playerAdd((EntityPlayerMP) event.player);
-        }
-    }*/
-
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        Constants.FP2_LOG.debug("Handling logout for player {}", event.player.getName());
-        ((IFarPlayer) event.player).fp2_IFarPlayer_close();
+        if (event.player instanceof EntityPlayerMP) {
+            ((IFarPlayer) event.player).fp2_IFarPlayer_close();
+        }
     }
 
     @SubscribeEvent

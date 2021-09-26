@@ -22,8 +22,10 @@ package net.daporkchop.fp2.mode.api;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
@@ -35,7 +37,6 @@ import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.event.RegisterRenderModesEvent;
 import net.daporkchop.fp2.util.registry.LinkedOrderedRegistry;
 import net.daporkchop.fp2.util.registry.OrderedRegistry;
-import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -87,18 +88,20 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      *
      * @param player the player
      * @param world  the world
+     * @param config
      * @return the new {@link IFarServerContext}
      */
-    IFarServerContext<POS, T> serverContext(@NonNull IFarPlayer player, @NonNull IFarWorldServer world);
+    IFarServerContext<POS, T> serverContext(@NonNull IFarPlayer player, @NonNull IFarWorldServer world, @NonNull FP2Config config);
 
     /**
      * Creates a new {@link IFarClientContext} for the given world.
      *
-     * @param world the world
+     * @param world  the world
+     * @param config
      * @return the new {@link IFarClientContext}
      */
     @SideOnly(Side.CLIENT)
-    IFarClientContext<POS, T> clientContext(@NonNull WorldClient world);
+    IFarClientContext<POS, T> clientContext(@NonNull IFarWorldClient world, @NonNull FP2Config config);
 
     /**
      * @return a recycler for tile objects

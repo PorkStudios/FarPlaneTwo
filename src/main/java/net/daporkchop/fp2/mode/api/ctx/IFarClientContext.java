@@ -20,11 +20,14 @@
 
 package net.daporkchop.fp2.mode.api.ctx;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
+import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
 
 /**
  * A client-side context for a specific {@link IFarRenderMode} in a {@link IFarWorldClient}.
@@ -32,6 +35,16 @@ import net.daporkchop.fp2.mode.api.client.IFarTileCache;
  * @author DaPorkchop_
  */
 public interface IFarClientContext<POS extends IFarPos, T extends IFarTile> extends AutoCloseable {
+    /**
+     * @return the render mode
+     */
+    IFarRenderMode<POS, T> mode();
+
+    /**
+     * @return the world
+     */
+    IFarWorldClient world();
+
     /**
      * @return a cache for tiles used by this context
      */
@@ -43,13 +56,22 @@ public interface IFarClientContext<POS extends IFarPos, T extends IFarTile> exte
     IFarRenderer renderer();
 
     /**
-     * @return the render mode
+     * @return the config currently being used
      */
-    IFarRenderMode<POS, T> mode();
+    FP2Config config();
 
+    /**
+     * Called whenever the player's config is changed.
+     *
+     * @param config the new config
+     */
+    @CalledFromNetworkThread
+    void notifyConfigChange(@NonNull FP2Config config);
+
+    /**
+     * Closes this context, releasing any allocated resources.
+     */
+    @CalledFromNetworkThread
     @Override
-    default void close() {
-        this.renderer().release();
-        this.tileCache().release();
-    }
+    void close();
 }

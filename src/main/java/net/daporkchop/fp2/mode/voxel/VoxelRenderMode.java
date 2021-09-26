@@ -22,10 +22,12 @@ package net.daporkchop.fp2.mode.voxel;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
@@ -43,7 +45,6 @@ import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
 import net.daporkchop.fp2.util.registry.LinkedOrderedRegistry;
-import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -86,14 +87,14 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
     }
 
     @Override
-    public IFarServerContext<VoxelPos, VoxelTile> serverContext(@NonNull IFarPlayer player, @NonNull IFarWorldServer world) {
-        return new VoxelServerContext(player, world, this);
+    public IFarServerContext<VoxelPos, VoxelTile> serverContext(@NonNull IFarPlayer player, @NonNull IFarWorldServer world, @NonNull FP2Config config) {
+        return new VoxelServerContext(player, world, config, this);
     }
 
     @SideOnly(Side.CLIENT)
     @Override
-    public IFarClientContext<VoxelPos, VoxelTile> clientContext(@NonNull WorldClient world) {
-        return new VoxelClientContext(this);
+    public IFarClientContext<VoxelPos, VoxelTile> clientContext(@NonNull IFarWorldClient world, @NonNull FP2Config config) {
+        return new VoxelClientContext(world, config, this);
     }
 
     @Override

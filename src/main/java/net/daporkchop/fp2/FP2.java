@@ -27,16 +27,18 @@ import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.debug.FP2Debug;
 import net.daporkchop.fp2.net.client.CPacketClientConfig;
 import net.daporkchop.fp2.net.client.CPacketDropAllTiles;
-import net.daporkchop.fp2.net.server.SPacketReady;
-import net.daporkchop.fp2.net.server.SPacketRenderMode;
+import net.daporkchop.fp2.net.client.CPacketInitWorldACK;
+import net.daporkchop.fp2.net.server.SPacketInitWorld;
+import net.daporkchop.fp2.net.server.SPacketSessionBegin;
+import net.daporkchop.fp2.net.server.SPacketSessionEnd;
 import net.daporkchop.fp2.net.server.SPacketTileData;
 import net.daporkchop.fp2.net.server.SPacketUnloadTile;
 import net.daporkchop.fp2.net.server.SPacketUnloadTiles;
+import net.daporkchop.fp2.net.server.SPacketUpdateConfig;
 import net.daporkchop.fp2.server.FP2Server;
 import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.event.FMLConstructionEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLModIdMappingEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
@@ -112,9 +114,13 @@ public class FP2 {
     protected void registerPackets() {
         int id = 0;
         NETWORK_WRAPPER.registerMessage(CPacketClientConfig.Handler.class, CPacketClientConfig.class, id++, Side.SERVER);
+        NETWORK_WRAPPER.registerMessage(CPacketInitWorldACK.Handler.class, CPacketInitWorldACK.class, id++, Side.SERVER);
         NETWORK_WRAPPER.registerMessage(CPacketDropAllTiles.Handler.class, CPacketDropAllTiles.class, id++, Side.SERVER);
-        NETWORK_WRAPPER.registerMessage(SPacketReady.Handler.class, SPacketReady.class, id++, Side.CLIENT);
-        NETWORK_WRAPPER.registerMessage(SPacketRenderMode.Handler.class, SPacketRenderMode.class, id++, Side.CLIENT);
+
+        NETWORK_WRAPPER.registerMessage(SPacketInitWorld.Handler.class, SPacketInitWorld.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(SPacketSessionBegin.Handler.class, SPacketSessionBegin.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(SPacketSessionEnd.Handler.class, SPacketSessionEnd.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(SPacketUpdateConfig.Handler.class, SPacketUpdateConfig.class, id++, Side.CLIENT);
         NETWORK_WRAPPER.registerMessage(SPacketTileData.Handler.class, SPacketTileData.class, id++, Side.CLIENT);
         NETWORK_WRAPPER.registerMessage(SPacketUnloadTile.Handler.class, SPacketUnloadTile.class, id++, Side.CLIENT);
         NETWORK_WRAPPER.registerMessage(SPacketUnloadTiles.Handler.class, SPacketUnloadTiles.class, id++, Side.CLIENT);

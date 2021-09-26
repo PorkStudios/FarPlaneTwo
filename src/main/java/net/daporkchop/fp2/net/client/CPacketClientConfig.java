@@ -57,7 +57,7 @@ public class CPacketClientConfig implements IMessage {
         @Override
         public IMessage onMessage(CPacketClientConfig message, MessageContext ctx) {
             ThreadingHelper.scheduleTaskInWorldThread(ctx.getServerHandler().player.world, () -> {
-                FP2_LOG.debug("Player {} initiated FP2 session with config {}", ctx.getServerHandler().player.getName(), message.config);
+                FP2_LOG.debug("player {} initiated FP2 session with config {}", ctx.getServerHandler().player.getName(), message.config);
 
                 ((IFarPlayer) ctx.getServerHandler().player).fp2_IFarPlayer_clientConfig(message.config);
             });

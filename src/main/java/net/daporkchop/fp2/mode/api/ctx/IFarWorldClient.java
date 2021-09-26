@@ -20,10 +20,11 @@
 
 package net.daporkchop.fp2.mode.api.ctx;
 
-import lombok.NonNull;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.util.annotation.CalledFromClientThread;
+import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -35,23 +36,25 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  */
 @SideOnly(Side.CLIENT)
 public interface IFarWorldClient extends IFarWorld {
-    /**
-     * Gets the {@link IFarClientContext} used by the given {@link IFarRenderMode} in this world.
-     *
-     * @param mode the {@link IFarRenderMode}
-     * @return the {@link IFarClientContext} used by the given {@link IFarRenderMode} in this world
-     */
-    <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> fp2_IFarWorldClient_contextFor(@NonNull IFarRenderMode<POS, T> mode);
+    @CalledFromNetworkThread
+    void fp2_IFarWorldClient_config(FP2Config config);
 
-    /**
-     * Makes the given render mode the active one for this world.
-     *
-     * @param mode the new mode. If {@code null}, rendering will be disabled
-     */
-    void fp2_IFarWorldClient_switchTo(IFarRenderMode<?, ?> mode);
+    @CalledFromNetworkThread
+    void fp2_IFarWorldClient_beginSession();
+
+    @CalledFromNetworkThread
+    void fp2_IFarWorldClient_endSession();
 
     /**
      * @return the currently active render context, or {@code null} if none are active
      */
     <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> fp2_IFarWorldClient_activeContext();
+
+    @CalledFromClientThread
+    @Override
+    void fp2_IFarWorld_init();
+
+    @CalledFromClientThread
+    @Override
+    void fp2_IFarWorld_close();
 }

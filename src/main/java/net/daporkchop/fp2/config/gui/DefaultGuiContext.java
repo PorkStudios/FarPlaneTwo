@@ -89,8 +89,8 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
     @SuppressWarnings("unchecked")
     public void pop() {
         if (this.topContext == this) { //this is the top screen
-            Object oldInstance = this.access.newInstance;
-            Object newInstance = this.access.oldInstance;
+            Object oldInstance = this.access.oldInstance;
+            Object newInstance = this.access.newInstance;
 
             if (oldInstance.equals(newInstance)) {
                 FP2_LOG.info("closed config gui: unchanged");

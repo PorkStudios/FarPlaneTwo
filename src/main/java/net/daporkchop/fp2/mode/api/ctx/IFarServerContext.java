@@ -34,7 +34,7 @@ import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
  *
  * @author DaPorkchop_
  */
-public interface IFarServerContext<POS extends IFarPos, T extends IFarTile> {
+public interface IFarServerContext<POS extends IFarPos, T extends IFarTile> extends AutoCloseable {
     /**
      * @return the player which this context belongs to
      */
@@ -61,14 +61,6 @@ public interface IFarServerContext<POS extends IFarPos, T extends IFarTile> {
     FP2Config config();
 
     /**
-     * Activates this context.
-     *
-     * @param config the new config
-     */
-    @CalledFromServerThread
-    void activate(@NonNull FP2Config config);
-
-    /**
      * Called whenever the player's config is changed.
      *
      * @param config the new config
@@ -77,10 +69,11 @@ public interface IFarServerContext<POS extends IFarPos, T extends IFarTile> {
     void notifyConfigChange(@NonNull FP2Config config);
 
     /**
-     * Deactivates this context, releasing any allocated resources.
+     * Closes this context, deactivating it if needed and releasing any allocated resources.
      */
     @CalledFromServerThread
-    void deactivate();
+    @Override
+    void close();
 
     /**
      * Updates this context.

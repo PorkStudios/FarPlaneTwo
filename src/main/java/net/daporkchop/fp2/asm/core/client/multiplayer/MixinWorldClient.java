@@ -20,25 +20,28 @@
 
 package net.daporkchop.fp2.asm.core.client.multiplayer;
 
-import lombok.NonNull;
 import net.daporkchop.fp2.asm.core.world.MixinWorld;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
-import net.daporkchop.lib.common.function.throwing.EFunction;
-import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
+import net.daporkchop.fp2.util.annotation.CalledFromClientThread;
+import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.world.World;
+import net.minecraft.util.text.TextComponentTranslation;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
-import java.util.Map;
-import java.util.function.Function;
+import java.util.Objects;
 
+import static net.daporkchop.fp2.FP2.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -46,35 +49,82 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Mixin(WorldClient.class)
 public abstract class MixinWorldClient extends MixinWorld implements IFarWorldClient {
-    @Unique
-    private final Map<IFarRenderMode, IFarClientContext> contexts = new ObjObjConcurrentHashMap<>();
-    @Unique
-    private final Function<IFarRenderMode, IFarClientContext> computeFunction = (EFunction<IFarRenderMode, IFarClientContext>) m ->
-            //always create context on client thread
-            Minecraft.getMinecraft().addScheduledTask(() -> m.clientContext(uncheckedCast(this))).get();
+    @Shadow
+    @Final
+    private Minecraft mc;
 
     @Unique
-    private IFarClientContext active;
+    private FP2Config config;
 
+    @Unique
+    private IFarClientContext<?, ?> context;
+
+    @Unique
+    private boolean sessionOpen;
+
+    @CalledFromClientThread
     @Override
-    public <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> fp2_IFarWorldClient_contextFor(@NonNull IFarRenderMode<POS, T> mode) {
-        return uncheckedCast(this.contexts.computeIfAbsent(mode, this.computeFunction));
+    public void fp2_IFarWorld_init() {
+        super.fp2_IFarWorld_init();
+
+        this.mc.player.sendMessage(new TextComponentTranslation(MODID + ".playerJoinWarningMessage"));
     }
 
+    @CalledFromNetworkThread
     @Override
-    public void fp2_IFarWorldClient_switchTo(IFarRenderMode<?, ?> mode) {
-        FP2_LOG.info("switching render mode to {}", mode != null ? mode.name() : null);
-        this.active = mode != null ? this.fp2_IFarWorldClient_contextFor(mode) : null;
+    public void fp2_IFarWorldClient_config(FP2Config config) {
+        if (Objects.equals(this.config, config)) { //nothing changed, so nothing to do!
+            return;
+        }
+
+        this.config = config;
+
+        if (this.context != null) {
+            if (this.modeFor(this.config) == this.context.mode()) {
+                this.context.notifyConfigChange(config);
+            } else {
+                FP2_LOG.warn("render mode was switched while a session is active!");
+            }
+        }
+    }
+
+    @CalledFromNetworkThread
+    @Override
+    public void fp2_IFarWorldClient_beginSession() {
+        checkState(!this.sessionOpen, "a session is already open!");
+        this.sessionOpen = true;
+
+        IFarRenderMode<?, ?> mode = this.modeFor(this.config);
+        if (mode != null) {
+            this.context = mode.clientContext(uncheckedCast(this), this.config);
+        }
+    }
+
+    @Unique
+    protected IFarRenderMode<?, ?> modeFor(FP2Config config) {
+        return config != null && config.renderModes().length != 0 ? IFarRenderMode.REGISTRY.get(config.renderModes()[0]) : null;
+    }
+
+    @CalledFromNetworkThread
+    @Override
+    public void fp2_IFarWorldClient_endSession() {
+        checkState(this.sessionOpen, "no session is currently open!");
+        this.sessionOpen = false;
+
+        if (this.context != null) {
+            this.context.close();
+            this.context = null;
+        }
     }
 
     @Override
     public <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> fp2_IFarWorldClient_activeContext() {
-        return uncheckedCast(this.active);
+        return uncheckedCast(this.context);
     }
 
+    @CalledFromClientThread
     @Override
     public void fp2_IFarWorld_close() {
-        this.contexts.forEach((mode, context) -> context.close());
-        this.contexts.clear();
+        //TODO: see if i need to do any cleanup on the client thread
     }
 }
