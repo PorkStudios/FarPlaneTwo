@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.asm.debug.client.renderer;
 
-import net.daporkchop.fp2.config.FP2ConfigOld;
+import net.daporkchop.fp2.config.FP2Config;
 import net.minecraft.client.renderer.ChunkRenderContainer;
 import net.minecraft.client.renderer.RenderGlobal;
 import net.minecraft.util.BlockRenderLayer;
@@ -38,7 +38,7 @@ public abstract class MixinRenderGlobal {
                     target = "Lnet/minecraft/client/renderer/ChunkRenderContainer;renderChunkLayer(Lnet/minecraft/util/BlockRenderLayer;)V"),
             allow = 1)
     private void fp2_debug_renderChunkLayer_skipVanilla(ChunkRenderContainer container, BlockRenderLayer layer) {
-        if (!FP2ConfigOld.debug.skipRenderWorld) {
+        if (!FP2Config.global().debug().vanillaTerrainRendering()) {
             container.renderChunkLayer(layer);
         }
     }

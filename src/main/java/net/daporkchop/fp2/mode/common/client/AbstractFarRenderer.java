@@ -24,7 +24,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
-import net.daporkchop.fp2.config.FP2ConfigOld;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -48,8 +47,6 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
     protected final IFarRenderMode<POS, T> mode;
 
     protected final BakeManager<POS, T> bakeManager;
-
-    protected final int maxLevel = FP2ConfigOld.maxLevels - 1;
 
     protected final GLBuffer drawCommandBuffer = new GLBuffer(GL_STREAM_DRAW);
 

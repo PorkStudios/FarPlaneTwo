@@ -24,7 +24,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
-import net.daporkchop.fp2.config.FP2ConfigOld;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
@@ -78,7 +78,7 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
             return this.handle;
         }
 
-        if (!(FP2_DEBUG && FP2ConfigOld.debug.disableExactGeneration) && this.world.anyVanillaTerrainExistsAt(this.pos)) {
+        if (!(FP2_DEBUG && !FP2Config.global().debug().exactGeneration()) && this.world.anyVanillaTerrainExistsAt(this.pos)) {
             //there's some terrain at the given position, let's try to generate something with it
             if (this.pos.level() == 0) {
                 //the position is at detail level 0, do exact generation

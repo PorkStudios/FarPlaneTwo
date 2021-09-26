@@ -30,6 +30,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.With;
 import net.daporkchop.fp2.config.gui.element.GuiRenderModeButton;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.lib.common.util.PorkUtil;
@@ -56,6 +57,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
 @Getter
+@With
 @EqualsAndHashCode
 @Setting.GuiCategories({
         @Setting.CategoryMeta(name = "default", title = false),
@@ -155,7 +157,6 @@ public final class FP2Config {
 
     @Builder.Default
     @Setting.Range(min = @Setting.Constant(1), max = @Setting.Constant(field = "net.daporkchop.fp2.util.Constants#MAX_LODS"))
-    @Setting.RestartRequired(Setting.Requirement.WORLD)
     @Setting.GuiCategory(CATEGORY_RENDER_DISTANCE)
     private final int maxLevels = preventInline(3);
 
@@ -197,6 +198,7 @@ public final class FP2Config {
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     @NoArgsConstructor
     @Getter
+    @With
     @EqualsAndHashCode
     @Setting.GuiCategories({
             @Setting.CategoryMeta(name = "default", title = false),
@@ -249,6 +251,7 @@ public final class FP2Config {
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     @NoArgsConstructor
     @Getter
+    @With
     @EqualsAndHashCode
     @Setting.GuiCategories({
             @Setting.CategoryMeta(name = "default", title = false),
@@ -309,6 +312,7 @@ public final class FP2Config {
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     @NoArgsConstructor
     @Getter
+    @With
     @EqualsAndHashCode
     @Setting.GuiCategories({
             @Setting.CategoryMeta(name = "default", title = false),
@@ -325,6 +329,7 @@ public final class FP2Config {
         @Setting.GuiCategory(CATEGORY_CLIENT)
         private final boolean backfaceCulling = preventInline(true);
 
+        @Builder.Default
         @Setting.GuiCategory(CATEGORY_CLIENT)
         private final boolean vanillaTerrainRendering = preventInline(true);
 

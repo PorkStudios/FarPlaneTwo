@@ -28,7 +28,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.config.FP2ConfigOld;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
@@ -85,6 +84,8 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
     protected final Map<POS, Entry> entries = new ConcurrentHashMap<>();
     protected final Map<IFarServerContext<POS, T>, Context> contexts = new ConcurrentHashMap<>();
+
+    protected final int generationThreads = FP2Config.global().performance().terrainThreads();
 
     public AbstractPlayerTracker(@NonNull IFarTileProvider<POS, T> world) {
         this.world = world;
@@ -234,7 +235,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
         //only ever accessed to by tracker thread
         protected final Set<POS> loadedPositions = new ObjectOpenHashSet<>();
-        protected final Set<POS> waitingPositions = new ObjectOpenHashSet<>(FP2ConfigOld.generationThreads << 4);
+        protected final Set<POS> waitingPositions = new ObjectOpenHashSet<>(AbstractPlayerTracker.this.generationThreads << 4);
         protected final RecyclingArrayDeque<POS> queuedPositions = new RecyclingArrayDeque<>();
 
         //these are using a single object reference instead of flattened fields to allow the value to be replaced atomically. to ensure coherent access to the values,
@@ -314,7 +315,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         private void fillLoadQueue() {
             this.assertOnTrackerThread();
 
-            for (POS pos; this.waitingPositions.size() < (FP2ConfigOld.generationThreads << 2) && (pos = this.queuedPositions.poll()) != null; ) {
+            for (POS pos; this.waitingPositions.size() < (AbstractPlayerTracker.this.generationThreads << 2) && (pos = this.queuedPositions.poll()) != null; ) {
                 checkState(this.waitingPositions.add(pos), "position already queued?!?");
                 AbstractPlayerTracker.this.beginTracking(this, pos);
             }

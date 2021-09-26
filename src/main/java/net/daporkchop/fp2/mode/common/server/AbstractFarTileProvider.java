@@ -25,7 +25,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
-import net.daporkchop.fp2.config.FP2ConfigOld;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -101,7 +101,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
             // a volatile, in-memory world clone to prevent huge numbers of chunks/cubes from potentially being generated (and therefore saved)
         }
 
-        this.lowResolution = FP2ConfigOld.performance.lowResolutionEnable && this.generatorRough != null && this.generatorRough.supportsLowResolution();
+        this.lowResolution = this.generatorRough != null && this.generatorRough.supportsLowResolution();
 
         this.scaler = this.createScaler();
 
@@ -121,7 +121,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
                 },
                 ThreadingHelper.workerGroupBuilder()
                         .world(this.world)
-                        .threads(FP2ConfigOld.generationThreads)
+                        .threads(FP2Config.global().performance().terrainThreads())
                         .threadFactory(PThreadFactories.builder().daemon().minPriority()
                                 .collapsingId().name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build()),
                 PriorityTask.approxComparator());
@@ -189,11 +189,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
 
         if (!this.updatesPending.isEmpty()) {
             this.storage.markAllDirty(StreamSupport.stream(Spliterators.spliterator(this.updatesPending, DISTINCT | NONNULL), false), this.lastCompletedTick)
-                    .forEach(pos -> {
-                        if (pos.level() < FP2ConfigOld.maxLevels) {
-                            this.scheduler.schedule(this.updateTaskFor(pos));
-                        }
-                    });
+                    .count(); //arbitrary lightweight terminal operation
             this.updatesPending.clear();
         }
     }

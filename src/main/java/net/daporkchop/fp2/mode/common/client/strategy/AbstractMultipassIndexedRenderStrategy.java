@@ -30,7 +30,7 @@ import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
 import net.daporkchop.fp2.client.gl.command.elements.buffer.MultidrawIndirectMultipassDrawElementsCommandBuffer;
 import net.daporkchop.fp2.client.gl.command.elements.buffer.SingleDrawIndirectMultipassDrawElementsCommandBuffer;
 import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
-import net.daporkchop.fp2.config.FP2ConfigOld;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -57,7 +57,7 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
 
     @Override
     public IRenderIndex<POS, MultipassIndexedBakeOutput, DrawElementsCommand> createIndex() {
-        return FP2ConfigOld.performance.gpuFrustumCulling
+        return FP2Config.global().performance().gpuFrustumCulling()
                 ? new GPUCulledRenderIndex<>(this)
                 : new CPUCulledRenderIndex<>(this);
     }

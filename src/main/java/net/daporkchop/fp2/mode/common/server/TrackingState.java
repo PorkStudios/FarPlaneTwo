@@ -26,10 +26,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.config.FP2ConfigOld;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.lib.math.vector.d.Vec3d;
-import net.minecraft.entity.player.EntityPlayerMP;
 
 import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;

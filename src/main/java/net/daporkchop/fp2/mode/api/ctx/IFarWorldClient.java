@@ -39,6 +39,8 @@ public interface IFarWorldClient extends IFarWorld {
     @CalledFromNetworkThread
     void fp2_IFarWorldClient_config(FP2Config config);
 
+    FP2Config fp2_IFarWorldClient_config();
+
     @CalledFromNetworkThread
     void fp2_IFarWorldClient_beginSession();
 

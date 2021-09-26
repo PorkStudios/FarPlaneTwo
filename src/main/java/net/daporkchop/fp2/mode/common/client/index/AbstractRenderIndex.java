@@ -28,7 +28,7 @@ import net.daporkchop.fp2.client.gl.command.IDrawCommand;
 import net.daporkchop.fp2.client.gl.command.IMultipassDrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
-import net.daporkchop.fp2.config.FP2ConfigOld;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -126,7 +126,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
     public void draw(int level, int pass) {
         checkIndex(RENDER_PASS_COUNT, pass);
 
-        if (FP2_DEBUG && FP2ConfigOld.debug.skipLevel0 && level == 0) { //debug mode: skip level-0 rendering if needed
+        if (FP2_DEBUG && !FP2Config.global().debug().levelZeroRendering() && level == 0) { //debug mode: skip level-0 rendering if needed
             return;
         }
 

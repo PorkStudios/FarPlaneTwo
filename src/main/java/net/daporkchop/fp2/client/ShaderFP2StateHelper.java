@@ -22,13 +22,14 @@ package net.daporkchop.fp2.client;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.config.FP2ConfigOld;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
+import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
+import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.lib.common.math.PMath.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL31.*;
 
@@ -40,7 +41,7 @@ public class ShaderFP2StateHelper {
     private final GLBuffer BUFFER = new GLBuffer(GL_STREAM_DRAW);
 
     private final int OFFSET_VIEW = 0;
-    private final int SIZE_VIEW = 3 * INT_SIZE + 2 * FLOAT_SIZE;
+    private final int SIZE_VIEW = 3 * INT_SIZE;
 
     private final int TOTAL_SIZE = OFFSET_VIEW + SIZE_VIEW;
 
@@ -51,25 +52,19 @@ public class ShaderFP2StateHelper {
         { //view
             long addr = ADDR_VIEW;
 
+            FP2Config config = PorkUtil.fallbackIfNull(((IFarWorldClient) mc.world).fp2_IFarWorldClient_config(), FP2Config.DEFAULT_CONFIG);
+
             //int renderDistance
-            PUnsafe.putInt(addr, FP2ConfigOld.renderDistance);
+            PUnsafe.putInt(addr, config.cutoffDistance() << config.maxLevels() >> 1);
             addr += INT_SIZE;
 
             //int maxLevels
-            PUnsafe.putInt(addr, FP2ConfigOld.maxLevels);
+            PUnsafe.putInt(addr, config.maxLevels());
             addr += INT_SIZE;
 
             //int levelCutoffDistance
-            PUnsafe.putInt(addr, FP2ConfigOld.levelCutoffDistance);
+            PUnsafe.putInt(addr, config.cutoffDistance());
             addr += INT_SIZE;
-
-            //float transitionStart
-            PUnsafe.putFloat(addr, (float) lerp(0.5d, 1.0d, FP2ConfigOld.client.levelTransitionStart));
-            addr += FLOAT_SIZE;
-
-            //float transitionEnd
-            PUnsafe.putFloat(addr, (float) lerp(0.5d, 1.0d, FP2ConfigOld.client.levelTransitionEnd));
-            addr += FLOAT_SIZE;
         }
 
         try (GLBuffer buffer = BUFFER.bind(GL_UNIFORM_BUFFER)) { //upload

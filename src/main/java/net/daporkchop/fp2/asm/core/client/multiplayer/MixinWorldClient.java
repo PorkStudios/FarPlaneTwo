@@ -88,6 +88,11 @@ public abstract class MixinWorldClient extends MixinWorld implements IFarWorldCl
         }
     }
 
+    @Override
+    public FP2Config fp2_IFarWorldClient_config() {
+        return this.config;
+    }
+
     @CalledFromNetworkThread
     @Override
     public void fp2_IFarWorldClient_beginSession() {

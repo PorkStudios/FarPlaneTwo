@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.client;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.asm.core.client.gui.IGuiScreen;
 import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
@@ -30,9 +29,7 @@ import net.minecraft.client.gui.GuiVideoSettings;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
@@ -64,13 +61,6 @@ public class ClientEvents {
     public void worldUnload(WorldEvent.Unload event) {
         if (event.getWorld().isRemote) {
             ((IFarWorldClient) event.getWorld()).fp2_IFarWorld_close();
-        }
-    }
-
-    @SubscribeEvent
-    public void onConfigChanged(ConfigChangedEvent.OnConfigChangedEvent event) {
-        if (event.getModID().equals(FP2.MODID)) {
-            ConfigManager.sync(FP2.MODID, net.minecraftforge.common.config.Config.Type.INSTANCE);
         }
     }
 

@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.client.gl;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.config.FP2ConfigOld;
+import net.daporkchop.fp2.config.FP2Config;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -35,8 +35,8 @@ import static org.lwjgl.opengl.GL11.*;
 @UtilityClass
 @SideOnly(Side.CLIENT)
 public class GLCompatibilityHelper {
-    public final boolean WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING = FP2ConfigOld.compatibility.workaroundAmdVertexPadding.shouldEnable(isOfficialAmdDriver());
-    public final boolean WORKAROUND_INTEL_MULTIDRAW_NOT_WORKING = FP2ConfigOld.compatibility.workaroundIntelMultidrawNotWorking.shouldEnable(isOfficialIntelDriver());
+    public final boolean WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING = FP2Config.global().compatibility().workaroundAmdVertexPadding().shouldEnable(isOfficialAmdDriver());
+    public final boolean WORKAROUND_INTEL_MULTIDRAW_NOT_WORKING = FP2Config.global().compatibility().workaroundIntelMultidrawNotWorking().shouldEnable(isOfficialIntelDriver());
 
     public final int EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT = WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? INT_SIZE : 1;
     public final boolean ALLOW_MULTIDRAW = !WORKAROUND_INTEL_MULTIDRAW_NOT_WORKING;
