@@ -65,10 +65,10 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
             final int baseZ = asrRound(playerZ, T_SHIFT + lvl);
 
             IntAxisAlignedBB limits = this.coordLimits[lvl];
-            int minX = limits.clampX(baseX - state.cutoff());
-            int minZ = limits.clampX(baseZ - state.cutoff());
-            int maxX = limits.clampZ(baseX + state.cutoff());
-            int maxZ = limits.clampZ(baseZ + state.cutoff());
+            int minX = max(baseX - state.cutoff(), limits.minX());
+            int minZ = max(baseZ - state.cutoff(), limits.minZ());
+            int maxX = min(baseX + state.cutoff(), limits.maxX());
+            int maxZ = min(baseZ + state.cutoff(), limits.maxZ());
 
             for (int x = minX; x <= maxX; x++) {
                 for (int z = minZ; z <= maxZ; z++) {
@@ -100,10 +100,10 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
 
             //removed positions
             if (!newState.hasLevel(lvl) || oldState.hasLevel(lvl)) {
-                int minX = limits.clampX(oldBaseX - oldState.cutoff());
-                int minZ = limits.clampZ(oldBaseZ - oldState.cutoff());
-                int maxX = limits.clampX(oldBaseX + oldState.cutoff());
-                int maxZ = limits.clampZ(oldBaseZ + oldState.cutoff());
+                int minX = max(oldBaseX - oldState.cutoff(), limits.minX());
+                int minZ = max(oldBaseZ - oldState.cutoff(), limits.minZ());
+                int maxX = min(oldBaseX + oldState.cutoff(), limits.maxX());
+                int maxZ = min(oldBaseZ + oldState.cutoff(), limits.maxZ());
 
                 for (int x = minX; x <= maxX; x++) {
                     for (int z = minZ; z <= maxZ; z++) {
@@ -116,10 +116,10 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
 
             //added positions
             if (!oldState.hasLevel(lvl) || newState.hasLevel(lvl)) {
-                int minX = limits.clampX(newBaseX - newState.cutoff());
-                int minZ = limits.clampZ(newBaseZ - newState.cutoff());
-                int maxX = limits.clampX(newBaseX + newState.cutoff());
-                int maxZ = limits.clampZ(newBaseZ + newState.cutoff());
+                int minX = max(newBaseX - newState.cutoff(), limits.minX());
+                int minZ = max(newBaseZ - newState.cutoff(), limits.minZ());
+                int maxX = min(newBaseX + newState.cutoff(), limits.maxX());
+                int maxZ = min(newBaseZ + newState.cutoff(), limits.maxZ());
 
                 for (int x = minX; x <= maxX; x++) {
                     for (int z = minZ; z <= maxZ; z++) {

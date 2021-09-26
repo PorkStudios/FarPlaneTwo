@@ -69,12 +69,12 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
             final int baseZ = asrRound(playerZ, T_SHIFT + lvl);
 
             IntAxisAlignedBB limits = this.coordLimits[lvl];
-            int minX = limits.clampX(baseX - state.cutoff());
-            int minY = limits.clampY(baseY - state.cutoff());
-            int minZ = limits.clampZ(baseZ - state.cutoff());
-            int maxX = limits.clampX(baseX + state.cutoff());
-            int maxY = limits.clampY(baseY + state.cutoff());
-            int maxZ = limits.clampZ(baseZ + state.cutoff());
+            int minX = max(baseX - state.cutoff(), limits.minX());
+            int minY = max(baseY - state.cutoff(), limits.minY());
+            int minZ = max(baseZ - state.cutoff(), limits.minZ());
+            int maxX = min(baseX + state.cutoff(), limits.maxX());
+            int maxY = min(baseY + state.cutoff(), limits.maxY());
+            int maxZ = min(baseZ + state.cutoff(), limits.maxZ());
 
             for (int x = minX; x <= maxX; x++) {
                 for (int y = minY; y <= maxY; y++) {
@@ -112,12 +112,12 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
 
             //removed positions
             if (!newState.hasLevel(lvl) || oldState.hasLevel(lvl)) {
-                int minX = limits.clampX(oldBaseX - oldState.cutoff());
-                int minY = limits.clampY(oldBaseY - oldState.cutoff());
-                int minZ = limits.clampZ(oldBaseZ - oldState.cutoff());
-                int maxX = limits.clampX(oldBaseX + oldState.cutoff());
-                int maxY = limits.clampY(oldBaseY + oldState.cutoff());
-                int maxZ = limits.clampZ(oldBaseZ + oldState.cutoff());
+                int minX = max(oldBaseX - oldState.cutoff(), limits.minX());
+                int minY = max(oldBaseY - oldState.cutoff(), limits.minY());
+                int minZ = max(oldBaseZ - oldState.cutoff(), limits.minZ());
+                int maxX = min(oldBaseX + oldState.cutoff(), limits.maxX());
+                int maxY = min(oldBaseY + oldState.cutoff(), limits.maxY());
+                int maxZ = min(oldBaseZ + oldState.cutoff(), limits.maxZ());
 
                 for (int x = minX; x <= maxX; x++) {
                     for (int y = minY; y <= maxY; y++) {
@@ -132,12 +132,12 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
 
             //added positions
             if (!oldState.hasLevel(lvl) || newState.hasLevel(lvl)) {
-                int minX = limits.clampX(newBaseX - newState.cutoff());
-                int minY = limits.clampY(newBaseY - newState.cutoff());
-                int minZ = limits.clampZ(newBaseZ - newState.cutoff());
-                int maxX = limits.clampX(newBaseX + newState.cutoff());
-                int maxY = limits.clampY(newBaseY + newState.cutoff());
-                int maxZ = limits.clampZ(newBaseZ + newState.cutoff());
+                int minX = max(newBaseX - newState.cutoff(), limits.minX());
+                int minY = max(newBaseY - newState.cutoff(), limits.minY());
+                int minZ = max(newBaseZ - newState.cutoff(), limits.minZ());
+                int maxX = min(newBaseX + newState.cutoff(), limits.maxX());
+                int maxY = min(newBaseY + newState.cutoff(), limits.maxY());
+                int maxZ = min(newBaseZ + newState.cutoff(), limits.maxZ());
 
                 for (int x = minX; x <= maxX; x++) {
                     for (int y = minY; y <= maxY; y++) {
