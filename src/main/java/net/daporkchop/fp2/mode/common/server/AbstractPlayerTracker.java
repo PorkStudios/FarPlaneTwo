@@ -27,18 +27,18 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.config.FP2ConfigOld;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
-import net.daporkchop.fp2.net.server.SPacketTileData;
-import net.daporkchop.fp2.net.server.SPacketUnloadTile;
-import net.daporkchop.fp2.net.server.SPacketUnloadTiles;
+import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.util.datastructure.CompactReferenceArraySet;
 import net.daporkchop.fp2.util.datastructure.RecyclingArrayDeque;
 import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
@@ -46,8 +46,6 @@ import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -79,14 +77,14 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
     //TODO: consider using a KeyedExecutor for this
     protected static final EventExecutorGroup TRACKER_THREADS = new DefaultEventLoopGroup(
-            FP2ConfigOld.performance.trackingThreads,
+            FP2Config.global().performance().trackingThreads(),
             PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Player Tracker #%d").build());
 
     protected final IFarTileProvider<POS, T> world;
     protected final IntAxisAlignedBB[] coordLimits;
 
     protected final Map<POS, Entry> entries = new ConcurrentHashMap<>();
-    protected final Map<EntityPlayerMP, Context> contexts = new ConcurrentHashMap<>();
+    protected final Map<IFarServerContext<POS, T>, Context> contexts = new ConcurrentHashMap<>();
 
     public AbstractPlayerTracker(@NonNull IFarTileProvider<POS, T> world) {
         this.world = world;
@@ -95,30 +93,30 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         world.storage().addListener(this);
     }
 
+    @CalledFromServerThread
     @Override
     public void close() {
         this.world.storage().removeListener(this);
     }
 
+    @CalledFromServerThread
     @Override
-    public void playerAdd(@NonNull EntityPlayerMP playerIn) {
-        this.contexts.compute(playerIn, (player, ctx) -> {
-            checkState(ctx == null, "player already tracked: %s", player);
+    public void playerAdd(@NonNull IFarServerContext<POS, T> contextIn) {
+        this.contexts.compute(contextIn, (context, ctx) -> {
+            checkState(ctx == null, "player already tracked: %s", context);
 
-            FP2_LOG.debug("added {} to tracker", player);
-
-            ctx = new Context(player);
-            ctx.scheduleUpdateIfNeeded();
-            return ctx;
+            FP2_LOG.debug("added {} to tracker", context);
+            return new Context(context);
         });
     }
 
+    @CalledFromServerThread
     @Override
-    public void playerRemove(@NonNull EntityPlayerMP playerIn) {
-        this.contexts.compute(playerIn, (player, ctx) -> {
-            checkState(ctx != null, "attempted to remove untracked player: %s", player);
+    public void playerRemove(@NonNull IFarServerContext<POS, T> contextIn) {
+        this.contexts.compute(contextIn, (context, ctx) -> {
+            checkState(ctx != null, "attempted to remove untracked player: %s", context);
 
-            FP2_LOG.debug("removed {} from tracker", player);
+            FP2_LOG.debug("removed {} from tracker", context);
 
             //release context
             ctx.release();
@@ -128,24 +126,21 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         });
     }
 
+    @CalledFromServerThread
+    @Override
+    public void playerUpdate(@NonNull IFarServerContext<POS, T> context) {
+        this.contexts.computeIfPresent(context, (c, ctx) -> {
+            ctx.scheduleUpdateIfNeeded();
+            return ctx;
+        });
+    }
+
     protected void tileLoaded(@NonNull ITileHandle<POS, T> handle) {
         this.entries.computeIfPresent(handle.pos(), (pos, entry) -> {
             //notify entry that the tile has been loaded
             entry.tileLoaded(handle);
 
             return entry;
-        });
-    }
-
-    @Override
-    public void playerMove(@NonNull EntityPlayerMP playerIn) {
-        checkState(FMLCommonHandler.instance().getMinecraftServerInstance().isCallingFromMinecraftThread(), "must be called from server thread!");
-
-        this.contexts.compute(playerIn, (player, ctx) -> {
-            checkState(ctx != null, "attempted to update untracked player: %s", player);
-
-            ctx.scheduleUpdateIfNeeded();
-            return ctx;
         });
     }
 
@@ -182,29 +177,30 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         });
     }
 
+    @CalledFromServerThread
     @Override
     public void debug_dropAllTiles() {
         ThreadingHelper.scheduleTaskInWorldThread(this.world.world(), () -> {
-            Collection<EntityPlayerMP> trackedPlayersSnapshot = new ArrayList<>(this.contexts.keySet());
-            trackedPlayersSnapshot.forEach(this::playerRemove);
+            Collection<IFarServerContext<POS, T>> trackedContextsSnapshot = new ArrayList<>(this.contexts.keySet());
+            trackedContextsSnapshot.forEach(this::playerRemove);
 
             //it should be reasonably safe to assume that all pending tasks will have been cancelled by now
 
-            trackedPlayersSnapshot.forEach(this::playerAdd);
+            trackedContextsSnapshot.forEach(this::playerAdd);
         });
     }
 
-    protected abstract STATE currentStateFor(@NonNull EntityPlayerMP player);
+    protected abstract STATE currentStateFor(@NonNull IFarServerContext<POS, T> context);
 
-    protected abstract void allPositions(@NonNull EntityPlayerMP player, @NonNull STATE state, @NonNull Consumer<POS> callback);
+    protected abstract void allPositions(@NonNull IFarServerContext<POS, T> context, @NonNull STATE state, @NonNull Consumer<POS> callback);
 
-    protected abstract void deltaPositions(@NonNull EntityPlayerMP player, @NonNull STATE oldState, @NonNull STATE newState, @NonNull Consumer<POS> added, @NonNull Consumer<POS> removed);
+    protected abstract void deltaPositions(@NonNull IFarServerContext<POS, T> context, @NonNull STATE oldState, @NonNull STATE newState, @NonNull Consumer<POS> added, @NonNull Consumer<POS> removed);
 
-    protected abstract boolean isVisible(@NonNull EntityPlayerMP player, @NonNull STATE state, @NonNull POS pos);
+    protected abstract boolean isVisible(@NonNull IFarServerContext<POS, T> context, @NonNull STATE state, @NonNull POS pos);
 
-    protected abstract Comparator<POS> comparatorFor(@NonNull EntityPlayerMP player, @NonNull STATE state);
+    protected abstract Comparator<POS> comparatorFor(@NonNull IFarServerContext<POS, T> context, @NonNull STATE state);
 
-    protected abstract boolean shouldTriggerUpdate(@NonNull EntityPlayerMP player, @NonNull STATE oldState, @NonNull STATE newState);
+    protected abstract boolean shouldTriggerUpdate(@NonNull IFarServerContext<POS, T> context, @NonNull STATE oldState, @NonNull STATE newState);
 
     protected void beginTracking(@NonNull Context ctx, @NonNull POS posIn) {
         this.entries.compute(posIn, (pos, entry) -> {
@@ -232,7 +228,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
     @RequiredArgsConstructor
     protected class Context extends AbstractReleasable {
         @NonNull
-        protected final EntityPlayerMP player;
+        protected final IFarServerContext<POS, T> context;
 
         protected final EventExecutor executor = TRACKER_THREADS.next();
 
@@ -253,8 +249,8 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
          */
         public void scheduleUpdateIfNeeded() {
             STATE lastPos = this.lastState;
-            STATE nextState = AbstractPlayerTracker.this.currentStateFor(this.player);
-            if (lastPos == null || AbstractPlayerTracker.this.shouldTriggerUpdate(this.player, lastPos, nextState)) {
+            STATE nextState = AbstractPlayerTracker.this.currentStateFor(this.context);
+            if (lastPos == null || AbstractPlayerTracker.this.shouldTriggerUpdate(this.context, lastPos, nextState)) {
                 //set nextPos to be used while updating
                 this.nextState = nextState;
 
@@ -274,7 +270,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
                 STATE lastState = this.lastState;
                 STATE nextState = this.nextState;
-                if (lastState != null && (nextState == null || !AbstractPlayerTracker.this.shouldTriggerUpdate(this.player, lastState, nextState))) {
+                if (lastState != null && (nextState == null || !AbstractPlayerTracker.this.shouldTriggerUpdate(this.context, lastState, nextState))) {
                     //there is no next state (possibly already updated?), so we shouldn't do anything
                     return;
                 }
@@ -287,9 +283,9 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
                     //unqueue all positions which are no longer visible.
                     //  this is O(n), whereas removing them during the deltaPositions 'removed' callback would be O(n*m) (where n=queue size, m=number of positions in render
                     //  distance). the savings from this are significant - when flying around with 1level@400cutoff, tracker updates are reduced from 5000-10000ms to about 40-50ms.
-                    this.queuedPositions.removeIf(pos -> !AbstractPlayerTracker.this.isVisible(this.player, nextState, pos));
+                    this.queuedPositions.removeIf(pos -> !AbstractPlayerTracker.this.isVisible(this.context, nextState, pos));
 
-                    AbstractPlayerTracker.this.deltaPositions(this.player, lastState, nextState,
+                    AbstractPlayerTracker.this.deltaPositions(this.context, lastState, nextState,
                             this.queuedPositions::add,
                             pos -> {
                                 //stop loading the tile if needed
@@ -302,11 +298,11 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
                                 }
                             });
                 } else { //no positions have been added so far, so we need to iterate over them all
-                    AbstractPlayerTracker.this.allPositions(this.player, nextState, this.queuedPositions::add);
+                    AbstractPlayerTracker.this.allPositions(this.context, nextState, this.queuedPositions::add);
                 }
 
                 //sort queue
-                this.queuedPositions.sort(AbstractPlayerTracker.this.comparatorFor(this.player, nextState));
+                this.queuedPositions.sort(AbstractPlayerTracker.this.comparatorFor(this.context, nextState));
             } catch (Exception e) {
                 ThreadingHelper.handle(AbstractPlayerTracker.this.world.world(), e);
             }
@@ -341,11 +337,11 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
                 STATE lastState = this.lastState;
                 if (this.isReleased() //context is released, ignore update
-                    || !AbstractPlayerTracker.this.isVisible(this.player, lastState, handle.pos())) { //the position has been unloaded since the task was enqueued, we can assume it's safe to ignore
+                    || !AbstractPlayerTracker.this.isVisible(this.context, lastState, handle.pos())) { //the position has been unloaded since the task was enqueued, we can assume it's safe to ignore
                     return;
                 }
 
-                NETWORK_WRAPPER.sendTo(new SPacketTileData().mode(AbstractPlayerTracker.this.world.mode()).tile(handle.snapshot()), this.player);
+                this.context.sendTile(handle.snapshot());
                 if (this.waitingPositions.remove(handle.pos())) { //we were waiting to load this tile, and now it's loaded!
                     checkState(this.loadedPositions.add(handle.pos()), "position already loaded?!?");
 
@@ -383,7 +379,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
                 if (this.loadedPositions.remove(pos)) {
                     checkState(!this.waitingPositions.remove(pos), "tile at %s was loaded and queued at once?!?", pos);
 
-                    NETWORK_WRAPPER.sendTo(new SPacketUnloadTile().mode(AbstractPlayerTracker.this.world.mode()).pos(pos), this.player);
+                    this.context.sendTileUnload(pos);
                 } else {
                     checkState(this.waitingPositions.remove(pos), "tile at %s wasn't loaded?!?", pos);
 
@@ -405,7 +401,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
             }
 
             //tell the client to unload all tiles
-            NETWORK_WRAPPER.sendTo(new SPacketUnloadTiles().mode(AbstractPlayerTracker.this.world.mode()).positions(new ArrayList<>(this.loadedPositions)), this.player);
+            this.context.sendMultiTileUnload(this.loadedPositions);
 
             //remove player from all tracking positions
             // (using temporary set to avoid CME)
@@ -425,7 +421,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
         @Override
         public String toString() {
-            return this.player.toString();
+            return this.context.toString();
         }
 
         protected void assertOnTrackerThread() {

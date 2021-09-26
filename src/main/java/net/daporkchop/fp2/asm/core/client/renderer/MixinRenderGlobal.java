@@ -88,11 +88,12 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
             at = @At("HEAD"))
     private void fp2_setupTerrain_prepare(Entity viewEntity, double partialTicks, ICamera camera, int frameCount, boolean playerSpectator, CallbackInfo ci) {
         IFarClientContext<?, ?> context = ((IFarWorldClient) this.world).fp2_IFarWorldClient_activeContext();
-        if (context != null) {
+        IFarRenderer renderer;
+        if (context != null && (renderer = context.renderer()) != null) {
             this.vanillaRenderabilityTracker.update(uncheckedCast(this));
 
             this.mc.profiler.startSection("fp2_prepare");
-            context.renderer().prepare((float) partialTicks, this.mc, (IFrustum) camera);
+            renderer.prepare((float) partialTicks, this.mc, (IFrustum) camera);
             this.mc.profiler.endSection();
         }
     }
@@ -117,9 +118,10 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
             allow = 2, require = 1)
     private void fp2_renderBlockLayer_post(BlockRenderLayer layer, double partialTicks, int pass, Entity entity, CallbackInfoReturnable<Integer> ci) {
         IFarClientContext<?, ?> context = ((IFarWorldClient) this.world).fp2_IFarWorldClient_activeContext();
-        if (context != null) {
+        IFarRenderer renderer;
+        if (context != null && (renderer = context.renderer()) != null) {
             this.mc.profiler.startSection("fp2_render_post");
-            context.renderer().render(this.mc, layer, false);
+            renderer.render(this.mc, layer, false);
             this.mc.profiler.endSection();
         }
     }

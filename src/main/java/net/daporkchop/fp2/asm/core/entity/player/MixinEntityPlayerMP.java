@@ -31,10 +31,13 @@ import net.daporkchop.fp2.net.server.SPacketSessionEnd;
 import net.daporkchop.fp2.net.server.SPacketUpdateConfig;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
+import net.daporkchop.lib.math.vector.d.Vec3d;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.network.NetHandlerPlayServer;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
 import java.util.Objects;
@@ -49,6 +52,8 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Mixin(EntityPlayerMP.class)
 public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPlayer {
+    @Shadow
+    public NetHandlerPlayServer connection;
     @Unique
     private FP2Config clientConfig;
     @Unique
@@ -74,6 +79,11 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPl
 
     public MixinEntityPlayerMP() {
         super(null, null);
+    }
+
+    @Override
+    public Vec3d fp2_IFarPlayer_position() {
+        return new Vec3d(this.posX, this.posY, this.posZ);
     }
 
     @CalledFromServerThread

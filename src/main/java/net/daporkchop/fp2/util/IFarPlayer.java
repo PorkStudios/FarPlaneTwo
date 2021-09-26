@@ -24,12 +24,15 @@ import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
+import net.daporkchop.lib.math.vector.d.Vec3d;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
 /**
  * @author DaPorkchop_
  */
 public interface IFarPlayer {
+    Vec3d fp2_IFarPlayer_position();
+
     @CalledFromServerThread
     void fp2_IFarPlayer_serverConfig(FP2Config serverConfig);
 

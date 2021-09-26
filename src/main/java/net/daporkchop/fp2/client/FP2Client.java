@@ -21,8 +21,11 @@
 package net.daporkchop.fp2.client;
 
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.mode.heightmap.client.HeightmapShaders;
 import net.daporkchop.fp2.mode.voxel.client.VoxelShaders;
+import net.daporkchop.fp2.net.client.CPacketClientConfig;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
@@ -70,6 +73,8 @@ public class FP2Client {
         }
 
         ClientEvents.register();
+
+        ConfigListenerManager.add(() -> NETWORK_WRAPPER.sendToServer(new CPacketClientConfig().config(FP2Config.global())));
 
         ((IReloadableResourceManager) Minecraft.getMinecraft().getResourceManager()).registerReloadListener(new FP2ResourceReloadListener());
     }

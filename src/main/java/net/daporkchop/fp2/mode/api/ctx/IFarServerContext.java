@@ -26,6 +26,7 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
 
@@ -82,4 +83,25 @@ public interface IFarServerContext<POS extends IFarPos, T extends IFarTile> exte
      */
     @CalledFromServerThread
     void update();
+
+    /**
+     * Sends the given tile data to the client.
+     *
+     * @param snapshot a snapshot of the data to be sent
+     */
+    void sendTile(@NonNull TileSnapshot<POS, T> snapshot);
+
+    /**
+     * Unloads the tile at the given position on the client.
+     *
+     * @param pos the position of the tile to unload
+     */
+    void sendTileUnload(@NonNull POS pos);
+
+    /**
+     * Unloads the tiles at the given positions on the client.
+     *
+     * @param positions the positions of the tiles to unload
+     */
+    void sendMultiTileUnload(@NonNull Iterable<POS> positions);
 }

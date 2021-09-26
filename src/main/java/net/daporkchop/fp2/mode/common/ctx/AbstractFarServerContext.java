@@ -22,6 +22,7 @@ package net.daporkchop.fp2.mode.common.ctx;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Synchronized;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
@@ -29,10 +30,15 @@ import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.net.server.SPacketUpdateConfig;
+import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
+import net.daporkchop.fp2.net.server.SPacketTileData;
+import net.daporkchop.fp2.net.server.SPacketUnloadTile;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
-import net.minecraft.entity.player.EntityPlayerMP;
+
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -48,6 +54,8 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
     protected final IFarRenderMode<POS, T> mode;
     protected final IFarTileProvider<POS, T> tileProvider;
 
+    protected final Map<POS, Optional<TileSnapshot<POS, T>>> sendQueue = new TreeMap<>();
+
     protected FP2Config config;
 
     protected boolean closed = false;
@@ -59,7 +67,7 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
         this.config = config;
 
         this.tileProvider = world.fp2_IFarWorldServer_tileProviderFor(mode);
-        this.tileProvider.tracker().playerAdd((EntityPlayerMP) this.player);
+        this.tileProvider.tracker().playerAdd(this);
     }
 
     @CalledFromServerThread
@@ -73,18 +81,60 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
 
     @CalledFromServerThread
     @Override
-    public void close() {
+    public void update() {
         checkState(!this.closed, "already closed!");
-        this.closed = true;
 
-        this.tileProvider.tracker().playerRemove((EntityPlayerMP) this.player);
+        this.tileProvider.tracker().playerUpdate(this);
+
+        this.flushSendQueue();
+    }
+
+    @Synchronized("sendQueue")
+    protected void flushSendQueue() {
+        if (!this.sendQueue.isEmpty()) {
+            this.sendQueue.forEach((pos, optionalSnapshot) -> this.player.fp2_IFarPlayer_sendPacket(optionalSnapshot.isPresent()
+                    ? new SPacketTileData().mode(this.mode).tile(optionalSnapshot.get())
+                    : new SPacketUnloadTile().mode(this.mode).pos(pos)));
+            this.sendQueue.clear();
+        }
     }
 
     @CalledFromServerThread
     @Override
-    public void update() {
+    public void close() {
         checkState(!this.closed, "already closed!");
+        this.closed = true;
 
-        this.tileProvider.tracker().playerMove((EntityPlayerMP) this.player);
+        this.tileProvider.tracker().playerRemove(this);
+    }
+
+    @Override
+    @Synchronized("sendQueue")
+    public void sendTile(@NonNull TileSnapshot<POS, T> snapshot) {
+        if (this.closed) { //this context has been closed - silently discard all tile data
+            return;
+        }
+
+        this.sendQueue.put(snapshot.pos(), Optional.of(snapshot));
+    }
+
+    @Override
+    @Synchronized("sendQueue")
+    public void sendTileUnload(@NonNull POS pos) {
+        if (this.closed) { //this context has been closed - silently discard all tile data
+            return;
+        }
+
+        this.sendQueue.put(pos, Optional.empty());
+    }
+
+    @Override
+    @Synchronized("sendQueue")
+    public void sendMultiTileUnload(@NonNull Iterable<POS> positions) {
+        if (this.closed) { //this context has been closed - silently discard all tile data
+            return;
+        }
+
+        positions.forEach(pos -> this.sendQueue.put(pos, Optional.empty()));
     }
 }

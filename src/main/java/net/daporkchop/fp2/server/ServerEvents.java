@@ -24,7 +24,6 @@ import io.github.opencubicchunks.cubicchunks.api.world.CubeDataEvent;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.net.server.SPacketInitWorld;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.IFarPlayer;
 import net.daporkchop.lib.common.util.PorkUtil;

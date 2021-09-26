@@ -21,12 +21,12 @@
 package net.daporkchop.fp2.mode.voxel.server;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.common.server.AbstractPlayerTracker;
 import net.daporkchop.fp2.mode.common.server.TrackingState;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
-import net.minecraft.entity.player.EntityPlayerMP;
 
 import java.util.Comparator;
 import java.util.function.Consumer;
@@ -52,12 +52,12 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
     }
 
     @Override
-    protected TrackingState currentStateFor(@NonNull EntityPlayerMP player) {
-        return TrackingState.createDefault(player);
+    protected TrackingState currentStateFor(@NonNull IFarServerContext<VoxelPos, VoxelTile> context) {
+        return TrackingState.createDefault(context);
     }
 
     @Override
-    protected void allPositions(@NonNull EntityPlayerMP player, @NonNull TrackingState state, @NonNull Consumer<VoxelPos> callback) {
+    protected void allPositions(@NonNull IFarServerContext<VoxelPos, VoxelTile> context, @NonNull TrackingState state, @NonNull Consumer<VoxelPos> callback) {
         final int playerX = floorI(state.x());
         final int playerY = floorI(state.y());
         final int playerZ = floorI(state.z());
@@ -86,7 +86,7 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
     }
 
     @Override
-    protected void deltaPositions(@NonNull EntityPlayerMP player, @NonNull TrackingState oldState, @NonNull TrackingState newState, @NonNull Consumer<VoxelPos> added, @NonNull Consumer<VoxelPos> removed) {
+    protected void deltaPositions(@NonNull IFarServerContext<VoxelPos, VoxelTile> context, @NonNull TrackingState oldState, @NonNull TrackingState newState, @NonNull Consumer<VoxelPos> added, @NonNull Consumer<VoxelPos> removed) {
         final int oldPlayerX = floorI(oldState.x());
         final int oldPlayerY = floorI(oldState.y());
         final int oldPlayerZ = floorI(oldState.z());
@@ -152,7 +152,7 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
     }
 
     @Override
-    protected boolean isVisible(@NonNull EntityPlayerMP player, @NonNull TrackingState state, @NonNull VoxelPos pos) {
+    protected boolean isVisible(@NonNull IFarServerContext<VoxelPos, VoxelTile> context, @NonNull TrackingState state, @NonNull VoxelPos pos) {
         return state.hasLevel(pos.level())
                && this.coordLimits[pos.level()].contains(pos.x(), pos.y(), pos.z())
                && abs(pos.x() - asrRound(floorI(state.x()), T_SHIFT + pos.level())) <= state.cutoff()
@@ -161,7 +161,7 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
     }
 
     @Override
-    protected Comparator<VoxelPos> comparatorFor(@NonNull EntityPlayerMP player, @NonNull TrackingState state) {
+    protected Comparator<VoxelPos> comparatorFor(@NonNull IFarServerContext<VoxelPos, VoxelTile> context, @NonNull TrackingState state) {
         class VoxelPosAndComparator extends VoxelPos implements Comparator<VoxelPos> {
             public VoxelPosAndComparator(int level, int x, int y, int z) {
                 super(level, x, y, z);
@@ -181,7 +181,7 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
     }
 
     @Override
-    protected boolean shouldTriggerUpdate(@NonNull EntityPlayerMP player, @NonNull TrackingState oldState, @NonNull TrackingState newState) {
+    protected boolean shouldTriggerUpdate(@NonNull IFarServerContext<VoxelPos, VoxelTile> context, @NonNull TrackingState oldState, @NonNull TrackingState newState) {
         return oldState.cutoff() != newState.cutoff()
                || oldState.minLevel() != newState.minLevel()
                || oldState.maxLevel() != newState.maxLevel()

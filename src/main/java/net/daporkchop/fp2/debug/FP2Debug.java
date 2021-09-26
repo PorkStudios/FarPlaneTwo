@@ -22,8 +22,8 @@ package net.daporkchop.fp2.debug;
 
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
-import net.daporkchop.fp2.config.FP2ConfigOld;
 import net.daporkchop.fp2.debug.client.DebugClientEvents;
 import net.daporkchop.fp2.debug.client.DebugKeyBindings;
 import net.minecraftforge.common.MinecraftForge;
@@ -59,10 +59,10 @@ public class FP2Debug {
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
             ConfigListenerManager.add(() -> {
                 ShaderManager.DefinesChangeBatch batch = ShaderManager.changeDefines();
-                for (FP2ConfigOld.Debug.DebugColorMode colorMode : FP2ConfigOld.Debug.DebugColorMode.values()) {
+                for (FP2Config.Debug.DebugColorMode colorMode : FP2Config.Debug.DebugColorMode.values()) {
                     batch.undefine("USE_DEBUG_COLORS_" + colorMode);
                 }
-                batch.define("USE_DEBUG_COLORS_" + FP2ConfigOld.debug.debugColorMode)
+                batch.define("USE_DEBUG_COLORS_" + FP2Config.global().debug().debugColors())
                         .apply();
             });
 

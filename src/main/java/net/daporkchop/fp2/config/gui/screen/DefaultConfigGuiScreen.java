@@ -148,6 +148,10 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
     }
 
     protected void renderBackground() {
+        if (MC.world != null) {
+            return;
+        }
+
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
 

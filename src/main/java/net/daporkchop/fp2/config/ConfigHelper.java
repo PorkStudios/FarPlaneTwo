@@ -280,7 +280,7 @@ public class ConfigHelper {
             Object oldValue = field.get(oldInstance);
             Object newValue = field.get(newInstance);
 
-            if (!Objects.equals(oldValue, newValue)) {
+            if (!Objects.deepEquals(oldValue, newValue)) {
                 Setting.RestartRequired restartRequiredAnnotation = field.getAnnotation(Setting.RestartRequired.class);
                 if (restartRequiredAnnotation != null && restartRequiredAnnotation.value().ordinal() > requirement.ordinal()) {
                     requirement = restartRequiredAnnotation.value();

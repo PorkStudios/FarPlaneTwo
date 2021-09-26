@@ -24,6 +24,7 @@ import net.daporkchop.fp2.client.FP2Client;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.x86.x86FeatureDetector;
 import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.debug.FP2Debug;
 import net.daporkchop.fp2.net.client.CPacketClientConfig;
 import net.daporkchop.fp2.net.client.CPacketDropAllTiles;
@@ -90,6 +91,7 @@ public class FP2 {
 
     @Mod.EventHandler
     public void postInit(FMLPostInitializationEvent event) {
+        ConfigListenerManager.fire();
         FP2Server.postInit();
 
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
