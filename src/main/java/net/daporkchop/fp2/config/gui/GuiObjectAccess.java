@@ -37,6 +37,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  *
  * @author DaPorkchop_
  */
+@Getter
 public class GuiObjectAccess<V> {
     protected static final GuiObjectAccess<?> NULL = new GuiObjectAccess<>(null, null, null);
 
@@ -48,7 +49,6 @@ public class GuiObjectAccess<V> {
     protected final V oldInstance;
     protected final V newInstance;
 
-    @Getter
     protected final Class<V> clazz;
 
     public GuiObjectAccess(V defaultInstance, V oldInstance, V newInstance) {

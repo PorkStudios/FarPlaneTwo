@@ -26,6 +26,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IConfigGuiComponent;
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
+import net.daporkchop.fp2.config.gui.IGuiContext;
 import net.daporkchop.fp2.config.gui.util.ElementBounds;
 import net.daporkchop.lib.common.util.PorkUtil;
 
@@ -42,6 +43,7 @@ import static org.lwjgl.opengl.GL11.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractConfigGuiContainer<T> implements IConfigGuiElement {
+    protected final IGuiContext context;
     protected final GuiObjectAccess<T> access;
     protected final List<IConfigGuiElement> elements;
 
@@ -50,9 +52,10 @@ public abstract class AbstractConfigGuiContainer<T> implements IConfigGuiElement
 
     protected final BitSet mouseButtonsDown = new BitSet();
 
-    public AbstractConfigGuiContainer(@NonNull GuiObjectAccess<T> access, @NonNull List<IConfigGuiElement> elements) {
+    public AbstractConfigGuiContainer(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull List<IConfigGuiElement> elements) {
         checkArg(!elements.isEmpty(), "cannot create %s with 0 elements!", PorkUtil.className(this));
 
+        this.context = context;
         this.access = access;
         this.elements = ImmutableList.copyOf(elements);
     }

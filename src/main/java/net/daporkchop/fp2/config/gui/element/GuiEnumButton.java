@@ -65,7 +65,7 @@ public class GuiEnumButton<T, E extends Enum<E>> extends GuiButton<T, E> {
         if (button == 0) { //left-click
             GuiObjectAccess<E> access = GuiObjectAccess.forStatic();
 
-            this.context.pushSubmenu(this.field.getName(), access, context -> new DefaultConfigGuiScreen(context, new ScrollingContainer<>(access, Stream.of(this.values)
+            this.context.pushSubmenu(this.field.getName(), access, context -> new DefaultConfigGuiScreen(context, new ScrollingContainer<>(this.context, access, Stream.of(this.values)
                     .map(value -> new ValueSelectionButton(context, value))
                     .collect(Collectors.toList()))));
         }

@@ -37,9 +37,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractReflectiveConfigGuiElement<T, V> extends AbstractConfigGuiElement {
-    @NonNull
     protected final GuiObjectAccess<T> access;
-    @NonNull
     protected final Field field;
 
     public AbstractReflectiveConfigGuiElement(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull Field field) {

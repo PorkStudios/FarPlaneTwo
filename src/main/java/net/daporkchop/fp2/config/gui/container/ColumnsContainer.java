@@ -25,6 +25,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
+import net.daporkchop.fp2.config.gui.IGuiContext;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
 import net.daporkchop.fp2.config.gui.util.ElementBounds;
 import net.daporkchop.lib.common.util.PArrays;
@@ -46,8 +47,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public class ColumnsContainer<T> extends AbstractConfigGuiContainer<T> {
-    public ColumnsContainer(@NonNull GuiObjectAccess<T> access, @NonNull List<IConfigGuiElement> elements) {
-        super(access, elements);
+    public ColumnsContainer(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull List<IConfigGuiElement> elements) {
+        super(context, access, elements);
     }
 
     protected int maxColumnSizeX(int sizeX, int columns) {

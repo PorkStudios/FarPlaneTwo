@@ -223,10 +223,10 @@ public class ConfigHelper {
      */
     @SideOnly(Side.CLIENT)
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
-    public IConfigGuiElement createConfigGuiContainer(@NonNull Setting.CategoryMeta categoryMeta, @NonNull GuiObjectAccess<?> access, @NonNull List<IConfigGuiElement> elements) {
-        Constructor<? extends IConfigGuiElement> constructor = categoryMeta.containerClass().getDeclaredConstructor(GuiObjectAccess.class, List.class);
+    public IConfigGuiElement createConfigGuiContainer(@NonNull Setting.CategoryMeta categoryMeta, @NonNull IGuiContext context, @NonNull GuiObjectAccess<?> access, @NonNull List<IConfigGuiElement> elements) {
+        Constructor<? extends IConfigGuiElement> constructor = categoryMeta.containerClass().getDeclaredConstructor(IGuiContext.class, GuiObjectAccess.class, List.class);
         constructor.setAccessible(true);
-        return constructor.newInstance(access, elements);
+        return constructor.newInstance(context, access, elements);
     }
 
     /**

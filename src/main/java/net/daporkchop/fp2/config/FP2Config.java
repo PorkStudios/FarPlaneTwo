@@ -31,6 +31,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.With;
+import net.daporkchop.fp2.config.gui.container.RenderDistanceContainer;
 import net.daporkchop.fp2.config.gui.element.GuiRenderModeButton;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.lib.common.util.PorkUtil;
@@ -61,7 +62,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @EqualsAndHashCode
 @Setting.GuiCategories({
         @Setting.CategoryMeta(name = "default", title = false),
-        @Setting.CategoryMeta(name = FP2Config.CATEGORY_RENDER_DISTANCE),
+        @Setting.CategoryMeta(name = FP2Config.CATEGORY_RENDER_DISTANCE, containerClass = RenderDistanceContainer.class),
 })
 public final class FP2Config {
     @SideOnly(Side.CLIENT)

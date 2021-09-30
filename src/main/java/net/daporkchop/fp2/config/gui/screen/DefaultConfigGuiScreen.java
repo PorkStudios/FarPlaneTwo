@@ -104,12 +104,12 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
                         },
                         Collectors.mapping(field -> ConfigHelper.createConfigGuiElement(context, access, field), Collectors.toList())));
 
-        this.element = new ScrollingContainer<>(access, categoriesByName.values().stream()
+        this.element = new ScrollingContainer<>(context, access, categoriesByName.values().stream()
                 .map(meta -> new AbstractMap.SimpleEntry<>(meta, elementsByCategory.get(meta)))
                 .filter(entry -> entry.getValue() != null && !entry.getValue().isEmpty())
                 .flatMap(entry -> Stream.of(
                         elementsByCategory.size() == 1 || !entry.getKey().title() ? null : new GuiTitle(context, entry.getKey().name() + ".category"),
-                        ConfigHelper.createConfigGuiContainer(entry.getKey(), access, entry.getValue())))
+                        ConfigHelper.createConfigGuiContainer(entry.getKey(), context, access, entry.getValue())))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList()));
     }
