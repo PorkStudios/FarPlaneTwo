@@ -22,7 +22,7 @@ package net.daporkchop.fp2.config.gui.element;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.config.ConfigHelper;
-import net.daporkchop.fp2.config.Setting;
+import net.daporkchop.fp2.config.Config;
 import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IGuiContext;
 import net.minecraft.client.resources.I18n;
@@ -76,8 +76,8 @@ public abstract class AbstractReflectiveConfigGuiElement<T, V> extends AbstractC
         }
 
         { //indicator for this option's value range
-            Setting.Range range = this.field.getAnnotation(Setting.Range.class);
-            Setting.GuiRange guiRange = this.field.getAnnotation(Setting.GuiRange.class);
+            Config.Range range = this.field.getAnnotation(Config.Range.class);
+            Config.GuiRange guiRange = this.field.getAnnotation(Config.GuiRange.class);
             if (range != null || guiRange != null) {
                 V min = uncheckedCast(ConfigHelper.evaluate(guiRange != null ? guiRange.min() : range.min()));
                 V max = uncheckedCast(ConfigHelper.evaluate(guiRange != null ? guiRange.max() : range.max()));
@@ -87,7 +87,7 @@ public abstract class AbstractReflectiveConfigGuiElement<T, V> extends AbstractC
         }
 
         { //indicator for whether this option requires a restart
-            Setting.RestartRequired restartRequired = this.field.getAnnotation(Setting.RestartRequired.class);
+            Config.RestartRequired restartRequired = this.field.getAnnotation(Config.RestartRequired.class);
             if (restartRequired != null) {
                 joiner.add(I18n.format(MODID + ".config.restartRequired.tooltip." + restartRequired.value()));
             }

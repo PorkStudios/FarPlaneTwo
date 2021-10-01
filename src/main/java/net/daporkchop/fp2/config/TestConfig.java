@@ -20,7 +20,6 @@
 
 package net.daporkchop.fp2.config;
 
-import lombok.Cleanup;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
@@ -31,19 +30,19 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 @ToString
 @EqualsAndHashCode
-@Setting.GuiCategories({
-        @Setting.CategoryMeta(name = "default"),
-        @Setting.CategoryMeta(name = "second"),
+@Config.GuiCategories({
+        @Config.CategoryMeta(name = "default"),
+        @Config.CategoryMeta(name = "second"),
 })
 public class TestConfig {
-    @Setting.GuiCategory("second")
-    @Setting.RestartRequired(Setting.Requirement.WORLD)
+    @Config.GuiCategory("second")
+    @Config.RestartRequired(Config.Requirement.WORLD)
     public Submenu submenu = new Submenu();
-    @Setting.GuiCategory("second")
-    @Setting.RestartRequired(Setting.Requirement.GAME)
+    @Config.GuiCategory("second")
+    @Config.RestartRequired(Config.Requirement.GAME)
     public TestEnum e = TestEnum.FIRST;
 
-    @Setting.Range(min = @Setting.Constant(0.0d), max = @Setting.Constant(10.0d))
+    @Config.Range(min = @Config.Constant(0.0d), max = @Config.Constant(10.0d))
     public int i = 3;
 
     public boolean boolOption0 = ThreadLocalRandom.current().nextBoolean();

@@ -23,7 +23,7 @@ package net.daporkchop.fp2.config.gui;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.config.ConfigHelper;
-import net.daporkchop.fp2.config.Setting;
+import net.daporkchop.fp2.config.Config;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
@@ -99,7 +99,7 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
 
                 ConfigHelper.validateConfig(newInstance);
 
-                Setting.Requirement restartRequirement = ConfigHelper.restartRequirement(oldInstance, newInstance);
+                Config.Requirement restartRequirement = ConfigHelper.restartRequirement(oldInstance, newInstance);
                 FP2_LOG.info("restart required: {}", restartRequirement);
 
                 this.callback.accept(newInstance);

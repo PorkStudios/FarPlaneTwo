@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.config;
 
+import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.IConfigGuiScreen;
 import net.daporkchop.fp2.config.gui.container.ColumnsContainer;
@@ -35,16 +36,15 @@ import static java.lang.annotation.RetentionPolicy.*;
 /**
  * @author DaPorkchop_
  */
-@Retention(RUNTIME)
-@Target({ FIELD, TYPE })
-public @interface Setting {
+@UtilityClass
+public class Config {
     /**
      * @author DaPorkchop_
      */
     @Retention(RUNTIME)
     @Target(TYPE)
     @SideOnly(Side.CLIENT)
-    @interface GuiScreenClass {
+    public @interface GuiScreenClass {
         /**
          * @return the class type of the {@link IConfigGuiScreen} to use for this object
          */
@@ -57,7 +57,7 @@ public @interface Setting {
     @Retention(RUNTIME)
     @Target(FIELD)
     @SideOnly(Side.CLIENT)
-    @interface GuiElementClass {
+    public @interface GuiElementClass {
         /**
          * @return the class type of the {@link IConfigGuiElement} to use for this setting
          */
@@ -70,7 +70,7 @@ public @interface Setting {
     @Retention(RUNTIME)
     @Target(TYPE)
     @SideOnly(Side.CLIENT)
-    @interface GuiCategories {
+    public @interface GuiCategories {
         /**
          * @return a {@link CategoryMeta} for each available category
          */
@@ -83,7 +83,7 @@ public @interface Setting {
     @Retention(RUNTIME)
     @Target({})
     @SideOnly(Side.CLIENT)
-    @interface CategoryMeta {
+    public @interface CategoryMeta {
         /**
          * @return the name of the category
          */
@@ -106,7 +106,7 @@ public @interface Setting {
     @Retention(RUNTIME)
     @Target(FIELD)
     @SideOnly(Side.CLIENT)
-    @interface GuiCategory {
+    public @interface GuiCategory {
         /**
          * @return the name of the category which this setting should be added to
          */
@@ -118,7 +118,8 @@ public @interface Setting {
      */
     @Retention(RUNTIME)
     @Target(FIELD)
-    @interface Range {
+    @SideOnly(Side.CLIENT)
+    public @interface GuiRange {
         Constant min();
 
         Constant max();
@@ -129,8 +130,7 @@ public @interface Setting {
      */
     @Retention(RUNTIME)
     @Target(FIELD)
-    @SideOnly(Side.CLIENT)
-    @interface GuiRange {
+    public @interface Range {
         Constant min();
 
         Constant max();
@@ -141,7 +141,7 @@ public @interface Setting {
      */
     @Retention(RUNTIME)
     @Target({})
-    @interface Constant {
+    public @interface Constant {
         /**
          * @return the value of this constant field, or {@link Double#NaN} if it isn't set
          */
@@ -163,7 +163,7 @@ public @interface Setting {
      */
     @Retention(RUNTIME)
     @Target(FIELD)
-    @interface RestartRequired {
+    public @interface RestartRequired {
         /**
          * @return the requirement for what needs to be restarted
          */
@@ -173,7 +173,7 @@ public @interface Setting {
     /**
      * @author DaPorkchop_
      */
-    enum Requirement {
+    public enum Requirement {
         NONE,
         WORLD,
         GAME;

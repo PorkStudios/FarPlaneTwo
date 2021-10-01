@@ -23,7 +23,7 @@ package net.daporkchop.fp2.config.gui.screen;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.config.ConfigHelper;
-import net.daporkchop.fp2.config.Setting;
+import net.daporkchop.fp2.config.Config;
 import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.IConfigGuiScreen;
@@ -72,18 +72,18 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
     public DefaultConfigGuiScreen(@NonNull IGuiContext context, @NonNull GuiObjectAccess<?> access) {
         this.context = context;
 
-        Setting.GuiCategories categories = access.clazz().getAnnotation(Setting.GuiCategories.class);
+        Config.GuiCategories categories = access.clazz().getAnnotation(Config.GuiCategories.class);
         if (categories == null) { //create default categories
             //dummy class to allow us to access the default value for the {@link Setting.GuiCategories} annotation without needing to implement it manually
-            @Setting.GuiCategories(@Setting.CategoryMeta(name = "default"))
+            @Config.GuiCategories(@Config.CategoryMeta(name = "default"))
             class DummyClass {
             }
 
-            categories = DummyClass.class.getAnnotation(Setting.GuiCategories.class);
+            categories = DummyClass.class.getAnnotation(Config.GuiCategories.class);
         }
 
         checkArg(categories.value().length != 0, "%s has no GUI categories!", access.clazz());
-        Map<String, Setting.CategoryMeta> categoriesByName = Stream.of(categories.value())
+        Map<String, Config.CategoryMeta> categoriesByName = Stream.of(categories.value())
                 .reduce(new LinkedHashMap<>(),
                         (map, meta) -> {
                             checkState(map.putIfAbsent(meta.name(), meta) == null, "duplicate category name: %s", meta.name());
@@ -91,11 +91,11 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
                         },
                         (a, b) -> null);
 
-        Map<Setting.CategoryMeta, List<IConfigGuiElement>> elementsByCategory = ConfigHelper.getConfigPropertyFields(access.clazz())
+        Map<Config.CategoryMeta, List<IConfigGuiElement>> elementsByCategory = ConfigHelper.getConfigPropertyFields(access.clazz())
                 .collect(Collectors.groupingBy(
                         field -> {
-                            String categoryName = Optional.ofNullable(field.getAnnotation(Setting.GuiCategory.class)).map(Setting.GuiCategory::value).orElse("default");
-                            Setting.CategoryMeta meta = categoriesByName.get(categoryName);
+                            String categoryName = Optional.ofNullable(field.getAnnotation(Config.GuiCategory.class)).map(Config.GuiCategory::value).orElse("default");
+                            Config.CategoryMeta meta = categoriesByName.get(categoryName);
                             checkArg(meta != null, "no such category: %s", categoryName);
                             return meta;
                         },

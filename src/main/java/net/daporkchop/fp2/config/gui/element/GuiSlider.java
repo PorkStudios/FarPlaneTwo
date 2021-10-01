@@ -22,7 +22,7 @@ package net.daporkchop.fp2.config.gui.element;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.config.ConfigHelper;
-import net.daporkchop.fp2.config.Setting;
+import net.daporkchop.fp2.config.Config;
 import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IGuiContext;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
@@ -49,9 +49,9 @@ public class GuiSlider<T> extends AbstractReflectiveConfigGuiElement<T, Number> 
     public GuiSlider(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull Field field) {
         super(context, access, field);
 
-        Setting.Range rangeAnnotation = field.getAnnotation(Setting.Range.class);
-        Setting.GuiRange guiRangeAnnotation = field.getAnnotation(Setting.GuiRange.class);
-        checkState(rangeAnnotation != null || guiRangeAnnotation != null, "cannot create slider for %s which isn't annotated with %s or %s", field, Setting.Range.class, Setting.GuiRange.class);
+        Config.Range rangeAnnotation = field.getAnnotation(Config.Range.class);
+        Config.GuiRange guiRangeAnnotation = field.getAnnotation(Config.GuiRange.class);
+        checkState(rangeAnnotation != null || guiRangeAnnotation != null, "cannot create slider for %s which isn't annotated with %s or %s", field, Config.Range.class, Config.GuiRange.class);
         Number minValue = ConfigHelper.evaluate(guiRangeAnnotation != null ? guiRangeAnnotation.min() : rangeAnnotation.min());
         Number maxValue = ConfigHelper.evaluate(guiRangeAnnotation != null ? guiRangeAnnotation.max() : rangeAnnotation.max());
 

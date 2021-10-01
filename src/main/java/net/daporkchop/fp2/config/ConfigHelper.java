@@ -84,13 +84,13 @@ public class ConfigHelper {
     }
 
     /**
-     * Extracts the numeric value from a {@link Setting.Constant} annotation.
+     * Extracts the numeric value from a {@link Config.Constant} annotation.
      *
      * @param constant the annotation
      * @return the numeric value
      */
     @SneakyThrows({ IllegalAccessException.class, InvocationTargetException.class, NoSuchFieldException.class, NoSuchMethodException.class })
-    public Number evaluate(@NonNull Setting.Constant constant) {
+    public Number evaluate(@NonNull Config.Constant constant) {
         double value = constant.value();
         String fieldId = constant.field();
         String methodId = constant.method();
@@ -139,7 +139,7 @@ public class ConfigHelper {
     @SideOnly(Side.CLIENT)
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
     public IConfigGuiScreen createConfigGuiScreen(@NonNull IGuiContext context, @NonNull GuiObjectAccess<?> access) {
-        Setting.GuiScreenClass guiScreenAnnotation = access.clazz().getAnnotation(Setting.GuiScreenClass.class);
+        Config.GuiScreenClass guiScreenAnnotation = access.clazz().getAnnotation(Config.GuiScreenClass.class);
         if (guiScreenAnnotation != null) { //a specific gui screen class was requested, so let's use it
             Constructor<? extends IConfigGuiScreen> constructor = guiScreenAnnotation.value().getDeclaredConstructor(IGuiContext.class, GuiObjectAccess.class);
             constructor.setAccessible(true);
@@ -183,7 +183,7 @@ public class ConfigHelper {
     @SideOnly(Side.CLIENT)
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
     public IConfigGuiElement createConfigGuiElement(@NonNull IGuiContext context, @NonNull GuiObjectAccess<?> access, @NonNull Field field) {
-        Setting.GuiElementClass guiElementAnnotation = field.getAnnotation(Setting.GuiElementClass.class);
+        Config.GuiElementClass guiElementAnnotation = field.getAnnotation(Config.GuiElementClass.class);
         if (guiElementAnnotation != null) { //a specific gui element class was requested, so let's use it
             Constructor<? extends IConfigGuiElement> constructor = guiElementAnnotation.value().getDeclaredConstructor(IGuiContext.class, GuiObjectAccess.class, Field.class);
             constructor.setAccessible(true);
@@ -223,7 +223,7 @@ public class ConfigHelper {
      */
     @SideOnly(Side.CLIENT)
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
-    public IConfigGuiElement createConfigGuiContainer(@NonNull Setting.CategoryMeta categoryMeta, @NonNull IGuiContext context, @NonNull GuiObjectAccess<?> access, @NonNull List<IConfigGuiElement> elements) {
+    public IConfigGuiElement createConfigGuiContainer(@NonNull Config.CategoryMeta categoryMeta, @NonNull IGuiContext context, @NonNull GuiObjectAccess<?> access, @NonNull List<IConfigGuiElement> elements) {
         Constructor<? extends IConfigGuiElement> constructor = categoryMeta.containerClass().getDeclaredConstructor(IGuiContext.class, GuiObjectAccess.class, List.class);
         constructor.setAccessible(true);
         return constructor.newInstance(context, access, elements);
@@ -269,25 +269,25 @@ public class ConfigHelper {
      *
      * @param oldInstance the old configuration object
      * @param newInstance the new configuration object
-     * @return the {@link Setting.Requirement}
+     * @return the {@link Config.Requirement}
      */
     @SneakyThrows(IllegalAccessException.class)
-    public <T> Setting.Requirement restartRequirement(@NonNull T oldInstance, @NonNull T newInstance) {
+    public <T> Config.Requirement restartRequirement(@NonNull T oldInstance, @NonNull T newInstance) {
         checkArg(oldInstance.getClass() == newInstance.getClass(), "%s != %s", oldInstance.getClass(), newInstance.getClass());
 
-        Setting.Requirement requirement = Setting.Requirement.NONE;
+        Config.Requirement requirement = Config.Requirement.NONE;
         for (Field field : getConfigPropertyFields(oldInstance.getClass()).toArray(Field[]::new)) {
             Object oldValue = field.get(oldInstance);
             Object newValue = field.get(newInstance);
 
             if (!Objects.deepEquals(oldValue, newValue)) {
-                Setting.RestartRequired restartRequiredAnnotation = field.getAnnotation(Setting.RestartRequired.class);
+                Config.RestartRequired restartRequiredAnnotation = field.getAnnotation(Config.RestartRequired.class);
                 if (restartRequiredAnnotation != null && restartRequiredAnnotation.value().ordinal() > requirement.ordinal()) {
                     requirement = restartRequiredAnnotation.value();
                 }
 
                 if (!isSimpleCopyableType(field.getType())) {
-                    Setting.Requirement subRequirement = restartRequirement(oldValue, newValue);
+                    Config.Requirement subRequirement = restartRequirement(oldValue, newValue);
                     if (subRequirement.ordinal() > requirement.ordinal()) {
                         requirement = subRequirement;
                     }
@@ -304,7 +304,7 @@ public class ConfigHelper {
      * @param instance the configuration object
      */
     @SneakyThrows(IllegalAccessException.class)
-    public void validateConfig(@NonNull Object instance) {
+    public <T> T validateConfig(@NonNull T instance) {
         for (Field field : getConfigPropertyFields(instance.getClass()).toArray(Field[]::new)) {
             Object value = field.get(instance);
 
@@ -313,7 +313,7 @@ public class ConfigHelper {
             if (!isSimpleCopyableType(field.getType())) {
                 validateConfig(value);
             } else if (Number.class.isAssignableFrom(value.getClass())) {
-                Setting.Range range = field.getAnnotation(Setting.Range.class);
+                Config.Range range = field.getAnnotation(Config.Range.class);
                 if (range != null) {
                     double min = evaluate(range.min()).doubleValue();
                     double max = evaluate(range.max()).doubleValue();
@@ -323,6 +323,8 @@ public class ConfigHelper {
                 }
             }
         }
+
+        return instance;
     }
 
     protected void checkValidPropertyType(@NonNull Field field) {
