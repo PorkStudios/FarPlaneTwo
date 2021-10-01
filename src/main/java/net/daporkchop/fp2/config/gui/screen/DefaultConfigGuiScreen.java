@@ -28,7 +28,6 @@ import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.IConfigGuiScreen;
 import net.daporkchop.fp2.config.gui.IGuiContext;
-import net.daporkchop.fp2.config.gui.container.ColumnsContainer;
 import net.daporkchop.fp2.config.gui.container.ScrollingContainer;
 import net.daporkchop.fp2.config.gui.element.GuiTitle;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
@@ -41,8 +40,6 @@ import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.resources.I18n;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Modifier;
 import java.util.AbstractMap;
 import java.util.Comparator;
 import java.util.LinkedHashMap;

@@ -34,6 +34,7 @@ import lombok.With;
 import net.daporkchop.fp2.config.gui.container.RenderDistanceContainer;
 import net.daporkchop.fp2.config.gui.element.GuiRenderModeButton;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.relauncher.Side;
@@ -43,6 +44,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
@@ -169,11 +171,9 @@ public final class FP2Config {
 
     @Builder.Default
     @Setting.GuiElementClass(GuiRenderModeButton.class)
-    @Setting.RestartRequired(Setting.Requirement.WORLD)
-    private final String[] renderModes = {
-            "voxel",
-            "heightmap",
-    };
+    private final String[] renderModes = IFarRenderMode.REGISTRY.stream()
+            .map(Map.Entry::getKey)
+            .toArray(String[]::new);
 
     @Builder.Default
     private final Performance performance = new Performance();

@@ -20,51 +20,41 @@
 
 package net.daporkchop.fp2.config.gui.element;
 
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.config.gui.IGuiContext;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
-import net.minecraft.client.resources.I18n;
+import net.daporkchop.fp2.config.gui.util.ElementBounds;
 
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.config.gui.GuiConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
-public class GuiTitle extends AbstractConfigGuiElement {
-    protected final String name;
+@RequiredArgsConstructor
+@Getter
+@Setter
+@Accessors(chain = false)
+public class GuiNoopPaddingElement implements IConfigGuiElement {
+    @NonNull
+    protected final ComponentDimensions preferredMinimumDimensions;
 
-    protected String text;
-    protected int textWidth;
-
-    public GuiTitle(@NonNull IGuiContext context, @NonNull String name) {
-        super(context);
-
-        this.name = name;
-    }
+    @NonNull
+    protected ElementBounds bounds = null;
 
     @Override
-    protected String langKey() {
-        return this.context.localeKeyBase() + this.name;
+    public Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY) {
+        return Stream.of(new ComponentDimensions(min(this.preferredMinimumDimensions.sizeX(), totalSizeX), min(this.preferredMinimumDimensions.sizeY(), totalSizeY)));
     }
 
     @Override
     public void init() {
-        this.text = I18n.format(this.langKey());
-        this.textWidth = MC.fontRenderer.getStringWidth(this.text);
-    }
-
-    @Override
-    public Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY) {
-        return Stream.of(new ComponentDimensions(totalSizeX, min((MC.fontRenderer.FONT_HEIGHT << 1) + PADDING, totalSizeY)));
-    }
-
-    @Override
-    public ComponentDimensions preferredMinimumDimensions() {
-        return new ComponentDimensions(this.textWidth, (MC.fontRenderer.FONT_HEIGHT << 1) + PADDING);
     }
 
     @Override
@@ -73,7 +63,11 @@ public class GuiTitle extends AbstractConfigGuiElement {
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
-        MC.fontRenderer.drawStringWithShadow(this.text, this.bounds.x() + ((this.bounds.sizeX() - this.textWidth) >> 1), this.bounds.y() + MC.fontRenderer.FONT_HEIGHT + PADDING, -1);
+    }
+
+    @Override
+    public Optional<String[]> getTooltip(int mouseX, int mouseY) {
+        return Optional.empty();
     }
 
     @Override

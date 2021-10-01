@@ -20,9 +20,9 @@
 
 package net.daporkchop.fp2.config.gui.container;
 
-import com.google.common.collect.ImmutableList;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IConfigGuiComponent;
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
@@ -30,6 +30,7 @@ import net.daporkchop.fp2.config.gui.IGuiContext;
 import net.daporkchop.fp2.config.gui.util.ElementBounds;
 import net.daporkchop.lib.common.util.PorkUtil;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
@@ -42,23 +43,19 @@ import static org.lwjgl.opengl.GL11.*;
 /**
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
 public abstract class AbstractConfigGuiContainer<T> implements IConfigGuiElement {
+    @NonNull
     protected final IGuiContext context;
+    @NonNull
     protected final GuiObjectAccess<T> access;
+    @NonNull
     protected final List<IConfigGuiElement> elements;
 
     @Getter
     protected ElementBounds bounds = ElementBounds.ZERO;
 
     protected final BitSet mouseButtonsDown = new BitSet();
-
-    public AbstractConfigGuiContainer(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull List<IConfigGuiElement> elements) {
-        checkArg(!elements.isEmpty(), "cannot create %s with 0 elements!", PorkUtil.className(this));
-
-        this.context = context;
-        this.access = access;
-        this.elements = ImmutableList.copyOf(elements);
-    }
 
     @Override
     public void bounds(@NonNull ElementBounds bounds) {

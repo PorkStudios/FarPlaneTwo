@@ -20,24 +20,206 @@
 
 package net.daporkchop.fp2.config.gui.element;
 
+import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.config.gui.GuiObjectAccess;
+import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.IGuiContext;
+import net.daporkchop.fp2.config.gui.container.ScrollingContainer;
+import net.daporkchop.fp2.config.gui.container.TableContainer;
+import net.daporkchop.fp2.config.gui.container.VerticallyStackedContainer;
+import net.daporkchop.fp2.config.gui.screen.DefaultConfigGuiScreen;
+import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.lib.common.util.PArrays;
+import net.minecraft.client.resources.I18n;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.StringJoiner;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+import static java.lang.Math.*;
+import static net.daporkchop.fp2.config.gui.GuiConstants.*;
 
 /**
  * @author DaPorkchop_
  */
-public class GuiRenderModeButton<T> extends GuiSubmenuButton<T, String[]> {
-    public GuiRenderModeButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull Field field) {
+public class GuiRenderModeButton extends GuiSubmenuButton<FP2Config, String[]> {
+    public GuiRenderModeButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<FP2Config> access, @NonNull Field field) {
         super(context, access, field);
     }
 
     @Override
     protected void handleClick(int button) {
         if (button == 0) { //left-click
-            //TODO: something
+            GuiObjectAccess<String[]> access = this.access.child(this.field);
+
+            this.context.pushSubmenu(this.field.getName(), access, context -> new DefaultConfigGuiScreen(context, new ScrollingContainer<>(context, access, Arrays.asList(
+                    new GuiTitle(context, "renderModesEnabled"),
+                    new EnabledContainer(context, access),
+                    new GuiTitle(context, "renderModesDisabled"),
+                    new DisabledContainer(context, access)))));
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    protected class EnabledContainer extends VerticallyStackedContainer<String[]> {
+        public EnabledContainer(@NonNull IGuiContext context, @NonNull GuiObjectAccess<String[]> access) {
+            super(context, access, new ArrayList<>());
+        }
+
+        @Override
+        public void init() {
+            String[] modes = GuiRenderModeButton.this.get();
+
+            this.elements.clear();
+            this.elements.add(modes.length == 0
+                    ? new GuiTitle(this.context, "noRenderModesEnabled")
+                    : new TableContainer<>(this.context, this.access,
+                    Stream.of(modes)
+                            .map(mode -> new IConfigGuiElement[]{
+                                    PArrays.indexOf(modes, mode) == 0
+                                            ? new GuiNoopPaddingElement(new ComponentDimensions(BUTTON_HEIGHT, BUTTON_HEIGHT))
+                                            : new SquareButton(this.context, this.access, GuiRenderModeButton.this.field, "listUp") {
+                                        @Override
+                                        protected void handleClick(int button) {
+                                            if (button == 0) { //left-click
+                                                int oldIndex = PArrays.indexOf(modes, mode);
+                                                PArrays.swap(modes, oldIndex, max(oldIndex - 1, 0));
+
+                                                this.context.pack();
+                                            }
+                                        }
+                                    },
+                                    PArrays.indexOf(modes, mode) == modes.length - 1
+                                            ? new GuiNoopPaddingElement(new ComponentDimensions(BUTTON_HEIGHT, BUTTON_HEIGHT))
+                                            : new SquareButton(this.context, this.access, GuiRenderModeButton.this.field, "listDown") {
+                                        @Override
+                                        protected void handleClick(int button) {
+                                            if (button == 0) { //left-click
+                                                int oldIndex = PArrays.indexOf(modes, mode);
+                                                PArrays.swap(modes, oldIndex, min(oldIndex + 1, modes.length - 1));
+
+                                                this.context.pack();
+                                            }
+                                        }
+                                    },
+                                    new SquareButton(this.context, this.access, GuiRenderModeButton.this.field, "listRemove") {
+                                        @Override
+                                        protected void handleClick(int button) {
+                                            if (button == 0) { //left-click
+                                                GuiRenderModeButton.this.set(Stream.of(GuiRenderModeButton.this.get())
+                                                        .filter(((Predicate<String>) mode::equals).negate())
+                                                        .toArray(String[]::new));
+
+                                                this.context.pack();
+                                            }
+                                        }
+                                    },
+                                    new GuiNoopPaddingElement(new ComponentDimensions(0, 0)),
+                                    new GuiLabel(this.context, mode, GuiLabel.Alignment.LEFT, GuiLabel.Alignment.CENTER),
+                            })
+                            .toArray(IConfigGuiElement[][]::new)));
+
+            super.init();
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    protected class DisabledContainer extends VerticallyStackedContainer<String[]> {
+        public DisabledContainer(@NonNull IGuiContext context, @NonNull GuiObjectAccess<String[]> access) {
+            super(context, access, new ArrayList<>());
+        }
+
+        @Override
+        public void init() {
+            String[] modes = IFarRenderMode.REGISTRY.stream()
+                    .map(Map.Entry::getKey)
+                    .filter(((Predicate<String>) ImmutableSet.copyOf(GuiRenderModeButton.this.get())::contains).negate())
+                    .toArray(String[]::new);
+
+            this.elements.clear();
+            this.elements.add(modes.length == 0
+                    ? new GuiTitle(this.context, "noRenderModesDisabled")
+                    : new TableContainer<>(this.context, this.access,
+                    Stream.of(modes)
+                            .map(mode -> new IConfigGuiElement[]{
+                                    new SquareButton(this.context, this.access, GuiRenderModeButton.this.field, "listAdd") {
+                                        @Override
+                                        protected void handleClick(int button) {
+                                            if (button == 0) { //left-click
+                                                String[] oldModes = GuiRenderModeButton.this.get();
+                                                String[] newModes = Arrays.copyOf(oldModes, oldModes.length + 1);
+                                                newModes[oldModes.length] = mode;
+                                                GuiRenderModeButton.this.set(newModes);
+
+                                                this.context.pack();
+                                            }
+                                        }
+                                    },
+                                    new GuiNoopPaddingElement(new ComponentDimensions(0, 0)),
+                                    new GuiLabel(this.context, mode, GuiLabel.Alignment.LEFT, GuiLabel.Alignment.CENTER),
+                            })
+                            .toArray(IConfigGuiElement[][]::new)));
+
+            super.init();
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    protected abstract class SquareButton extends GuiButton<String[], String> {
+        protected final String name;
+
+        public SquareButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<String[]> access, @NonNull Field field, @NonNull String name) {
+            super(context, access, field);
+
+            this.name = name;
+        }
+
+        @Override
+        public Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY) {
+            return Stream.of(new ComponentDimensions(min(totalSizeX, BUTTON_HEIGHT), min(totalSizeY, BUTTON_HEIGHT)));
+        }
+
+        @Override
+        public ComponentDimensions preferredMinimumDimensions() {
+            return new ComponentDimensions(BUTTON_HEIGHT, BUTTON_HEIGHT);
+        }
+
+        @Override
+        protected String langKey() {
+            return this.context.localeKeyBase() + this.name;
+        }
+
+        @Override
+        protected String localizeValue(String value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        protected String text() {
+            return this.localizedName();
+        }
+
+        @Override
+        protected void computeTooltipText0(@NonNull StringJoiner joiner) {
+            { //tooltip text from locale
+                String tooltipKey = this.langKey() + ".tooltip";
+                if (I18n.hasKey(tooltipKey)) {
+                    joiner.add(I18n.format(tooltipKey));
+                }
+            }
         }
     }
 }

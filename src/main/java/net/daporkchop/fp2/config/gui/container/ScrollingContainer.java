@@ -137,7 +137,7 @@ public class ScrollingContainer<T> extends AbstractConfigGuiContainer<T> {
             IConfigGuiElement element = this.elements.get(i);
             ComponentDimensions dimensions = elementDimensions.get(i);
 
-            element.bounds(new ElementBounds(0, y, dimensions.sizeX(), dimensions.sizeY()));
+            element.bounds(new ElementBounds((this.bounds.sizeX() - dimensions.sizeX()) >> 1, y, dimensions.sizeX(), dimensions.sizeY()));
             y += dimensions.sizeY() + PADDING;
         }
     }

@@ -34,16 +34,22 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public class GuiTitle extends AbstractConfigGuiElement {
+public class GuiLabel extends AbstractConfigGuiElement {
     protected final String name;
+
+    protected final Alignment horizontalAlignment;
+    protected final Alignment verticalAlignment;
 
     protected String text;
     protected int textWidth;
+    protected int textHeight;
 
-    public GuiTitle(@NonNull IGuiContext context, @NonNull String name) {
+    public GuiLabel(@NonNull IGuiContext context, @NonNull String name, @NonNull Alignment horizontalAlignment, @NonNull Alignment verticalAlignment) {
         super(context);
 
         this.name = name;
+        this.horizontalAlignment = horizontalAlignment;
+        this.verticalAlignment = verticalAlignment;
     }
 
     @Override
@@ -55,16 +61,17 @@ public class GuiTitle extends AbstractConfigGuiElement {
     public void init() {
         this.text = I18n.format(this.langKey());
         this.textWidth = MC.fontRenderer.getStringWidth(this.text);
+        this.textHeight = MC.fontRenderer.FONT_HEIGHT;
     }
 
     @Override
     public Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY) {
-        return Stream.of(new ComponentDimensions(totalSizeX, min((MC.fontRenderer.FONT_HEIGHT << 1) + PADDING, totalSizeY)));
+        return Stream.of(new ComponentDimensions(totalSizeX, min(this.textHeight, totalSizeY)));
     }
 
     @Override
     public ComponentDimensions preferredMinimumDimensions() {
-        return new ComponentDimensions(this.textWidth, (MC.fontRenderer.FONT_HEIGHT << 1) + PADDING);
+        return new ComponentDimensions(this.textWidth, this.textHeight);
     }
 
     @Override
@@ -73,7 +80,10 @@ public class GuiTitle extends AbstractConfigGuiElement {
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
-        MC.fontRenderer.drawStringWithShadow(this.text, this.bounds.x() + ((this.bounds.sizeX() - this.textWidth) >> 1), this.bounds.y() + MC.fontRenderer.FONT_HEIGHT + PADDING, -1);
+        MC.fontRenderer.drawStringWithShadow(this.text,
+                this.horizontalAlignment.align(this.bounds.x(), this.bounds.sizeX(), this.textWidth),
+                this.verticalAlignment.align(this.bounds.y(), this.bounds.sizeY(), this.textHeight),
+                -1);
     }
 
     @Override
@@ -94,5 +104,43 @@ public class GuiTitle extends AbstractConfigGuiElement {
 
     @Override
     public void keyPressed(char typedChar, int keyCode) {
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public enum Alignment {
+        LEFT {
+            @Override
+            public int align(int boundsBase, int boundsSize, int textSize) {
+                return boundsBase;
+            }
+        },
+        TOP {
+            @Override
+            public int align(int boundsBase, int boundsSize, int textSize) {
+                return LEFT.align(boundsBase, boundsSize, textSize);
+            }
+        },
+        CENTER {
+            @Override
+            public int align(int boundsBase, int boundsSize, int textSize) {
+                return boundsBase + ((boundsSize - textSize) >> 1);
+            }
+        },
+        RIGHT {
+            @Override
+            public int align(int boundsBase, int boundsSize, int textSize) {
+                return boundsBase + boundsSize - textSize;
+            }
+        },
+        BOTTOM {
+            @Override
+            public int align(int boundsBase, int boundsSize, int textSize) {
+                return RIGHT.align(boundsBase, boundsSize, textSize);
+            }
+        };
+
+        public abstract int align(int boundsBase, int boundsSize, int textSize);
     }
 }
