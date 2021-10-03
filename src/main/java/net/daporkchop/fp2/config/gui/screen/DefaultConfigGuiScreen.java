@@ -72,7 +72,7 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
     public DefaultConfigGuiScreen(@NonNull IGuiContext context, @NonNull GuiObjectAccess<?> access) {
         this.context = context;
 
-        Config.GuiCategories categories = access.getAnnotation(Config.GuiCategories.class);
+        Config.GuiCategories categories = access.type().getAnnotation(Config.GuiCategories.class);
         if (categories == null) { //create default categories
             //dummy class to allow us to access the default value for the {@link Setting.GuiCategories} annotation without needing to implement it manually
             @Config.GuiCategories(@Config.CategoryMeta(name = "default"))

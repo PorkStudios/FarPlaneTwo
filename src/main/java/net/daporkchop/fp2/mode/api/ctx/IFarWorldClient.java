@@ -37,8 +37,10 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public interface IFarWorldClient extends IFarWorld {
     @CalledFromNetworkThread
-    void fp2_IFarWorldClient_config(FP2Config config);
+    void fp2_IFarWorldClient_updateConfig(FP2Config serverConfig, FP2Config mergedConfig);
 
+    FP2Config fp2_IFarWorldClient_serverConfig();
+    
     FP2Config fp2_IFarWorldClient_config();
 
     @CalledFromNetworkThread

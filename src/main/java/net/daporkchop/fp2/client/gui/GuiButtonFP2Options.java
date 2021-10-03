@@ -23,6 +23,7 @@ package net.daporkchop.fp2.client.gui;
 import lombok.NonNull;
 import net.daporkchop.fp2.config.ConfigHelper;
 import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
@@ -45,7 +46,11 @@ public class GuiButtonFP2Options extends GuiButton {
     @Override
     public boolean mousePressed(Minecraft mc, int mouseX, int mouseY) {
         if (super.mousePressed(mc, mouseX, mouseY)) {
-            ConfigHelper.createAndDisplayGuiContext("menu", FP2Config.DEFAULT_CONFIG, null, FP2Config.global(), FP2Config::set);
+            FP2Config defaultConfig = FP2Config.DEFAULT_CONFIG;
+            FP2Config serverConfig = mc.world != null && !mc.integratedServerIsRunning ? ((IFarWorldClient) mc.world).fp2_IFarWorldClient_serverConfig() : null;
+            FP2Config clientConfig = FP2Config.global();
+
+            ConfigHelper.createAndDisplayGuiContext("menu", defaultConfig, serverConfig, clientConfig, FP2Config::set);
             return true;
         } else {
             return false;

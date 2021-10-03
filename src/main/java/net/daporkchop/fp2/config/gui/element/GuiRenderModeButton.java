@@ -39,6 +39,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -50,8 +52,12 @@ import static net.daporkchop.fp2.config.gui.GuiConstants.*;
  * @author DaPorkchop_
  */
 public class GuiRenderModeButton extends GuiSubmenuButton<String[]> {
+    protected final Set<String> serverModes;
+
     public GuiRenderModeButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<String[]> access) {
         super(context, access);
+
+        this.serverModes = ImmutableSet.copyOf(Optional.ofNullable(access.getServer()).orElseGet(() -> IFarRenderMode.REGISTRY.nameStream().toArray(String[]::new)));
     }
 
     @Override
@@ -131,7 +137,7 @@ public class GuiRenderModeButton extends GuiSubmenuButton<String[]> {
                                         }
                                     },
                                     new GuiNoopPaddingElement(new ComponentDimensions(0, 0)),
-                                    new GuiLabel(this.context, mode, GuiLabel.Alignment.LEFT, GuiLabel.Alignment.CENTER),
+                                    new ModeLabel(this.context, mode),
                             })
                             .toArray(IConfigGuiElement[][]::new)));
 
@@ -175,7 +181,7 @@ public class GuiRenderModeButton extends GuiSubmenuButton<String[]> {
                                         }
                                     },
                                     new GuiNoopPaddingElement(new ComponentDimensions(0, 0)),
-                                    new GuiLabel(this.context, mode, GuiLabel.Alignment.LEFT, GuiLabel.Alignment.CENTER),
+                                    new ModeLabel(this.context, mode),
                             })
                             .toArray(IConfigGuiElement[][]::new)));
 
@@ -227,6 +233,33 @@ public class GuiRenderModeButton extends GuiSubmenuButton<String[]> {
                 if (I18n.hasKey(tooltipKey)) {
                     joiner.add(I18n.format(tooltipKey));
                 }
+            }
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    protected class ModeLabel extends GuiLabel {
+        public ModeLabel(@NonNull IGuiContext context, @NonNull String name) {
+            super(context, name, GuiLabel.Alignment.LEFT, GuiLabel.Alignment.CENTER);
+        }
+
+        @Override
+        protected void computeTooltipText0(@NonNull StringJoiner joiner) {
+            super.computeTooltipText0(joiner);
+
+            if (!GuiRenderModeButton.this.serverModes.contains(this.name)) {
+                joiner.add(I18n.format(GuiRenderModeButton.this.langKey() + ".renderModeDisabledOnServer"));
+            }
+        }
+
+        @Override
+        public void init() {
+            super.init();
+
+            if (!GuiRenderModeButton.this.serverModes.contains(this.name)) {
+                this.text = "§8" + this.text;
             }
         }
     }

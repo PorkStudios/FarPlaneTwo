@@ -36,26 +36,32 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 @Setter
 @Getter
 public class SPacketUpdateConfig implements IMessage {
-    protected FP2Config config;
+    protected FP2Config serverConfig;
+    protected FP2Config mergedConfig;
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.config = buf.readBoolean() ? FP2Config.parse(Constants.readString(buf)) : null;
+        this.serverConfig = buf.readBoolean() ? FP2Config.parse(Constants.readString(buf)) : null;
+        this.mergedConfig = buf.readBoolean() ? FP2Config.parse(Constants.readString(buf)) : null;
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeBoolean(this.config != null);
-
-        if (this.config != null) {
-            Constants.writeString(buf, this.config.toString());
+        buf.writeBoolean(this.serverConfig != null);
+        if (this.serverConfig != null) {
+            Constants.writeString(buf, this.serverConfig.toString());
+        }
+        
+        buf.writeBoolean(this.mergedConfig != null);
+        if (this.mergedConfig != null) {
+            Constants.writeString(buf, this.mergedConfig.toString());
         }
     }
 
     public static class Handler implements IMessageHandler<SPacketUpdateConfig, IMessage> {
         @Override
         public IMessage onMessage(SPacketUpdateConfig message, MessageContext ctx) {
-            ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorldClient_config(message.config);
+            ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorldClient_updateConfig(message.serverConfig, message.mergedConfig);
             return null;
         }
     }

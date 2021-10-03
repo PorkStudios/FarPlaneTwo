@@ -27,6 +27,7 @@ import net.daporkchop.fp2.config.gui.IGuiContext;
 import net.daporkchop.fp2.config.gui.access.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
 import net.daporkchop.lib.common.misc.string.PStrings;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.I18n;
 
 import java.util.function.Function;
@@ -37,6 +38,7 @@ import static java.lang.Math.*;
 import static net.daporkchop.fp2.FP2.*;
 import static net.daporkchop.fp2.config.gui.GuiConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -78,7 +80,20 @@ public class GuiSlider extends AbstractReflectiveConfigGuiElement<Number> {
                 slider -> {
                     this.access.setCurrent(boxFunction.apply(fp ? slider.getValue() : slider.getValueInt()));
                     slider.displayString = this.text();
-                });
+                }) {
+            @Override
+            protected void mouseDragged(Minecraft mc, int par2, int par3) {
+                if (this.visible) {
+                    Number serverValue = GuiSlider.this.access.getServer();
+                    if (serverValue != null) {
+                        int color = 0x44FF0000;
+                        this.drawGradientRect(this.x + 1 + floorI((serverValue.doubleValue() - this.minValue) / (this.maxValue - this.minValue) * (this.width - 2)), this.y + 1, this.x + this.width - 1, this.y + this.height - 1, color, color);
+                    }
+                }
+
+                super.mouseDragged(mc, par2, par3);
+            }
+        };
     }
 
     @Override
@@ -94,6 +109,17 @@ public class GuiSlider extends AbstractReflectiveConfigGuiElement<Number> {
     @Override
     public void init() {
         this.slider.updateSlider();
+    }
+
+    @Override
+    protected String text() {
+        String prefix = "";
+        Number serverValue = this.access.getServer();
+        if (serverValue != null && serverValue.doubleValue() < this.access.getCurrent().doubleValue()) {
+            prefix = "§c";
+        }
+
+        return prefix + super.text();
     }
 
     @Override

@@ -102,6 +102,10 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPl
     private void updateConfig(FP2Config serverConfig, FP2Config clientConfig) {
         checkState(!this.closed, "already closed!");
 
+        if (!Objects.equals(this.serverConfig, serverConfig)) { //re-send server config if it changed
+            this.fp2_IFarPlayer_sendPacket(new SPacketUpdateConfig().serverConfig(this.serverConfig).mergedConfig(this.mergedConfig));
+        }
+
         this.serverConfig = serverConfig;
         this.clientConfig = clientConfig;
         FP2Config mergedConfig = FP2Config.merge(serverConfig, clientConfig);
@@ -137,7 +141,7 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPl
     @Unique
     protected void updateMergedConfig(FP2Config mergedConfig) {
         this.mergedConfig = mergedConfig;
-        this.fp2_IFarPlayer_sendPacket(new SPacketUpdateConfig().config(mergedConfig));
+        this.fp2_IFarPlayer_sendPacket(new SPacketUpdateConfig().serverConfig(this.serverConfig).mergedConfig(mergedConfig));
     }
 
     @CalledFromServerThread

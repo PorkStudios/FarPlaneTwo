@@ -93,7 +93,7 @@ final class ReflectiveGuiObjectAccess<T, V> implements GuiObjectAccess<V> {
     @SneakyThrows(IllegalAccessException.class)
     public V getServer() {
         return this.serverInstance != null //allowing static access to a server field doesn't make any sense...
-                ? uncheckedCast(this.field.get(this.defaultInstance))
+                ? uncheckedCast(this.field.get(this.serverInstance))
                 : null;
     }
 

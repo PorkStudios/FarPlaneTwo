@@ -27,7 +27,11 @@ import net.daporkchop.fp2.config.gui.IGuiContext;
 import net.daporkchop.fp2.config.gui.access.GuiObjectAccess;
 import net.minecraft.client.resources.I18n;
 
+import java.util.Objects;
+import java.util.Optional;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.FP2.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -60,15 +64,15 @@ public abstract class AbstractReflectiveConfigGuiElement<V> extends AbstractConf
         super.computeTooltipText0(joiner);
 
         { //indicator for this option's old/default values
-            String oldValue = this.localizeValue(this.access.getOld());
-            String defaultValue = this.localizeValue(this.access.getDefault());
+            String text = Stream.of(
+                    Optional.ofNullable(this.localizeValue(this.access.getOld())).map(val -> I18n.format(MODID + ".config.old.tooltip", val)).orElse(null),
+                    Optional.ofNullable(this.localizeValue(this.access.getDefault())).map(val -> I18n.format(MODID + ".config.default.tooltip", val)).orElse(null),
+                    Optional.ofNullable(this.access.getServer()).map(this::localizeValue).map(val -> I18n.format(MODID + ".config.server.tooltip", val)).orElse(null))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.joining("\n"));
 
-            String key = oldValue == null
-                    ? defaultValue == null ? null : "default"
-                    : defaultValue == null ? "old" : "oldDefault";
-
-            if (key != null) {
-                joiner.add(I18n.format(MODID + ".config." + key + ".tooltip", oldValue, defaultValue));
+            if (!text.isEmpty()) {
+                joiner.add(text);
             }
         }
 

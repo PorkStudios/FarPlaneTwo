@@ -31,9 +31,9 @@ fp2.config.enum.selected.false=%s
 
 fp2.config.slider.format=%s
 
-fp2.config.old.tooltip=Current value: %1$s
-fp2.config.default.tooltip=Default value: %2$s
-fp2.config.oldDefault.tooltip=Current value: %1$s\nDefault value: %2$s
+fp2.config.old.tooltip=Current value: %s
+fp2.config.default.tooltip=Default value: %s
+fp2.config.server.tooltip=Server value: %s
 fp2.config.range.tooltip=Minimum: %1$s\nMaximum: %2$s
 
 fp2.config.restartRequired.tooltip.WORLD=§cChanges to this option require a world reload to take effect!
@@ -62,6 +62,7 @@ fp2.config.menu.renderModes.renderModesEnabled=§n§lEnabled Render Modes
 fp2.config.menu.renderModes.renderModesDisabled=§n§lDisabled Render Modes
 fp2.config.menu.renderModes.noRenderModesEnabled=§cNo render modes enabled!
 fp2.config.menu.renderModes.noRenderModesDisabled=§aNo render modes disabled!
+fp2.config.menu.renderModes.renderModeDisabledOnServer=§cThis render mode is not supported by the server!
 fp2.config.menu.renderModes.listAdd=+
 fp2.config.menu.renderModes.listAdd.tooltip=Enable this render mode
 fp2.config.menu.renderModes.listRemove=-
@@ -72,7 +73,9 @@ fp2.config.menu.renderModes.listDown=⬇
 fp2.config.menu.renderModes.listDown.tooltip=Decrease this render mode's priority
 
 fp2.config.menu.renderModes.heightmap=Heightmap
+fp2.config.menu.renderModes.heightmap.tooltip=Only renders the top block layer.\nFastest, but looks worst and can't display overhangs.
 fp2.config.menu.renderModes.voxel=Voxel
+fp2.config.menu.renderModes.voxel.tooltip=Renders actual 3D terrain data.\nNotably slower than heightmap, but looks best.
 
 fp2.config.menu.performance=Performance
 fp2.config.menu.performance.title=FarPlaneTwo Performance Options

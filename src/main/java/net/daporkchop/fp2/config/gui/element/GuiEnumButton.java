@@ -76,7 +76,7 @@ public class GuiEnumButton<E extends Enum<E>> extends GuiButton<E> {
         protected final E value;
 
         public ValueSelectionButton(@NonNull IGuiContext context, @NonNull E value) {
-            super(context, GuiEnumButton.this.access.childAccess(GuiEnumButton.this.fields[value.ordinal()]));
+            super(context, GuiObjectAccess.forStaticField(GuiEnumButton.this.fields[value.ordinal()]));
 
             this.value = value;
         }

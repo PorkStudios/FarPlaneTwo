@@ -54,6 +54,8 @@ public abstract class MixinWorldClient extends MixinWorld implements IFarWorldCl
     private Minecraft mc;
 
     @Unique
+    private FP2Config serverConfig;
+    @Unique
     private FP2Config config;
 
     @Unique
@@ -72,20 +74,27 @@ public abstract class MixinWorldClient extends MixinWorld implements IFarWorldCl
 
     @CalledFromNetworkThread
     @Override
-    public void fp2_IFarWorldClient_config(FP2Config config) {
-        if (Objects.equals(this.config, config)) { //nothing changed, so nothing to do!
+    public void fp2_IFarWorldClient_updateConfig(FP2Config serverConfig, FP2Config mergedConfig) {
+        this.serverConfig = serverConfig;
+
+        if (Objects.equals(this.config, mergedConfig)) { //nothing changed, so nothing to do!
             return;
         }
 
-        this.config = config;
+        this.config = mergedConfig;
 
         if (this.context != null) {
             if (this.modeFor(this.config) == this.context.mode()) {
-                this.context.notifyConfigChange(config);
+                this.context.notifyConfigChange(mergedConfig);
             } else {
                 FP2_LOG.warn("render mode was switched while a session is active!");
             }
         }
+    }
+
+    @Override
+    public FP2Config fp2_IFarWorldClient_serverConfig() {
+        return this.serverConfig;
     }
 
     @Override
