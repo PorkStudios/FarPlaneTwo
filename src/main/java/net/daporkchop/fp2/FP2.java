@@ -45,10 +45,14 @@ import net.minecraftforge.fml.common.event.FMLModIdMappingEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
+import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 import net.minecraftforge.fml.relauncher.Side;
 
 import static net.daporkchop.fp2.FP2.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -119,12 +123,24 @@ public class FP2 {
         NETWORK_WRAPPER.registerMessage(CPacketInitWorldACK.Handler.class, CPacketInitWorldACK.class, id++, Side.SERVER);
         NETWORK_WRAPPER.registerMessage(CPacketDropAllTiles.Handler.class, CPacketDropAllTiles.class, id++, Side.SERVER);
 
-        NETWORK_WRAPPER.registerMessage(SPacketInitWorld.Handler.class, SPacketInitWorld.class, id++, Side.CLIENT);
-        NETWORK_WRAPPER.registerMessage(SPacketSessionBegin.Handler.class, SPacketSessionBegin.class, id++, Side.CLIENT);
-        NETWORK_WRAPPER.registerMessage(SPacketSessionEnd.Handler.class, SPacketSessionEnd.class, id++, Side.CLIENT);
-        NETWORK_WRAPPER.registerMessage(SPacketUpdateConfig.Handler.class, SPacketUpdateConfig.class, id++, Side.CLIENT);
-        NETWORK_WRAPPER.registerMessage(SPacketTileData.Handler.class, SPacketTileData.class, id++, Side.CLIENT);
-        NETWORK_WRAPPER.registerMessage(SPacketUnloadTile.Handler.class, SPacketUnloadTile.class, id++, Side.CLIENT);
-        NETWORK_WRAPPER.registerMessage(SPacketUnloadTiles.Handler.class, SPacketUnloadTiles.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(IS_DEDICATED_SERVER ? uncheckedCast($DummyMessageHandler.class) : SPacketInitWorld.Handler.class, SPacketInitWorld.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(IS_DEDICATED_SERVER ? uncheckedCast($DummyMessageHandler.class) : SPacketSessionBegin.Handler.class, SPacketSessionBegin.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(IS_DEDICATED_SERVER ? uncheckedCast($DummyMessageHandler.class) : SPacketSessionEnd.Handler.class, SPacketSessionEnd.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(IS_DEDICATED_SERVER ? uncheckedCast($DummyMessageHandler.class) : SPacketUpdateConfig.Handler.class, SPacketUpdateConfig.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(IS_DEDICATED_SERVER ? uncheckedCast($DummyMessageHandler.class) : SPacketTileData.Handler.class, SPacketTileData.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(IS_DEDICATED_SERVER ? uncheckedCast($DummyMessageHandler.class) : SPacketUnloadTile.Handler.class, SPacketUnloadTile.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(IS_DEDICATED_SERVER ? uncheckedCast($DummyMessageHandler.class) : SPacketUnloadTiles.Handler.class, SPacketUnloadTiles.class, id++, Side.CLIENT);
+    }
+
+    /**
+     * Dummy {@link IMessageHandler} implementation which serves no purpose other than to serve as a fallback to prevent client handlers from being loaded on the server.
+     *
+     * @author DaPorkchop_
+     */
+    public static class $DummyMessageHandler implements IMessageHandler {
+        @Override
+        public IMessage onMessage(IMessage message, MessageContext ctx) {
+            throw new IllegalStateException(className(message));
+        }
     }
 }

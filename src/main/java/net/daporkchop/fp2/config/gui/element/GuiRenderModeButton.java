@@ -85,10 +85,15 @@ public class GuiRenderModeButton extends GuiSubmenuButton<String[]> {
 
             this.elements.clear();
             this.elements.add(new GuiTitle(this.context, "renderModesEnabled"));
-            this.elements.add(modes.length == 0
-                    ? new GuiTitle(this.context, "noRenderModesEnabled")
-                    : new TableContainer<>(this.context, this.access,
-                    Stream.of(modes)
+            this.elements.add(new TableContainer<>(this.context, this.access, modes.length == 0 ?
+                    new IConfigGuiElement[][]{
+                            {
+                                    new GuiNoopPaddingElement(new ComponentDimensions(0, BUTTON_HEIGHT)),
+                                    new GuiLabel(this.context, "noRenderModesEnabled", GuiLabel.Alignment.CENTER, GuiLabel.Alignment.CENTER),
+                                    new GuiNoopPaddingElement(new ComponentDimensions(0, BUTTON_HEIGHT)),
+                            }
+                    }
+                    : Stream.of(modes)
                             .map(mode -> new IConfigGuiElement[]{
                                     new SquareButton(this.context, this.access, "listRemove") {
                                         @Override
@@ -162,28 +167,33 @@ public class GuiRenderModeButton extends GuiSubmenuButton<String[]> {
 
             this.elements.clear();
             this.elements.add(new GuiTitle(this.context, "renderModesDisabled"));
-            this.elements.add(modes.length == 0
-                    ? new GuiTitle(this.context, "noRenderModesDisabled")
-                    : new TableContainer<>(this.context, this.access,
-                    Stream.of(modes)
-                            .map(mode -> new IConfigGuiElement[]{
-                                    new SquareButton(this.context, this.access, "listAdd") {
-                                        @Override
-                                        protected void handleClick(int button) {
-                                            if (button == 0) { //left-click
-                                                String[] oldModes = GuiRenderModeButton.this.access.getCurrent();
-                                                String[] newModes = Arrays.copyOf(oldModes, oldModes.length + 1);
-                                                newModes[oldModes.length] = mode;
-                                                GuiRenderModeButton.this.access.setCurrent(newModes);
+            this.elements.add(new TableContainer<>(this.context, this.access, modes.length == 0 ?
+                    new IConfigGuiElement[][]{
+                            {
+                                    new GuiNoopPaddingElement(new ComponentDimensions(0, BUTTON_HEIGHT)),
+                                    new GuiLabel(this.context, "noRenderModesDisabled", GuiLabel.Alignment.CENTER, GuiLabel.Alignment.CENTER),
+                                    new GuiNoopPaddingElement(new ComponentDimensions(0, BUTTON_HEIGHT)),
+                            }
+                    }
+                    : Stream.of(modes)
+                    .map(mode -> new IConfigGuiElement[]{
+                            new SquareButton(this.context, this.access, "listAdd") {
+                                @Override
+                                protected void handleClick(int button) {
+                                    if (button == 0) { //left-click
+                                        String[] oldModes = GuiRenderModeButton.this.access.getCurrent();
+                                        String[] newModes = Arrays.copyOf(oldModes, oldModes.length + 1);
+                                        newModes[oldModes.length] = mode;
+                                        GuiRenderModeButton.this.access.setCurrent(newModes);
 
-                                                this.context.pack();
-                                            }
-                                        }
-                                    },
-                                    new GuiNoopPaddingElement(new ComponentDimensions(0, 0)),
-                                    new ModeLabel(this.context, mode),
-                            })
-                            .toArray(IConfigGuiElement[][]::new)));
+                                        this.context.pack();
+                                    }
+                                }
+                            },
+                            new GuiNoopPaddingElement(new ComponentDimensions(0, 0)),
+                            new ModeLabel(this.context, mode),
+                    })
+                    .toArray(IConfigGuiElement[][]::new)));
 
             super.init();
         }

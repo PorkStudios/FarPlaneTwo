@@ -41,6 +41,15 @@ public class Config {
     /**
      * @author DaPorkchop_
      */
+    public enum Requirement {
+        NONE,
+        WORLD,
+        GAME;
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
     @Retention(RUNTIME)
     @Target(TYPE)
     @SideOnly(Side.CLIENT)
@@ -119,6 +128,15 @@ public class Config {
     @Retention(RUNTIME)
     @Target(FIELD)
     @SideOnly(Side.CLIENT)
+    public @interface GuiShowServerValue {
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Retention(RUNTIME)
+    @Target(FIELD)
+    @SideOnly(Side.CLIENT)
     public @interface GuiRange {
         Constant min();
 
@@ -168,14 +186,5 @@ public class Config {
          * @return the requirement for what needs to be restarted
          */
         Requirement value();
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public enum Requirement {
-        NONE,
-        WORLD,
-        GAME;
     }
 }

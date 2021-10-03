@@ -130,8 +130,17 @@ public class Constants {
     public static final Ref<ArrayAllocator<double[]>> ALLOC_DOUBLE = ThreadRef.soft(() -> ArrayAllocator.pow2(double[]::new, ReferenceType.STRONG, 32));
     public static final Ref<ArrayAllocator<Object[]>> ALLOC_OBJECT = ThreadRef.soft(() -> ArrayAllocator.pow2(Object[]::new, ReferenceType.STRONG, 32));
 
+    public static final boolean IS_DEDICATED_SERVER = FMLCommonHandler.instance().getSide() == Side.SERVER;
+    public static final boolean IS_CLIENT = FMLCommonHandler.instance().getSide() == Side.CLIENT;
+
     @SideOnly(Side.CLIENT)
-    public static final Minecraft MC = Minecraft.getMinecraft();
+    public static Minecraft MC;
+
+    static {
+        if (IS_CLIENT) { //initialize client-only fields here to prevent errors
+            MC = Minecraft.getMinecraft();
+        }
+    }
 
     /**
      * Copypasta of {@link FMLLog#bigWarning(String, Object...)} with support for multi-line error messages.

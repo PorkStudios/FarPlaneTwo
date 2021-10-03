@@ -67,7 +67,7 @@ public abstract class AbstractReflectiveConfigGuiElement<V> extends AbstractConf
             String text = Stream.of(
                     Optional.ofNullable(this.localizeValue(this.access.getOld())).map(val -> I18n.format(MODID + ".config.old.tooltip", val)).orElse(null),
                     Optional.ofNullable(this.localizeValue(this.access.getDefault())).map(val -> I18n.format(MODID + ".config.default.tooltip", val)).orElse(null),
-                    Optional.ofNullable(this.access.getServer()).map(this::localizeValue).map(val -> I18n.format(MODID + ".config.server.tooltip", val)).orElse(null))
+                    this.access.getAnnotation(Config.GuiShowServerValue.class) != null ? Optional.ofNullable(this.access.getServer()).map(this::localizeValue).map(val -> I18n.format(MODID + ".config.server.tooltip", val)).orElse(null) : null)
                     .filter(Objects::nonNull)
                     .collect(Collectors.joining("\n"));
 

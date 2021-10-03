@@ -157,19 +157,21 @@ public final class FP2Config implements Cloneable<FP2Config> {
         return clientConfig.toBuilder()
                 .maxLevels(min(serverConfig.maxLevels(), clientConfig.maxLevels()))
                 .cutoffDistance(min(serverConfig.cutoffDistance(), clientConfig.cutoffDistance()))
-                .renderModes(Stream.of(serverConfig.renderModes()).filter(ImmutableSet.copyOf(clientConfig.renderModes)::contains).toArray(String[]::new))
+                .renderModes(Stream.of(clientConfig.renderModes()).filter(ImmutableSet.copyOf(serverConfig.renderModes())::contains).toArray(String[]::new))
                 .build();
     }
 
     @Builder.Default
     @Config.Range(min = @Config.Constant(1), max = @Config.Constant(field = "net.daporkchop.fp2.util.Constants#MAX_LODS"))
     @Config.GuiCategory(CATEGORY_RENDER_DISTANCE)
+    @Config.GuiShowServerValue
     private final int maxLevels = preventInline(3);
 
     @Builder.Default
     @Config.Range(min = @Config.Constant(0), max = @Config.Constant(Integer.MAX_VALUE))
     @Config.GuiRange(min = @Config.Constant(1), max = @Config.Constant(1024))
     @Config.GuiCategory(CATEGORY_RENDER_DISTANCE)
+    @Config.GuiShowServerValue
     private final int cutoffDistance = preventInline(256);
 
     @Builder.Default
@@ -384,10 +386,12 @@ public final class FP2Config implements Cloneable<FP2Config> {
 
         @Builder.Default
         @Config.GuiCategory(CATEGORY_SERVER)
+        @Config.GuiShowServerValue
         private final boolean exactGeneration = preventInline(true);
 
         @Builder.Default
         @Config.GuiCategory(CATEGORY_SERVER)
+        @Config.GuiShowServerValue
         private final boolean levelZeroTracking = preventInline(true);
 
         @Override
