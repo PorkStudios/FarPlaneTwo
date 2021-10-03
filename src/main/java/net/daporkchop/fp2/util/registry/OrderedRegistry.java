@@ -129,6 +129,20 @@ public interface OrderedRegistry<T> extends Iterable<Map.Entry<String, T>> {
      */
     Stream<Map.Entry<String, T>> stream();
 
+    /**
+     * @return a {@link Stream} over all the names in this registry
+     */
+    default Stream<String> nameStream() {
+        return this.stream().map(Map.Entry::getKey);
+    }
+
+    /**
+     * @return a {@link Stream} over all the values in this registry
+     */
+    default Stream<T> valueStream() {
+        return this.stream().map(Map.Entry::getValue);
+    }
+
     @Override
     Iterator<Map.Entry<String, T>> iterator();
 

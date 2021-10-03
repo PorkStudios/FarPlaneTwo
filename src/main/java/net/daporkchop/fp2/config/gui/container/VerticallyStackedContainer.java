@@ -73,7 +73,7 @@ public class VerticallyStackedContainer<T> extends AbstractConfigGuiContainer<T>
             IConfigGuiElement element = this.elements.get(i);
             ComponentDimensions dimensions = element.possibleDimensions(this.bounds.sizeX(), Integer.MAX_VALUE).min(COMPARATOR_LOWY_HIGHX).get();
 
-            element.bounds(new ElementBounds(0, y, dimensions.sizeX(), dimensions.sizeY()));
+            element.bounds(new ElementBounds((this.bounds.sizeX() - dimensions.sizeX()) >> 1, y, dimensions.sizeX(), dimensions.sizeY()));
             y += dimensions.sizeY() + PADDING;
         }
     }

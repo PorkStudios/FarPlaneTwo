@@ -58,13 +58,13 @@ fp2.config.menu.labelEquivalentRenderDistance=Render Distance Equivalent: %1$s b
 fp2.config.menu.renderModes=Render Modes...
 
 fp2.config.menu.renderModes.title=FarPlaneTwo Render Modes
-fp2.config.menu.renderModes.renderModesEnabled=Enabled Render Modes
-fp2.config.menu.renderModes.renderModesDisabled=Disabled Render Modes
+fp2.config.menu.renderModes.renderModesEnabled=§n§lEnabled Render Modes
+fp2.config.menu.renderModes.renderModesDisabled=§n§lDisabled Render Modes
 fp2.config.menu.renderModes.noRenderModesEnabled=§cNo render modes enabled!
 fp2.config.menu.renderModes.noRenderModesDisabled=§aNo render modes disabled!
-fp2.config.menu.renderModes.listAdd=✔
+fp2.config.menu.renderModes.listAdd=+
 fp2.config.menu.renderModes.listAdd.tooltip=Enable this render mode
-fp2.config.menu.renderModes.listRemove=✖
+fp2.config.menu.renderModes.listRemove=-
 fp2.config.menu.renderModes.listRemove.tooltip=Disable this render mode
 fp2.config.menu.renderModes.listUp=⬆
 fp2.config.menu.renderModes.listUp.tooltip=Increase this render mode's priority

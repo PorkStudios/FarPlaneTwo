@@ -32,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.With;
 import net.daporkchop.fp2.config.gui.container.RenderDistanceContainer;
+import net.daporkchop.fp2.config.gui.element.GuiDebugButton;
 import net.daporkchop.fp2.config.gui.element.GuiRenderModeButton;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
@@ -173,17 +174,20 @@ public final class FP2Config implements Cloneable<FP2Config> {
 
     @Builder.Default
     @Config.GuiElementClass(GuiRenderModeButton.class)
-    private final String[] renderModes = IFarRenderMode.REGISTRY.stream()
-            .map(Map.Entry::getKey)
-            .toArray(String[]::new);
+    @NonNull
+    private final String[] renderModes = IFarRenderMode.REGISTRY.nameStream().toArray(String[]::new);
 
     @Builder.Default
+    @NonNull
     private final Performance performance = new Performance();
 
     @Builder.Default
+    @NonNull
     private final Compatibility compatibility = new Compatibility();
 
     @Builder.Default
+    @Config.GuiElementClass(GuiDebugButton.class)
+    @NonNull
     private final Debug debug = new Debug();
 
     /**
@@ -192,11 +196,9 @@ public final class FP2Config implements Cloneable<FP2Config> {
      * @return the cleaned config
      */
     public FP2Config clean() {
-        return this.toBuilder()
-                .renderModes(Stream.of(this.renderModes)
-                        .filter(IFarRenderMode.REGISTRY.stream().map(Map.Entry::getKey).collect(Collectors.toSet())::contains)
-                        .toArray(String[]::new))
-                .build();
+        return this.withRenderModes(Stream.of(this.renderModes)
+                .filter(IFarRenderMode.REGISTRY.stream().map(Map.Entry::getKey).collect(Collectors.toSet())::contains)
+                .toArray(String[]::new));
     }
 
     /**
@@ -302,11 +304,13 @@ public final class FP2Config implements Cloneable<FP2Config> {
         @Builder.Default
         @Config.GuiCategory(CATEGORY_CLIENT_WORKAROUNDS)
         @Config.RestartRequired(Config.Requirement.GAME)
+        @NonNull
         private final WorkaroundState workaroundAmdVertexPadding = preventInline(WorkaroundState.AUTO);
 
         @Builder.Default
         @Config.GuiCategory(CATEGORY_CLIENT_WORKAROUNDS)
         @Config.RestartRequired(Config.Requirement.GAME)
+        @NonNull
         private final WorkaroundState workaroundIntelMultidrawNotWorking = preventInline(WorkaroundState.AUTO);
 
         @Override
@@ -375,6 +379,7 @@ public final class FP2Config implements Cloneable<FP2Config> {
 
         @Builder.Default
         @Config.GuiCategory(CATEGORY_CLIENT)
+        @NonNull
         private final DebugColorMode debugColors = preventInline(DebugColorMode.DISABLED);
 
         @Builder.Default

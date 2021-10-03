@@ -174,6 +174,9 @@ public class LinkedOrderedRegistry<T> implements OrderedRegistry<T> {
         return this.list.toString();
     }
 
+    /**
+     * @author DaPorkchop_
+     */
     @AllArgsConstructor
     private static class Entry<T> implements Map.Entry<String, T> {
         @NonNull

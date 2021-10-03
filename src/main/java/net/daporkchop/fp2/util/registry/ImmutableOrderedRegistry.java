@@ -110,6 +110,16 @@ public final class ImmutableOrderedRegistry<T> implements OrderedRegistry<T> {
     }
 
     @Override
+    public Stream<String> nameStream() {
+        return this.map.keySet().stream();
+    }
+
+    @Override
+    public Stream<T> valueStream() {
+        return this.map.values().stream();
+    }
+
+    @Override
     public void forEachEntry(@NonNull BiConsumer<String, ? super T> action) {
         this.map.forEach(action);
     }

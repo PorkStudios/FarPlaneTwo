@@ -26,6 +26,7 @@ import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.IGuiContext;
+import net.daporkchop.fp2.config.gui.container.ColumnsContainer;
 import net.daporkchop.fp2.config.gui.container.ScrollingContainer;
 import net.daporkchop.fp2.config.gui.container.TableContainer;
 import net.daporkchop.fp2.config.gui.container.VerticallyStackedContainer;
@@ -38,6 +39,7 @@ import net.minecraft.client.resources.I18n;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.function.Predicate;
@@ -59,11 +61,11 @@ public class GuiRenderModeButton extends GuiSubmenuButton<FP2Config, String[]> {
         if (button == 0) { //left-click
             GuiObjectAccess<String[]> access = this.access.child(this.field);
 
-            this.context.pushSubmenu(this.field.getName(), access, context -> new DefaultConfigGuiScreen(context, new ScrollingContainer<>(context, access, Arrays.asList(
-                    new GuiTitle(context, "renderModesEnabled"),
-                    new EnabledContainer(context, access),
-                    new GuiTitle(context, "renderModesDisabled"),
-                    new DisabledContainer(context, access)))));
+            this.context.pushSubmenu(this.field.getName(), access, context -> new DefaultConfigGuiScreen(context,
+                    new ScrollingContainer<>(context, access, Collections.singletonList(
+                            new ColumnsContainer<>(context, access, Arrays.asList(
+                                    new DisabledContainer(context, access),
+                                    new EnabledContainer(context, access)))))));
         }
     }
 
@@ -80,14 +82,31 @@ public class GuiRenderModeButton extends GuiSubmenuButton<FP2Config, String[]> {
             String[] modes = GuiRenderModeButton.this.get();
 
             this.elements.clear();
+            this.elements.add(new GuiTitle(this.context, "renderModesEnabled"));
             this.elements.add(modes.length == 0
                     ? new GuiTitle(this.context, "noRenderModesEnabled")
                     : new TableContainer<>(this.context, this.access,
                     Stream.of(modes)
                             .map(mode -> new IConfigGuiElement[]{
-                                    PArrays.indexOf(modes, mode) == 0
-                                            ? new GuiNoopPaddingElement(new ComponentDimensions(BUTTON_HEIGHT, BUTTON_HEIGHT))
-                                            : new SquareButton(this.context, this.access, GuiRenderModeButton.this.field, "listUp") {
+                                    new SquareButton(this.context, this.access, GuiRenderModeButton.this.field, "listRemove") {
+                                        @Override
+                                        protected void handleClick(int button) {
+                                            if (button == 0) { //left-click
+                                                GuiRenderModeButton.this.set(Stream.of(GuiRenderModeButton.this.get())
+                                                        .filter(((Predicate<String>) mode::equals).negate())
+                                                        .toArray(String[]::new));
+
+                                                this.context.pack();
+                                            }
+                                        }
+                                    },
+                                    new SquareButton(this.context, this.access, GuiRenderModeButton.this.field, "listUp") {
+                                        {
+                                            if (PArrays.indexOf(modes, mode) == 0) {
+                                                this.button.enabled = false;
+                                            }
+                                        }
+
                                         @Override
                                         protected void handleClick(int button) {
                                             if (button == 0) { //left-click
@@ -98,26 +117,18 @@ public class GuiRenderModeButton extends GuiSubmenuButton<FP2Config, String[]> {
                                             }
                                         }
                                     },
-                                    PArrays.indexOf(modes, mode) == modes.length - 1
-                                            ? new GuiNoopPaddingElement(new ComponentDimensions(BUTTON_HEIGHT, BUTTON_HEIGHT))
-                                            : new SquareButton(this.context, this.access, GuiRenderModeButton.this.field, "listDown") {
+                                    new SquareButton(this.context, this.access, GuiRenderModeButton.this.field, "listDown") {
+                                        {
+                                            if (PArrays.indexOf(modes, mode) == modes.length - 1) {
+                                                this.button.enabled = false;
+                                            }
+                                        }
+
                                         @Override
                                         protected void handleClick(int button) {
                                             if (button == 0) { //left-click
                                                 int oldIndex = PArrays.indexOf(modes, mode);
                                                 PArrays.swap(modes, oldIndex, min(oldIndex + 1, modes.length - 1));
-
-                                                this.context.pack();
-                                            }
-                                        }
-                                    },
-                                    new SquareButton(this.context, this.access, GuiRenderModeButton.this.field, "listRemove") {
-                                        @Override
-                                        protected void handleClick(int button) {
-                                            if (button == 0) { //left-click
-                                                GuiRenderModeButton.this.set(Stream.of(GuiRenderModeButton.this.get())
-                                                        .filter(((Predicate<String>) mode::equals).negate())
-                                                        .toArray(String[]::new));
 
                                                 this.context.pack();
                                             }
@@ -148,6 +159,7 @@ public class GuiRenderModeButton extends GuiSubmenuButton<FP2Config, String[]> {
                     .toArray(String[]::new);
 
             this.elements.clear();
+            this.elements.add(new GuiTitle(this.context, "renderModesDisabled"));
             this.elements.add(modes.length == 0
                     ? new GuiTitle(this.context, "noRenderModesDisabled")
                     : new TableContainer<>(this.context, this.access,
