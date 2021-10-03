@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.config.gui;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.gui.util.ElementBounds;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.config.gui.util.ElementBounds;
 
 import java.util.stream.Stream;
 

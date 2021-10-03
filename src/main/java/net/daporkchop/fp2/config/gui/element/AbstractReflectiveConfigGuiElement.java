@@ -21,13 +21,12 @@
 package net.daporkchop.fp2.config.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.ConfigHelper;
 import net.daporkchop.fp2.config.Config;
-import net.daporkchop.fp2.config.gui.GuiObjectAccess;
+import net.daporkchop.fp2.config.ConfigHelper;
 import net.daporkchop.fp2.config.gui.IGuiContext;
+import net.daporkchop.fp2.config.gui.access.GuiObjectAccess;
 import net.minecraft.client.resources.I18n;
 
-import java.lang.reflect.Field;
 import java.util.StringJoiner;
 
 import static net.daporkchop.fp2.FP2.*;
@@ -36,35 +35,33 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractReflectiveConfigGuiElement<T, V> extends AbstractConfigGuiElement {
-    protected final GuiObjectAccess<T> access;
-    protected final Field field;
+public abstract class AbstractReflectiveConfigGuiElement<V> extends AbstractConfigGuiElement {
+    protected final GuiObjectAccess<V> access;
 
-    public AbstractReflectiveConfigGuiElement(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull Field field) {
+    public AbstractReflectiveConfigGuiElement(@NonNull IGuiContext context, @NonNull GuiObjectAccess<V> access) {
         super(context);
 
         this.access = access;
-        this.field = field;
     }
 
     @Override
     protected String langKey() {
-        return this.context.localeKeyBase() + this.field.getName();
+        return this.context.localeKeyBase() + this.access.name();
     }
 
     protected String text() {
-        return I18n.format(MODID + ".config.property.format", this.localizedName(), this.localizeValue(this.get()));
+        return I18n.format(MODID + ".config.property.format", this.localizedName(), this.localizeValue(this.access.getCurrent()));
     }
 
-    protected abstract String localizeValue(V value);
+    protected abstract String localizeValue(@NonNull V value);
 
     @Override
     protected void computeTooltipText0(@NonNull StringJoiner joiner) {
         super.computeTooltipText0(joiner);
 
         { //indicator for this option's old/default values
-            String oldValue = this.localizeValue(this.access.getOld(this.field));
-            String defaultValue = this.localizeValue(this.access.getDefault(this.field));
+            String oldValue = this.localizeValue(this.access.getOld());
+            String defaultValue = this.localizeValue(this.access.getDefault());
 
             String key = oldValue == null
                     ? defaultValue == null ? null : "default"
@@ -76,8 +73,8 @@ public abstract class AbstractReflectiveConfigGuiElement<T, V> extends AbstractC
         }
 
         { //indicator for this option's value range
-            Config.Range range = this.field.getAnnotation(Config.Range.class);
-            Config.GuiRange guiRange = this.field.getAnnotation(Config.GuiRange.class);
+            Config.Range range = this.access.getAnnotation(Config.Range.class);
+            Config.GuiRange guiRange = this.access.getAnnotation(Config.GuiRange.class);
             if (range != null || guiRange != null) {
                 V min = uncheckedCast(ConfigHelper.evaluate(guiRange != null ? guiRange.min() : range.min()));
                 V max = uncheckedCast(ConfigHelper.evaluate(guiRange != null ? guiRange.max() : range.max()));
@@ -87,18 +84,10 @@ public abstract class AbstractReflectiveConfigGuiElement<T, V> extends AbstractC
         }
 
         { //indicator for whether this option requires a restart
-            Config.RestartRequired restartRequired = this.field.getAnnotation(Config.RestartRequired.class);
+            Config.RestartRequired restartRequired = this.access.getAnnotation(Config.RestartRequired.class);
             if (restartRequired != null) {
                 joiner.add(I18n.format(MODID + ".config.restartRequired.tooltip." + restartRequired.value()));
             }
         }
-    }
-
-    protected V get() {
-        return this.access.get(this.field);
-    }
-
-    protected void set(@NonNull V value) {
-        this.access.set(this.field, value);
     }
 }

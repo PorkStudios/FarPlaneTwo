@@ -45,7 +45,7 @@ public class GuiButtonFP2Options extends GuiButton {
     @Override
     public boolean mousePressed(Minecraft mc, int mouseX, int mouseY) {
         if (super.mousePressed(mc, mouseX, mouseY)) {
-            ConfigHelper.createAndDisplayGuiContext("menu", FP2Config.DEFAULT_CONFIG, FP2Config.global(), FP2Config::set);
+            ConfigHelper.createAndDisplayGuiContext("menu", FP2Config.DEFAULT_CONFIG, null, FP2Config.global(), FP2Config::set);
             return true;
         } else {
             return false;

@@ -21,15 +21,14 @@
 package net.daporkchop.fp2.config.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.ConfigHelper;
 import net.daporkchop.fp2.config.Config;
-import net.daporkchop.fp2.config.gui.GuiObjectAccess;
+import net.daporkchop.fp2.config.ConfigHelper;
 import net.daporkchop.fp2.config.gui.IGuiContext;
+import net.daporkchop.fp2.config.gui.access.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.minecraft.client.resources.I18n;
 
-import java.lang.reflect.Field;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -43,41 +42,41 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class GuiSlider<T> extends AbstractReflectiveConfigGuiElement<T, Number> {
+public class GuiSlider extends AbstractReflectiveConfigGuiElement<Number> {
     protected final net.minecraftforge.fml.client.config.GuiSlider slider;
 
-    public GuiSlider(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull Field field) {
-        super(context, access, field);
+    public GuiSlider(@NonNull IGuiContext context, @NonNull GuiObjectAccess<Number> access) {
+        super(context, access);
 
-        Config.Range rangeAnnotation = field.getAnnotation(Config.Range.class);
-        Config.GuiRange guiRangeAnnotation = field.getAnnotation(Config.GuiRange.class);
-        checkState(rangeAnnotation != null || guiRangeAnnotation != null, "cannot create slider for %s which isn't annotated with %s or %s", field, Config.Range.class, Config.GuiRange.class);
+        Config.Range rangeAnnotation = access.getAnnotation(Config.Range.class);
+        Config.GuiRange guiRangeAnnotation = access.getAnnotation(Config.GuiRange.class);
+        checkState(rangeAnnotation != null || guiRangeAnnotation != null, "cannot create slider for %s which isn't annotated with %s or %s", access.name(), Config.Range.class, Config.GuiRange.class);
         Number minValue = ConfigHelper.evaluate(guiRangeAnnotation != null ? guiRangeAnnotation.min() : rangeAnnotation.min());
         Number maxValue = ConfigHelper.evaluate(guiRangeAnnotation != null ? guiRangeAnnotation.max() : rangeAnnotation.max());
 
         boolean fp;
         Function<Double, Number> boxFunction;
 
-        Class<?> type = field.getType();
-        if (type == int.class || type == Integer.class) {
+        Class<?> type = access.getDefault().getClass();
+        if (type == Integer.class) {
             fp = false;
             boxFunction = Double::intValue;
-        } else if (type == long.class || type == Long.class) {
+        } else if (type == Long.class) {
             fp = false;
             boxFunction = Double::longValue;
-        } else if (type == float.class || type == Float.class) {
+        } else if (type == Float.class) {
             fp = true;
             boxFunction = Double::floatValue;
-        } else if (type == double.class || type == Double.class) {
+        } else if (type == Double.class) {
             fp = true;
             boxFunction = Double::doubleValue;
         } else {
-            throw new IllegalArgumentException(PStrings.fastFormat("cannot create slider for %s of unsupported type %s", field, type));
+            throw new IllegalArgumentException(PStrings.fastFormat("cannot create slider for %s of unsupported type %s", type));
         }
 
-        this.slider = new net.minecraftforge.fml.client.config.GuiSlider(0, 0, 0, 0, 0, "", "", minValue.doubleValue(), maxValue.doubleValue(), this.get().doubleValue(), fp, true,
+        this.slider = new net.minecraftforge.fml.client.config.GuiSlider(0, 0, 0, 0, 0, "", "", minValue.doubleValue(), maxValue.doubleValue(), this.access.getCurrent().doubleValue(), fp, true,
                 slider -> {
-                    this.set(boxFunction.apply(fp ? slider.getValue() : slider.getValueInt()));
+                    this.access.setCurrent(boxFunction.apply(fp ? slider.getValue() : slider.getValueInt()));
                     slider.displayString = this.text();
                 });
     }
@@ -98,7 +97,7 @@ public class GuiSlider<T> extends AbstractReflectiveConfigGuiElement<T, Number> 
     }
 
     @Override
-    protected String localizeValue(Number value) {
+    protected String localizeValue(@NonNull Number value) {
         String text = this.slider.showDecimal ? String.valueOf(value.doubleValue()) : String.valueOf(value.longValue());
 
         String formatKey = this.langKey() + ".format";

@@ -22,10 +22,9 @@ package net.daporkchop.fp2.config.gui.element;
 
 import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
-import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.IGuiContext;
+import net.daporkchop.fp2.config.gui.access.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.container.ColumnsContainer;
 import net.daporkchop.fp2.config.gui.container.ScrollingContainer;
 import net.daporkchop.fp2.config.gui.container.TableContainer;
@@ -36,7 +35,6 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.lib.common.util.PArrays;
 import net.minecraft.client.resources.I18n;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,21 +49,19 @@ import static net.daporkchop.fp2.config.gui.GuiConstants.*;
 /**
  * @author DaPorkchop_
  */
-public class GuiRenderModeButton extends GuiSubmenuButton<FP2Config, String[]> {
-    public GuiRenderModeButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<FP2Config> access, @NonNull Field field) {
-        super(context, access, field);
+public class GuiRenderModeButton extends GuiSubmenuButton<String[]> {
+    public GuiRenderModeButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<String[]> access) {
+        super(context, access);
     }
 
     @Override
     protected void handleClick(int button) {
         if (button == 0) { //left-click
-            GuiObjectAccess<String[]> access = this.access.child(this.field);
-
-            this.context.pushSubmenu(this.field.getName(), access, context -> new DefaultConfigGuiScreen(context,
-                    new ScrollingContainer<>(context, access, Collections.singletonList(
-                            new ColumnsContainer<>(context, access, Arrays.asList(
-                                    new DisabledContainer(context, access),
-                                    new EnabledContainer(context, access)))))));
+            this.context.pushSubmenu(this.access.name(), this.access, context -> new DefaultConfigGuiScreen(context,
+                    new ScrollingContainer<>(context, this.access, Collections.singletonList(
+                            new ColumnsContainer<>(context, this.access, Arrays.asList(
+                                    new DisabledContainer(context, this.access),
+                                    new EnabledContainer(context, this.access)))))));
         }
     }
 
@@ -79,7 +75,7 @@ public class GuiRenderModeButton extends GuiSubmenuButton<FP2Config, String[]> {
 
         @Override
         public void init() {
-            String[] modes = GuiRenderModeButton.this.get();
+            String[] modes = GuiRenderModeButton.this.access.getCurrent();
 
             this.elements.clear();
             this.elements.add(new GuiTitle(this.context, "renderModesEnabled"));
@@ -88,11 +84,11 @@ public class GuiRenderModeButton extends GuiSubmenuButton<FP2Config, String[]> {
                     : new TableContainer<>(this.context, this.access,
                     Stream.of(modes)
                             .map(mode -> new IConfigGuiElement[]{
-                                    new SquareButton(this.context, this.access, GuiRenderModeButton.this.field, "listRemove") {
+                                    new SquareButton(this.context, this.access, "listRemove") {
                                         @Override
                                         protected void handleClick(int button) {
                                             if (button == 0) { //left-click
-                                                GuiRenderModeButton.this.set(Stream.of(GuiRenderModeButton.this.get())
+                                                GuiRenderModeButton.this.access.setCurrent(Stream.of(GuiRenderModeButton.this.access.getCurrent())
                                                         .filter(((Predicate<String>) mode::equals).negate())
                                                         .toArray(String[]::new));
 
@@ -100,7 +96,7 @@ public class GuiRenderModeButton extends GuiSubmenuButton<FP2Config, String[]> {
                                             }
                                         }
                                     },
-                                    new SquareButton(this.context, this.access, GuiRenderModeButton.this.field, "listUp") {
+                                    new SquareButton(this.context, this.access, "listUp") {
                                         {
                                             if (PArrays.indexOf(modes, mode) == 0) {
                                                 this.button.enabled = false;
@@ -117,7 +113,7 @@ public class GuiRenderModeButton extends GuiSubmenuButton<FP2Config, String[]> {
                                             }
                                         }
                                     },
-                                    new SquareButton(this.context, this.access, GuiRenderModeButton.this.field, "listDown") {
+                                    new SquareButton(this.context, this.access, "listDown") {
                                         {
                                             if (PArrays.indexOf(modes, mode) == modes.length - 1) {
                                                 this.button.enabled = false;
@@ -155,7 +151,7 @@ public class GuiRenderModeButton extends GuiSubmenuButton<FP2Config, String[]> {
         public void init() {
             String[] modes = IFarRenderMode.REGISTRY.stream()
                     .map(Map.Entry::getKey)
-                    .filter(((Predicate<String>) ImmutableSet.copyOf(GuiRenderModeButton.this.get())::contains).negate())
+                    .filter(((Predicate<String>) ImmutableSet.copyOf(GuiRenderModeButton.this.access.getCurrent())::contains).negate())
                     .toArray(String[]::new);
 
             this.elements.clear();
@@ -165,14 +161,14 @@ public class GuiRenderModeButton extends GuiSubmenuButton<FP2Config, String[]> {
                     : new TableContainer<>(this.context, this.access,
                     Stream.of(modes)
                             .map(mode -> new IConfigGuiElement[]{
-                                    new SquareButton(this.context, this.access, GuiRenderModeButton.this.field, "listAdd") {
+                                    new SquareButton(this.context, this.access, "listAdd") {
                                         @Override
                                         protected void handleClick(int button) {
                                             if (button == 0) { //left-click
-                                                String[] oldModes = GuiRenderModeButton.this.get();
+                                                String[] oldModes = GuiRenderModeButton.this.access.getCurrent();
                                                 String[] newModes = Arrays.copyOf(oldModes, oldModes.length + 1);
                                                 newModes[oldModes.length] = mode;
-                                                GuiRenderModeButton.this.set(newModes);
+                                                GuiRenderModeButton.this.access.setCurrent(newModes);
 
                                                 this.context.pack();
                                             }
@@ -190,11 +186,11 @@ public class GuiRenderModeButton extends GuiSubmenuButton<FP2Config, String[]> {
     /**
      * @author DaPorkchop_
      */
-    protected abstract class SquareButton extends GuiButton<String[], String> {
+    protected abstract class SquareButton extends GuiButton<String[]> {
         protected final String name;
 
-        public SquareButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<String[]> access, @NonNull Field field, @NonNull String name) {
-            super(context, access, field);
+        public SquareButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<String[]> access, @NonNull String name) {
+            super(context, access);
 
             this.name = name;
         }
@@ -215,7 +211,7 @@ public class GuiRenderModeButton extends GuiSubmenuButton<FP2Config, String[]> {
         }
 
         @Override
-        protected String localizeValue(String value) {
+        protected String localizeValue(@NonNull String[] value) {
             throw new UnsupportedOperationException();
         }
 

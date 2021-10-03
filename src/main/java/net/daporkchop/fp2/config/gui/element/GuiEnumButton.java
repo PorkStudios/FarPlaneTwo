@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.config.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IGuiContext;
+import net.daporkchop.fp2.config.gui.access.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.container.ScrollingContainer;
 import net.daporkchop.fp2.config.gui.screen.DefaultConfigGuiScreen;
 import net.minecraft.client.resources.I18n;
@@ -38,14 +38,14 @@ import static net.daporkchop.fp2.FP2.*;
 /**
  * @author DaPorkchop_
  */
-public class GuiEnumButton<T, E extends Enum<E>> extends GuiButton<T, E> {
+public class GuiEnumButton<E extends Enum<E>> extends GuiButton<E> {
     protected final E[] values;
     protected final Field[] fields;
 
-    public GuiEnumButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull Field field) {
-        super(context, access, field);
+    public GuiEnumButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<E> access) {
+        super(context, access);
 
-        Class<E> enumClazz = this.get().getDeclaringClass();
+        Class<E> enumClazz = this.access.getCurrent().getDeclaringClass();
 
         this.values = enumClazz.getEnumConstants();
         this.fields = Stream.of(this.values)
@@ -56,16 +56,14 @@ public class GuiEnumButton<T, E extends Enum<E>> extends GuiButton<T, E> {
     }
 
     @Override
-    protected String localizeValue(E value) {
+    protected String localizeValue(@NonNull E value) {
         return I18n.format(value.getDeclaringClass().getTypeName() + '#' + value);
     }
 
     @Override
     protected void handleClick(int button) {
         if (button == 0) { //left-click
-            GuiObjectAccess<E> access = GuiObjectAccess.forStatic();
-
-            this.context.pushSubmenu(this.field.getName(), access, context -> new DefaultConfigGuiScreen(context, new ScrollingContainer<>(context, access, Stream.of(this.values)
+            this.context.pushSubmenu(this.access.name(), this.access, context -> new DefaultConfigGuiScreen(context, new ScrollingContainer<>(context, this.access, Stream.of(this.values)
                     .map(value -> new ValueSelectionButton(context, value))
                     .collect(Collectors.toList()))));
         }
@@ -74,11 +72,11 @@ public class GuiEnumButton<T, E extends Enum<E>> extends GuiButton<T, E> {
     /**
      * @author DaPorkchop_
      */
-    protected class ValueSelectionButton extends GuiButton<E, E> {
+    protected class ValueSelectionButton extends GuiButton<E> {
         protected final E value;
 
         public ValueSelectionButton(@NonNull IGuiContext context, @NonNull E value) {
-            super(context, GuiObjectAccess.forStatic(), GuiEnumButton.this.fields[value.ordinal()]);
+            super(context, GuiEnumButton.this.access.childAccess(GuiEnumButton.this.fields[value.ordinal()]));
 
             this.value = value;
         }
@@ -90,17 +88,17 @@ public class GuiEnumButton<T, E extends Enum<E>> extends GuiButton<T, E> {
 
         @Override
         protected String text() {
-            return I18n.format(MODID + ".config.enum.selected." + (this.value == GuiEnumButton.this.get()), this.localizeValue(this.value));
+            return I18n.format(MODID + ".config.enum.selected." + (this.value == GuiEnumButton.this.access.getCurrent()), this.localizeValue(this.value));
         }
 
         @Override
-        protected String localizeValue(E value) {
+        protected String localizeValue(@NonNull E value) {
             return I18n.format(this.value.getDeclaringClass().getTypeName() + '#' + value);
         }
 
         @Override
         protected void handleClick(int button) {
-            GuiEnumButton.this.set(this.value);
+            GuiEnumButton.this.access.setCurrent(this.value);
             this.context.pop();
         }
     }

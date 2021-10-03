@@ -22,12 +22,12 @@ package net.daporkchop.fp2.config.gui.screen;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.config.ConfigHelper;
 import net.daporkchop.fp2.config.Config;
-import net.daporkchop.fp2.config.gui.GuiObjectAccess;
+import net.daporkchop.fp2.config.ConfigHelper;
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.IConfigGuiScreen;
 import net.daporkchop.fp2.config.gui.IGuiContext;
+import net.daporkchop.fp2.config.gui.access.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.container.ScrollingContainer;
 import net.daporkchop.fp2.config.gui.element.GuiTitle;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
@@ -72,7 +72,7 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
     public DefaultConfigGuiScreen(@NonNull IGuiContext context, @NonNull GuiObjectAccess<?> access) {
         this.context = context;
 
-        Config.GuiCategories categories = access.clazz().getAnnotation(Config.GuiCategories.class);
+        Config.GuiCategories categories = access.getAnnotation(Config.GuiCategories.class);
         if (categories == null) { //create default categories
             //dummy class to allow us to access the default value for the {@link Setting.GuiCategories} annotation without needing to implement it manually
             @Config.GuiCategories(@Config.CategoryMeta(name = "default"))
@@ -82,7 +82,7 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
             categories = DummyClass.class.getAnnotation(Config.GuiCategories.class);
         }
 
-        checkArg(categories.value().length != 0, "%s has no GUI categories!", access.clazz());
+        checkArg(categories.value().length != 0, "%s has no GUI categories!", access);
         Map<String, Config.CategoryMeta> categoriesByName = Stream.of(categories.value())
                 .reduce(new LinkedHashMap<>(),
                         (map, meta) -> {
@@ -91,7 +91,7 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
                         },
                         (a, b) -> null);
 
-        Map<Config.CategoryMeta, List<IConfigGuiElement>> elementsByCategory = ConfigHelper.getConfigPropertyFields(access.clazz())
+        Map<Config.CategoryMeta, List<IConfigGuiElement>> elementsByCategory = ConfigHelper.getConfigPropertyFields(access.type())
                 .collect(Collectors.groupingBy(
                         field -> {
                             String categoryName = Optional.ofNullable(field.getAnnotation(Config.GuiCategory.class)).map(Config.GuiCategory::value).orElse("default");
@@ -99,7 +99,7 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
                             checkArg(meta != null, "no such category: %s", categoryName);
                             return meta;
                         },
-                        Collectors.mapping(field -> ConfigHelper.createConfigGuiElement(context, access, field), Collectors.toList())));
+                        Collectors.mapping(field -> ConfigHelper.createConfigGuiElement(context, access.childAccess(field)), Collectors.toList())));
 
         this.element = new ScrollingContainer<>(context, access, categoriesByName.values().stream()
                 .map(meta -> new AbstractMap.SimpleEntry<>(meta, elementsByCategory.get(meta)))

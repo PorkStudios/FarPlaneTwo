@@ -25,7 +25,7 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.config.gui.DefaultGuiContext;
-import net.daporkchop.fp2.config.gui.GuiObjectAccess;
+import net.daporkchop.fp2.config.gui.access.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.IConfigGuiScreen;
 import net.daporkchop.fp2.config.gui.IGuiContext;
@@ -126,8 +126,8 @@ public class ConfigHelper {
      * @param callback a callback function that will be called if the configuration has been modified once the menu is closed
      */
     @SideOnly(Side.CLIENT)
-    public <V> void createAndDisplayGuiContext(@NonNull String menuName, @NonNull V defaultConfig, @NonNull V currentConfig, @NonNull Consumer<V> callback) {
-        new DefaultGuiContext(MODID + ".config." + menuName + '.', new GuiObjectAccess<>(defaultConfig, currentConfig, cloneConfigObject(currentConfig)), callback);
+    public <V> void createAndDisplayGuiContext(@NonNull String menuName, @NonNull V defaultConfig, V serverConfig, @NonNull V currentConfig, @NonNull Consumer<V> callback) {
+        new DefaultGuiContext(MODID + ".config." + menuName + '.', GuiObjectAccess.forValues(defaultConfig, serverConfig, currentConfig, cloneConfigObject(currentConfig)), callback);
     }
 
     /**
@@ -139,7 +139,7 @@ public class ConfigHelper {
     @SideOnly(Side.CLIENT)
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
     public IConfigGuiScreen createConfigGuiScreen(@NonNull IGuiContext context, @NonNull GuiObjectAccess<?> access) {
-        Config.GuiScreenClass guiScreenAnnotation = access.clazz().getAnnotation(Config.GuiScreenClass.class);
+        Config.GuiScreenClass guiScreenAnnotation = access.getAnnotation(Config.GuiScreenClass.class);
         if (guiScreenAnnotation != null) { //a specific gui screen class was requested, so let's use it
             Constructor<? extends IConfigGuiScreen> constructor = guiScreenAnnotation.value().getDeclaredConstructor(IGuiContext.class, GuiObjectAccess.class);
             constructor.setAccessible(true);
@@ -177,40 +177,37 @@ public class ConfigHelper {
      * Creates a new {@link IConfigGuiElement} for a given {@link IGuiContext}, config struct instance and config property field.
      *
      * @param context the current {@link IGuiContext}
-     * @param field   the config property field
      * @return a new {@link IConfigGuiElement}
      */
     @SideOnly(Side.CLIENT)
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
-    public IConfigGuiElement createConfigGuiElement(@NonNull IGuiContext context, @NonNull GuiObjectAccess<?> access, @NonNull Field field) {
-        Config.GuiElementClass guiElementAnnotation = field.getAnnotation(Config.GuiElementClass.class);
+    public IConfigGuiElement createConfigGuiElement(@NonNull IGuiContext context, @NonNull GuiObjectAccess<?> access) {
+        Config.GuiElementClass guiElementAnnotation = access.getAnnotation(Config.GuiElementClass.class);
         if (guiElementAnnotation != null) { //a specific gui element class was requested, so let's use it
-            Constructor<? extends IConfigGuiElement> constructor = guiElementAnnotation.value().getDeclaredConstructor(IGuiContext.class, GuiObjectAccess.class, Field.class);
+            Constructor<? extends IConfigGuiElement> constructor = guiElementAnnotation.value().getDeclaredConstructor(IGuiContext.class, GuiObjectAccess.class);
             constructor.setAccessible(true);
-            return constructor.newInstance(context, access, field);
+            return constructor.newInstance(context, access);
         }
 
-        checkValidPropertyType(field);
-
-        Class<?> type = field.getType();
+        Class<?> type = access.type();
         checkArg(type != char.class && type != Character.class
                  && type != byte.class && type != Byte.class
                  && type != short.class && type != Short.class
                  && (type.isPrimitive() || type.isEnum() || (type.getModifiers() & Modifier.ABSTRACT) == 0)
                  && !type.isInterface() && !type.isAnonymousClass(),
-                "unsupported type for field: %s", field);
+                "unsupported type for access: %s", access);
 
         if (type.isEnum()) {
-            return new GuiEnumButton<>(context, access, field);
+            return new GuiEnumButton<>(context, uncheckedCast(access));
         } else if (type == boolean.class || type == Boolean.class) {
-            return new GuiToggleButton<>(context, access, field);
+            return new GuiToggleButton(context, uncheckedCast(access));
         } else if (type == int.class || type == Integer.class
                    || type == long.class || type == Long.class
                    || type == float.class || type == Float.class
                    || type == double.class || type == Double.class) {
-            return new GuiSlider<>(context, access, field);
+            return new GuiSlider(context, uncheckedCast(access));
         } else {
-            return new GuiSubmenuButton<>(context, access, field);
+            return new GuiSubmenuButton<>(context, access);
         }
     }
 

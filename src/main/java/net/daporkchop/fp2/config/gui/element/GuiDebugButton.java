@@ -22,19 +22,17 @@ package net.daporkchop.fp2.config.gui.element;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IGuiContext;
-
-import java.lang.reflect.Field;
+import net.daporkchop.fp2.config.gui.access.GuiObjectAccess;
 
 import static net.daporkchop.fp2.debug.FP2Debug.*;
 
 /**
  * @author DaPorkchop_
  */
-public class GuiDebugButton extends GuiSubmenuButton<FP2Config, FP2Config.Debug> {
-    public GuiDebugButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<FP2Config> access, @NonNull Field field) {
-        super(context, access, field);
+public class GuiDebugButton extends GuiSubmenuButton<FP2Config.Debug> {
+    public GuiDebugButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<FP2Config.Debug> access) {
+        super(context, access);
 
         if (!FP2_DEBUG) {
             this.button.enabled = false;

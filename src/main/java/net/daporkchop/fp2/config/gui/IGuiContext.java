@@ -22,6 +22,7 @@ package net.daporkchop.fp2.config.gui;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.config.ConfigHelper;
+import net.daporkchop.fp2.config.gui.access.GuiObjectAccess;
 
 import java.util.function.Function;
 

@@ -21,31 +21,29 @@
 package net.daporkchop.fp2.config.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IGuiContext;
+import net.daporkchop.fp2.config.gui.access.GuiObjectAccess;
 import net.minecraft.client.resources.I18n;
-
-import java.lang.reflect.Field;
 
 import static net.daporkchop.fp2.FP2.*;
 
 /**
  * @author DaPorkchop_
  */
-public class GuiToggleButton<T> extends GuiButton<T, Boolean> {
-    public GuiToggleButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull Field field) {
-        super(context, access, field);
+public class GuiToggleButton extends GuiButton<Boolean> {
+    public GuiToggleButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<Boolean> access) {
+        super(context, access);
     }
 
     @Override
-    protected String localizeValue(Boolean value) {
+    protected String localizeValue(@NonNull Boolean value) {
         return I18n.format(MODID + ".config.boolean." + value);
     }
 
     @Override
     protected void handleClick(int button) {
         if (button == 0) { //left-click
-            this.set(!this.get()); //invert value
+            this.access.setCurrent(!this.access.getCurrent()); //invert value
             this.context.pack();
         }
     }

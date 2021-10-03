@@ -21,9 +21,9 @@
 package net.daporkchop.fp2.config.gui.container;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.IGuiContext;
+import net.daporkchop.fp2.config.gui.access.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
 import net.daporkchop.fp2.config.gui.util.ElementBounds;
 import net.minecraft.client.gui.Gui;

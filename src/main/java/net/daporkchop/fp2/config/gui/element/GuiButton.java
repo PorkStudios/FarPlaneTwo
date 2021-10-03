@@ -21,13 +21,11 @@
 package net.daporkchop.fp2.config.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IGuiContext;
+import net.daporkchop.fp2.config.gui.access.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
-import net.minecraft.client.resources.I18n;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
 
-import java.lang.reflect.Field;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -38,11 +36,11 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class GuiButton<T, V> extends AbstractReflectiveConfigGuiElement<T, V> {
+public abstract class GuiButton<V> extends AbstractReflectiveConfigGuiElement<V> {
     protected GuiButtonExt button = new GuiButtonExt(0, 0, 0, "");
 
-    public GuiButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull Field field) {
-        super(context, access, field);
+    public GuiButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<V> access) {
+        super(context, access);
     }
 
     @Override

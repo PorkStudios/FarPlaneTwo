@@ -22,8 +22,9 @@ package net.daporkchop.fp2.config.gui;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.config.ConfigHelper;
 import net.daporkchop.fp2.config.Config;
+import net.daporkchop.fp2.config.ConfigHelper;
+import net.daporkchop.fp2.config.gui.access.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
@@ -89,8 +90,8 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
     @SuppressWarnings("unchecked")
     public void pop() {
         if (this.topContext == this) { //this is the top screen
-            Object oldInstance = this.access.oldInstance;
-            Object newInstance = this.access.newInstance;
+            Object oldInstance = this.access.getOld();
+            Object newInstance = this.access.getCurrent();
 
             if (oldInstance.equals(newInstance)) {
                 FP2_LOG.info("closed config gui: unchanged");

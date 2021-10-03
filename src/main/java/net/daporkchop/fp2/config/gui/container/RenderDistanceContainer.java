@@ -22,9 +22,9 @@ package net.daporkchop.fp2.config.gui.container;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.config.gui.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.IConfigGuiElement;
 import net.daporkchop.fp2.config.gui.IGuiContext;
+import net.daporkchop.fp2.config.gui.access.GuiObjectAccess;
 import net.daporkchop.fp2.config.gui.element.AbstractConfigGuiElement;
 import net.daporkchop.fp2.config.gui.util.ComponentDimensions;
 import net.minecraft.client.resources.I18n;
@@ -82,7 +82,7 @@ public class RenderDistanceContainer extends VerticallyStackedContainer<FP2Confi
         }
 
         protected String text() {
-            return this.textFormatter.apply(this.access.newInstance(), this.langKey());
+            return this.textFormatter.apply(this.access.getCurrent(), this.langKey());
         }
 
         @Override
