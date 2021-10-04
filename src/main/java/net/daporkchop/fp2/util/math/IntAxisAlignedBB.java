@@ -36,8 +36,8 @@ public class IntAxisAlignedBB {
     protected final int minX;
     protected final int minY;
     protected final int minZ;
-    protected final int maxY;
     protected final int maxX;
+    protected final int maxY;
     protected final int maxZ;
 
     public boolean contains(int x, int y, int z) {
