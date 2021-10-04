@@ -130,8 +130,8 @@ public class Constants {
     public static final Ref<ArrayAllocator<double[]>> ALLOC_DOUBLE = ThreadRef.soft(() -> ArrayAllocator.pow2(double[]::new, ReferenceType.STRONG, 32));
     public static final Ref<ArrayAllocator<Object[]>> ALLOC_OBJECT = ThreadRef.soft(() -> ArrayAllocator.pow2(Object[]::new, ReferenceType.STRONG, 32));
 
-    public static final boolean IS_DEDICATED_SERVER = FMLCommonHandler.instance().getSide() == Side.SERVER;
-    public static final boolean IS_CLIENT = FMLCommonHandler.instance().getSide() == Side.CLIENT;
+    public static final boolean IS_DEDICATED_SERVER = !FP2_TEST && FMLCommonHandler.instance().getSide() == Side.SERVER;
+    public static final boolean IS_CLIENT = !FP2_TEST && FMLCommonHandler.instance().getSide() == Side.CLIENT;
 
     @SideOnly(Side.CLIENT)
     public static Minecraft MC;
