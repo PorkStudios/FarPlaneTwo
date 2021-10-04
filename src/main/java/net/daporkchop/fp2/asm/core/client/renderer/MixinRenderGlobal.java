@@ -25,7 +25,7 @@ import net.daporkchop.fp2.client.VanillaRenderabilityTracker;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
 import net.daporkchop.fp2.util.alloc.DirectMemoryAllocator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
@@ -87,7 +87,7 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
     @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;setupTerrain(Lnet/minecraft/entity/Entity;DLnet/minecraft/client/renderer/culling/ICamera;IZ)V",
             at = @At("HEAD"))
     private void fp2_setupTerrain_prepare(Entity viewEntity, double partialTicks, ICamera camera, int frameCount, boolean playerSpectator, CallbackInfo ci) {
-        IFarClientContext<?, ?> context = ((IFarWorldClient) this.world).fp2_IFarWorldClient_activeContext();
+        IFarClientContext<?, ?> context = ((IFarPlayerClient) this.mc.getConnection()).fp2_IFarPlayerClient_activeContext();
         IFarRenderer renderer;
         if (context != null && (renderer = context.renderer()) != null) {
             this.vanillaRenderabilityTracker.update(uncheckedCast(this));
@@ -104,7 +104,7 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
                     shift = At.Shift.AFTER),
             allow = 1, require = 1)
     private void fp2_renderBlockLayer_pre(BlockRenderLayer layer, double partialTicks, int pass, Entity entity, CallbackInfoReturnable<Integer> ci) {
-        IFarClientContext<?, ?> context = ((IFarWorldClient) this.world).fp2_IFarWorldClient_activeContext();
+        IFarClientContext<?, ?> context = ((IFarPlayerClient) this.mc.getConnection()).fp2_IFarPlayerClient_activeContext();
         IFarRenderer renderer;
         if (context != null && (renderer = context.renderer()) != null) {
             this.mc.profiler.startSection("fp2_render_pre");
@@ -117,7 +117,7 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
             at = @At(value = "RETURN"),
             allow = 2, require = 1)
     private void fp2_renderBlockLayer_post(BlockRenderLayer layer, double partialTicks, int pass, Entity entity, CallbackInfoReturnable<Integer> ci) {
-        IFarClientContext<?, ?> context = ((IFarWorldClient) this.world).fp2_IFarWorldClient_activeContext();
+        IFarClientContext<?, ?> context = ((IFarPlayerClient) this.mc.getConnection()).fp2_IFarPlayerClient_activeContext();
         IFarRenderer renderer;
         if (context != null && (renderer = context.renderer()) != null) {
             this.mc.profiler.startSection("fp2_render_post");

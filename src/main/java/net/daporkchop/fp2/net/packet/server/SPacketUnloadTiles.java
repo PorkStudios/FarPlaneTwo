@@ -18,33 +18,45 @@
  *
  */
 
-package net.daporkchop.fp2.net.server;
+package net.daporkchop.fp2.net.packet.server;
 
 import io.netty.buffer.ByteBuf;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.util.Constants;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+
+import java.util.ArrayList;
+import java.util.Collection;
 
 /**
- * Sent by the server to tell the client to get ready to initiate a new session.
- *
  * @author DaPorkchop_
  */
-public class SPacketSessionBegin implements IMessage {
+@Getter
+@Setter
+public class SPacketUnloadTiles implements IMessage {
+    @NonNull
+    protected IFarRenderMode<?, ?> mode;
+    @NonNull
+    protected Collection<IFarPos> positions;
+
     @Override
     public void fromBytes(ByteBuf buf) {
+        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
+        int size = Constants.readVarInt(buf);
+        this.positions = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            this.positions.add(this.mode.readPos(buf));
+        }
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-    }
-
-    public static class Handler implements IMessageHandler<SPacketSessionBegin, IMessage> {
-        @Override
-        public IMessage onMessage(SPacketSessionBegin message, MessageContext ctx) {
-            ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorldClient_beginSession();
-            return null;
-        }
+        Constants.writeString(buf, this.mode.name());
+        Constants.writeVarInt(buf, this.positions.size());
+        this.positions.forEach(pos -> pos.writePos(buf));
     }
 }

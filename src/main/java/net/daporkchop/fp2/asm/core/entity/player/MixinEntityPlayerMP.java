@@ -25,11 +25,10 @@ import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.net.server.SPacketInitWorld;
-import net.daporkchop.fp2.net.server.SPacketSessionBegin;
-import net.daporkchop.fp2.net.server.SPacketSessionEnd;
-import net.daporkchop.fp2.net.server.SPacketUpdateConfig;
-import net.daporkchop.fp2.util.IFarPlayer;
+import net.daporkchop.fp2.net.packet.server.SPacketSessionBegin;
+import net.daporkchop.fp2.net.packet.server.SPacketSessionEnd;
+import net.daporkchop.fp2.net.packet.server.SPacketUpdateConfig;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
 import net.daporkchop.lib.math.vector.d.Vec3d;
 import net.minecraft.entity.player.EntityPlayer;
@@ -51,7 +50,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Mixin(EntityPlayerMP.class)
-public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPlayer {
+public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPlayerServer {
     @Shadow
     public NetHandlerPlayServer connection;
     @Unique
@@ -70,10 +69,7 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPl
     private IFarServerContext<?, ?> context;
 
     @Unique
-    private boolean clientWorldInitialized;
-    @Unique
     private boolean sessionOpen;
-
     @Unique
     private boolean closed;
 
@@ -132,7 +128,7 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPl
             this.mode = mode;
             this.updateMergedConfig(mergedConfig);
 
-            if (this.clientWorldInitialized) {
+            if (this.canBeginSession()) {
                 this.beginSession();
             }
         }
@@ -144,6 +140,11 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPl
         this.fp2_IFarPlayer_sendPacket(new SPacketUpdateConfig().serverConfig(this.serverConfig).mergedConfig(mergedConfig));
     }
 
+    @Unique
+    protected boolean canBeginSession() {
+        return this.world != null && this.mergedConfig != null;
+    }
+
     @CalledFromServerThread
     @Override
     public void fp2_IFarPlayer_joinedWorld(@NonNull IFarWorldServer world) {
@@ -151,10 +152,11 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPl
             this.endSession();
         }
 
-        this.clientWorldInitialized = false;
         this.world = world;
 
-        this.fp2_IFarPlayer_sendPacket(new SPacketInitWorld());
+        if (this.canBeginSession()) { //the merged config is non-null - we can open a new session!
+            this.beginSession();
+        }
     }
 
     @Unique
@@ -163,7 +165,7 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPl
         this.sessionOpen = true;
 
         if (this.mode != null) {
-            this.fp2_IFarPlayer_sendPacket(new SPacketSessionBegin());
+            this.fp2_IFarPlayer_sendPacket(new SPacketSessionBegin().coordLimits(this.world.fp2_IFarWorld_coordLimits()));
 
             this.context = this.mode.serverContext(this, this.world, this.mergedConfig);
         }
@@ -179,17 +181,6 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPl
             this.context = null;
 
             this.fp2_IFarPlayer_sendPacket(new SPacketSessionEnd());
-        }
-    }
-
-    @CalledFromServerThread
-    @Override
-    public void fp2_IFarPlayer_ackInitWorld() {
-        checkState(!this.clientWorldInitialized, "client world was already initialized!");
-        this.clientWorldInitialized = true;
-
-        if (this.mergedConfig != null) { //the merged config is non-null - we can open a new session!
-            this.beginSession();
         }
     }
 

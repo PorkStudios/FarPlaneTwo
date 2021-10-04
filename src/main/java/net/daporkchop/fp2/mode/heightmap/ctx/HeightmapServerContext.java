@@ -27,13 +27,13 @@ import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.common.ctx.AbstractFarServerContext;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
-import net.daporkchop.fp2.util.IFarPlayer;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 
 /**
  * @author DaPorkchop_
  */
 public class HeightmapServerContext extends AbstractFarServerContext<HeightmapPos, HeightmapTile> {
-    public HeightmapServerContext(@NonNull IFarPlayer player, @NonNull IFarWorldServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
+    public HeightmapServerContext(@NonNull IFarPlayerServer player, @NonNull IFarWorldServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
         super(player, world, config, mode);
     }
 }

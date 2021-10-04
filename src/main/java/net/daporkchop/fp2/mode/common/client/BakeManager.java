@@ -87,7 +87,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         this.index = this.strategy.createIndex();
         this.baker = this.strategy.createBaker();
         this.world = MC.world;
-        this.coordLimits = ((IFarWorldClient) this.world).fp2_IFarWorld_coordLimits();
+        this.coordLimits = renderer.context().world().fp2_IFarWorld_coordLimits();
 
         this.bakeScheduler = new NoFutureScheduler<>(this, ThreadingHelper.workerGroupBuilder()
                 .world(this.world)

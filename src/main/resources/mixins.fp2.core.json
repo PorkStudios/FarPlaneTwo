@@ -5,7 +5,7 @@
   "refmap": "mixins.fp2.refmap.json",
   "client": [
     "client.gui.IGuiScreen",
-    "client.multiplayer.MixinWorldClient",
+    "client.network.MixinNetHandlerPlayClient",
     "client.renderer.culling.MixinFrustum",
     "client.renderer.culling.MixinICamera",
     "client.renderer.MixinEntityRenderer",

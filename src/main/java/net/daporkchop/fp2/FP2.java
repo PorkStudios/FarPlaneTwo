@@ -26,16 +26,16 @@ import net.daporkchop.fp2.compat.x86.x86FeatureDetector;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.debug.FP2Debug;
-import net.daporkchop.fp2.net.client.CPacketClientConfig;
-import net.daporkchop.fp2.net.client.CPacketDropAllTiles;
-import net.daporkchop.fp2.net.client.CPacketInitWorldACK;
-import net.daporkchop.fp2.net.server.SPacketInitWorld;
-import net.daporkchop.fp2.net.server.SPacketSessionBegin;
-import net.daporkchop.fp2.net.server.SPacketSessionEnd;
-import net.daporkchop.fp2.net.server.SPacketTileData;
-import net.daporkchop.fp2.net.server.SPacketUnloadTile;
-import net.daporkchop.fp2.net.server.SPacketUnloadTiles;
-import net.daporkchop.fp2.net.server.SPacketUpdateConfig;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
+import net.daporkchop.fp2.net.packet.client.CPacketClientConfig;
+import net.daporkchop.fp2.net.packet.client.CPacketDropAllTiles;
+import net.daporkchop.fp2.net.packet.server.SPacketHandshake;
+import net.daporkchop.fp2.net.packet.server.SPacketSessionBegin;
+import net.daporkchop.fp2.net.packet.server.SPacketSessionEnd;
+import net.daporkchop.fp2.net.packet.server.SPacketTileData;
+import net.daporkchop.fp2.net.packet.server.SPacketUnloadTile;
+import net.daporkchop.fp2.net.packet.server.SPacketUnloadTiles;
+import net.daporkchop.fp2.net.packet.server.SPacketUpdateConfig;
 import net.daporkchop.fp2.server.FP2Server;
 import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
 import net.minecraftforge.fml.common.FMLCommonHandler;
@@ -49,6 +49,7 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static net.daporkchop.fp2.FP2.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -118,29 +119,35 @@ public class FP2 {
     }
 
     protected void registerPackets() {
+        @SideOnly(Side.CLIENT)
+        class ClientboundHandler implements IMessageHandler<IMessage, IMessage> {
+            @Override
+            public IMessage onMessage(IMessage message, MessageContext ctx) {
+                ((IFarPlayerClient) ctx.getClientHandler()).fp2_IFarPlayerClient_handle(message);
+                return null;
+            }
+        }
+
+        @SideOnly(Side.SERVER)
+        class ClientboundHandlerOnDedicatedServer implements IMessageHandler<IMessage, IMessage> {
+            @Override
+            public IMessage onMessage(IMessage message, MessageContext ctx) {
+                throw new IllegalStateException("attempted to handle clientbound packet on dedicated server: " + className(message));
+            }
+        }
+
+        IMessageHandler<IMessage, IMessage> clientboundHandler = IS_DEDICATED_SERVER ? new ClientboundHandlerOnDedicatedServer() : new ClientboundHandler();
+
         int id = 0;
         NETWORK_WRAPPER.registerMessage(CPacketClientConfig.Handler.class, CPacketClientConfig.class, id++, Side.SERVER);
-        NETWORK_WRAPPER.registerMessage(CPacketInitWorldACK.Handler.class, CPacketInitWorldACK.class, id++, Side.SERVER);
         NETWORK_WRAPPER.registerMessage(CPacketDropAllTiles.Handler.class, CPacketDropAllTiles.class, id++, Side.SERVER);
 
-        NETWORK_WRAPPER.registerMessage(IS_DEDICATED_SERVER ? uncheckedCast($DummyMessageHandler.class) : SPacketInitWorld.Handler.class, SPacketInitWorld.class, id++, Side.CLIENT);
-        NETWORK_WRAPPER.registerMessage(IS_DEDICATED_SERVER ? uncheckedCast($DummyMessageHandler.class) : SPacketSessionBegin.Handler.class, SPacketSessionBegin.class, id++, Side.CLIENT);
-        NETWORK_WRAPPER.registerMessage(IS_DEDICATED_SERVER ? uncheckedCast($DummyMessageHandler.class) : SPacketSessionEnd.Handler.class, SPacketSessionEnd.class, id++, Side.CLIENT);
-        NETWORK_WRAPPER.registerMessage(IS_DEDICATED_SERVER ? uncheckedCast($DummyMessageHandler.class) : SPacketUpdateConfig.Handler.class, SPacketUpdateConfig.class, id++, Side.CLIENT);
-        NETWORK_WRAPPER.registerMessage(IS_DEDICATED_SERVER ? uncheckedCast($DummyMessageHandler.class) : SPacketTileData.Handler.class, SPacketTileData.class, id++, Side.CLIENT);
-        NETWORK_WRAPPER.registerMessage(IS_DEDICATED_SERVER ? uncheckedCast($DummyMessageHandler.class) : SPacketUnloadTile.Handler.class, SPacketUnloadTile.class, id++, Side.CLIENT);
-        NETWORK_WRAPPER.registerMessage(IS_DEDICATED_SERVER ? uncheckedCast($DummyMessageHandler.class) : SPacketUnloadTiles.Handler.class, SPacketUnloadTiles.class, id++, Side.CLIENT);
-    }
-
-    /**
-     * Dummy {@link IMessageHandler} implementation which serves no purpose other than to serve as a fallback to prevent client handlers from being loaded on the server.
-     *
-     * @author DaPorkchop_
-     */
-    public static class $DummyMessageHandler implements IMessageHandler {
-        @Override
-        public IMessage onMessage(IMessage message, MessageContext ctx) {
-            throw new IllegalStateException(className(message));
-        }
+        NETWORK_WRAPPER.registerMessage(clientboundHandler, SPacketHandshake.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(clientboundHandler, SPacketSessionBegin.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(clientboundHandler, SPacketSessionEnd.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(clientboundHandler, SPacketUpdateConfig.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(clientboundHandler, SPacketTileData.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(clientboundHandler, SPacketUnloadTile.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(clientboundHandler, SPacketUnloadTiles.class, id++, Side.CLIENT);
     }
 }

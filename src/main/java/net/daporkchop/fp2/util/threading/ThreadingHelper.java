@@ -94,24 +94,24 @@ public class ThreadingHelper {
     /**
      * Schedules a task to be executed on the given world's thread.
      *
-     * @param world the world whose thread the task should be exected on
+     * @param world the world whose thread the task should be executed on
      * @param task  the task to execute
      */
     public CompletableFuture<Void> scheduleTaskInWorldThread(@NonNull World world, @NonNull Runnable task) {
-        return workExecutorFor(world).run(task);
+        return workExecutorForWorld(world).run(task);
     }
 
     /**
      * Schedules a task to be executed on the given world's thread.
      *
-     * @param world the world whose thread the task should be exected on
+     * @param world the world whose thread the task should be executed on
      * @param task  the task to execute
      */
     public <V> CompletableFuture<V> scheduleTaskInWorldThread(@NonNull World world, @NonNull Supplier<V> task) {
-        return workExecutorFor(world).supply(task);
+        return workExecutorForWorld(world).supply(task);
     }
 
-    protected FutureExecutor workExecutorFor(@NonNull World world) {
+    protected FutureExecutor workExecutorForWorld(@NonNull World world) {
         WorldWorkerGroup workerGroup = THREADS_TO_GROUPS.get(Thread.currentThread());
         if (workerGroup != null) { //this is a worker thread, return the world-specific executor thread
             checkArg(world == workerGroup.world(), "thread %s attempted to submit task for a world it doesn't belong to!", Thread.currentThread());
@@ -124,8 +124,41 @@ public class ThreadingHelper {
 
     protected MarkedFutureExecutor rootExecutorFor(@NonNull World world) {
         return world.isRemote
-                ? ClientThreadMarkedFutureExecutor.getFor(Minecraft.getMinecraft())
+                ? ClientThreadMarkedFutureExecutor.getFor(MC)
                 : ServerThreadMarkedFutureExecutor.getFor(FMLCommonHandler.instance().getMinecraftServerInstance());
+    }
+
+    /**
+     * Schedules a task to be executed on the client thread.
+     *
+     * @param task the task to execute
+     */
+    public CompletableFuture<Void> scheduleTaskInClientThread(@NonNull Runnable task) {
+        return workExecutorForClient().run(task);
+    }
+
+    /**
+     * Schedules a task to be executed on the client thread.
+     *
+     * @param task the task to execute
+     */
+    public <V> CompletableFuture<V> scheduleTaskInClientThread(@NonNull Supplier<V> task) {
+        return workExecutorForClient().supply(task);
+    }
+
+    protected FutureExecutor workExecutorForClient() {
+        WorldWorkerGroup workerGroup = THREADS_TO_GROUPS.get(Thread.currentThread());
+        if (workerGroup != null) { //this is a worker thread, return the world-specific executor thread
+            checkArg(workerGroup.world().isRemote, "thread %s attempted to submit task on the client thread when it isn't allowed to!", Thread.currentThread());
+            return workerGroup.worldExecutor();
+        }
+
+        //if it isn't a worker thread, we can just submit the task to the root executor
+        return rootExecutorForClient();
+    }
+
+    protected MarkedFutureExecutor rootExecutorForClient() {
+        return ClientThreadMarkedFutureExecutor.getFor(MC);
     }
 
     /**

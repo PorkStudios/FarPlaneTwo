@@ -24,7 +24,7 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
@@ -52,7 +52,7 @@ public class ShaderFP2StateHelper {
         { //view
             long addr = ADDR_VIEW;
 
-            FP2Config config = PorkUtil.fallbackIfNull(((IFarWorldClient) mc.world).fp2_IFarWorldClient_config(), FP2Config.DEFAULT_CONFIG);
+            FP2Config config = PorkUtil.fallbackIfNull(((IFarPlayerClient) mc.getConnection()).fp2_IFarPlayerClient_config(), FP2Config.DEFAULT_CONFIG);
 
             //int renderDistance
             PUnsafe.putInt(addr, config.cutoffDistance() << config.maxLevels() >> 1);

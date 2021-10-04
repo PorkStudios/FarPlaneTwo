@@ -18,25 +18,35 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.ctx;
+package net.daporkchop.fp2.mode.api.player;
 
-import net.daporkchop.fp2.util.annotation.CalledFromClientThread;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import lombok.NonNull;
+import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
+import net.daporkchop.lib.math.vector.d.Vec3d;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
 /**
- * Provides access to {@link IFarClientContext} instances in a {@link WorldClient}.
- *
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public interface IFarWorldClient extends IFarWorld {
-    @CalledFromClientThread
-    @Override
-    void fp2_IFarWorld_init();
+public interface IFarPlayerServer {
+    Vec3d fp2_IFarPlayer_position();
 
-    @CalledFromClientThread
-    @Override
-    void fp2_IFarWorld_close();
+    @CalledFromServerThread
+    void fp2_IFarPlayer_serverConfig(FP2Config serverConfig);
+
+    @CalledFromServerThread
+    void fp2_IFarPlayer_clientConfig(FP2Config clientConfig);
+
+    @CalledFromServerThread
+    void fp2_IFarPlayer_joinedWorld(@NonNull IFarWorldServer world);
+
+    void fp2_IFarPlayer_sendPacket(@NonNull IMessage packet);
+
+    @CalledFromServerThread
+    void fp2_IFarPlayer_update();
+
+    @CalledFromServerThread
+    void fp2_IFarPlayer_close();
 }

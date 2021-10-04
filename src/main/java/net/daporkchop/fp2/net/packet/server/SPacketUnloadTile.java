@@ -18,56 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.net.server;
+package net.daporkchop.fp2.net.packet.server;
 
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
-import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
-
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
 @Setter
-public class SPacketTileData implements IMessage {
+public class SPacketUnloadTile implements IMessage {
     @NonNull
     protected IFarRenderMode<?, ?> mode;
     @NonNull
-    protected TileSnapshot<?, ?> tile;
+    protected IFarPos pos;
 
     @Override
     public void fromBytes(ByteBuf buf) {
         this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
-        this.tile = new TileSnapshot<>(buf, this.mode);
+        this.pos = this.mode.readPos(buf);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
         Constants.writeString(buf, this.mode.name());
-        this.tile.write(buf);
-    }
-
-    public static class Handler implements IMessageHandler<SPacketTileData, IMessage> {
-        @Override
-        public IMessage onMessage(SPacketTileData message, MessageContext ctx) {
-            ThreadingHelper.scheduleTaskInWorldThread(ctx.getClientHandler().world, () -> { //TODO: run this on network thread and somehow guarantee that the context will be active
-                IFarWorldClient world = (IFarWorldClient) ctx.getClientHandler().world;
-                IFarClientContext<?, ?> context = world.fp2_IFarWorldClient_activeContext();
-                context.tileCache().receiveTile(uncheckedCast(message.tile.compressed()));
-            });
-            return null;
-        }
+        this.pos.writePos(buf);
     }
 }

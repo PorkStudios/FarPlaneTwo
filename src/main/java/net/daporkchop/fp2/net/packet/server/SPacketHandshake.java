@@ -18,38 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.util;
+package net.daporkchop.fp2.net.packet.server;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
-import net.daporkchop.lib.math.vector.d.Vec3d;
+import io.netty.buffer.ByteBuf;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
 /**
+ * Sent by the server to tell the client that FP2 is present on the remote server and that it should send its config to the server in order to continue
+ * the handshake process.
+ *
  * @author DaPorkchop_
  */
-public interface IFarPlayer {
-    Vec3d fp2_IFarPlayer_position();
+public class SPacketHandshake implements IMessage {
+    @Override
+    public void fromBytes(ByteBuf buf) {
+    }
 
-    @CalledFromServerThread
-    void fp2_IFarPlayer_serverConfig(FP2Config serverConfig);
-
-    @CalledFromServerThread
-    void fp2_IFarPlayer_clientConfig(FP2Config clientConfig);
-
-    @CalledFromServerThread
-    void fp2_IFarPlayer_joinedWorld(@NonNull IFarWorldServer world);
-
-    @CalledFromServerThread
-    void fp2_IFarPlayer_ackInitWorld();
-
-    void fp2_IFarPlayer_sendPacket(@NonNull IMessage packet);
-
-    @CalledFromServerThread
-    void fp2_IFarPlayer_update();
-
-    @CalledFromServerThread
-    void fp2_IFarPlayer_close();
+    @Override
+    public void toBytes(ByteBuf buf) {
+    }
 }

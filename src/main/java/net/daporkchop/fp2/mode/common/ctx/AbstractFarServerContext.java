@@ -31,9 +31,9 @@ import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
-import net.daporkchop.fp2.net.server.SPacketTileData;
-import net.daporkchop.fp2.net.server.SPacketUnloadTile;
-import net.daporkchop.fp2.util.IFarPlayer;
+import net.daporkchop.fp2.net.packet.server.SPacketTileData;
+import net.daporkchop.fp2.net.packet.server.SPacketUnloadTile;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
 
 import java.util.Map;
@@ -49,7 +49,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IFarTile> implements IFarServerContext<POS, T> {
-    protected final IFarPlayer player;
+    protected final IFarPlayerServer player;
     protected final IFarWorldServer world;
     protected final IFarRenderMode<POS, T> mode;
     protected final IFarTileProvider<POS, T> tileProvider;
@@ -60,7 +60,7 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
 
     protected boolean closed = false;
 
-    public AbstractFarServerContext(@NonNull IFarPlayer player, @NonNull IFarWorldServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<POS, T> mode) {
+    public AbstractFarServerContext(@NonNull IFarPlayerServer player, @NonNull IFarWorldServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<POS, T> mode) {
         this.player = player;
         this.world = world;
         this.mode = mode;

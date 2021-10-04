@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.net.client;
+package net.daporkchop.fp2.net.packet.client;
 
 import io.netty.buffer.ByteBuf;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;

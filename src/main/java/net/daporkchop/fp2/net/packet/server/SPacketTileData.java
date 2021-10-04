@@ -18,51 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.net.server;
+package net.daporkchop.fp2.net.packet.server;
 
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
-import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
 import net.daporkchop.fp2.util.Constants;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 /**
  * @author DaPorkchop_
  */
-@Setter
 @Getter
-public class SPacketUpdateConfig implements IMessage {
-    protected FP2Config serverConfig;
-    protected FP2Config mergedConfig;
+@Setter
+public class SPacketTileData implements IMessage {
+    @NonNull
+    protected IFarRenderMode<?, ?> mode;
+    @NonNull
+    protected TileSnapshot<?, ?> tile;
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.serverConfig = buf.readBoolean() ? FP2Config.parse(Constants.readString(buf)) : null;
-        this.mergedConfig = buf.readBoolean() ? FP2Config.parse(Constants.readString(buf)) : null;
+        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
+        this.tile = new TileSnapshot<>(buf, this.mode);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeBoolean(this.serverConfig != null);
-        if (this.serverConfig != null) {
-            Constants.writeString(buf, this.serverConfig.toString());
-        }
-        
-        buf.writeBoolean(this.mergedConfig != null);
-        if (this.mergedConfig != null) {
-            Constants.writeString(buf, this.mergedConfig.toString());
-        }
-    }
-
-    public static class Handler implements IMessageHandler<SPacketUpdateConfig, IMessage> {
-        @Override
-        public IMessage onMessage(SPacketUpdateConfig message, MessageContext ctx) {
-            ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorldClient_updateConfig(message.serverConfig, message.mergedConfig);
-            return null;
-        }
+        Constants.writeString(buf, this.mode.name());
+        this.tile.write(buf);
     }
 }

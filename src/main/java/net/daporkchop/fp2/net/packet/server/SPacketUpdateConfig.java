@@ -18,33 +18,40 @@
  *
  */
 
-package net.daporkchop.fp2.net.server;
+package net.daporkchop.fp2.net.packet.server;
 
 import io.netty.buffer.ByteBuf;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
+import lombok.Getter;
+import lombok.Setter;
+import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.util.Constants;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 /**
- * Notifies the client to stop the current session.
- *
  * @author DaPorkchop_
  */
-public class SPacketSessionEnd implements IMessage {
+@Setter
+@Getter
+public class SPacketUpdateConfig implements IMessage {
+    protected FP2Config serverConfig;
+    protected FP2Config mergedConfig;
+
     @Override
     public void fromBytes(ByteBuf buf) {
+        this.serverConfig = buf.readBoolean() ? FP2Config.parse(Constants.readString(buf)) : null;
+        this.mergedConfig = buf.readBoolean() ? FP2Config.parse(Constants.readString(buf)) : null;
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-    }
+        buf.writeBoolean(this.serverConfig != null);
+        if (this.serverConfig != null) {
+            Constants.writeString(buf, this.serverConfig.toString());
+        }
 
-    public static class Handler implements IMessageHandler<SPacketSessionEnd, IMessage> {
-        @Override
-        public IMessage onMessage(SPacketSessionEnd message, MessageContext ctx) {
-            ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorldClient_endSession();
-            return null;
+        buf.writeBoolean(this.mergedConfig != null);
+        if (this.mergedConfig != null) {
+            Constants.writeString(buf, this.mergedConfig.toString());
         }
     }
 }
