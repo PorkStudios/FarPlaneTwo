@@ -46,13 +46,17 @@ import net.minecraftforge.fml.common.event.FMLModIdMappingEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
+import net.minecraftforge.fml.common.network.NetworkCheckHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import java.util.Map;
+
 import static net.daporkchop.fp2.FP2.*;
+import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -66,9 +70,12 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 public class FP2 {
     public static final String MODID = "fp2";
 
+    private String version = "";
+
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         FP2_LOG = event.getModLog();
+        this.version = event.getModMetadata().version;
 
         FP2Config.load();
 
@@ -117,6 +124,15 @@ public class FP2 {
     @Mod.EventHandler
     public void onIdsChanged(FMLModIdMappingEvent event) {
         FastRegistry.reload();
+    }
+
+    @NetworkCheckHandler
+    public boolean checkCanConnectWithMods(Map<String, String> modVersions, Side remoteSide) {
+        String remoteVersion = modVersions.get(MODID);
+
+        return FP2_DEBUG //accept any version in debug mode
+               || remoteVersion == null //fp2 isn't present on the remote side, so it doesn't matter whether or not it's compatible
+               || this.version.equals(remoteVersion); //if fp2 is present, the versions must match
     }
 
     protected void registerPackets() {

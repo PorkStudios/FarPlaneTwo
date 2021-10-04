@@ -47,7 +47,7 @@ public class GuiButtonFP2Options extends GuiButton {
     public boolean mousePressed(Minecraft mc, int mouseX, int mouseY) {
         if (super.mousePressed(mc, mouseX, mouseY)) {
             FP2Config defaultConfig = FP2Config.DEFAULT_CONFIG;
-            FP2Config serverConfig = mc.world != null && !mc.integratedServerIsRunning ? ((IFarPlayerClient) mc.world).fp2_IFarPlayerClient_serverConfig() : null;
+            FP2Config serverConfig = !mc.integratedServerIsRunning && mc.getConnection() != null ? ((IFarPlayerClient) mc.getConnection()).fp2_IFarPlayerClient_serverConfig() : null;
             FP2Config clientConfig = FP2Config.global();
 
             ConfigHelper.createAndDisplayGuiContext("menu", defaultConfig, serverConfig, clientConfig, FP2Config::set);

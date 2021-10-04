@@ -101,7 +101,10 @@ public class ServerEvents {
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.player instanceof EntityPlayerMP) {
             IFarPlayerServer player = (IFarPlayerServer) ((EntityPlayerMP) event.player).connection;
-            player.fp2_IFarPlayer_close();
+
+            if (player != null) { //can happen if the player is kicked during the login sequence
+                player.fp2_IFarPlayer_close();
+            }
         }
     }
 
