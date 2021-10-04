@@ -18,43 +18,31 @@
  *
  */
 
-package net.daporkchop.fp2.net.server;
+package net.daporkchop.fp2.mode.api.player;
 
-import io.netty.buffer.ByteBuf;
+import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
-import net.daporkchop.fp2.net.client.CPacketClientConfig;
-import net.daporkchop.fp2.net.client.CPacketInitWorldACK;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
-
-import static net.daporkchop.fp2.util.Constants.*;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 /**
- * Sent by the server to tell the client to initialize its current {@link IFarWorldClient} instance.
- *
  * @author DaPorkchop_
  */
-public class SPacketInitWorld implements IMessage {
-    @Override
-    public void fromBytes(ByteBuf buf) {
-    }
+@SideOnly(Side.CLIENT)
+public interface IFarPlayerClient {
+    @CalledFromNetworkThread
+    void fp2_IFarPlayerClient_handle(@NonNull Object packet);
 
-    @Override
-    public void toBytes(ByteBuf buf) {
-    }
+    FP2Config fp2_IFarPlayerClient_serverConfig();
 
-    public static class Handler implements IMessageHandler<SPacketInitWorld, IMessage> {
-        @Override
-        public IMessage onMessage(SPacketInitWorld message, MessageContext ctx) {
-            ctx.getClientHandler().client.addScheduledTask(() -> {
-                ((IFarWorldClient) ctx.getClientHandler().world).fp2_IFarWorld_init();
+    FP2Config fp2_IFarPlayerClient_config();
 
-                NETWORK_WRAPPER.sendToServer(new CPacketInitWorldACK());
-                NETWORK_WRAPPER.sendToServer(new CPacketClientConfig().config(FP2Config.global()));
-            });
-            return null;
-        }
-    }
+    /**
+     * @return the currently active render context, or {@code null} if none are active
+     */
+    <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> fp2_IFarPlayerClient_activeContext();
 }

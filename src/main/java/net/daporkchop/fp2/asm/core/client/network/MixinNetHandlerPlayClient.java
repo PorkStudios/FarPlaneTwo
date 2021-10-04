@@ -75,14 +75,16 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
             this.beginSession((SPacketSessionBegin) packet);
         } else if (packet instanceof SPacketSessionEnd) {
             this.endSession((SPacketSessionEnd) packet);
-        } else if (packet instanceof SPacketUpdateConfig) {
-            this.updateConfig((SPacketUpdateConfig) packet);
         } else if (packet instanceof SPacketTileData) {
             this.handleTileData((SPacketTileData) packet);
         } else if (packet instanceof SPacketUnloadTile) {
             this.handleUnloadTile((SPacketUnloadTile) packet);
         } else if (packet instanceof SPacketUnloadTiles) {
             this.handleUnloadTiles((SPacketUnloadTiles) packet);
+        } else if (packet instanceof SPacketUpdateConfig.Merged) {
+            this.updateMergedConfig((SPacketUpdateConfig.Merged) packet);
+        } else if (packet instanceof SPacketUpdateConfig.Server) {
+            this.updateServerConfig((SPacketUpdateConfig.Server) packet);
         } else {
             throw new IllegalArgumentException("don't know how to handle " + className(packet));
         }
@@ -119,26 +121,6 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
     }
 
     @Unique
-    private void updateConfig(@NonNull SPacketUpdateConfig packet) {
-        this.serverConfig = packet.serverConfig();
-
-        FP2Config mergedConfig = packet.mergedConfig();
-        if (Objects.equals(this.config, mergedConfig)) { //nothing changed, so nothing to do!
-            return;
-        }
-
-        this.config = mergedConfig;
-
-        if (this.context != null) {
-            if (this.modeFor(this.config) == this.context.mode()) {
-                this.context.notifyConfigChange(mergedConfig);
-            } else {
-                FP2_LOG.warn("render mode was switched while a session is active!");
-            }
-        }
-    }
-
-    @Unique
     private void handleTileData(@NonNull SPacketTileData packet) {
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
@@ -160,6 +142,28 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
         checkState(this.context != null, "active session has no render mode!");
 
         packet.positions().forEach(PorkUtil.<IFarTileCache<IFarPos, ?>>uncheckedCast(this.context.tileCache())::unloadTile);
+    }
+
+    @Unique
+    private void updateMergedConfig(@NonNull SPacketUpdateConfig.Merged packet) {
+        if (Objects.equals(this.config, packet.config())) { //nothing changed, so nothing to do!
+            return;
+        }
+
+        this.config = packet.config();
+
+        if (this.context != null) {
+            if (this.modeFor(this.config) == this.context.mode()) {
+                this.context.notifyConfigChange(packet.config());
+            } else {
+                FP2_LOG.warn("render mode was switched while a session is active!");
+            }
+        }
+    }
+
+    @Unique
+    private void updateServerConfig(@NonNull SPacketUpdateConfig.Server packet) {
+        this.serverConfig = packet.config();
     }
 
     @Override

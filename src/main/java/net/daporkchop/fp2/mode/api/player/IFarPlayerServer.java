@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.api.player;
 import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
 import net.daporkchop.lib.math.vector.d.Vec3d;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -33,11 +34,11 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 public interface IFarPlayerServer {
     Vec3d fp2_IFarPlayer_position();
 
-    @CalledFromServerThread
-    void fp2_IFarPlayer_serverConfig(FP2Config serverConfig);
+    @CalledFromNetworkThread
+    void fp2_IFarPlayerServer_handle(@NonNull Object packet);
 
     @CalledFromServerThread
-    void fp2_IFarPlayer_clientConfig(FP2Config clientConfig);
+    void fp2_IFarPlayer_serverConfig(FP2Config serverConfig);
 
     @CalledFromServerThread
     void fp2_IFarPlayer_joinedWorld(@NonNull IFarWorldServer world);

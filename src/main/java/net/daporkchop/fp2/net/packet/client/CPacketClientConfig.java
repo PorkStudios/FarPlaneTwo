@@ -26,13 +26,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
-
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -51,17 +45,5 @@ public class CPacketClientConfig implements IMessage {
     @Override
     public void toBytes(ByteBuf buf) {
         Constants.writeString(buf, this.config.toString());
-    }
-
-    public static class Handler implements IMessageHandler<CPacketClientConfig, IMessage> {
-        @Override
-        public IMessage onMessage(CPacketClientConfig message, MessageContext ctx) {
-            ThreadingHelper.scheduleTaskInWorldThread(ctx.getServerHandler().player.world, () -> {
-                FP2_LOG.debug("player {} initiated FP2 session with config {}", ctx.getServerHandler().player.getName(), message.config);
-
-                ((IFarPlayerServer) ctx.getServerHandler().player).fp2_IFarPlayer_clientConfig(message.config);
-            });
-            return null;
-        }
     }
 }

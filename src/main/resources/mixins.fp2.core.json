@@ -16,7 +16,7 @@
     "client.MixinMinecraft"
   ],
   "mixins": [
-    "entity.player.MixinEntityPlayerMP",
+    "network.MixinNetHandlerPlayServer",
     "server.MixinMinecraftServer",
     "world.MixinWorld",
     "world.MixinWorldServer",

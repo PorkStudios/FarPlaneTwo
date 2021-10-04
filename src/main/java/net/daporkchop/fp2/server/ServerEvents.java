@@ -24,10 +24,9 @@ import io.github.opencubicchunks.cubicchunks.api.world.CubeDataEvent;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.net.packet.server.SPacketHandshake;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
-import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.common.MinecraftForge;
@@ -38,8 +37,6 @@ import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
-
-import java.util.List;
 
 import static net.daporkchop.fp2.FP2.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -84,15 +81,16 @@ public class ServerEvents {
         if (event.player instanceof EntityPlayerMP) {
             event.player.sendMessage(new TextComponentTranslation(MODID + ".playerJoinWarningMessage"));
 
-            ((IFarPlayerServer) event.player).fp2_IFarPlayer_serverConfig(FP2Config.global());
-            ((IFarPlayerServer) event.player).fp2_IFarPlayer_sendPacket(new SPacketHandshake());
+            IFarPlayerServer player = (IFarPlayerServer) ((EntityPlayerMP) event.player).connection;
+            player.fp2_IFarPlayer_serverConfig(FP2Config.global());
+            player.fp2_IFarPlayer_sendPacket(new SPacketHandshake());
         }
     }
 
     @SubscribeEvent
     public void onPlayerJoinWorld(EntityJoinWorldEvent event) {
         if (!event.getWorld().isRemote && event.getEntity() instanceof EntityPlayerMP) {
-            IFarPlayerServer player = (IFarPlayerServer) event.getEntity();
+            IFarPlayerServer player = (IFarPlayerServer) ((EntityPlayerMP) event.getEntity()).connection;
 
             //cubic chunks world data information has already been sent
             player.fp2_IFarPlayer_joinedWorld((IFarWorldServer) event.getWorld());
@@ -102,7 +100,8 @@ public class ServerEvents {
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.player instanceof EntityPlayerMP) {
-            ((IFarPlayerServer) event.player).fp2_IFarPlayer_close();
+            IFarPlayerServer player = (IFarPlayerServer) ((EntityPlayerMP) event.player).connection;
+            player.fp2_IFarPlayer_close();
         }
     }
 
@@ -111,7 +110,7 @@ public class ServerEvents {
         if (!event.world.isRemote && event.phase == TickEvent.Phase.END) {
             WorldChangeListenerManager.fireTickEnd(event.world);
 
-            PorkUtil.<List<IFarPlayerServer>>uncheckedCast(event.world.playerEntities).forEach(IFarPlayerServer::fp2_IFarPlayer_update);
+            event.world.playerEntities.forEach(player -> ((IFarPlayerServer) ((EntityPlayerMP) player).connection).fp2_IFarPlayer_update());
         }
     }
 

@@ -27,6 +27,7 @@ import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.debug.FP2Debug;
 import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.net.packet.client.CPacketClientConfig;
 import net.daporkchop.fp2.net.packet.client.CPacketDropAllTiles;
 import net.daporkchop.fp2.net.packet.server.SPacketHandshake;
@@ -119,6 +120,14 @@ public class FP2 {
     }
 
     protected void registerPackets() {
+        class ServerboundHandler implements IMessageHandler<IMessage, IMessage> {
+            @Override
+            public IMessage onMessage(IMessage message, MessageContext ctx) {
+                ((IFarPlayerServer) ctx.getServerHandler()).fp2_IFarPlayerServer_handle(message);
+                return null;
+            }
+        }
+
         @SideOnly(Side.CLIENT)
         class ClientboundHandler implements IMessageHandler<IMessage, IMessage> {
             @Override
@@ -136,18 +145,23 @@ public class FP2 {
             }
         }
 
+        IMessageHandler<IMessage, IMessage> serverboundHandler = new ServerboundHandler();
         IMessageHandler<IMessage, IMessage> clientboundHandler = IS_DEDICATED_SERVER ? new ClientboundHandlerOnDedicatedServer() : new ClientboundHandler();
 
         int id = 0;
-        NETWORK_WRAPPER.registerMessage(CPacketClientConfig.Handler.class, CPacketClientConfig.class, id++, Side.SERVER);
-        NETWORK_WRAPPER.registerMessage(CPacketDropAllTiles.Handler.class, CPacketDropAllTiles.class, id++, Side.SERVER);
 
+        //serverbound packets
+        NETWORK_WRAPPER.registerMessage(serverboundHandler, CPacketClientConfig.class, id++, Side.SERVER);
+        NETWORK_WRAPPER.registerMessage(serverboundHandler, CPacketDropAllTiles.class, id++, Side.SERVER);
+
+        //clientbound packets
         NETWORK_WRAPPER.registerMessage(clientboundHandler, SPacketHandshake.class, id++, Side.CLIENT);
         NETWORK_WRAPPER.registerMessage(clientboundHandler, SPacketSessionBegin.class, id++, Side.CLIENT);
         NETWORK_WRAPPER.registerMessage(clientboundHandler, SPacketSessionEnd.class, id++, Side.CLIENT);
-        NETWORK_WRAPPER.registerMessage(clientboundHandler, SPacketUpdateConfig.class, id++, Side.CLIENT);
         NETWORK_WRAPPER.registerMessage(clientboundHandler, SPacketTileData.class, id++, Side.CLIENT);
         NETWORK_WRAPPER.registerMessage(clientboundHandler, SPacketUnloadTile.class, id++, Side.CLIENT);
         NETWORK_WRAPPER.registerMessage(clientboundHandler, SPacketUnloadTiles.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(clientboundHandler, SPacketUpdateConfig.Merged.class, id++, Side.CLIENT);
+        NETWORK_WRAPPER.registerMessage(clientboundHandler, SPacketUpdateConfig.Server.class, id++, Side.CLIENT);
     }
 }

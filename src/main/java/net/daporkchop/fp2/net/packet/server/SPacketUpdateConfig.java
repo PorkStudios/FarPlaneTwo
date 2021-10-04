@@ -22,36 +22,47 @@ package net.daporkchop.fp2.net.packet.server;
 
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.util.Constants;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
+import static net.daporkchop.lib.common.util.PorkUtil.*;
+
 /**
  * @author DaPorkchop_
  */
-@Setter
 @Getter
-public class SPacketUpdateConfig implements IMessage {
-    protected FP2Config serverConfig;
-    protected FP2Config mergedConfig;
+public abstract class SPacketUpdateConfig<I extends SPacketUpdateConfig<I>> implements IMessage {
+    protected FP2Config config;
+
+    public I config(FP2Config config) {
+        this.config = config;
+        return uncheckedCast(this);
+    }
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.serverConfig = buf.readBoolean() ? FP2Config.parse(Constants.readString(buf)) : null;
-        this.mergedConfig = buf.readBoolean() ? FP2Config.parse(Constants.readString(buf)) : null;
+        this.config = buf.readBoolean() ? FP2Config.parse(Constants.readString(buf)) : null;
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeBoolean(this.serverConfig != null);
-        if (this.serverConfig != null) {
-            Constants.writeString(buf, this.serverConfig.toString());
+        buf.writeBoolean(this.config != null);
+        if (this.config != null) {
+            Constants.writeString(buf, this.config.toString());
         }
+    }
 
-        buf.writeBoolean(this.mergedConfig != null);
-        if (this.mergedConfig != null) {
-            Constants.writeString(buf, this.mergedConfig.toString());
-        }
+    /**
+     * @author DaPorkchop_
+     */
+    public static class Merged extends SPacketUpdateConfig<Merged> {
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public static class Server extends SPacketUpdateConfig<Server> {
     }
 }

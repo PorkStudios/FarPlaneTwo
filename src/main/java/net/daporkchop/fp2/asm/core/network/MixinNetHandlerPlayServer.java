@@ -18,22 +18,26 @@
  *
  */
 
-package net.daporkchop.fp2.asm.core.entity.player;
+package net.daporkchop.fp2.asm.core.network;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
+import net.daporkchop.fp2.net.packet.client.CPacketClientConfig;
+import net.daporkchop.fp2.net.packet.client.CPacketDropAllTiles;
 import net.daporkchop.fp2.net.packet.server.SPacketSessionBegin;
 import net.daporkchop.fp2.net.packet.server.SPacketSessionEnd;
 import net.daporkchop.fp2.net.packet.server.SPacketUpdateConfig;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
+import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
 import net.daporkchop.lib.math.vector.d.Vec3d;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.NetHandlerPlayServer;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -42,6 +46,8 @@ import org.spongepowered.asm.mixin.Unique;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.FP2.*;
+import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -49,10 +55,11 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-@Mixin(EntityPlayerMP.class)
-public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPlayerServer {
+@Mixin(NetHandlerPlayServer.class)
+public abstract class MixinNetHandlerPlayServer implements IFarPlayerServer {
     @Shadow
-    public NetHandlerPlayServer connection;
+    public EntityPlayerMP player;
+
     @Unique
     private FP2Config clientConfig;
     @Unique
@@ -73,13 +80,42 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPl
     @Unique
     private boolean closed;
 
-    public MixinEntityPlayerMP() {
-        super(null, null);
-    }
-
     @Override
     public Vec3d fp2_IFarPlayer_position() {
-        return new Vec3d(this.posX, this.posY, this.posZ);
+        EntityPlayerMP player = this.player;
+        return new Vec3d(player.posX, player.posY, player.posZ);
+    }
+
+    @CalledFromNetworkThread
+    @Override
+    public void fp2_IFarPlayerServer_handle(@NonNull Object packet) {
+        this.world.fp2_IFarWorld_scheduleTask(() -> { //TODO: move all logic to network threads
+            if (packet instanceof CPacketClientConfig) {
+                this.handleClientConfig((CPacketClientConfig) packet);
+            } else if (packet instanceof CPacketDropAllTiles) {
+                this.handleDropAllTiles((CPacketDropAllTiles) packet);
+            } else {
+                throw new IllegalArgumentException("don't know how to handle " + className(packet));
+            }
+        });
+    }
+
+    @Unique
+    private void handleClientConfig(@NonNull CPacketClientConfig packet) {
+        this.updateConfig(this.serverConfig, packet.config());
+    }
+
+    @Unique
+    private void handleDropAllTiles(@NonNull CPacketDropAllTiles packet) {
+        if (!FP2_DEBUG) {
+            this.disconnect(new TextComponentTranslation(MODID + ".debug.debugModeNotEnabled"));
+            return;
+        }
+
+        this.world.fp2_IFarWorld_scheduleTask(() -> {
+            FP2_LOG.info("Dropping all tiles");
+            this.world.fp2_IFarWorldServer_forEachTileProvider(tileProvider -> tileProvider.tracker().debug_dropAllTiles());
+        });
     }
 
     @CalledFromServerThread
@@ -88,18 +124,12 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPl
         this.updateConfig(serverConfig, this.clientConfig);
     }
 
-    @CalledFromServerThread
-    @Override
-    public void fp2_IFarPlayer_clientConfig(FP2Config clientConfig) {
-        this.updateConfig(this.serverConfig, clientConfig);
-    }
-
     @Unique
     private void updateConfig(FP2Config serverConfig, FP2Config clientConfig) {
         checkState(!this.closed, "already closed!");
 
         if (!Objects.equals(this.serverConfig, serverConfig)) { //re-send server config if it changed
-            this.fp2_IFarPlayer_sendPacket(new SPacketUpdateConfig().serverConfig(this.serverConfig).mergedConfig(this.mergedConfig));
+            this.fp2_IFarPlayer_sendPacket(new SPacketUpdateConfig.Server().config(serverConfig));
         }
 
         this.serverConfig = serverConfig;
@@ -137,7 +167,7 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPl
     @Unique
     protected void updateMergedConfig(FP2Config mergedConfig) {
         this.mergedConfig = mergedConfig;
-        this.fp2_IFarPlayer_sendPacket(new SPacketUpdateConfig().serverConfig(this.serverConfig).mergedConfig(mergedConfig));
+        this.fp2_IFarPlayer_sendPacket(new SPacketUpdateConfig.Merged().config(mergedConfig));
     }
 
     @Unique
@@ -187,7 +217,7 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPl
     @Override
     public void fp2_IFarPlayer_sendPacket(@NonNull IMessage packet) {
         if (!this.closed) {
-            NETWORK_WRAPPER.sendTo(packet, uncheckedCast(this));
+            NETWORK_WRAPPER.sendTo(packet, this.player);
         }
     }
 
@@ -209,4 +239,7 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IFarPl
         this.updateConfig(null, null);
         this.closed = true;
     }
+
+    @Shadow
+    public abstract void disconnect(ITextComponent textComponent);
 }
