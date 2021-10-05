@@ -21,9 +21,9 @@
 package net.daporkchop.fp2.config;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.config.gui.IConfigGuiElement;
-import net.daporkchop.fp2.config.gui.IConfigGuiScreen;
-import net.daporkchop.fp2.config.gui.container.ColumnsContainer;
+import net.daporkchop.fp2.client.gui.IConfigGuiElement;
+import net.daporkchop.fp2.client.gui.IConfigGuiScreen;
+import net.daporkchop.fp2.client.gui.container.ColumnsContainer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 

@@ -38,7 +38,7 @@ public abstract class MixinRenderGlobal {
                     target = "Lnet/minecraft/client/renderer/ChunkRenderContainer;renderChunkLayer(Lnet/minecraft/util/BlockRenderLayer;)V"),
             allow = 1)
     private void fp2_debug_renderChunkLayer_skipVanilla(ChunkRenderContainer container, BlockRenderLayer layer) {
-        if (!FP2Config.global().debug().vanillaTerrainRendering()) {
+        if (FP2Config.global().debug().vanillaTerrainRendering()) {
             container.renderChunkLayer(layer);
         }
     }

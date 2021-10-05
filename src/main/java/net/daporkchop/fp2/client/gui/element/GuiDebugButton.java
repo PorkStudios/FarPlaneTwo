@@ -18,44 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui;
+package net.daporkchop.fp2.client.gui.element;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
+import net.daporkchop.fp2.client.gui.IGuiContext;
+import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import static net.daporkchop.fp2.FP2.*;
+import static net.daporkchop.fp2.debug.FP2Debug.*;
 
 /**
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public class GuiButtonFP2Options extends GuiButton {
-    protected final GuiScreen parent;
+public class GuiDebugButton extends GuiSubmenuButton<FP2Config.Debug> {
+    public GuiDebugButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<FP2Config.Debug> access) {
+        super(context, access);
 
-    public GuiButtonFP2Options(int buttonId, int x, int y, @NonNull GuiScreen parent) {
-        super(buttonId, x, y, 40, 20, I18n.format(MODID + ".gui.buttonFP2Options"));
-
-        this.parent = parent;
-    }
-
-    @Override
-    public boolean mousePressed(Minecraft mc, int mouseX, int mouseY) {
-        if (super.mousePressed(mc, mouseX, mouseY)) {
-            FP2Config defaultConfig = FP2Config.DEFAULT_CONFIG;
-            FP2Config serverConfig = !mc.integratedServerIsRunning && mc.getConnection() != null ? ((IFarPlayerClient) mc.getConnection()).fp2_IFarPlayerClient_serverConfig() : null;
-            FP2Config clientConfig = FP2Config.global();
-
-            GuiHelper.createAndDisplayGuiContext("menu", defaultConfig, serverConfig, clientConfig, FP2Config::set);
-            return true;
-        } else {
-            return false;
+        if (!FP2_DEBUG) {
+            this.button.enabled = false;
         }
     }
 }

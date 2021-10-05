@@ -18,44 +18,35 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui;
+package net.daporkchop.fp2.client.gui.util;
 
+import lombok.Data;
 import lombok.NonNull;
-import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import static net.daporkchop.fp2.FP2.*;
+import static java.lang.Math.*;
 
 /**
  * @author DaPorkchop_
  */
+@Data
 @SideOnly(Side.CLIENT)
-public class GuiButtonFP2Options extends GuiButton {
-    protected final GuiScreen parent;
+public final class ComponentDimensions {
+    public static final ComponentDimensions ZERO = new ComponentDimensions(0, 0);
 
-    public GuiButtonFP2Options(int buttonId, int x, int y, @NonNull GuiScreen parent) {
-        super(buttonId, x, y, 40, 20, I18n.format(MODID + ".gui.buttonFP2Options"));
+    protected final int sizeX;
+    protected final int sizeY;
 
-        this.parent = parent;
+    public ComponentDimensions pad(int padding) {
+        return this.pad(padding, padding);
     }
 
-    @Override
-    public boolean mousePressed(Minecraft mc, int mouseX, int mouseY) {
-        if (super.mousePressed(mc, mouseX, mouseY)) {
-            FP2Config defaultConfig = FP2Config.DEFAULT_CONFIG;
-            FP2Config serverConfig = !mc.integratedServerIsRunning && mc.getConnection() != null ? ((IFarPlayerClient) mc.getConnection()).fp2_IFarPlayerClient_serverConfig() : null;
-            FP2Config clientConfig = FP2Config.global();
+    public ComponentDimensions pad(int paddingX, int paddingY) {
+        return new ComponentDimensions(this.sizeX + paddingX, this.sizeY + paddingY);
+    }
 
-            GuiHelper.createAndDisplayGuiContext("menu", defaultConfig, serverConfig, clientConfig, FP2Config::set);
-            return true;
-        } else {
-            return false;
-        }
+    public ComponentDimensions union(@NonNull ComponentDimensions other) {
+        return new ComponentDimensions(max(this.sizeX, other.sizeX), max(this.sizeY, other.sizeY));
     }
 }

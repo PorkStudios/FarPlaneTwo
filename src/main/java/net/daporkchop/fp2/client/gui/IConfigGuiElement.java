@@ -21,41 +21,33 @@
 package net.daporkchop.fp2.client.gui;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
+import net.daporkchop.fp2.client.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.client.gui.util.ElementBounds;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import static net.daporkchop.fp2.FP2.*;
+import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
  */
 @SideOnly(Side.CLIENT)
-public class GuiButtonFP2Options extends GuiButton {
-    protected final GuiScreen parent;
+public interface IConfigGuiElement extends IConfigGuiComponent {
+    Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY);
 
-    public GuiButtonFP2Options(int buttonId, int x, int y, @NonNull GuiScreen parent) {
-        super(buttonId, x, y, 40, 20, I18n.format(MODID + ".gui.buttonFP2Options"));
+    ComponentDimensions preferredMinimumDimensions();
 
-        this.parent = parent;
-    }
+    /**
+     * @return this element's bounds
+     */
+    ElementBounds bounds();
 
-    @Override
-    public boolean mousePressed(Minecraft mc, int mouseX, int mouseY) {
-        if (super.mousePressed(mc, mouseX, mouseY)) {
-            FP2Config defaultConfig = FP2Config.DEFAULT_CONFIG;
-            FP2Config serverConfig = !mc.integratedServerIsRunning && mc.getConnection() != null ? ((IFarPlayerClient) mc.getConnection()).fp2_IFarPlayerClient_serverConfig() : null;
-            FP2Config clientConfig = FP2Config.global();
-
-            GuiHelper.createAndDisplayGuiContext("menu", defaultConfig, serverConfig, clientConfig, FP2Config::set);
-            return true;
-        } else {
-            return false;
-        }
-    }
+    /**
+     * Sets this element's bounds.
+     * <p>
+     * Implicitly calls {@link #pack()} after the bounds are updated.
+     *
+     * @param bounds the new bounds
+     */
+    void bounds(@NonNull ElementBounds bounds);
 }

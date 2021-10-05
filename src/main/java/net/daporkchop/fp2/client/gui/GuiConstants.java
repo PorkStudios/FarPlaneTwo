@@ -20,42 +20,48 @@
 
 package net.daporkchop.fp2.client.gui;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
+import lombok.experimental.UtilityClass;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import static net.daporkchop.fp2.FP2.*;
-
 /**
+ * Constant values used throughout the GUI code.
+ *
  * @author DaPorkchop_
  */
+@UtilityClass
 @SideOnly(Side.CLIENT)
-public class GuiButtonFP2Options extends GuiButton {
-    protected final GuiScreen parent;
+public class GuiConstants {
+    //
+    // sizes
+    //
 
-    public GuiButtonFP2Options(int buttonId, int x, int y, @NonNull GuiScreen parent) {
-        super(buttonId, x, y, 40, 20, I18n.format(MODID + ".gui.buttonFP2Options"));
+    /**
+     * The padding around all components (vertical and horizontal).
+     */
+    public static final int PADDING = 2;
 
-        this.parent = parent;
-    }
+    /**
+     * The height of the title in a GUI header.
+     */
+    public static final int HEADER_TITLE_HEIGHT = 30;
 
-    @Override
-    public boolean mousePressed(Minecraft mc, int mouseX, int mouseY) {
-        if (super.mousePressed(mc, mouseX, mouseY)) {
-            FP2Config defaultConfig = FP2Config.DEFAULT_CONFIG;
-            FP2Config serverConfig = !mc.integratedServerIsRunning && mc.getConnection() != null ? ((IFarPlayerClient) mc.getConnection()).fp2_IFarPlayerClient_serverConfig() : null;
-            FP2Config clientConfig = FP2Config.global();
+    public static final int FOOTER_HEIGHT = 27;
 
-            GuiHelper.createAndDisplayGuiContext("menu", defaultConfig, serverConfig, clientConfig, FP2Config::set);
-            return true;
-        } else {
-            return false;
-        }
-    }
+    /**
+     * The width of a scrollbar.
+     */
+    public static final int SCROLLBAR_WIDTH = 5;
+
+    /**
+     * The maximum number of columns to use.
+     */
+    public static final int MAX_COLUMNS = 2;
+
+    /**
+     * The height of a button.
+     */
+    public static final int BUTTON_HEIGHT = 20;
+
+    public static final int BUTTON_INTERNAL_PADDING_HORIZONTAL = 6;
 }
