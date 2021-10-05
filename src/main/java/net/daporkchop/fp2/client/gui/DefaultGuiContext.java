@@ -80,7 +80,7 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
         this.access = access;
         this.callback = null;
 
-        this.localeKeyBase = parentContext.localeKeyBase() + name + '.';
+        this.localeKeyBase = name.endsWith(".") ? name : parentContext.localeKeyBase() + name + '.';
         this.screen = screenFactory.apply(this);
     }
 

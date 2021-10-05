@@ -79,6 +79,8 @@ public abstract class GuiButton<V> extends AbstractReflectiveConfigGuiElement<V>
 
     @Override
     public void mouseDown(int mouseX, int mouseY, int button) {
+        super.mouseDown(mouseX, mouseY, button);
+
         if (button == 0 && this.button.mousePressed(MC, mouseX, mouseY)) {
             this.handleClick(button);
         }

@@ -31,10 +31,14 @@ fp2.config.enum.selected.false=%s
 
 fp2.config.slider.format=%s
 
-fp2.config.old.tooltip=Current value: %s
+fp2.config.old.tooltip=Saved value: %s
 fp2.config.default.tooltip=Default value: %s
 fp2.config.server.tooltip=Server value: %s
 fp2.config.range.tooltip=Minimum: %1$s\nMaximum: %2$s
+
+fp2.config.moreOptions.tooltip=Right-Click for more options.
+fp2.config.moreOptions.resetOld=Reset to saved value
+fp2.config.moreOptions.resetDefault=Reset to default value
 
 fp2.config.restartRequired.tooltip.WORLD=§cChanges to this option require a world reload to take effect!
 fp2.config.restartRequired.tooltip.GAME=§cChanges to this option require a game restart to take effect!

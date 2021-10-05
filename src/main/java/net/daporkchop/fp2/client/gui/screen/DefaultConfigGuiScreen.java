@@ -139,13 +139,17 @@ public class DefaultConfigGuiScreen implements IConfigGuiScreen {
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
-        String titleString = I18n.format(this.context.localeKeyBase() + "title");
+        String titleString = this.getTitleString();
         MC.fontRenderer.drawStringWithShadow(titleString, (this.dimensions.sizeX() - MC.fontRenderer.getStringWidth(titleString)) >> 1, 15, -1);
 
         this.renderBackground();
         this.element.render(mouseX, mouseY, partialTicks);
 
         this.doneButton.drawButton(MC, mouseX, mouseY, partialTicks);
+    }
+
+    protected String getTitleString() {
+        return I18n.format(this.context.localeKeyBase() + "title");
     }
 
     protected void renderBackground() {

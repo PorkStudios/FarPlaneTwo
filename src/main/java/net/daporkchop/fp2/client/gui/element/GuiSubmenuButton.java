@@ -36,6 +36,11 @@ public class GuiSubmenuButton<V> extends GuiButton<V> {
     }
 
     @Override
+    protected boolean allowMoreOptions() {
+        return false;
+    }
+
+    @Override
     protected String text() {
         return this.localizedName();
     }

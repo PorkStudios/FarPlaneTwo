@@ -21,14 +21,19 @@
 package net.daporkchop.fp2.client.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.Config;
-import net.daporkchop.fp2.config.ConfigHelper;
 import net.daporkchop.fp2.client.gui.IGuiContext;
 import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
+import net.daporkchop.fp2.client.gui.container.ColumnsContainer;
+import net.daporkchop.fp2.client.gui.container.ScrollingContainer;
+import net.daporkchop.fp2.client.gui.screen.DefaultConfigGuiScreen;
+import net.daporkchop.fp2.config.Config;
+import net.daporkchop.fp2.config.ConfigHelper;
 import net.minecraft.client.resources.I18n;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
@@ -49,6 +54,10 @@ public abstract class AbstractReflectiveConfigGuiElement<V> extends AbstractConf
         super(context);
 
         this.access = access;
+    }
+
+    protected boolean allowMoreOptions() {
+        return true;
     }
 
     @Override
@@ -95,6 +104,65 @@ public abstract class AbstractReflectiveConfigGuiElement<V> extends AbstractConf
             if (restartRequired != null) {
                 joiner.add(I18n.format(MODID + ".config.restartRequired.tooltip." + restartRequired.value()));
             }
+        }
+
+        if (this.allowMoreOptions()) { //indicator to open "more options" menu
+            joiner.add(I18n.format(MODID + ".config.moreOptions.tooltip"));
+        }
+    }
+
+    @Override
+    public void mouseDown(int mouseX, int mouseY, int button) {
+        if (button == 1 && this.bounds.contains(mouseX, mouseY) && this.allowMoreOptions()) {
+            class ResetButton extends GuiButton<V> {
+                final String name;
+                final V value;
+
+                public ResetButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<V> access, @NonNull String name, @NonNull V value) {
+                    super(context, access);
+
+                    this.name = name;
+                    this.value = value;
+                }
+
+                @Override
+                protected boolean allowMoreOptions() {
+                    return false;
+                }
+
+                @Override
+                protected String langKey() {
+                    return MODID + ".config.moreOptions." + this.name;
+                }
+
+                @Override
+                protected String localizeValue(@NonNull V value) {
+                    return AbstractReflectiveConfigGuiElement.this.localizeValue(value);
+                }
+
+                @Override
+                protected Optional<String[]> computeTooltipText() {
+                    return Optional.empty();
+                }
+
+                @Override
+                protected void handleClick(int button) {
+                    if (button == 0) { //left-click
+                        AbstractReflectiveConfigGuiElement.this.access.setCurrent(this.value);
+                        this.context.pop();
+                    }
+                }
+            }
+
+            this.context.pushSubmenu(this.context.localeKeyBase(), this.access, context -> new DefaultConfigGuiScreen(context, new ScrollingContainer<>(context, this.access, Collections.singletonList(
+                    new ColumnsContainer<>(context, this.access, Arrays.asList(
+                            new ResetButton(context, this.access, "resetOld", this.access.getOld()),
+                            new ResetButton(context, this.access, "resetDefault", this.access.getDefault())))))) {
+                @Override
+                protected String getTitleString() {
+                    return AbstractReflectiveConfigGuiElement.this.text();
+                }
+            });
         }
     }
 }

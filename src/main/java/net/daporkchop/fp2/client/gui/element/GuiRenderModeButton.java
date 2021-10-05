@@ -215,6 +215,11 @@ public class GuiRenderModeButton extends GuiSubmenuButton<String[]> {
         }
 
         @Override
+        protected boolean allowMoreOptions() {
+            return false;
+        }
+
+        @Override
         public Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY) {
             return Stream.of(new ComponentDimensions(min(totalSizeX, BUTTON_HEIGHT), min(totalSizeY, BUTTON_HEIGHT)));
         }
@@ -254,8 +259,12 @@ public class GuiRenderModeButton extends GuiSubmenuButton<String[]> {
      * @author DaPorkchop_
      */
     protected class ModeLabel extends GuiLabel {
+        protected final String name;
+
         public ModeLabel(@NonNull IGuiContext context, @NonNull String name) {
             super(context, name, GuiLabel.Alignment.LEFT, GuiLabel.Alignment.CENTER);
+
+            this.name = name;
         }
 
         @Override

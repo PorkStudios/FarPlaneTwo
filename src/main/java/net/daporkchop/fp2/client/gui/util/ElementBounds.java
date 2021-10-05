@@ -77,6 +77,6 @@ public final class ElementBounds {
      * @return whether or not the given point is contained within this element's bounds
      */
     public boolean contains(int x, int y) {
-        return x >= this.x && x <= this.x + this.sizeX && y >= this.y && y <= this.y + this.sizeY;
+        return x >= this.x && x < this.x + this.sizeX && y >= this.y && y < this.y + this.sizeY;
     }
 }

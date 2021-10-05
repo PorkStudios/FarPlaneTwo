@@ -148,6 +148,8 @@ public class GuiSlider extends AbstractReflectiveConfigGuiElement<Number> {
 
     @Override
     public void mouseDown(int mouseX, int mouseY, int button) {
+        super.mouseDown(mouseX, mouseY, button);
+
         if (button == 0) {
             this.slider.mousePressed(MC, mouseX, mouseY);
         }

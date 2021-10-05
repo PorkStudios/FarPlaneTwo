@@ -27,6 +27,7 @@ import net.minecraft.client.resources.I18n;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
@@ -37,7 +38,8 @@ import static net.daporkchop.fp2.util.Constants.*;
  */
 @SideOnly(Side.CLIENT)
 public class GuiLabel extends AbstractConfigGuiElement {
-    protected final String name;
+    protected final Supplier<String> langKeyFactory;
+    protected final Supplier<String> textFactory;
 
     protected final Alignment horizontalAlignment;
     protected final Alignment verticalAlignment;
@@ -49,19 +51,31 @@ public class GuiLabel extends AbstractConfigGuiElement {
     public GuiLabel(@NonNull IGuiContext context, @NonNull String name, @NonNull Alignment horizontalAlignment, @NonNull Alignment verticalAlignment) {
         super(context);
 
-        this.name = name;
+        this.langKeyFactory = () -> context.localeKeyBase() + name;
+        this.textFactory = () -> I18n.format(this.langKey());
+
+        this.horizontalAlignment = horizontalAlignment;
+        this.verticalAlignment = verticalAlignment;
+    }
+
+    public GuiLabel(@NonNull IGuiContext context, @NonNull Supplier<String> textFactory, @NonNull Alignment horizontalAlignment, @NonNull Alignment verticalAlignment) {
+        super(context);
+
+        this.langKeyFactory = () -> context.localeKeyBase().substring(0, max(context.localeKeyBase().length() - 1, 0));
+        this.textFactory = textFactory;
+
         this.horizontalAlignment = horizontalAlignment;
         this.verticalAlignment = verticalAlignment;
     }
 
     @Override
     protected String langKey() {
-        return this.context.localeKeyBase() + this.name;
+        return this.langKeyFactory.get();
     }
 
     @Override
     public void init() {
-        this.text = I18n.format(this.langKey());
+        this.text = this.textFactory.get();
         this.textWidth = MC.fontRenderer.getStringWidth(this.text);
         this.textHeight = MC.fontRenderer.FONT_HEIGHT;
     }
