@@ -21,17 +21,18 @@
 package net.daporkchop.fp2.client.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.Config;
-import net.daporkchop.fp2.config.ConfigHelper;
 import net.daporkchop.fp2.client.gui.IGuiContext;
 import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
 import net.daporkchop.fp2.client.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.config.Config;
+import net.daporkchop.fp2.config.ConfigHelper;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.I18n;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -56,8 +57,10 @@ public class GuiSlider extends AbstractReflectiveConfigGuiElement<Number> {
         Config.Range rangeAnnotation = access.getAnnotation(Config.Range.class);
         Config.GuiRange guiRangeAnnotation = access.getAnnotation(Config.GuiRange.class);
         checkState(rangeAnnotation != null || guiRangeAnnotation != null, "cannot create slider for %s which isn't annotated with %s or %s", access.name(), Config.Range.class, Config.GuiRange.class);
-        Number minValue = ConfigHelper.evaluate(guiRangeAnnotation != null ? guiRangeAnnotation.min() : rangeAnnotation.min());
-        Number maxValue = ConfigHelper.evaluate(guiRangeAnnotation != null ? guiRangeAnnotation.max() : rangeAnnotation.max());
+        Number minValueFromAnnotation = ConfigHelper.evaluate(guiRangeAnnotation != null ? guiRangeAnnotation.min() : rangeAnnotation.min());
+        Number maxValueFromAnnotation = ConfigHelper.evaluate(guiRangeAnnotation != null ? guiRangeAnnotation.max() : rangeAnnotation.max());
+
+        Number snapFromAnnotation = guiRangeAnnotation != null ? ConfigHelper.evaluate(guiRangeAnnotation.snapTo()) : null;
 
         boolean fp;
         Function<Double, Number> boxFunction;
@@ -79,10 +82,17 @@ public class GuiSlider extends AbstractReflectiveConfigGuiElement<Number> {
             throw new IllegalArgumentException(PStrings.fastFormat("cannot create slider for %s of unsupported type %s", type));
         }
 
-        this.slider = new net.minecraftforge.fml.client.config.GuiSlider(0, 0, 0, 0, 0, "", "", minValue.doubleValue(), maxValue.doubleValue(), this.access.getCurrent().doubleValue(), fp, true,
+        this.slider = new net.minecraftforge.fml.client.config.GuiSlider(0, 0, 0, 0, 0,
+                "", "",
+                minValueFromAnnotation.doubleValue(), maxValueFromAnnotation.doubleValue(), this.access.getCurrent().doubleValue(),
+                fp, true,
                 slider -> {
-                    this.access.setCurrent(boxFunction.apply(fp ? slider.getValue() : slider.getValueInt()));
+                    double value = fp ? slider.getValue() : slider.getValueInt();
+
+                    this.access.setCurrent(boxFunction.apply(value));
+
                     slider.displayString = this.text();
+                    slider.sliderValue = (value - slider.minValue) / (slider.maxValue - slider.minValue);
                 }) {
             @Override
             protected void mouseDragged(Minecraft mc, int par2, int par3) {
@@ -95,6 +105,26 @@ public class GuiSlider extends AbstractReflectiveConfigGuiElement<Number> {
                 }
 
                 super.mouseDragged(mc, par2, par3);
+            }
+
+            @Override
+            public int getValueInt() {
+                int min = minValueFromAnnotation.intValue();
+                int max = maxValueFromAnnotation.intValue();
+                int snap = snapFromAnnotation != null ? snapFromAnnotation.intValue() : 1;
+
+                return roundI(lerp(min, max, this.sliderValue) / snap) * snap;
+            }
+
+            @Override
+            public double getValue() {
+                double min = minValueFromAnnotation.doubleValue();
+                double max = maxValueFromAnnotation.doubleValue();
+                double snap = snapFromAnnotation != null ? snapFromAnnotation.doubleValue() : Double.NaN;
+
+                return Double.isNaN(snap)
+                        ? lerp(min, max, this.sliderValue)
+                        : round(lerp(min, max, this.sliderValue) / snap) * snap;
             }
         };
     }
@@ -144,6 +174,11 @@ public class GuiSlider extends AbstractReflectiveConfigGuiElement<Number> {
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
         this.slider.drawButton(MC, mouseX, mouseY, partialTicks);
+    }
+
+    @Override
+    public Optional<String[]> getTooltip(int mouseX, int mouseY) {
+        return this.slider.dragging ? Optional.empty() : super.getTooltip(mouseX, mouseY);
     }
 
     @Override

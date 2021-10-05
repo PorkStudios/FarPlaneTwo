@@ -21,12 +21,12 @@
 package net.daporkchop.fp2.client.gui.container;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.client.gui.IConfigGuiElement;
 import net.daporkchop.fp2.client.gui.IGuiContext;
 import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
 import net.daporkchop.fp2.client.gui.element.AbstractConfigGuiElement;
 import net.daporkchop.fp2.client.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.config.FP2Config;
 import net.minecraft.client.resources.I18n;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -34,12 +34,14 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.client.gui.GuiConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -51,10 +53,29 @@ public class RenderDistanceContainer extends VerticallyStackedContainer<FP2Confi
 
         return Arrays.asList(
                 new ColumnsContainer<>(context, access, elements),
-                new Label(context, access, "labelEquivalentRenderDistance", (config, langKey) -> {
-                    int renderDistanceBlocks = config.cutoffDistance() << (config.maxLevels() - 1);
-                    return I18n.format(langKey, numberFormat.format(renderDistanceBlocks), numberFormat.format(renderDistanceBlocks >> 4));
-                }));
+                new DynamicLabel(context, access,
+                        (config, langKey) -> {
+                            int renderDistanceBlocks = config.cutoffDistance() << (config.maxLevels() - 1);
+                            return I18n.format(langKey + "labelEquivalentRenderDistance", numberFormat.format(renderDistanceBlocks), numberFormat.format(renderDistanceBlocks >> 4)).split("\n");
+                        },
+                        (config, langKey) -> {
+                            int renderDistanceVanilla = MC.gameSettings.renderDistanceChunks;
+
+                            String[] lines = I18n.format(langKey + "labelCutoffDistanceLessThanVanilla", numberFormat.format(renderDistanceVanilla), numberFormat.format(renderDistanceVanilla << 4), numberFormat.format(renderDistanceVanilla << 5)).split("\n");
+                            if ((config.cutoffDistance() >> 4) >= (renderDistanceVanilla << 1)) {
+                                Arrays.fill(lines, null);
+                            }
+                            return lines;
+                        },
+                        (config, langKey) -> {
+                            final int minCutoff = 64;
+
+                            String[] lines = I18n.format(langKey + "labelCutoffDistanceTooSmall", numberFormat.format(minCutoff)).split("\n");
+                            if (config.cutoffDistance() >= minCutoff) {
+                                Arrays.fill(lines, null);
+                            }
+                            return lines;
+                        }));
     }
 
     public RenderDistanceContainer(@NonNull IGuiContext context, @NonNull GuiObjectAccess<FP2Config> access, @NonNull List<IConfigGuiElement> elements) {
@@ -64,28 +85,32 @@ public class RenderDistanceContainer extends VerticallyStackedContainer<FP2Confi
     /**
      * @author DaPorkchop_
      */
-    protected static class Label extends AbstractConfigGuiElement {
+    protected static class DynamicLabel extends AbstractConfigGuiElement {
         protected final GuiObjectAccess<FP2Config> access;
-        protected final String name;
-        protected final BiFunction<FP2Config, String, String> textFormatter;
+        protected final BiFunction<FP2Config, String, String[]>[] textFormatters;
 
-        protected final int height = MC.fontRenderer.FONT_HEIGHT + (PADDING << 1);
+        protected final int height;
 
-        public Label(@NonNull IGuiContext context, @NonNull GuiObjectAccess<FP2Config> access, @NonNull String name, @NonNull BiFunction<FP2Config, String, String> textFormatter) {
+        @SafeVarargs
+        public DynamicLabel(@NonNull IGuiContext context, @NonNull GuiObjectAccess<FP2Config> access, @NonNull BiFunction<FP2Config, String, String[]>... textFormatters) {
             super(context);
 
             this.access = access;
-            this.name = name;
-            this.textFormatter = textFormatter;
+            this.textFormatters = textFormatters;
+
+            int theoreticalMaxLines = toInt(this.text().count());
+            this.height = theoreticalMaxLines * (MC.fontRenderer.FONT_HEIGHT + PADDING) + PADDING;
         }
 
         @Override
         protected String langKey() {
-            return this.context.localeKeyBase() + this.name;
+            return this.context.localeKeyBase();
         }
 
-        protected String text() {
-            return this.textFormatter.apply(this.access.getCurrent(), this.langKey());
+        protected Stream<String> text() {
+            return Stream.of(this.textFormatters)
+                    .map(textFormatter -> textFormatter.apply(this.access.getCurrent(), this.langKey()))
+                    .flatMap(Stream::of);
         }
 
         @Override
@@ -95,7 +120,12 @@ public class RenderDistanceContainer extends VerticallyStackedContainer<FP2Confi
 
         @Override
         public ComponentDimensions preferredMinimumDimensions() {
-            return new ComponentDimensions(MC.fontRenderer.getStringWidth(this.text()) + (PADDING << 1), this.height);
+            int maxWidth = this.text()
+                    .filter(Objects::nonNull)
+                    .mapToInt(MC.fontRenderer::getStringWidth)
+                    .max().orElse(0);
+
+            return new ComponentDimensions(maxWidth + (PADDING << 1), this.height);
         }
 
         @Override
@@ -108,7 +138,13 @@ public class RenderDistanceContainer extends VerticallyStackedContainer<FP2Confi
 
         @Override
         public void render(int mouseX, int mouseY, float partialTicks) {
-            MC.fontRenderer.drawStringWithShadow(this.text(), this.bounds.x() + PADDING, this.bounds.y() + PADDING, -1);
+            int x = this.bounds.x() + PADDING;
+            int y = this.bounds.y() + PADDING;
+
+            for (String line : this.text().filter(Objects::nonNull).toArray(String[]::new)) {
+                MC.fontRenderer.drawStringWithShadow(line, x, y, -1);
+                y += MC.fontRenderer.FONT_HEIGHT + PADDING;
+            }
         }
 
         @Override

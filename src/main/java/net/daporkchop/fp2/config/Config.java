@@ -141,6 +141,13 @@ public class Config {
         Constant min();
 
         Constant max();
+
+        /**
+         * If present, causes the slider's values to be snapped to multiples of this constant.
+         * <p>
+         * Note that if this constant is defined, both {@link #min()} and {@link #max()} must be multiples of it.
+         */
+        Constant snapTo() default @Constant;
     }
 
     /**

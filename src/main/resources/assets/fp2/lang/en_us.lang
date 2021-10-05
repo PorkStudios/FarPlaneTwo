@@ -58,6 +58,8 @@ fp2.config.menu.cutoffDistance.format=%s blocks
 fp2.config.menu.cutoffDistance.tooltip=The radius (in blocks) of the maximum detail level.\nThis value is doubled for each subsequent level, so a value of 256 will mean a 256 block radius for the maximum detail level, a 512 block radius for the 1/2-detail level, a 1024 block radius for the 1/4-detail level, etc.
 
 fp2.config.menu.labelEquivalentRenderDistance=Render Distance Equivalent: %1$s blocks (%2$s chunks)
+fp2.config.menu.labelCutoffDistanceLessThanVanilla=§6Warning: Cutoff distance should be at least 2x vanilla render distance\n  §6Current vanilla render distance: %1$s chunks (%2$s blocks)\n  §6Recommended cutoff distance: at least %3$s blocks
+fp2.config.menu.labelCutoffDistanceTooSmall=§cCritical: Cutoff distance should be at least %1$s blocks
 
 fp2.config.menu.renderModes=Render Modes...
 
