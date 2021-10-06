@@ -22,10 +22,10 @@ package net.daporkchop.fp2.client.gui;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.config.Config;
-import net.daporkchop.fp2.config.ConfigHelper;
 import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
 import net.daporkchop.fp2.client.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.config.Config;
+import net.daporkchop.fp2.config.ConfigHelper;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.resources.I18n;

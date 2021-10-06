@@ -141,6 +141,7 @@ public class GuiSlider extends AbstractReflectiveConfigGuiElement<Number> {
 
     @Override
     public void init() {
+        this.slider.setValue(this.access.getCurrent().doubleValue());
         this.slider.updateSlider();
     }
 

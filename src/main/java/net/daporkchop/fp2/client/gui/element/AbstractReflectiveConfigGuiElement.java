@@ -137,7 +137,7 @@ public abstract class AbstractReflectiveConfigGuiElement<V> extends AbstractConf
 
                 @Override
                 protected String localizeValue(@NonNull V value) {
-                    return AbstractReflectiveConfigGuiElement.this.localizeValue(value);
+                    return AbstractReflectiveConfigGuiElement.this.localizeValue(this.value);
                 }
 
                 @Override
