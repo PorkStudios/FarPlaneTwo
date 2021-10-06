@@ -21,9 +21,11 @@
 package net.daporkchop.fp2.mode.api.tile;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.util.SimpleRecycler;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
 
 /**
  * A snapshot of the data stored at a given tile position.
@@ -53,4 +55,7 @@ public interface ITileSnapshot<POS extends IFarPos, T extends IFarTile> extends 
      * @return this snapshot as a {@link CompressedTileSnapshot}
      */
     ITileSnapshot<POS, T> compressed();
+
+    @DebugOnly
+    DebugStats.TileSnapshot stats();
 }

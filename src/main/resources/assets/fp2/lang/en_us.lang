@@ -1,6 +1,18 @@
 #PARSE_ESCAPES
 
 #
+# Number formatting
+#
+
+fp2.util.numberFormat.bytes.0=%sB
+fp2.util.numberFormat.bytes.1=%sKiB
+fp2.util.numberFormat.bytes.2=%sMiB
+fp2.util.numberFormat.bytes.3=%sGiB
+fp2.util.numberFormat.bytes.4=%sTiB
+fp2.util.numberFormat.bytes.5=%sPiB
+fp2.util.numberFormat.bytes.6=%sEiB
+
+#
 # GUI
 #
 
@@ -58,8 +70,12 @@ fp2.config.menu.cutoffDistance.format=%s blocks
 fp2.config.menu.cutoffDistance.tooltip=The radius (in blocks) of the maximum detail level.\nThis value is doubled for each subsequent level, so a value of 256 will mean a 256 block radius for the maximum detail level, a 512 block radius for the 1/2-detail level, a 1024 block radius for the 1/4-detail level, etc.
 
 fp2.config.menu.labelEquivalentRenderDistance=Render Distance Equivalent: %1$s blocks (%2$s chunks)
-fp2.config.menu.labelCutoffDistanceLessThanVanilla=§6Warning: Cutoff distance should be at least 2x vanilla render distance\n  §6Current vanilla render distance: %1$s chunks (%2$s blocks)\n  §6Recommended cutoff distance: at least %3$s blocks
-fp2.config.menu.labelCutoffDistanceTooSmall=§cCritical: Cutoff distance should be at least %1$s blocks
+fp2.config.menu.labelApproximatePerformance=Estimated performance gain: %1$sx
+fp2.config.menu.labelApproximatePerformance.tooltip=A §overy§r rough estimation of FarPlaneTwo's performance for rendering the currently configured area (in Voxel mode) compared to vanilla's performance for rendering the equivalent area.\nThis is currently a worst-case estimate, assuming a SkyGrid world with Cubic Chunks. Real-world performance gains will almost certainly be significantly less.
+fp2.config.menu.labelApproximateVRAM=Estimated VRAM Usage: %1$s
+fp2.config.menu.labelCutoffDistanceLessThanVanilla=§6Warning: Cutoff distance should be at least %1$sx vanilla render distance! Your vanilla render distance is currently %2$s chunks (%3$s blocks), which corresponds to a recommended cutoff distance of at least %4$s blocks.
+fp2.config.menu.labelCutoffDistanceTooHigh=§6Warning: Cutoff distance is very high! Consider lowering it and increasing the number of LoD levels instead.
+fp2.config.menu.labelCutoffDistanceTooSmall=§cCritical: Cutoff distance should be at least %1$s blocks!
 
 fp2.config.menu.renderModes=Render Modes...
 

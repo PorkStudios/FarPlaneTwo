@@ -18,36 +18,26 @@
  *
  */
 
-package net.daporkchop.fp2.debug.util;
+package net.daporkchop.fp2.util.annotation;
 
-import lombok.NonNull;
-import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
-import net.minecraft.util.text.TextComponentString;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-import static net.daporkchop.fp2.util.Constants.*;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.*;
 
 /**
- * Debug mode utility methods.
+ * Indicates that the annotated element is only present in debug mode.
  *
  * @author DaPorkchop_
  */
-@UtilityClass
-@DebugOnly
-public class DebugUtils {
-    public static final String CHAT_PREFIX = "§8§l[§9FarPlaneTwo Debug§8§l]§r ";
-
-    @SideOnly(Side.CLIENT)
-    public void clientMsg(@NonNull String msg) {
-        clientMsg(CHAT_PREFIX, msg);
-    }
-
-    @SideOnly(Side.CLIENT)
-    public void clientMsg(@NonNull String prefix, @NonNull String msg) {
-        for (String line : msg.split("\n")) {
-            MC.player.sendMessage(new TextComponentString(prefix + line));
-        }
-    }
+//TODO: implement this
+@Retention(CLASS)
+@Target({ TYPE, FIELD, METHOD, CONSTRUCTOR })
+public @interface DebugOnly {
+    /**
+     * @return what to do to the annotated element when not running in debug mode
+     * @see RemovalPolicy
+     */
+    RemovalPolicy value() default RemovalPolicy.DELETE;
 }

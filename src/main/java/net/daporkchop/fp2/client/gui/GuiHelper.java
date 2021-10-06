@@ -31,16 +31,20 @@ import net.daporkchop.fp2.client.gui.element.GuiToggleButton;
 import net.daporkchop.fp2.client.gui.screen.DefaultConfigGuiScreen;
 import net.daporkchop.fp2.config.Config;
 import net.daporkchop.fp2.config.ConfigHelper;
+import net.minecraft.client.resources.I18n;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
+import java.text.NumberFormat;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.FP2.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -127,5 +131,38 @@ public class GuiHelper {
         Constructor<? extends IConfigGuiElement> constructor = categoryMeta.containerClass().getDeclaredConstructor(IGuiContext.class, GuiObjectAccess.class, List.class);
         constructor.setAccessible(true);
         return constructor.newInstance(context, access, elements);
+    }
+
+    /**
+     * @return a {@link NumberFormat} for numbers which can be used in the current locale
+     */
+    public NumberFormat numberFormat() {
+        NumberFormat numberFormat = NumberFormat.getInstance(MC.languageManager.getCurrentLanguage().getJavaLocale());
+        numberFormat.setMaximumFractionDigits(2);
+        return numberFormat;
+    }
+
+    /**
+     * @return a {@link NumberFormat} for percentages which can be used in the current locale
+     */
+    public NumberFormat percentFormat() {
+        NumberFormat numberFormat = NumberFormat.getPercentInstance(MC.languageManager.getCurrentLanguage().getJavaLocale());
+        numberFormat.setMaximumFractionDigits(2);
+        return numberFormat;
+    }
+
+    /**
+     * Formats a byte count as a human-readable number in the current locale.
+     *
+     * @param size the byte count
+     * @return the formatted count
+     */
+    public String formatByteCount(long size) {
+        for (long log1024 = 6L; ; log1024--) {
+            long fac = 1L << (log1024 * 10L);
+            if (log1024 == 0L || abs(size) >= fac) {
+                return I18n.format(MODID + ".util.numberFormat.bytes." + log1024, numberFormat().format(size / (double) fac));
+            }
+        }
     }
 }

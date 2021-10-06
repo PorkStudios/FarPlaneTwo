@@ -26,9 +26,11 @@ import io.netty.buffer.Unpooled;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.util.SimpleRecycler;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.compression.zstd.Zstd;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -100,5 +102,19 @@ public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> imp
     @Override
     public ITileSnapshot<POS, T> compressed() {
         return this; //we're already compressed!
+    }
+
+    @DebugOnly
+    @Override
+    public DebugStats.TileSnapshot stats() {
+        if (this.data == null) { //this tile is empty!
+            return DebugStats.TileSnapshot.ZERO;
+        } else {
+            return DebugStats.TileSnapshot.builder()
+                    .allocatedSpace(this.data.length)
+                    .totalSpace(this.data.length)
+                    .uncompressedSize(Zstd.PROVIDER.frameContentSize(Unpooled.wrappedBuffer(this.data)))
+                    .build();
+        }
     }
 }

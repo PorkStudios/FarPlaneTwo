@@ -29,6 +29,7 @@ import net.daporkchop.fp2.client.gl.command.IMultipassDrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -39,6 +40,7 @@ import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.util.alloc.Allocator;
 import net.daporkchop.fp2.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.util.alloc.SequentialFixedSizeAllocator;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.fp2.util.datastructure.SimpleSet;
 import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
@@ -131,6 +133,14 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
         }
 
         this.levels[level].draw(pass);
+    }
+
+    @DebugOnly
+    @Override
+    public DebugStats.Renderer stats() {
+        return Stream.of(this.levels)
+                .map(Level::stats)
+                .reduce(DebugStats.Renderer.builder().bakedTiles(this.renderablePositions.count()).build(), DebugStats.Renderer::add);
     }
 
     /**
@@ -313,6 +323,14 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
             Stream.of(this.vaos).forEach(VertexArrayObject::delete);
             this.positionsBuffer.delete();
             this.commandBuffer.release();
+        }
+
+        @DebugOnly
+        protected DebugStats.Renderer stats() {
+            return DebugStats.Renderer.builder()
+                    .bakedTilesWithData(this.positionsToSlots.size())
+                    .build()
+                    .add(this.storage.stats());
         }
     }
 }

@@ -18,36 +18,31 @@
  *
  */
 
-package net.daporkchop.fp2.debug.util;
-
-import lombok.NonNull;
-import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
-import net.minecraft.util.text.TextComponentString;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-
-import static net.daporkchop.fp2.util.Constants.*;
+package net.daporkchop.fp2.util.annotation;
 
 /**
- * Debug mode utility methods.
+ * Defines how to handle removal of an element which is being deleted at runtime by another annotation.
  *
  * @author DaPorkchop_
+ * @see DebugOnly
  */
-@UtilityClass
-@DebugOnly
-public class DebugUtils {
-    public static final String CHAT_PREFIX = "§8§l[§9FarPlaneTwo Debug§8§l]§r ";
-
-    @SideOnly(Side.CLIENT)
-    public void clientMsg(@NonNull String msg) {
-        clientMsg(CHAT_PREFIX, msg);
-    }
-
-    @SideOnly(Side.CLIENT)
-    public void clientMsg(@NonNull String prefix, @NonNull String msg) {
-        for (String line : msg.split("\n")) {
-            MC.player.sendMessage(new TextComponentString(prefix + line));
-        }
-    }
+public enum RemovalPolicy {
+    /**
+     * The element will be removed from the class bytecode, but all references to it will be left as-is.
+     */
+    DELETE,
+    /**
+     * The element will be removed from the class bytecode. Any bytecode references to it will cause an exception to be thrown during class loading.
+     */
+    ERROR_LOAD,
+    /**
+     * The element will be removed from the class bytecode. Any bytecode references to it will be replaced with bytecode equivalent to {@code throw new AssertionError();}.
+     */
+    ERROR_RUNTIME,
+    /**
+     * The element will be removed from the class bytecode, and all references to it will be silently discarded.
+     * <p>
+     * Note that this WILL cause issues if the member's (return) value is used.
+     */
+    DROP;
 }

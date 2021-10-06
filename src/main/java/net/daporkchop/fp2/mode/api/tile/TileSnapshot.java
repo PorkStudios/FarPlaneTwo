@@ -26,10 +26,12 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.util.SimpleRecycler;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
 
 /**
  * @author DaPorkchop_
@@ -87,5 +89,19 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements IT
     @Override
     public ITileSnapshot<POS, T> compressed() {
         return new CompressedTileSnapshot<>(this);
+    }
+
+    @DebugOnly
+    @Override
+    public DebugStats.TileSnapshot stats() {
+        if (this.data == null) { //this tile is empty!
+            return DebugStats.TileSnapshot.ZERO;
+        } else {
+            return DebugStats.TileSnapshot.builder()
+                    .allocatedSpace(this.data.length)
+                    .totalSpace(this.data.length)
+                    .uncompressedSize(this.data.length)
+                    .build();
+        }
     }
 }

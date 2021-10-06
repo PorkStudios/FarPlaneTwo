@@ -21,10 +21,12 @@
 package net.daporkchop.fp2.mode.api.client;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.unsafe.capability.Releasable;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -74,6 +76,9 @@ public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> extends 
      * @return the tiles at the given positions. Tiles that were not present in the cache will be {@code null}
      */
     Stream<ITileSnapshot<POS, T>> getTilesCached(@NonNull Stream<POS> positions);
+
+    @DebugOnly
+    DebugStats.TileCache stats();
 
     /**
      * Receives notifications when a tile is updated in a {@link IFarTileCache}.
