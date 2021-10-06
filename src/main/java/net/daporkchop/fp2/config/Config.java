@@ -147,7 +147,7 @@ public class Config {
          * <p>
          * Note that if this constant is defined, both {@link #min()} and {@link #max()} must be multiples of it.
          */
-        Constant snapTo() default @Constant;
+        Constant snapTo() default @Constant(field = "<null>");
     }
 
     /**

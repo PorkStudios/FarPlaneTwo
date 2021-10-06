@@ -80,6 +80,10 @@ public class ConfigHelper {
         String fieldId = constant.field();
         String methodId = constant.method();
 
+        if ("<null>".equals(fieldId)) { //annotation has specifically requested to return null
+            return null;
+        }
+
         checkArg((Double.isNaN(value) ? 0 : 1) + (fieldId.isEmpty() ? 0 : 1) + (methodId.isEmpty() ? 0 : 1) == 1,
                 "invalid @Constant annotation: exactly one of 'value', 'field' and 'method' must be set!");
 
