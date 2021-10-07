@@ -158,8 +158,6 @@ public class RenderDistanceContainer extends VerticallyStackedContainer<FP2Confi
         public GuiDynamicLabel(@NonNull IGuiContext context, @NonNull GuiObjectAccess<FP2Config> access, @NonNull BiFunction<FP2Config, String, LabelContents>... labels) {
             super(context);
 
-            MC.languageManager.onResourceManagerReload(MC.resourceManager);
-
             this.access = access;
             this.labels = labels;
         }
