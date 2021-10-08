@@ -25,7 +25,10 @@ import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.net.packet.debug.server.SPacketDebugUpdateStatistics;
+import net.daporkchop.fp2.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -37,12 +40,29 @@ public interface IFarPlayerClient {
     @CalledFromNetworkThread
     void fp2_IFarPlayerClient_handle(@NonNull Object packet);
 
+    @DebugOnly
+    @CalledFromNetworkThread
+    void fp2_IFarPlayerClient_handleDebug(@NonNull Object packet);
+
+    @DebugOnly
+    @CalledFromAnyThread
+    SPacketDebugUpdateStatistics fp2_IFarPlayerClient_debugServerStats();
+
+    /**
+     * @return the server's config, or {@code null} if none/currently unknown
+     */
+    @CalledFromAnyThread
     FP2Config fp2_IFarPlayerClient_serverConfig();
 
+    /**
+     * @return the current effective config (merged result of client and server config), or {@code null} if none
+     */
+    @CalledFromAnyThread
     FP2Config fp2_IFarPlayerClient_config();
 
     /**
      * @return the currently active render context, or {@code null} if none are active
      */
+    @CalledFromAnyThread
     <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> fp2_IFarPlayerClient_activeContext();
 }

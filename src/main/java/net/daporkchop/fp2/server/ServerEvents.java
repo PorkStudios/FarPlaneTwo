@@ -25,7 +25,7 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
-import net.daporkchop.fp2.net.packet.server.SPacketHandshake;
+import net.daporkchop.fp2.net.packet.standard.server.SPacketHandshake;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.text.TextComponentTranslation;

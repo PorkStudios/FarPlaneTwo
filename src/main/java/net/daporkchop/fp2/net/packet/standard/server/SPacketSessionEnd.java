@@ -18,32 +18,22 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.client;
+package net.daporkchop.fp2.net.packet.standard.server;
 
 import io.netty.buffer.ByteBuf;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.util.Constants;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
 /**
+ * Notifies the client to stop the current session.
+ *
  * @author DaPorkchop_
  */
-@Setter
-@Getter
-public class CPacketClientConfig implements IMessage {
-    @NonNull
-    protected FP2Config config;
-
+public class SPacketSessionEnd implements IMessage {
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.config = FP2Config.parse(Constants.readString(buf));
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        Constants.writeString(buf, this.config.toString());
     }
 }

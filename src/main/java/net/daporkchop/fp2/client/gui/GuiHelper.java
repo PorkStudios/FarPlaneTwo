@@ -40,6 +40,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static java.lang.Math.*;
@@ -154,14 +156,30 @@ public class GuiHelper {
     /**
      * Formats a byte count as a human-readable number in the current locale.
      *
-     * @param size the byte count
+     * @param bytes the byte count
      * @return the formatted count
      */
-    public String formatByteCount(long size) {
+    public String formatByteCount(long bytes) {
         for (long log1024 = 6L; ; log1024--) {
             long fac = 1L << (log1024 * 10L);
-            if (log1024 == 0L || abs(size) >= fac) {
-                return I18n.format(MODID + ".util.numberFormat.bytes." + log1024, numberFormat().format(size / (double) fac));
+            if (log1024 == 0L || abs(bytes) >= fac) {
+                return I18n.format(MODID + ".util.numberFormat.bytes." + log1024, numberFormat().format(bytes / (double) fac));
+            }
+        }
+    }
+
+    /**
+     * Formats a duration as a human-readable number in the current locale.
+     *
+     * @param nanos the duration (in nanoseconds)
+     * @return the formatted count
+     */
+    public String formatDuration(long nanos) {
+        TimeUnit[] units = TimeUnit.values();
+        for (int i = units.length - 1; ; i--) { //iterate backwards
+            long fac = units[i].toNanos(1L);
+            if (fac == 1L || abs(nanos) >= fac) {
+                return I18n.format(MODID + ".util.numberFormat.time." + units[i].name().toLowerCase(Locale.ROOT), numberFormat().format(nanos / (double) fac));
             }
         }
     }

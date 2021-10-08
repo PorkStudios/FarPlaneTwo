@@ -31,10 +31,13 @@ import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
-import net.daporkchop.fp2.net.packet.server.SPacketTileData;
-import net.daporkchop.fp2.net.packet.server.SPacketUnloadTile;
+import net.daporkchop.fp2.net.packet.debug.server.SPacketDebugUpdateStatistics;
+import net.daporkchop.fp2.net.packet.standard.server.SPacketTileData;
+import net.daporkchop.fp2.net.packet.standard.server.SPacketUnloadTile;
 import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
+import net.daporkchop.fp2.util.annotation.RemovalPolicy;
 
 import java.util.Map;
 import java.util.Optional;
@@ -59,6 +62,9 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
     protected FP2Config config;
 
     protected boolean closed = false;
+
+    @DebugOnly
+    private int debugLastUpdateSent;
 
     public AbstractFarServerContext(@NonNull IFarPlayerServer player, @NonNull IFarWorldServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<POS, T> mode) {
         this.player = player;
@@ -87,6 +93,7 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
         this.tileProvider.tracker().playerUpdate(this);
 
         this.flushSendQueue();
+        this.debugUpdate();
     }
 
     @Synchronized("sendQueue")
@@ -96,6 +103,15 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
                     ? new SPacketTileData().mode(this.mode).tile(optionalSnapshot.get())
                     : new SPacketUnloadTile().mode(this.mode).pos(pos)));
             this.sendQueue.clear();
+        }
+    }
+
+    @DebugOnly(RemovalPolicy.DROP)
+    private void debugUpdate() {
+        if (++this.debugLastUpdateSent == 20) { //send a debug statistics update packet once every 20s
+            this.debugLastUpdateSent = 0;
+
+            this.player.fp2_IFarPlayer_debugSendPacket(new SPacketDebugUpdateStatistics().trackingPlayer(this.tileProvider.tracker().statsFor(this)));
         }
     }
 

@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.server;
+package net.daporkchop.fp2.net.packet.standard.server;
 
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;

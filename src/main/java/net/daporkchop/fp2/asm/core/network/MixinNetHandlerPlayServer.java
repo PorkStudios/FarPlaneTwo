@@ -26,13 +26,15 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
-import net.daporkchop.fp2.net.packet.client.CPacketClientConfig;
-import net.daporkchop.fp2.net.packet.client.CPacketDropAllTiles;
-import net.daporkchop.fp2.net.packet.server.SPacketSessionBegin;
-import net.daporkchop.fp2.net.packet.server.SPacketSessionEnd;
-import net.daporkchop.fp2.net.packet.server.SPacketUpdateConfig;
+import net.daporkchop.fp2.net.FP2Network;
+import net.daporkchop.fp2.net.packet.debug.client.CPacketDebugDropAllTiles;
+import net.daporkchop.fp2.net.packet.standard.client.CPacketClientConfig;
+import net.daporkchop.fp2.net.packet.standard.server.SPacketSessionBegin;
+import net.daporkchop.fp2.net.packet.standard.server.SPacketSessionEnd;
+import net.daporkchop.fp2.net.packet.standard.server.SPacketUpdateConfig;
 import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.math.vector.d.Vec3d;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.NetHandlerPlayServer;
@@ -48,6 +50,7 @@ import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.FP2.*;
 import static net.daporkchop.fp2.debug.FP2Debug.*;
+import static net.daporkchop.fp2.net.FP2Network.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -91,9 +94,7 @@ public abstract class MixinNetHandlerPlayServer implements IFarPlayerServer {
     public void fp2_IFarPlayerServer_handle(@NonNull Object packet) {
         this.world.fp2_IFarWorld_scheduleTask(() -> { //TODO: move all logic to network threads
             if (packet instanceof CPacketClientConfig) {
-                this.handleClientConfig((CPacketClientConfig) packet);
-            } else if (packet instanceof CPacketDropAllTiles) {
-                this.handleDropAllTiles((CPacketDropAllTiles) packet);
+                this.handle((CPacketClientConfig) packet);
             } else {
                 throw new IllegalArgumentException("don't know how to handle " + className(packet));
             }
@@ -101,12 +102,26 @@ public abstract class MixinNetHandlerPlayServer implements IFarPlayerServer {
     }
 
     @Unique
-    private void handleClientConfig(@NonNull CPacketClientConfig packet) {
+    private void handle(@NonNull CPacketClientConfig packet) {
         this.updateConfig(this.serverConfig, packet.config());
     }
 
+    @DebugOnly
+    @CalledFromNetworkThread
+    @Override
+    public void fp2_IFarPlayerServer_handleDebug(@NonNull Object packet) {
+        this.world.fp2_IFarWorld_scheduleTask(() -> { //TODO: move all logic to network threads
+            if (packet instanceof CPacketDebugDropAllTiles) {
+                this.handleDebug((CPacketDebugDropAllTiles) packet);
+            } else {
+                throw new IllegalArgumentException("don't know how to handle " + className(packet));
+            }
+        });
+    }
+
+    @DebugOnly
     @Unique
-    private void handleDropAllTiles(@NonNull CPacketDropAllTiles packet) {
+    private void handleDebug(@NonNull CPacketDebugDropAllTiles packet) {
         if (!FP2_DEBUG) {
             this.disconnect(new TextComponentTranslation(MODID + ".debug.debugModeNotEnabled"));
             return;
@@ -114,7 +129,7 @@ public abstract class MixinNetHandlerPlayServer implements IFarPlayerServer {
 
         this.world.fp2_IFarWorld_scheduleTask(() -> {
             FP2_LOG.info("Dropping all tiles");
-            this.world.fp2_IFarWorldServer_forEachTileProvider(tileProvider -> tileProvider.tracker().debug_dropAllTiles());
+            this.world.fp2_IFarWorldServer_forEachTileProvider(tileProvider -> tileProvider.tracker().dropAllTiles());
         });
     }
 
@@ -217,7 +232,15 @@ public abstract class MixinNetHandlerPlayServer implements IFarPlayerServer {
     @Override
     public void fp2_IFarPlayer_sendPacket(@NonNull IMessage packet) {
         if (!this.closed) {
-            NETWORK_WRAPPER.sendTo(packet, this.player);
+            PROTOCOL_FP2.sendTo(packet, this.player);
+        }
+    }
+
+    @DebugOnly
+    @Override
+    public void fp2_IFarPlayer_debugSendPacket(@NonNull IMessage packet) {
+        if (!this.closed) {
+            PROTOCOL_DEBUG.sendTo(packet, this.player);
         }
     }
 

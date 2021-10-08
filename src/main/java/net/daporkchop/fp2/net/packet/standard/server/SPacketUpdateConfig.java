@@ -18,44 +18,47 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.player;
+package net.daporkchop.fp2.net.packet.standard.server;
 
-import lombok.NonNull;
+import io.netty.buffer.ByteBuf;
+import lombok.Getter;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
-import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
-import net.daporkchop.lib.math.vector.d.Vec3d;
+import net.daporkchop.fp2.util.Constants;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarPlayerServer {
-    Vec3d fp2_IFarPlayer_position();
+@Getter
+public abstract class SPacketUpdateConfig<I extends SPacketUpdateConfig<I>> implements IMessage {
+    protected FP2Config config;
 
-    @CalledFromNetworkThread
-    void fp2_IFarPlayerServer_handle(@NonNull Object packet);
+    public I config(FP2Config config) {
+        this.config = config;
+        return uncheckedCast(this);
+    }
 
-    @DebugOnly
-    @CalledFromNetworkThread
-    void fp2_IFarPlayerServer_handleDebug(@NonNull Object packet);
+    @Override
+    public void fromBytes(ByteBuf buf) {
+        this.config = FP2Config.fromJson(Constants.readString(buf));
+    }
 
-    @CalledFromServerThread
-    void fp2_IFarPlayer_serverConfig(FP2Config serverConfig);
+    @Override
+    public void toBytes(ByteBuf buf) {
+        Constants.writeString(buf, FP2Config.toJson(this.config));
+    }
 
-    @CalledFromServerThread
-    void fp2_IFarPlayer_joinedWorld(@NonNull IFarWorldServer world);
+    /**
+     * @author DaPorkchop_
+     */
+    public static class Merged extends SPacketUpdateConfig<Merged> {
+    }
 
-    void fp2_IFarPlayer_sendPacket(@NonNull IMessage packet);
-
-    @DebugOnly
-    void fp2_IFarPlayer_debugSendPacket(@NonNull IMessage packet);
-
-    @CalledFromServerThread
-    void fp2_IFarPlayer_update();
-
-    @CalledFromServerThread
-    void fp2_IFarPlayer_close();
+    /**
+     * @author DaPorkchop_
+     */
+    public static class Server extends SPacketUpdateConfig<Server> {
+    }
 }

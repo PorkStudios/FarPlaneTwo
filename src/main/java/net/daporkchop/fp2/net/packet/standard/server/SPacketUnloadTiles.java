@@ -18,22 +18,45 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.server;
+package net.daporkchop.fp2.net.packet.standard.server;
 
 import io.netty.buffer.ByteBuf;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.util.Constants;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 /**
- * Notifies the client to stop the current session.
- *
  * @author DaPorkchop_
  */
-public class SPacketSessionEnd implements IMessage {
+@Getter
+@Setter
+public class SPacketUnloadTiles implements IMessage {
+    @NonNull
+    protected IFarRenderMode<?, ?> mode;
+    @NonNull
+    protected Collection<IFarPos> positions;
+
     @Override
     public void fromBytes(ByteBuf buf) {
+        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
+        int size = Constants.readVarInt(buf);
+        this.positions = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            this.positions.add(this.mode.readPos(buf));
+        }
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
+        Constants.writeString(buf, this.mode.name());
+        Constants.writeVarInt(buf, this.positions.size());
+        this.positions.forEach(pos -> pos.writePos(buf));
     }
 }

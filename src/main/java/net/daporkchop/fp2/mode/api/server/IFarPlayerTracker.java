@@ -21,10 +21,12 @@
 package net.daporkchop.fp2.mode.api.server;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
 
 /**
  * @author DaPorkchop_
@@ -39,8 +41,12 @@ public interface IFarPlayerTracker<POS extends IFarPos, T extends IFarTile> exte
     @CalledFromServerThread
     void playerUpdate(@NonNull IFarServerContext<POS, T> context);
 
+    @DebugOnly
     @CalledFromServerThread
-    void debug_dropAllTiles();
+    void dropAllTiles();
+
+    @DebugOnly
+    DebugStats.TrackingPlayer statsFor(@NonNull IFarServerContext<POS, T> context);
 
     @CalledFromServerThread
     @Override

@@ -28,6 +28,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
@@ -38,6 +39,8 @@ import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
+import net.daporkchop.fp2.util.annotation.RemovalPolicy;
 import net.daporkchop.fp2.util.datastructure.CompactReferenceArraySet;
 import net.daporkchop.fp2.util.datastructure.RecyclingArrayDeque;
 import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
@@ -178,17 +181,42 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         });
     }
 
+    @DebugOnly
     @CalledFromServerThread
     @Override
-    public void debug_dropAllTiles() {
-        ThreadingHelper.scheduleTaskInWorldThread(this.world.world(), () -> {
-            Collection<IFarServerContext<POS, T>> trackedContextsSnapshot = new ArrayList<>(this.contexts.keySet());
-            trackedContextsSnapshot.forEach(this::playerRemove);
+    public void dropAllTiles() {
+        Collection<IFarServerContext<POS, T>> trackedContextsSnapshot = new ArrayList<>(this.contexts.keySet());
+        trackedContextsSnapshot.forEach(this::playerRemove);
 
-            //it should be reasonably safe to assume that all pending tasks will have been cancelled by now
+        //it should be reasonably safe to assume that all pending tasks will have been cancelled by now
 
-            trackedContextsSnapshot.forEach(this::playerAdd);
-        });
+        trackedContextsSnapshot.forEach(this::playerAdd);
+    }
+
+    @DebugOnly
+    @Override
+    public DebugStats.TrackingPlayer statsFor(@NonNull IFarServerContext<POS, T> context) {
+        @DebugOnly
+        class State implements BiFunction<IFarServerContext<POS, T>, Context, Context> {
+            DebugStats.TrackingPlayer stats;
+
+            @Override
+            public Context apply(IFarServerContext<POS, T> c, Context ctx) {
+                this.stats = DebugStats.TrackingPlayer.builder()
+                        .tilesLoaded(ctx.loadedPositions.size())
+                        .tilesLoading(ctx.waitingPositions.size())
+                        .tilesQueued(ctx.queuedPositions.size())
+                        .lastUpdateTime(ctx.lastUpdateTime)
+                        .avgUpdateTime(ctx.lastUpdateTime)
+                        .build();
+
+                return ctx;
+            }
+        }
+
+        State state = new State();
+        this.contexts.computeIfPresent(context, state);
+        return state.stats;
     }
 
     protected abstract STATE currentStateFor(@NonNull IFarServerContext<POS, T> context);
@@ -243,6 +271,9 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         protected volatile STATE lastState;
         protected volatile STATE nextState;
 
+        @DebugOnly(RemovalPolicy.DROP)
+        protected long lastUpdateTime;
+
         /**
          * Considers scheduling this player for a tracking update.
          * <p>
@@ -266,6 +297,8 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
          * Must be called on this context's worker thread.
          */
         private void update() {
+            long startTime = System.nanoTime();
+
             try {
                 this.assertOnTrackerThread();
 
@@ -310,6 +343,8 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
             //double-check to make sure the load queue is totally filled
             this.fillLoadQueue();
+
+            this.lastUpdateTime = System.nanoTime() - startTime;
         }
 
         private void fillLoadQueue() {

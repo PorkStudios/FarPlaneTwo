@@ -18,20 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.client;
+package net.daporkchop.fp2.net.packet.standard.server;
 
 import io.netty.buffer.ByteBuf;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
+import net.daporkchop.fp2.util.Constants;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
 /**
  * @author DaPorkchop_
  */
-public class CPacketDropAllTiles implements IMessage {
+@Getter
+@Setter
+public class SPacketTileData implements IMessage {
+    @NonNull
+    protected IFarRenderMode<?, ?> mode;
+    @NonNull
+    protected TileSnapshot<?, ?> tile;
+
     @Override
     public void fromBytes(ByteBuf buf) {
+        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
+        this.tile = new TileSnapshot<>(buf, this.mode);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
+        Constants.writeString(buf, this.mode.name());
+        this.tile.write(buf);
     }
 }

@@ -26,7 +26,7 @@ import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.debug.util.DebugUtils;
-import net.daporkchop.fp2.net.packet.client.CPacketDropAllTiles;
+import net.daporkchop.fp2.net.packet.debug.client.CPacketDebugDropAllTiles;
 import net.minecraft.client.gui.GuiIngameMenu;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
@@ -37,7 +37,7 @@ import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.net.FP2Network.*;
 
 /**
  * @author DaPorkchop_
@@ -50,7 +50,7 @@ public class DebugClientEvents {
             ShaderManager.reload(true);
         }
         if (DebugKeyBindings.DROP_TILES.isPressed()) {
-            NETWORK_WRAPPER.sendToServer(new CPacketDropAllTiles());
+            PROTOCOL_DEBUG.sendToServer(new CPacketDebugDropAllTiles());
             DebugUtils.clientMsg("§aReloading all tiles");
         }
         if (DebugKeyBindings.REBUILD_UVS.isPressed()) {

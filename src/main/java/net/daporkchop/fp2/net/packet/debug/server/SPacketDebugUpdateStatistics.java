@@ -18,23 +18,33 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.server;
+package net.daporkchop.fp2.net.packet.debug.server;
 
 import io.netty.buffer.ByteBuf;
+import lombok.Getter;
+import lombok.Setter;
+import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
+import static net.daporkchop.fp2.util.Constants.*;
+
 /**
- * Sent by the server to tell the client that FP2 is present on the remote server and that it should send its config to the server in order to continue
- * the handshake process.
- *
  * @author DaPorkchop_
  */
-public class SPacketHandshake implements IMessage {
+@Getter
+@Setter
+@DebugOnly
+public class SPacketDebugUpdateStatistics implements IMessage {
+    protected DebugStats.TrackingPlayer trackingPlayer;
+
     @Override
     public void fromBytes(ByteBuf buf) {
+        this.trackingPlayer = GSON.fromJson(readString(buf), DebugStats.TrackingPlayer.class);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
+        writeString(buf, GSON.toJson(this.trackingPlayer));
     }
 }

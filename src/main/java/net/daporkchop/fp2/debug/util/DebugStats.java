@@ -25,11 +25,18 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import java.lang.reflect.Modifier;
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.stream.Stream;
+
 import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Container class for various structs containing statistics useful while debugging.
@@ -42,72 +49,115 @@ public class DebugStats {
     /**
      * @author DaPorkchop_
      */
+    public interface $Stats<S extends $Stats<S>> {
+        /**
+         * Adds the given {@link S} instance to this instance, returning a new instance with the result.
+         *
+         * @param other the other instance
+         * @return an instance with the result
+         */
+        S add(@NonNull S other);
+
+        /**
+         * Subtracts the given {@link S} instance from this instance, returning a new instance with the result.
+         *
+         * @param other the other instance
+         * @return an instance with the result
+         */
+        S sub(@NonNull S other);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public abstract class $AbstractSimpleIntegerStats<S extends $AbstractSimpleIntegerStats<S>> implements $Stats<S> {
+        private static final Map<Class<? extends $AbstractSimpleIntegerStats>, long[]> OFFSETS_CACHE = new IdentityHashMap<>();
+
+        private static long[] offsets(@NonNull Class<? extends $AbstractSimpleIntegerStats> clazz) {
+            long[] offsets = OFFSETS_CACHE.get(clazz);
+            return offsets != null ? offsets : computeOffsets(clazz);
+        }
+
+        private static long[] computeOffsets(@NonNull Class<? extends $AbstractSimpleIntegerStats> clazz) {
+            long[] offsets = Stream.of(clazz.getDeclaredFields())
+                    .filter(field -> (field.getModifiers() & Modifier.STATIC) == 0)
+                    .peek(field -> checkState(field.getType() == long.class, "field type must be long: %s", field))
+                    .mapToLong(PUnsafe::objectFieldOffset)
+                    .sorted()
+                    .toArray();
+
+            synchronized (OFFSETS_CACHE) {
+                OFFSETS_CACHE.putIfAbsent(clazz, offsets);
+            }
+
+            return offsets;
+        }
+
+        @Override
+        public S add(@NonNull S other) {
+            S out = uncheckedCast(PUnsafe.allocateInstance(this.getClass()));
+            for (long offset : offsets(this.getClass())) {
+                PUnsafe.putLong(out, offset, PUnsafe.getLong(this, offset) + PUnsafe.getLong(other, offset));
+            }
+            return out;
+        }
+
+        @Override
+        public S sub(@NonNull S other) {
+            S out = uncheckedCast(PUnsafe.allocateInstance(this.getClass()));
+            for (long offset : offsets(this.getClass())) {
+                PUnsafe.putLong(out, offset, PUnsafe.getLong(this, offset) - PUnsafe.getLong(other, offset));
+            }
+            return out;
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
     @Builder
     @Data
-    public static final class TileSnapshot {
+    public static final class Allocator extends $AbstractSimpleIntegerStats<Allocator> {
+        public static final Allocator ZERO = builder().build();
+
+        protected final long heapRegions;
+        protected final long allocations;
+
+        protected final long allocatedSpace;
+        protected final long totalSpace;
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Builder
+    @Data
+    public static final class TileSnapshot extends $AbstractSimpleIntegerStats<TileSnapshot> {
         public static final TileSnapshot ZERO = builder().build();
 
         protected final long allocatedSpace;
         protected final long totalSpace;
 
         protected final long uncompressedSize;
-
-        /**
-         * Combines two {@link TileSnapshot} instances.
-         *
-         * @param other the other instance
-         * @return an instance with the combined values
-         */
-        public TileSnapshot add(@NonNull TileSnapshot other) {
-            return new TileSnapshot(
-                    this.allocatedSpace + other.allocatedSpace,
-                    this.totalSpace + other.totalSpace,
-                    this.uncompressedSize + other.uncompressedSize);
-        }
-
-        /**
-         * Subtracts the given {@link TileSnapshot} instance from this instance.
-         *
-         * @param other the other instance
-         * @return an instance with the subtracted values
-         */
-        public TileSnapshot sub(@NonNull TileSnapshot other) {
-            return new TileSnapshot(
-                    this.allocatedSpace - other.allocatedSpace,
-                    this.totalSpace - other.totalSpace,
-                    this.uncompressedSize - other.uncompressedSize);
-        }
     }
-    
+
     /**
      * @author DaPorkchop_
      */
     @Builder
     @Data
-    public static final class TileCache {
-        public static final TileCache ZERO = builder().build();
+    public static final class TrackingPlayer extends $AbstractSimpleIntegerStats<TrackingPlayer> {
+        public static final TrackingPlayer ZERO = builder().build();
 
-        protected final long tileCount;
-        protected final long tileCountWithData;
+        protected final long tilesLoaded;
+        protected final long tilesLoading;
+        protected final long tilesQueued;
 
-        protected final long allocatedSpace;
-        protected final long totalSpace;
-        
-        protected final long uncompressedSize;
+        protected final long avgUpdateTime;
+        protected final long lastUpdateTime;
 
-        /**
-         * Combines two {@link TileCache} instances.
-         *
-         * @param other the other instance
-         * @return an instance with the combined values
-         */
-        public TileCache add(@NonNull TileCache other) {
-            return new TileCache(
-                    this.tileCount + other.tileCount,
-                    this.tileCountWithData + other.tileCountWithData,
-                    this.allocatedSpace + other.allocatedSpace,
-                    this.totalSpace + other.totalSpace,
-                    this.uncompressedSize + other.uncompressedSize);
+        public long tilesTotal() {
+            return this.tilesLoaded + this.tilesLoading + this.tilesQueued;
         }
     }
 
@@ -117,7 +167,25 @@ public class DebugStats {
     @Builder
     @Data
     @SideOnly(Side.CLIENT)
-    public static final class Renderer {
+    public static final class TileCache extends $AbstractSimpleIntegerStats<TileCache> {
+        public static final TileCache ZERO = builder().build();
+
+        protected final long tileCount;
+        protected final long tileCountWithData;
+
+        protected final long allocatedSpace;
+        protected final long totalSpace;
+
+        protected final long uncompressedSize;
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Builder
+    @Data
+    @SideOnly(Side.CLIENT)
+    public static final class Renderer implements $Stats<Renderer> {
         public static final Renderer ZERO = builder().build();
 
         protected final long bakedTiles;
@@ -134,15 +202,10 @@ public class DebugStats {
         protected final long totalVertices;
         protected final long vertexSize;
 
-        /**
-         * Combines two {@link Renderer} instances.
-         *
-         * @param other the other instance
-         * @return an instance with the combined values
-         */
+        @Override
         public Renderer add(@NonNull Renderer other) {
-            checkArg(((this.indexSize == 0L) ^ (other.indexSize == 0L)) || this.indexSize == other.indexSize, "cannot add renderer debug stats with different index sizes (%d != %d)", this.indexSize, other.indexSize);
-            checkArg(((this.vertexSize == 0L) ^ (other.vertexSize == 0L)) || this.vertexSize == other.vertexSize, "cannot add renderer debug stats with different index sizes (%d != %d)", this.indexSize, other.indexSize);
+            checkArg(((this.indexSize == 0L) ^ (other.indexSize == 0L)) || this.indexSize == other.indexSize, "cannot merge renderer debug stats with different index sizes (%d != %d)", this.indexSize, other.indexSize);
+            checkArg(((this.vertexSize == 0L) ^ (other.vertexSize == 0L)) || this.vertexSize == other.vertexSize, "cannot merge renderer debug stats with different index sizes (%d != %d)", this.indexSize, other.indexSize);
 
             long thisIndexMask = this.indexSize != 0L ? -1L : 0L;
             long otherIndexMask = other.indexSize != 0L ? -1L : 0L;
@@ -160,34 +223,27 @@ public class DebugStats {
                     (this.totalVertices & thisVertexMask) + (other.totalVertices & otherVertexMask),
                     max(this.vertexSize, other.vertexSize));
         }
-    }
 
-    /**
-     * @author DaPorkchop_
-     */
-    @Builder
-    @Data
-    public static final class Allocator {
-        public static final Allocator ZERO = builder().build();
+        @Override
+        public Renderer sub(@NonNull Renderer other) {
+            checkArg(((this.indexSize == 0L) ^ (other.indexSize == 0L)) || this.indexSize == other.indexSize, "cannot merge renderer debug stats with different index sizes (%d != %d)", this.indexSize, other.indexSize);
+            checkArg(((this.vertexSize == 0L) ^ (other.vertexSize == 0L)) || this.vertexSize == other.vertexSize, "cannot merge renderer debug stats with different index sizes (%d != %d)", this.indexSize, other.indexSize);
 
-        protected final long heapRegions;
-        protected final long allocations;
+            long thisIndexMask = this.indexSize != 0L ? -1L : 0L;
+            long otherIndexMask = other.indexSize != 0L ? -1L : 0L;
+            long thisVertexMask = this.vertexSize != 0L ? -1L : 0L;
+            long otherVertexMask = other.vertexSize != 0L ? -1L : 0L;
 
-        protected final long allocatedSpace;
-        protected final long totalSpace;
-
-        /**
-         * Combines two {@link Allocator} instances.
-         *
-         * @param other the other instance
-         * @return an instance with the combined values
-         */
-        public Allocator add(@NonNull Allocator other) {
-            return new Allocator(
-                    this.heapRegions + other.heapRegions,
-                    this.allocations + other.allocations,
-                    this.allocatedSpace + other.allocatedSpace,
-                    this.totalSpace + other.totalSpace);
+            return new Renderer(this.bakedTiles - other.bakedTiles,
+                    this.bakedTilesWithData - other.bakedTilesWithData,
+                    this.allocatedVRAM - other.allocatedVRAM,
+                    this.totalVRAM - other.totalVRAM,
+                    (this.allocatedIndices & thisIndexMask) - (other.allocatedIndices & otherIndexMask),
+                    (this.totalIndices & thisIndexMask) - (other.totalIndices & otherIndexMask),
+                    max(this.indexSize, other.indexSize),
+                    (this.allocatedVertices & thisVertexMask) - (other.allocatedVertices & otherVertexMask),
+                    (this.totalVertices & thisVertexMask) - (other.totalVertices & otherVertexMask),
+                    max(this.vertexSize, other.vertexSize));
         }
     }
 }

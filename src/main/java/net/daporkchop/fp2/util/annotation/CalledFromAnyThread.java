@@ -18,45 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.server;
+package net.daporkchop.fp2.util.annotation;
 
-import io.netty.buffer.ByteBuf;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.util.Constants;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.*;
 
 /**
+ * Indicates that the annotated method must be able to be safely called from any thread at any time.
+ *
  * @author DaPorkchop_
  */
-@Getter
-@Setter
-public class SPacketUnloadTiles implements IMessage {
-    @NonNull
-    protected IFarRenderMode<?, ?> mode;
-    @NonNull
-    protected Collection<IFarPos> positions;
-
-    @Override
-    public void fromBytes(ByteBuf buf) {
-        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
-        int size = Constants.readVarInt(buf);
-        this.positions = new ArrayList<>(size);
-        for (int i = 0; i < size; i++) {
-            this.positions.add(this.mode.readPos(buf));
-        }
-    }
-
-    @Override
-    public void toBytes(ByteBuf buf) {
-        Constants.writeString(buf, this.mode.name());
-        Constants.writeVarInt(buf, this.positions.size());
-        this.positions.forEach(pos -> pos.writePos(buf));
-    }
+@Retention(CLASS)
+@Target(METHOD)
+public @interface CalledFromAnyThread {
 }

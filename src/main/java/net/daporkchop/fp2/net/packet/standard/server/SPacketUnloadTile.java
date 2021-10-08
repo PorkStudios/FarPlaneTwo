@@ -18,44 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.player;
+package net.daporkchop.fp2.net.packet.standard.server;
 
+import io.netty.buffer.ByteBuf;
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
-import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
-import net.daporkchop.lib.math.vector.d.Vec3d;
+import lombok.Setter;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.util.Constants;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarPlayerServer {
-    Vec3d fp2_IFarPlayer_position();
+@Getter
+@Setter
+public class SPacketUnloadTile implements IMessage {
+    @NonNull
+    protected IFarRenderMode<?, ?> mode;
+    @NonNull
+    protected IFarPos pos;
 
-    @CalledFromNetworkThread
-    void fp2_IFarPlayerServer_handle(@NonNull Object packet);
+    @Override
+    public void fromBytes(ByteBuf buf) {
+        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
+        this.pos = this.mode.readPos(buf);
+    }
 
-    @DebugOnly
-    @CalledFromNetworkThread
-    void fp2_IFarPlayerServer_handleDebug(@NonNull Object packet);
-
-    @CalledFromServerThread
-    void fp2_IFarPlayer_serverConfig(FP2Config serverConfig);
-
-    @CalledFromServerThread
-    void fp2_IFarPlayer_joinedWorld(@NonNull IFarWorldServer world);
-
-    void fp2_IFarPlayer_sendPacket(@NonNull IMessage packet);
-
-    @DebugOnly
-    void fp2_IFarPlayer_debugSendPacket(@NonNull IMessage packet);
-
-    @CalledFromServerThread
-    void fp2_IFarPlayer_update();
-
-    @CalledFromServerThread
-    void fp2_IFarPlayer_close();
+    @Override
+    public void toBytes(ByteBuf buf) {
+        Constants.writeString(buf, this.mode.name());
+        this.pos.writePos(buf);
+    }
 }
