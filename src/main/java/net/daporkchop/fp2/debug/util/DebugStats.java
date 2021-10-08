@@ -146,15 +146,15 @@ public class DebugStats {
      */
     @Builder
     @Data
-    public static final class TrackingPlayer extends $AbstractSimpleIntegerStats<TrackingPlayer> {
-        public static final TrackingPlayer ZERO = builder().build();
+    public static final class Tracking extends $AbstractSimpleIntegerStats<Tracking> {
+        public static final Tracking ZERO = builder().build();
 
         protected final long tilesLoaded;
         protected final long tilesLoading;
         protected final long tilesQueued;
 
-        protected final long avgUpdateTime;
-        protected final long lastUpdateTime;
+        protected final long avgUpdateDuration;
+        protected final long lastUpdateDuration;
 
         public long tilesTotal() {
             return this.tilesLoaded + this.tilesLoading + this.tilesQueued;

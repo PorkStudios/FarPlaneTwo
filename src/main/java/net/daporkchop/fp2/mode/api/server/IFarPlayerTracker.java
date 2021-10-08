@@ -46,7 +46,7 @@ public interface IFarPlayerTracker<POS extends IFarPos, T extends IFarTile> exte
     void dropAllTiles();
 
     @DebugOnly
-    DebugStats.TrackingPlayer statsFor(@NonNull IFarServerContext<POS, T> context);
+    DebugStats.Tracking statsFor(@NonNull IFarServerContext<POS, T> context);
 
     @CalledFromServerThread
     @Override

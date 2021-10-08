@@ -23,7 +23,12 @@ package net.daporkchop.fp2.util.datastructure.java.ndimensionalintsegtree;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.util.datastructure.NDimensionalIntSegtreeSet;
+import net.daporkchop.lib.primitive.lambda.IntIntConsumer;
+import net.daporkchop.lib.primitive.lambda.IntIntIntConsumer;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+
+import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 
 /**
  * Thread-safe wrapper around a {@link NDimensionalIntSegtreeSet}.
@@ -68,6 +73,11 @@ public class SynchronizedNDimensionalIntSegtreeSet implements NDimensionalIntSeg
     @Override
     public synchronized boolean contains(@NonNull int... point) {
         return this.delegate.contains(point);
+    }
+
+    @Override
+    public synchronized void forEach(@NonNull Consumer<int[]> callback) {
+        this.delegate.forEach(callback);
     }
 
     @Override
@@ -123,6 +133,21 @@ public class SynchronizedNDimensionalIntSegtreeSet implements NDimensionalIntSeg
     @Override
     public synchronized boolean contains(int x, int y, int z) {
         return this.delegate.contains(x, y, z);
+    }
+
+    @Override
+    public synchronized void forEach1D(@NonNull IntConsumer callback) {
+        this.delegate.forEach1D(callback);
+    }
+
+    @Override
+    public synchronized void forEach2D(@NonNull IntIntConsumer callback) {
+        this.delegate.forEach2D(callback);
+    }
+
+    @Override
+    public synchronized void forEach3D(@NonNull IntIntIntConsumer callback) {
+        this.delegate.forEach3D(callback);
     }
 
     @Override

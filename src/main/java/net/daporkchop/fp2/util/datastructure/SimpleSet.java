@@ -22,14 +22,20 @@ package net.daporkchop.fp2.util.datastructure;
 
 import lombok.NonNull;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Alternative to {@link Set} with a much simpler API.
  *
  * @author DaPorkchop_
  */
-public interface SimpleSet<E> extends IDatastructure<SimpleSet<E>> {
+public interface SimpleSet<E> extends IDatastructure<SimpleSet<E>>, Iterable<E> {
     /**
      * @return the number of points in this set
      */
@@ -74,4 +80,20 @@ public interface SimpleSet<E> extends IDatastructure<SimpleSet<E>> {
      * @return whether or not this set contains the given point
      */
     boolean contains(@NonNull E value);
+
+    /**
+     * Runs the given callback function for every value in this set.
+     *
+     * @param callback the callback function
+     */
+    void forEach(@NonNull Consumer<? super E> callback);
+
+    @Override
+    @Deprecated
+    default Iterator<E> iterator() {
+        //buffer the whole thing into a list in order to get it as an iterator
+        List<E> list = new ArrayList<>(toInt(this.count()));
+        this.forEach(list::add);
+        return list.iterator();
+    }
 }

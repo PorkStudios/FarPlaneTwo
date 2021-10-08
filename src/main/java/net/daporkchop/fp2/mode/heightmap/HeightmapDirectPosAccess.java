@@ -37,6 +37,8 @@ import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import java.util.function.Consumer;
+
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
@@ -235,6 +237,14 @@ public class HeightmapDirectPosAccess implements IFarDirectPosAccess<HeightmapPo
             @Override
             public boolean contains(@NonNull HeightmapPos pos) {
                 return this.delegate[pos.level()].contains(pos.x(), pos.z());
+            }
+
+            @Override
+            public void forEach(@NonNull Consumer<? super HeightmapPos> callback) {
+                for (int level = 0; level < MAX_LODS; level++) {
+                    int levelButFinal = level; //damn you java
+                    this.delegate[level].forEach2D((x, y) -> new HeightmapPos(levelButFinal, x, y));
+                }
             }
         };
     }

@@ -36,15 +36,15 @@ import static net.daporkchop.fp2.util.Constants.*;
 @Setter
 @DebugOnly
 public class SPacketDebugUpdateStatistics implements IMessage {
-    protected DebugStats.TrackingPlayer trackingPlayer;
+    protected DebugStats.Tracking tracking;
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.trackingPlayer = GSON.fromJson(readString(buf), DebugStats.TrackingPlayer.class);
+        this.tracking = GSON.fromJson(readString(buf), DebugStats.Tracking.class);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        writeString(buf, GSON.toJson(this.trackingPlayer));
+        writeString(buf, GSON.toJson(this.tracking));
     }
 }

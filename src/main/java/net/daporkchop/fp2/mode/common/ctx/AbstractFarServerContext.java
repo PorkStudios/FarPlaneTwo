@@ -29,12 +29,12 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
 import net.daporkchop.fp2.net.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.net.packet.standard.server.SPacketTileData;
 import net.daporkchop.fp2.net.packet.standard.server.SPacketUnloadTile;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.fp2.util.annotation.RemovalPolicy;
@@ -111,7 +111,7 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
         if (++this.debugLastUpdateSent == 20) { //send a debug statistics update packet once every 20s
             this.debugLastUpdateSent = 0;
 
-            this.player.fp2_IFarPlayer_debugSendPacket(new SPacketDebugUpdateStatistics().trackingPlayer(this.tileProvider.tracker().statsFor(this)));
+            this.player.fp2_IFarPlayer_debugSendPacket(new SPacketDebugUpdateStatistics().tracking(this.tileProvider.tracker().statsFor(this)));
         }
     }
 

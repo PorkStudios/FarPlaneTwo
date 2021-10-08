@@ -37,6 +37,8 @@ import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import java.util.function.Consumer;
+
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
@@ -252,6 +254,14 @@ public class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos> {
             @Override
             public boolean contains(@NonNull VoxelPos pos) {
                 return this.delegate[pos.level()].contains(pos.x(), pos.y(), pos.z());
+            }
+
+            @Override
+            public void forEach(@NonNull Consumer<? super VoxelPos> callback) {
+                for (int level = 0; level < MAX_LODS; level++) {
+                    int levelButFinal = level; //damn you java
+                    this.delegate[level].forEach3D((x, y, z) -> new VoxelPos(levelButFinal, x, y, z));
+                }
             }
         };
     }

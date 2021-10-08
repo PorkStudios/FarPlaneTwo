@@ -43,6 +43,7 @@ import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.fp2.util.annotation.RemovalPolicy;
 import net.daporkchop.fp2.util.datastructure.CompactReferenceArraySet;
 import net.daporkchop.fp2.util.datastructure.RecyclingArrayDeque;
+import net.daporkchop.fp2.util.datastructure.SimpleSet;
 import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
@@ -52,6 +53,7 @@ import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -195,19 +197,19 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
     @DebugOnly
     @Override
-    public DebugStats.TrackingPlayer statsFor(@NonNull IFarServerContext<POS, T> context) {
+    public DebugStats.Tracking statsFor(@NonNull IFarServerContext<POS, T> context) {
         @DebugOnly
         class State implements BiFunction<IFarServerContext<POS, T>, Context, Context> {
-            DebugStats.TrackingPlayer stats;
+            DebugStats.Tracking stats;
 
             @Override
             public Context apply(IFarServerContext<POS, T> c, Context ctx) {
-                this.stats = DebugStats.TrackingPlayer.builder()
-                        .tilesLoaded(ctx.loadedPositions.size())
-                        .tilesLoading(ctx.waitingPositions.size())
+                this.stats = DebugStats.Tracking.builder()
+                        .tilesLoaded(ctx.loadedPositions.count())
+                        .tilesLoading(ctx.waitingPositions.count())
                         .tilesQueued(ctx.queuedPositions.size())
-                        .lastUpdateTime(ctx.lastUpdateTime)
-                        .avgUpdateTime(ctx.lastUpdateTime)
+                        .lastUpdateDuration(ctx.lastUpdateTime)
+                        .avgUpdateDuration(ctx.lastUpdateTime)
                         .build();
 
                 return ctx;
@@ -262,8 +264,8 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         protected final EventExecutor executor = TRACKER_THREADS.next();
 
         //only ever accessed to by tracker thread
-        protected final Set<POS> loadedPositions = new ObjectOpenHashSet<>();
-        protected final Set<POS> waitingPositions = new ObjectOpenHashSet<>(AbstractPlayerTracker.this.generationThreads << 4);
+        protected final SimpleSet<POS> loadedPositions = AbstractPlayerTracker.this.world.mode().directPosAccess().newPositionSet();
+        protected final SimpleSet<POS> waitingPositions = AbstractPlayerTracker.this.world.mode().directPosAccess().newPositionSet();
         protected final RecyclingArrayDeque<POS> queuedPositions = new RecyclingArrayDeque<>();
 
         //these are using a single object reference instead of flattened fields to allow the value to be replaced atomically. to ensure coherent access to the values,
@@ -350,7 +352,7 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
         private void fillLoadQueue() {
             this.assertOnTrackerThread();
 
-            for (POS pos; this.waitingPositions.size() < (AbstractPlayerTracker.this.generationThreads << 2) && (pos = this.queuedPositions.poll()) != null; ) {
+            for (POS pos; this.waitingPositions.count() < ((long) AbstractPlayerTracker.this.generationThreads << 2) && (pos = this.queuedPositions.poll()) != null; ) {
                 checkState(this.waitingPositions.add(pos), "position already queued?!?");
                 AbstractPlayerTracker.this.beginTracking(this, pos);
             }
@@ -441,14 +443,17 @@ public abstract class AbstractPlayerTracker<POS extends IFarPos, T extends IFarT
 
             //remove player from all tracking positions
             // (using temporary set to avoid CME)
-            Set<POS> tmp = new ObjectOpenHashSet<>(this.waitingPositions.size() + this.loadedPositions.size());
-            tmp.addAll(this.waitingPositions);
-            tmp.addAll(this.loadedPositions);
-            tmp.forEach(pos -> AbstractPlayerTracker.this.stopTracking(this, pos));
-            tmp.clear();
+            try (SimpleSet<POS> tmp = AbstractPlayerTracker.this.world.mode().directPosAccess().newPositionSet()) {
+                this.waitingPositions.forEach(tmp::add);
+                this.loadedPositions.forEach(tmp::add);
+
+                tmp.forEach(pos -> AbstractPlayerTracker.this.stopTracking(this, pos));
+            }
 
             //release everything
             this.queuedPositions.close();
+            this.waitingPositions.close();
+            this.loadedPositions.close();
         }
 
         protected boolean isReleased() {
