@@ -23,6 +23,8 @@ package net.daporkchop.fp2.mode.common.client.bake;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.command.IDrawCommand;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
+import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.common.misc.refcount.RefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
@@ -76,4 +78,7 @@ public interface IMultipassBakeOutputStorage<B extends IBakeOutput, C extends ID
 
     @Override
     boolean release() throws AlreadyReleasedException;
+
+    @DebugOnly
+    DebugStats.Renderer stats();
 }

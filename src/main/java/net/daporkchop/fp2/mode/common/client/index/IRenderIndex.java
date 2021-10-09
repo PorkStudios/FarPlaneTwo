@@ -23,8 +23,10 @@ package net.daporkchop.fp2.mode.common.client.index;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.command.IDrawCommand;
+import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.common.misc.refcount.RefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
@@ -79,4 +81,7 @@ public interface IRenderIndex<POS extends IFarPos, B extends IBakeOutput, C exte
 
     @Override
     boolean release() throws AlreadyReleasedException;
+
+    @DebugOnly
+    DebugStats.Renderer stats();
 }

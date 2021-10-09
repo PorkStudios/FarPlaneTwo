@@ -20,211 +20,305 @@
 
 package net.daporkchop.fp2.config;
 
+import com.google.common.collect.ImmutableSet;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.FP2;
+import lombok.SneakyThrows;
+import lombok.With;
+import net.daporkchop.fp2.client.gui.container.RenderDistanceContainer;
+import net.daporkchop.fp2.client.gui.element.GuiDebugButton;
+import net.daporkchop.fp2.client.gui.element.GuiRenderModeButton;
+import net.daporkchop.fp2.config.listener.ConfigListenerManager;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.lib.common.misc.Cloneable;
 import net.daporkchop.lib.common.util.PorkUtil;
-import net.minecraftforge.common.config.Config;
-import net.minecraftforge.common.config.ConfigManager;
-import net.minecraftforge.fml.client.event.ConfigChangedEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.Loader;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.lang.Math.*;
+import static java.nio.file.StandardCopyOption.*;
+import static java.nio.file.StandardOpenOption.*;
+import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-@Config(modid = FP2.MODID)
-@Mod.EventBusSubscriber
-public class FP2Config {
-    @Config.Comment({
-            "The mode that will be used for rendering distant terrain."
-    })
-    @Config.LangKey("config.fp2.renderMode")
-    @Config.RequiresWorldRestart
-    public static String renderMode = "voxel";
+@Builder(access = AccessLevel.PRIVATE, toBuilder = true)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor
+@Getter
+@With
+@EqualsAndHashCode
+@Config.GuiCategories({
+        @Config.CategoryMeta(name = "default", title = false),
+        @Config.CategoryMeta(name = FP2Config.CATEGORY_RENDER_DISTANCE, containerClass = RenderDistanceContainer.class),
+})
+public final class FP2Config implements Cloneable<FP2Config> {
+    @SideOnly(Side.CLIENT)
+    protected static final String CATEGORY_RENDER_DISTANCE = "renderDistance";
 
-    @Config.Comment({
-            "The far plane render distance (in blocks)"
-    })
-    @Config.RangeInt(min = 1)
-    @Config.LangKey("config.fp2.renderDistance")
-    public static int renderDistance = 512;
+    private static final Path CONFIG_DIR = Loader.instance().getConfigDir().toPath();
+    private static final String CONFIG_FILE_NAME = "fp2.json5";
 
-    @Config.Comment({
-            "The number of LoD levels to use.",
-            "Warning: Increasing this value requires exponentially larger amounts of memory! (for now, this'll be fixed later)"
-    })
-    @Config.RangeInt(min = 1, max = 32)
-    @Config.SlidingOption
-    @Config.LangKey("config.fp2.maxLevels")
-    @Config.RequiresWorldRestart
-    public static int maxLevels = 3;
+    public static final FP2Config DEFAULT_CONFIG = new FP2Config();
+    private static FP2Config GLOBAL_CONFIG;
 
-    @Config.Comment({
-            "The distance (in blocks) between LoD transitions.",
-            "Note that this value is doubled for each level, so a setting of 64 will mean 64 blocks for the first layer, 128 blocks for the second layer, etc."
-    })
-    @Config.RangeInt(min = 0)
-    @Config.LangKey("config.fp2.levelCutoffDistance")
-    public static int levelCutoffDistance = 256;
+    /**
+     * Parses an {@link FP2Config} instance from the given JSON string.
+     *
+     * @param json the JSON string
+     * @return the parsed {@link FP2Config}
+     */
+    public static FP2Config parse(@NonNull String json) {
+        return ConfigHelper.validateConfig(GSON.fromJson(json, FP2Config.class).clean());
+    }
 
-    @Config.Comment({
-            "The number of threads that will be used on the server for loading and generating fp2 terrain data.",
-            "Default: <cpu count> - 1 (and at least 1)"
-    })
-    @Config.RangeInt(min = 1)
-    @Config.LangKey("config.fp2.generationThreads")
-    @Config.RequiresWorldRestart
-    public static int generationThreads = max(PorkUtil.CPU_COUNT - 1, 1);
+    /**
+     * Loads the global configuration from disk, falling back to the default configuration if needed.
+     * <p>
+     * This method may only be called once.
+     */
+    @SneakyThrows(IOException.class)
+    public synchronized static void load() {
+        checkState(GLOBAL_CONFIG == null, "global configuration has already been loaded!");
 
-    @Config.Comment({
-            "Config options available only on the client."
-    })
-    @Config.LangKey("config.fp2.client")
-    public static Client client = new Client();
+        //delete temporary config file (will only be present if the system crashed while saving config)
+        Files.deleteIfExists(CONFIG_DIR.resolve(CONFIG_FILE_NAME + ".tmp"));
 
-    @Config.Comment({
-            "Performance options."
-    })
-    @Config.LangKey("config.fp2.performance")
-    public static Performance performance = new Performance();
+        Path configFile = CONFIG_DIR.resolve(CONFIG_FILE_NAME);
+        if (Files.exists(configFile)) { //config file already exists, read it
+            GLOBAL_CONFIG = parse(new String(Files.readAllBytes(configFile), StandardCharsets.UTF_8));
+        } else { //config file doesn't exist, set it to the default config and then save it
+            GLOBAL_CONFIG = DEFAULT_CONFIG;
+            set(GLOBAL_CONFIG);
+        }
+    }
 
-    @Config.Comment({
-            "Compatibility options."
-    })
-    @Config.LangKey("config.fp2.compatibility")
-    public static Compatibility compatibility = new Compatibility();
+    /**
+     * Sets the current global configuration and writes it to disk.
+     *
+     * @param config the new global configuration
+     * @throws IllegalStateException if the global configuration hasn't been loaded using {@link #load()}
+     */
+    @SneakyThrows(IOException.class)
+    public synchronized static void set(@NonNull FP2Config config) {
+        checkState(GLOBAL_CONFIG != null, "global configuration hasn't been loaded!");
 
-    @Config.Comment({
-            "Options for storage of far terrain tiles."
-    })
-    @Config.LangKey("config.fp2.storage")
-    public static Storage storage = new Storage();
+        Files.createDirectories(CONFIG_DIR);
+        Path tempConfigFile = CONFIG_DIR.resolve(CONFIG_FILE_NAME + ".tmp");
+        Path realConfigFile = CONFIG_DIR.resolve(CONFIG_FILE_NAME);
 
-    @Config.Comment({
-            "Config options useful while developing the mod.",
-            "Note: these options will be ignored unless you add '-Dfp2.debug=true' to your JVM launch arguments."
-    })
-    @Config.LangKey("config.fp2.debug")
-    public static Debug debug = new Debug();
+        //write whole config to temporary file and sync to storage device, then atomically replace the existing one
+        Files.write(tempConfigFile, GSON_PRETTY.toJson(config).getBytes(StandardCharsets.UTF_8), WRITE, CREATE, TRUNCATE_EXISTING, SYNC);
+        Files.move(tempConfigFile, realConfigFile, REPLACE_EXISTING, ATOMIC_MOVE);
 
-    @SubscribeEvent
-    public static void onConfigChanged(ConfigChangedEvent.OnConfigChangedEvent event) {
-        if (FP2.MODID.equals(event.getModID())) {
-            ConfigManager.sync(FP2.MODID, Config.Type.INSTANCE);
-            ConfigListenerManager.fire();
+        GLOBAL_CONFIG = config;
+        ConfigListenerManager.fire();
+    }
+
+    /**
+     * @return the current global configuration
+     * @throws IllegalStateException if the global configuration hasn't been loaded using {@link #load()}
+     */
+    public static FP2Config global() {
+        FP2Config config = GLOBAL_CONFIG;
+        checkState(config != null, "global configuration hasn't been loaded!");
+        return config;
+    }
+
+    /**
+     * Merges the given server and client configurations.
+     *
+     * @param serverConfig the server's configuration
+     * @param clientConfig the client's configuration
+     * @return the merged configuration, or {@code null}
+     */
+    public static FP2Config merge(FP2Config serverConfig, FP2Config clientConfig) {
+        if (serverConfig == null || clientConfig == null) { //client config is already null, do nothing lol
+            return null;
+        }
+
+        return clientConfig.toBuilder()
+                .maxLevels(min(serverConfig.maxLevels(), clientConfig.maxLevels()))
+                .cutoffDistance(min(serverConfig.cutoffDistance(), clientConfig.cutoffDistance()))
+                .renderModes(Stream.of(clientConfig.renderModes()).filter(ImmutableSet.copyOf(serverConfig.renderModes())::contains).toArray(String[]::new))
+                .build();
+    }
+
+    @Builder.Default
+    @Config.Range(min = @Config.Constant(1), max = @Config.Constant(field = "net.daporkchop.fp2.util.Constants#MAX_LODS"))
+    @Config.GuiCategory(CATEGORY_RENDER_DISTANCE)
+    @Config.GuiShowServerValue
+    private final int maxLevels = preventInline(3);
+
+    @Builder.Default
+    @Config.Range(min = @Config.Constant(0), max = @Config.Constant(Integer.MAX_VALUE))
+    @Config.GuiRange(min = @Config.Constant(field = "net.daporkchop.fp2.util.Constants#T_VOXELS"), max = @Config.Constant(1024), snapTo = @Config.Constant(field = "net.daporkchop.fp2.util.Constants#T_VOXELS"))
+    @Config.GuiCategory(CATEGORY_RENDER_DISTANCE)
+    @Config.GuiShowServerValue
+    private final int cutoffDistance = preventInline(256);
+
+    @Builder.Default
+    @Config.GuiElementClass(GuiRenderModeButton.class)
+    @NonNull
+    private final String[] renderModes = IFarRenderMode.REGISTRY.nameStream().toArray(String[]::new);
+
+    @Builder.Default
+    @NonNull
+    private final Performance performance = new Performance();
+
+    @Builder.Default
+    @NonNull
+    private final Compatibility compatibility = new Compatibility();
+
+    @Builder.Default
+    @Config.GuiElementClass(GuiDebugButton.class)
+    @NonNull
+    private final Debug debug = new Debug();
+
+    /**
+     * Cleans up this config, eliminating any impossible values.
+     *
+     * @return the cleaned config
+     */
+    public FP2Config clean() {
+        return this.withRenderModes(Stream.of(this.renderModes)
+                .filter(IFarRenderMode.REGISTRY.stream().map(Map.Entry::getKey).collect(Collectors.toSet())::contains)
+                .toArray(String[]::new));
+    }
+
+    /**
+     * @return this configuration encoded as a JSON string
+     */
+    @Override
+    public String toString() {
+        return GSON.toJson(this);
+    }
+
+    @Override
+    public FP2Config clone() {
+        return this.toBuilder()
+                .renderModes(this.renderModes.clone())
+                .performance(this.performance.clone())
+                .compatibility(this.compatibility.clone())
+                .debug(this.debug.clone())
+                .build();
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Builder(access = AccessLevel.PRIVATE, toBuilder = true)
+    @AllArgsConstructor(access = AccessLevel.PRIVATE)
+    @NoArgsConstructor
+    @Getter
+    @With
+    @EqualsAndHashCode
+    @Config.GuiCategories({
+            @Config.CategoryMeta(name = "default", title = false),
+            @Config.CategoryMeta(name = Performance.CATEGORY_CLIENT),
+            @Config.CategoryMeta(name = Performance.CATEGORY_THREADS),
+    })
+    public static class Performance implements Cloneable<Performance> {
+        @SideOnly(Side.CLIENT)
+        protected static final String CATEGORY_CLIENT = "client";
+        @SideOnly(Side.CLIENT)
+        protected static final String CATEGORY_THREADS = "threads";
+
+        @Builder.Default
+        @Config.RestartRequired(Config.Requirement.WORLD)
+        @Config.GuiCategory(CATEGORY_CLIENT)
+        private final boolean gpuFrustumCulling = preventInline(true);
+
+        @Builder.Default
+        @Config.Range(min = @Config.Constant(1), max = @Config.Constant(Integer.MAX_VALUE))
+        @Config.GuiRange(min = @Config.Constant(1), max = @Config.Constant(1024))
+        @Config.GuiCategory(CATEGORY_CLIENT)
+        private final int maxBakesProcessedPerFrame = preventInline(256);
+
+        @Builder.Default
+        @Config.Range(min = @Config.Constant(1), max = @Config.Constant(Integer.MAX_VALUE))
+        @Config.GuiRange(min = @Config.Constant(1), max = @Config.Constant(field = "net.daporkchop.lib.common.util.PorkUtil#CPU_COUNT"))
+        @Config.RestartRequired(Config.Requirement.GAME)
+        @Config.GuiCategory(CATEGORY_THREADS)
+        private final int trackingThreads = max(PorkUtil.CPU_COUNT >> 2, 1);
+
+        @Builder.Default
+        @Config.Range(min = @Config.Constant(1), max = @Config.Constant(Integer.MAX_VALUE))
+        @Config.GuiRange(min = @Config.Constant(1), max = @Config.Constant(field = "net.daporkchop.lib.common.util.PorkUtil#CPU_COUNT"))
+        @Config.RestartRequired(Config.Requirement.WORLD)
+        @Config.GuiCategory(CATEGORY_THREADS)
+        private final int terrainThreads = max((PorkUtil.CPU_COUNT >> 1) + (PorkUtil.CPU_COUNT >> 2), 1);
+
+        @Builder.Default
+        @Config.Range(min = @Config.Constant(1), max = @Config.Constant(Integer.MAX_VALUE))
+        @Config.GuiRange(min = @Config.Constant(1), max = @Config.Constant(field = "net.daporkchop.lib.common.util.PorkUtil#CPU_COUNT"))
+        @Config.RestartRequired(Config.Requirement.WORLD)
+        @Config.GuiCategory(CATEGORY_THREADS)
+        private final int bakeThreads = max((PorkUtil.CPU_COUNT >> 1) + (PorkUtil.CPU_COUNT >> 2), 1);
+
+        @Override
+        public Performance clone() {
+            return this.toBuilder().build();
         }
     }
 
     /**
      * @author DaPorkchop_
      */
-    public static class Client {
-        @Config.Comment({
-                "The number of threads that will be used for preparing far plane terrain data for rendering.",
-                "Default: <cpu count> - 1 (and at least 1)"
-        })
-        @Config.LangKey("config.fp2.client.renderThreads")
-        @Config.RequiresWorldRestart
-        public int renderThreads = max(PorkUtil.CPU_COUNT - 1, 1);
+    @Builder(access = AccessLevel.PRIVATE, toBuilder = true)
+    @AllArgsConstructor(access = AccessLevel.PRIVATE)
+    @NoArgsConstructor
+    @Getter
+    @With
+    @EqualsAndHashCode
+    @Config.GuiCategories({
+            @Config.CategoryMeta(name = "default", title = false),
+            @Config.CategoryMeta(name = Compatibility.CATEGORY_CLIENT),
+            @Config.CategoryMeta(name = Compatibility.CATEGORY_CLIENT_WORKAROUNDS),
+    })
+    public static class Compatibility implements Cloneable<Compatibility> {
+        @SideOnly(Side.CLIENT)
+        protected static final String CATEGORY_CLIENT = "client";
+        @SideOnly(Side.CLIENT)
+        protected static final String CATEGORY_CLIENT_WORKAROUNDS = "clientWorkarounds";
 
-        @Config.Comment({
-                "The factor of the maximum extent of a detail level at which the detail transition will start.",
-                "Should be less than levelTransitionEnd."
-        })
-        @Config.LangKey("config.fp2.client.levelTransitionStart")
-        @Config.SlidingOption
-        @Config.RangeDouble(min = 0.0d, max = 1.0d)
-        public double levelTransitionStart = 0.6d;
+        @Builder.Default
+        @Config.GuiCategory(CATEGORY_CLIENT)
+        private final boolean reversedZ = preventInline(true);
 
-        @Config.Comment({
-                "The factor of the maximum extent of a detail level at which the detail transition will end.",
-                "Should be more than levelTransitionStart."
-        })
-        @Config.LangKey("config.fp2.client.levelTransitionEnd")
-        @Config.SlidingOption
-        @Config.RangeDouble(min = 0.0d, max = 1.0d)
-        public double levelTransitionEnd = 0.9d;
-    }
+        @Builder.Default
+        @Config.GuiCategory(CATEGORY_CLIENT_WORKAROUNDS)
+        @Config.RestartRequired(Config.Requirement.GAME)
+        @NonNull
+        private final WorkaroundState workaroundAmdVertexPadding = preventInline(WorkaroundState.AUTO);
 
-    /**
-     * @author DaPorkchop_
-     */
-    public static class Performance {
-        @Config.Comment({
-                "Whether or not tiles can be generated at low resolution if supported by the terrain generator.",
-                "Don't disable this unless you have a specific reason for doing so - it can have MASSIVE performance implications."
-        })
-        @Config.LangKey("config.fp2.performance.lowResolutionEnable")
-        @Config.RequiresWorldRestart
-        public boolean lowResolutionEnable = true;
+        @Builder.Default
+        @Config.GuiCategory(CATEGORY_CLIENT_WORKAROUNDS)
+        @Config.RestartRequired(Config.Requirement.GAME)
+        @NonNull
+        private final WorkaroundState workaroundIntelMultidrawNotWorking = preventInline(WorkaroundState.AUTO);
 
-        @Config.Comment({
-                "The number of threads to be used for tracking the tiles loaded by a given player.",
-                "You shouldn't need to change this unless you have huge player counts.",
-                "Default: 2"
-        })
-        @Config.LangKey("config.fp2.performance.trackingThreads")
-        @Config.RequiresMcRestart
-        public int trackingThreads = min(PorkUtil.CPU_COUNT, 2);
-
-        @Config.Comment({
-                "Allows frustum culling to be done on the GPU instead of the CPU.",
-                "This can have major performance benefits, but may cause visual glitches or even crashes."
-        })
-        @Config.LangKey("config.fp2.performance.gpuFrustumCulling")
-        @Config.RequiresWorldRestart
-        public boolean gpuFrustumCulling = true;
-
-        @Config.Comment({
-                "Whether or not frustum culling should be done on multiple threads.",
-                "Only makes a difference if GPU frustum culling is disabled.",
-                "This will likely hurt performance except for specific scenarios.",
-                "Currently unimplemented."
-        })
-        @Config.LangKey("config.fp2.performance.multithreadedFrustumCulling")
-        public boolean multithreadedFrustumCulling = false;
-
-        @Config.Comment({
-                "The maximum number of tile bake outputs to process per frame.",
-                "Increasing this value will increase the rate at which the client can process terrain data from the server, at the cost",
-                "of more stutters when loading terrain. Lowering this value will reduce or eliminate stutters, but may cause artificially increased tile",
-                "update latency and client memory usage."
-        })
-        @Config.LangKey("config.fp2.performance.maxBakesProcessedPerFrame")
-        @Config.RangeInt(min = 1)
-        public int maxBakesProcessedPerFrame = 128;
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public static class Compatibility {
-        @Config.Comment({
-                "Whether or not to use a reversed-Z projection matrix on the client.",
-                "Enabling this prevents Z-fighting (flickering) of distant geometry, but may cause issues with other rendering mods."
-        })
-        @Config.LangKey("config.fp2.compatibility.reversedZ")
-        public boolean reversedZ = true;
-
-        @Config.Comment({
-                "A workaround for an issue with AMD's official GPU driver which results in horrible performance when a vertex attribute",
-                "doesn't have a 4-byte alignment."
-        })
-        @Config.LangKey("config.fp2.compatibility.workaroundAmdVertexPadding")
-        @Config.RequiresMcRestart
-        public WorkaroundState workaroundAmdVertexPadding = WorkaroundState.AUTO;
-
-        @Config.Comment({
-                "A workaround for an issue with Intel's official GPU driver which results in multidraw drawing commands being so horrifically buggy",
-                "that they might as well not work at all. (more specifically: flickering, things being rendered in the wrong positions, memory corruption,",
-                "driver segfaults, the whole deal)"
-        })
-        @Config.LangKey("config.fp2.compatibility.workaroundIntelMultidrawNotWorking")
-        @Config.RequiresMcRestart
-        public WorkaroundState workaroundIntelMultidrawNotWorking = WorkaroundState.AUTO;
+        @Override
+        public Compatibility clone() {
+            return this.toBuilder().build();
+        }
 
         /**
          * @author DaPorkchop_
@@ -256,42 +350,54 @@ public class FP2Config {
     /**
      * @author DaPorkchop_
      */
-    public static class Storage {
-    }
+    @Builder(access = AccessLevel.PRIVATE, toBuilder = true)
+    @AllArgsConstructor(access = AccessLevel.PRIVATE)
+    @NoArgsConstructor
+    @Getter
+    @With
+    @EqualsAndHashCode
+    @Config.GuiCategories({
+            @Config.CategoryMeta(name = "default", title = false),
+            @Config.CategoryMeta(name = Debug.CATEGORY_CLIENT),
+            @Config.CategoryMeta(name = Debug.CATEGORY_SERVER),
+    })
+    public static class Debug implements Cloneable<Debug> {
+        @SideOnly(Side.CLIENT)
+        protected static final String CATEGORY_CLIENT = "client";
+        @SideOnly(Side.CLIENT)
+        protected static final String CATEGORY_SERVER = "server";
 
-    /**
-     * @author DaPorkchop_
-     */
-    public static class Debug {
-        @Config.Comment({
-                "If true, the vanilla world will not be rendered."
-        })
-        @Config.LangKey("config.fp2.debug.skipRenderWorld")
-        public boolean skipRenderWorld = false;
+        @Builder.Default
+        @Config.GuiCategory(CATEGORY_CLIENT)
+        private final boolean backfaceCulling = preventInline(true);
 
-        @Config.Comment({
-                "If true, exact generators will never be used."
-        })
-        @Config.LangKey("config.fp2.debug.disableExactGeneration")
-        public boolean disableExactGeneration = false;
+        @Builder.Default
+        @Config.GuiCategory(CATEGORY_CLIENT)
+        private final boolean vanillaTerrainRendering = preventInline(true);
 
-        @Config.Comment({
-                "If true, level 0 tiles will not be rendered."
-        })
-        @Config.LangKey("config.fp2.debug.skipLevel0")
-        public boolean skipLevel0 = false;
+        @Builder.Default
+        @Config.GuiCategory(CATEGORY_CLIENT)
+        private final boolean levelZeroRendering = preventInline(true);
 
-        @Config.Comment({
-                "If true, backface culling will be disabled."
-        })
-        @Config.LangKey("config.fp2.debug.disableBackfaceCull")
-        public boolean disableBackfaceCull = false;
+        @Builder.Default
+        @Config.GuiCategory(CATEGORY_CLIENT)
+        @NonNull
+        private final DebugColorMode debugColors = preventInline(DebugColorMode.DISABLED);
 
-        @Config.Comment({
-                "The debug color mode to enable."
-        })
-        @Config.LangKey("config.fp2.debug.debugShadingMode")
-        public DebugColorMode debugColorMode = DebugColorMode.DISABLED;
+        @Builder.Default
+        @Config.GuiCategory(CATEGORY_SERVER)
+        @Config.GuiShowServerValue
+        private final boolean exactGeneration = preventInline(true);
+
+        @Builder.Default
+        @Config.GuiCategory(CATEGORY_SERVER)
+        @Config.GuiShowServerValue
+        private final boolean levelZeroTracking = preventInline(true);
+
+        @Override
+        public Debug clone() {
+            return this.toBuilder().build();
+        }
 
         /**
          * @author DaPorkchop_
@@ -300,8 +406,8 @@ public class FP2Config {
         @Getter
         public enum DebugColorMode {
             DISABLED(false),
-            DISTANCE(true),
-            POSITIONS(true),
+            LEVEL(true),
+            POSITION(true),
             FACE_NORMAL(true);
 
             protected final boolean enable;

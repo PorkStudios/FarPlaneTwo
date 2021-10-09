@@ -29,12 +29,16 @@ import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuffer;
 import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexLayout;
+import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.mode.common.client.bake.AbstractMultipassBakeOutputStorage;
 import net.daporkchop.fp2.mode.common.client.bake.IMultipassBakeOutputStorage;
 import net.daporkchop.fp2.util.alloc.Allocator;
 import net.daporkchop.fp2.util.alloc.SequentialFixedSizeAllocator;
 import net.daporkchop.fp2.util.alloc.SequentialVariableSizedAllocator;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.unsafe.PUnsafe;
+
+import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -220,5 +224,26 @@ public class MultipassIndexedBakeOutputStorage extends AbstractMultipassBakeOutp
                     .firstIndex(_pass_firstIndex(pass))
                     .count(_pass_count(pass));
         }
+    }
+
+    @DebugOnly
+    @Override
+    public DebugStats.Renderer stats() {
+        DebugStats.Allocator vertexStats = this.vertexAlloc.stats();
+        DebugStats.Allocator indexStats = Stream.of(this.indexAllocs).map(Allocator::stats).reduce(DebugStats.Allocator.ZERO, DebugStats.Allocator::add);
+
+        long vertexSize = this.vertexBuffer.layout().format().vertexSize();
+        long indexSize = this.indexSize;
+
+        return DebugStats.Renderer.builder()
+                .allocatedVRAM(vertexStats.allocatedSpace() * vertexSize + indexStats.allocatedSpace())
+                .totalVRAM(vertexStats.totalSpace() * vertexSize + indexStats.totalSpace())
+                .allocatedIndices(indexStats.allocatedSpace() / indexSize)
+                .totalIndices(indexStats.totalSpace() / indexSize)
+                .indexSize(indexSize)
+                .allocatedVertices(vertexStats.allocatedSpace())
+                .totalVertices(vertexStats.totalSpace())
+                .vertexSize(vertexSize)
+                .build();
     }
 }

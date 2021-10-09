@@ -81,6 +81,11 @@ public final class ImmutableOrderedRegistry<T> implements OrderedRegistry<T> {
     }
 
     @Override
+    public boolean contains(@NonNull String name) {
+        return this.map.containsKey(name);
+    }
+
+    @Override
     public T get(@NonNull String name) {
         T value = this.map.get(name);
         checkArg(value != null, "unable to find entry with name \"%s\"!", name);
@@ -102,6 +107,16 @@ public final class ImmutableOrderedRegistry<T> implements OrderedRegistry<T> {
     @Override
     public Iterator<Map.Entry<String, T>> iterator() {
         return this.map.entrySet().iterator();
+    }
+
+    @Override
+    public Stream<String> nameStream() {
+        return this.map.keySet().stream();
+    }
+
+    @Override
+    public Stream<T> valueStream() {
+        return this.map.values().stream();
     }
 
     @Override

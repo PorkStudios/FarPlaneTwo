@@ -36,7 +36,7 @@ public class ReversedZ {
     public boolean REVERSED = false;
 
     public void enable() {
-        if (FP2Config.compatibility.reversedZ) {
+        if (FP2Config.global().compatibility().reversedZ()) {
             REVERSED = true;
 
             GlStateManager.depthFunc(GL_LEQUAL);

@@ -21,28 +21,19 @@
 package net.daporkchop.fp2.mode.voxel.ctx;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.server.IFarWorld;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.common.ctx.AbstractFarServerContext;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.mode.voxel.server.VoxelWorld;
-import net.minecraft.world.WorldServer;
-
-import static net.daporkchop.fp2.util.Constants.*;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 
 /**
  * @author DaPorkchop_
  */
 public class VoxelServerContext extends AbstractFarServerContext<VoxelPos, VoxelTile> {
-    public VoxelServerContext(@NonNull WorldServer vanillaWorld, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
-        super(vanillaWorld, mode);
-    }
-
-    @Override
-    protected IFarWorld<VoxelPos, VoxelTile> world0(@NonNull WorldServer vanillaWorld) {
-        return isCubicWorld(vanillaWorld)
-                ? new VoxelWorld.CubicChunks(vanillaWorld, this.mode)
-                : new VoxelWorld.Vanilla(vanillaWorld, this.mode);
+    public VoxelServerContext(@NonNull IFarPlayerServer player, @NonNull IFarWorldServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
+        super(player, world, config, mode);
     }
 }

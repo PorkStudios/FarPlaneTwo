@@ -23,20 +23,26 @@ package net.daporkchop.fp2.mode.api.server;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.minecraft.entity.player.EntityPlayerMP;
+import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
+import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
 
 /**
  * @author DaPorkchop_
  */
 public interface IFarPlayerTracker<POS extends IFarPos, T extends IFarTile> extends AutoCloseable {
-    void playerAdd(@NonNull EntityPlayerMP player);
+    @CalledFromServerThread
+    void playerAdd(@NonNull IFarServerContext<POS, T> context);
 
-    void playerRemove(@NonNull EntityPlayerMP player);
+    @CalledFromServerThread
+    void playerRemove(@NonNull IFarServerContext<POS, T> context);
 
-    void playerMove(@NonNull EntityPlayerMP player);
+    @CalledFromServerThread
+    void playerUpdate(@NonNull IFarServerContext<POS, T> context);
 
+    @CalledFromServerThread
     void debug_dropAllTiles();
 
+    @CalledFromServerThread
     @Override
     void close();
 }

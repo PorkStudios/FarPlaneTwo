@@ -50,7 +50,7 @@ out VS_OUT {
 //
 //
 
-#if defined(USE_DEBUG_COLORS_DISTANCE) || defined(USE_DEBUG_COLORS_POSITIONS)
+#if defined(USE_DEBUG_COLORS_LEVEL) || defined(USE_DEBUG_COLORS_POSITION)
 const vec3[16] DEBUG_COLORS = vec3[](
 vec3(0., 1., 0.), vec3(1., 1., 0.), vec3(1., 0., 0.), vec3(0., 0., 1.),
 vec3(1., 0., 1.), vec3(0., 1., 1.), vec3(.5), vec3(1.),
@@ -66,9 +66,9 @@ vec3(0., .5, 1.), vec3(.5, 0., 1.), vec3(5., 1., .5), vec3(5., 1., .5)
 //
 
 vec3 computeVertexColor(vec3 va_color, ivec4 tile_position) {
-#if defined(USE_DEBUG_COLORS_DISTANCE)
+#if defined(USE_DEBUG_COLORS_LEVEL)
     return DEBUG_COLORS[tile_position.w];
-#elif defined(USE_DEBUG_COLORS_POSITIONS)
+#elif defined(USE_DEBUG_COLORS_POSITION)
     ivec4 i = (tile_position & 1) << ivec4(3, 2, 1, 0);
     return DEBUG_COLORS[(i.x | i.y) | (i.z | i.w)];
 #else

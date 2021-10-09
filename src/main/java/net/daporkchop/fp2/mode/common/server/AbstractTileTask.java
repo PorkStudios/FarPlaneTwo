@@ -48,13 +48,13 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> implements Supplier<ITileHandle<POS, T>> {
-    protected final AbstractFarWorld<POS, T> world;
+    protected final AbstractFarTileProvider<POS, T> world;
     protected final Scheduler<PriorityTask<POS>, ITileHandle<POS, T>> scheduler;
 
     protected final POS pos;
     protected final ITileHandle<POS, T> handle;
 
-    public AbstractTileTask(@NonNull AbstractFarWorld<POS, T> world, @NonNull Scheduler<PriorityTask<POS>, ITileHandle<POS, T>> scheduler, @NonNull POS pos) {
+    public AbstractTileTask(@NonNull AbstractFarTileProvider<POS, T> world, @NonNull Scheduler<PriorityTask<POS>, ITileHandle<POS, T>> scheduler, @NonNull POS pos) {
         this.world = world;
         this.scheduler = scheduler;
 
@@ -78,7 +78,7 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
             return this.handle;
         }
 
-        if (!(FP2_DEBUG && FP2Config.debug.disableExactGeneration) && this.world.anyVanillaTerrainExistsAt(this.pos)) {
+        if (!(FP2_DEBUG && !FP2Config.global().debug().exactGeneration()) && this.world.anyVanillaTerrainExistsAt(this.pos)) {
             //there's some terrain at the given position, let's try to generate something with it
             if (this.pos.level() == 0) {
                 //the position is at detail level 0, do exact generation
@@ -196,7 +196,7 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
      * @author DaPorkchop_
      */
     public static class Load<POS extends IFarPos, T extends IFarTile> extends AbstractTileTask<POS, T> {
-        public Load(@NonNull AbstractFarWorld<POS, T> world, @NonNull Scheduler<PriorityTask<POS>, ITileHandle<POS, T>> scheduler, @NonNull POS pos) {
+        public Load(@NonNull AbstractFarTileProvider<POS, T> world, @NonNull Scheduler<PriorityTask<POS>, ITileHandle<POS, T>> scheduler, @NonNull POS pos) {
             super(world, scheduler, pos);
         }
 
@@ -223,7 +223,7 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
         @Getter(AccessLevel.PROTECTED)
         protected final long minimumTimestamp;
 
-        public Update(@NonNull AbstractFarWorld<POS, T> world, @NonNull Scheduler<PriorityTask<POS>, ITileHandle<POS, T>> scheduler, @NonNull POS pos) {
+        public Update(@NonNull AbstractFarTileProvider<POS, T> world, @NonNull Scheduler<PriorityTask<POS>, ITileHandle<POS, T>> scheduler, @NonNull POS pos) {
             super(world, scheduler, pos);
 
             long minimumTimestamp = this.handle.dirtyTimestamp();

@@ -1,8 +1,23 @@
+#PARSE_ESCAPES
+
+#
+# Number formatting
+#
+
+fp2.util.numberFormat.bytes.0=%sB
+fp2.util.numberFormat.bytes.1=%sKiB
+fp2.util.numberFormat.bytes.2=%sMiB
+fp2.util.numberFormat.bytes.3=%sGiB
+fp2.util.numberFormat.bytes.4=%sTiB
+fp2.util.numberFormat.bytes.5=%sPiB
+fp2.util.numberFormat.bytes.6=%sEiB
+
 #
 # GUI
 #
 
 fp2.gui.buttonFP2Options=FP2
+fp2.playerJoinWarningMessage=§c§lFarPlaneTwo pre-pre-pre-alpha build: use at your own risk!
 
 #
 # Keybinds
@@ -18,32 +33,140 @@ key.fp2.debug.rebuildUVs=Rebuild far texture UVs
 # Config options
 #
 
-config.fp2.renderMode=Render mode
-config.fp2.renderDistance=Render distance (currently unused)
-config.fp2.maxLevels=Max LoD levels
-config.fp2.levelCutoffDistance=LoD level cutoff distance
-config.fp2.generationThreads=Generation threads
-config.fp2.ioThreads=I/O Threads
+fp2.config.property.format=%s: %s
 
-config.fp2.client=Client options
-config.fp2.client.renderThreads=Render threads
-config.fp2.client.heightmap=Heightmap options
-config.fp2.client.levelTransitionStart=Detail transition start
-config.fp2.client.levelTransitionEnd=Detail transition end
+fp2.config.boolean.true=§aEnabled§r
+fp2.config.boolean.false=§cDisabled§r
 
-config.fp2.performance=Performance options
-config.fp2.performance.lowResolutionEnable=Allow low resolution
-config.fp2.performance.savePartial=Allow partial save
+fp2.config.enum.selected.true=%s §o(selected)§r
+fp2.config.enum.selected.false=%s
 
-config.fp2.debug=Debug options
-config.fp2.debug.debug=Debug mode
-config.fp2.debug.disableRead=Disable read
-config.fp2.debug.disableWrite=Disable write
-config.fp2.debug.disablePersistence=Disable persistence
-config.fp2.debug.skipRenderWorld=Skip vanilla render
+fp2.config.slider.format=%s
 
-config.fp2.storage=Storage options
-config.fp2.storage.leveldb=leveldb options
+fp2.config.old.tooltip=Saved value: %s
+fp2.config.default.tooltip=Default value: %s
+fp2.config.server.tooltip=Server value: %s
+fp2.config.range.tooltip=Minimum: %1$s\nMaximum: %2$s
+
+fp2.config.moreOptions.tooltip=Right-Click for more options.
+fp2.config.moreOptions.resetOld=Reset to saved value
+fp2.config.moreOptions.resetDefault=Reset to default value
+
+fp2.config.restartRequired.tooltip.WORLD=§cChanges to this option require a world reload to take effect!
+fp2.config.restartRequired.tooltip.GAME=§cChanges to this option require a game restart to take effect!
+fp2.config.restartRequired.dialog.title.WORLD=World Reload Required
+fp2.config.restartRequired.dialog.message.WORLD=One or more changed settings requires that the current world be reloaded before taking effect.
+fp2.config.restartRequired.dialog.title.GAME=Minecraft Restart Required
+fp2.config.restartRequired.dialog.message.GAME=One or more changed settings requires that Minecraft be restarted before taking effect.
+fp2.config.restartRequired.dialog.confirm=I Understand
+
+fp2.config.menu.title=FarPlaneTwo Options
+
+fp2.config.menu.renderDistance.category=Render Distance
+fp2.config.menu.maxLevels=LoD Levels
+fp2.config.menu.maxLevels.tooltip=The number of detail levels to use.\nThe first detail level has a radius of §o<Cutoff Distance>§r and is rendered with maximum visual quality. Each subsequent detail level has twice the radius and half the quality of the previous level.\nIncreasing this value by 1 will double the radius rendered by FP2.
+fp2.config.menu.cutoffDistance=Cutoff Distance
+fp2.config.menu.cutoffDistance.format=%s blocks
+fp2.config.menu.cutoffDistance.tooltip=The radius (in blocks) of the maximum detail level.\nThis value is doubled for each subsequent level, so a value of 256 will mean a 256 block radius for the maximum detail level, a 512 block radius for the 1/2-detail level, a 1024 block radius for the 1/4-detail level, etc.
+
+fp2.config.menu.labelEquivalentRenderDistance=Render Distance Equivalent: %1$s blocks (%2$s chunks)
+fp2.config.menu.labelApproximatePerformance=Estimated performance gain: %1$sx
+fp2.config.menu.labelApproximatePerformance.tooltip=A §overy§r rough estimation of FarPlaneTwo's performance for rendering the currently configured area (in Voxel mode) compared to vanilla's performance for rendering the equivalent area.\nThis is currently a worst-case estimate, assuming a SkyGrid world with Cubic Chunks. Real-world performance gains will almost certainly be significantly less.
+fp2.config.menu.labelApproximateVRAM=Estimated VRAM Usage: %1$s
+fp2.config.menu.labelCutoffDistanceLessThanVanilla=§6Warning: Cutoff distance should be at least %1$sx vanilla render distance! Your vanilla render distance is currently %2$s chunks (%3$s blocks), which corresponds to a recommended cutoff distance of at least %4$s blocks.
+fp2.config.menu.labelCutoffDistanceTooHigh=§6Warning: Cutoff distance is very high! Consider lowering it and increasing the number of LoD levels instead.
+fp2.config.menu.labelCutoffDistanceTooSmall=§cCritical: Cutoff distance should be at least %1$s blocks!
+
+fp2.config.menu.renderModes=Render Modes...
+
+fp2.config.menu.renderModes.title=FarPlaneTwo Render Modes
+fp2.config.menu.renderModes.renderModesEnabled=§n§lEnabled Render Modes
+fp2.config.menu.renderModes.renderModesDisabled=§n§lDisabled Render Modes
+fp2.config.menu.renderModes.noRenderModesEnabled=§cNo render modes enabled!
+fp2.config.menu.renderModes.noRenderModesDisabled=§aNo render modes disabled!
+fp2.config.menu.renderModes.renderModeDisabledOnServer=§cThis render mode is not supported by the server!
+fp2.config.menu.renderModes.listAdd=+
+fp2.config.menu.renderModes.listAdd.tooltip=Enable this render mode
+fp2.config.menu.renderModes.listRemove=-
+fp2.config.menu.renderModes.listRemove.tooltip=Disable this render mode
+fp2.config.menu.renderModes.listUp=⬆
+fp2.config.menu.renderModes.listUp.tooltip=Increase this render mode's priority
+fp2.config.menu.renderModes.listDown=⬇
+fp2.config.menu.renderModes.listDown.tooltip=Decrease this render mode's priority
+
+fp2.config.menu.renderModes.heightmap=Heightmap
+fp2.config.menu.renderModes.heightmap.tooltip=Only renders the top block layer.\nFastest, but looks worst and can't display overhangs.
+fp2.config.menu.renderModes.voxel=Voxel
+fp2.config.menu.renderModes.voxel.tooltip=Renders actual 3D terrain data.\nNotably slower than heightmap, but looks best.
+
+fp2.config.menu.performance=Performance
+fp2.config.menu.performance.title=FarPlaneTwo Performance Options
+
+fp2.config.menu.performance.client.category=Client
+fp2.config.menu.performance.gpuFrustumCulling=GPU Frustum Culling
+fp2.config.menu.performance.gpuFrustumCulling.tooltip=Allows frustum culling to be done on the GPU instead of the CPU.\nThis can significantly increase FPS, especially on high-end GPUs.
+fp2.config.menu.performance.maxBakesProcessedPerFrame=Max. Bakes/Frame
+fp2.config.menu.performance.maxBakesProcessedPerFrame.tooltip=Limits the maximum number of baked tiles for the client to process per frame.\nIncreasing this value will increase the rate at which the client can process terrain data from the server, at the cost of more stutters when loading terrain. Lowering this value will reduce or eliminate stutters, but may cause higher tile update latency and client memory usage.
+
+fp2.config.menu.performance.threads.category=Multithreading
+fp2.config.menu.performance.trackingThreads=Tracking Threads
+fp2.config.menu.performance.trackingThreads.tooltip=The number of threads to use for keeping track of what terrain is visible to players.\nUnless you're running a server with lots of players, this doesn't need to be set very high.
+fp2.config.menu.performance.terrainThreads=Terrain Threads
+fp2.config.menu.performance.terrainThreads.tooltip=The number of threads to use for loading, saving, generating and simplifying terrain.\nThese threads do most of the work for the mod. You'll probably want to set this a bit lower than your CPU's core count - about 75%% is a reasonable default.
+fp2.config.menu.performance.bakeThreads=Render Threads
+fp2.config.menu.performance.bakeThreads.tooltip=The number of threads to use on the client for preparing terrain data for rendering.
+
+fp2.config.menu.compatibility=Compatibility
+fp2.config.menu.compatibility.title=FarPlaneTwo Compatibility Options
+
+fp2.config.menu.compatibility.client.category=Client
+fp2.config.menu.compatibility.reversedZ=Reversed-Z Projection
+fp2.config.menu.compatibility.reversedZ.tooltip=Whether or not to use a reversed-Z projection matrix on the client.\nEnabling this prevents most Z-fighting (flickering) of distant terrain, but may cause issues with other mods that affect rendering.
+
+fp2.config.menu.compatibility.clientWorkarounds.category=Client Workarounds
+fp2.config.menu.compatibility.workaroundAmdVertexPadding=Vertex Padding (AMD)
+fp2.config.menu.compatibility.workaroundAmdVertexPadding.title=Workaround - Vertex Padding (AMD)
+fp2.config.menu.compatibility.workaroundAmdVertexPadding.tooltip=A workaround for an issue with AMD's official GPU driver which results in horrible performance when a vertex attribute isn't aligned to a 4-byte boundary.
+fp2.config.menu.compatibility.workaroundIntelMultidrawNotWorking=Broken MultiDraw (Intel)
+fp2.config.menu.compatibility.workaroundIntelMultidrawNotWorking.title=Workaround - Broken MultiDraw (Intel)
+fp2.config.menu.compatibility.workaroundIntelMultidrawNotWorking.tooltip=A workaround for an issue with Intel's official GPU driver which results in multidraw drawing commands being so horrifically buggy that they might as well not work at all.\nMore specifically: flickering, things being rendered in the wrong positions, memory corruption, driver segfaults, etc.
+
+net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState#AUTO=§bAuto§r
+net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState#AUTO.tooltip=Automatically determines whether or not this workaround should be enabled based on your detected system information.
+net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState#ENABLED=§aEnable§r
+net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState#ENABLED.tooltip=Forces this workaround to be enabled, regardless of whether or not it would be needed.\nNote that this can needlessly hurt performance on systems where the workaround isn't strictly necessary.
+net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState#DISABLED=§cDisable§r
+net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState#DISABLED.tooltip=Forces this workaround to be disabled, even if it would be needed.\nNote that this can cause things to break unexpectedly on systems where the workaround would be required.
+
+fp2.config.menu.debug=Debug
+fp2.config.menu.debug.tooltip=These options are intended to be used while debugging FarPlaneTwo.\n§c§lAll options in this category will do nothing unless debug mode is enabled! To enable debug mode, add §c§o-Dfp2.debug=true §c§lto your JVM launch arguments. If you don't know what that means, you should leave this category alone.
+fp2.config.menu.debug.title=FarPlaneTwo Debug Options
+
+fp2.config.menu.debug.client.category=Client
+fp2.config.menu.debug.backfaceCulling=Backface Culling
+fp2.config.menu.debug.backfaceCulling.tooltip=Allows the GPU to discard triangles which are only visible from behind.
+fp2.config.menu.debug.vanillaTerrainRendering=Vanilla Terrain Rendering
+fp2.config.menu.debug.vanillaTerrainRendering.tooltip=Prevents vanilla terrain from being rendered, so that the only visible terrain is added by FP2.
+fp2.config.menu.debug.levelZeroRendering=Level-0 Rendering
+fp2.config.menu.debug.levelZeroRendering.tooltip=If disabled, FP2 will not render terrain at the maximum detail level.
+fp2.config.menu.debug.debugColors=Debug Colors
+fp2.config.menu.debug.debugColors.title=Debug Colors
+fp2.config.menu.debug.debugColors.tooltip=Causes FP2's terrain to be colored differently.
+
+net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#DISABLED=Disabled
+net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#DISABLED.tooltip=Debug colors are disabled; FP2 terrain is rendered normally.
+net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#LEVEL=Tile Level
+net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#LEVEL.tooltip=Colors tiles based on their detail level.
+net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#POSITION=Tile Position
+net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#POSITION.tooltip=Colors tiles in a checkerboard patter based on their position and detail level.
+net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#FACE_NORMAL=Face Normal
+net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#FACE_NORMAL.tooltip=Colors individual triangles based on their normal vector.
+
+fp2.config.menu.debug.server.category=Server
+fp2.config.menu.debug.exactGeneration=Exact Generation
+fp2.config.menu.debug.exactGeneration.tooltip=Allows FP2 to do exact generation in places where vanilla terrain already exists.\nDisabling this will force the rough generator to be used everywhere and prevent terrain updates from running. If no rough generator is available, nothing will load.
+fp2.config.menu.debug.levelZeroTracking=Level-0 Tracking
+fp2.config.menu.debug.levelZeroTracking.tooltip=If disabled, FP2 will not track terrain tiles at the maximum detail level.
 
 #
 # Misc. Debug

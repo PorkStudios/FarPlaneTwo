@@ -76,7 +76,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
     }
 
     default void preRender() {
-        if (FP2_DEBUG && FP2Config.debug.disableBackfaceCull) {
+        if (FP2_DEBUG && !FP2Config.global().debug().backfaceCulling()) {
             GlStateManager.disableCull();
         }
 
@@ -89,7 +89,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
     default void postRender() {
         glDisable(GL_STENCIL_TEST);
 
-        if (FP2_DEBUG && FP2Config.debug.disableBackfaceCull) {
+        if (FP2_DEBUG && !FP2Config.global().debug().backfaceCulling()) {
             GlStateManager.enableCull();
         }
     }

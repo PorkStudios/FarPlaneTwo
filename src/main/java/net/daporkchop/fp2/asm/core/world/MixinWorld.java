@@ -42,16 +42,21 @@ public abstract class MixinWorld implements IFarWorld {
     @Unique
     protected IntAxisAlignedBB[] coordLimits;
 
+    @Unique
+    protected boolean isInitialized() {
+        return this.coordLimits != null;
+    }
+
     @Override
     public IntAxisAlignedBB[] fp2_IFarWorld_coordLimits() {
         IntAxisAlignedBB[] coordLimits = this.coordLimits;
-        checkState(coordLimits != null, "not initialized!");
+        checkState(this.isInitialized(), "not initialized!");
         return coordLimits;
     }
 
     @Override
     public void fp2_IFarWorld_init() {
-        checkState(this.coordLimits == null, "already initialized!");
+        checkState(!this.isInitialized(), "already initialized!");
 
         IntAxisAlignedBB bounds = Constants.getBounds(uncheckedCast(this));
         this.coordLimits = IntStream.range(0, Integer.SIZE)

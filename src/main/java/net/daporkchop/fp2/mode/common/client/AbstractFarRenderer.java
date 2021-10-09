@@ -24,13 +24,14 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.BlockRenderLayer;
@@ -48,8 +49,6 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
     protected final IFarRenderMode<POS, T> mode;
 
     protected final BakeManager<POS, T> bakeManager;
-
-    protected final int maxLevel = FP2Config.maxLevels - 1;
 
     protected final GLBuffer drawCommandBuffer = new GLBuffer(GL_STREAM_DRAW);
 
@@ -91,6 +90,12 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
         this.strategy.render(uncheckedCast(this.bakeManager.index), layer, pre);
 
         checkGLError("post fp2 render");
+    }
+
+    @DebugOnly
+    @Override
+    public DebugStats.Renderer stats() {
+        return this.bakeManager.index.stats();
     }
 
     @Override

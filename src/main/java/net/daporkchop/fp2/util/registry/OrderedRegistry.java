@@ -104,6 +104,13 @@ public interface OrderedRegistry<T> extends Iterable<Map.Entry<String, T>> {
     OrderedRegistry<T> remove(@NonNull String name);
 
     /**
+     * Checks if this registry contains an entry with the given name.
+     *
+     * @param name the name of the entry to check for
+     */
+    boolean contains(@NonNull String name);
+
+    /**
      * Gets the existing entry with the given name.
      *
      * @param name the name of the entry to get
@@ -121,6 +128,20 @@ public interface OrderedRegistry<T> extends Iterable<Map.Entry<String, T>> {
      * @return a {@link Stream} over all the entries in this registry
      */
     Stream<Map.Entry<String, T>> stream();
+
+    /**
+     * @return a {@link Stream} over all the names in this registry
+     */
+    default Stream<String> nameStream() {
+        return this.stream().map(Map.Entry::getKey);
+    }
+
+    /**
+     * @return a {@link Stream} over all the values in this registry
+     */
+    default Stream<T> valueStream() {
+        return this.stream().map(Map.Entry::getValue);
+    }
 
     @Override
     Iterator<Map.Entry<String, T>> iterator();

@@ -23,11 +23,14 @@ package net.daporkchop.fp2.mode.heightmap;
 import io.github.opencubicchunks.cubicchunks.cubicgen.flat.FlatTerrainProcessor;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.mode.api.server.IFarWorld;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.common.AbstractFarRenderMode;
@@ -35,16 +38,16 @@ import net.daporkchop.fp2.mode.heightmap.ctx.HeightmapClientContext;
 import net.daporkchop.fp2.mode.heightmap.ctx.HeightmapServerContext;
 import net.daporkchop.fp2.mode.heightmap.event.RegisterExactHeightmapGeneratorsEvent;
 import net.daporkchop.fp2.mode.heightmap.event.RegisterRoughHeightmapGeneratorsEvent;
-import net.daporkchop.fp2.mode.heightmap.server.HeightmapWorld;
+import net.daporkchop.fp2.mode.heightmap.server.HeightmapTileProvider;
 import net.daporkchop.fp2.mode.heightmap.server.gen.exact.CCHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.exact.VanillaHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.rough.CWGFlatHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.rough.CWGHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.rough.FlatHeightmapGenerator;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
 import net.daporkchop.fp2.util.registry.LinkedOrderedRegistry;
-import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.gen.ChunkGeneratorFlat;
 import net.minecraftforge.fml.relauncher.Side;
@@ -83,14 +86,21 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
     }
 
     @Override
-    public IFarServerContext<HeightmapPos, HeightmapTile> serverContext(@NonNull WorldServer world) {
-        return new HeightmapServerContext(world, this);
+    public IFarTileProvider<HeightmapPos, HeightmapTile> tileProvider(@NonNull WorldServer world) {
+        return isCubicWorld(world)
+                ? new HeightmapTileProvider.CubicChunks(world, this)
+                : new HeightmapTileProvider.Vanilla(world, this);
+    }
+
+    @Override
+    public IFarServerContext<HeightmapPos, HeightmapTile> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarWorldServer world, @NonNull FP2Config config) {
+        return new HeightmapServerContext(player, world, config, this);
     }
 
     @SideOnly(Side.CLIENT)
     @Override
-    public IFarClientContext<HeightmapPos, HeightmapTile> clientContext(@NonNull WorldClient world) {
-        return new HeightmapClientContext(this);
+    public IFarClientContext<HeightmapPos, HeightmapTile> clientContext(@NonNull IFarWorldClient world, @NonNull FP2Config config) {
+        return new HeightmapClientContext(world, config, this);
     }
 
     @Override

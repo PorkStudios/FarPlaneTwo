@@ -20,12 +20,16 @@
 
 package net.daporkchop.fp2.util.alloc;
 
-import it.unimi.dsi.fastutil.longs.Long2LongMap;
-import it.unimi.dsi.fastutil.longs.Long2LongMaps;
-import it.unimi.dsi.fastutil.longs.Long2LongRBTreeMap;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
+import net.daporkchop.lib.primitive.map.LongLongMap;
+import net.daporkchop.lib.primitive.map.concurrent.LongLongConcurrentHashMap;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
+
+import java.util.function.LongConsumer;
+import java.util.stream.StreamSupport;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -38,7 +42,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public final class DirectMemoryAllocator implements Allocator {
-    protected final Long2LongMap allocations = Long2LongMaps.synchronize(new Long2LongRBTreeMap());
+    protected final LongLongMap allocations = new LongLongConcurrentHashMap(-1L); //TODO: replace this with a ConcurrentSkipListMap once PorkLib supports it
 
     protected final boolean zero;
 
@@ -50,7 +54,6 @@ public final class DirectMemoryAllocator implements Allocator {
      * @param zero whether or not uninitialized memory should be zeroed out
      */
     public DirectMemoryAllocator(boolean zero) {
-        this.allocations.defaultReturnValue(-1L);
         PCleaner.cleaner(this, new Releaser(this.allocations));
 
         this.zero = zero;
@@ -92,6 +95,30 @@ public final class DirectMemoryAllocator implements Allocator {
         PUnsafe.freeMemory(address);
     }
 
+    @DebugOnly
+    @Override
+    public DebugStats.Allocator stats() {
+        @DebugOnly
+        class State implements LongConsumer {
+            long size = 0L;
+            long count = 0L;
+
+            @Override
+            public void accept(long size) {
+                this.size += size;
+                this.count++;
+            }
+        }
+
+        State state = new State();
+        this.allocations.values().forEach(state);
+
+        return DebugStats.Allocator.builder()
+                .allocatedSpace(state.size).totalSpace(state.size)
+                .heapRegions(state.count).allocations(state.count)
+                .build();
+    }
+
     /**
      * Cleans up any memory allocated by a {@link DirectMemoryAllocator} which wasn't freed.
      *
@@ -99,7 +126,7 @@ public final class DirectMemoryAllocator implements Allocator {
      */
     @RequiredArgsConstructor
     private static final class Releaser implements Runnable {
-        protected final Long2LongMap allocations;
+        protected final LongLongMap allocations;
 
         @Override
         public void run() {
@@ -108,8 +135,8 @@ public final class DirectMemoryAllocator implements Allocator {
             }
 
             bigWarning("%d memory blocks allocated by %s (totalling %d bytes) were not freed!",
-                    this.allocations.size(), DirectMemoryAllocator.class.getCanonicalName(), this.allocations.values().stream().mapToLong(Long::longValue).sum());
-            this.allocations.keySet().forEach(PUnsafe::freeMemory);
+                    this.allocations.size(), DirectMemoryAllocator.class.getCanonicalName(), StreamSupport.stream(this.allocations.values().spliterator(), false).mapToLong(Long::longValue).sum());
+            this.allocations.keySet().forEach((LongConsumer) PUnsafe::freeMemory);
         }
     }
 }

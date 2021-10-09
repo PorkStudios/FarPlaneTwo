@@ -21,10 +21,13 @@
 package net.daporkchop.fp2.mode.common.client;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.mode.api.tile.ITileSnapshot;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
+import net.daporkchop.fp2.util.annotation.RemovalPolicy;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -33,6 +36,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -50,10 +55,17 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
     protected final Map<POS, ITileSnapshot<POS, T>> tiles = new ConcurrentHashMap<>();
     protected final Collection<Listener<POS, T>> listeners = new CopyOnWriteArraySet<>();
 
+    @DebugOnly
+    protected final AtomicReference<DebugStats.TileSnapshot> debug_tileStats = new AtomicReference<>(DebugStats.TileSnapshot.ZERO);
+    @DebugOnly
+    protected final LongAdder debug_nonEmptyTileCount = new LongAdder();
+
     @Override
     public void receiveTile(@NonNull ITileSnapshot<POS, T> tile) {
         this.assertNotReleased();
         this.tiles.compute(tile.pos(), (pos, old) -> {
+            this.debug_updateStats(old, tile);
+
             if (old == null) {
                 this.listeners.forEach(listener -> listener.tileAdded(tile));
             } else {
@@ -67,6 +79,8 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
     public void unloadTile(@NonNull POS _pos) {
         this.assertNotReleased();
         this.tiles.computeIfPresent(_pos, (pos, old) -> {
+            this.debug_updateStats(old, null);
+
             this.listeners.forEach(listener -> listener.tileRemoved(pos));
             return null;
         });
@@ -100,6 +114,31 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
     public Stream<ITileSnapshot<POS, T>> getTilesCached(@NonNull Stream<POS> position) {
         this.assertNotReleased();
         return position.map(this);
+    }
+
+    @DebugOnly(RemovalPolicy.DROP)
+    protected void debug_updateStats(ITileSnapshot<POS, T> prev, ITileSnapshot<POS, T> next) {
+        DebugStats.TileSnapshot prevStats = prev != null ? prev.stats() : DebugStats.TileSnapshot.ZERO;
+        DebugStats.TileSnapshot nextStats = next != null ? next.stats() : DebugStats.TileSnapshot.ZERO;
+
+        this.debug_tileStats.updateAndGet(currStats -> currStats.sub(prevStats).add(nextStats));
+        this.debug_nonEmptyTileCount.add(prev != null
+                ? next != null ? 0L : -1L
+                : next != null ? 1L : 0L);
+    }
+
+    @DebugOnly
+    @Override
+    public DebugStats.TileCache stats() {
+        DebugStats.TileSnapshot snapshotStats = this.debug_tileStats.get();
+
+        return DebugStats.TileCache.builder()
+                .tileCount(this.tiles.size())
+                .tileCountWithData(this.debug_nonEmptyTileCount.sum())
+                .allocatedSpace(snapshotStats.allocatedSpace())
+                .totalSpace(snapshotStats.allocatedSpace())
+                .uncompressedSize(snapshotStats.uncompressedSize())
+                .build();
     }
 
     /**

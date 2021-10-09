@@ -20,35 +20,88 @@
 
 package net.daporkchop.fp2.mode.api.ctx;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.api.server.IFarWorld;
-import net.minecraft.world.WorldServer;
+import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
+import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
 
 /**
- * A client-side context for a specific {@link IFarRenderMode} in a {@link IFarWorldServer}.
+ * A server-side context for a specific {@link IFarPlayerServer} in a {@link IFarWorldServer} using a specific {@link IFarRenderMode}.
  *
  * @author DaPorkchop_
  */
 public interface IFarServerContext<POS extends IFarPos, T extends IFarTile> extends AutoCloseable {
     /**
-     * @return the {@link IFarWorld} used in this context
+     * @return the player which this context belongs to
      */
-    IFarWorld<POS, T> world();
+    IFarPlayerServer player();
 
     /**
-     * @return the vanilla {@link WorldServer}
+     * @return the vanilla world
      */
-    WorldServer vanillaWorld();
+    IFarWorldServer world();
 
     /**
      * @return the render mode
      */
     IFarRenderMode<POS, T> mode();
 
+    /**
+     * @return the {@link IFarTileProvider} used in this context
+     */
+    IFarTileProvider<POS, T> tileProvider();
+
+    /**
+     * @return the config currently being used
+     */
+    FP2Config config();
+
+    /**
+     * Called whenever the player's config is changed.
+     *
+     * @param config the new config
+     */
+    @CalledFromServerThread
+    void notifyConfigChange(@NonNull FP2Config config);
+
+    /**
+     * Closes this context, deactivating it if needed and releasing any allocated resources.
+     */
+    @CalledFromServerThread
     @Override
-    default void close() {
-        this.world().close();
-    }
+    void close();
+
+    /**
+     * Updates this context.
+     * <p>
+     * Called once per tick in order to schedule tracking updates, etc.
+     */
+    @CalledFromServerThread
+    void update();
+
+    /**
+     * Sends the given tile data to the client.
+     *
+     * @param snapshot a snapshot of the data to be sent
+     */
+    void sendTile(@NonNull TileSnapshot<POS, T> snapshot);
+
+    /**
+     * Unloads the tile at the given position on the client.
+     *
+     * @param pos the position of the tile to unload
+     */
+    void sendTileUnload(@NonNull POS pos);
+
+    /**
+     * Unloads the tiles at the given positions on the client.
+     *
+     * @param positions the positions of the tiles to unload
+     */
+    void sendMultiTileUnload(@NonNull Iterable<POS> positions);
 }

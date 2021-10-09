@@ -22,8 +22,10 @@ package net.daporkchop.fp2.mode.voxel.ctx;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.of.OFHelper;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.mode.common.ctx.AbstractFarClientContext;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
@@ -33,12 +35,12 @@ import net.daporkchop.fp2.mode.voxel.client.VoxelRenderer;
  * @author DaPorkchop_
  */
 public class VoxelClientContext extends AbstractFarClientContext<VoxelPos, VoxelTile> {
-    public VoxelClientContext(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
-        super(mode);
+    public VoxelClientContext(@NonNull IFarWorldClient world, @NonNull FP2Config config, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
+        super(world, config, mode);
     }
 
     @Override
-    protected IFarRenderer renderer0(IFarRenderer old) {
+    protected IFarRenderer renderer0(IFarRenderer old, @NonNull FP2Config config) {
         if (OFHelper.of_Config_isShaders()) {
             return old; //TODO: transform feedback renderer
         } else {

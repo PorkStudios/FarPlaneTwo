@@ -35,16 +35,11 @@ public class BlockType {
     public final int BLOCK_TYPE_TRANSPARENT = 1;
     public final int BLOCK_TYPE_OPAQUE = 2;
 
-    @SideOnly(Side.CLIENT)
     public final int RENDER_TYPE_OPAQUE = 0;
-    @SideOnly(Side.CLIENT)
     public final int RENDER_TYPE_CUTOUT = 1;
-    @SideOnly(Side.CLIENT)
     public final int RENDER_TYPE_TRANSLUCENT = 2;
-    @SideOnly(Side.CLIENT)
     public final int RENDER_TYPES = 3;
 
-    @SideOnly(Side.CLIENT)
     private final int[] RENDER_TYPE_LOOKUP = {
             RENDER_TYPE_OPAQUE, //SOLID
             RENDER_TYPE_CUTOUT, //CUTOUT_MIPPED,

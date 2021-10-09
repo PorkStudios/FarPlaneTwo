@@ -22,12 +22,25 @@ package net.daporkchop.fp2.mode.common.ctx;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Synchronized;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.mode.api.server.IFarWorld;
-import net.minecraft.world.WorldServer;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
+import net.daporkchop.fp2.net.packet.server.SPacketTileData;
+import net.daporkchop.fp2.net.packet.server.SPacketUnloadTile;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
+import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
+
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Base implementation of {@link IFarServerContext}.
@@ -36,16 +49,92 @@ import net.minecraft.world.WorldServer;
  */
 @Getter
 public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IFarTile> implements IFarServerContext<POS, T> {
-    protected final WorldServer vanillaWorld;
-    protected final IFarWorld<POS, T> world;
+    protected final IFarPlayerServer player;
+    protected final IFarWorldServer world;
     protected final IFarRenderMode<POS, T> mode;
+    protected final IFarTileProvider<POS, T> tileProvider;
 
-    public AbstractFarServerContext(@NonNull WorldServer vanillaWorld, @NonNull IFarRenderMode<POS, T> mode) {
-        this.vanillaWorld = vanillaWorld;
+    protected final Map<POS, Optional<TileSnapshot<POS, T>>> sendQueue = new TreeMap<>();
+
+    protected FP2Config config;
+
+    protected boolean closed = false;
+
+    public AbstractFarServerContext(@NonNull IFarPlayerServer player, @NonNull IFarWorldServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<POS, T> mode) {
+        this.player = player;
+        this.world = world;
         this.mode = mode;
+        this.config = config;
 
-        this.world = this.world0(vanillaWorld);
+        this.tileProvider = world.fp2_IFarWorldServer_tileProviderFor(mode);
+        this.tileProvider.tracker().playerAdd(this);
     }
 
-    protected abstract IFarWorld<POS, T> world0(@NonNull WorldServer vanillaWorld);
+    @CalledFromServerThread
+    @Override
+    public void notifyConfigChange(@NonNull FP2Config config) {
+        checkState(!this.closed, "already closed!");
+        this.config = config;
+
+        //no reason to bother scheduling an update immediately, it'll happen on the next server tick anyway
+    }
+
+    @CalledFromServerThread
+    @Override
+    public void update() {
+        checkState(!this.closed, "already closed!");
+
+        this.tileProvider.tracker().playerUpdate(this);
+
+        this.flushSendQueue();
+    }
+
+    @Synchronized("sendQueue")
+    protected void flushSendQueue() {
+        if (!this.sendQueue.isEmpty()) {
+            this.sendQueue.forEach((pos, optionalSnapshot) -> this.player.fp2_IFarPlayer_sendPacket(optionalSnapshot.isPresent()
+                    ? new SPacketTileData().mode(this.mode).tile(optionalSnapshot.get())
+                    : new SPacketUnloadTile().mode(this.mode).pos(pos)));
+            this.sendQueue.clear();
+        }
+    }
+
+    @CalledFromServerThread
+    @Override
+    public void close() {
+        checkState(!this.closed, "already closed!");
+        this.closed = true;
+
+        this.tileProvider.tracker().playerRemove(this);
+    }
+
+    @Override
+    @Synchronized("sendQueue")
+    public void sendTile(@NonNull TileSnapshot<POS, T> snapshot) {
+        if (this.closed) { //this context has been closed - silently discard all tile data
+            return;
+        }
+
+        this.sendQueue.put(snapshot.pos(), Optional.of(snapshot));
+    }
+
+    @Override
+    @Synchronized("sendQueue")
+    public void sendTileUnload(@NonNull POS pos) {
+        if (this.closed) { //this context has been closed - silently discard all tile data
+            return;
+        }
+
+        this.sendQueue.put(pos, Optional.empty());
+    }
+
+    @Override
+    @Synchronized("sendQueue")
+    public void sendMultiTileUnload(@NonNull Iterable<POS> positions) {
+        if (this.closed) { //this context has been closed - silently discard all tile data
+            return;
+        }
+
+        positions.forEach(pos -> this.sendQueue.put(pos, Optional.empty()));
+    }
 }

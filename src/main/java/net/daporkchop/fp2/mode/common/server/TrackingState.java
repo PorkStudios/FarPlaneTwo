@@ -26,7 +26,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
 import net.daporkchop.fp2.config.FP2Config;
-import net.minecraft.entity.player.EntityPlayerMP;
+import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
+import net.daporkchop.lib.math.vector.d.Vec3d;
 
 import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -42,11 +43,14 @@ import static net.daporkchop.fp2.util.math.MathUtil.*;
 @ToString
 @EqualsAndHashCode
 public class TrackingState {
-    public static TrackingState createDefault(@NonNull EntityPlayerMP player) {
-        return new TrackingState(player.posX, player.posY, player.posZ,
-                asrRound(FP2Config.levelCutoffDistance, T_SHIFT),
-                FP2_DEBUG && FP2Config.debug.skipLevel0 ? 1 : 0,
-                FP2Config.maxLevels);
+    public static TrackingState createDefault(@NonNull IFarServerContext<?, ?> context) {
+        Vec3d pos = context.player().fp2_IFarPlayer_position();
+        FP2Config config = context.config();
+
+        return new TrackingState(pos.getX(), pos.getY(), pos.getZ(),
+                asrRound(config.cutoffDistance(), T_SHIFT),
+                FP2_DEBUG && !config.debug().levelZeroTracking() ? 1 : 0,
+                config.maxLevels());
     }
 
     protected final double x;

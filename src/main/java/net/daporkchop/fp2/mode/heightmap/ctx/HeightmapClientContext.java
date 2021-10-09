@@ -21,8 +21,10 @@
 package net.daporkchop.fp2.mode.heightmap.ctx;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.mode.common.ctx.AbstractFarClientContext;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
@@ -32,12 +34,12 @@ import net.daporkchop.fp2.mode.heightmap.client.HeightmapRenderer;
  * @author DaPorkchop_
  */
 public class HeightmapClientContext extends AbstractFarClientContext<HeightmapPos, HeightmapTile> {
-    public HeightmapClientContext(@NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
-        super(mode);
+    public HeightmapClientContext(@NonNull IFarWorldClient world, @NonNull FP2Config config, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
+        super(world, config, mode);
     }
 
     @Override
-    protected IFarRenderer renderer0(IFarRenderer old) {
+    protected IFarRenderer renderer0(IFarRenderer old, @NonNull FP2Config config) {
         return old instanceof HeightmapRenderer.ShaderMultidraw ? old : new HeightmapRenderer.ShaderMultidraw(this);
     }
 }

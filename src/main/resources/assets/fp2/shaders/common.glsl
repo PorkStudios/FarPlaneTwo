@@ -25,15 +25,15 @@
 //
 
 //colors terrain based on its distance to the camera
-//#define USE_DEBUG_COLORS_DISTANCE
+//#define USE_DEBUG_COLORS_LEVEL
 
 //colors terrain based on its tile position
-//#define USE_DEBUG_COLORS_POSITIONS
+//#define USE_DEBUG_COLORS_POSITION
 
 //colors terrain based on its face normal vector
 //#define USE_DEBUG_COLORS_FACE_NORMAL
 
-#if defined(USE_DEBUG_COLORS_DISTANCE) || defined(USE_DEBUG_COLORS_POSITIONS) || defined(USE_DEBUG_COLORS_FACE_NORMAL)
+#if defined(USE_DEBUG_COLORS_LEVEL) || defined(USE_DEBUG_COLORS_POSITION) || defined(USE_DEBUG_COLORS_FACE_NORMAL)
 #define USE_DEBUG_COLORS
 #endif
 
@@ -85,8 +85,6 @@ struct FP2_View {
     int renderDistance;
     int maxLevels;
     int levelCutoffDistance;
-    float transitionStart;
-    float transitionEnd;
 };
 
 layout(std140, binding = 1) uniform FP2_STATE {

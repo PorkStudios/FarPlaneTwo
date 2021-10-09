@@ -20,8 +20,15 @@
 
 package net.daporkchop.fp2.mode.api.ctx;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.minecraft.world.World;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Provides access to additional fp2 information in a {@link World}.
@@ -43,4 +50,26 @@ public interface IFarWorld {
      * Called when the world is being unloaded.
      */
     void fp2_IFarWorld_close();
+
+    /**
+     * Schedules a task to be run on this world's thread.
+     *
+     * @param task the task to run
+     * @return a {@link CompletableFuture} which will be completed with the result of the task
+     * @see ThreadingHelper#scheduleTaskInWorldThread(World, Runnable)
+     */
+    default CompletableFuture<Void> fp2_IFarWorld_scheduleTask(@NonNull Runnable task) {
+        return ThreadingHelper.scheduleTaskInWorldThread(uncheckedCast(this), task);
+    }
+
+    /**
+     * Schedules a task to be run on this world's thread.
+     *
+     * @param task the task to run
+     * @return a {@link CompletableFuture} which will be completed with the result of the task
+     * @see ThreadingHelper#scheduleTaskInWorldThread(World, Supplier)
+     */
+    default <T> CompletableFuture<T> fp2_IFarWorld_scheduleTask(@NonNull Supplier<T> task) {
+        return ThreadingHelper.scheduleTaskInWorldThread(uncheckedCast(this), task);
+    }
 }
