@@ -29,7 +29,7 @@ import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
+import net.daporkchop.fp2.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
@@ -79,9 +79,9 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
 
     protected final IFarStorage<POS, T> storage;
 
-    protected final IFarPlayerTracker<POS, T> tracker;
+    protected final IFarTrackerManager<POS, T> trackerManager;
 
-    protected final Scheduler<PriorityTask<POS>, ITileHandle<POS, T>> scheduler; //TODO: make this global rather than per-dimension
+    protected final Scheduler<PriorityTask<POS>, ITileHandle<POS, T>> scheduler; //TODO: make this global rather than per-mode and per-dimension
 
     protected final boolean lowResolution;
 
@@ -122,18 +122,18 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
                 ThreadingHelper.workerGroupBuilder()
                         .world(this.world)
                         .threads(FP2Config.global().performance().terrainThreads())
-                        .threadFactory(PThreadFactories.builder().daemon().minPriority()
-                                .collapsingId().name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build()),
+                        .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
+                                .name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build()),
                 PriorityTask.approxComparator());
 
-        this.tracker = this.createTracker();
+        this.trackerManager = this.createTracker();
 
         WorldChangeListenerManager.add(this.world, this);
     }
 
     protected abstract IFarScaler<POS, T> createScaler();
 
-    protected abstract IFarPlayerTracker<POS, T> createTracker();
+    protected abstract IFarTrackerManager<POS, T> createTracker();
 
     protected abstract boolean anyVanillaTerrainExistsAt(@NonNull POS pos);
 

@@ -27,6 +27,7 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.mode.api.server.tracking.IFarTracker;
 import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
 
@@ -55,6 +56,11 @@ public interface IFarServerContext<POS extends IFarPos, T extends IFarTile> exte
      * @return the {@link IFarTileProvider} used in this context
      */
     IFarTileProvider<POS, T> tileProvider();
+
+    /**
+     * @return the {@link IFarTracker} used by this context
+     */
+    IFarTracker<POS, T> tracker();
 
     /**
      * @return the config currently being used

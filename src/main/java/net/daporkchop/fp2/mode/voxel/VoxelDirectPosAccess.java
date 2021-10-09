@@ -235,6 +235,16 @@ public class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos> {
             }
 
             @Override
+            public boolean isEmpty() {
+                for (NDimensionalIntSet set : this.delegate) {
+                    if (!set.isEmpty()) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            @Override
             public void clear() {
                 for (int level = 0; level < MAX_LODS; level++) {
                     this.delegate[level].clear();

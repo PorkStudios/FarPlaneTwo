@@ -218,6 +218,16 @@ public class HeightmapDirectPosAccess implements IFarDirectPosAccess<HeightmapPo
             }
 
             @Override
+            public boolean isEmpty() {
+                for (NDimensionalIntSet set : this.delegate) {
+                    if (!set.isEmpty()) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            @Override
             public void clear() {
                 for (int level = 0; level < MAX_LODS; level++) {
                     this.delegate[level].clear();

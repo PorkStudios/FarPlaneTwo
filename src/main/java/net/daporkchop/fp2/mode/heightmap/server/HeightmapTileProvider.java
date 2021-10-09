@@ -23,12 +23,13 @@ package net.daporkchop.fp2.mode.heightmap.server;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
+import net.daporkchop.fp2.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.server.scale.HeightmapScalerMinMax;
+import net.daporkchop.fp2.mode.heightmap.server.tracking.HeightmapTrackerManager;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
@@ -48,8 +49,8 @@ public abstract class HeightmapTileProvider extends AbstractFarTileProvider<Heig
     }
 
     @Override
-    protected IFarPlayerTracker<HeightmapPos, HeightmapTile> createTracker() {
-        return new HeightmapPlayerTracker(this);
+    protected IFarTrackerManager<HeightmapPos, HeightmapTile> createTracker() {
+        return new HeightmapTrackerManager(this);
     }
 
     @Override

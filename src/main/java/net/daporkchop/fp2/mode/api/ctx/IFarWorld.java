@@ -72,4 +72,11 @@ public interface IFarWorld {
     default <T> CompletableFuture<T> fp2_IFarWorld_scheduleTask(@NonNull Supplier<T> task) {
         return ThreadingHelper.scheduleTaskInWorldThread(uncheckedCast(this), task);
     }
+
+    /**
+     * @return this world's dimension ID
+     */
+    default int fp2_IFarWorld_dimensionId() {
+        return ((World) this).provider.getDimension();
+    }
 }

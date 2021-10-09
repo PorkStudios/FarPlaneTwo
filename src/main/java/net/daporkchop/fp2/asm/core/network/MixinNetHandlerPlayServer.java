@@ -26,7 +26,6 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
-import net.daporkchop.fp2.net.FP2Network;
 import net.daporkchop.fp2.net.packet.debug.client.CPacketDebugDropAllTiles;
 import net.daporkchop.fp2.net.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.net.packet.standard.server.SPacketSessionBegin;
@@ -129,7 +128,7 @@ public abstract class MixinNetHandlerPlayServer implements IFarPlayerServer {
 
         this.world.fp2_IFarWorld_scheduleTask(() -> {
             FP2_LOG.info("Dropping all tiles");
-            this.world.fp2_IFarWorldServer_forEachTileProvider(tileProvider -> tileProvider.tracker().dropAllTiles());
+            this.world.fp2_IFarWorldServer_forEachTileProvider(tileProvider -> tileProvider.trackerManager().dropAllTiles());
         });
     }
 

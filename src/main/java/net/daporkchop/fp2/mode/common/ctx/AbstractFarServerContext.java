@@ -31,6 +31,7 @@ import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.mode.api.server.tracking.IFarTracker;
 import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
 import net.daporkchop.fp2.net.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.net.packet.standard.server.SPacketTileData;
@@ -57,6 +58,8 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
     protected final IFarRenderMode<POS, T> mode;
     protected final IFarTileProvider<POS, T> tileProvider;
 
+    protected final IFarTracker<POS, T> tracker;
+
     protected final Map<POS, Optional<TileSnapshot<POS, T>>> sendQueue = new TreeMap<>();
 
     protected FP2Config config;
@@ -73,7 +76,7 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
         this.config = config;
 
         this.tileProvider = world.fp2_IFarWorldServer_tileProviderFor(mode);
-        this.tileProvider.tracker().playerAdd(this);
+        this.tracker = this.tileProvider.trackerManager().beginTracking(this);
     }
 
     @CalledFromServerThread
@@ -90,7 +93,7 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
     public void update() {
         checkState(!this.closed, "already closed!");
 
-        this.tileProvider.tracker().playerUpdate(this);
+        this.tracker.update();
 
         this.flushSendQueue();
         this.debugUpdate();
@@ -111,7 +114,7 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
         if (++this.debugLastUpdateSent == 20) { //send a debug statistics update packet once every 20s
             this.debugLastUpdateSent = 0;
 
-            this.player.fp2_IFarPlayer_debugSendPacket(new SPacketDebugUpdateStatistics().tracking(this.tileProvider.tracker().statsFor(this)));
+            this.player.fp2_IFarPlayer_debugSendPacket(new SPacketDebugUpdateStatistics().tracking(this.tracker.debugStats()));
         }
     }
 
@@ -121,7 +124,7 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
         checkState(!this.closed, "already closed!");
         this.closed = true;
 
-        this.tileProvider.tracker().playerRemove(this);
+        this.tracker.close();
     }
 
     @Override
