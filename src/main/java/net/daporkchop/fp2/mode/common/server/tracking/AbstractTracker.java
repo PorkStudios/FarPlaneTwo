@@ -68,6 +68,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
     protected final IntAxisAlignedBB[] coordLimits;
 
     protected final SimpleSet<POS> loadedPositions;
+    protected final Set<POS> formerlyWaitingPositions = ConcurrentHashMap.newKeySet();
     protected final Set<POS> waitingPositions = ConcurrentHashMap.newKeySet();
     protected final RecyclingArrayDeque<POS> queuedPositions = new RecyclingArrayDeque<>();
 
@@ -93,7 +94,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
     @Override
     public void update() {
         STATE lastState = this.lastState;
-        STATE nextState = this.currentState();
+        STATE nextState = this.currentState(this.context);
         if (lastState == null || this.shouldTriggerUpdate(lastState, nextState)) {
             //set nextPos to be used while updating
             this.nextState = nextState;
@@ -101,6 +102,8 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
             //add update task to execution queue (this will call doUpdate)
             this.manager.scheduler().schedule(this);
         }
+
+        this.updateFillLoadQueue();
     }
 
     /**
@@ -159,8 +162,8 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
     }
 
     protected void updateFillLoadQueue() {
-        int targetLoadQueueSize = FP2Config.global().performance().terrainThreads();
-        List<POS> addedPositions = new ArrayList<>();
+        int targetLoadQueueSize = FP2Config.global().performance().terrainThreads() << 4;
+        List<POS> positions = new ArrayList<>();
 
         do {
             if (!PUnsafe.tryMonitorEnter(this)) { //this tracker's monitor is already held!
@@ -173,6 +176,12 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
             }
 
             try {
+                //move positions from the formerly waiting positions set into loaded
+                positions.addAll(this.formerlyWaitingPositions);
+                positions.forEach(this.formerlyWaitingPositions::remove);
+                positions.forEach(this.loadedPositions::add);
+                positions.clear();
+
                 if (this.queuedPositions.isEmpty()) { //the queue is empty, so there's nothing left to do
                     return;
                 }
@@ -187,15 +196,15 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
                     this.waitingPositions.add(pos);
 
                     //buffer the positions we want to add in a list (we don't want to being tracking them while holding the monitor since that could deadlock)
-                    addedPositions.add(pos);
+                    positions.add(pos);
                 }
             } finally {
                 PUnsafe.monitorExit(this);
             }
 
             //begin tracking all of the added positions
-            addedPositions.forEach(pos -> this.manager.beginTracking(this, pos));
-            addedPositions.clear();
+            positions.forEach(pos -> this.manager.beginTracking(this, pos));
+            positions.clear();
         } while (this.waitingPositions.size() < targetLoadQueueSize);
     }
 
@@ -211,7 +220,8 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
         this.context.sendTile(uncheckedCast(snapshot));
 
         if (this.waitingPositions.remove(snapshot.pos())) { //we were waiting for this position to be loaded!
-            this.updateFillLoadQueue();
+            this.formerlyWaitingPositions.add(snapshot.pos());
+            this.manager.scheduler.schedule(this);
         }
     }
 
@@ -248,15 +258,55 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
                 .build();
     }
 
-    protected abstract STATE currentState();
+    /**
+     * Computes the current {@link STATE} from the given context.
+     *
+     * @param context the {@link IFarServerContext} which we are tracking for
+     * @return a new {@link STATE}
+     */
+    protected abstract STATE currentState(@NonNull IFarServerContext<POS, T> context);
 
+    /**
+     * Checks whether or not the difference between two given {@link STATE}s is sufficiently drastic to warrant triggering a tracking update.
+     *
+     * @param oldState the old {@link STATE}
+     * @param newState the new {@link STATE}
+     * @return whether or not a tracking update should be triggered
+     */
+    protected abstract boolean shouldTriggerUpdate(@NonNull STATE oldState, @NonNull STATE newState);
+
+    /**
+     * Enumerates every tile position visible in the given {@link STATE}.
+     *
+     * @param state    the {@link STATE}
+     * @param callback a callback function which should be called once for every visible tile position
+     */
     protected abstract void allPositions(@NonNull STATE state, @NonNull Consumer<POS> callback);
 
+    /**
+     * Computes the tile positions whose visibility changed between two given {@link STATE}s.
+     *
+     * @param oldState the old {@link STATE}
+     * @param newState the new {@link STATE}
+     * @param added    a callback function which should be called once for every tile position which was not visible in the old state but is now visible
+     * @param removed  a callback function which should be called once for every tile position which was visible in the old state but is no longer visible
+     */
     protected abstract void deltaPositions(@NonNull STATE oldState, @NonNull STATE newState, @NonNull Consumer<POS> added, @NonNull Consumer<POS> removed);
 
+    /**
+     * Checks whether or not the given tile position is visible in the given state.
+     *
+     * @param state the {@link STATE}
+     * @param pos   the tile position to check
+     * @return whether or not the tile position is visible
+     */
     protected abstract boolean isVisible(@NonNull STATE state, @NonNull POS pos);
 
+    /**
+     * Gets a {@link Comparator} which can be used for sorting the tile positions visible in the given {@link STATE} by their load priority.
+     *
+     * @param state the {@link STATE}
+     * @return a {@link Comparator} for sorting visible tile positions
+     */
     protected abstract Comparator<POS> comparatorFor(@NonNull STATE state);
-
-    protected abstract boolean shouldTriggerUpdate(@NonNull STATE oldState, @NonNull STATE newState);
 }

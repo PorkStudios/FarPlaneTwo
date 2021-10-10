@@ -52,8 +52,16 @@ public class HeightmapTracker extends AbstractTracker<HeightmapPos, HeightmapTil
     }
 
     @Override
-    protected TrackingState currentState() {
-        return TrackingState.createDefault(this.context);
+    protected TrackingState currentState(@NonNull IFarServerContext<HeightmapPos, HeightmapTile> context) {
+        return TrackingState.createDefault(context);
+    }
+
+    @Override
+    protected boolean shouldTriggerUpdate(@NonNull TrackingState oldState, @NonNull TrackingState newState) {
+        return oldState.cutoff() != newState.cutoff()
+               || oldState.minLevel() != newState.minLevel()
+               || oldState.maxLevel() != newState.maxLevel()
+               || sq(oldState.x() - newState.x()) + sq(oldState.z() - newState.z()) >= UPDATE_TRIGGER_DISTANCE_SQUARED;
     }
 
     @Override
@@ -151,7 +159,7 @@ public class HeightmapTracker extends AbstractTracker<HeightmapPos, HeightmapTil
             @Override
             public int compare(HeightmapPos o1, HeightmapPos o2) {
                 int d;
-                if ((d = Integer.compare(o1.level(), o2.level())) != 0) {
+                if ((d = o1.level() - o2.level()) != 0) {
                     return d;
                 }
                 return Integer.compare(this.manhattanDistance(o1), this.manhattanDistance(o2));
@@ -159,13 +167,5 @@ public class HeightmapTracker extends AbstractTracker<HeightmapPos, HeightmapTil
         }
 
         return new HeightmapPosAndComparator(0, asrRound(floorI(state.x()), T_SHIFT), asrRound(floorI(state.z()), T_SHIFT));
-    }
-
-    @Override
-    protected boolean shouldTriggerUpdate(@NonNull TrackingState oldState, @NonNull TrackingState newState) {
-        return oldState.cutoff() != newState.cutoff()
-               || oldState.minLevel() != newState.minLevel()
-               || oldState.maxLevel() != newState.maxLevel()
-               || sq(oldState.x() - newState.x()) + sq(oldState.z() - newState.z()) >= UPDATE_TRIGGER_DISTANCE_SQUARED;
     }
 }

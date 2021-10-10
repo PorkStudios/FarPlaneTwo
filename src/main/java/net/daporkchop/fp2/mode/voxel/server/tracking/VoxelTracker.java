@@ -53,8 +53,16 @@ public class VoxelTracker extends AbstractTracker<VoxelPos, VoxelTile, TrackingS
     }
 
     @Override
-    protected TrackingState currentState() {
-        return TrackingState.createDefault(this.context);
+    protected TrackingState currentState(@NonNull IFarServerContext<VoxelPos, VoxelTile> context) {
+        return TrackingState.createDefault(context);
+    }
+
+    @Override
+    protected boolean shouldTriggerUpdate(@NonNull TrackingState oldState, @NonNull TrackingState newState) {
+        return oldState.cutoff() != newState.cutoff()
+               || oldState.minLevel() != newState.minLevel()
+               || oldState.maxLevel() != newState.maxLevel()
+               || sq(oldState.x() - newState.x()) + sq(oldState.y() - newState.y()) + sq(oldState.z() - newState.z()) >= UPDATE_TRIGGER_DISTANCE_SQUARED;
     }
 
     @Override
@@ -171,7 +179,7 @@ public class VoxelTracker extends AbstractTracker<VoxelPos, VoxelTile, TrackingS
             @Override
             public int compare(VoxelPos o1, VoxelPos o2) {
                 int d;
-                if ((d = Integer.compare(o1.level(), o2.level())) != 0) {
+                if ((d = o1.level() - o2.level()) != 0) {
                     return d;
                 }
                 return Integer.compare(this.manhattanDistance(o1), this.manhattanDistance(o2));
@@ -179,13 +187,5 @@ public class VoxelTracker extends AbstractTracker<VoxelPos, VoxelTile, TrackingS
         }
 
         return new VoxelPosAndComparator(0, asrRound(floorI(state.x()), T_SHIFT), asrRound(floorI(state.y()), T_SHIFT), asrRound(floorI(state.z()), T_SHIFT));
-    }
-
-    @Override
-    protected boolean shouldTriggerUpdate(@NonNull TrackingState oldState, @NonNull TrackingState newState) {
-        return oldState.cutoff() != newState.cutoff()
-               || oldState.minLevel() != newState.minLevel()
-               || oldState.maxLevel() != newState.maxLevel()
-               || sq(oldState.x() - newState.x()) + sq(oldState.y() - newState.y()) + sq(oldState.z() - newState.z()) >= UPDATE_TRIGGER_DISTANCE_SQUARED;
     }
 }

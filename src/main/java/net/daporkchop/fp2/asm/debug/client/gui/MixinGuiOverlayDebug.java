@@ -68,9 +68,9 @@ public abstract class MixinGuiOverlayDebug extends Gui {
                 if (tileCache != null) {
                     DebugStats.TileCache stats = tileCache.stats();
                     list.add("TileCache: " + numberFormat.format(stats.tileCountWithData()) + '/' + numberFormat.format(stats.tileCount())
-                             + ' ' + percentFormat.format(stats.allocatedSpace() / (double) stats.totalSpace())
+                             + ' ' + percentFormat.format((stats.allocatedSpace() | stats.totalSpace()) != 0L ? stats.allocatedSpace() / (double) stats.totalSpace() : 1.0d)
                              + ' ' + GuiHelper.formatByteCount(stats.allocatedSpace()) + '/' + GuiHelper.formatByteCount(stats.totalSpace())
-                             + " (" + percentFormat.format(stats.allocatedSpace() / (double) stats.uncompressedSize()) + " -> " + GuiHelper.formatByteCount(stats.uncompressedSize()) + ')');
+                             + " (" + percentFormat.format((stats.allocatedSpace() | stats.uncompressedSize()) != 0L ? stats.allocatedSpace() / (double) stats.uncompressedSize() : 1.0d) + " -> " + GuiHelper.formatByteCount(stats.uncompressedSize()) + ')');
                 } else {
                     list.add("§oNo TileCache active");
                 }
