@@ -58,20 +58,20 @@ public class RenderDistanceContainer extends VerticallyStackedContainer<FP2Confi
                 new ColumnsContainer<>(context, access, elements),
                 new GuiDynamicLabel(context, access,
                         (config, langKey) -> {
-                            int renderDistanceBlocks = config.cutoffDistance() << (config.maxLevels() - 1);
+                            long renderDistanceBlocks = config.effectiveRenderDistanceBlocks();
 
                             return new LabelContents(
                                     "labelEquivalentRenderDistance",
                                     true,
-                                    renderDistanceBlocks, renderDistanceBlocks >> 4);
+                                    renderDistanceBlocks, renderDistanceBlocks >> 4L);
                         },
                         (config, langKey) -> {
                             //approximation: tested in a vanilla world, 1024 cutoff with 1 level had 65247 renderable tiles and went down
                             //  to almost exactly 1/4 when cutoff was reduced to 512
                             //  -> for vanilla-style worlds, we can imagine the world as being conceptually flat
 
-                            int renderDistanceBlocks = config.cutoffDistance() << (config.maxLevels() - 1);
-                            int renderDistanceChunks = renderDistanceBlocks >> 4;
+                            long renderDistanceBlocks = config.effectiveRenderDistanceBlocks();
+                            long renderDistanceChunks = renderDistanceBlocks >> 4L;
 
                             //test case with 1024 cutoff had 65247 tiles loaded, use that to compute average tile count
                             int testCaseCutoff = 1024;
