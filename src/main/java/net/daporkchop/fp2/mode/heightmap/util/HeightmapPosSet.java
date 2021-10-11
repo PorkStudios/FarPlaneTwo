@@ -61,7 +61,7 @@ public class HeightmapPosSet extends AbstractPosSet<HeightmapPos> {
 
         for (int level = 0; level < delegates.length; level++) {
             int levelButFinal = level; //damn you java
-            delegates[level].forEach2D((x, y) -> new HeightmapPos(levelButFinal, x, y));
+            delegates[level].forEach2D((x, y) -> callback.accept(new HeightmapPos(levelButFinal, x, y)));
         }
     }
 }

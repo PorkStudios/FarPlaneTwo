@@ -43,6 +43,7 @@ import net.daporkchop.fp2.util.threading.scheduler.NoFutureScheduler;
 import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -76,7 +77,7 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
                         .world(tileProvider.world())
                         .threads(FP2Config.global().performance().trackingThreads())
                         .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
-                                .name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", tileProvider.mode().name(), ((IFarWorldServer) tileProvider.world()).fp2_IFarWorld_dimensionId())).build()));
+                                .name(PStrings.fastFormat("FP2 %s DIM%d Tracker #%%d", tileProvider.mode().name(), ((IFarWorldServer) tileProvider.world()).fp2_IFarWorld_dimensionId())).build()));
 
         tileProvider.storage().addListener(this);
     }
@@ -105,37 +106,69 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
      */
     protected abstract AbstractTracker<POS, T, ?> createTrackerFor(@NonNull IFarServerContext<POS, T> context);
 
+    protected void tileLoaded(@NonNull ITileHandle<POS, T> handle) {
+        class State implements BiFunction<POS, Entry, Entry>, Runnable {
+            Entry entry;
+
+            @Override
+            public Entry apply(@NonNull POS pos, @NonNull Entry entry) {
+                PUnsafe.monitorEnter(entry);
+                this.entry = entry;
+
+                return entry;
+            }
+
+            @Override
+            public void run() {
+                if (this.entry != null) {
+                    try {
+                        this.entry.tileLoaded(handle);
+                    } finally {
+                        PUnsafe.monitorExit(this.entry);
+                    }
+                }
+            }
+        }
+
+        State state = new State();
+        this.entries.computeIfPresent(handle.pos(), state);
+        state.run();
+    }
+
     @Override
     public void tilesChanged(@NonNull Stream<POS> positions) {
-        BiFunction<POS, Entry, Entry> func = (pos, entry) -> {
+        /*BiFunction<POS, Entry, Entry> func = (pos, entry) -> {
             //notify entry that the tile has been changed
             entry.tileChanged();
 
             return entry;
         };
 
-        positions.forEach(pos -> this.entries.computeIfPresent(pos, func));
+        positions.forEach(pos -> this.entries.computeIfPresent(pos, func));*/
+        //TODO: this
     }
 
     @Override
     public void tilesDirty(@NonNull Stream<POS> positions) {
-        BiFunction<POS, Entry, Entry> func = (pos, entry) -> {
+        /*BiFunction<POS, Entry, Entry> func = (pos, entry) -> {
             //notify entry that the tile is now dirty
             entry.tileDirty();
 
             return entry;
         };
 
-        positions.forEach(pos -> this.entries.computeIfPresent(pos, func));
+        positions.forEach(pos -> this.entries.computeIfPresent(pos, func));*/
+        //TODO: this
     }
 
     protected void recheckDirty(@NonNull ITileHandle<POS, T> handle) {
-        this.entries.computeIfPresent(handle.pos(), (pos, entry) -> {
+        /*this.entries.computeIfPresent(handle.pos(), (pos, entry) -> {
             //notify entry that the tile has been loaded
             entry.checkDirty();
 
             return entry;
-        });
+        });*/
+        //TODO: this
     }
 
     @DebugOnly
@@ -152,21 +185,62 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
     }
 
     protected void beginTracking(@NonNull AbstractTracker<POS, T, ?> tracker, @NonNull POS posIn) {
-        this.entries.compute(posIn, (pos, entry) -> {
-            if (entry == null) { //no entry exists at this position, so we should make a new one
-                entry = new Entry(pos);
+        class State implements BiFunction<POS, Entry, Entry>, Runnable {
+            Entry entry;
+
+            @Override
+            public Entry apply(@NonNull POS pos, Entry entry) {
+                if (entry == null) { //no entry exists at this position, so we should make a new one
+                    entry = new Entry(pos);
+                }
+
+                PUnsafe.monitorEnter(entry);
+                this.entry = entry;
+
+                return entry;
             }
 
-            return entry.addTracker(tracker);
-        });
+            @Override
+            public void run() {
+                try {
+                    this.entry.addTracker(tracker);
+                } finally {
+                    PUnsafe.monitorExit(this.entry);
+                }
+            }
+        }
+
+        State state = new State();
+        this.entries.compute(posIn, state);
+        state.run();
     }
 
     protected void stopTracking(@NonNull AbstractTracker<POS, T, ?> tracker, @NonNull POS posIn) {
-        this.entries.compute(posIn, (pos, entry) -> {
-            checkState(entry != null, "cannot remove player %s from non-existent tracking entry at %s", tracker, pos);
+        class State implements BiFunction<POS, Entry, Entry> {
+            boolean repeat;
 
-            return entry.removeTracker(tracker);
-        });
+            @Override
+            public Entry apply(@NonNull POS pos, Entry entry) {
+                checkState(entry != null, "cannot remove player %s from non-existent tracking entry at %s", tracker, pos);
+
+                if (!PUnsafe.tryMonitorEnter(entry)) { //failed to acquire a lock, break out and spin
+                    this.repeat = true;
+                    return entry;
+                }
+
+                try {
+                    this.repeat = false;
+                    return entry.removeTracker(tracker);
+                } finally {
+                    PUnsafe.monitorExit(entry);
+                }
+            }
+        }
+
+        State state = new State();
+        do {
+            this.entries.compute(posIn, state);
+        } while (state.repeat);
     }
 
     /**
@@ -203,13 +277,8 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
         public void accept(@NonNull ITileHandle<POS, T> handle) {
             if (Thread.holdsLock(this)) { //the thenAccept callback was fired immediately (from the constructor)
                 this.tileLoaded(handle);
-            } else { //future was completed from another thread - go through the TrackerManager's
-                AbstractTrackerManager.this.entries.compute(this.pos, (pos, entry) -> {
-                    if (entry == this) { //entry might be different if this entry was removed
-                        this.tileLoaded(handle);
-                    }
-                    return entry;
-                });
+            } else { //future was completed from another thread - go through TrackerManager in order to acquire a lock
+                AbstractTrackerManager.this.tileLoaded(handle);
             }
         }
 
@@ -222,18 +291,24 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
             this.checkDirty();
         }
 
-        public Entry addTracker(@NonNull AbstractTracker<POS, T, ?> tracker) {
+        public void addTracker(@NonNull AbstractTracker<POS, T, ?> tracker) {
             checkState(super.add(tracker), "player %s was already added to entry %s!", tracker, this);
 
-            if (this.handle != null) { //the tile has already been initialized, let's send it to the player
-                tracker.notifyChanged(this.handle.snapshot());
-            }
+            tracker.notifyStartedTracking(this.pos);
 
-            return this;
+            if (this.handle != null) { //the tile has already been initialized, let's send it to the player
+                tracker.notifyLoaded(this.handle.snapshot());
+            }
         }
 
         public Entry removeTracker(@NonNull AbstractTracker<POS, T, ?> tracker) {
             checkState(super.remove(tracker), "player %s did not belong to entry %s!", tracker, this);
+
+            if (this.handle != null) {
+                tracker.notifyUnloaded(this.pos);
+            }
+
+            tracker.notifyStoppedTracking(this.pos);
 
             if (super.isEmpty()) { //no more players are tracking this entry, so it can be removed
                 //release the tile load/update future (potentially removing it from the scheduler)
@@ -263,7 +338,7 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
 
             //notify all players which have this tile loaded
             ITileSnapshot<POS, T> snapshot = this.handle.snapshot();
-            super.forEach(tracker -> tracker.notifyChanged(snapshot));
+            super.forEach(tracker -> tracker.notifyLoaded(snapshot));
         }
 
         public void tileDirty() {
@@ -275,6 +350,10 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
         }
 
         protected void checkDirty() {
+            if (true) { //TODO: this
+                return;
+            }
+
             if (this.future != null && this.future.isDone()) { //an update was previously pending and has been completed
                 this.future = null;
             }

@@ -61,7 +61,7 @@ public class VoxelPosSet extends AbstractPosSet<VoxelPos> {
 
         for (int level = 0; level < delegates.length; level++) {
             int levelButFinal = level; //damn you java
-            delegates[level].forEach3D((x, y, z) -> new VoxelPos(levelButFinal, x, y, z));
+            delegates[level].forEach3D((x, y, z) -> callback.accept(new VoxelPos(levelButFinal, x, y, z)));
         }
     }
 }
