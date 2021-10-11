@@ -100,8 +100,7 @@ public abstract class MixinEntityRenderer {
 
         if (context != null) {
             FP2Config config = context.config();
-            //farPlaneDistance = FP2Config.renderDistance;
-            farPlaneDistance = config.cutoffDistance() << config.maxLevels() >> 1;
+            farPlaneDistance = config.effectiveRenderDistanceBlocks();
             //TODO: i need a better system for computing this
         }
         this.farPlaneDistance = farPlaneDistance;

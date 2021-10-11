@@ -79,18 +79,6 @@ layout(std140, binding = 0) uniform GLSTATE {
     GlFog fog;
 } glState;
 
-//FP2 state
-
-struct FP2_View {
-    int renderDistance;
-    int maxLevels;
-    int levelCutoffDistance;
-};
-
-layout(std140, binding = 1) uniform FP2_STATE {
-    FP2_View view;
-} fp2_state;
-
 //
 //
 // BUFFERS

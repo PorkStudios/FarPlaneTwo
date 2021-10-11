@@ -204,6 +204,13 @@ public final class FP2Config implements Cloneable<FP2Config> {
     }
 
     /**
+     * @return the effective render distance, in blocks
+     */
+    public long effectiveRenderDistanceBlocks() {
+        return (long) this.cutoffDistance << (this.maxLevels - 1L);
+    }
+
+    /**
      * @return this configuration encoded as a JSON string
      */
     @Override
