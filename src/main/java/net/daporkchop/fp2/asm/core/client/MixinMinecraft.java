@@ -20,9 +20,12 @@
 
 package net.daporkchop.fp2.asm.core.client;
 
+import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
 import net.daporkchop.fp2.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.profiler.Profiler;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -50,6 +53,8 @@ public abstract class MixinMinecraft implements ClientThreadMarkedFutureExecutor
     @Final
     public Profiler profiler;
 
+    @Shadow public EntityPlayerSP player;
+
     @Inject(method = "Lnet/minecraft/client/Minecraft;<init>*",
             at = @At("RETURN"))
     private void fp2_$init$_constructMarkedExecutor(CallbackInfo ci) {
@@ -71,5 +76,20 @@ public abstract class MixinMinecraft implements ClientThreadMarkedFutureExecutor
         this.profiler.startSection("fp2_scheduled_tasks");
         this.executor.doAllWork();
         this.profiler.endSection();
+    }
+
+    @Inject(
+            method = {
+                    "Lnet/minecraft/client/Minecraft;loadWorld(Lnet/minecraft/client/multiplayer/WorldClient;Ljava/lang/String;)V",
+                    "Lnet/minecraft/client/Minecraft;setDimensionAndSpawnPlayer(I)V"
+            },
+            at = @At(value = "FIELD",
+                    target = "Lnet/minecraft/client/Minecraft;player:Lnet/minecraft/client/entity/EntityPlayerSP;",
+                    opcode = Opcodes.PUTFIELD,
+                    shift = At.Shift.AFTER))
+    private void fp2_notifyContextReady(CallbackInfo ci) { //gross hack to ensure that the client config packet isn't sent until the client is ready
+        if (this.player != null) {
+            ((IFarPlayerClient) this.player.connection).fp2_IFarPlayerClient_ready();
+        }
     }
 }

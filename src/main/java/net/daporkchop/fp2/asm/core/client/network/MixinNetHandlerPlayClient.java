@@ -38,6 +38,7 @@ import net.daporkchop.fp2.net.packet.standard.server.SPacketUnloadTile;
 import net.daporkchop.fp2.net.packet.standard.server.SPacketUnloadTiles;
 import net.daporkchop.fp2.net.packet.standard.server.SPacketUpdateConfig;
 import net.daporkchop.fp2.util.annotation.CalledFromAnyThread;
+import net.daporkchop.fp2.util.annotation.CalledFromClientThread;
 import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.common.util.PorkUtil;
@@ -67,6 +68,10 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
 
     @Unique
     private boolean handshakeReceived;
+    @Unique
+    private boolean clientReady;
+    @Unique
+    private boolean initialConfigSent;
     @Unique
     private boolean sessionOpen;
 
@@ -103,7 +108,7 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
         checkState(!this.handshakeReceived, "handshake packet has already been received!");
         this.handshakeReceived = true;
 
-        PROTOCOL_FP2.sendToServer(new CPacketClientConfig().config(FP2Config.global()));
+        this.trySendInitialConfig();
     }
 
     @Unique
@@ -196,6 +201,27 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
     @Override
     public SPacketDebugUpdateStatistics fp2_IFarPlayerClient_debugServerStats() {
         return this.debugServerStats;
+    }
+
+    @CalledFromClientThread
+    @Override
+    public void fp2_IFarPlayerClient_ready() {
+        if (!this.clientReady) {
+            this.clientReady = true;
+
+            this.trySendInitialConfig();
+        }
+    }
+
+    @Unique
+    protected synchronized void trySendInitialConfig() {
+        if (!this.initialConfigSent) {
+            if (this.handshakeReceived && this.clientReady) {
+                this.initialConfigSent = true;
+
+                PROTOCOL_FP2.sendToServer(new CPacketClientConfig().config(FP2Config.global()));
+            }
+        }
     }
 
     @CalledFromAnyThread

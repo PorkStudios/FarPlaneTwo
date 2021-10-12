@@ -27,6 +27,7 @@ import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.net.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.util.annotation.CalledFromAnyThread;
+import net.daporkchop.fp2.util.annotation.CalledFromClientThread;
 import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.minecraftforge.fml.relauncher.Side;
@@ -47,6 +48,9 @@ public interface IFarPlayerClient {
     @DebugOnly
     @CalledFromAnyThread
     SPacketDebugUpdateStatistics fp2_IFarPlayerClient_debugServerStats();
+
+    @CalledFromClientThread
+    void fp2_IFarPlayerClient_ready();
 
     /**
      * @return the server's config, or {@code null} if none/currently unknown
