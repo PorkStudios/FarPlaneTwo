@@ -25,6 +25,7 @@ import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.util.annotation.CalledFromClientThread;
 import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -36,6 +37,9 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 public interface IFarPlayerClient {
     @CalledFromNetworkThread
     void fp2_IFarPlayerClient_handle(@NonNull Object packet);
+
+    @CalledFromClientThread
+    void fp2_IFarPlayerClient_ready();
 
     FP2Config fp2_IFarPlayerClient_serverConfig();
 

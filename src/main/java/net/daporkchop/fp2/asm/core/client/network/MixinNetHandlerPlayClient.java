@@ -36,6 +36,7 @@ import net.daporkchop.fp2.net.packet.server.SPacketTileData;
 import net.daporkchop.fp2.net.packet.server.SPacketUnloadTile;
 import net.daporkchop.fp2.net.packet.server.SPacketUnloadTiles;
 import net.daporkchop.fp2.net.packet.server.SPacketUpdateConfig;
+import net.daporkchop.fp2.util.annotation.CalledFromClientThread;
 import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.client.network.NetHandlerPlayClient;
@@ -63,6 +64,10 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
 
     @Unique
     private boolean handshakeReceived;
+    @Unique
+    private boolean clientReady;
+    @Unique
+    private boolean initialConfigSent;
     @Unique
     private boolean sessionOpen;
 
@@ -95,7 +100,7 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
         checkState(!this.handshakeReceived, "handshake packet has already been received!");
         this.handshakeReceived = true;
 
-        NETWORK_WRAPPER.sendToServer(new CPacketClientConfig().config(FP2Config.global()));
+        this.trySendInitialConfig();
     }
 
     @Unique
@@ -164,6 +169,27 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
     @Unique
     private void updateServerConfig(@NonNull SPacketUpdateConfig.Server packet) {
         this.serverConfig = packet.config();
+    }
+
+    @CalledFromClientThread
+    @Override
+    public void fp2_IFarPlayerClient_ready() {
+        if (!this.clientReady) {
+            this.clientReady = true;
+
+            this.trySendInitialConfig();
+        }
+    }
+
+    @Unique
+    protected synchronized void trySendInitialConfig() {
+        if (!this.initialConfigSent) {
+            if (this.handshakeReceived && this.clientReady) {
+                this.initialConfigSent = true;
+
+                NETWORK_WRAPPER.sendToServer(new CPacketClientConfig().config(FP2Config.global()));
+            }
+        }
     }
 
     @Override
