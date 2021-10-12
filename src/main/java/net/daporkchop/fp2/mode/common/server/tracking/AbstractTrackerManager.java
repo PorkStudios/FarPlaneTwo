@@ -22,6 +22,7 @@ package net.daporkchop.fp2.mode.common.server.tracking;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
@@ -52,6 +53,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.util.Constants.*;
@@ -109,72 +111,44 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
     protected abstract AbstractTracker<POS, T, ?> createTrackerFor(@NonNull IFarServerContext<POS, T> context);
 
     protected void tileLoaded(@NonNull ITileHandle<POS, T> handle) {
-        class State implements BiFunction<POS, Entry, Entry>, Runnable {
-            Entry entry;
-            boolean spin;
-
+        new AbstractEntryOperation_VoidIfPresent(handle.pos()) {
             @Override
-            public Entry apply(@NonNull POS pos, @NonNull Entry entry) {
-                this.entry = entry;
-                this.spin = !PUnsafe.tryMonitorEnter(entry);
-
-                return entry;
+            protected void run(@NonNull Entry entry) {
+                entry.tileLoaded(handle);
             }
+        }.run();
+    }
 
+    protected void tileUpdated(@NonNull ITileHandle<POS, T> handle) {
+        new AbstractEntryOperation_VoidIfPresent(handle.pos()) {
             @Override
-            public void run() {
-                if (this.entry != null) {
-                    try {
-                        this.entry.tileLoaded(handle);
-                    } finally {
-                        PUnsafe.monitorExit(this.entry);
-                    }
-                }
+            protected void run(@NonNull Entry entry) {
+                entry.tileUpdated(handle);
             }
-        }
-
-        State state = new State();
-        do {
-            state.spin = false;
-            this.entries.computeIfPresent(handle.pos(), state);
-        } while (state.spin);
-        state.run();
+        }.run();
     }
 
     @Override
     public void tilesChanged(@NonNull Stream<POS> positions) {
-        /*BiFunction<POS, Entry, Entry> func = (pos, entry) -> {
-            //notify entry that the tile has been changed
-            entry.tileChanged();
-
-            return entry;
-        };
-
-        positions.forEach(pos -> this.entries.computeIfPresent(pos, func));*/
-        //TODO: this
     }
 
     @Override
     public void tilesDirty(@NonNull Stream<POS> positions) {
-        /*BiFunction<POS, Entry, Entry> func = (pos, entry) -> {
-            //notify entry that the tile is now dirty
-            entry.tileDirty();
-
-            return entry;
-        };
-
-        positions.forEach(pos -> this.entries.computeIfPresent(pos, func));*/
-        //TODO: this
+        positions.forEach(pos -> new AbstractEntryOperation_VoidIfPresent(pos) {
+            @Override
+            protected void run(@NonNull Entry entry) {
+                entry.tileDirty();
+            }
+        }.run());
     }
 
     protected void recheckDirty(@NonNull ITileHandle<POS, T> handle) {
-        /*this.entries.computeIfPresent(handle.pos(), (pos, entry) -> {
-            //notify entry that the tile has been loaded
-            entry.checkDirty();
-
-            return entry;
-        });*/
-        //TODO: this
+        new AbstractEntryOperation_VoidIfPresent(handle.pos()) {
+            @Override
+            protected void run(@NonNull Entry entry) {
+                entry.checkDirty(handle);
+            }
+        }.run();
     }
 
     @DebugOnly
@@ -251,12 +225,49 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
     }
 
     /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    protected abstract class AbstractEntryOperation_VoidIfPresent implements BiFunction<POS, Entry, Entry>, Runnable {
+        @NonNull
+        protected final POS pos;
+
+        protected Entry entry;
+        protected boolean spin;
+
+        @Override
+        public Entry apply(@NonNull POS pos, @NonNull Entry entry) {
+            this.entry = entry;
+            this.spin = !PUnsafe.tryMonitorEnter(entry);
+
+            return entry;
+        }
+
+        @Override
+        public void run() {
+            do {
+                AbstractTrackerManager.this.entries.computeIfPresent(this.pos, this);
+            } while (this.spin);
+
+            if (this.entry != null) {
+                try {
+                    this.run(this.entry);
+                } finally {
+                    PUnsafe.monitorExit(this.entry);
+                }
+            }
+        }
+
+        protected abstract void run(@NonNull Entry entry);
+    }
+
+    /**
      * Associates a tile position to the {@link AbstractTracker}s which are tracking it.
      *
      * @author DaPorkchop_
      */
     @ToString
-    protected class Entry extends CompactReferenceArraySet<AbstractTracker<POS, T, ?>> implements Consumer<ITileHandle<POS, T>> {
+    protected class Entry extends CompactReferenceArraySet<AbstractTracker<POS, T, ?>> implements Consumer<ITileHandle<POS, T>>, Function<ITileHandle<POS, T>, Void> {
         //we're using an ArraySet because even though all the operations run in O(n) time, it shouldn't ever be an issue - this should still be plenty fast even if there are
         //  hundreds of players tracking the same tile, and it uses a fair amount less memory than an equivalent HashSet.
         //we extend from CompactReferenceArraySet rather than having it as a field in order to minimize memory wasted by JVM object headers and the likes, as well as reduced
@@ -289,11 +300,11 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
             }
 
             if (super.isEmpty()) { //no more players are tracking this entry, so it can be removed
-                //release the tile load/update future (potentially removing it from the scheduler)
-                /*if (this.future != null) {
-                    this.future.cancel(false);
-                    this.future = null;
-                }*/ //TODO: this needs to be there for updates
+                //release the tile update future if present (potentially removing it from the scheduler)
+                if (this.updateFuture != null) {
+                    this.updateFuture.cancel(false);
+                    this.updateFuture = null;
+                }
 
                 //this entry should be replaced with null
                 return null;
@@ -313,6 +324,10 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
                 this.loadFuture = AbstractTrackerManager.this.tileProvider.requestLoad(this.pos);
                 this.loadFuture.thenAccept(this);
             }
+        }
+
+        protected boolean isWaitingForLoad(@NonNull AbstractTracker<POS, T, ?> tracker) {
+            return this.trackersWaitingForLoad != null && this.trackersWaitingForLoad.contains(tracker);
         }
 
         protected boolean removeWaitingForLoad(@NonNull AbstractTracker<POS, T, ?> tracker) {
@@ -335,7 +350,7 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
          */
         @Override
         @Deprecated
-        public void accept(@NonNull ITileHandle<POS, T> handle) {
+        public void accept(@NonNull ITileHandle<POS, T> handle) { //used by loadFuture
             if (Thread.holdsLock(this)) { //the thenAccept callback was fired immediately
                 this.tileLoaded(handle);
             } else { //future was completed from another thread - go through TrackerManager in order to acquire a lock
@@ -364,40 +379,62 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
                 this.trackersWaitingForLoad = null;
             }
 
-            //this.checkDirty(handle);
+            this.checkDirty(handle);
         }
 
-        //TODO: this
-        /*public void tileChanged() {
-            if (this.handle == null) { //tile hasn't been loaded yet, we don't care about any updates
-                return;
+        public void tileUpdated(@NonNull ITileHandle<POS, T> handle) {
+            checkState(handle.isInitialized(), "handle at %s hasn't been initialized yet!", this.pos);
+
+            checkState(this.updateFuture != null, "tileUpdated called at %s even though it wasn't scheduled for an update!", this.pos);
+            checkState(this.updateFuture.isDone(), "tileUpdated called at %s even though it wasn't complete!", this.pos);
+            this.updateFuture = null;
+
+            ITileSnapshot<POS, T> snapshot = handle.snapshot();
+            if (snapshot.timestamp() > this.lastSentTimestamp) { //tile is newer than the tile previously sent to all trackers, so we'll broadcast it to all the trackers
+                //  which aren't waiting for an initial load
+                this.lastSentTimestamp = snapshot.timestamp();
+
+                super.forEach(tracker -> {
+                    if (!this.isWaitingForLoad(tracker)) {
+                        tracker.notifyChanged(snapshot);
+                    }
+                });
             }
 
-            this.notifyTrackers();
-            this.checkDirty();
+            this.checkDirty(handle);
         }
 
         public void tileDirty() {
-            if (this.handle == null) { //tile hasn't been loaded yet, we don't care about any updates
-                return;
-            }
-
-            this.checkDirty();
+            this.checkDirty(AbstractTrackerManager.this.tileProvider.storage().handleFor(this.pos));
         }
 
-        protected void checkDirty() {
-            if (this.future != null && this.future.isDone()) { //an update was previously pending and has been completed
-                this.future = null;
+        protected void checkDirty(@NonNull ITileHandle<POS, T> handle) {
+            if (this.updateFuture != null && this.updateFuture.isDone()) { //an update was previously pending and has been completed
+                this.updateFuture = null;
             }
 
-            if (this.future != null //tile is still being loaded or is already being updated, we shouldn't try to update it again
-                || this.handle.dirtyTimestamp() == ITileMetadata.TIMESTAMP_BLANK) { //tile isn't dirty, no need to update
+            if (this.updateFuture != null //tile is still being loaded or is already being updated, we shouldn't try to update it again
+                || handle.dirtyTimestamp() == ITileMetadata.TIMESTAMP_BLANK) { //tile isn't dirty, no need to update
                 return;
             }
 
             //schedule a new update task for this tile
-            this.future = AbstractTrackerManager.this.tileProvider.requestUpdate(this.pos);
-            this.future.thenAccept(AbstractTrackerManager.this::recheckDirty);
-        }*/
+            this.updateFuture = AbstractTrackerManager.this.tileProvider.requestUpdate(this.pos);
+            this.updateFuture.thenApply(this);
+        }
+
+        /**
+         * @deprecated internal API, do not touch!
+         */
+        @Override
+        @Deprecated
+        public Void apply(ITileHandle<POS, T> handle) { //used by updateFuture
+            if (Thread.holdsLock(this)) { //the thenApply callback was fired immediately
+                this.tileUpdated(handle);
+            } else { //future was completed from another thread - go through TrackerManager in order to acquire a lock
+                AbstractTrackerManager.this.tileUpdated(handle);
+            }
+            return null;
+        }
     }
 }
