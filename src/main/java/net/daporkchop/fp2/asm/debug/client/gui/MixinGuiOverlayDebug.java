@@ -106,7 +106,8 @@ public abstract class MixinGuiOverlayDebug extends Gui {
             if (packet != null) {
                 DebugStats.Tracking trackingStats = packet.tracking();
                 if (trackingStats != null) {
-                    list.add("Tracker: " + numberFormat.format(trackingStats.tilesTotal()) + "T " + numberFormat.format(trackingStats.tilesLoaded()) + "L "
+                    list.add("Tracker: " + numberFormat.format(trackingStats.tilesTrackedGlobal()) + "G "
+                             + numberFormat.format(trackingStats.tilesTotal()) + "T " + numberFormat.format(trackingStats.tilesLoaded()) + "L "
                              + numberFormat.format(trackingStats.tilesLoading()) + "P " + numberFormat.format(trackingStats.tilesQueued()) + 'Q');
                     list.add("Updates: " + GuiHelper.formatDuration(trackingStats.avgUpdateDuration()) + " avg, " + GuiHelper.formatDuration(trackingStats.lastUpdateDuration()) + " last");
                 } else {

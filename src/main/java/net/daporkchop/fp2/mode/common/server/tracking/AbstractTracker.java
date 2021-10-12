@@ -346,6 +346,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
                 .tilesLoaded(this.loadedPositions.count())
                 .tilesLoading(this.waitingPositions.size())
                 .tilesQueued(this.queuedPositions.size())
+                .tilesTrackedGlobal(this.manager.entries().size())
                 .lastUpdateDuration(this.lastUpdateTime)
                 .avgUpdateDuration(this.lastUpdateTime)
                 .build();

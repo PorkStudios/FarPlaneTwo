@@ -152,6 +152,7 @@ public class DebugStats {
         protected final long tilesLoaded;
         protected final long tilesLoading;
         protected final long tilesQueued;
+        protected final long tilesTrackedGlobal;
 
         protected final long avgUpdateDuration;
         protected final long lastUpdateDuration;

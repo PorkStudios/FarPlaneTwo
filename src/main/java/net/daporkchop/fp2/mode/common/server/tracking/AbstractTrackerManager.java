@@ -47,12 +47,14 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -262,15 +264,69 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
 
         protected final POS pos;
 
-        protected CompletableFuture<ITileHandle<POS, T>> future;
-        protected ITileHandle<POS, T> handle;
+        protected CompletableFuture<ITileHandle<POS, T>> loadFuture;
+        protected CompletableFuture<ITileHandle<POS, T>> updateFuture;
+        protected Set<AbstractTracker<POS, T, ?>> trackersWaitingForLoad; //all tracker instances which are waiting for the load future to be completed, or null if empty
+
+        protected long lastSentTimestamp = ITileMetadata.TIMESTAMP_BLANK;
 
         public Entry(@NonNull POS pos) {
             this.pos = pos;
+        }
 
-            synchronized (this) { //synchronize here so that we can detect whether or not the callback was immediate in #accept(ITileHandle)
-                this.future = AbstractTrackerManager.this.tileProvider.requestLoad(pos);
-                this.future.thenAccept(this);
+        public void addTracker(@NonNull AbstractTracker<POS, T, ?> tracker) {
+            checkState(super.add(tracker), "player %s was already added to entry %s!", tracker, this);
+
+            this.addWaitingForLoad(tracker);
+        }
+
+        public Entry removeTracker(@NonNull AbstractTracker<POS, T, ?> tracker) {
+            checkState(super.remove(tracker), "player %s did not belong to entry %s!", tracker, this);
+
+            if (!this.removeWaitingForLoad(tracker)) { //the tracker wasn't waiting for the tile to be loaded, which means it's already been loaded for the tracker and we need to
+                //  send a tile unload notification now
+                tracker.notifyUnloaded(this.pos);
+            }
+
+            if (super.isEmpty()) { //no more players are tracking this entry, so it can be removed
+                //release the tile load/update future (potentially removing it from the scheduler)
+                /*if (this.future != null) {
+                    this.future.cancel(false);
+                    this.future = null;
+                }*/ //TODO: this needs to be there for updates
+
+                //this entry should be replaced with null
+                return null;
+            } else {
+                return this;
+            }
+        }
+
+        protected void addWaitingForLoad(@NonNull AbstractTracker<POS, T, ?> tracker) {
+            if (this.trackersWaitingForLoad == null) {
+                this.trackersWaitingForLoad = new CompactReferenceArraySet<>();
+            }
+
+            checkState(this.trackersWaitingForLoad.add(tracker), "already waiting for load: %s", tracker);
+
+            if (this.loadFuture == null) { //loadFuture isn't set, schedule a new one
+                this.loadFuture = AbstractTrackerManager.this.tileProvider.requestLoad(this.pos);
+                this.loadFuture.thenAccept(this);
+            }
+        }
+
+        protected boolean removeWaitingForLoad(@NonNull AbstractTracker<POS, T, ?> tracker) {
+            if (this.trackersWaitingForLoad != null && this.trackersWaitingForLoad.remove(tracker)) {
+                if (this.trackersWaitingForLoad.isEmpty()) { //set is now empty, set it to null to save memory
+                    this.trackersWaitingForLoad = null;
+
+                    //cancel the load future since it's no longer needed
+                    this.loadFuture.cancel(false);
+                    this.loadFuture = null;
+                }
+                return true;
+            } else {
+                return false;
             }
         }
 
@@ -280,7 +336,7 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
         @Override
         @Deprecated
         public void accept(@NonNull ITileHandle<POS, T> handle) {
-            if (Thread.holdsLock(this)) { //the thenAccept callback was fired immediately (from the constructor)
+            if (Thread.holdsLock(this)) { //the thenAccept callback was fired immediately
                 this.tileLoaded(handle);
             } else { //future was completed from another thread - go through TrackerManager in order to acquire a lock
                 AbstractTrackerManager.this.tileLoaded(handle);
@@ -288,58 +344,37 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
         }
 
         public void tileLoaded(@NonNull ITileHandle<POS, T> handle) {
-            checkState(this.handle == null, "already loaded handle at %s?!?", this.pos);
-            this.future = null;
-            this.handle = handle;
+            checkState(handle.isInitialized(), "handle at %s hasn't been initialized yet!", this.pos);
 
-            this.notifyTrackers();
-            this.checkDirty();
-        }
-
-        public void addTracker(@NonNull AbstractTracker<POS, T, ?> tracker) {
-            checkState(super.add(tracker), "player %s was already added to entry %s!", tracker, this);
-
-            if (this.handle != null) { //the tile has already been initialized, let's send it to the player
-                tracker.notifyChanged(this.handle.snapshot());
-            }
-        }
-
-        public Entry removeTracker(@NonNull AbstractTracker<POS, T, ?> tracker) {
-            checkState(super.remove(tracker), "player %s did not belong to entry %s!", tracker, this);
-
-            if (this.handle != null) {
-                tracker.notifyUnloaded(this.pos);
+            if (this.loadFuture != null) { //cancel loadFuture if needed
+                this.loadFuture.cancel(false);
+                this.loadFuture = null;
             }
 
-            if (super.isEmpty()) { //no more players are tracking this entry, so it can be removed
-                //release the tile load/update future (potentially removing it from the scheduler)
-                if (this.future != null) {
-                    this.future.cancel(false);
-                    this.future = null;
-                }
+            ITileSnapshot<POS, T> snapshot = handle.snapshot();
+            if (snapshot.timestamp() > this.lastSentTimestamp) { //tile is newer than the tile previously sent to all trackers, so we'll broadcast it to everyone
+                this.lastSentTimestamp = snapshot.timestamp();
 
-                //this entry should be replaced with null
-                return null;
-            } else {
-                return this;
+                super.forEach(tracker -> tracker.notifyChanged(snapshot));
+
+                //all of the trackers which were waiting for load have been notified as well
+                this.trackersWaitingForLoad = null;
+            } else if (this.trackersWaitingForLoad != null) { //notify only the players which were waiting for the tile to be loaded
+                this.trackersWaitingForLoad.forEach(tracker -> tracker.notifyChanged(snapshot));
+                this.trackersWaitingForLoad = null;
             }
+
+            //this.checkDirty(handle);
         }
 
-        public void tileChanged() {
+        //TODO: this
+        /*public void tileChanged() {
             if (this.handle == null) { //tile hasn't been loaded yet, we don't care about any updates
                 return;
             }
 
             this.notifyTrackers();
             this.checkDirty();
-        }
-
-        protected void notifyTrackers() {
-            checkState(this.handle.isInitialized(), "handle at %s hasn't been initialized yet!", this.pos);
-
-            //notify all players which have this tile loaded
-            ITileSnapshot<POS, T> snapshot = this.handle.snapshot();
-            super.forEach(tracker -> tracker.notifyChanged(snapshot));
         }
 
         public void tileDirty() {
@@ -351,10 +386,6 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
         }
 
         protected void checkDirty() {
-            if (true) { //TODO: this
-                return;
-            }
-
             if (this.future != null && this.future.isDone()) { //an update was previously pending and has been completed
                 this.future = null;
             }
@@ -367,6 +398,6 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
             //schedule a new update task for this tile
             this.future = AbstractTrackerManager.this.tileProvider.requestUpdate(this.pos);
             this.future.thenAccept(AbstractTrackerManager.this::recheckDirty);
-        }
+        }*/
     }
 }
