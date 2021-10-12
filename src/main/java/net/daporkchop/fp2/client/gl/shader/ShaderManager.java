@@ -32,6 +32,7 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.debug.util.DebugUtils;
 import net.daporkchop.lib.binary.oio.StreamUtil;
 import net.daporkchop.lib.common.misc.string.PStrings;
+import net.minecraft.util.ResourceLocation;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -60,7 +61,7 @@ import static org.lwjgl.opengl.GL20.*;
  */
 @UtilityClass
 public class ShaderManager {
-    protected final String BASE_PATH = "/assets/fp2/shaders";
+    protected final String BASE_PATH = "shaders";
 
     protected final LoadingCache<AbstractShaderBuilder, ShaderProgram> SHADER_CACHE = CacheBuilder.newBuilder()
             .weakValues()
@@ -105,8 +106,7 @@ public class ShaderManager {
                 IntStream.range(0, names.length)
                         .mapToObj(idx -> {
                             String fileName = names[idx];
-                            try (InputStream in = ShaderManager.class.getResourceAsStream(BASE_PATH + '/' + fileName)) {
-                                checkState(in != null, "Unable to find shader file: \"%s\"!", fileName);
+                            try (InputStream in = MC.resourceManager.getResource(new ResourceLocation("fp2", BASE_PATH + '/' + fileName)).getInputStream()) {
                                 String prefix = "#line 1 " + (idx + 1) + '\n';
                                 String code = new String(StreamUtil.toByteArray(in), StandardCharsets.UTF_8);
                                 return prefix + code;

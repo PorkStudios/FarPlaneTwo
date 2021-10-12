@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.client;
 
+import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.IResourceManagerReloadListener;
 import net.minecraftforge.client.resource.IResourceType;
@@ -39,6 +40,9 @@ public class FP2ResourceReloadListener implements ISelectiveResourceReloadListen
     public void onResourceManagerReload(IResourceManager resourceManager, Predicate<IResourceType> resourcePredicate) {
         if (resourcePredicate.test(VanillaResourceType.TEXTURES)) {
             TexUVs.reloadUVs();
+        }
+        if (resourcePredicate.test(VanillaResourceType.SHADERS)) {
+            ShaderManager.reload(false);
         }
     }
 }

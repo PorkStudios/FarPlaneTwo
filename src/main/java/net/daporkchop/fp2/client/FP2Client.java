@@ -75,8 +75,6 @@ public class FP2Client {
         ClientEvents.register();
 
         ConfigListenerManager.add(() -> NETWORK_WRAPPER.sendToServer(new CPacketClientConfig().config(FP2Config.global())));
-
-        ((IReloadableResourceManager) Minecraft.getMinecraft().getResourceManager()).registerReloadListener(new FP2ResourceReloadListener());
     }
 
     /**
@@ -91,6 +89,8 @@ public class FP2Client {
      */
     public void postInit() {
         TexUVs.initDefault();
+
+        ((IReloadableResourceManager) Minecraft.getMinecraft().getResourceManager()).registerReloadListener(new FP2ResourceReloadListener());
 
         //load shader classes on client thread
         PUnsafe.ensureClassInitialized(HeightmapShaders.class);

@@ -32,6 +32,7 @@ import net.daporkchop.fp2.client.gl.WorkGroupSize;
 import net.daporkchop.lib.binary.oio.reader.UTF8FileReader;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.ResourceLocation;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,6 +40,7 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
+import static net.daporkchop.fp2.FP2.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -104,8 +106,7 @@ public final class ComputeShaderBuilder extends ShaderManager.AbstractShaderBuil
     @SneakyThrows(IOException.class)
     protected ProgramMeta meta() {
         ProgramMeta meta;
-        try (InputStream in = ShaderManager.class.getResourceAsStream(PStrings.fastFormat("%s/prog/%s.json", ShaderManager.BASE_PATH, this.programName))) {
-            checkArg(in != null, "Unable to find shader meta file: \"%s/prog/%s.json\"!", ShaderManager.BASE_PATH, this.programName);
+        try (InputStream in = MC.resourceManager.getResource(new ResourceLocation(MODID, ShaderManager.BASE_PATH + "/prog/" + this.programName + ".json")).getInputStream()) {
             meta = GSON.fromJson(new UTF8FileReader(in), ProgramMeta.class);
         }
 
