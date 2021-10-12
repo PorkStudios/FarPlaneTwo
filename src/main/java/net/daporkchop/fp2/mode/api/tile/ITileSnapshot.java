@@ -52,9 +52,14 @@ public interface ITileSnapshot<POS extends IFarPos, T extends IFarTile> extends 
     boolean isEmpty();
 
     /**
-     * @return this snapshot as a {@link CompressedTileSnapshot}
+     * @return this snapshot, with its tile data stored compressed in-memory
      */
     ITileSnapshot<POS, T> compressed();
+
+    /**
+     * @return this snapshot, with its tile data stored in-memory without compression
+     */
+    ITileSnapshot<POS, T> uncompressed();
 
     @DebugOnly
     DebugStats.TileSnapshot stats();

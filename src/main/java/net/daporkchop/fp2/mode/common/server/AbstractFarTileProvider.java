@@ -29,12 +29,12 @@ import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
+import net.daporkchop.fp2.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.common.server.storage.rocksdb.RocksStorage;
 import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
@@ -66,9 +66,6 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Getter
 public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFarTile> implements IFarTileProvider<POS, T>, IWorldChangeListener {
-    protected static final int PRIORITY_UPDATE = 1;
-    protected static final int PRIORITY_LOAD = -1;
-
     protected final WorldServer world;
     protected final IFarRenderMode<POS, T> mode;
     protected final File root;

@@ -91,6 +91,11 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements IT
         return new CompressedTileSnapshot<>(this);
     }
 
+    @Override
+    public ITileSnapshot<POS, T> uncompressed() {
+        return this; //we're already uncompressed!
+    }
+
     @DebugOnly
     @Override
     public DebugStats.TileSnapshot stats() {

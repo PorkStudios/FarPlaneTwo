@@ -82,6 +82,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
     protected volatile STATE nextState;
 
     protected volatile boolean queuePaused = false;
+    protected volatile boolean closed = false;
 
     @DebugOnly(RemovalPolicy.DROP)
     protected long lastUpdateTime;
@@ -114,6 +115,10 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
      * Actually runs a tracker update. Called from the {@link #manager}'s update scheduler.
      */
     protected void doUpdate() {
+        if (this.closed) { //the tracker has been closed, exit
+            return;
+        }
+
         { //check if we need to update tracking state
             STATE lastState = this.lastState;
             STATE nextState = this.nextState;
@@ -122,27 +127,11 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
                 this.lastState = nextState;
                 this.nextState = null;
 
-                { //untrack all the currently waiting tiles
-                    //  this makes tile loading more responsive by forcing high-priority tiles to the front of the execution queue, and simplifies
-                    //  synchronization logic in the rest of this class' code
-
-                    //pause queue updates in order to make waitingPositions immutable
-                    synchronized (this) { //synchronizing here is, in fact, critical to making this work (i think)
-                        this.queuePaused = true;
-                    }
-
-                    List<POS> waitingPositions = new ArrayList<>(this.waitingPositions);
-                    this.waitingPositions.clear();
-
-                    //stop tracking all positions in the set
-                    waitingPositions.forEach(pos -> this.manager.stopTracking(this, pos));
-
-                    synchronized (this) {
-                        //re-add all of the now cancelled tasks to the queue
-                        //  (this probably doesn't need to be synchronized, but i'm doing it anyway to be safe)
-                        this.queuedPositions.addAll(waitingPositions);
-                    }
-                }
+                //untrack all the currently waiting tiles
+                //  this makes tile loading more responsive by forcing high-priority tiles to the front of the execution queue, and simplifies
+                //  synchronization logic in the rest of this class' code
+                this.pauseQueue();
+                this.clearWaiting();
 
                 try (SimpleSet<POS> untrackingPositions = this.mode.directPosAccess().newPositionSet()) {
                     //actually update the tracking state (this is synchronized)
@@ -155,11 +144,11 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
                 checkState(this.waitingPositions.isEmpty(), "load queue isn't empty?!? %s", this.waitingPositions);
 
                 //unpause the queue so that we can fill it up again
-                this.queuePaused = false;
+                this.unpauseQueue();
             }
         }
 
-        this.updateFillLoadQueue();
+        this.updateWaiting();
     }
 
     protected synchronized void updateState(STATE lastState, @NonNull STATE nextState, @NonNull SimpleSet<POS> untrackingPositions) {
@@ -190,8 +179,50 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
         this.lastUpdateTime = System.nanoTime() - startTime;
     }
 
-    protected void updateFillLoadQueue() {
-        int targetLoadQueueSize = FP2Config.global().performance().terrainThreads() << 4;
+    /**
+     * Unpauses the load queue, allowing waiting positions to be added again.
+     * <p>
+     * {@link #unpauseQueue()} must be called at some point after calling this method, otherwise tile loading will stop.
+     */
+    protected synchronized void pauseQueue() { //synchronizing is, in fact, critical to making this work (i think)
+        this.queuePaused = true;
+    }
+
+    /**
+     * Unpauses the load queue, allowing waiting positions to be added again.
+     */
+    protected void unpauseQueue() {
+        this.queuePaused = false;
+    }
+
+    /**
+     * Stops tracking all tiles that are being waited on and re-adds them to the queue.
+     * <p>
+     * The queue must be paused (using {@link #pauseQueue()}) when this method is called.
+     */
+    protected synchronized void clearWaiting() {
+        //move completed positions from waitingPositions to loadedPositions
+        for (POS pos; (pos = this.doneWaitingPositions.poll()) != null; ) {
+            this.waitingPositions.remove(pos);
+            this.loadedPositions.add(pos);
+        }
+
+        //remove the rest of the waiting positions, stop tracking them and re-add them to the load queue
+        List<POS> waitingPositions = new ArrayList<>(this.waitingPositions);
+        this.waitingPositions.clear();
+
+        //stop tracking all positions in the set
+        waitingPositions.forEach(pos -> this.manager.stopTracking(this, pos));
+
+        //re-add all of the now cancelled tasks to the queue
+        this.queuedPositions.addAll(waitingPositions);
+    }
+
+    /**
+     * Mark completed tiles as loaded, and replaces them by beginning to wait on new positions from the queue (if possible).
+     */
+    protected void updateWaiting() {
+        int targetLoadQueueSize = FP2Config.global().performance().terrainThreads();
         List<POS> positions = new ArrayList<>();
 
         do {
@@ -258,7 +289,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
                 checkState(this.doneWaitingPositions.add(pos), "couldn't mark completed position as done waiting: ", pos);
 
                 //try to fill up the load queue again to compensate for the removal of this position
-                this.updateFillLoadQueue();
+                this.updateWaiting();
             }
         } catch (Throwable t) {
             ThreadingHelper.handle(this.context.tileProvider().world(), t);
@@ -281,6 +312,12 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
     @CalledFromServerThread
     @Override
     public synchronized void close() {
+        checkState(!this.closed, "already closed!");
+        this.closed = true;
+
+        //pause the queue to prevent workers from doing anything else
+        this.pauseQueue();
+
         //tell the client to unload all tiles
         this.context.sendMultiTileUnload(this.loadedPositions);
 
@@ -296,11 +333,15 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
         //release everything
         this.queuedPositions.close();
         this.loadedPositions.close();
+        this.waitingPositions.clear();
+        this.doneWaitingPositions.clear();
     }
 
     @DebugOnly
     @Override
     public DebugStats.Tracking debugStats() {
+        //i don't care that i'm calling #count() and #size() in a not thread-safe manner - worst-case scenario, the count is reported incorrectly for a split second
+
         return DebugStats.Tracking.builder()
                 .tilesLoaded(this.loadedPositions.count())
                 .tilesLoading(this.waitingPositions.size())

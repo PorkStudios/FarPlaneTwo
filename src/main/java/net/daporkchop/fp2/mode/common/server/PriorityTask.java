@@ -37,6 +37,7 @@ public interface PriorityTask<POS extends IFarPos> {
      * @deprecated internal API, do not touch!
      */
     @Deprecated
+    @SuppressWarnings("DeprecatedIsStillUsed")
     Comparator<PriorityTask<?>> _APPROX_COMPARATOR = (a, b) -> {
         int d;
         if ((d = a.stage().compareTo(b.stage())) == 0) {
