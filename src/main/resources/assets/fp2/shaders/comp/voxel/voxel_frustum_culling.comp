@@ -43,7 +43,7 @@ bool select(uint index) { //implements method in comp/command_buffer_selection.c
     ivec3 position_relative = position_absolute - glState.camera.position_floor;
 
     return
-#if defined(LEVEL_0)
+#if LEVEL_0
         !isVanillaRenderableLevel0(pos.xyz) &&
 #endif
         isBoxInFrustum(

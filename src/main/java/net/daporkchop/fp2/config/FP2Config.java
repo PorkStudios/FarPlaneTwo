@@ -415,7 +415,7 @@ public final class FP2Config implements Cloneable<FP2Config> {
             DISABLED(false),
             LEVEL(true),
             POSITION(true),
-            FACE_NORMAL(true);
+            NORMAL(true);
 
             protected final boolean enable;
         }

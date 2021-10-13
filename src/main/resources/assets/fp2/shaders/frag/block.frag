@@ -22,10 +22,12 @@ void main() {
     vec3 normal = normalVector();
 
     vec4 frag_color;
-#if defined(USE_DEBUG_COLORS_FACE_NORMAL)
-    frag_color = vec4(normal * normal, 1.);
-#elif defined(USE_DEBUG_COLORS)
+#if FP2_DEBUG_COLORS_ENABLED
+#if FP2_DEBUG_COLORS_MODE == FP2_DEBUG_COLORS_MODE_LEVEL || FP2_DEBUG_COLORS_MODE == FP2_DEBUG_COLORS_MODE_POSITION
     frag_color = vec4(fs_in.color * diffuseLight(normal), 1.);
+#elif FP2_DEBUG_COLORS_MODE == FP2_DEBUG_COLORS_MODE_NORMAL
+    frag_color = vec4(normal * normal, 1.);
+#endif
 #else
     //initial block texture sample
     frag_color = sampleTerrain(normal);

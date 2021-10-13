@@ -48,8 +48,6 @@ vec4 addFog(in vec4 color) {
 #elif GL_FOG_MODE == GL_FOG_MODE_EXP2
     float depth = fog_in.depth;
     fogFactor = exp(-glState.fog.density * (depth * depth));
-#else
-#error unsupported fog mode!
 #endif
 
     //mix fog colors

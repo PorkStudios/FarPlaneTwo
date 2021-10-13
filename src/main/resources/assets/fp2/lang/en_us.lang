@@ -159,8 +159,8 @@ net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#LEVEL=Tile Level
 net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#LEVEL.tooltip=Colors tiles based on their detail level.
 net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#POSITION=Tile Position
 net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#POSITION.tooltip=Colors tiles in a checkerboard patter based on their position and detail level.
-net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#FACE_NORMAL=Face Normal
-net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#FACE_NORMAL.tooltip=Colors individual triangles based on their normal vector.
+net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#NORMAL=Normal
+net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#NORMAL.tooltip=Colors individual triangles based on their normal vector.
 
 fp2.config.menu.debug.server.category=Server
 fp2.config.menu.debug.exactGeneration=Exact Generation
