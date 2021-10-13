@@ -121,8 +121,8 @@ public class ShaderGlStateHelper {
             addr += FLOAT_SIZE;
 
             ShaderManager.changeDefines()
-                    .define("GL_FOG_ENABLED", glGetBoolean(GL_FOG))
-                    .define("GL_FOG_MODE", glGetInteger(GL_FOG_MODE))
+                    .define("FP2_FOG_ENABLED", glGetBoolean(GL_FOG))
+                    .define("FP2_FOG_MODE", glGetInteger(GL_FOG_MODE))
                     .apply();
         }
 

@@ -24,11 +24,11 @@
 //
 //
 
-#if GL_FOG_ENABLED
+#if FP2_FOG_ENABLED
 in FOG {
     float depth;
 } fog_in;
-#endif //GL_FOG_ENABLED
+#endif //FP2_FOG_ENABLED
 
 //
 //
@@ -37,15 +37,15 @@ in FOG {
 //
 
 vec4 addFog(in vec4 color) {
-#if GL_FOG_ENABLED
+#if FP2_FOG_ENABLED
     //compute the fog factor (formula depends on the current fog mode)
     float fogFactor;
 
-#if GL_FOG_MODE == GL_FOG_MODE_LINEAR
+#if FP2_FOG_MODE == FP2_FOG_MODE_LINEAR
     fogFactor = (glState.fog.end - fog_in.depth) * glState.fog.scale;
-#elif GL_FOG_MODE == GL_FOG_MODE_EXP
+#elif FP2_FOG_MODE == FP2_FOG_MODE_EXP
     fogFactor = exp(-glState.fog.density * fog_in.depth);
-#elif GL_FOG_MODE == GL_FOG_MODE_EXP2
+#elif FP2_FOG_MODE == FP2_FOG_MODE_EXP2
     float depth = fog_in.depth;
     fogFactor = exp(-glState.fog.density * (depth * depth));
 #endif

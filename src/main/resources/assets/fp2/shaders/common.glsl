@@ -53,29 +53,29 @@
 // Fog
 
 //the following 2 macros are defined from java code:
-//#define GL_FOG_ENABLED (bool)
-//#define GL_FOG_MODE (GL_FOG_MODE_*)
+//#define FP2_FOG_ENABLED (bool)
+//#define FP2_FOG_MODE (FP2_FOG_MODE_*)
 
 //f = (end - c) / (end - start)
-#define GL_FOG_MODE_LINEAR (9729)
+#define FP2_FOG_MODE_LINEAR (9729)
 
 //f = e ^ (-density * c)
-#define GL_FOG_MODE_EXP (2048)
+#define FP2_FOG_MODE_EXP (2048)
 
 //f = e ^ (-density * c ^ 2)
-#define GL_FOG_MODE_EXP2 (2049)
+#define FP2_FOG_MODE_EXP2 (2049)
 
 //f = <user code included from resource at this macro>
-//#define GL_FOG_MODE_USER fp2:shaders/frag/fog/placeholder_user_fog.frag
+//#define FP2_FOG_MODE_USER fp2:shaders/frag/fog/placeholder_user_fog.frag
 
-#if !defined(GL_FOG_ENABLED) || !GL_FOG_ENABLED || !defined(GL_FOG_MODE)
-#undef GL_FOG_ENABLED
-#undef GL_FOG_MODE
-#define GL_FOG_ENABLED (0)
-#define GL_FOG_MODE (-1)
+#if !defined(FP2_FOG_ENABLED) || !FP2_FOG_ENABLED || !defined(FP2_FOG_MODE)
+#undef FP2_FOG_ENABLED
+#undef FP2_FOG_MODE
+#define FP2_FOG_ENABLED (0)
+#define FP2_FOG_MODE (-1)
 #endif
 
-#if GL_FOG_ENABLED && GL_FOG_MODE != GL_FOG_MODE_LINEAR && GL_FOG_MODE != GL_FOG_MODE_EXP && GL_FOG_MODE != GL_FOG_MODE_EXP2
+#if FP2_FOG_ENABLED && FP2_FOG_MODE != FP2_FOG_MODE_LINEAR && FP2_FOG_MODE != FP2_FOG_MODE_EXP && FP2_FOG_MODE != FP2_FOG_MODE_EXP2
 #error unsupported fog mode!
 #endif
 

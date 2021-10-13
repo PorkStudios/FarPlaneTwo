@@ -24,11 +24,11 @@
 //
 //
 
-#if GL_FOG_ENABLED
+#if FP2_FOG_ENABLED
 out FOG {
     float depth;
 } fog_out;
-#endif //GL_FOG_ENABLED
+#endif //FP2_FOG_ENABLED
 
 //
 //
@@ -37,7 +37,7 @@ out FOG {
 //
 
 void setFog(in vec3 relativePos) {
-#if GL_FOG_ENABLED
+#if FP2_FOG_ENABLED
     //set fog depth based on vertex distance to camera
     fog_out.depth = length(relativePos);
 #else
