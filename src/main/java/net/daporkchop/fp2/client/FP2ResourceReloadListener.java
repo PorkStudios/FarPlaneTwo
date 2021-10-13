@@ -42,7 +42,7 @@ public class FP2ResourceReloadListener implements ISelectiveResourceReloadListen
             TexUVs.reloadUVs();
         }
         if (resourcePredicate.test(VanillaResourceType.SHADERS)) {
-            ShaderManager.reload(false);
+            ShaderManager.reload(true);
         }
     }
 }

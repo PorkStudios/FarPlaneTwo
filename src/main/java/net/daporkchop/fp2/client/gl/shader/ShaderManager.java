@@ -48,6 +48,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.FP2.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -105,11 +106,24 @@ public class ShaderManager {
                         headers),
                 IntStream.range(0, names.length)
                         .mapToObj(idx -> {
-                            String fileName = names[idx];
-                            try (InputStream in = MC.resourceManager.getResource(new ResourceLocation("fp2", BASE_PATH + '/' + fileName)).getInputStream()) {
+                            ResourceLocation location = new ResourceLocation(MODID, BASE_PATH + '/' + names[idx]);
+
+                            try (InputStream in = MC.resourceManager.getResource(location).getInputStream()) {
                                 String prefix = "#line 1 " + (idx + 1) + '\n';
                                 String code = new String(StreamUtil.toByteArray(in), StandardCharsets.UTF_8);
-                                return prefix + code;
+                                String suffix = "";
+
+                                if (code.contains("\r\n")) {
+                                    FP2_LOG.warn("'{}' has windows-style line endings, automatically changing to unix", location);
+                                    code = code.replace("\r\n", "\n");
+                                }
+
+                                if (!code.endsWith("\n")) {
+                                    FP2_LOG.warn("'{}' doesn't have a trailing newline, automatically adding one", location);
+                                    suffix = "\n";
+                                }
+
+                                return prefix + code + suffix;
                             } catch (IOException e) {
                                 throw new UncheckedIOException(e);
                             }
