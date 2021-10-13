@@ -38,7 +38,6 @@ import net.daporkchop.lib.math.vector.d.Vec3d;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.NetHandlerPlayServer;
 import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -47,8 +46,6 @@ import org.spongepowered.asm.mixin.Unique;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.FP2.*;
-import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.net.FP2Network.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -121,11 +118,6 @@ public abstract class MixinNetHandlerPlayServer implements IFarPlayerServer {
     @DebugOnly
     @Unique
     private void handleDebug(@NonNull CPacketDebugDropAllTiles packet) {
-        if (!FP2_DEBUG) {
-            this.disconnect(new TextComponentTranslation(MODID + ".debug.debugModeNotEnabled"));
-            return;
-        }
-
         this.world.fp2_IFarWorld_scheduleTask(() -> {
             FP2_LOG.info("Dropping all tiles");
             this.world.fp2_IFarWorldServer_forEachTileProvider(tileProvider -> tileProvider.trackerManager().dropAllTiles());

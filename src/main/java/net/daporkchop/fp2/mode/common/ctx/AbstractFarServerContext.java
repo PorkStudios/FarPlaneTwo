@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
+import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -111,6 +112,11 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
 
     @DebugOnly(RemovalPolicy.DROP)
     private void debugUpdate() {
+        if (!FP2_DEBUG) { //debug mode not enabled, do nothing
+            //TODO: remove this once @DebugOnly actually works
+            return;
+        }
+
         if (++this.debugLastUpdateSent == 20) { //send a debug statistics update packet once every 20s
             this.debugLastUpdateSent = 0;
 

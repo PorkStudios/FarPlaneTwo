@@ -117,7 +117,7 @@ public class FP2Network {
             @Override
             public IMessage onMessage(IMessage message, MessageContext ctx) {
                 if (!FP2_DEBUG) {
-                    ctx.getServerHandler().disconnect(new TextComponentTranslation(MODID + ".debug.debugModeNotEnabled"));
+                    ctx.getServerHandler().disconnect(new TextComponentTranslation(MODID + ".debug.debugModeNotEnabled.server"));
                     return null;
                 }
 
@@ -132,7 +132,7 @@ public class FP2Network {
             @Override
             public IMessage onMessage(IMessage message, MessageContext ctx) {
                 if (!FP2_DEBUG) {
-                    ctx.getClientHandler().netManager.closeChannel(new TextComponentTranslation(MODID + ".debug.debugModeNotEnabled"));
+                    ctx.getClientHandler().netManager.closeChannel(new TextComponentTranslation(MODID + ".debug.debugModeNotEnabled.client"));
                     return null;
                 }
 
