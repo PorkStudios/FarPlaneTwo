@@ -72,7 +72,19 @@ public class TexUVs {
     private static final Map<IBlockState, StateFaceQuadRenderer> STATE_TO_RENDERER = new IdentityHashMap<>();
     private static final StateFaceQuadRenderer DEFAULT_RENDERER = (state, face, model) -> {
         List<BakedQuad> quads = model.getQuads(state, face, 0L);
-        if (quads != null && !quads.isEmpty()) {
+        if (quads.isEmpty()) { //the model has no cullfaces for the given facing direction, try to find a matching non-cullface
+            for (BakedQuad quad : model.getQuads(state, null, 0L)) {
+                if (quad.getFace() == face) {
+                    quads = Collections.singletonList(quad);
+                    break;
+                }
+            }
+        }
+
+        //TODO: we could possibly do something using the code from FaceBakery#getFacingFromVertexData(int[]) to find the quad closest to this face, even if it's not
+        // an exact match...
+
+        if (!quads.isEmpty()) {
             List<PackedBakedQuad> out = new ArrayList<>(quads.size());
             for (int i = 0, len = quads.size(); i < len; i++) {
                 out.add(new PackedBakedQuad(quads.get(i)));
@@ -238,19 +250,28 @@ public class TexUVs {
         QUAD_DATA.bindBase(GL_SHADER_STORAGE_BUFFER, 1);
     }
 
+    /**
+     * @author DaPorkchop_
+     */
     @FunctionalInterface
     public interface StateFaceReplacer {
         IBlockState replace(IBlockState state, EnumFacing face);
     }
 
+    /**
+     * @author DaPorkchop_
+     */
     @FunctionalInterface
     public interface StateFaceQuadRenderer {
         List<PackedBakedQuad> render(IBlockState state, EnumFacing face, IBakedModel model);
     }
 
+    /**
+     * @author DaPorkchop_
+     */
     @AllArgsConstructor
     @EqualsAndHashCode
-    public class PackedBakedQuad {
+    private static class PackedBakedQuad {
         public final float minU;
         public final float minV;
         public final float maxU;
@@ -270,6 +291,9 @@ public class TexUVs {
         }
     }
 
+    /**
+     * @author DaPorkchop_
+     */
     private static class IntArrayEqualsMap extends ObjIntOpenHashMap<int[]> {
         @Override
         protected int hash0(int[] key) {

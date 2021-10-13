@@ -327,7 +327,9 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
             }
         } catch (Throwable t) {
             task.completeExceptionally(t);
-            ThreadingHelper.handle(this.group.world(), t);
+            if (this.running) { //only handle the exception if we aren't already shutting the scheduler down
+                ThreadingHelper.handle(this.group.world(), t);
+            }
         } finally { //the task's been executed, remove it from the map
             this.deleteTask(task);
 
