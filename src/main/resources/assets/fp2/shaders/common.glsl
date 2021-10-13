@@ -24,6 +24,9 @@
 //
 //
 
+// Debug colors
+// (these macros are defined dynamically from java code)
+
 //colors terrain based on its distance to the camera
 //#define USE_DEBUG_COLORS_LEVEL
 
@@ -37,9 +40,28 @@
 #define USE_DEBUG_COLORS
 #endif
 
-#define FOG_LINEAR (9729)
-#define FOG_EXP (2048)
-#define FOG_EXP2 (2049)
+// Fog
+
+//the following two macros are defined from java code:
+//#define GL_FOG_ENABLED (bool)
+//#define GL_FOG_MODE (GL_FOG_MODE_*)
+
+//f = (end - c) / (end - start)
+#define GL_FOG_MODE_LINEAR (9729)
+
+//f = e ^ (-density * c)
+#define GL_FOG_MODE_EXP (2048)
+
+//f = e ^ (-density * c ^ 2)
+#define GL_FOG_MODE_EXP2 (2049)
+
+//f = <user code included from resource at this macro>
+//#define GL_FOG_MODE_USER fp2:shaders/frag/fog/placeholder_user_fog.frag
+
+#if !defined(GL_FOG_ENABLED) || !defined(GL_FOG_MODE)
+#define GL_FOG_ENABLED (0)
+#define GL_FOG_MODE (0)
+#endif
 
 #define T_SHIFT (4)
 #define T_MASK ((1 << T_SHIFT) - 1)
@@ -54,7 +76,7 @@
 //
 //
 
-//OpenGL state
+// OpenGL state
 
 struct GlCamera {
     mat4 modelviewprojection;
@@ -70,8 +92,6 @@ struct GlFog {
     float start;
     float end;
     float scale;
-
-    int mode;
 };
 
 layout(std140, binding = 0) uniform GLSTATE {
@@ -85,7 +105,7 @@ layout(std140, binding = 0) uniform GLSTATE {
 //
 //
 
-//Texture UVs
+// Texture UVs
 
 layout(std430, binding = 0) readonly buffer QUAD_LISTS {
     ivec2 quad_lists[];
@@ -104,7 +124,7 @@ layout(std430, binding = 1) readonly buffer QUAD_DATA {
 };
 
 #if defined(LEVEL_0)
-//Vanilla renderability index
+// Vanilla renderability index
 
 layout(std430, binding = 6) readonly buffer VANILLA_RENDERABILITY {
     ivec3 offset;

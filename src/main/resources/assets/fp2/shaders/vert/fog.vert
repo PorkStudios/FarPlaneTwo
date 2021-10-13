@@ -24,6 +24,24 @@
 //
 //
 
+#if GL_FOG_ENABLED
 out FOG {
     float depth;
 } fog_out;
+#endif //GL_FOG_ENABLED
+
+//
+//
+// UTILITIES
+//
+//
+
+void setFog(in vec3 relativePos) {
+#if GL_FOG_ENABLED
+    //set fog depth based on vertex distance to camera
+    fog_out.depth = length(relativePos);
+#else
+    //fog is disabled, do nothing
+#endif
+}
+

@@ -42,6 +42,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -50,7 +51,6 @@ import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.FP2.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
@@ -183,9 +183,7 @@ public class ShaderManager {
             }
         } catch (Exception e) {
             FP2_LOG.error("shader reload failed", e);
-            if (message) {
-                DebugUtils.clientMsg("§cshaders reload failed (check console).");
-            }
+            DebugUtils.clientMsg("§cshaders reload failed (check console).");
         }
     }
 
@@ -217,9 +215,12 @@ public class ShaderManager {
     public static final class DefinesChangeBatch {
         protected final Map<String, Object> originals = GLOBAL_DEFINES;
         protected final Map<String, Object> updated = new Object2ObjectOpenHashMap<>(this.originals);
+        protected boolean dirty = false;
 
         public DefinesChangeBatch undefine(@NonNull String name) {
-            this.updated.remove(name);
+            if (this.updated.remove(name) != null) {
+                this.dirty = true;
+            }
             return this;
         }
 
@@ -228,7 +229,9 @@ public class ShaderManager {
         }
 
         public DefinesChangeBatch define(@NonNull String name, @NonNull Object value) {
-            this.updated.put(name, value);
+            if (!Objects.equals(this.updated.put(name, value), value)) {
+                this.dirty = true;
+            }
             return this;
         }
 
@@ -236,8 +239,11 @@ public class ShaderManager {
             if (GLOBAL_DEFINES != this.originals) {
                 throw new ConcurrentModificationException();
             }
-            GLOBAL_DEFINES = ImmutableMap.copyOf(this.updated);
-            reload(false);
+
+            if (this.dirty) { //avoid doing an expensive shader reload if nothing changed
+                GLOBAL_DEFINES = ImmutableMap.copyOf(this.updated);
+                reload(false);
+            }
         }
     }
 }

@@ -24,9 +24,11 @@
 //
 //
 
+#if GL_FOG_ENABLED
 in FOG {
     float depth;
 } fog_in;
+#endif //GL_FOG_ENABLED
 
 //
 //
@@ -34,18 +36,26 @@ in FOG {
 //
 //
 
-float getFogFactor() { //this shouldn't cause any significant performance drop because the result is constant for every invocation
-    if (glState.fog.mode == FOG_LINEAR) {
-        return clamp((glState.fog.end - fog_in.depth) * glState.fog.scale, 0., 1.);
-    } else if (glState.fog.mode == FOG_EXP)  {
-        return clamp(exp(-glState.fog.density * fog_in.depth), 0., 1.);
-    } else if (glState.fog.mode == FOG_EXP2)  {
-        return clamp(exp(-glState.fog.density * (fog_in.depth * fog_in.depth)), 0., 1.);
-    } else {
-        return 1.;
-    }
-}
+vec4 addFog(in vec4 color) {
+#if GL_FOG_ENABLED
+    //compute the fog factor (formula depends on the current fog mode)
+    float fogFactor;
 
-vec4 addFog(vec4 color) {
-    return mix(glState.fog.color, color, getFogFactor());
+#if GL_FOG_MODE == GL_FOG_MODE_LINEAR
+    fogFactor = (glState.fog.end - fog_in.depth) * glState.fog.scale;
+#elif GL_FOG_MODE == GL_FOG_MODE_EXP
+    fogFactor = exp(-glState.fog.density * fog_in.depth);
+#elif GL_FOG_MODE == GL_FOG_MODE_EXP2
+    float depth = fog_in.depth;
+    fogFactor = exp(-glState.fog.density * (depth * depth));
+#else
+#error unsupported fog mode!
+#endif
+
+    //mix fog colors
+    return mix(glState.fog.color, color, clamp(fogFactor, 0., 1.));
+#else
+    //fog is disabled, don't modify the fragment color
+    return color;
+#endif
 }

@@ -38,7 +38,7 @@ void main() {
     vec3 relativePos = vec3(relative_tile_position) + in_pos * float(1 << tile_position.w) / 8. - glState.camera.position_fract;
 
     //set fog depth based on vertex distance to camera
-    fog_out.depth = length(relativePos);
+    setFog(relativePos);
 
     //vertex position is detail mixed
     gl_Position = cameraTransform(relativePos);
