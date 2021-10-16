@@ -223,14 +223,6 @@ public final class FP2Config implements Cloneable<FP2Config> {
         return (long) this.cutoffDistance << (this.maxLevels - 1L);
     }
 
-    /**
-     * @return this configuration encoded as a JSON string
-     */
-    @Override
-    public String toString() {
-        return GSON.toJson(this);
-    }
-
     @Override
     public FP2Config clone() {
         return this.toBuilder()

@@ -203,6 +203,7 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
         return this.debugServerStats;
     }
 
+    @CalledFromAnyThread
     @CalledFromClientThread
     @Override
     public void fp2_IFarPlayerClient_ready() {
@@ -224,7 +225,6 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
         }
     }
 
-    @CalledFromAnyThread
     @Override
     public FP2Config fp2_IFarPlayerClient_serverConfig() {
         return this.serverConfig;
