@@ -36,7 +36,7 @@ public interface ITileHandle<POS extends IFarPos, T extends IFarTile> extends IT
     /**
      * @return a snapshot of this tile's current data and metadata, or {@code null} if the tile hasn't been initialized
      */
-    TileSnapshot<POS, T> snapshot();
+    ITileSnapshot<POS, T> snapshot();
 
     /**
      * Atomically sets this tile's contents to the given data.

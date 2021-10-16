@@ -50,7 +50,7 @@ public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> imp
     @Getter(AccessLevel.NONE)
     protected final byte[] data;
 
-    public CompressedTileSnapshot(@NonNull TileSnapshot<POS, T> src) {
+    protected CompressedTileSnapshot(@NonNull TileSnapshot<POS, T> src) {
         this.pos = src.pos();
         this.timestamp = src.timestamp();
 
@@ -78,10 +78,10 @@ public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> imp
             ByteBuf compressed = Unpooled.wrappedBuffer(this.data);
             ByteBuf uncompressed = ByteBufAllocator.DEFAULT.buffer(Zstd.PROVIDER.frameContentSize(compressed));
             try {
-                //uncompress data
+                //decompress data
                 checkState(ZSTD_INF.get().decompress(compressed, uncompressed));
 
-                //initialize tile from uncompressed data
+                //initialize tile from decompressed data
                 T tile = recycler.allocate();
                 tile.read(uncompressed);
                 return tile;
@@ -102,6 +102,20 @@ public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> imp
     @Override
     public ITileSnapshot<POS, T> compressed() {
         return this; //we're already compressed!
+    }
+
+    @Override
+    public ITileSnapshot<POS, T> uncompressed() {
+        byte[] uncompressedData = null;
+        if (this.data != null) {
+            //allocate buffer
+            uncompressedData = new byte[Zstd.PROVIDER.frameContentSize(Unpooled.wrappedBuffer(this.data))];
+
+            //decompress data
+            checkState(ZSTD_INF.get().decompress(Unpooled.wrappedBuffer(this.data), Unpooled.wrappedBuffer(uncompressedData).clear()));
+        }
+
+        return new TileSnapshot<>(this.pos, this.timestamp, uncompressedData);
     }
 
     @DebugOnly

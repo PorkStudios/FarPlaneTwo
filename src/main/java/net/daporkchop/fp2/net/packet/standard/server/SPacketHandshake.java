@@ -18,37 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.server;
+package net.daporkchop.fp2.net.packet.standard.server;
 
 import io.netty.buffer.ByteBuf;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.util.Constants;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
 /**
+ * Sent by the server to tell the client that FP2 is present on the remote server and that it should send its config to the server in order to continue
+ * the handshake process.
+ *
  * @author DaPorkchop_
  */
-@Getter
-@Setter
-public class SPacketUnloadTile implements IMessage {
-    @NonNull
-    protected IFarRenderMode<?, ?> mode;
-    @NonNull
-    protected IFarPos pos;
-
+public class SPacketHandshake implements IMessage {
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
-        this.pos = this.mode.readPos(buf);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        Constants.writeString(buf, this.mode.name());
-        this.pos.writePos(buf);
     }
 }

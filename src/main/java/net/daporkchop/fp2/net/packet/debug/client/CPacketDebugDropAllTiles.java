@@ -18,17 +18,17 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.server;
+package net.daporkchop.fp2.net.packet.debug.client;
 
 import io.netty.buffer.ByteBuf;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
 /**
- * Notifies the client to stop the current session.
- *
  * @author DaPorkchop_
  */
-public class SPacketSessionEnd implements IMessage {
+@DebugOnly
+public class CPacketDebugDropAllTiles implements IMessage {
     @Override
     public void fromBytes(ByteBuf buf) {
     }

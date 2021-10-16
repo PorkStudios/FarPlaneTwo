@@ -29,17 +29,22 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
-import net.daporkchop.fp2.net.packet.server.SPacketTileData;
-import net.daporkchop.fp2.net.packet.server.SPacketUnloadTile;
 import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
+import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.mode.api.server.tracking.IFarTracker;
+import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
+import net.daporkchop.fp2.net.packet.debug.server.SPacketDebugUpdateStatistics;
+import net.daporkchop.fp2.net.packet.standard.server.SPacketTileData;
+import net.daporkchop.fp2.net.packet.standard.server.SPacketUnloadTile;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
+import net.daporkchop.fp2.util.annotation.RemovalPolicy;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
+import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -54,11 +59,16 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
     protected final IFarRenderMode<POS, T> mode;
     protected final IFarTileProvider<POS, T> tileProvider;
 
+    protected final IFarTracker<POS, T> tracker;
+
     protected final Map<POS, Optional<TileSnapshot<POS, T>>> sendQueue = new TreeMap<>();
 
     protected FP2Config config;
 
     protected boolean closed = false;
+
+    @DebugOnly
+    private int debugLastUpdateSent;
 
     public AbstractFarServerContext(@NonNull IFarPlayerServer player, @NonNull IFarWorldServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<POS, T> mode) {
         this.player = player;
@@ -67,7 +77,7 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
         this.config = config;
 
         this.tileProvider = world.fp2_IFarWorldServer_tileProviderFor(mode);
-        this.tileProvider.tracker().playerAdd(this);
+        this.tracker = this.tileProvider.trackerManager().beginTracking(this);
     }
 
     @CalledFromServerThread
@@ -84,9 +94,10 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
     public void update() {
         checkState(!this.closed, "already closed!");
 
-        this.tileProvider.tracker().playerUpdate(this);
+        this.tracker.update();
 
         this.flushSendQueue();
+        this.debugUpdate();
     }
 
     @Synchronized("sendQueue")
@@ -99,13 +110,27 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
         }
     }
 
+    @DebugOnly(RemovalPolicy.DROP)
+    private void debugUpdate() {
+        if (!FP2_DEBUG) { //debug mode not enabled, do nothing
+            //TODO: remove this once @DebugOnly actually works
+            return;
+        }
+
+        if (++this.debugLastUpdateSent == 20) { //send a debug statistics update packet once every 20s
+            this.debugLastUpdateSent = 0;
+
+            this.player.fp2_IFarPlayer_debugSendPacket(new SPacketDebugUpdateStatistics().tracking(this.tracker.debugStats()));
+        }
+    }
+
     @CalledFromServerThread
     @Override
     public void close() {
         checkState(!this.closed, "already closed!");
         this.closed = true;
 
-        this.tileProvider.tracker().playerRemove(this);
+        this.tracker.close();
     }
 
     @Override

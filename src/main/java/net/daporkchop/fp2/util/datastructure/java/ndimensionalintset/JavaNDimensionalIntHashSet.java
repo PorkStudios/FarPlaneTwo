@@ -27,8 +27,10 @@ import net.daporkchop.fp2.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.util.Arrays;
+import java.util.function.Consumer;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Hash-based implementation of {@link NDimensionalIntSet} which works with arbitrary dimension counts.
@@ -96,5 +98,10 @@ public class JavaNDimensionalIntHashSet extends ObjectOpenCustomHashSet<int[]> i
     public boolean contains(@NonNull int... point) {
         checkArg(point.length == this.dimensions, this.dimensions);
         return super.contains(point);
+    }
+
+    @Override
+    public void forEach(@NonNull Consumer action) {
+        super.forEach(uncheckedCast(action));
     }
 }

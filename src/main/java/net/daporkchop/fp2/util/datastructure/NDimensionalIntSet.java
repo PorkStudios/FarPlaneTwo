@@ -22,7 +22,12 @@ package net.daporkchop.fp2.util.datastructure;
 
 import lombok.NonNull;
 import lombok.Setter;
+import net.daporkchop.lib.primitive.lambda.IntIntConsumer;
+import net.daporkchop.lib.primitive.lambda.IntIntIntConsumer;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+
+import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 
 import static java.util.Objects.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -85,6 +90,13 @@ public interface NDimensionalIntSet extends IDatastructure<NDimensionalIntSet> {
      * @throws IllegalArgumentException if this set's dimensionality is not equal to the dimensionality of the given point
      */
     boolean contains(@NonNull int... point);
+
+    /**
+     * Runs the given callback function on every point in this set.
+     *
+     * @param callback the callback function
+     */
+    void forEach(@NonNull Consumer<int[]> callback);
 
     //
     // special cases
@@ -199,6 +211,42 @@ public interface NDimensionalIntSet extends IDatastructure<NDimensionalIntSet> {
      */
     default boolean contains(int x, int y, int z) {
         return this.contains(new int[]{ x, y, z });
+    }
+
+    /**
+     * Runs the given callback function on every 1D point in this set.
+     *
+     * @param callback the callback function
+     */
+    default void forEach1D(@NonNull IntConsumer callback) {
+        this.forEach(coords -> {
+            checkArg(coords.length == 1, "1D callback for %dD set!", coords.length);
+            callback.accept(coords[0]);
+        });
+    }
+
+    /**
+     * Runs the given callback function on every 2D point in this set.
+     *
+     * @param callback the callback function
+     */
+    default void forEach2D(@NonNull IntIntConsumer callback) {
+        this.forEach(coords -> {
+            checkArg(coords.length == 2, "2D callback for %dD set!", coords.length);
+            callback.accept(coords[0], coords[1]);
+        });
+    }
+
+    /**
+     * Runs the given callback function on every 3D point in this set.
+     *
+     * @param callback the callback function
+     */
+    default void forEach3D(@NonNull IntIntIntConsumer callback) {
+        this.forEach(coords -> {
+            checkArg(coords.length == 3, "3D callback for %dD set!", coords.length);
+            callback.accept(coords[0], coords[1], coords[2]);
+        });
     }
 
     @Override

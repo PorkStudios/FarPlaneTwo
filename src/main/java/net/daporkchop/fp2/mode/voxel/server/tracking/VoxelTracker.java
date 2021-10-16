@@ -18,12 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.server;
+package net.daporkchop.fp2.mode.voxel.server.tracking;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.mode.common.server.AbstractPlayerTracker;
-import net.daporkchop.fp2.mode.common.server.TrackingState;
+import net.daporkchop.fp2.mode.common.server.tracking.AbstractTracker;
+import net.daporkchop.fp2.mode.common.server.tracking.AbstractTrackerManager;
+import net.daporkchop.fp2.mode.common.server.tracking.TrackingState;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
@@ -39,7 +40,7 @@ import static net.daporkchop.lib.common.math.PMath.*;
 /**
  * @author DaPorkchop_
  */
-public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTile, TrackingState> {
+public class VoxelTracker extends AbstractTracker<VoxelPos, VoxelTile, TrackingState> {
     protected static boolean overlaps(int x0, int y0, int z0, int x1, int y1, int z1, int radius) {
         int dx = abs(x0 - x1);
         int dy = abs(y0 - y1);
@@ -47,17 +48,25 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
         return dx <= radius && dy <= radius && dz <= radius;
     }
 
-    public VoxelPlayerTracker(@NonNull VoxelTileProvider world) {
-        super(world);
+    public VoxelTracker(@NonNull AbstractTrackerManager<VoxelPos, VoxelTile> manager, @NonNull IFarServerContext<VoxelPos, VoxelTile> context) {
+        super(manager, context);
     }
 
     @Override
-    protected TrackingState currentStateFor(@NonNull IFarServerContext<VoxelPos, VoxelTile> context) {
+    protected TrackingState currentState(@NonNull IFarServerContext<VoxelPos, VoxelTile> context) {
         return TrackingState.createDefault(context);
     }
 
     @Override
-    protected void allPositions(@NonNull IFarServerContext<VoxelPos, VoxelTile> context, @NonNull TrackingState state, @NonNull Consumer<VoxelPos> callback) {
+    protected boolean shouldTriggerUpdate(@NonNull TrackingState oldState, @NonNull TrackingState newState) {
+        return oldState.cutoff() != newState.cutoff()
+               || oldState.minLevel() != newState.minLevel()
+               || oldState.maxLevel() != newState.maxLevel()
+               || sq(oldState.x() - newState.x()) + sq(oldState.y() - newState.y()) + sq(oldState.z() - newState.z()) >= UPDATE_TRIGGER_DISTANCE_SQUARED;
+    }
+
+    @Override
+    protected void allPositions(@NonNull TrackingState state, @NonNull Consumer<VoxelPos> callback) {
         final int playerX = floorI(state.x());
         final int playerY = floorI(state.y());
         final int playerZ = floorI(state.z());
@@ -86,7 +95,7 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
     }
 
     @Override
-    protected void deltaPositions(@NonNull IFarServerContext<VoxelPos, VoxelTile> context, @NonNull TrackingState oldState, @NonNull TrackingState newState, @NonNull Consumer<VoxelPos> added, @NonNull Consumer<VoxelPos> removed) {
+    protected void deltaPositions(@NonNull TrackingState oldState, @NonNull TrackingState newState, @NonNull Consumer<VoxelPos> added, @NonNull Consumer<VoxelPos> removed) {
         final int oldPlayerX = floorI(oldState.x());
         final int oldPlayerY = floorI(oldState.y());
         final int oldPlayerZ = floorI(oldState.z());
@@ -152,7 +161,7 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
     }
 
     @Override
-    protected boolean isVisible(@NonNull IFarServerContext<VoxelPos, VoxelTile> context, @NonNull TrackingState state, @NonNull VoxelPos pos) {
+    protected boolean isVisible(@NonNull TrackingState state, @NonNull VoxelPos pos) {
         return state.hasLevel(pos.level())
                && this.coordLimits[pos.level()].contains(pos.x(), pos.y(), pos.z())
                && abs(pos.x() - asrRound(floorI(state.x()), T_SHIFT + pos.level())) <= state.cutoff()
@@ -161,7 +170,7 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
     }
 
     @Override
-    protected Comparator<VoxelPos> comparatorFor(@NonNull IFarServerContext<VoxelPos, VoxelTile> context, @NonNull TrackingState state) {
+    protected Comparator<VoxelPos> comparatorFor(@NonNull TrackingState state) {
         class VoxelPosAndComparator extends VoxelPos implements Comparator<VoxelPos> {
             public VoxelPosAndComparator(int level, int x, int y, int z) {
                 super(level, x, y, z);
@@ -170,7 +179,7 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
             @Override
             public int compare(VoxelPos o1, VoxelPos o2) {
                 int d;
-                if ((d = Integer.compare(o1.level(), o2.level())) != 0) {
+                if ((d = o1.level() - o2.level()) != 0) {
                     return d;
                 }
                 return Integer.compare(this.manhattanDistance(o1), this.manhattanDistance(o2));
@@ -178,13 +187,5 @@ public class VoxelPlayerTracker extends AbstractPlayerTracker<VoxelPos, VoxelTil
         }
 
         return new VoxelPosAndComparator(0, asrRound(floorI(state.x()), T_SHIFT), asrRound(floorI(state.y()), T_SHIFT), asrRound(floorI(state.z()), T_SHIFT));
-    }
-
-    @Override
-    protected boolean shouldTriggerUpdate(@NonNull IFarServerContext<VoxelPos, VoxelTile> context, @NonNull TrackingState oldState, @NonNull TrackingState newState) {
-        return oldState.cutoff() != newState.cutoff()
-               || oldState.minLevel() != newState.minLevel()
-               || oldState.maxLevel() != newState.maxLevel()
-               || sq(oldState.x() - newState.x()) + sq(oldState.y() - newState.y()) + sq(oldState.z() - newState.z()) >= UPDATE_TRIGGER_DISTANCE_SQUARED;
     }
 }

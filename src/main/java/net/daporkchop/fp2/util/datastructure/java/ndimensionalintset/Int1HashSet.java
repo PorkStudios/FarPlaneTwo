@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.util.datastructure.java.ndimensionalintset;
 
+import io.netty.util.internal.PlatformDependent;
 import lombok.NonNull;
 import net.daporkchop.fp2.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
@@ -27,6 +28,7 @@ import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
+import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -41,6 +43,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public class Int1HashSet extends AbstractRefCounted implements NDimensionalIntSet {
+    protected static final int BUCKET_AXIS_BITS = 6; //the number of bits per axis which are used inside of the bucket rather than identifying the bucket
+    protected static final int BUCKET_AXIS_MASK = (1 << BUCKET_AXIS_BITS) - 1;
+
     protected static final long KEY_X_OFFSET = 0L;
     protected static final long KEY_BYTES = KEY_X_OFFSET + Integer.BYTES;
 
@@ -51,10 +56,6 @@ public class Int1HashSet extends AbstractRefCounted implements NDimensionalIntSe
     protected static final long BUCKET_BYTES = BUCKET_VALUE_OFFSET + VALUE_BYTES;
 
     protected static final long DEFAULT_TABLE_SIZE = 16L;
-
-    protected static final int BUCKET_AXIS_BITS = 6; //the number of bits per axis which are used inside of the bucket rather than identifying the bucket
-    protected static final int BUCKET_AXIS_MASK = (1 << BUCKET_AXIS_BITS) - 1;
-    protected static final int BUCKET_SIZE = BUCKET_AXIS_MASK;
 
     protected static long hashPosition(int x) {
         return x * 1403638657883916319L; //some random prime number
@@ -199,13 +200,13 @@ public class Int1HashSet extends AbstractRefCounted implements NDimensionalIntSe
         oldCleaner.clean();
     }
 
-    /**
-     * Runs the given function on every position in this set.
-     *
-     * @param action the function to run
-     * @see java.util.Set#forEach(java.util.function.Consumer)
-     */
-    public void forEach(@NonNull IntConsumer action) {
+    @Override
+    public void forEach(@NonNull Consumer<int[]> callback) {
+        this.forEach1D(x -> callback.accept(new int[]{ x }));
+    }
+
+    @Override
+    public void forEach1D(@NonNull IntConsumer action) {
         long tableAddr = this.tableAddr;
         if (tableAddr == 0L) { //the table isn't even allocated yet, there's nothing to iterate through...
             return;
@@ -216,16 +217,16 @@ public class Int1HashSet extends AbstractRefCounted implements NDimensionalIntSe
             //read the bucket into registers
             int bucketX = PUnsafe.getInt(bucket + BUCKET_KEY_OFFSET + KEY_X_OFFSET);
             long value = PUnsafe.getLong(bucket + BUCKET_VALUE_OFFSET);
-            if (value == 0L) { //the bucket is unset, so there's no reason to look at it
-                continue;
-            }
 
-            for (int i = 0; i <= BUCKET_SIZE; i++) { //check each flag in the bucket value to see if it's set
-                if ((value & (1L << i)) == 0L) { //the flag isn't set
-                    continue;
-                }
+            while (value != 0L) {
+                //this is intrinsic and compiles into TZCNT, which has a latency of 3 cycles - much faster than iterating through all 64 bits
+                //  and checking each one individually!
+                int index = Long.numberOfTrailingZeros(value);
 
-                int dx = i & BUCKET_AXIS_MASK;
+                //clear the bit in question so that it won't be returned next time around
+                value &= ~(1L << index);
+
+                int dx = index & BUCKET_AXIS_MASK;
                 action.accept((bucketX << BUCKET_AXIS_BITS) + dx);
             }
         }
@@ -280,7 +281,6 @@ public class Int1HashSet extends AbstractRefCounted implements NDimensionalIntSe
         long slot;
 
         int currX;
-        int currY;
         long currValue;
 
         for (; ; ) {
@@ -296,13 +296,12 @@ public class Int1HashSet extends AbstractRefCounted implements NDimensionalIntSe
                         currX = PUnsafe.getInt(currAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET)) & mask;
 
                 if (last <= pos ? last >= slot || slot > pos : last >= slot && slot > pos) {
+                    long lastAddr = tableAddr + last * BUCKET_BYTES;
+                    PlatformDependent.putInt(lastAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET, currX);
+                    PlatformDependent.putLong(lastAddr + BUCKET_VALUE_OFFSET, currValue);
                     break;
                 }
             }
-
-            long lastAddr = tableAddr + last * BUCKET_BYTES;
-            PUnsafe.putInt(lastAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET, currX);
-            PUnsafe.putLong(lastAddr + BUCKET_VALUE_OFFSET, currValue);
         }
     }
 

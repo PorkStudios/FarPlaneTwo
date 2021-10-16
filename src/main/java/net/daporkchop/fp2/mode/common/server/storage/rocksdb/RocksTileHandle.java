@@ -33,6 +33,7 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
+import net.daporkchop.fp2.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Transaction;
@@ -59,13 +60,13 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> implements
     public long timestamp() {
         byte[] timestampBytes = this.storage.db.get(this.storage.cfTileTimestamp, this.pos.toBytes());
         return timestampBytes != null
-                ? Unpooled.wrappedBuffer(timestampBytes).readLongLE() //timestamp for this tile exists, extract it from the byte array
+                ? readLongLE(timestampBytes) //timestamp for this tile exists, extract it from the byte array
                 : TIMESTAMP_BLANK;
     }
 
     @Override
     @SneakyThrows(RocksDBException.class)
-    public TileSnapshot<POS, T> snapshot() {
+    public ITileSnapshot<POS, T> snapshot() {
         byte[] keyBytes = this.pos.toBytes();
 
         //read timestamp and tile bytes using multiGet to ensure coherency
@@ -77,7 +78,7 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> implements
         byte[] tileBytes = valueBytes.get(1);
 
         return timestampBytes != null
-                ? new TileSnapshot<>(this.pos, Unpooled.wrappedBuffer(timestampBytes).readLongLE(), tileBytes)
+                ? new TileSnapshot<>(this.pos, readLongLE(timestampBytes), tileBytes)
                 : null;
     }
 
@@ -94,12 +95,12 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> implements
 
             byte[] timestampBytes = get[0];
             long timestamp = timestampBytes != null
-                    ? Unpooled.wrappedBuffer(timestampBytes).readLongLE() //timestamp for this tile exists, extract it from the byte array
+                    ? readLongLE(timestampBytes) //timestamp for this tile exists, extract it from the byte array
                     : TIMESTAMP_BLANK;
 
             byte[] dirtyTimestampBytes = get[1];
             long dirtyTimestamp = dirtyTimestampBytes != null
-                    ? Unpooled.wrappedBuffer(dirtyTimestampBytes).readLongLE() //dirty timestamp for this tile exists, extract it from the byte array
+                    ? readLongLE(dirtyTimestampBytes) //dirty timestamp for this tile exists, extract it from the byte array
                     : TIMESTAMP_BLANK;
 
             if (metadata.timestamp() <= timestamp) { //the new timestamp isn't newer than the existing one, so we can't replace it
@@ -108,7 +109,7 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> implements
             }
 
             //store new timestamp in db
-            txn.put(this.storage.cfTileTimestamp, keyBytes, UnpooledByteBufAllocator.DEFAULT.heapBuffer(Long.BYTES, Long.BYTES).writeLongLE(metadata.timestamp()).array());
+            txn.put(this.storage.cfTileTimestamp, keyBytes, writeLongLE(metadata.timestamp()));
 
             //clear dirty timestamp if needed
             if (metadata.timestamp() >= dirtyTimestamp) {

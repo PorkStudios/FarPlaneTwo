@@ -18,12 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.server;
+package net.daporkchop.fp2.mode.heightmap.server.tracking;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.mode.common.server.AbstractPlayerTracker;
-import net.daporkchop.fp2.mode.common.server.TrackingState;
+import net.daporkchop.fp2.mode.common.server.tracking.AbstractTracker;
+import net.daporkchop.fp2.mode.common.server.tracking.AbstractTrackerManager;
+import net.daporkchop.fp2.mode.common.server.tracking.TrackingState;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
@@ -39,24 +40,32 @@ import static net.daporkchop.lib.common.math.PMath.*;
 /**
  * @author DaPorkchop_
  */
-public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, HeightmapTile, TrackingState> {
+public class HeightmapTracker extends AbstractTracker<HeightmapPos, HeightmapTile, TrackingState> {
     protected static boolean overlaps(int x0, int z0, int x1, int z1, int radius) {
         int dx = abs(x0 - x1);
         int dz = abs(z0 - z1);
         return dx <= radius && dz <= radius;
     }
 
-    public HeightmapPlayerTracker(@NonNull HeightmapTileProvider world) {
-        super(world);
+    public HeightmapTracker(@NonNull AbstractTrackerManager<HeightmapPos, HeightmapTile> manager, @NonNull IFarServerContext<HeightmapPos, HeightmapTile> context) {
+        super(manager, context);
     }
 
     @Override
-    protected TrackingState currentStateFor(@NonNull IFarServerContext<HeightmapPos, HeightmapTile> context) {
+    protected TrackingState currentState(@NonNull IFarServerContext<HeightmapPos, HeightmapTile> context) {
         return TrackingState.createDefault(context);
     }
 
     @Override
-    protected void allPositions(@NonNull IFarServerContext<HeightmapPos, HeightmapTile> context, @NonNull TrackingState state, @NonNull Consumer<HeightmapPos> callback) {
+    protected boolean shouldTriggerUpdate(@NonNull TrackingState oldState, @NonNull TrackingState newState) {
+        return oldState.cutoff() != newState.cutoff()
+               || oldState.minLevel() != newState.minLevel()
+               || oldState.maxLevel() != newState.maxLevel()
+               || sq(oldState.x() - newState.x()) + sq(oldState.z() - newState.z()) >= UPDATE_TRIGGER_DISTANCE_SQUARED;
+    }
+
+    @Override
+    protected void allPositions(@NonNull TrackingState state, @NonNull Consumer<HeightmapPos> callback) {
         final int playerX = floorI(state.x());
         final int playerZ = floorI(state.z());
 
@@ -79,7 +88,7 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
     }
 
     @Override
-    protected void deltaPositions(@NonNull IFarServerContext<HeightmapPos, HeightmapTile> context, @NonNull TrackingState oldState, @NonNull TrackingState newState, @NonNull Consumer<HeightmapPos> added, @NonNull Consumer<HeightmapPos> removed) {
+    protected void deltaPositions(@NonNull TrackingState oldState, @NonNull TrackingState newState, @NonNull Consumer<HeightmapPos> added, @NonNull Consumer<HeightmapPos> removed) {
         final int oldPlayerX = floorI(oldState.x());
         final int oldPlayerZ = floorI(oldState.z());
         final int newPlayerX = floorI(newState.x());
@@ -133,7 +142,7 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
     }
 
     @Override
-    protected boolean isVisible(@NonNull IFarServerContext<HeightmapPos, HeightmapTile> context, @NonNull TrackingState state, @NonNull HeightmapPos pos) {
+    protected boolean isVisible(@NonNull TrackingState state, @NonNull HeightmapPos pos) {
         return state.hasLevel(pos.level())
                && this.coordLimits[pos.level()].contains2d(pos.x(), pos.z())
                && abs(pos.x() - asrRound(floorI(state.x()), T_SHIFT + pos.level())) <= state.cutoff()
@@ -141,7 +150,7 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
     }
 
     @Override
-    protected Comparator<HeightmapPos> comparatorFor(@NonNull IFarServerContext<HeightmapPos, HeightmapTile> context, @NonNull TrackingState state) {
+    protected Comparator<HeightmapPos> comparatorFor(@NonNull TrackingState state) {
         class HeightmapPosAndComparator extends HeightmapPos implements Comparator<HeightmapPos> {
             public HeightmapPosAndComparator(int level, int x, int z) {
                 super(level, x, z);
@@ -150,7 +159,7 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
             @Override
             public int compare(HeightmapPos o1, HeightmapPos o2) {
                 int d;
-                if ((d = Integer.compare(o1.level(), o2.level())) != 0) {
+                if ((d = o1.level() - o2.level()) != 0) {
                     return d;
                 }
                 return Integer.compare(this.manhattanDistance(o1), this.manhattanDistance(o2));
@@ -158,13 +167,5 @@ public class HeightmapPlayerTracker extends AbstractPlayerTracker<HeightmapPos, 
         }
 
         return new HeightmapPosAndComparator(0, asrRound(floorI(state.x()), T_SHIFT), asrRound(floorI(state.z()), T_SHIFT));
-    }
-
-    @Override
-    protected boolean shouldTriggerUpdate(@NonNull IFarServerContext<HeightmapPos, HeightmapTile> context, @NonNull TrackingState oldState, @NonNull TrackingState newState) {
-        return oldState.cutoff() != newState.cutoff()
-               || oldState.minLevel() != newState.minLevel()
-               || oldState.maxLevel() != newState.maxLevel()
-               || sq(oldState.x() - newState.x()) + sq(oldState.z() - newState.z()) >= UPDATE_TRIGGER_DISTANCE_SQUARED;
     }
 }

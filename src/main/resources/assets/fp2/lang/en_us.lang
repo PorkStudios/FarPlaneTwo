@@ -12,6 +12,14 @@ fp2.util.numberFormat.bytes.4=%sTiB
 fp2.util.numberFormat.bytes.5=%sPiB
 fp2.util.numberFormat.bytes.6=%sEiB
 
+fp2.util.numberFormat.time.nanoseconds=%sns
+fp2.util.numberFormat.time.microseconds=%sμs
+fp2.util.numberFormat.time.milliseconds=%sms
+fp2.util.numberFormat.time.seconds=%ss
+fp2.util.numberFormat.time.minutes=%smin
+fp2.util.numberFormat.time.hours=%sh
+fp2.util.numberFormat.time.days=%sd
+
 #
 # GUI
 #
@@ -172,4 +180,5 @@ fp2.config.menu.debug.levelZeroTracking.tooltip=If disabled, FP2 will not track 
 # Misc. Debug
 #
 
-fp2.debug.debugModeNotEnabled=FP2 debug mode is not enabled on the server!
+fp2.debug.debugModeNotEnabled.client=FP2 debug mode is not enabled on the server!
+fp2.debug.debugModeNotEnabled.server=FP2 debug mode is not enabled on the client!

@@ -30,6 +30,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.ToString;
 import lombok.With;
 import net.daporkchop.fp2.client.gui.container.RenderDistanceContainer;
 import net.daporkchop.fp2.client.gui.element.GuiDebugButton;
@@ -64,6 +65,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @NoArgsConstructor
 @Getter
 @With
+@ToString
 @EqualsAndHashCode
 @Config.GuiCategories({
         @Config.CategoryMeta(name = "default", title = false),
@@ -85,8 +87,19 @@ public final class FP2Config implements Cloneable<FP2Config> {
      * @param json the JSON string
      * @return the parsed {@link FP2Config}
      */
-    public static FP2Config parse(@NonNull String json) {
-        return ConfigHelper.validateConfig(GSON.fromJson(json, FP2Config.class).clean());
+    public static FP2Config fromJson(@NonNull String json) {
+        FP2Config config = GSON.fromJson(json, FP2Config.class);
+        return config != null ? ConfigHelper.validateConfig(config.clean()) : null;
+    }
+
+    /**
+     * Encodes an {@link FP2Config} instance to a JSON string.
+     *
+     * @param config the {@link FP2Config} instance
+     * @return the JSON-encoded config
+     */
+    public static String toJson(FP2Config config) {
+        return GSON.toJson(config);
     }
 
     /**
@@ -103,7 +116,7 @@ public final class FP2Config implements Cloneable<FP2Config> {
 
         Path configFile = CONFIG_DIR.resolve(CONFIG_FILE_NAME);
         if (Files.exists(configFile)) { //config file already exists, read it
-            GLOBAL_CONFIG = parse(new String(Files.readAllBytes(configFile), StandardCharsets.UTF_8));
+            GLOBAL_CONFIG = fromJson(new String(Files.readAllBytes(configFile), StandardCharsets.UTF_8));
         } else { //config file doesn't exist, set it to the default config and then save it
             GLOBAL_CONFIG = DEFAULT_CONFIG;
             set(GLOBAL_CONFIG);
@@ -210,14 +223,6 @@ public final class FP2Config implements Cloneable<FP2Config> {
         return (long) this.cutoffDistance << (this.maxLevels - 1L);
     }
 
-    /**
-     * @return this configuration encoded as a JSON string
-     */
-    @Override
-    public String toString() {
-        return GSON.toJson(this);
-    }
-
     @Override
     public FP2Config clone() {
         return this.toBuilder()
@@ -236,6 +241,7 @@ public final class FP2Config implements Cloneable<FP2Config> {
     @NoArgsConstructor
     @Getter
     @With
+    @ToString
     @EqualsAndHashCode
     @Config.GuiCategories({
             @Config.CategoryMeta(name = "default", title = false),
@@ -294,6 +300,7 @@ public final class FP2Config implements Cloneable<FP2Config> {
     @NoArgsConstructor
     @Getter
     @With
+    @ToString
     @EqualsAndHashCode
     @Config.GuiCategories({
             @Config.CategoryMeta(name = "default", title = false),
@@ -362,6 +369,7 @@ public final class FP2Config implements Cloneable<FP2Config> {
     @NoArgsConstructor
     @Getter
     @With
+    @ToString
     @EqualsAndHashCode
     @Config.GuiCategories({
             @Config.CategoryMeta(name = "default", title = false),

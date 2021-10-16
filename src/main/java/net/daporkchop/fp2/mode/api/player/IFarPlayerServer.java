@@ -25,6 +25,7 @@ import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.math.vector.d.Vec3d;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
@@ -37,6 +38,10 @@ public interface IFarPlayerServer {
     @CalledFromNetworkThread
     void fp2_IFarPlayerServer_handle(@NonNull Object packet);
 
+    @DebugOnly
+    @CalledFromNetworkThread
+    void fp2_IFarPlayerServer_handleDebug(@NonNull Object packet);
+
     @CalledFromServerThread
     void fp2_IFarPlayer_serverConfig(FP2Config serverConfig);
 
@@ -44,6 +49,9 @@ public interface IFarPlayerServer {
     void fp2_IFarPlayer_joinedWorld(@NonNull IFarWorldServer world);
 
     void fp2_IFarPlayer_sendPacket(@NonNull IMessage packet);
+
+    @DebugOnly
+    void fp2_IFarPlayer_debugSendPacket(@NonNull IMessage packet);
 
     @CalledFromServerThread
     void fp2_IFarPlayer_update();

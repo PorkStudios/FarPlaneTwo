@@ -18,20 +18,35 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.client;
+package net.daporkchop.fp2.mode.api.server.tracking;
 
-import io.netty.buffer.ByteBuf;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
+import net.daporkchop.fp2.util.annotation.DebugOnly;
 
 /**
  * @author DaPorkchop_
  */
-public class CPacketDropAllTiles implements IMessage {
-    @Override
-    public void fromBytes(ByteBuf buf) {
-    }
+public interface IFarTracker<POS extends IFarPos, T extends IFarTile> extends AutoCloseable {
+    /**
+     * Updates this tracker.
+     * <p>
+     * Should be called periodically to check for tiles which should be loaded or unloaded.
+     */
+    @CalledFromServerThread
+    void update();
 
+    /**
+     * Closes this tracker, unloading all tiles and releasing all resources.
+     * <p>
+     * Once this method has been called, calling any method on this instance will result in undefined behavior.
+     */
+    @CalledFromServerThread
     @Override
-    public void toBytes(ByteBuf buf) {
-    }
+    void close();
+
+    @DebugOnly
+    DebugStats.Tracking debugStats();
 }

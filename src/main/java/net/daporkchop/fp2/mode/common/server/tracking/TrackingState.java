@@ -18,13 +18,10 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.server;
+package net.daporkchop.fp2.mode.common.server.tracking;
 
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NonNull;
-import lombok.ToString;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.lib.math.vector.d.Vec3d;
@@ -34,14 +31,11 @@ import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 
 /**
- * Immutable container with the information required for an {@link AbstractPlayerTracker} implementation to know which tiles to load for a given player.
+ * Immutable container with the information required for an {@link AbstractTrackerManager} implementation to know which tiles to load for a given player.
  *
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-@Getter
-@ToString
-@EqualsAndHashCode
+@Data
 public class TrackingState {
     public static TrackingState createDefault(@NonNull IFarServerContext<?, ?> context) {
         Vec3d pos = context.player().fp2_IFarPlayer_position();

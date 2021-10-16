@@ -29,6 +29,7 @@ import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.util.Arrays;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -153,5 +154,10 @@ public class JavaNDimensionalIntSegtreeSet extends AbstractRefCounted implements
     @Override
     public boolean contains(@NonNull int... point) {
         return this.delegates[0].contains(point);
+    }
+
+    @Override
+    public void forEach(@NonNull Consumer<int[]> callback) {
+        this.delegates[0].forEach(callback);
     }
 }

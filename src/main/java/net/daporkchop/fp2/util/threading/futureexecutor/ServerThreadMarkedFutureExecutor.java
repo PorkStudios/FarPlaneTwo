@@ -61,6 +61,11 @@ public class ServerThreadMarkedFutureExecutor extends AbstractMarkedFutureExecut
         return this.running;
     }
 
+    @Override
+    public boolean doWork() {
+        return this.hasWork() && super.doWork();
+    }
+
     /**
      * @author DaPorkchop_
      * @deprecated internal API, do not touch!

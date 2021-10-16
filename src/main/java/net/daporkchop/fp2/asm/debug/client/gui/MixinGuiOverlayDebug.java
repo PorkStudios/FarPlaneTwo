@@ -26,6 +26,7 @@ import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
+import net.daporkchop.fp2.net.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiOverlayDebug;
 import org.spongepowered.asm.mixin.Mixin;
@@ -49,23 +50,27 @@ public abstract class MixinGuiOverlayDebug extends Gui {
             locals = LocalCapture.CAPTURE_FAILHARD)
     private void fp2_getDebugInfoRight_injectFP2DebugInfo(CallbackInfoReturnable<List<String>> ci,
                                                           long maxMemory, long totalMemory, long freeMemory, long usedMemory, List<String> list) {
+        IFarPlayerClient player = (IFarPlayerClient) MC.getConnection();
+        if (player == null) { //connection is null while the F3 screen is visible? this shouldn't be possible...
+            return;
+        }
+
         NumberFormat numberFormat = GuiHelper.numberFormat();
         NumberFormat percentFormat = GuiHelper.percentFormat();
 
-        list.add("");
-        list.add("§lFarPlaneTwo (Client):");
+        {
+            list.add("");
+            list.add("§lFarPlaneTwo (Client):");
 
-        IFarPlayerClient player = (IFarPlayerClient) MC.getConnection();
-        if (player != null) {
             IFarClientContext<?, ?> context = player.fp2_IFarPlayerClient_activeContext();
             if (context != null) {
                 IFarTileCache<?, ?> tileCache = context.tileCache();
                 if (tileCache != null) {
                     DebugStats.TileCache stats = tileCache.stats();
                     list.add("TileCache: " + numberFormat.format(stats.tileCountWithData()) + '/' + numberFormat.format(stats.tileCount())
-                             + ' ' + percentFormat.format(stats.allocatedSpace() / (double) stats.totalSpace())
+                             + ' ' + percentFormat.format((stats.allocatedSpace() | stats.totalSpace()) != 0L ? stats.allocatedSpace() / (double) stats.totalSpace() : 1.0d)
                              + ' ' + GuiHelper.formatByteCount(stats.allocatedSpace()) + '/' + GuiHelper.formatByteCount(stats.totalSpace())
-                             + " (" + percentFormat.format(stats.allocatedSpace() / (double) stats.uncompressedSize()) + " -> " + GuiHelper.formatByteCount(stats.uncompressedSize()) + ')');
+                             + " (" + percentFormat.format((stats.allocatedSpace() | stats.uncompressedSize()) != 0L ? stats.allocatedSpace() / (double) stats.uncompressedSize() : 1.0d) + " -> " + GuiHelper.formatByteCount(stats.uncompressedSize()) + ')');
                 } else {
                     list.add("§oNo TileCache active");
                 }
@@ -73,7 +78,8 @@ public abstract class MixinGuiOverlayDebug extends Gui {
                 IFarRenderer renderer = context.renderer();
                 if (renderer != null) {
                     DebugStats.Renderer stats = renderer.stats();
-                    list.add("Baked Tiles: " + numberFormat.format(stats.bakedTilesWithData()) + '/' + numberFormat.format(stats.bakedTiles()));
+                    list.add("Baked Tiles: " + numberFormat.format(stats.bakedTiles()) + "T " + numberFormat.format(stats.bakedTilesWithData()) + "D "
+                             + numberFormat.format(stats.bakedTiles() - stats.bakedTilesWithData()) + 'E');
                     list.add("All VRAM: " + percentFormat.format(stats.allocatedVRAM() / (double) stats.totalVRAM())
                              + ' ' + GuiHelper.formatByteCount(stats.allocatedVRAM()) + '/' + GuiHelper.formatByteCount(stats.totalVRAM()));
                     list.add("Indices: " + percentFormat.format(stats.allocatedIndices() / (double) stats.totalIndices())
@@ -89,6 +95,26 @@ public abstract class MixinGuiOverlayDebug extends Gui {
                 }
             } else {
                 list.add("§oNo context active");
+            }
+        }
+
+        {
+            list.add("");
+            list.add("§lFarPlaneTwo (Server):");
+
+            SPacketDebugUpdateStatistics packet = player.fp2_IFarPlayerClient_debugServerStats();
+            if (packet != null) {
+                DebugStats.Tracking trackingStats = packet.tracking();
+                if (trackingStats != null) {
+                    list.add("Tracker: " + numberFormat.format(trackingStats.tilesTrackedGlobal()) + "G "
+                             + numberFormat.format(trackingStats.tilesTotal()) + "T " + numberFormat.format(trackingStats.tilesLoaded()) + "L "
+                             + numberFormat.format(trackingStats.tilesLoading()) + "P " + numberFormat.format(trackingStats.tilesQueued()) + 'Q');
+                    list.add("Updates: " + GuiHelper.formatDuration(trackingStats.avgUpdateDuration()) + " avg, " + GuiHelper.formatDuration(trackingStats.lastUpdateDuration()) + " last");
+                } else {
+                    list.add("§oTracking data not available");
+                }
+            } else {
+                list.add("§oData not available");
             }
         }
     }

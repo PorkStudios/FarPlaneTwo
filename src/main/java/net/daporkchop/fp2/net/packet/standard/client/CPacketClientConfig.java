@@ -18,51 +18,30 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.server;
+package net.daporkchop.fp2.net.packet.standard.client;
 
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
-import lombok.NonNull;
+import lombok.Setter;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.util.Constants;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
-import static net.daporkchop.lib.common.util.PorkUtil.*;
-
 /**
  * @author DaPorkchop_
  */
+@Setter
 @Getter
-public abstract class SPacketUpdateConfig<I extends SPacketUpdateConfig<I>> implements IMessage {
+public class CPacketClientConfig implements IMessage {
     protected FP2Config config;
-
-    public I config(FP2Config config) {
-        this.config = config;
-        return uncheckedCast(this);
-    }
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.config = buf.readBoolean() ? FP2Config.parse(Constants.readString(buf)) : null;
+        this.config = FP2Config.fromJson(Constants.readString(buf));
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeBoolean(this.config != null);
-        if (this.config != null) {
-            Constants.writeString(buf, this.config.toString());
-        }
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public static class Merged extends SPacketUpdateConfig<Merged> {
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public static class Server extends SPacketUpdateConfig<Server> {
+        Constants.writeString(buf, FP2Config.toJson(this.config));
     }
 }

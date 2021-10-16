@@ -24,9 +24,13 @@ import lombok.NonNull;
 import net.daporkchop.fp2.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.lib.common.function.throwing.ERunnable;
 import net.daporkchop.lib.common.function.throwing.ESupplier;
+import net.daporkchop.lib.primitive.lambda.IntIntConsumer;
+import net.daporkchop.lib.primitive.lambda.IntIntIntConsumer;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 import java.util.stream.Stream;
 
 /**
@@ -107,6 +111,12 @@ public class AsyncInitializedNDimensionalIntSegtreeSet implements NDimensionalIn
     }
 
     @Override
+    public void forEach(@NonNull Consumer<int[]> callback) {
+        this.handleRead();
+        this.delegate.forEach(callback);
+    }
+
+    @Override
     public boolean containsAny(@NonNull int[] a, @NonNull int[] b) {
         this.handleRead();
         return this.delegate.containsAny(a, b);
@@ -170,6 +180,24 @@ public class AsyncInitializedNDimensionalIntSegtreeSet implements NDimensionalIn
     public boolean contains(int x, int y, int z) {
         this.handleRead();
         return this.delegate.contains(x, y, z);
+    }
+
+    @Override
+    public void forEach1D(@NonNull IntConsumer callback) {
+        this.handleRead();
+        this.delegate.forEach1D(callback);
+    }
+
+    @Override
+    public void forEach2D(@NonNull IntIntConsumer callback) {
+        this.handleRead();
+        this.delegate.forEach2D(callback);
+    }
+
+    @Override
+    public void forEach3D(@NonNull IntIntIntConsumer callback) {
+        this.handleRead();
+        this.delegate.forEach3D(callback);
     }
 
     @Override

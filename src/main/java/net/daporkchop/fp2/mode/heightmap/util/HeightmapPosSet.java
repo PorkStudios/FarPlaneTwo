@@ -18,32 +18,50 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.client;
+package net.daporkchop.fp2.mode.heightmap.util;
 
-import io.netty.buffer.ByteBuf;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
-import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.util.Constants;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.daporkchop.fp2.mode.common.util.AbstractPosSet;
+import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.util.datastructure.NDimensionalIntSet;
+import net.daporkchop.fp2.util.datastructure.SimpleSet;
+
+import java.util.function.Consumer;
 
 /**
+ * Implementation of {@link SimpleSet} optimized specifically for {@link HeightmapPos}.
+ * <p>
+ * Not thread-safe.
+ *
  * @author DaPorkchop_
  */
-@Setter
-@Getter
-public class CPacketClientConfig implements IMessage {
-    @NonNull
-    protected FP2Config config;
-
-    @Override
-    public void fromBytes(ByteBuf buf) {
-        this.config = FP2Config.parse(Constants.readString(buf));
+public class HeightmapPosSet extends AbstractPosSet<HeightmapPos> {
+    public HeightmapPosSet() {
+        super(2);
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
-        Constants.writeString(buf, this.config.toString());
+    public boolean add(@NonNull HeightmapPos pos) {
+        return this.delegates[pos.level()].add(pos.x(), pos.z());
+    }
+
+    @Override
+    public boolean remove(@NonNull HeightmapPos pos) {
+        return this.delegates[pos.level()].remove(pos.x(), pos.z());
+    }
+
+    @Override
+    public boolean contains(@NonNull HeightmapPos pos) {
+        return this.delegates[pos.level()].contains(pos.x(), pos.z());
+    }
+
+    @Override
+    public void forEach(@NonNull Consumer<? super HeightmapPos> callback) {
+        NDimensionalIntSet[] delegates = this.delegates;
+
+        for (int level = 0; level < delegates.length; level++) {
+            int levelButFinal = level; //damn you java
+            delegates[level].forEach2D((x, y) -> callback.accept(new HeightmapPos(levelButFinal, x, y)));
+        }
     }
 }

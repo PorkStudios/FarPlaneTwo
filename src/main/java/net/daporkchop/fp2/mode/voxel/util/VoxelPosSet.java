@@ -18,23 +18,50 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.server;
+package net.daporkchop.fp2.mode.voxel.util;
 
-import io.netty.buffer.ByteBuf;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import lombok.NonNull;
+import net.daporkchop.fp2.mode.common.util.AbstractPosSet;
+import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.util.datastructure.NDimensionalIntSet;
+import net.daporkchop.fp2.util.datastructure.SimpleSet;
+
+import java.util.function.Consumer;
 
 /**
- * Sent by the server to tell the client that FP2 is present on the remote server and that it should send its config to the server in order to continue
- * the handshake process.
+ * Implementation of {@link SimpleSet} optimized specifically for {@link VoxelPos}.
+ * <p>
+ * Not thread-safe.
  *
  * @author DaPorkchop_
  */
-public class SPacketHandshake implements IMessage {
-    @Override
-    public void fromBytes(ByteBuf buf) {
+public class VoxelPosSet extends AbstractPosSet<VoxelPos> {
+    public VoxelPosSet() {
+        super(3);
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
+    public boolean add(@NonNull VoxelPos pos) {
+        return this.delegates[pos.level()].add(pos.x(), pos.y(), pos.z());
+    }
+
+    @Override
+    public boolean remove(@NonNull VoxelPos pos) {
+        return this.delegates[pos.level()].remove(pos.x(), pos.y(), pos.z());
+    }
+
+    @Override
+    public boolean contains(@NonNull VoxelPos pos) {
+        return this.delegates[pos.level()].contains(pos.x(), pos.y(), pos.z());
+    }
+
+    @Override
+    public void forEach(@NonNull Consumer<? super VoxelPos> callback) {
+        NDimensionalIntSet[] delegates = this.delegates;
+
+        for (int level = 0; level < delegates.length; level++) {
+            int levelButFinal = level; //damn you java
+            delegates[level].forEach3D((x, y, z) -> callback.accept(new VoxelPos(levelButFinal, x, y, z)));
+        }
     }
 }

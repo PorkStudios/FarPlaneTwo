@@ -23,12 +23,13 @@ package net.daporkchop.fp2.mode.voxel.server;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.NonNull;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.server.IFarPlayerTracker;
+import net.daporkchop.fp2.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerIntersection;
+import net.daporkchop.fp2.mode.voxel.server.tracking.VoxelTrackerManager;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
@@ -48,8 +49,8 @@ public abstract class VoxelTileProvider extends AbstractFarTileProvider<VoxelPos
     }
 
     @Override
-    protected IFarPlayerTracker<VoxelPos, VoxelTile> createTracker() {
-        return new VoxelPlayerTracker(this);
+    protected IFarTrackerManager<VoxelPos, VoxelTile> createTracker() {
+        return new VoxelTrackerManager(this);
     }
 
     @Override

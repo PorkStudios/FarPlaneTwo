@@ -26,7 +26,6 @@ import com.google.common.cache.LoadingCache;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
-import io.netty.buffer.UnpooledByteBufAllocator;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.config.FP2Config;
@@ -37,6 +36,8 @@ import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.lib.common.misc.file.PFiles;
+import net.daporkchop.lib.common.system.PlatformInfo;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ColumnFamilyOptions;
@@ -126,6 +127,29 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
     @SneakyThrows(RocksDBException.class)
     protected static void delete(@NonNull RocksDB db, @NonNull ColumnFamilyHandle handle, @NonNull ByteBuf key) {
         db.delete(handle, WRITE_OPTIONS, key.nioBuffer());
+    }
+
+    protected static long readLongLE(@NonNull byte[] src) {
+        return readLongLE(src, 0);
+    }
+
+    protected static long readLongLE(@NonNull byte[] src, int index) {
+        checkRangeLen(src.length, index, Long.BYTES);
+
+        long val = PUnsafe.getLong(src, PUnsafe.ARRAY_BYTE_BASE_OFFSET + index);
+        return PlatformInfo.IS_BIG_ENDIAN ? Long.reverseBytes(val) : val;
+    }
+
+    protected static byte[] writeLongLE(long val) {
+        byte[] dst = new byte[Long.BYTES];
+        writeLongLE(dst, 0, val);
+        return dst;
+    }
+
+    protected static void writeLongLE(@NonNull byte[] dst, int index, long val) {
+        checkRangeLen(dst.length, index, Long.BYTES);
+
+        PUnsafe.putLong(dst, PUnsafe.ARRAY_BYTE_BASE_OFFSET + index, PlatformInfo.IS_BIG_ENDIAN ? Long.reverseBytes(val) : val);
     }
 
     protected final AbstractFarTileProvider<POS, T> world;
@@ -233,19 +257,17 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
 
             //iterate through positions, updating the dirty timestamps as needed
             List<POS> out = new ArrayList<>(length);
-
-            ByteBuf dirtyTimestampBuf = UnpooledByteBufAllocator.DEFAULT.heapBuffer(Long.BYTES, Long.BYTES);
-            byte[] dirtyTimestampArray = dirtyTimestampBuf.array();
+            byte[] dirtyTimestampArray = new byte[Long.BYTES];
 
             for (int i = 0; i < length; i++) {
                 byte[] timestampBytes = get[(i << 1) + 0];
                 long timestamp = timestampBytes != null
-                        ? Unpooled.wrappedBuffer(timestampBytes).readLongLE() //timestamp for this tile exists, extract it from the byte array
+                        ? readLongLE(timestampBytes) //timestamp for this tile exists, extract it from the byte array
                         : TIMESTAMP_BLANK;
 
                 byte[] dirtyTimestampBytes = get[(i << 1) + 1];
                 long existingDirtyTimestamp = dirtyTimestampBytes != null
-                        ? Unpooled.wrappedBuffer(dirtyTimestampBytes).readLongLE() //dirty timestamp for this tile exists, extract it from the byte array
+                        ? readLongLE(dirtyTimestampBytes) //dirty timestamp for this tile exists, extract it from the byte array
                         : TIMESTAMP_BLANK;
 
                 if (timestamp == TIMESTAMP_BLANK //the tile doesn't exist, so we can't mark it as dirty
@@ -255,7 +277,7 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
                 }
 
                 //store new dirty timestamp in db
-                dirtyTimestampBuf.setLongLE(0, dirtyTimestamp);
+                writeLongLE(dirtyTimestampArray, 0, dirtyTimestamp);
                 txn.put(this.cfTileDirtyTimestamp, allKeyBytes[i], dirtyTimestampArray);
 
                 //save the position to return it as part of the result stream
