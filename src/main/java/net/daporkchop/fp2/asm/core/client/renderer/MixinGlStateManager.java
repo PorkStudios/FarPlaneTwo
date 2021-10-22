@@ -26,14 +26,54 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
+import static org.lwjgl.opengl.GL11.*;
+
 /**
  * @author DaPorkchop_
  */
 @Mixin(GlStateManager.class)
 public abstract class MixinGlStateManager {
     @ModifyVariable(method = "Lnet/minecraft/client/renderer/GlStateManager;depthFunc(I)V",
-            at = @At("HEAD"))
-    private static int invertDepthModes(int func) {
-        return ReversedZ.modifyDepthFunc(func);
+            at = @At("HEAD"),
+            argsOnly = true)
+    private static int fp2_depthFunc_invertForReversedZ(int func) {
+        if (ReversedZ.REVERSED) { //reversed-z projection is enabled, flip function around
+            switch (func) {
+                case GL_LESS:
+                    return GL_GREATER;
+                case GL_LEQUAL:
+                    return GL_GEQUAL;
+                case GL_GREATER:
+                    return GL_LESS;
+                case GL_GEQUAL:
+                    return GL_LEQUAL;
+            }
+        }
+
+        return func;
+    }
+
+    @ModifyVariable(method = "Lnet/minecraft/client/renderer/GlStateManager;doPolygonOffset(FF)V",
+            at = @At("HEAD"),
+            argsOnly = true,
+            ordinal = 0)
+    private static float fp2_doPolygonOffset_invertFactorForReversedZ(float factor) {
+        if (ReversedZ.REVERSED) { //reversed-z projection is enabled, invert factor
+            return -factor;
+        }
+
+        return factor;
+    }
+
+    @ModifyVariable(method = "Lnet/minecraft/client/renderer/GlStateManager;doPolygonOffset(FF)V",
+            at = @At("HEAD"),
+            argsOnly = true,
+            ordinal = 1)
+    private static float fp2_doPolygonOffset_invertOffsetForReversedZ(float offset) {
+        if (ReversedZ.REVERSED) { //reversed-z projection is enabled, invert offset
+            return -offset;
+        }
+
+        return offset;
     }
 }

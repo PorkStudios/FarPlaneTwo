@@ -57,20 +57,4 @@ public class ReversedZ {
             GlStateManager.clearDepth(1.0d);
         }
     }
-
-    public int modifyDepthFunc(int func) {
-        if (REVERSED) {
-            switch (func) {
-                case GL_LESS:
-                    return GL_GREATER;
-                case GL_LEQUAL:
-                    return GL_GEQUAL;
-                case GL_GREATER:
-                    return GL_LESS;
-                case GL_GEQUAL:
-                    return GL_LEQUAL;
-            }
-        }
-        return func;
-    }
 }
