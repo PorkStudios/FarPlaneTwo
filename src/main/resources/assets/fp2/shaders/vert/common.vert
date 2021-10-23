@@ -18,6 +18,11 @@
  *
  */
 
+#ifndef VERT_COMMON
+#define VERT_COMMON
+
+#include <"fp2:shaders/common.glsl">
+
 //
 //
 // INPUTS
@@ -50,7 +55,7 @@ out VS_OUT {
 //
 //
 
-#if defined(USE_DEBUG_COLORS_LEVEL) || defined(USE_DEBUG_COLORS_POSITION)
+#if FP2_DEBUG_COLORS_ENABLED
 const vec3[16] DEBUG_COLORS = vec3[](
 vec3(0., 1., 0.), vec3(1., 1., 0.), vec3(1., 0., 0.), vec3(0., 0., 1.),
 vec3(1., 0., 1.), vec3(0., 1., 1.), vec3(.5), vec3(1.),
@@ -66,12 +71,19 @@ vec3(0., .5, 1.), vec3(.5, 0., 1.), vec3(5., 1., .5), vec3(5., 1., .5)
 //
 
 vec3 computeVertexColor(vec3 va_color, ivec4 tile_position) {
-#if defined(USE_DEBUG_COLORS_LEVEL)
+#if FP2_DEBUG_COLORS_ENABLED
+#if FP2_DEBUG_COLORS_MODE == FP2_DEBUG_COLORS_MODE_LEVEL
     return DEBUG_COLORS[tile_position.w];
-#elif defined(USE_DEBUG_COLORS_POSITION)
+#elif FP2_DEBUG_COLORS_MODE == FP2_DEBUG_COLORS_MODE_POSITION
     ivec4 i = (tile_position & 1) << ivec4(3, 2, 1, 0);
     return DEBUG_COLORS[(i.x | i.y) | (i.z | i.w)];
+#elif FP2_DEBUG_COLORS_MODE == FP2_DEBUG_COLORS_MODE_NORMAL
+    return va_color;
+#endif
 #else
+    //debug colors aren't enabled, we can just use the standard color
     return va_color;
 #endif
 }
+
+#endif //VERT_COMMON

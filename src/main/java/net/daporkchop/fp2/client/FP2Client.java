@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.client;
 
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.mode.heightmap.client.HeightmapShaders;
@@ -28,8 +29,6 @@ import net.daporkchop.fp2.mode.voxel.client.VoxelShaders;
 import net.daporkchop.fp2.net.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.unsafe.PUnsafe;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
@@ -38,6 +37,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.compat.of.OFHelper.*;
+import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.fp2.net.FP2Network.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -76,8 +76,6 @@ public class FP2Client {
         ClientEvents.register();
 
         ConfigListenerManager.add(() -> PROTOCOL_FP2.sendToServer(new CPacketClientConfig().config(FP2Config.global())));
-
-        ((IReloadableResourceManager) Minecraft.getMinecraft().getResourceManager()).registerReloadListener(new FP2ResourceReloadListener());
     }
 
     /**
@@ -91,7 +89,14 @@ public class FP2Client {
      * Called during {@link FMLPostInitializationEvent}.
      */
     public void postInit() {
+        ShaderManager.changeDefines()
+                .define("T_SHIFT", T_SHIFT)
+                .define("RENDER_PASS_COUNT", RENDER_PASS_COUNT)
+                .apply();
+
         TexUVs.initDefault();
+
+        MC.resourceManager.registerReloadListener(new FP2ResourceReloadListener());
 
         //load shader classes on client thread
         PUnsafe.ensureClassInitialized(HeightmapShaders.class);

@@ -18,6 +18,11 @@
  *
  */
 
+#define VERT_HEIGHTMAP_HEIGHTMAP
+
+#include <"fp2:shaders/vert/common.vert">
+#include <"fp2:shaders/vert/fog.vert">
+
 //
 //
 // VERTEX ATTRIBUTES
@@ -49,7 +54,7 @@ void main() {
     vec3 relativePos = vec3(relative_tile_position + getLowOffsetPre(tile_position.w)) + getLowOffsetPost() - glState.camera.position_fract;
 
     //set fog depth based on vertex distance to camera
-    fog_out.depth = length(relativePos);
+    setFog(relativePos);
 
     //vertex position is detail mixed
     gl_Position = cameraTransform(relativePos);

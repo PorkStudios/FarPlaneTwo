@@ -47,7 +47,12 @@ public class DebugUtils {
     @SideOnly(Side.CLIENT)
     public void clientMsg(@NonNull String prefix, @NonNull String msg) {
         for (String line : msg.split("\n")) {
-            MC.player.sendMessage(new TextComponentString(prefix + line));
+            line = prefix + line;
+            if (MC.player != null) {
+                MC.player.sendMessage(new TextComponentString(line));
+            } else { //not currently ingame...
+                FP2_LOG.info(line);
+            }
         }
     }
 }

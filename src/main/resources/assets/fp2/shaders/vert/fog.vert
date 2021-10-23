@@ -18,12 +18,36 @@
  *
  */
 
+#ifndef VERT_FOG
+#define VERT_FOG
+
+#include <"fp2:shaders/common.glsl">
+
 //
 //
 // OUTPUTS
 //
 //
 
+#if FP2_FOG_ENABLED
 out FOG {
     float depth;
 } fog_out;
+#endif //FP2_FOG_ENABLED
+
+//
+//
+// UTILITIES
+//
+//
+
+void setFog(in vec3 relativePos) {
+#if FP2_FOG_ENABLED
+    //set fog depth based on vertex distance to camera
+    fog_out.depth = length(relativePos);
+#else
+    //fog is disabled, do nothing
+#endif
+}
+
+#endif //VERT_FOG

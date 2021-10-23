@@ -18,35 +18,97 @@
  *
  */
 
+#ifndef GLSL_COMMON
+#define GLSL_COMMON
+
 //
 //
 // MACROS
 //
 //
 
-//colors terrain based on its distance to the camera
-//#define USE_DEBUG_COLORS_LEVEL
+// Debug colors
+
+//the following 2 macros are defined from java code:
+//#define FP2_DEBUG_COLORS_ENABLED (bool)
+//#define FP2_DEBUG_COLORS_MODE (FP2_DEBUG_COLORS_MODE_*)
+
+//colors terrain based on its detail level
+#define FP2_DEBUG_COLORS_MODE_LEVEL (1)
 
 //colors terrain based on its tile position
-//#define USE_DEBUG_COLORS_POSITION
+#define FP2_DEBUG_COLORS_MODE_POSITION (2)
 
 //colors terrain based on its face normal vector
-//#define USE_DEBUG_COLORS_FACE_NORMAL
+#define FP2_DEBUG_COLORS_MODE_NORMAL (3)
 
-#if defined(USE_DEBUG_COLORS_LEVEL) || defined(USE_DEBUG_COLORS_POSITION) || defined(USE_DEBUG_COLORS_FACE_NORMAL)
-#define USE_DEBUG_COLORS
+#if !defined(FP2_DEBUG_COLORS_ENABLED) || !FP2_DEBUG_COLORS_ENABLED || !defined(FP2_DEBUG_COLORS_MODE)
+#undef FP2_DEBUG_COLORS_ENABLED
+#undef FP2_DEBUG_COLORS_MODE
+#define FP2_DEBUG_COLORS_ENABLED (0)
+#define FP2_DEBUG_COLORS_MODE (-1)
 #endif
 
-#define FOG_LINEAR (9729)
-#define FOG_EXP (2048)
-#define FOG_EXP2 (2049)
+#if FP2_DEBUG_COLORS_ENABLED && FP2_DEBUG_COLORS_MODE != FP2_DEBUG_COLORS_MODE_LEVEL && FP2_DEBUG_COLORS_MODE != FP2_DEBUG_COLORS_MODE_POSITION && FP2_DEBUG_COLORS_MODE != FP2_DEBUG_COLORS_MODE_NORMAL
+#error unsupported debug color mode!
+#endif
 
-#define T_SHIFT (4)
+// Fog
+
+//the following 2 macros are defined from java code:
+//#define FP2_FOG_ENABLED (bool)
+//#define FP2_FOG_MODE (FP2_FOG_MODE_*)
+
+//f = (end - c) / (end - start)
+#define FP2_FOG_MODE_LINEAR (9729)
+
+//f = e ^ (-density * c)
+#define FP2_FOG_MODE_EXP (2048)
+
+//f = e ^ (-density * c ^ 2)
+#define FP2_FOG_MODE_EXP2 (2049)
+
+//f = <user code included from resource at this macro>
+//#define FP2_FOG_MODE_USER fp2:shaders/frag/fog/placeholder_user_fog.frag
+
+#if !defined(FP2_FOG_ENABLED) || !FP2_FOG_ENABLED || !defined(FP2_FOG_MODE)
+#undef FP2_FOG_ENABLED
+#undef FP2_FOG_MODE
+#define FP2_FOG_ENABLED (0)
+#define FP2_FOG_MODE (-1)
+#endif
+
+#if FP2_FOG_ENABLED && FP2_FOG_MODE != FP2_FOG_MODE_LINEAR && FP2_FOG_MODE != FP2_FOG_MODE_EXP && FP2_FOG_MODE != FP2_FOG_MODE_EXP2
+#error unsupported fog mode!
+#endif
+
+// FP2 constants
+
+//the following 2 macros are defined from java code:
+//#define T_SHIFT (uint)
+//#define RENDER_PASS_COUNT (uint)
+
+#if !defined(T_SHIFT)
+#error T_SHIFT must be set!
+#endif
+
 #define T_MASK ((1 << T_SHIFT) - 1)
 #define T_VOXELS (1 << T_SHIFT)
 #define T_VERTS (T_VOXELS + 1)
 
-#define RENDER_PASS_COUNT (3)
+#if !defined(RENDER_PASS_COUNT)
+#error RENDER_PASS_COUNT must be set!
+#endif
+
+// FP2 detail level constants
+
+//the following macro is defined from java code:
+//#define LEVEL_0 (bool)
+
+#if !defined(LEVEL_0)
+//default value is false
+#define LEVEL_0 (0)
+#endif
 
 //
 //
@@ -54,7 +116,7 @@
 //
 //
 
-//OpenGL state
+// OpenGL state
 
 struct GlCamera {
     mat4 modelviewprojection;
@@ -70,8 +132,6 @@ struct GlFog {
     float start;
     float end;
     float scale;
-
-    int mode;
 };
 
 layout(std140, binding = 0) uniform GLSTATE {
@@ -85,7 +145,7 @@ layout(std140, binding = 0) uniform GLSTATE {
 //
 //
 
-//Texture UVs
+// Texture UVs
 
 layout(std430, binding = 0) readonly buffer QUAD_LISTS {
     ivec2 quad_lists[];
@@ -103,8 +163,8 @@ layout(std430, binding = 1) readonly buffer QUAD_DATA {
     BakedQuad quad_data[];
 };
 
-#if defined(LEVEL_0)
-//Vanilla renderability index
+#if LEVEL_0
+// Vanilla renderability index
 
 layout(std430, binding = 6) readonly buffer VANILLA_RENDERABILITY {
     ivec3 offset;
@@ -193,7 +253,7 @@ int normalToFaceIndex(vec3 normal)  {
     }*/
 }
 
-#if defined(LEVEL_0)
+#if LEVEL_0
 // vanilla renderability tests
 
 bool isVanillaRenderableLevel0(in ivec3 chunkPos) {
@@ -213,3 +273,5 @@ bool isVanillaRenderableLevel0(in ivec3 chunkPos) {
     return (vanilla_renderability_state.flags[idx >> 5] & (1 << idx)) != 0;
 }
 #endif
+
+#endif //GLSL_COMMON

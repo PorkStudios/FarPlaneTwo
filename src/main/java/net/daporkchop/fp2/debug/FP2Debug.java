@@ -57,14 +57,10 @@ public class FP2Debug {
         bigWarning("FarPlaneTwo debug mode enabled!");
 
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-            ConfigListenerManager.add(() -> {
-                ShaderManager.DefinesChangeBatch batch = ShaderManager.changeDefines();
-                for (FP2Config.Debug.DebugColorMode colorMode : FP2Config.Debug.DebugColorMode.values()) {
-                    batch.undefine("USE_DEBUG_COLORS_" + colorMode);
-                }
-                batch.define("USE_DEBUG_COLORS_" + FP2Config.global().debug().debugColors())
-                        .apply();
-            });
+            ConfigListenerManager.add(() -> ShaderManager.changeDefines()
+                    .define("FP2_DEBUG_COLORS_ENABLED", FP2Config.global().debug().debugColors().enable())
+                    .define("FP2_DEBUG_COLORS_MODE", FP2Config.global().debug().debugColors().ordinal())
+                    .apply());
 
             MinecraftForge.EVENT_BUS.register(new DebugClientEvents());
         }

@@ -99,10 +99,9 @@ public class GPUCulledRenderIndex<POS extends IFarPos, B extends IBakeOutput, C 
             super(level, GROW_FUNCTION);
 
             ComputeShaderBuilder cullShaderBuilder = GPUCulledRenderIndex.this.cullingStrategy.cullShaderBuilder()
-                    .withWorkGroupSize(WORK_GROUP_SIZE);
-            if (this.level == 0) {
-                cullShaderBuilder = cullShaderBuilder.define("LEVEL_0");
-            }
+                    .withWorkGroupSize(WORK_GROUP_SIZE)
+                    .define("LEVEL_0", this.level == 0);
+
             this.cullShader = this.commandBuffer.configureShader(cullShaderBuilder).link();
         }
 

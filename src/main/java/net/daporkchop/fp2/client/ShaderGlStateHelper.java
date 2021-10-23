@@ -25,6 +25,7 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.client.gl.camera.Frustum;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
+import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.util.DirectBufferReuse;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -32,7 +33,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
 
-import static java.lang.Math.abs;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.compat.of.OFHelper.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -53,7 +53,7 @@ public class ShaderGlStateHelper {
     private final int SIZE_CAMERA = MAT4_SIZE + IVEC3_SIZE + VEC3_SIZE;
 
     private final int OFFSET_FOG = OFFSET_CAMERA + SIZE_CAMERA;
-    private final int SIZE_FOG = VEC4_SIZE + 4 * FLOAT_SIZE + INT_SIZE;
+    private final int SIZE_FOG = VEC4_SIZE + 4 * FLOAT_SIZE;
 
     private final int TOTAL_SIZE = OFFSET_FOG + SIZE_FOG;
 
@@ -120,9 +120,10 @@ public class ShaderGlStateHelper {
             PUnsafe.putFloat(addr, 1.0f / (end - start));
             addr += FLOAT_SIZE;
 
-            //int mode
-            PUnsafe.putInt(addr, glGetBoolean(GL_FOG) ? glGetInteger(GL_FOG_MODE) : 0);
-            addr += INT_SIZE;
+            ShaderManager.changeDefines()
+                    .define("FP2_FOG_ENABLED", glGetBoolean(GL_FOG))
+                    .define("FP2_FOG_MODE", glGetInteger(GL_FOG_MODE))
+                    .apply();
         }
 
         try (GLBuffer buffer = BUFFER.bind(GL_UNIFORM_BUFFER)) { //upload

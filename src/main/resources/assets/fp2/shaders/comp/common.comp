@@ -18,6 +18,11 @@
  *
  */
 
+#ifndef COMP_COMMON
+#define COMP_COMMON
+
+#include <"fp2:shaders/common.glsl">
+
 /*
  * builtins:
  *
@@ -91,6 +96,14 @@
 
 //
 //
+// LOCAL WORK GROUP SIZE
+//
+//
+
+layout(local_size_x = COMPUTE_SHADER_LOCAL_SIZE_X, local_size_y = COMPUTE_SHADER_LOCAL_SIZE_Y, local_size_z = COMPUTE_SHADER_LOCAL_SIZE_Z) in;
+
+//
+//
 // MACROS
 //
 //
@@ -118,3 +131,5 @@
 // gl_GlobalInvocationIndex
 //   This is a 1D version of gl_GlobalInvocationID. In other words, it is to gl_GlobalInvocationID what gl_LocalInvocationIndex is to gl_LocalInvocationID.
 #define gl_GlobalInvocationIndex (gl_WorkGroupInvocationIndex * COMPUTE_SHADER_LOCAL_SIZE_TOTAL + gl_LocalInvocationIndex)
+
+#endif //COMP_COMMON

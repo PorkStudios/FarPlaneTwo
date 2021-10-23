@@ -26,36 +26,52 @@ import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.With;
 import net.daporkchop.fp2.client.gl.WorkGroupSize;
-import net.daporkchop.lib.binary.oio.reader.UTF8FileReader;
-import net.daporkchop.lib.common.misc.string.PStrings;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.ResourceLocation;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+@With
 @EqualsAndHashCode(callSuper = false)
 public final class ComputeShaderBuilder extends ShaderManager.AbstractShaderBuilder<ComputeShaderBuilder, ComputeShaderProgram> {
     @NonNull
-    @With
     protected final String programName;
+
+    protected final ResourceLocation computeShader;
+
+    protected final WorkGroupSize workGroupSize;
+
+    @NonNull
+    protected final Set<EnumFacing.Axis> localEnableAxes;
+
+    @NonNull
+    protected final Set<EnumFacing.Axis> globalEnableAxes;
+
     @With(AccessLevel.PROTECTED)
+    @NonNull
     protected final Map<String, Object> defines;
 
-    @With
-    protected final WorkGroupSize workGroupSize;
+    /**
+     * @see ShaderManager#computeShaderBuilder(String)
+     */
+    protected ComputeShaderBuilder(@NonNull String programName) {
+        this.programName = programName;
+        this.computeShader = null;
+        this.workGroupSize = null;
+        this.localEnableAxes = this.globalEnableAxes = EnumSet.allOf(EnumFacing.Axis.class);
+        this.defines = Collections.emptyMap();
+    }
 
     @Override
     public ComputeShaderBuilder define(@NonNull String name, @NonNull Object value) {
@@ -77,76 +93,48 @@ public final class ComputeShaderBuilder extends ShaderManager.AbstractShaderBuil
         return this;
     }
 
-    protected String headers(@NonNull ProgramMeta meta) {
-        return ShaderManager.headers(ImmutableMap.<String, Object>builder()
-                        .putAll(this.defines)
-                        .put("COMPUTE_SHADER_LOCAL_SIZE_X", this.workGroupSize.x())
-                        .put("COMPUTE_SHADER_LOCAL_SIZE_Y", this.workGroupSize.y())
-                        .put("COMPUTE_SHADER_LOCAL_SIZE_Z", this.workGroupSize.z())
-                        .put("COMPUTE_SHADER_LOCAL_SIZE_TOTAL", this.workGroupSize.totalSize())
-                        .put("COMPUTE_SHADER_LOCAL_ENABLE_X", meta.localEnableAxes.contains(EnumFacing.Axis.X))
-                        .put("COMPUTE_SHADER_LOCAL_ENABLE_Y", meta.localEnableAxes.contains(EnumFacing.Axis.Y))
-                        .put("COMPUTE_SHADER_LOCAL_ENABLE_Z", meta.localEnableAxes.contains(EnumFacing.Axis.Z))
-                        .put("COMPUTE_SHADER_GLOBAL_ENABLE_X", meta.globalEnableAxes.contains(EnumFacing.Axis.X))
-                        .put("COMPUTE_SHADER_GLOBAL_ENABLE_Y", meta.globalEnableAxes.contains(EnumFacing.Axis.Y))
-                        .put("COMPUTE_SHADER_GLOBAL_ENABLE_Z", meta.globalEnableAxes.contains(EnumFacing.Axis.Z))
-                        .build(),
-                PStrings.fastFormat("layout(local_size_x = %d, local_size_y = %d, local_size_z = %d) in;",
-                        this.workGroupSize.x(), this.workGroupSize.y(), this.workGroupSize.z()));
+    protected Map<String, Object> macros() {
+        return ImmutableMap.<String, Object>builder()
+                .putAll(ShaderManager.GLOBAL_DEFINES)
+                .putAll(this.defines)
+                .put("COMPUTE_SHADER_LOCAL_SIZE_X", this.workGroupSize.x())
+                .put("COMPUTE_SHADER_LOCAL_SIZE_Y", this.workGroupSize.y())
+                .put("COMPUTE_SHADER_LOCAL_SIZE_Z", this.workGroupSize.z())
+                .put("COMPUTE_SHADER_LOCAL_SIZE_TOTAL", this.workGroupSize.totalSize())
+                .put("COMPUTE_SHADER_LOCAL_ENABLE_X", this.localEnableAxes.contains(EnumFacing.Axis.X))
+                .put("COMPUTE_SHADER_LOCAL_ENABLE_Y", this.localEnableAxes.contains(EnumFacing.Axis.Y))
+                .put("COMPUTE_SHADER_LOCAL_ENABLE_Z", this.localEnableAxes.contains(EnumFacing.Axis.Z))
+                .put("COMPUTE_SHADER_GLOBAL_ENABLE_X", this.globalEnableAxes.contains(EnumFacing.Axis.X))
+                .put("COMPUTE_SHADER_GLOBAL_ENABLE_Y", this.globalEnableAxes.contains(EnumFacing.Axis.Y))
+                .put("COMPUTE_SHADER_GLOBAL_ENABLE_Z", this.globalEnableAxes.contains(EnumFacing.Axis.Z))
+                .build();
     }
 
     @Override
     public ComputeShaderProgram link() {
+        checkState(this.computeShader != null, "computeShader must be set!");
         checkState(this.workGroupSize != null, "workGroupSize must be set!");
+        checkState(!this.localEnableAxes.isEmpty(), "program \"%s\" has no local axes enabled!", this.programName);
+        checkState(!this.globalEnableAxes.isEmpty(), "program \"%s\" has no global axes enabled!", this.programName);
         return super.link();
-    }
-
-    @SneakyThrows(IOException.class)
-    protected ProgramMeta meta() {
-        ProgramMeta meta;
-        try (InputStream in = ShaderManager.class.getResourceAsStream(PStrings.fastFormat("%s/prog/%s.json", ShaderManager.BASE_PATH, this.programName))) {
-            checkArg(in != null, "Unable to find shader meta file: \"%s/prog/%s.json\"!", ShaderManager.BASE_PATH, this.programName);
-            meta = GSON.fromJson(new UTF8FileReader(in), ProgramMeta.class);
-        }
-
-        checkState(meta.comp != null, "Program \"%s\" has no shaders!", this.programName);
-        checkState(!meta.localEnableAxes.isEmpty(), "Program \"%s\" has no local axes enabled!", this.programName);
-        checkState(!meta.globalEnableAxes.isEmpty(), "Program \"%s\" has no global axes enabled!", this.programName);
-
-        return meta;
     }
 
     @Override
     protected ComputeShaderProgram supply() {
-        ProgramMeta meta = this.meta();
-
         return new ComputeShaderProgram(
                 this.programName,
                 null, null, null,
-                ShaderManager.get(meta.comp, this.headers(meta), ShaderType.COMPUTE),
+                ShaderManager.get(this.computeShader, this.macros(), ShaderType.COMPUTE),
                 null,
-                this.workGroupSize, meta.globalEnableAxes);
+                this.workGroupSize, this.globalEnableAxes);
     }
 
     @Override
     protected void reload(@NonNull ComputeShaderProgram program) {
-        ProgramMeta meta = this.meta();
-
         program.reload(
                 null, null, null,
-                ShaderManager.get(meta.comp, this.headers(meta), ShaderType.COMPUTE),
+                ShaderManager.get(this.computeShader, this.macros(), ShaderType.COMPUTE),
                 null,
-                meta.globalEnableAxes);
-    }
-
-    /**
-     * Metadata for a compute shader program.
-     *
-     * @author DaPorkchop_
-     */
-    private static final class ProgramMeta {
-        public Set<EnumFacing.Axis> localEnableAxes = EnumSet.allOf(EnumFacing.Axis.class);
-        public Set<EnumFacing.Axis> globalEnableAxes = EnumSet.allOf(EnumFacing.Axis.class);
-        public String[] comp;
+                this.globalEnableAxes);
     }
 }

@@ -18,6 +18,11 @@
  *
  */
 
+#ifndef COMP_FRUSTUM
+#define COMP_FRUSTUM
+
+#include <"fp2:shaders/comp/common.comp">
+
 //
 //
 // MACROS
@@ -128,3 +133,5 @@ bool isBoxInFrustumPartial(in vec3 min, in vec3 max) {
 bool isBoxInFrustum(in vec3 min, in vec3 max) {
     return isBoxInFrustumFully(min, max) || isBoxInFrustumPartial(min, max);
 }
+
+#endif //COMP_FRUSTUM

@@ -30,25 +30,24 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.debug.util.DebugUtils;
-import net.daporkchop.lib.binary.oio.StreamUtil;
 import net.daporkchop.lib.common.misc.string.PStrings;
+import net.minecraft.util.ResourceLocation;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.FP2.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
@@ -60,7 +59,71 @@ import static org.lwjgl.opengl.GL20.*;
  */
 @UtilityClass
 public class ShaderManager {
-    protected final String BASE_PATH = "/assets/fp2/shaders";
+    protected final String BASE_PATH = "shaders";
+
+    protected final LoadingCache<ResourceLocation, SourceLine[]> SOURCE_CACHE = CacheBuilder.newBuilder()
+            .weakValues()
+            .build(new CacheLoader<ResourceLocation, SourceLine[]>() {
+                @Override
+                public SourceLine[] load(@NonNull ResourceLocation location) throws IOException {
+                    List<SourceLine> lines = new LinkedList<>();
+
+                    //read each line and wrap it in a SourceLine
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(MC.resourceManager.getResource(location).getInputStream()))) {
+                        for (String line; (line = reader.readLine()) != null; ) {
+                            lines.add(new SourceLine(line, location, lines.size() + 1));
+                        }
+                    }
+
+                    //strip comments
+                    final StringBuilder builder = new StringBuilder();
+                    boolean inMultilineComment = false;
+
+                    for (ListIterator<SourceLine> itr = lines.listIterator(); itr.hasNext(); ) {
+                        SourceLine line = itr.next();
+                        String text = line.text();
+
+                        builder.setLength(0);
+
+                        ITERATE_CHARS:
+                        for (int i = 0, len = text.length(); i < len; i++) {
+                            char c = text.charAt(i);
+
+                            if (inMultilineComment) { //we're currently in a multiline comment
+                                if (c == '*' && i + 1 < len && text.charAt(i + 1) == '/') { //we reached the end of the comment
+                                    inMultilineComment = false;
+                                    i++;
+                                } else {
+                                    //no-op, skip the character
+                                }
+                            } else {
+                                if (c == '/' && i + 1 < len) { //this is a potential comment start
+                                    switch (text.charAt(i + 1)) {
+                                        case '/': //single line comment
+                                            break ITERATE_CHARS;
+                                        case '*': //multiline comment
+                                            inMultilineComment = true;
+                                            i++;
+                                            continue;
+                                    }
+                                }
+
+                                //no special handling required for this char, copy it
+                                builder.append(c);
+                            }
+                        }
+
+                        text = builder.toString();
+                        if (text.isEmpty() || text.trim().isEmpty()) { //line is empty or effectively empty, discard it
+                            itr.remove();
+                        } else { //update line with processed text
+                            itr.set(line.withText(text));
+                        }
+                    }
+
+                    return lines.toArray(new SourceLine[0]);
+                }
+            });
 
     protected final LoadingCache<AbstractShaderBuilder, ShaderProgram> SHADER_CACHE = CacheBuilder.newBuilder()
             .weakValues()
@@ -68,22 +131,12 @@ public class ShaderManager {
 
     protected Map<String, Object> GLOBAL_DEFINES = Collections.emptyMap();
 
-    protected String headers(@NonNull Map<String, Object> defines, @NonNull String... lines) {
-        return Stream.concat(
-                Stream.concat(GLOBAL_DEFINES.entrySet().stream(), defines.entrySet().stream())
-                        .map(e -> PStrings.fastFormat("#define %s (%s)", e.getKey(),
-                                e.getValue() instanceof Boolean
-                                        ? ((Boolean) e.getValue() ? 1 : 0)
-                                        : e.getValue())),
-                Stream.of(lines)).collect(Collectors.joining("\n", "#line 1 0\n", "\n"));
-    }
-
     public RenderShaderBuilder renderShaderBuilder(@NonNull String programName) {
-        return new RenderShaderBuilder(programName, Collections.emptyMap());
+        return new RenderShaderBuilder(programName);
     }
 
     public ComputeShaderBuilder computeShaderBuilder(@NonNull String programName) {
-        return new ComputeShaderBuilder(programName, Collections.emptyMap(), null);
+        return new ComputeShaderBuilder(programName);
     }
 
     /**
@@ -97,31 +150,19 @@ public class ShaderManager {
         return renderShaderBuilder(programName).link();
     }
 
-    protected Shader get(@NonNull String[] names, @NonNull String headers, @NonNull ShaderType type) {
-        return new Shader(type, names, Stream.concat(
-                Stream.of(
-                        "#version 430 core\n", //add version prefix
-                        headers),
-                IntStream.range(0, names.length)
-                        .mapToObj(idx -> {
-                            String fileName = names[idx];
-                            try (InputStream in = ShaderManager.class.getResourceAsStream(BASE_PATH + '/' + fileName)) {
-                                checkState(in != null, "Unable to find shader file: \"%s\"!", fileName);
-                                String prefix = "#line 1 " + (idx + 1) + '\n';
-                                String code = new String(StreamUtil.toByteArray(in), StandardCharsets.UTF_8);
-                                return prefix + code;
-                            } catch (IOException e) {
-                                throw new UncheckedIOException(e);
-                            }
-                        }))
-                .toArray(String[]::new));
+    protected Shader get(@NonNull ResourceLocation name, @NonNull Map<String, Object> macros, @NonNull ShaderType type) {
+        return new Shader(type, name, new Preprocessor(macros, SOURCE_CACHE)
+                .appendLines(new SourceLine("#version 430 core", new ResourceLocation(MODID, "<auto-generated>"), 1))
+                .appendLines(name)
+                .preprocess()
+                .lines());
     }
 
-    protected void validateShaderCompile(int id, @NonNull String... names) {
+    protected void validateShaderCompile(int id, @NonNull ResourceLocation name, @NonNull SourceLine... lines) {
         if (glGetShaderi(id, GL_COMPILE_STATUS) == GL_FALSE) {
             String error = PStrings.fastFormat("Couldn't compile shader \"%s\":\n%s",
-                    Arrays.toString(names),
-                    formatInfoLog(glGetShaderInfoLog(id, glGetShaderi(id, GL_INFO_LOG_LENGTH)), names));
+                    name,
+                    formatInfoLog(glGetShaderInfoLog(id, glGetShaderi(id, GL_INFO_LOG_LENGTH)), lines));
             System.err.println(error);
             throw new IllegalStateException(error);
         }
@@ -143,17 +184,25 @@ public class ShaderManager {
         }
     }
 
-    protected String formatInfoLog(@NonNull String origText, @NonNull String... names) {
-        Matcher matcher = Pattern.compile("^(-?\\d+)\\((-?\\d+)\\) (: .+)", Pattern.MULTILINE).matcher(origText);
-        StringBuffer buffer = new StringBuffer();
-        while (matcher.find()) {
-            int nameIndex = Integer.parseInt(matcher.group(1)) - 1;
-            String name = nameIndex < 0 || nameIndex >= names.length ? "<unknown source>" : names[nameIndex];
-            matcher.appendReplacement(buffer, Matcher.quoteReplacement('(' + name + ':' + matcher.group(2) + ')' + matcher.group(3)));
-        }
-        matcher.appendTail(buffer);
+    protected String formatInfoLog(@NonNull String text, @NonNull SourceLine... lines) {
+        for (Pattern pattern : new Pattern[]{ //different patterns for various error formats i've encountered so far
+                Pattern.compile("^(?<file>\\d+)\\((?<line>\\d+)\\) (?<text>: .+)", Pattern.MULTILINE),
+                Pattern.compile("^(?<file>\\d+):(?<line>\\d+)\\((?<row>\\d+)\\)(?<text>: .+)", Pattern.MULTILINE),
+        }) {
+            Matcher matcher = pattern.matcher(text);
+            if (matcher.find()) {
+                StringBuffer buffer = new StringBuffer();
+                do {
+                    SourceLine line = lines[Integer.parseInt(matcher.group("line")) - 1];
+                    matcher.appendReplacement(buffer, Matcher.quoteReplacement("(" + line.location() + ':' + line.lineNumber() + ')' + matcher.group("text")));
+                } while (matcher.find());
+                matcher.appendTail(buffer);
 
-        return buffer.toString();
+                text = buffer.toString();
+            }
+        }
+
+        return text;
     }
 
     public DefinesChangeBatch changeDefines() {
@@ -169,9 +218,7 @@ public class ShaderManager {
             }
         } catch (Exception e) {
             FP2_LOG.error("shader reload failed", e);
-            if (message) {
-                DebugUtils.clientMsg("§cshaders reload failed (check console).");
-            }
+            DebugUtils.clientMsg("§cshaders reload failed (check console).");
         }
     }
 
@@ -203,9 +250,12 @@ public class ShaderManager {
     public static final class DefinesChangeBatch {
         protected final Map<String, Object> originals = GLOBAL_DEFINES;
         protected final Map<String, Object> updated = new Object2ObjectOpenHashMap<>(this.originals);
+        protected boolean dirty = false;
 
         public DefinesChangeBatch undefine(@NonNull String name) {
-            this.updated.remove(name);
+            if (this.updated.remove(name) != null) {
+                this.dirty = true;
+            }
             return this;
         }
 
@@ -214,7 +264,9 @@ public class ShaderManager {
         }
 
         public DefinesChangeBatch define(@NonNull String name, @NonNull Object value) {
-            this.updated.put(name, value);
+            if (!Objects.equals(this.updated.put(name, value), value)) {
+                this.dirty = true;
+            }
             return this;
         }
 
@@ -222,8 +274,11 @@ public class ShaderManager {
             if (GLOBAL_DEFINES != this.originals) {
                 throw new ConcurrentModificationException();
             }
-            GLOBAL_DEFINES = ImmutableMap.copyOf(this.updated);
-            reload(false);
+
+            if (this.dirty) { //avoid doing an expensive shader reload if nothing changed
+                GLOBAL_DEFINES = ImmutableMap.copyOf(this.updated);
+                reload(false);
+            }
         }
     }
 }

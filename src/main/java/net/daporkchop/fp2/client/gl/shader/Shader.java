@@ -24,8 +24,11 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.ResourceLocation;
 
-import static net.daporkchop.fp2.util.Constants.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import static org.lwjgl.opengl.GL20.*;
 
 /**
@@ -38,10 +41,8 @@ class Shader {
     protected final ShaderType type;
     protected final int id;
 
-    protected Shader(@NonNull ShaderType type, @NonNull String[] names, @NonNull String[] code) {
+    protected Shader(@NonNull ShaderType type, @NonNull ResourceLocation name, @NonNull SourceLine... lines) {
         this.type = type;
-
-        FP2_LOG.debug("compiling {} shader with source:\n{}", type, String.join("", code));
 
         //allocate shader
         this.id = glCreateShader(type.id);
@@ -51,10 +52,10 @@ class Shader {
         PCleaner.cleaner(this, () -> Minecraft.getMinecraft().addScheduledTask(() -> glDeleteShader(id)));
 
         //set shader source code
-        glShaderSource(id, code);
+        glShaderSource(id, Stream.of(lines).map(SourceLine::text).collect(Collectors.joining("\n")));
 
         //compile and validate shader
         glCompileShader(id);
-        ShaderManager.validateShaderCompile(this.id, names);
+        ShaderManager.validateShaderCompile(this.id, name, lines);
     }
 }
