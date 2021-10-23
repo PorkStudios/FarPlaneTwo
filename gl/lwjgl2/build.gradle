@@ -18,8 +18,12 @@
  *
  */
 
-include 'core'
-include 'gl'
-include 'gl:lwjgl2'
-include 'mc'
-include 'mc:1.12.2-forge'
+dependencies {
+    shade project(":gl")
+
+    compile "org.lwjgl.lwjgl:lwjgl:$lwjgl2Version"
+    compile "org.lwjgl.lwjgl:lwjgl_util:$lwjgl2Version"
+
+    compile "org.lwjgl.lwjgl:lwjgl-platform:$lwjgl2Version:natives-linux"
+    compile "org.lwjgl.lwjgl:lwjgl-platform:$lwjgl2Version:natives-windows"
+}

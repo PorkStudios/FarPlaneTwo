@@ -1,0 +1,247 @@
+/*
+ * Adapted from The MIT License (MIT)
+ *
+ * Copyright (c) 2020-2021 DaPorkchop_
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software
+ * is furnished to do so, subject to the following conditions:
+ *
+ * Any persons and/or organizations using this software must include the above copyright notice and this permission notice,
+ * provide sufficient credit to the original authors of the project (IE: DaPorkchop_), as well as provide a link to the original project.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
+buildscript {
+    repositories {
+        jcenter()
+        maven {
+            name = "DaPorkchop_"
+            url = "https://maven.daporkchop.net/"
+        }
+        maven {
+            name = "SpongePowered"
+            url = "https://repo.spongepowered.org/maven"
+        }
+    }
+    dependencies {
+        classpath "net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT"
+        classpath "org.spongepowered:mixingradle:0.6-SNAPSHOT"
+    }
+}
+
+apply plugin: "net.minecraftforge.gradle.forge"
+apply plugin: "org.spongepowered.mixin"
+apply plugin: "maven-publish"
+
+ext {
+    //minecraft things
+    mcpmappingsVersion = "stable_39"
+    minecraftforgeVersion = "14.23.5.2847"
+    minecraftVersion = "1.12.2"
+}
+
+sourceSets.main {
+    java.srcDirs = [ "../../src/main/java" ]
+    resources.srcDirs = [ "../../src/main/resources" ]
+}
+
+sourceSets.test {
+    java.srcDirs = [ "../../src/test/java" ]
+    resources.srcDirs = [ "../../src/test/resources" ]
+}
+
+repositories {
+    maven { //needed for CWG
+        name = "elytradev"
+        url = "https://repo.elytradev.com"
+    }
+}
+
+dependencies {
+    shade project(":gl:lwjgl2")
+
+    shade("net.daporkchop.lib:compression-zstd:$porklibVersion") {
+        exclude group: "io.netty"
+    }
+    shade("net.daporkchop.lib:concurrent:$porklibVersion") {
+        exclude group: "io.netty"
+    }
+    shade("net.daporkchop.lib:noise:$porklibVersion") {
+        exclude group: "io.netty"
+    }
+    shade("net.daporkchop.lib:primitive:$porklibVersion") {
+        exclude group: "io.netty"
+    }
+
+    compile "net.daporkchop:forgerocks:$rocksdbVersion-$minecraftVersion"
+
+    deobfCompile "io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT"
+    deobfCompile "io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT"
+
+    if ("true".equalsIgnoreCase(System.getProperty("idea.sync.active"))) {
+        //intellij is present - we don't want it to register mixin as an annotation processor, so we just add it as a standard dependency.
+        //  if we don't do this, the intellij annotation processors will get totally screwed up
+        compile "org.spongepowered:mixin:$mixinVersion"
+    } else {
+        //register mixin as a standard annotation processor
+        annotationProcessor "org.spongepowered:mixin:$mixinVersion:processor"
+    }
+}
+
+minecraft {
+    version = "$minecraftVersion-$minecraftforgeVersion"
+    runDir = "run"
+    mappings = "$mcpmappingsVersion"
+    makeObfSourceJar = false
+
+    coreMod = "net.daporkchop.fp2.asm.FP2MixinLoader"
+
+    def args = [
+            "-Dmixin.checks.interfaces=true",
+            "-Dmixin.debug.export=true",
+            "-Dmixin.debug.verbose=true",
+            "-Dmixin.hotSwap=true",
+            "-Dfp2.debug=true",
+            "-Xmx2G",
+            "-XX:+UseG1GC",
+            "-ea",
+            "-da:io.netty..."
+    ]
+    clientJvmArgs += args
+    serverJvmArgs += args
+}
+
+processResources {
+    // this will ensure that this task is redone when the versions change.
+    inputs.property "version", project.version
+    inputs.property "mcversion", project.minecraft.version
+
+    // replace stuff in mcmod.info, nothing else
+    from(sourceSets.main.resources.srcDirs) {
+        include "mcmod.info"
+
+        // replace version and mcversion
+        expand "version": project.version, "mcversion": project.minecraft.version
+    }
+
+    // copy everything else except the mcmod.info
+    from(sourceSets.main.resources.srcDirs) {
+        exclude "mcmod.info"
+    }
+}
+
+mixin {
+    defaultObfuscationEnv searge
+    add sourceSets.main, "mixins.fp2.refmap.json"
+}
+
+reobf.jar {
+    mappingType = "SEARGE"
+    classpath = sourceSets.main.compileClasspath
+}
+
+jar {
+    String branchName = System.getenv("BRANCH_NAME") //suffix jar name with branch name, if present and not the master branch
+    branchName = branchName != null && !branchName.isEmpty() && !"master".equals(branchName) ? '-' + branchName.replaceAll("[^a-zA-Z0-9.-]", "_") : "";
+    archiveName "fp2-$fp2Version-$minecraftVersion" + branchName + ".jar"
+
+    from {
+        configurations.shade.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }.unique()
+    } {
+        exclude "META-INF/**"
+        exclude sourceSets.main.output.asFileTree.collect {
+            return it.getPath().split("java/main/").last()
+        }
+    }
+
+    manifest {
+        attributes(
+                "MixinConfigs": "mixins.fp2.core.json",
+                "tweakClass": "org.spongepowered.asm.launch.MixinTweaker",
+                "TweakOrder": 0,
+                "FMLCorePluginContainsFMLMod": "true",
+                "FMLCorePlugin": "net.daporkchop.fp2.asm.FP2MixinLoader",
+                "ForceLoadAsMod": "true",
+                "FMLAT": "fp2_at.cfg"
+        )
+    }
+}
+
+if (System.getProperty("os.name", "").toLowerCase().replaceAll("[^a-z0-9]+", "").startsWith("windows")) {
+    System.out.println("You are running Windows, which is bad and you should feel bad.\nThis means that native libraries will not be built.")
+} else {
+    task compileNatives(type: Exec) {
+        workingDir "$projectDir"
+        commandLine "make",
+                "-f", "src/main/native/project.mk",
+                String.format("-j%d", Runtime.getRuntime().availableProcessors())
+    }
+
+    compileJava.dependsOn(compileNatives)
+
+    task cleanNatives(type: Exec) {
+        workingDir "$projectDir"
+        commandLine "make", "clean"
+    }
+
+    clean.dependsOn(cleanNatives)
+}
+
+task sourceJar2(type: Jar) { //workaround for srg2sourge bug
+    from sourceSets.main.allSource
+}
+
+publishing {
+    repositories {
+        if (project.hasProperty("daporkchopMavenUsername") && project.hasProperty("daporkchopMavenPassword")) {
+            maven {
+                credentials {
+                    username = "$daporkchopMavenUsername"
+                    password = "$daporkchopMavenPassword"
+                }
+
+                name = "DaPorkchop_"
+                url = version.endsWith("SNAPSHOT") ? "https://maven.daporkchop.net/snapshot/" : "https://maven.daporkchop.net/release/"
+            }
+        }
+    }
+
+    publications {
+        maven(MavenPublication) {
+            groupId = "net.daporkchop"
+            artifactId = "fp2"
+            version = "$fp2VersionMajor-$minecraftVersion-SNAPSHOT"
+
+            from components.java
+
+            artifacts.clear()
+            artifact jar {
+                classifier null
+            }
+            artifact sourceJar2 {
+                classifier "sources"
+            }
+        }
+    }
+}
+
+task preIntellijRuns {
+    doFirst {
+        java.util.stream.StreamSupport.stream(configurations.annotationProcessor.spliterator(), false).filter({
+            java.nio.file.Paths.get(it.absolutePath).getFileName().toString().matches("mixin-\\d+(\\.\\d+)*\\.jar")
+        }).findAny().ifPresent({
+            minecraft.clientJvmArgs += "-javaagent:" + it.absolutePath
+            minecraft.serverJvmArgs += "-javaagent:" + it.absolutePath
+        })
+    }
+}
+genIntellijRuns.dependsOn(preIntellijRuns)

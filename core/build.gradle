@@ -18,8 +18,8 @@
  *
  */
 
-include 'core'
-include 'gl'
-include 'gl:lwjgl2'
-include 'mc'
-include 'mc:1.12.2-forge'
+dependencies {
+    shade project(":gl")
+
+    compile "org.rocksdb:rocksdbjni:$rocksdbVersion"
+}
