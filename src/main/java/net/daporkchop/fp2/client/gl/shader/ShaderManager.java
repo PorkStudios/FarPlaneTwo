@@ -132,11 +132,11 @@ public class ShaderManager {
     protected Map<String, Object> GLOBAL_DEFINES = Collections.emptyMap();
 
     public RenderShaderBuilder renderShaderBuilder(@NonNull String programName) {
-        return new RenderShaderBuilder(programName, null, null, null, Collections.emptyMap());
+        return new RenderShaderBuilder(programName);
     }
 
     public ComputeShaderBuilder computeShaderBuilder(@NonNull String programName) {
-        return new ComputeShaderBuilder(programName, null, null, Collections.emptyMap());
+        return new ComputeShaderBuilder(programName);
     }
 
     /**
@@ -184,16 +184,25 @@ public class ShaderManager {
         }
     }
 
-    protected String formatInfoLog(@NonNull String origText, @NonNull SourceLine... lines) {
-        Matcher matcher = Pattern.compile("^(-?\\d+)\\((-?\\d+)\\) (: .+)", Pattern.MULTILINE).matcher(origText);
-        StringBuffer buffer = new StringBuffer();
-        while (matcher.find()) {
-            SourceLine line = lines[Integer.parseInt(matcher.group(2)) - 1];
-            matcher.appendReplacement(buffer, Matcher.quoteReplacement("(" + line.location() + ':' + line.lineNumber() + ')' + matcher.group(3)));
-        }
-        matcher.appendTail(buffer);
+    protected String formatInfoLog(@NonNull String text, @NonNull SourceLine... lines) {
+        for (Pattern pattern : new Pattern[]{ //different patterns for various error formats i've encountered so far
+                Pattern.compile("^(?<file>\\d+)\\((?<line>\\d+)\\) (?<text>: .+)", Pattern.MULTILINE),
+                Pattern.compile("^(?<file>\\d+):(?<line>\\d+)\\((?<row>\\d+)\\)(?<text>: .+)", Pattern.MULTILINE),
+        }) {
+            Matcher matcher = pattern.matcher(text);
+            if (matcher.find()) {
+                StringBuffer buffer = new StringBuffer();
+                do {
+                    SourceLine line = lines[Integer.parseInt(matcher.group("line")) - 1];
+                    matcher.appendReplacement(buffer, Matcher.quoteReplacement("(" + line.location() + ':' + line.lineNumber() + ')' + matcher.group("text")));
+                } while (matcher.find());
+                matcher.appendTail(buffer);
 
-        return buffer.toString();
+                text = buffer.toString();
+            }
+        }
+
+        return text;
     }
 
     public DefinesChangeBatch changeDefines() {

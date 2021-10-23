@@ -18,6 +18,11 @@
  *
  */
 
+#define COMP_VOXEL_VOXEL_FRUSTUM_CULLING
+
+#include <"fp2:shaders/comp/command_buffer_selection.comp">
+#include <"fp2:shaders/comp/frustum.comp">
+
 //
 //
 // BUFFERS

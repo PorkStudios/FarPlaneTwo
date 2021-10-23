@@ -24,7 +24,10 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gl.shader.ComputeShaderBuilder;
 import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
+
+import java.util.EnumSet;
 
 import static net.daporkchop.fp2.FP2.*;
 
@@ -46,5 +49,6 @@ public class VoxelShaders {
             .link();
 
     public static final ComputeShaderBuilder CULL_SHADER = ShaderManager.computeShaderBuilder("voxel/cull")
-            .withComputeShader(new ResourceLocation(MODID, "shaders/comp/voxel/voxel_frustum_culling.comp"));
+            .withComputeShader(new ResourceLocation(MODID, "shaders/comp/voxel/voxel_frustum_culling.comp"))
+            .withGlobalEnableAxes(EnumSet.of(EnumFacing.Axis.X, EnumFacing.Axis.Y));
 }

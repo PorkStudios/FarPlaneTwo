@@ -18,6 +18,9 @@
  *
  */
 
+#ifndef COMP_INDIRECT_DRAW
+#define COMP_INDIRECT_DRAW
+
 //
 //
 // STRUCTS
@@ -25,16 +28,18 @@
 //
 
 struct DrawArraysIndirectCommand {
-    int count;
-    int instanceCount;
-    int first;
-    int baseInstance;
+    uint count;
+    uint instanceCount;
+    uint first;
+    uint baseInstance;
 };
 
 struct DrawElementsIndirectCommand {
-    int count;
-    int instanceCount;
-    int firstIndex;
-    int baseVertex;
-    int baseInstance;
+    uint count;
+    uint instanceCount;
+    uint firstIndex;
+    uint baseVertex;
+    uint baseInstance;
 };
+
+#endif //COMP_INDIRECT_DRAW

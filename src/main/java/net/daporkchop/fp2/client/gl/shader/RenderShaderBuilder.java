@@ -27,8 +27,11 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.With;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Map;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -37,21 +40,30 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+@With
 @EqualsAndHashCode(callSuper = false)
 public final class RenderShaderBuilder extends ShaderManager.AbstractShaderBuilder<RenderShaderBuilder, RenderShaderProgram> {
     @NonNull
-    @With
     protected final String programName;
 
-    @With
     protected final ResourceLocation vertexShader;
-    @With
     protected final ResourceLocation geometryShader;
-    @With
     protected final ResourceLocation fragmentShader;
 
     @With(AccessLevel.PROTECTED)
+    @NonNull
     protected final Map<String, Object> defines;
+
+    /**
+     * @see ShaderManager#renderShaderBuilder(String)
+     */
+    protected RenderShaderBuilder(@NonNull String programName) {
+        this.programName = programName;
+        this.vertexShader = null;
+        this.geometryShader = null;
+        this.fragmentShader = null;
+        this.defines = Collections.emptyMap();
+    }
 
     @Override
     public RenderShaderBuilder define(@NonNull String name, @NonNull Object value) {

@@ -18,6 +18,11 @@
  *
  */
 
+#ifndef COMP_COMMAND_BUFFER_SELECTION
+#define COMP_COMMAND_BUFFER_SELECTION
+
+#include <"fp2:shaders/comp/common.comp">
+
 //
 //
 // MACRO VALIDATION
@@ -49,13 +54,7 @@ bool select(uint index);
 
 #if defined(MULTIPASS_COMMAND_BUFFER_TYPE_MULTIDRAW_INDIRECT)
 
-struct DrawElementsIndirectCommand {
-    uint count;
-    uint instanceCount;
-    uint firstIndex;
-    uint baseVertex;
-    uint baseInstance;
-};
+#include <"fp2:shaders/comp/indirect_draw.comp">
 
 layout(std430, binding = 4) buffer COMMANDS {
     DrawElementsIndirectCommand commands[];
@@ -75,3 +74,5 @@ void main() {
 #else
 #error unknown command buffer type?!?
 #endif
+
+#endif //COMP_COMMAND_BUFFER_SELECTION

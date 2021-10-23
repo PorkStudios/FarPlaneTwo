@@ -108,8 +108,24 @@ public class Preprocessor {
     protected static final String EXPR_NEGATION_PATTERN = "!(" + EXPR_TRIVIAL_PATTERN + ')';
     protected static final Pattern EXPR_NEGATION_PATTERN_COMPILED = Pattern.compile(EXPR_NEGATION_PATTERN);
 
-    protected static final String EXPR_OPERATION_PATTERN = '(' + EXPR_SINGLE_PATTERN + ")\\s*(==|!=|&&|\\|\\||<<|>>>?|[+\\-*/&|^])\\s*(" + EXPR_SINGLE_PATTERN + ')';
-    protected static final Pattern EXPR_OPERATION_PATTERN_COMPILED = Pattern.compile(EXPR_OPERATION_PATTERN);
+    protected static final String[] EXPR_OPERATOR_PATTERNS_PRIORITIZED = {
+            "[*/%]",
+            "[+-]",
+            "<<|>>>?",
+            "[<>]=?",
+            "[!=]=",
+            "&",
+            "\\^",
+            "\\|",
+            "&&",
+            "\\|\\|",
+    };
+    protected static final String[] EXPR_OPERATION_PATTERNS_PRIORITIZED = Stream.of(EXPR_OPERATOR_PATTERNS_PRIORITIZED)
+            .map(pat -> '(' + EXPR_SINGLE_PATTERN + ")\\s*(" + pat + ")\\s*(" + EXPR_SINGLE_PATTERN + ')')
+            .toArray(String[]::new);
+    protected static final Pattern[] EXPR_OPERATION_PATTERNS_COMPILED_PRIORITIZED = Stream.of(EXPR_OPERATION_PATTERNS_PRIORITIZED)
+            .map(Pattern::compile)
+            .toArray(Pattern[]::new);
     protected static final int EXPR_OPERATION_PATTERN_GROUP_A = 1;
     protected static final int EXPR_OPERATION_PATTERN_GROUP_B = 4;
     protected static final int EXPR_OPERATION_PATTERN_GROUP_OP = 3;
@@ -459,17 +475,19 @@ public class Preprocessor {
             }
 
             //expression <operator> expression
-            for (matcher = EXPR_OPERATION_PATTERN_COMPILED.matcher(expr); matcher.find(); matcher.reset(expr)) {
-                StringBuffer buffer = new StringBuffer();
-                do {
-                    matcher.appendReplacement(buffer, String.valueOf(
-                            this.evalOperation(
-                                    this.evaluateExpr(matcher.group(EXPR_OPERATION_PATTERN_GROUP_A)),
-                                    this.evaluateExpr(matcher.group(EXPR_OPERATION_PATTERN_GROUP_B)),
-                                    matcher.group(EXPR_OPERATION_PATTERN_GROUP_OP))));
-                } while (matcher.find());
-                matcher.appendTail(buffer);
-                expr = buffer.toString().trim();
+            for (Pattern pattern : EXPR_OPERATION_PATTERNS_COMPILED_PRIORITIZED) {
+                for (matcher = pattern.matcher(expr); matcher.find(); matcher.reset(expr)) {
+                    StringBuffer buffer = new StringBuffer();
+                    do {
+                        matcher.appendReplacement(buffer, String.valueOf(
+                                this.evalOperation(
+                                        this.evaluateExpr(matcher.group(EXPR_OPERATION_PATTERN_GROUP_A)),
+                                        this.evaluateExpr(matcher.group(EXPR_OPERATION_PATTERN_GROUP_B)),
+                                        matcher.group(EXPR_OPERATION_PATTERN_GROUP_OP))));
+                    } while (matcher.find());
+                    matcher.appendTail(buffer);
+                    expr = buffer.toString().trim();
+                }
             }
         }
     }
@@ -484,6 +502,8 @@ public class Preprocessor {
                 return Math.multiplyExact(a, b);
             case "/":
                 return a / b;
+            case "%":
+                return a % b;
             case "&":
                 return a & b;
             case "|":
@@ -494,6 +514,14 @@ public class Preprocessor {
                 return a == b ? 1L : 0L;
             case "!=":
                 return a != b ? 1L : 0L;
+            case "<":
+                return a < b ? 1L : 0L;
+            case ">":
+                return a > b ? 1L : 0L;
+            case "<=":
+                return a <= b ? 1L : 0L;
+            case ">=":
+                return a >= b ? 1L : 0L;
             case "&&":
                 return a != 0L && b != 0L ? 1L : 0L;
             case "||":
