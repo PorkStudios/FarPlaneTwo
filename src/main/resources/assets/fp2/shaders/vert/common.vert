@@ -18,6 +18,11 @@
  *
  */
 
+#ifndef VERT_COMMON
+#define VERT_COMMON
+
+#include <"fp2:shaders/common.glsl">
+
 //
 //
 // INPUTS
@@ -80,3 +85,5 @@ vec3 computeVertexColor(vec3 va_color, ivec4 tile_position) {
     return va_color;
 #endif
 }
+
+#endif //VERT_COMMON

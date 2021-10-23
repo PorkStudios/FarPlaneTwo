@@ -18,6 +18,11 @@
  *
  */
 
+#define VERT_VOXEL_VOXEL
+
+#include <"fp2:shaders/vert/common.vert">
+#include <"fp2:shaders/vert/fog.vert">
+
 //
 //
 // VERTEX ATTRIBUTES

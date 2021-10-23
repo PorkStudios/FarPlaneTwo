@@ -18,6 +18,9 @@
  *
  */
 
+#ifndef GLSL_COMMON
+#define GLSL_COMMON
+
 //
 //
 // MACROS
@@ -270,3 +273,5 @@ bool isVanillaRenderableLevel0(in ivec3 chunkPos) {
     return (vanilla_renderability_state.flags[idx >> 5] & (1 << idx)) != 0;
 }
 #endif
+
+#endif //GLSL_COMMON

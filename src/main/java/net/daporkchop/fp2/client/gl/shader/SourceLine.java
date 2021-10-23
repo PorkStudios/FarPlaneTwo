@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-$today.year DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,11 +18,46 @@
  *
  */
 
-//
-//
-// MACROS
-//
-//
+package net.daporkchop.fp2.client.gl.shader;
 
-//we are currently preparing render data for transform feedback rendering for an optifine shader
-#define OPTIFINE_SHADER
+import lombok.Data;
+import lombok.NonNull;
+import lombok.With;
+import net.minecraft.util.ResourceLocation;
+
+/**
+ * A single line of source code, along with metadata describing its location.
+ *
+ * @author DaPorkchop_
+ */
+@Data
+public final class SourceLine {
+    @With
+    @NonNull
+    private final String text;
+
+    @NonNull
+    private final ResourceLocation location;
+    private final int lineNumber;
+
+    @Override
+    public String toString() {
+        return this.toString(null, true);
+    }
+
+    public String toString(String prefix) {
+        return this.toString(prefix, true);
+    }
+
+    public String toString(String prefix, boolean includeText) {
+        StringBuilder builder = new StringBuilder();
+        if (prefix != null) {
+            builder.append(prefix).append(' ');
+        }
+        builder.append("at <").append(this.location).append(' ').append(this.lineNumber).append('>');
+        if (includeText) {
+            builder.append(": ").append(this.text);
+        }
+        return builder.toString();
+    }
+}

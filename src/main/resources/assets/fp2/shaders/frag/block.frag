@@ -18,6 +18,11 @@
  *
  */
 
+#define FRAG_BLOCK
+
+#include <"fp2:shaders/frag/common.frag">
+#include <"fp2:shaders/frag/fog.frag">
+
 void main() {
     vec3 normal = normalVector();
 

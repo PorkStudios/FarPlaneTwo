@@ -18,6 +18,11 @@
  *
  */
 
+#ifndef VERT_FOG
+#define VERT_FOG
+
+#include <"fp2:shaders/common.glsl">
+
 //
 //
 // OUTPUTS
@@ -45,3 +50,4 @@ void setFog(in vec3 relativePos) {
 #endif
 }
 
+#endif //VERT_FOG

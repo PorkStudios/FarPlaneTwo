@@ -18,6 +18,11 @@
  *
  */
 
+#ifndef FRAG_FOG
+#define FRAG_FOG
+
+#include <"fp2:shaders/common.glsl">
+
 //
 //
 // INPUTS
@@ -57,3 +62,5 @@ vec4 addFog(in vec4 color) {
     return color;
 #endif
 }
+
+#endif //FRAG_FOG

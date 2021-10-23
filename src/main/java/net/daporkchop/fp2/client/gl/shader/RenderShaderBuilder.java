@@ -26,17 +26,11 @@ import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.With;
-import net.daporkchop.lib.binary.oio.reader.UTF8FileReader;
 import net.minecraft.util.ResourceLocation;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Map;
 
-import static net.daporkchop.fp2.FP2.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -48,6 +42,14 @@ public final class RenderShaderBuilder extends ShaderManager.AbstractShaderBuild
     @NonNull
     @With
     protected final String programName;
+
+    @With
+    protected final ResourceLocation vertexShader;
+    @With
+    protected final ResourceLocation geometryShader;
+    @With
+    protected final ResourceLocation fragmentShader;
+
     @With(AccessLevel.PROTECTED)
     protected final Map<String, Object> defines;
 
@@ -71,58 +73,36 @@ public final class RenderShaderBuilder extends ShaderManager.AbstractShaderBuild
         return this;
     }
 
-    @SneakyThrows(IOException.class)
-    protected ProgramMeta meta() {
-        ProgramMeta meta;
-        try (InputStream in = MC.resourceManager.getResource(new ResourceLocation(MODID, ShaderManager.BASE_PATH + "/prog/" + this.programName + ".json")).getInputStream()) {
-            meta = GSON.fromJson(new UTF8FileReader(in), ProgramMeta.class);
-        }
-
-        checkState(meta.vert != null, "Program \"%s\" has no vertex shaders!", this.programName);
-        if (meta.xfb_varying != null) {
+    @Override
+    public RenderShaderProgram link() {
+        checkState(this.vertexShader != null, "vertexShader must be set for %s", this.programName);
+        /*if (meta.xfb_varying != null) {
             checkState(meta.frag == null, "Program \"%s\" has both fragment shaders and transform feedback outputs!", this.programName);
-        } else {
-            checkState(meta.frag != null, "Program \"%s\" has no fragment shaders!", this.programName);
-        }
+        } else {*/
+        checkState(this.fragmentShader != null, "fragmentShader must be set for %s", this.programName);
+        //}
 
-        return meta;
+        return super.link();
     }
 
     @Override
     protected RenderShaderProgram supply() {
-        ProgramMeta meta = this.meta();
-
         return new RenderShaderProgram(
                 this.programName,
-                meta.vert != null ? ShaderManager.get(meta.vert, ShaderManager.headers(this.defines), ShaderType.VERTEX) : null,
-                meta.geom != null ? ShaderManager.get(meta.geom, ShaderManager.headers(this.defines), ShaderType.GEOMETRY) : null,
-                meta.frag != null ? ShaderManager.get(meta.frag, ShaderManager.headers(this.defines), ShaderType.FRAGMENT) : null,
+                this.vertexShader != null ? ShaderManager.get(this.vertexShader, ShaderManager.GLOBAL_DEFINES, ShaderType.VERTEX) : null,
+                this.geometryShader != null ? ShaderManager.get(this.geometryShader, ShaderManager.GLOBAL_DEFINES, ShaderType.GEOMETRY) : null,
+                this.fragmentShader != null ? ShaderManager.get(this.fragmentShader, ShaderManager.GLOBAL_DEFINES, ShaderType.FRAGMENT) : null,
                 null,
-                meta.xfb_varying);
+                null);
     }
 
     @Override
     protected void reload(@NonNull RenderShaderProgram program) {
-        ProgramMeta meta = this.meta();
-
         program.reload(
-                meta.vert != null ? ShaderManager.get(meta.vert, ShaderManager.headers(this.defines), ShaderType.VERTEX) : null,
-                meta.geom != null ? ShaderManager.get(meta.geom, ShaderManager.headers(this.defines), ShaderType.GEOMETRY) : null,
-                meta.frag != null ? ShaderManager.get(meta.frag, ShaderManager.headers(this.defines), ShaderType.FRAGMENT) : null,
+                this.vertexShader != null ? ShaderManager.get(this.vertexShader, ShaderManager.GLOBAL_DEFINES, ShaderType.VERTEX) : null,
+                this.geometryShader != null ? ShaderManager.get(this.geometryShader, ShaderManager.GLOBAL_DEFINES, ShaderType.GEOMETRY) : null,
+                this.fragmentShader != null ? ShaderManager.get(this.fragmentShader, ShaderManager.GLOBAL_DEFINES, ShaderType.FRAGMENT) : null,
                 null,
-                meta.xfb_varying);
-    }
-
-    /**
-     * Metadata for a shader program.
-     *
-     * @author DaPorkchop_
-     */
-    private static final class ProgramMeta {
-        public String[] vert;
-        public String[] geom;
-        public String[] frag;
-
-        public String[] xfb_varying;
+                null);
     }
 }
