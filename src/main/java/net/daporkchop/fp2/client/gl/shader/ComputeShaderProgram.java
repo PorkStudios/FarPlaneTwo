@@ -24,7 +24,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.WorkGroupSize;
+import net.daporkchop.fp2.gl.compute.ComputeLocalSize;
 import net.daporkchop.lib.common.math.BinMath;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.Vec3i;
@@ -41,12 +41,12 @@ import static org.lwjgl.opengl.GL43.*;
  * @author DaPorkchop_
  */
 public final class ComputeShaderProgram extends ShaderProgram<ComputeShaderProgram> {
-    protected final WorkGroupSize workGroupSize;
+    protected final ComputeLocalSize workGroupSize;
     protected Set<EnumFacing.Axis> globalEnableAxes;
 
     protected final LoadingCache<Long, Vec3i> computeDispatchSizes;
 
-    protected ComputeShaderProgram(@NonNull String name, Shader vert, Shader geom, Shader frag, Shader comp, String[] xfb_varying, @NonNull WorkGroupSize workGroupSize, @NonNull Set<EnumFacing.Axis> globalEnableAxes) {
+    protected ComputeShaderProgram(@NonNull String name, Shader vert, Shader geom, Shader frag, Shader comp, String[] xfb_varying, @NonNull ComputeLocalSize workGroupSize, @NonNull Set<EnumFacing.Axis> globalEnableAxes) {
         super(name, vert, geom, frag, comp, xfb_varying);
 
         this.workGroupSize = workGroupSize;
@@ -58,7 +58,7 @@ public final class ComputeShaderProgram extends ShaderProgram<ComputeShaderProgr
                 .build(new CacheLoader<Long, Vec3i>() {
                     @Override
                     public Vec3i load(Long totalInvocations) throws Exception {
-                        long totalWorkGroupSize = ComputeShaderProgram.this.workGroupSize.totalSize();
+                        long totalWorkGroupSize = ComputeShaderProgram.this.workGroupSize.count();
                         checkArg(positive(totalInvocations, "totalInvocations") % totalWorkGroupSize == 0L,
                                 "total invocation count %d must be a multiple of work group size %d",
                                 totalInvocations, totalWorkGroupSize);

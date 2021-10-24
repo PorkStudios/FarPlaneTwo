@@ -97,7 +97,7 @@ dependencies {
 
 minecraft {
     version = "$minecraftVersion-$minecraftforgeVersion"
-    runDir = "run"
+    runDir = "../../run"
     mappings = "$mcpmappingsVersion"
     makeObfSourceJar = false
 
@@ -180,7 +180,7 @@ if (System.getProperty("os.name", "").toLowerCase().replaceAll("[^a-z0-9]+", "")
     System.out.println("You are running Windows, which is bad and you should feel bad.\nThis means that native libraries will not be built.")
 } else {
     task compileNatives(type: Exec) {
-        workingDir "$projectDir"
+        workingDir "$projectDir/../.."
         commandLine "make",
                 "-f", "src/main/native/project.mk",
                 String.format("-j%d", Runtime.getRuntime().availableProcessors())

@@ -18,6 +18,33 @@
  *
  */
 
-dependencies {
-    shade project(":common")
+package net.daporkchop.fp2.gl.lwjgl2;
+
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.GLContextHints;
+
+import java.util.function.Supplier;
+
+/**
+ * @author DaPorkchop_
+ */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+class FactoryLWJGL2 implements Supplier<GL.Factory>, GL.Factory {
+    @Override
+    public GL.Factory get() {
+        return this;
+    }
+
+    @Override
+    public GL wrapCurrent() {
+        return new LWJGL2();
+    }
+
+    @Override
+    public GL createContext(@NonNull GLContextHints hints) {
+        throw new UnsupportedOperationException(); //TODO: implement context creation
+    }
 }

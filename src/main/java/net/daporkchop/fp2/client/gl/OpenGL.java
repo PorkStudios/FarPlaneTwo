@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.client.gl;
 
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.gl.compute.ComputeLocalSize;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import org.lwjgl.opengl.ContextCapabilities;
@@ -85,7 +86,7 @@ public class OpenGL {
     public final int MAX_COMPUTE_WORK_GROUP_COUNT_X;
     public final int MAX_COMPUTE_WORK_GROUP_COUNT_Y;
     public final int MAX_COMPUTE_WORK_GROUP_COUNT_Z;
-    public final WorkGroupSize MAX_COMPUTE_WORK_GROUP_SIZE;
+    public final ComputeLocalSize MAX_COMPUTE_WORK_GROUP_SIZE;
     public final int MAX_COMPUTE_WORK_GROUP_INVOCATIONS;
 
     static {
@@ -106,7 +107,7 @@ public class OpenGL {
         MAX_COMPUTE_WORK_GROUP_COUNT_X = glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0);
         MAX_COMPUTE_WORK_GROUP_COUNT_Y = glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1);
         MAX_COMPUTE_WORK_GROUP_COUNT_Z = glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2);
-        MAX_COMPUTE_WORK_GROUP_SIZE = new WorkGroupSize(
+        MAX_COMPUTE_WORK_GROUP_SIZE = new ComputeLocalSize(
                 glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0),
                 glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1),
                 glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2));
@@ -130,20 +131,20 @@ public class OpenGL {
         }
     }
 
-    protected Stream<WorkGroupSize> allPossibleWorkGroupSizes() {
+    protected Stream<ComputeLocalSize> allPossibleWorkGroupSizes() {
         return IntStream.rangeClosed(1, MAX_COMPUTE_WORK_GROUP_SIZE.x())
                 .mapToObj(x -> IntStream.rangeClosed(1, MAX_COMPUTE_WORK_GROUP_SIZE.y())
                         .mapToObj(y -> IntStream.rangeClosed(1, MAX_COMPUTE_WORK_GROUP_SIZE.z())
-                                .mapToObj(z -> new WorkGroupSize(x, y, z)))
+                                .mapToObj(z -> new ComputeLocalSize(x, y, z)))
                         .flatMap(Function.identity()))
                 .flatMap(Function.identity());
     }
 
-    protected Stream<WorkGroupSize> allPossibleWorkGroupSizesPow2() {
+    protected Stream<ComputeLocalSize> allPossibleWorkGroupSizesPow2() {
         return IntStream.rangeClosed(0, Integer.numberOfTrailingZeros(Integer.highestOneBit(MAX_COMPUTE_WORK_GROUP_SIZE.x())))
                 .mapToObj(xShift -> IntStream.rangeClosed(0, Integer.numberOfTrailingZeros(Integer.highestOneBit(MAX_COMPUTE_WORK_GROUP_SIZE.y())))
                         .mapToObj(yShift -> IntStream.rangeClosed(0, Integer.numberOfTrailingZeros(Integer.highestOneBit(MAX_COMPUTE_WORK_GROUP_SIZE.z())))
-                                .mapToObj(zShift -> new WorkGroupSize(1 << xShift, 1 << yShift, 1 << zShift)))
+                                .mapToObj(zShift -> new ComputeLocalSize(1 << xShift, 1 << yShift, 1 << zShift)))
                         .flatMap(Function.identity()))
                 .flatMap(Function.identity());
     }
@@ -153,13 +154,13 @@ public class OpenGL {
      * <p>
      * If either {@code minSize} or {@code maxSize} are {@code null}, they will be treated as if there were no limits in that direction.
      * <p>
-     * The bounds given here define the total size of the work group. If you need control over the individual axes, use {@link #getOptimalComputeWorkGroupSizeAxis(WorkGroupSize, WorkGroupSize)}.
+     * The bounds given here define the total size of the work group. If you need control over the individual axes, use {@link #getOptimalComputeWorkGroupSizeAxis(ComputeLocalSize, ComputeLocalSize)}.
      *
      * @param minSize the minimum allowed size of a single compute work group (inclusive)
      * @param maxSize the maximum allowed size of a single compute work group (inclusive)
      * @return the optimal size of a compute shader work group for the given bounds
      */
-    public WorkGroupSize getOptimalComputeWorkGroupSizeTotal(Integer minSize, Integer maxSize) {
+    public ComputeLocalSize getOptimalComputeWorkGroupSizeTotal(Integer minSize, Integer maxSize) {
         //check arguments
         if (minSize != null) {
             positive(minSize, "minSize");
@@ -175,7 +176,7 @@ public class OpenGL {
         //brute-force search (this is stupidly inefficient, but i don't feel like optimizing this and it only has to run once anyway)
         return allPossibleWorkGroupSizes().parallel()
                 //only allow work groups whose total size is in the given range
-                .filter(workGroupSize -> workGroupSize.totalSize() >= minSizeI && workGroupSize.totalSize() <= maxSizeI)
+                .filter(workGroupSize -> workGroupSize.count() >= minSizeI && workGroupSize.count() <= maxSizeI)
                 //sorting by reverse order gives us a stream of work groups starting with the largest total size.
                 //  yes, this buffers the whole stream, but who cares? most likely it'll only be a few thousand elements
                 .sorted(Comparator.reverseOrder())
@@ -197,19 +198,19 @@ public class OpenGL {
      * @param maxSize the maximum allowed size of a single compute work group (inclusive)
      * @return the optimal size of a compute shader work group for the given bounds
      */
-    public WorkGroupSize getOptimalComputeWorkGroupSizeAxis(WorkGroupSize minSize, WorkGroupSize maxSize) {
+    public ComputeLocalSize getOptimalComputeWorkGroupSizeAxis(ComputeLocalSize minSize, ComputeLocalSize maxSize) {
         //check arguments
         if (maxSize != null) {
             checkArg(minSize == null || (maxSize.x() >= minSize.x() && maxSize.y() >= minSize.y() && maxSize.z() >= minSize.z()), "maxSize (%s) must not be less than than minSize (%s)!", maxSize, minSize);
         }
 
-        WorkGroupSize minSizeI = minSize != null ? minSize : new WorkGroupSize(1, 1, 1);
-        WorkGroupSize maxSizeI = maxSize != null ? maxSize : MAX_COMPUTE_WORK_GROUP_SIZE;
+        ComputeLocalSize minSizeI = minSize != null ? minSize : new ComputeLocalSize(1, 1, 1);
+        ComputeLocalSize maxSizeI = maxSize != null ? maxSize : MAX_COMPUTE_WORK_GROUP_SIZE;
 
         //brute-force search (this is stupidly inefficient, but i don't feel like optimizing this and it only has to run once anyway)
         return allPossibleWorkGroupSizes().parallel()
                 //only allow work groups whose total size is valid and whose component-wise sizes are in the given range
-                .filter(workGroupSize -> workGroupSize.totalSize() < MAX_COMPUTE_WORK_GROUP_INVOCATIONS
+                .filter(workGroupSize -> workGroupSize.count() < MAX_COMPUTE_WORK_GROUP_INVOCATIONS
                                          && workGroupSize.x() >= minSizeI.x() && workGroupSize.x() <= maxSizeI.x()
                                          && workGroupSize.y() >= minSizeI.y() && workGroupSize.y() <= maxSizeI.y()
                                          && workGroupSize.z() >= minSizeI.z() && workGroupSize.z() <= maxSizeI.z())
@@ -225,7 +226,7 @@ public class OpenGL {
 
     /**
      * Computes the optimal size of a compute shader work group, given some arbitrary upper and lower bounds. This method is similar to
-     * {@link #getOptimalComputeWorkGroupSizeTotal(Integer, Integer)}, except that it is guaranteed to return a {@link WorkGroupSize} whose {@link WorkGroupSize#totalSize()} is a
+     * {@link #getOptimalComputeWorkGroupSizeTotal(Integer, Integer)}, except that it is guaranteed to return a {@link ComputeLocalSize} whose {@link ComputeLocalSize#count()} is a
      * power of 2.
      * <p>
      * If either {@code minSize} or {@code maxSize} are {@code null}, they will be treated as if there were no limits in that direction.
@@ -234,7 +235,7 @@ public class OpenGL {
      * @param maxSize the maximum allowed size of a single compute work group (inclusive)
      * @return the optimal size of a compute shader work group for the given bounds
      */
-    public WorkGroupSize getOptimalComputeWorkSizePow2(Integer minSize, Integer maxSize) {
+    public ComputeLocalSize getOptimalComputeWorkSizePow2(Integer minSize, Integer maxSize) {
         //check arguments
         if (minSize != null) {
             positive(minSize, "minSize");
@@ -250,8 +251,8 @@ public class OpenGL {
         //brute-force search (this is stupidly inefficient, but i don't feel like optimizing this and it only has to run once anyway)
         return allPossibleWorkGroupSizesPow2().parallel()
                 //only allow work groups whose total size is in the given range
-                .filter(workGroupSize -> workGroupSize.totalSize() <= MAX_COMPUTE_WORK_GROUP_INVOCATIONS
-                                         && workGroupSize.totalSize() >= minSizeI && workGroupSize.totalSize() <= maxSizeI)
+                .filter(workGroupSize -> workGroupSize.count() <= MAX_COMPUTE_WORK_GROUP_INVOCATIONS
+                                         && workGroupSize.count() >= minSizeI && workGroupSize.count() <= maxSizeI)
                 //sorting by reverse order gives us a stream of work groups starting with the largest total size.
                 //  yes, this buffers the whole stream, but who cares? most likely it'll only be a few thousand elements
                 .sorted(Comparator.reverseOrder())

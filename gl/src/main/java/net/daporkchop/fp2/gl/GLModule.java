@@ -18,6 +18,20 @@
  *
  */
 
-dependencies {
-    shade project(":common")
+package net.daporkchop.fp2.gl;
+
+/**
+ * A subset of OpenGL functionality.
+ * <p>
+ * Modules may be disabled if not supported for the context's current version/profile, or if unsupported by the underlying graphics driver.
+ * <p>
+ * This interface should generally not be implemented directly.
+ *
+ * @author DaPorkchop_
+ */
+public interface GLModule {
+    /**
+     * @return whether or not this module is supported. If {@code false}, all other methods in this instance will throw {@link UnsupportedOperationException}
+     */
+    boolean supported();
 }

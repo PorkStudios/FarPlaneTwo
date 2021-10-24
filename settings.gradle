@@ -18,6 +18,7 @@
  *
  */
 
+include 'common'
 include 'core'
 include 'gl'
 include 'gl:lwjgl2'

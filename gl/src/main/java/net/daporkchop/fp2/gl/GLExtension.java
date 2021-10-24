@@ -18,6 +18,16 @@
  *
  */
 
-dependencies {
-    shade project(":common")
+package net.daporkchop.fp2.gl;
+
+import lombok.RequiredArgsConstructor;
+
+/**
+ * All known OpenGL extensions.
+ *
+ * @author DaPorkchop_
+ */
+@RequiredArgsConstructor
+public enum GLExtension {
+    GL_ARB_compute_shader;
 }

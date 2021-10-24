@@ -18,6 +18,21 @@
  *
  */
 
-dependencies {
-    shade project(":common")
+package net.daporkchop.fp2.gl.lwjgl2.compute;
+
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import net.daporkchop.fp2.gl.compute.GLCompute;
+
+import java.util.function.Supplier;
+
+/**
+ * @author DaPorkchop_
+ */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+class ComputeSupplier implements Supplier<GLCompute> {
+    @Override
+    public GLCompute get() {
+        throw new UnsupportedOperationException();
+    }
 }

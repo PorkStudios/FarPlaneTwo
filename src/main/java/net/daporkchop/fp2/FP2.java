@@ -26,6 +26,7 @@ import net.daporkchop.fp2.compat.x86.x86FeatureDetector;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.debug.FP2Debug;
+import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.net.FP2Network;
 import net.daporkchop.fp2.server.FP2Server;
 import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
@@ -59,6 +60,8 @@ public class FP2 {
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
+        GL gl = GL.wrapCurrent();
+
         FP2_LOG = event.getModLog();
         this.version = event.getModMetadata().version;
 

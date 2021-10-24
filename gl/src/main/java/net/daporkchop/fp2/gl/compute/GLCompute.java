@@ -18,6 +18,33 @@
  *
  */
 
-dependencies {
-    shade project(":common")
+package net.daporkchop.fp2.gl.compute;
+
+import net.daporkchop.fp2.gl.GLModule;
+
+/**
+ * @author DaPorkchop_
+ */
+public interface GLCompute extends GLModule {
+    /**
+     * @return the maximum size of a compute shader dispatch along each axis
+     */
+    ComputeGlobalSize maxGlobalSize();
+
+    /**
+     * @return the maximum total number of work groups per compute shader dispatch. Note that this may be less than the
+     *         {@link ComputeGlobalSize#count()} returned by {@link #maxGlobalSize()}
+     */
+    long maxGlobalCount();
+
+    /**
+     * @return the maximum size of a compute shader work group along each axis
+     */
+    ComputeLocalSize maxLocalSize();
+
+    /**
+     * @return the maximum total number of shader invocations per work group Note that this may be less than the
+     *         {@link ComputeLocalSize#count()} returned by {@link #maxLocalSize()}
+     */
+    long maxLocalCount();
 }

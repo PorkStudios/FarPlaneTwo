@@ -19,5 +19,7 @@
  */
 
 dependencies {
-    shade project(":common")
+    shade "net.daporkchop.lib:common:$porklibVersion"
+
+    compile "com.google.guava:guava:$guavaVersion"
 }

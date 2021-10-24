@@ -18,6 +18,45 @@
  *
  */
 
-dependencies {
-    shade project(":common")
+package net.daporkchop.fp2.gl;
+
+import lombok.Getter;
+import net.daporkchop.lib.common.misc.string.PUnsafeStrings;
+
+/**
+ * All known OpenGL versions.
+ *
+ * @author DaPorkchop_
+ */
+@Getter
+public enum GLVersion {
+    GL_1_0(1, 0),
+    GL_1_1(1, 1),
+    GL_1_2(1, 2),
+    GL_1_3(1, 3),
+    GL_1_4(1, 4),
+    GL_1_5(1, 5),
+    GL_2_0(2, 0),
+    GL_2_1(2, 1),
+    GL_3_0(3, 0),
+    GL_3_1(3, 1),
+    GL_3_2(3, 2),
+    GL_3_3(3, 3),
+    GL_4_0(4, 0),
+    GL_4_1(4, 1),
+    GL_4_2(4, 2),
+    GL_4_3(4, 3),
+    GL_4_4(4, 4),
+    GL_4_5(4, 5),
+    GL_4_6(4, 6);
+
+    private final int major;
+    private final int minor;
+
+    GLVersion(int major, int minor) {
+        PUnsafeStrings.setEnumName(this, "OpenGL " + major + '.' + minor);
+
+        this.major = major;
+        this.minor = minor;
+    }
 }

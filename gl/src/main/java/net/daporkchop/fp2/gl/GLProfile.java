@@ -18,6 +18,14 @@
  *
  */
 
-dependencies {
-    shade project(":common")
+package net.daporkchop.fp2.gl;
+
+/**
+ * All known OpenGL context profiles.
+ *
+ * @author DaPorkchop_
+ */
+public enum GLProfile {
+    COMPAT,
+    CORE;
 }

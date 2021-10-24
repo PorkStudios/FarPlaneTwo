@@ -18,48 +18,46 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl;
+package net.daporkchop.fp2.gl;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.With;
 
 /**
- * Defines the size of a compute shader work group.
+ * Arguments used when creating a new OpenGL context.
  *
  * @author DaPorkchop_
  */
-@Getter
-@ToString
-@EqualsAndHashCode
-public final class WorkGroupSize implements Comparable<WorkGroupSize> {
-    private final int x;
-    private final int y;
-    private final int z;
-
-    public WorkGroupSize(int x, int y, int z) {
-        this.x = positive(x, "x");
-        this.y = positive(y, "y");
-        this.z = positive(z, "z");
-    }
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@Data
+@With
+@Builder(toBuilder = true)
+public final class GLContextHints {
+    public static final GLContextHints DEFAULT = builder().build();
 
     /**
-     * @return the total number of shader invocations per work group
+     * The OpenGL version to request.
+     * <p>
+     * If {@code null}, any arbitrary version (likely the latest supported by the driver) will be used.
      */
-    public int totalSize() {
-        return this.x * this.y * this.z;
-    }
+    private final GLVersion version;
 
-    @Override
-    public int compareTo(WorkGroupSize o) {
-        int d;
-        if ((d = Integer.compare(this.totalSize(), o.totalSize())) == 0
-            && (d = Integer.compare(this.x, o.x)) == 0
-            && (d = Integer.compare(this.y, o.y)) == 0) {
-            d = Integer.compare(this.z, o.z);
-        }
-        return d;
-    }
+    /**
+     * The OpenGL profile to request.
+     * <p>
+     * Defaults to {@link GLProfile#COMPAT}.
+     */
+    @Builder.Default
+    @NonNull
+    private final GLProfile profile = GLProfile.COMPAT;
+
+    /**
+     * Whether or not a forward compatibility context should be requested.
+     */
+    @Builder.Default
+    private final boolean forwardCompatibility = false;
 }
