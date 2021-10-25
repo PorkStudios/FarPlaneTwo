@@ -23,6 +23,7 @@ package net.daporkchop.fp2.gl;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.gl.compute.GLCompute;
+import net.daporkchop.fp2.gl.shader.GLShaders;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -33,8 +34,6 @@ import java.util.function.Supplier;
  * @author DaPorkchop_
  */
 public interface GL extends AutoCloseable {
-    //GLCompute COMPUTE = GlobalProperties.<Supplier<GLCompute>>getInstance("gl.compute.supplier").get();
-
     /**
      * Creates a new {@link GL} instance which wraps the currently active OpenGL context.
      * <p>
@@ -61,10 +60,19 @@ public interface GL extends AutoCloseable {
                 .createContext(hints);
     }
 
+    //
+    // GENERAL
+    //
+
     /**
-     * @return the most recent supported OpenGL version
+     * @return all OpenGL versions supported by this context
      */
-    GLVersion version();
+    Set<GLVersion> versions();
+
+    /**
+     * @return the most recent OpenGL version supported by this context
+     */
+    GLVersion latestVersion();
 
     /**
      * @return all extensions supported by this context
@@ -78,6 +86,20 @@ public interface GL extends AutoCloseable {
      */
     @Override
     void close();
+
+    //
+    // MODULES
+    //
+
+    /**
+     * @return the module for accessing shaders
+     */
+    GLShaders shaders();
+
+    /**
+     * @return the module for accessing compute shaders
+     */
+    GLCompute compute();
 
     /**
      * Supplies implementations of {@link GL}.
@@ -95,5 +117,4 @@ public interface GL extends AutoCloseable {
          */
         GL createContext(@NonNull GLContextHints hints);
     }
-
 }

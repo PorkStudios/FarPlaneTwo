@@ -20,16 +20,22 @@
 
 package net.daporkchop.fp2.gl;
 
+import lombok.NonNull;
+
 /**
  * A subset of OpenGL functionality.
  * <p>
  * Modules may be disabled if not supported for the context's current version/profile, or if unsupported by the underlying graphics driver.
  * <p>
- * This interface should generally not be implemented directly.
+ * This interface should generally not be implemented or used directly, it's intended for use by sub-interfaces.
  *
  * @author DaPorkchop_
  */
 public interface GLModule {
+    static <M extends GLModule> M unsupportedImplementation(@NonNull Class<M> clazz) {
+        throw new UnsupportedOperationException(clazz.getTypeName()); //TODO: bytecode generation
+    }
+
     /**
      * @return whether or not this module is supported. If {@code false}, all other methods in this instance will throw {@link UnsupportedOperationException}
      */

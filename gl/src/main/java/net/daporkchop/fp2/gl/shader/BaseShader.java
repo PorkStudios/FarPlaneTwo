@@ -18,44 +18,17 @@
  *
  */
 
-package net.daporkchop.fp2.gl;
+package net.daporkchop.fp2.gl.shader;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.GLResource;
 
 /**
- * All known OpenGL versions.
+ * Base interface for all shader types.
+ * <p>
+ * This interface should generally not be implemented or used directly, it's intended for use by sub-interfaces.
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public enum GLVersion {
-    OpenGL10(1, 0),
-    OpenGL11(1, 1),
-    OpenGL12(1, 2),
-    OpenGL13(1, 3),
-    OpenGL14(1, 4),
-    OpenGL15(1, 5),
-    OpenGL20(2, 0),
-    OpenGL21(2, 1),
-    OpenGL30(3, 0),
-    OpenGL31(3, 1),
-    OpenGL32(3, 2),
-    OpenGL33(3, 3),
-    OpenGL40(4, 0),
-    OpenGL41(4, 1),
-    OpenGL42(4, 2),
-    OpenGL43(4, 3),
-    OpenGL44(4, 4),
-    OpenGL45(4, 5),
-    OpenGL46(4, 6);
-
-    private final int major;
-    private final int minor;
-
-    @Override
-    public String toString() {
-        return "OpenGL " + this.major + '.' + this.minor;
-    }
+public interface BaseShader extends GLResource {
+    //currently contains no code, but leaving this interface here for sanity
 }

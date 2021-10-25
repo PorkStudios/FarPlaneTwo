@@ -18,45 +18,42 @@
  *
  */
 
-package net.daporkchop.fp2.gl.compute;
+package net.daporkchop.fp2.gl.shader;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.GLModule;
-import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 
 /**
- * API for OpenGL compute shaders.
+ * API for OpenGL shaders.
  *
  * @author DaPorkchop_
  */
-public interface GLCompute extends GLModule {
+public interface GLShaders extends GLModule {
     /**
-     * @return the maximum size of a compute shader dispatch along each axis
+     * Compiles a {@link VertexShader} from the given source code.
+     *
+     * @param source the source code
+     * @return the compiled {@link VertexShader}
+     * @throws ShaderCompilationException if shader compilation fails
      */
-    ComputeGlobalSize maxGlobalSize();
+    VertexShader compileVertexShader(@NonNull String source) throws ShaderCompilationException;
 
     /**
-     * @return the maximum total number of work groups per compute shader dispatch. Note that this may be less than the
-     *         {@link ComputeGlobalSize#count()} returned by {@link #maxGlobalSize()}
+     * Compiles a {@link FragmentShader} from the given source code.
+     *
+     * @param source the source code
+     * @return the compiled {@link FragmentShader}
+     * @throws ShaderCompilationException if shader compilation fails
      */
-    long maxGlobalCount();
+    FragmentShader compileFragmentShader(@NonNull String source) throws ShaderCompilationException;
 
     /**
-     * @return the maximum size of a compute shader work group along each axis
+     * Links a {@link ShaderProgram} from the given {@link VertexShader} and {@link FragmentShader}.
+     *
+     * @param vertexShader   the {@link VertexShader}
+     * @param fragmentShader the {@link FragmentShader}
+     * @return the linked {@link ShaderProgram}
+     * @throws ShaderLinkageException if shader linkage fails
      */
-    ComputeLocalSize maxLocalSize();
-
-    /**
-     * @return the maximum total number of shader invocations per work group Note that this may be less than the
-     *         {@link ComputeLocalSize#count()} returned by {@link #maxLocalSize()}
-     */
-    long maxLocalCount();
-
-    /**
-     * Compiles a {@link ComputeShader} from the given source code.
-     * <p>
-     * Note: OpenGL technically requires compute shaders to be compiled and then linked in separate stages. This method combines both stages into one, since there's little point in linking
-     * in a separate stage.
-     */
-    ComputeShader compileComputeShader(@NonNull String source) throws ShaderCompilationException;
+    ShaderProgram linkShaderProgram(@NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException;
 }

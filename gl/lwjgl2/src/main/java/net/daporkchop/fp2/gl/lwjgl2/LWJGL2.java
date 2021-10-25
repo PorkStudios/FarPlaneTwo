@@ -20,18 +20,24 @@
 
 package net.daporkchop.fp2.gl.lwjgl2;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import jdk.jfr.Name;
 import lombok.Getter;
+import lombok.NonNull;
+import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.GLExtension;
+import net.daporkchop.fp2.gl.GLModule;
 import net.daporkchop.fp2.gl.GLVersion;
+import net.daporkchop.fp2.gl.compute.GLCompute;
+import net.daporkchop.fp2.gl.shader.GLShaders;
 import net.daporkchop.lib.common.function.throwing.EPredicate;
 import org.lwjgl.opengl.ContextCapabilities;
 import org.lwjgl.opengl.GLContext;
 
-import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -39,13 +45,17 @@ import java.util.stream.Stream;
  */
 @Getter
 public class LWJGL2 implements GL {
-    protected final GLVersion version;
+    protected final Set<GLVersion> versions;
+    protected final GLVersion latestVersion;
     protected final Set<GLExtension> extensions;
+
+    protected final GLShaders shaders;
+    protected final GLCompute compute;
 
     protected LWJGL2() {
         ContextCapabilities capabilities = GLContext.getCapabilities();
 
-        this.version = Lists.reverse(Arrays.asList(GLVersion.values())).stream()
+        this.versions = Stream.of(GLVersion.values())
                 .filter((EPredicate<GLVersion>) version -> {
                     try {
                         return (boolean) ContextCapabilities.class.getDeclaredField("OpenGL" + version.major() + version.minor()).get(capabilities);
@@ -53,7 +63,9 @@ public class LWJGL2 implements GL {
                         return false; //field not found, therefore the version isn't supported by LWJGL2
                     }
                 })
-                .findFirst().get();
+                .collect(Sets.toImmutableEnumSet());
+
+        this.latestVersion = this.versions.stream().max(Comparator.naturalOrder()).get();
 
         this.extensions = Stream.of(GLExtension.values())
                 .filter((EPredicate<GLExtension>) extension -> {
@@ -64,9 +76,27 @@ public class LWJGL2 implements GL {
                     }
                 })
                 .collect(Sets.toImmutableEnumSet());
+
+        this.shaders = GlobalProperties.<ModuleFactory<GLShaders>>getInstance("gl.lwjgl2.shaders.factory").create(this);
+        this.compute = GlobalProperties.<ModuleFactory<GLCompute>>getInstance("gl.lwjgl2.compute.factory").create(this);
     }
 
     @Override
     public void close() {
+    }
+
+    /**
+     * Factory for LWJGL2 module implementations.
+     *
+     * @author DaPorkchop_
+     */
+    @FunctionalInterface
+    public interface ModuleFactory<M extends GLModule> {
+        /**
+         * Creates a new {@link M} from the given {@link LWJGL2} context.
+         * @param gl the {@link LWJGL2} context
+         * @return the new {@link M}
+         */
+        M create(@NonNull LWJGL2 gl);
     }
 }
