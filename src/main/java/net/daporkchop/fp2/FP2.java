@@ -61,6 +61,7 @@ public class FP2 {
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         GL gl = GL.wrapCurrent();
+        gl.compute().maxGlobalCount();
 
         FP2_LOG = event.getModLog();
         this.version = event.getModMetadata().version;

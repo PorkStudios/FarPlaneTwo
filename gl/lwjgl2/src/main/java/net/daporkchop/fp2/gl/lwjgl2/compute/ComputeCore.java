@@ -20,9 +20,12 @@
 
 package net.daporkchop.fp2.gl.lwjgl2.compute;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.gl.compute.ComputeGlobalSize;
 import net.daporkchop.fp2.gl.compute.ComputeLocalSize;
+import net.daporkchop.fp2.gl.compute.ComputeShader;
 import net.daporkchop.fp2.gl.compute.GLCompute;
+import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 
 import static org.lwjgl.opengl.GL11.glGetInteger;
 import static org.lwjgl.opengl.GL30.glGetInteger;

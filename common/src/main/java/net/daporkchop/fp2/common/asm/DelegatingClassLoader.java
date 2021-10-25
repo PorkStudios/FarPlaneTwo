@@ -18,9 +18,32 @@
  *
  */
 
-dependencies {
-    shade "net.daporkchop.lib:common:$porklibVersion"
+package net.daporkchop.fp2.common.asm;
 
-    compile "com.google.guava:guava:$guavaVersion"
-    compile "org.ow2.asm:asm-debug-all:$asmVersion"
+import lombok.NonNull;
+
+/**
+ * A {@link ClassLoader} which delegates all requests to the system/parent class loader, but also allows classes to be manually defined by name.
+ *
+ * @author DaPorkchop_
+ */
+public class DelegatingClassLoader extends ClassLoader {
+    public DelegatingClassLoader() {
+        super();
+    }
+
+    public DelegatingClassLoader(@NonNull ClassLoader parent) {
+        super(parent);
+    }
+
+    /**
+     * Defines a class with the given name and code.
+     *
+     * @param name the class name
+     * @param code the class' code
+     * @return the defined class
+     */
+    public Class<?> defineClass(@NonNull String name, @NonNull byte[] code) {
+        return super.defineClass(name, code, 0, code.length);
+    }
 }
