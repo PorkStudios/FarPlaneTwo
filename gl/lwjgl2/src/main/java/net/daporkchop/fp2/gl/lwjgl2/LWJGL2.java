@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.gl.lwjgl2;
 
 import com.google.common.collect.Sets;
-import jdk.jfr.Name;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
@@ -37,7 +36,6 @@ import org.lwjgl.opengl.GLContext;
 
 import java.util.Comparator;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -48,6 +46,8 @@ public class LWJGL2 implements GL {
     protected final Set<GLVersion> versions;
     protected final GLVersion latestVersion;
     protected final Set<GLExtension> extensions;
+
+    protected final ResourceArena resourceArena = new ResourceArena();
 
     protected final GLShaders shaders;
     protected final GLCompute compute;
@@ -83,6 +83,7 @@ public class LWJGL2 implements GL {
 
     @Override
     public void close() {
+        this.resourceArena.release();
     }
 
     /**
@@ -94,6 +95,7 @@ public class LWJGL2 implements GL {
     public interface ModuleFactory<M extends GLModule> {
         /**
          * Creates a new {@link M} from the given {@link LWJGL2} context.
+         *
          * @param gl the {@link LWJGL2} context
          * @return the new {@link M}
          */

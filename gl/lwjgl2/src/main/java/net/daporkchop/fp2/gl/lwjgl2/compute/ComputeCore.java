@@ -21,11 +21,15 @@
 package net.daporkchop.fp2.gl.lwjgl2.compute;
 
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.compute.ComputeGlobalSize;
 import net.daporkchop.fp2.gl.compute.ComputeLocalSize;
 import net.daporkchop.fp2.gl.compute.ComputeShader;
 import net.daporkchop.fp2.gl.compute.GLCompute;
+import net.daporkchop.fp2.gl.lwjgl2.LWJGL2;
+import net.daporkchop.fp2.gl.lwjgl2.shader.BaseShaderImpl;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
+import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 
 import static org.lwjgl.opengl.GL11.glGetInteger;
 import static org.lwjgl.opengl.GL30.glGetInteger;
@@ -34,7 +38,11 @@ import static org.lwjgl.opengl.GL43.*;
 /**
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
 public class ComputeCore implements GLCompute {
+    @NonNull
+    protected final LWJGL2 gl;
+
     @Override
     public boolean supported() {
         return true;
@@ -64,5 +72,20 @@ public class ComputeCore implements GLCompute {
     @Override
     public long maxLocalCount() {
         return glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS);
+    }
+
+    @Override
+    public ComputeShader compileComputeShader(@NonNull ComputeLocalSize localSize, @NonNull String source) throws ShaderCompilationException {
+        class UnlinkedComputeShader extends BaseShaderImpl {
+            public UnlinkedComputeShader(@NonNull String... sources) throws ShaderCompilationException {
+                super(ComputeCore.this.gl, GL_COMPUTE_SHADER, sources);
+            }
+        }
+
+        try (UnlinkedComputeShader shader = new UnlinkedComputeShader(source)) {
+            return new ComputeShaderImpl(this.gl, localSize, shader);
+        } catch (ShaderLinkageException e) {
+            throw new ShaderCompilationException("unable to link compute shader", e);
+        }
     }
 }

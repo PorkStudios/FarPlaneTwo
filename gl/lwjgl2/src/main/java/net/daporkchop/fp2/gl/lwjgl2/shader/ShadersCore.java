@@ -18,33 +18,45 @@
  *
  */
 
-package net.daporkchop.fp2.gl.lwjgl2.compute;
+package net.daporkchop.fp2.gl.lwjgl2.shader;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.GLExtension;
-import net.daporkchop.fp2.gl.GLModule;
-import net.daporkchop.fp2.gl.GLVersion;
-import net.daporkchop.fp2.gl.compute.GLCompute;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.lwjgl2.LWJGL2;
+import net.daporkchop.fp2.gl.shader.FragmentShader;
+import net.daporkchop.fp2.gl.shader.GLShaders;
+import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
+import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
+import net.daporkchop.fp2.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.gl.shader.VertexShader;
 
-import java.util.function.Function;
-import java.util.function.Supplier;
+import static org.lwjgl.opengl.GL20.*;
 
 /**
  * @author DaPorkchop_
  */
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-class ComputeFactory implements LWJGL2.ModuleFactory<GLCompute> {
+@RequiredArgsConstructor
+public class ShadersCore implements GLShaders {
+    @NonNull
+    protected final LWJGL2 gl;
+
     @Override
-    public GLCompute create(@NonNull LWJGL2 gl) {
-        if (gl.versions().contains(GLVersion.OpenGL43)) {
-            return new ComputeCore(gl);
-        } else if (gl.extensions().contains(GLExtension.GL_ARB_compute_shader)) {
-            return new ComputeCore(gl); //we can re-use the same implementation, since the LWJGL2 extension methods just redirect to the core implementation anyway
-        } else {
-            return GLModule.unsupportedImplementation(GLCompute.class);
-        }
+    public boolean supported() {
+        return true;
+    }
+
+    @Override
+    public VertexShader compileVertexShader(@NonNull String source) throws ShaderCompilationException {
+        return new VertexShaderImpl(this.gl, GL_VERTEX_SHADER, source);
+    }
+
+    @Override
+    public FragmentShader compileFragmentShader(@NonNull String source) throws ShaderCompilationException {
+        return new FragmentShaderImpl(this.gl, GL_FRAGMENT_SHADER, source);
+    }
+
+    @Override
+    public ShaderProgram linkShaderProgram(@NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException {
+        return new ShaderProgramImpl(this.gl, (VertexShaderImpl) vertexShader, (FragmentShaderImpl) fragmentShader);
     }
 }

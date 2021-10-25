@@ -18,33 +18,54 @@
  *
  */
 
-package net.daporkchop.fp2.gl.lwjgl2.compute;
+package net.daporkchop.fp2.gl.lwjgl2.shader;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.GLExtension;
-import net.daporkchop.fp2.gl.GLModule;
-import net.daporkchop.fp2.gl.GLVersion;
-import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.lwjgl2.LWJGL2;
+import net.daporkchop.fp2.gl.shader.BaseShader;
+import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
+import org.lwjgl.opengl.GL20;
 
-import java.util.function.Function;
-import java.util.function.Supplier;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL20.*;
 
 /**
  * @author DaPorkchop_
  */
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-class ComputeFactory implements LWJGL2.ModuleFactory<GLCompute> {
-    @Override
-    public GLCompute create(@NonNull LWJGL2 gl) {
-        if (gl.versions().contains(GLVersion.OpenGL43)) {
-            return new ComputeCore(gl);
-        } else if (gl.extensions().contains(GLExtension.GL_ARB_compute_shader)) {
-            return new ComputeCore(gl); //we can re-use the same implementation, since the LWJGL2 extension methods just redirect to the core implementation anyway
-        } else {
-            return GLModule.unsupportedImplementation(GLCompute.class);
+@Getter
+public abstract class BaseShaderImpl implements BaseShader {
+    protected final LWJGL2 gl;
+
+    protected final int type;
+    protected final int id;
+
+    public BaseShaderImpl(@NonNull LWJGL2 gl, int type, @NonNull String... sources) throws ShaderCompilationException {
+        //allocate new shader
+        this.gl = gl;
+        this.type = type;
+        this.id = glCreateShader(type);
+
+        //set source and compile shader
+        glShaderSource(this.id, sources);
+        glCompileShader(this.id);
+
+        //check for errors
+        if (glGetShaderi(this.id, GL_COMPILE_STATUS) == GL_FALSE) {
+            String log = glGetShaderInfoLog(this.id, glGetShaderi(this.id, GL_INFO_LOG_LENGTH));
+
+            //delete shader
+            glDeleteShader(this.id);
+
+            throw new ShaderCompilationException(log);
         }
+
+        //register resource for cleaning
+        this.gl.resourceArena().register(this, this.id, GL20::glDeleteShader);
+    }
+
+    @Override
+    public void close() {
+        this.gl.resourceArena().delete(this);
     }
 }

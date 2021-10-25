@@ -58,5 +58,5 @@ public interface GLCompute extends GLModule {
      * Note: OpenGL technically requires compute shaders to be compiled and then linked in separate stages. This method combines both stages into one, since there's little point in linking
      * in a separate stage.
      */
-    ComputeShader compileComputeShader(@NonNull String source) throws ShaderCompilationException;
+    ComputeShader compileComputeShader(@NonNull ComputeLocalSize localSize, @NonNull String source) throws ShaderCompilationException;
 }
