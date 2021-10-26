@@ -22,9 +22,7 @@ package net.daporkchop.fp2.gl.lwjgl2;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.GLContextHints;
+import net.daporkchop.fp2.gl.GLContext;
 
 import java.util.function.Supplier;
 
@@ -32,19 +30,14 @@ import java.util.function.Supplier;
  * @author DaPorkchop_
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-class LWJGL2SupplierAndFactory implements Supplier<GL.Factory>, GL.Factory {
+class LWJGL2SupplierAndFactory implements Supplier<GLContext.Factory>, GLContext.Factory {
     @Override
-    public GL.Factory get() {
+    public GLContext.Factory get() {
         return this;
     }
 
     @Override
-    public GL wrapCurrent() {
+    public GLContext wrapCurrent() {
         return new LWJGL2();
-    }
-
-    @Override
-    public GL createContext(@NonNull GLContextHints hints) {
-        throw new UnsupportedOperationException(); //TODO: implement context creation
     }
 }

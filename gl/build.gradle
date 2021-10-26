@@ -20,4 +20,6 @@
 
 dependencies {
     shade project(":common")
+
+    compile "io.netty:netty-all:$nettyVersion"
 }

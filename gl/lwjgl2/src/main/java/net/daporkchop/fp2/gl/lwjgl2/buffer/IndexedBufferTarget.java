@@ -18,21 +18,30 @@
  *
  */
 
-package net.daporkchop.fp2.gl;
+package net.daporkchop.fp2.gl.lwjgl2.buffer;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.opengl.GL31.*;
+import static org.lwjgl.opengl.GL43.*;
 
 /**
- * An arbitrary OpenGL resource.
- * <p>
- * This interface should generally not be implemented or used directly, it's intended for use by sub-interfaces.
- *
  * @author DaPorkchop_
  */
-public interface GLResource extends AutoCloseable {
-    /**
-     * Closes this resource, immediately releasing any internally allocated resources.
-     * <p>
-     * If not manually closed, a resource will be automatically closed when the resource instance is garbage-collected, or when all owning {@link GLContext} contexts have been closed.
-     */
-    @Override
-    void close();
+@RequiredArgsConstructor
+@Getter
+public enum IndexedBufferTarget {
+    TRANSFORM_FEEDBACK_BUFFER(GL_TRANSFORM_FEEDBACK_BUFFER, GL_TRANSFORM_FEEDBACK_BUFFER_BINDING,
+            GL_TRANSFORM_FEEDBACK_BUFFER_START, GL_TRANSFORM_FEEDBACK_BUFFER_SIZE),
+    SHADER_STORAGE_BUFFER(GL_SHADER_STORAGE_BUFFER, GL_SHADER_STORAGE_BUFFER_BINDING,
+            GL_SHADER_STORAGE_BUFFER_START, GL_SHADER_STORAGE_BUFFER_SIZE),
+    UNIFORM_BUFFER(GL_UNIFORM_BUFFER, GL_UNIFORM_BUFFER_BINDING,
+            GL_UNIFORM_BUFFER_START, GL_UNIFORM_BUFFER_SIZE);
+
+    private final int id;
+    private final int binding;
+    private final int bindingStart;
+    private final int bindingSize;
 }

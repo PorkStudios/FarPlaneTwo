@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.util;
+package net.daporkchop.fp2.common.util;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
@@ -35,27 +35,25 @@ import java.nio.IntBuffer;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Allows me to use direct memory directly, and not allocate a new wrapping buffer for every LWJGL method call.
- * <p>
- * Absolutely not thread-safe!
+ * Allows unsafe creation of NIO buffers which wrap a direct memory pointer without a cleaner.
  *
  * @author DaPorkchop_
  */
 @UtilityClass
-public class DirectBufferReuse {
+public class DirectBufferHackery {
     static {
         checkState(PlatformInfo.UNALIGNED, "Unaligned memory access not supported?!? (what kind of computer are you running this on lol)");
     }
 
-    public final long BUFFER_CAPACITY_OFFSET = PUnsafe.pork_getOffset(Buffer.class, "capacity");
-    public final long BUFFER_ADDRESS_OFFSET = PUnsafe.pork_getOffset(Buffer.class, "address");
+    private final long BUFFER_CAPACITY_OFFSET = PUnsafe.pork_getOffset(Buffer.class, "capacity");
+    private final long BUFFER_ADDRESS_OFFSET = PUnsafe.pork_getOffset(Buffer.class, "address");
 
-    public final ByteBuffer _BYTE = PUnsafe.allocateInstance(PorkUtil.classForName("java.nio.DirectByteBuffer"));
-    public final IntBuffer _INT = PUnsafe.allocateInstance(PorkUtil.classForName("java.nio.DirectIntBufferU"));
-    public final FloatBuffer _FLOAT = PUnsafe.allocateInstance(PorkUtil.classForName("java.nio.DirectFloatBufferU"));
-    public final DoubleBuffer _DOUBLE = PUnsafe.allocateInstance(PorkUtil.classForName("java.nio.DirectDoubleBufferU"));
+    private final Class<ByteBuffer> BYTE = PorkUtil.classForName("java.nio.DirectByteBuffer");
+    private final Class<IntBuffer> INT = PorkUtil.classForName("java.nio.DirectIntBufferU");
+    private final Class<FloatBuffer> FLOAT = PorkUtil.classForName("java.nio.DirectFloatBufferU");
+    private final Class<DoubleBuffer> DOUBLE = PorkUtil.classForName("java.nio.DirectDoubleBufferU");
 
-    public void _resetBuffer(@NonNull Buffer buffer, long address, int capacity) {
+    public void reset(@NonNull Buffer buffer, long address, int capacity) {
         checkState(buffer.isDirect(), "buffer isn't direct! %s", buffer);
 
         PUnsafe.putInt(buffer, BUFFER_CAPACITY_OFFSET, capacity);
@@ -63,27 +61,43 @@ public class DirectBufferReuse {
         buffer.clear();
     }
 
+    public ByteBuffer emptyByte() {
+        return PUnsafe.allocateInstance(BYTE);
+    }
+
     public static ByteBuffer wrapByte(long address, int capacity) {
-        ByteBuffer buffer = _BYTE;
-        _resetBuffer(buffer, address, capacity);
+        ByteBuffer buffer = emptyByte();
+        reset(buffer, address, capacity);
         return buffer;
+    }
+
+    public IntBuffer emptyInt() {
+        return PUnsafe.allocateInstance(INT);
     }
 
     public static IntBuffer wrapInt(long address, int capacity) {
-        IntBuffer buffer = _INT;
-        _resetBuffer(buffer, address, capacity);
+        IntBuffer buffer = emptyInt();
+        reset(buffer, address, capacity);
         return buffer;
+    }
+
+    public FloatBuffer emptyFloat() {
+        return PUnsafe.allocateInstance(FLOAT);
     }
 
     public static FloatBuffer wrapFloat(long address, int capacity) {
-        FloatBuffer buffer = _FLOAT;
-        _resetBuffer(buffer, address, capacity);
+        FloatBuffer buffer = emptyFloat();
+        reset(buffer, address, capacity);
         return buffer;
     }
 
+    public DoubleBuffer emptyDouble() {
+        return PUnsafe.allocateInstance(DOUBLE);
+    }
+
     public static DoubleBuffer wrapDouble(long address, int capacity) {
-        DoubleBuffer buffer = _DOUBLE;
-        _resetBuffer(buffer, address, capacity);
+        DoubleBuffer buffer = emptyDouble();
+        reset(buffer, address, capacity);
         return buffer;
     }
 }

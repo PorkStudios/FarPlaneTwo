@@ -18,46 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.gl;
+package net.daporkchop.fp2.gl.format;
 
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.With;
+import net.daporkchop.fp2.gl.GLModule;
 
 /**
- * Arguments used when creating a new OpenGL context.
- *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-@Data
-@With
-@Builder(toBuilder = true)
-public final class GLContextHints {
-    public static final GLContextHints DEFAULT = builder().build();
-
-    /**
-     * The OpenGL version to request.
-     * <p>
-     * If {@code null}, any arbitrary version (likely the latest supported by the driver) will be used.
-     */
-    private final GLVersion version;
-
-    /**
-     * The OpenGL profile to request.
-     * <p>
-     * Defaults to {@link GLProfile#COMPAT}.
-     */
-    @Builder.Default
-    @NonNull
-    private final GLProfile profile = GLProfile.COMPAT;
-
-    /**
-     * Whether or not a forward compatibility context should be requested.
-     */
-    @Builder.Default
-    private final boolean forwardCompatibility = false;
+public interface GLFormat extends GLModule {
 }

@@ -26,7 +26,7 @@ import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.client.gl.camera.Frustum;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
-import net.daporkchop.fp2.util.DirectBufferReuse;
+import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
@@ -99,7 +99,7 @@ public class ShaderGlStateHelper {
             long addr = ADDR_FOG;
 
             //vec4 color
-            glGetFloat(GL_FOG_COLOR, DirectBufferReuse.wrapFloat(addr, 16)); //buffer needs to fit 16 elements, but only the first 4 will be used
+            glGetFloat(GL_FOG_COLOR, DirectBufferHackery.wrapFloat(addr, 16)); //buffer needs to fit 16 elements, but only the first 4 will be used
             addr += VEC4_SIZE;
 
             //float density

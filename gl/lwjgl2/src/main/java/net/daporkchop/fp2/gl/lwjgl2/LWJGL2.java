@@ -24,15 +24,17 @@ import com.google.common.collect.Sets;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
-import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.GLContext;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLModule;
 import net.daporkchop.fp2.gl.GLVersion;
+import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.compute.GLCompute;
+import net.daporkchop.fp2.gl.lwjgl2.buffer.GLBufferImpl;
 import net.daporkchop.fp2.gl.shader.GLShaders;
 import net.daporkchop.lib.common.function.throwing.EPredicate;
 import org.lwjgl.opengl.ContextCapabilities;
-import org.lwjgl.opengl.GLContext;
 
 import java.util.Comparator;
 import java.util.Set;
@@ -42,7 +44,7 @@ import java.util.stream.Stream;
  * @author DaPorkchop_
  */
 @Getter
-public class LWJGL2 implements GL {
+public class LWJGL2 implements GLContext {
     protected final Set<GLVersion> versions;
     protected final GLVersion latestVersion;
     protected final Set<GLExtension> extensions;
@@ -53,7 +55,7 @@ public class LWJGL2 implements GL {
     protected final GLCompute compute;
 
     protected LWJGL2() {
-        ContextCapabilities capabilities = GLContext.getCapabilities();
+        ContextCapabilities capabilities = org.lwjgl.opengl.GLContext.getCapabilities();
 
         this.versions = Stream.of(GLVersion.values())
                 .filter((EPredicate<GLVersion>) version -> {
@@ -79,6 +81,11 @@ public class LWJGL2 implements GL {
 
         this.shaders = GlobalProperties.<ModuleFactory<GLShaders>>getInstance("gl.lwjgl2.shaders.factory").create(this);
         this.compute = GlobalProperties.<ModuleFactory<GLCompute>>getInstance("gl.lwjgl2.compute.factory").create(this);
+    }
+
+    @Override
+    public GLBuffer createBuffer(@NonNull BufferUsage usage) {
+        return new GLBufferImpl(this, usage);
     }
 
     @Override

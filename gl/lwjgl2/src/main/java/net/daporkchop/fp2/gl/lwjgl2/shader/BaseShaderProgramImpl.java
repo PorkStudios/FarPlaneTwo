@@ -36,7 +36,6 @@ import static org.lwjgl.opengl.GL20.*;
 @Getter
 public abstract class BaseShaderProgramImpl implements BaseShaderProgram {
     protected final LWJGL2 gl;
-
     protected final int id;
 
     public BaseShaderProgramImpl(@NonNull LWJGL2 gl, @NonNull BaseShaderImpl... shaders) throws ShaderLinkageException {

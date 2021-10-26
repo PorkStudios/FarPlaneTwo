@@ -22,6 +22,8 @@ package net.daporkchop.fp2.gl;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
+import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.shader.GLShaders;
 
@@ -33,31 +35,18 @@ import java.util.function.Supplier;
  *
  * @author DaPorkchop_
  */
-public interface GL extends AutoCloseable {
+public interface GLContext extends AutoCloseable {
     /**
-     * Creates a new {@link GL} instance which wraps the currently active OpenGL context.
+     * Creates a new {@link GLContext} instance which wraps the currently active OpenGL context.
      * <p>
-     * The returned {@link GL} will not own the current context. Closing it will release any resources allocated by this {@link GL} instance, but the rest of the context will not
+     * The returned {@link GLContext} will not own the current context. Closing it will release any resources allocated by this {@link GLContext} instance, but the rest of the context will not
      * be unaffected.
      *
-     * @return a new {@link GL} instance which wraps the currently active OpenGL context
+     * @return a new {@link GLContext} instance which wraps the currently active OpenGL context
      */
-    static GL wrapCurrent() {
+    static GLContext wrapCurrent() {
         return GlobalProperties.<Supplier<Factory>>getInstanceCached("gl.factory.supplier").get()
                 .wrapCurrent();
-    }
-
-    /**
-     * Creates a new OpenGL context and returns a new {@link GL} instance for accessing it.
-     * <p>
-     * The returned {@link GL} will own the newly created context.
-     *
-     * @param hints the options with which the context should be created
-     * @return a new {@link GL} instance which wraps the newly created OpenGL context
-     */
-    static GL createContext(@NonNull GLContextHints hints) {
-        return GlobalProperties.<Supplier<Factory>>getInstanceCached("gl.factory.supplier").get()
-                .createContext(hints);
     }
 
     //
@@ -92,6 +81,14 @@ public interface GL extends AutoCloseable {
     //
 
     /**
+     * Creates a new OpenGL buffer.
+     *
+     * @param usage the buffer's usage hint
+     * @return a new {@link GLBuffer}
+     */
+    GLBuffer createBuffer(@NonNull BufferUsage usage);
+
+    /**
      * @return the module for accessing shaders
      */
     GLShaders shaders();
@@ -102,19 +99,14 @@ public interface GL extends AutoCloseable {
     GLCompute compute();
 
     /**
-     * Supplies implementations of {@link GL}.
+     * Supplies implementations of {@link GLContext}.
      *
      * @author DaPorkchop_
      */
     interface Factory {
         /**
-         * @see GL#wrapCurrent()
+         * @see GLContext#wrapCurrent()
          */
-        GL wrapCurrent();
-
-        /**
-         * @see GL#createContext(GLContextHints)
-         */
-        GL createContext(@NonNull GLContextHints hints);
+        GLContext wrapCurrent();
     }
 }
