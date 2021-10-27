@@ -252,7 +252,22 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
                 }
 
                 //obtain an exclusive lock on both timestamp keys to ensure coherency
-                get = txn.multiGetForUpdate(READ_OPTIONS, Arrays.asList(handles), keys);
+
+                final int MAX_BATCH_SIZE = 65536;
+                if (keys.length <= MAX_BATCH_SIZE) {
+                    get = txn.multiGetForUpdate(READ_OPTIONS, Arrays.asList(handles), keys);
+                } else { //workaround for https://github.com/facebook/rocksdb/issues/9006
+                    get = new byte[keys.length][];
+
+                    for (int i = 0; i < keys.length; ) {
+                        int batchSize = min(keys.length - i, MAX_BATCH_SIZE);
+
+                        byte[][] tmp = txn.multiGet(READ_OPTIONS, Arrays.asList(handles).subList(i, i + batchSize), Arrays.copyOfRange(keys, i, i + batchSize));
+                        System.arraycopy(tmp, 0, get, i, batchSize);
+
+                        i += batchSize;
+                    }
+                }
             }
 
             //iterate through positions, updating the dirty timestamps as needed
