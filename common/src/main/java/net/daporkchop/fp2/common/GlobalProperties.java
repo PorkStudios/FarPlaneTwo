@@ -26,21 +26,17 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ExecutionError;
 import com.google.common.util.concurrent.UncheckedExecutionException;
+import lombok.AccessLevel;
+import lombok.Data;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.experimental.UtilityClass;
 import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
@@ -49,57 +45,54 @@ import java.util.concurrent.ExecutionException;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Container class for global properties which are used to configure the behavior of every FP2 module.
- *
  * @author DaPorkchop_
  */
-@UtilityClass
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class GlobalProperties {
-    protected final Map<String, String> PROPERTIES;
+    protected static final LoadingCache<CacheKey, GlobalProperties> CACHE = CacheBuilder.newBuilder()
+            .weakKeys().weakValues()
+            .build(new CacheLoader<CacheKey, GlobalProperties>() {
+                @Override
+                public GlobalProperties load(@NonNull CacheKey key) throws IOException {
+                    Properties properties = new Properties();
+                    try {
+                        //load file and append to list
+                        try (InputStream in = key.clazz.getResourceAsStream(key.name + ".properties")) {
+                            properties.load(in);
+                        }
+                    } catch (IOException e) {
+                        throw new IOException("unable to load properties for " + key, e);
+                    }
 
-    protected final LoadingCache<String, Class<?>> CLASSES_CACHE = CacheBuilder.newBuilder()
+                    return new GlobalProperties(ImmutableMap.copyOf(PorkUtil.<Map<String, String>>uncheckedCast(properties)));
+                }
+            });
+
+    @NonNull
+    protected final Map<String, String> properties;
+
+    protected final LoadingCache<String, Class<?>> classesCache = CacheBuilder.newBuilder()
             .weakValues()
             .build(new CacheLoader<String, Class<?>>() {
                 @Override
                 public Class<?> load(@NonNull String key) throws Exception {
-                    return Class.forName(get(key), false, GlobalProperties.class.getClassLoader());
+                    return Class.forName(GlobalProperties.this.get(key), false, GlobalProperties.class.getClassLoader());
                 }
             });
 
-    protected final LoadingCache<String, Object> INSTANCES_CACHE = CacheBuilder.newBuilder()
+    protected final LoadingCache<String, Object> instancesCache = CacheBuilder.newBuilder()
             .weakValues()
-            .build(CacheLoader.from(GlobalProperties::getInstance));
+            .build(CacheLoader.from(this::getInstance));
 
-    static {
-        List<Properties> propertiesList = new ArrayList<>();
-
-        try {
-            //iterate over every fp2.properties file (from each module)
-            for (Enumeration<URL> urls = GlobalProperties.class.getClassLoader().getResources("fp2.properties"); urls.hasMoreElements(); ) {
-                //load file and append to list
-                try (InputStream in = urls.nextElement().openStream()) {
-                    Properties properties = new Properties();
-                    properties.load(in);
-                    propertiesList.add(properties);
-                }
-            }
-        } catch (IOException e) {
-            throw new AssertionError("unable to load global properties!", e);
-        }
-
-        //sort properties files by their priority
-        propertiesList.sort(Comparator.comparingDouble(properties -> Double.parseDouble(properties.getProperty("priority", "0"))));
-
-        //merge properties in order
-        Map<String, String> merged = new HashMap<>();
-        for (Properties properties : propertiesList) {
-            for (Map.Entry<String, String> entry : PorkUtil.<Map<String, String>>uncheckedCast(properties).entrySet()) {
-                merged.put(entry.getKey().intern(), entry.getValue().intern());
-            }
-        }
-        merged.remove("priority");
-
-        PROPERTIES = ImmutableMap.copyOf(merged);
+    /**
+     * Gets the properties for the given class with the given name.
+     *
+     * @param clazz the class
+     * @param name  the name of the properties file, relative to the class
+     * @return the properties
+     */
+    public static GlobalProperties find(@NonNull Class<?> clazz, @NonNull String name) {
+        return CACHE.getUnchecked(new CacheKey(clazz, name));
     }
 
     /**
@@ -110,7 +103,7 @@ public class GlobalProperties {
      * @throws NoSuchElementException if no property with the given key exists
      */
     public String get(@NonNull String key) {
-        String value = PROPERTIES.get(key);
+        String value = this.properties.get(key);
         if (value == null) {
             throw new NoSuchElementException(key);
         }
@@ -129,7 +122,7 @@ public class GlobalProperties {
     @SneakyThrows(Throwable.class)
     public <T> Class<? extends T> getClass(@NonNull String key) {
         try {
-            return uncheckedCast(CLASSES_CACHE.get(key));
+            return uncheckedCast(this.classesCache.get(key));
         } catch (ExecutionException | UncheckedExecutionException | ExecutionError e) {
             throw e.getCause();
         }
@@ -153,7 +146,7 @@ public class GlobalProperties {
      */
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
     public <T> T getInstance(@NonNull String key) {
-        Constructor<? extends T> constructor = GlobalProperties.<T>getClass(key).getDeclaredConstructor();
+        Constructor<? extends T> constructor = this.<T>getClass(key).getDeclaredConstructor();
         constructor.setAccessible(true);
         return constructor.newInstance();
     }
@@ -178,9 +171,18 @@ public class GlobalProperties {
     @SneakyThrows(Throwable.class)
     public <T> T getInstanceCached(@NonNull String key) {
         try {
-            return uncheckedCast(INSTANCES_CACHE.get(key));
+            return uncheckedCast(this.instancesCache.get(key));
         } catch (ExecutionException | UncheckedExecutionException | ExecutionError e) {
             throw e.getCause();
         }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Data
+    private static class CacheKey {
+        private final Class clazz;
+        private final String name;
     }
 }

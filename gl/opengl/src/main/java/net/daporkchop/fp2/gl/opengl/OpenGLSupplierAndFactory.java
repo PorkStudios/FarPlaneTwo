@@ -18,17 +18,26 @@
  *
  */
 
-package net.daporkchop.fp2.gl;
+package net.daporkchop.fp2.gl.opengl;
 
-import lombok.RequiredArgsConstructor;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import net.daporkchop.fp2.gl.GLContext;
+
+import java.util.function.Supplier;
 
 /**
- * All known OpenGL extensions.
- *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public enum GLExtension {
-    GL_ARB_compatibility,
-    GL_ARB_compute_shader;
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+class OpenGLSupplierAndFactory implements Supplier<GLContext.Factory>, GLContext.Factory {
+    @Override
+    public GLContext.Factory get() {
+        return this;
+    }
+
+    @Override
+    public GLContext wrapCurrent() {
+        return new OpenGL();
+    }
 }

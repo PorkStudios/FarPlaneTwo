@@ -45,7 +45,8 @@ public interface GLContext extends AutoCloseable {
      * @return a new {@link GLContext} instance which wraps the currently active OpenGL context
      */
     static GLContext wrapCurrent() {
-        return GlobalProperties.<Supplier<Factory>>getInstanceCached("gl.factory.supplier").get()
+        return GlobalProperties.find(GLContext.class, "gl")
+                .<Supplier<Factory>>getInstanceCached("factory.supplier").get()
                 .wrapCurrent();
     }
 
@@ -54,14 +55,14 @@ public interface GLContext extends AutoCloseable {
     //
 
     /**
-     * @return all OpenGL versions supported by this context
+     * @return the context's OpenGL version
      */
-    Set<GLVersion> versions();
+    GLVersion version();
 
     /**
-     * @return the most recent OpenGL version supported by this context
+     * @return the context's OpenGL profile
      */
-    GLVersion latestVersion();
+    GLProfile profile();
 
     /**
      * @return all extensions supported by this context
@@ -76,10 +77,6 @@ public interface GLContext extends AutoCloseable {
     @Override
     void close();
 
-    //
-    // MODULES
-    //
-
     /**
      * Creates a new OpenGL buffer.
      *
@@ -87,6 +84,10 @@ public interface GLContext extends AutoCloseable {
      * @return a new {@link GLBuffer}
      */
     GLBuffer createBuffer(@NonNull BufferUsage usage);
+
+    //
+    // MODULES
+    //
 
     /**
      * @return the module for accessing shaders

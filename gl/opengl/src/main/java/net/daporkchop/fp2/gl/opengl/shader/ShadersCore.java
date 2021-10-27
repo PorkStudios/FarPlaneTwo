@@ -18,17 +18,45 @@
  *
  */
 
-package net.daporkchop.fp2.gl;
+package net.daporkchop.fp2.gl.opengl.shader;
 
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.lwjgl2.LWJGL2;
+import net.daporkchop.fp2.gl.shader.FragmentShader;
+import net.daporkchop.fp2.gl.shader.GLShaders;
+import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
+import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
+import net.daporkchop.fp2.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.gl.shader.VertexShader;
+
+import static org.lwjgl.opengl.GL20.*;
 
 /**
- * All known OpenGL extensions.
- *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public enum GLExtension {
-    GL_ARB_compatibility,
-    GL_ARB_compute_shader;
+public class ShadersCore implements GLShaders {
+    @NonNull
+    protected final LWJGL2 gl;
+
+    @Override
+    public boolean supported() {
+        return true;
+    }
+
+    @Override
+    public VertexShader compileVertexShader(@NonNull String source) throws ShaderCompilationException {
+        return new VertexShaderImpl(this.gl, GL_VERTEX_SHADER, source);
+    }
+
+    @Override
+    public FragmentShader compileFragmentShader(@NonNull String source) throws ShaderCompilationException {
+        return new FragmentShaderImpl(this.gl, GL_FRAGMENT_SHADER, source);
+    }
+
+    @Override
+    public ShaderProgram linkShaderProgram(@NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException {
+        return new ShaderProgramImpl(this.gl, (VertexShaderImpl) vertexShader, (FragmentShaderImpl) fragmentShader);
+    }
 }

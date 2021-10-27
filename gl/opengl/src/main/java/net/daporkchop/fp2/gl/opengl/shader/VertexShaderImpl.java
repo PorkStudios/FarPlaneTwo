@@ -18,17 +18,18 @@
  *
  */
 
-package net.daporkchop.fp2.gl;
+package net.daporkchop.fp2.gl.opengl.shader;
 
-import lombok.RequiredArgsConstructor;
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.lwjgl2.LWJGL2;
+import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
+import net.daporkchop.fp2.gl.shader.VertexShader;
 
 /**
- * All known OpenGL extensions.
- *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public enum GLExtension {
-    GL_ARB_compatibility,
-    GL_ARB_compute_shader;
+public class VertexShaderImpl extends BaseShaderImpl implements VertexShader {
+    public VertexShaderImpl(@NonNull LWJGL2 gl, int type, @NonNull String... sources) throws ShaderCompilationException {
+        super(gl, type, sources);
+    }
 }

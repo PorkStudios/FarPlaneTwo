@@ -18,17 +18,43 @@
  *
  */
 
-package net.daporkchop.fp2.gl;
+package net.daporkchop.fp2.gl.opengl;
 
-import lombok.RequiredArgsConstructor;
+import lombok.NonNull;
+import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.gl.buffer.BufferUsage;
+
+import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 
 /**
- * All known OpenGL extensions.
+ * Methods for converting GL enum values to actual OpenGL integers.
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public enum GLExtension {
-    GL_ARB_compatibility,
-    GL_ARB_compute_shader;
+@UtilityClass
+public class GLEnumUtil {
+    public int from(@NonNull BufferUsage usage) {
+        switch (usage) {
+            case STREAM_DRAW:
+                return GL_STREAM_DRAW;
+            case STREAM_READ:
+                return GL_STREAM_READ;
+            case STREAM_COPY:
+                return GL_STREAM_COPY;
+            case STATIC_DRAW:
+                return GL_STATIC_DRAW;
+            case STATIC_READ:
+                return GL_STATIC_READ;
+            case STATIC_COPY:
+                return GL_STATIC_COPY;
+            case DYNAMIC_READ:
+                return GL_DYNAMIC_READ;
+            case DYNAMIC_DRAW:
+                return GL_DYNAMIC_DRAW;
+            case DYNAMIC_COPY:
+                return GL_DYNAMIC_COPY;
+            default:
+                throw new IllegalArgumentException(usage.name());
+        }
+    }
 }

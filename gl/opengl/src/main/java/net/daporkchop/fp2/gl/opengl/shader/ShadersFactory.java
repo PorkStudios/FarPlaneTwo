@@ -18,17 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.gl;
+package net.daporkchop.fp2.gl.opengl.shader;
 
-import lombok.RequiredArgsConstructor;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.lwjgl2.LWJGL2;
+import net.daporkchop.fp2.gl.shader.GLShaders;
 
 /**
- * All known OpenGL extensions.
- *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public enum GLExtension {
-    GL_ARB_compatibility,
-    GL_ARB_compute_shader;
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+class ShadersFactory implements LWJGL2.ModuleFactory<GLShaders> {
+    @Override
+    public GLShaders create(@NonNull LWJGL2 gl) {
+        return new ShadersCore(gl); //we assume shaders are available on all hardware
+    }
 }

@@ -18,17 +18,30 @@
  *
  */
 
-package net.daporkchop.fp2.gl;
+package net.daporkchop.fp2.gl.opengl.buffer;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.opengl.GL31.*;
+import static org.lwjgl.opengl.GL43.*;
+
 /**
- * All known OpenGL extensions.
- *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public enum GLExtension {
-    GL_ARB_compatibility,
-    GL_ARB_compute_shader;
+@Getter
+public enum IndexedBufferTarget {
+    TRANSFORM_FEEDBACK_BUFFER(GL_TRANSFORM_FEEDBACK_BUFFER, GL_TRANSFORM_FEEDBACK_BUFFER_BINDING,
+            GL_TRANSFORM_FEEDBACK_BUFFER_START, GL_TRANSFORM_FEEDBACK_BUFFER_SIZE),
+    SHADER_STORAGE_BUFFER(GL_SHADER_STORAGE_BUFFER, GL_SHADER_STORAGE_BUFFER_BINDING,
+            GL_SHADER_STORAGE_BUFFER_START, GL_SHADER_STORAGE_BUFFER_SIZE),
+    UNIFORM_BUFFER(GL_UNIFORM_BUFFER, GL_UNIFORM_BUFFER_BINDING,
+            GL_UNIFORM_BUFFER_START, GL_UNIFORM_BUFFER_SIZE);
+
+    private final int id;
+    private final int binding;
+    private final int bindingStart;
+    private final int bindingSize;
 }

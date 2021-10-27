@@ -18,17 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.gl;
-
-import lombok.RequiredArgsConstructor;
+package net.daporkchop.fp2.gl.util;
 
 /**
- * All known OpenGL extensions.
- *
+ * Thrown when an exception occurs when 
+ * 
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public enum GLExtension {
-    GL_ARB_compatibility,
-    GL_ARB_compute_shader;
+public class GLException extends RuntimeException {
+    public GLException(String message) {
+        super(message);
+    }
+
+    public GLException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

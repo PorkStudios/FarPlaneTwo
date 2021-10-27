@@ -21,6 +21,7 @@
 include 'common'
 include 'core'
 include 'gl'
-include 'gl:lwjgl2'
+include 'gl:opengl'
+include 'gl:opengl-lwjgl2'
 include 'mc'
 include 'mc:1.12.2-forge'

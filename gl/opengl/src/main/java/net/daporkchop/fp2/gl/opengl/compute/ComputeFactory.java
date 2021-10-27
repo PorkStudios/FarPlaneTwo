@@ -18,17 +18,30 @@
  *
  */
 
-package net.daporkchop.fp2.gl;
+package net.daporkchop.fp2.gl.opengl.compute;
 
-import lombok.RequiredArgsConstructor;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.GLExtension;
+import net.daporkchop.fp2.gl.GLModule;
+import net.daporkchop.fp2.gl.GLVersion;
+import net.daporkchop.fp2.gl.compute.GLCompute;
+import net.daporkchop.fp2.gl.lwjgl2.LWJGL2;
 
 /**
- * All known OpenGL extensions.
- *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public enum GLExtension {
-    GL_ARB_compatibility,
-    GL_ARB_compute_shader;
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+class ComputeFactory implements LWJGL2.ModuleFactory<GLCompute> {
+    @Override
+    public GLCompute create(@NonNull LWJGL2 gl) {
+        if (gl.versions().contains(GLVersion.OpenGL43)) {
+            return new ComputeCore(gl);
+        } else if (gl.extensions().contains(GLExtension.GL_ARB_compute_shader)) {
+            return new ComputeCore(gl); //we can re-use the same implementation, since the LWJGL2 extension methods just redirect to the core implementation anyway
+        } else {
+            return GLModule.unsupportedImplementation(GLCompute.class);
+        }
+    }
 }

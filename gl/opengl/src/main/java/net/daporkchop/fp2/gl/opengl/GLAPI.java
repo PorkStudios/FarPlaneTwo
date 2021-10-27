@@ -18,17 +18,72 @@
  *
  */
 
-package net.daporkchop.fp2.gl;
+package net.daporkchop.fp2.gl.opengl;
 
-import lombok.RequiredArgsConstructor;
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.GLVersion;
+
+import java.nio.ByteBuffer;
 
 /**
- * All known OpenGL extensions.
+ * Provides access to the OpenGL API.
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public enum GLExtension {
-    GL_ARB_compatibility,
-    GL_ARB_compute_shader;
+public interface GLAPI {
+    //
+    //
+    // UTILITIES
+    //
+    //
+
+    GLVersion version();
+
+    //
+    //
+    // OpenGL 1.1
+    //
+    //
+
+    int glGetError();
+
+    int glGetInteger(int pname);
+
+    String glGetString(int pname);
+
+    //
+    //
+    // OpenGL 1.5
+    //
+    //
+
+    int glGenBuffers();
+
+    void glDeleteBuffers(int buffer);
+
+    void glBindBuffer(int target, int buffer);
+
+    void glBufferData(int target, long data_size, long data, int usage);
+
+    void glBufferData(int target, @NonNull ByteBuffer data, int usage);
+
+    void glBufferSubData(int target, long offset, long data_size, long data);
+
+    void glBufferSubData(int target, long offset, @NonNull ByteBuffer data);
+
+    void glGetBufferSubData(int target, long offset, long data_size, long data);
+
+    void glGetBufferSubData(int target, long offset, @NonNull ByteBuffer data);
+
+    long glMapBuffer(int target, int usage);
+
+    void glUnmapBuffer(int target);
+
+    //
+    //
+    // OpenGL 3.0
+    //
+    //
+
+    String glGetStringi(int pname, int idx);
 }
