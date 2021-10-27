@@ -21,15 +21,17 @@
 package net.daporkchop.fp2.gl.opengl.shader;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.lwjgl2.LWJGL2;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.shader.FragmentShader;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
+
+import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 
 /**
  * @author DaPorkchop_
  */
 public class FragmentShaderImpl extends BaseShaderImpl implements FragmentShader {
-    public FragmentShaderImpl(@NonNull LWJGL2 gl, int type, @NonNull String... sources) throws ShaderCompilationException {
-        super(gl, type, sources);
+    public FragmentShaderImpl(@NonNull OpenGL gl, @NonNull String... sources) throws ShaderCompilationException {
+        super(gl, GL_FRAGMENT_SHADER, sources);
     }
 }

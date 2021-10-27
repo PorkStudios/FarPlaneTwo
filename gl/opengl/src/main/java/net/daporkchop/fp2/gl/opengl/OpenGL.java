@@ -25,7 +25,7 @@ import com.google.common.collect.Sets;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
-import net.daporkchop.fp2.gl.GLContext;
+import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLModule;
 import net.daporkchop.fp2.gl.GLProfile;
@@ -34,7 +34,15 @@ import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
-import net.daporkchop.fp2.gl.shader.GLShaders;
+import net.daporkchop.fp2.gl.opengl.compute.ComputeCore;
+import net.daporkchop.fp2.gl.opengl.shader.FragmentShaderImpl;
+import net.daporkchop.fp2.gl.opengl.shader.ShaderProgramImpl;
+import net.daporkchop.fp2.gl.opengl.shader.VertexShaderImpl;
+import net.daporkchop.fp2.gl.shader.FragmentShader;
+import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
+import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
+import net.daporkchop.fp2.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.gl.shader.VertexShader;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -48,7 +56,7 @@ import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
  * @author DaPorkchop_
  */
 @Getter
-public class OpenGL implements GLContext {
+public class OpenGL implements GL {
     protected final GLAPI api;
 
     protected final GLVersion version;
@@ -57,12 +65,11 @@ public class OpenGL implements GLContext {
 
     protected final ResourceArena resourceArena = new ResourceArena();
 
-    protected final GLShaders shaders;
     protected final GLCompute compute;
 
     protected OpenGL() {
         this.api = GlobalProperties.find(OpenGL.class, "opengl")
-                .<Supplier<GLAPI>>getInstance("functions.supplier")
+                .<Supplier<GLAPI>>getInstance("api.supplier")
                 .get();
 
         this.version = this.api.version();
@@ -74,7 +81,7 @@ public class OpenGL implements GLContext {
                 extensionNames = ImmutableSet.copyOf(extensions.trim().split(" "));
             } else { //use new indexed EXTENSIONS property
                 extensionNames = IntStream.range(0, this.api.glGetInteger(GL_NUM_EXTENSIONS))
-                        .mapToObj(i -> this.api.glGetStringi(GL_EXTENSIONS, i))
+                        .mapToObj(i -> this.api.glGetString(GL_EXTENSIONS, i))
                         .collect(Collectors.toSet());
             }
 
@@ -102,6 +109,17 @@ public class OpenGL implements GLContext {
 
             this.profile = !core && !forwards ? GLProfile.COMPAT : GLProfile.CORE;
         }
+
+        //
+        // create modules
+        //
+
+        //compute
+        if (this.version.compareTo(GLVersion.OpenGL43) >= 0 || this.extensions.contains(GLExtension.GL_ARB_compute_shader)) {
+            this.compute = new ComputeCore(this);
+        } else {
+            this.compute = GLModule.unsupportedImplementation(GLCompute.class);
+        }
     }
 
     @Override
@@ -110,23 +128,22 @@ public class OpenGL implements GLContext {
     }
 
     @Override
-    public void close() {
-        this.resourceArena.release();
+    public VertexShader compileVertexShader(@NonNull String source) throws ShaderCompilationException {
+        return new VertexShaderImpl(this, source);
     }
 
-    /**
-     * Factory for LWJGL2 module implementations.
-     *
-     * @author DaPorkchop_
-     */
-    @FunctionalInterface
-    public interface ModuleFactory<M extends GLModule> {
-        /**
-         * Creates a new {@link M} from the given {@link OpenGL} context.
-         *
-         * @param gl the {@link OpenGL} context
-         * @return the new {@link M}
-         */
-        M create(@NonNull OpenGL gl);
+    @Override
+    public FragmentShader compileFragmentShader(@NonNull String source) throws ShaderCompilationException {
+        return new FragmentShaderImpl(this, source);
+    }
+
+    @Override
+    public ShaderProgram linkShaderProgram(@NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException {
+        return new ShaderProgramImpl(this, (VertexShaderImpl) vertexShader, (FragmentShaderImpl) fragmentShader);
+    }
+
+    @Override
+    public void close() {
+        this.resourceArena.release();
     }
 }

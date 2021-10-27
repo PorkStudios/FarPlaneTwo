@@ -21,26 +21,29 @@
 package net.daporkchop.fp2.gl.opengl.compute;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.compute.ComputeGlobalSize;
 import net.daporkchop.fp2.gl.compute.ComputeLocalSize;
 import net.daporkchop.fp2.gl.compute.ComputeShader;
 import net.daporkchop.fp2.gl.compute.GLCompute;
-import net.daporkchop.fp2.gl.lwjgl2.LWJGL2;
-import net.daporkchop.fp2.gl.lwjgl2.shader.BaseShaderImpl;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.shader.BaseShaderImpl;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 
-import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL43.*;
+import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 public class ComputeCore implements GLCompute {
-    @NonNull
-    protected final LWJGL2 gl;
+    protected final OpenGL gl;
+    protected final GLAPI api;
+
+    public ComputeCore(@NonNull OpenGL gl) {
+        this.gl = gl;
+        this.api = gl.api();
+    }
 
     @Override
     public boolean supported() {
@@ -50,9 +53,9 @@ public class ComputeCore implements GLCompute {
     @Override
     public ComputeGlobalSize maxGlobalSize() {
         return new ComputeGlobalSize(
-                glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0),
-                glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1),
-                glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2));
+                this.api.glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0),
+                this.api.glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1),
+                this.api.glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2));
     }
 
     @Override
@@ -63,14 +66,14 @@ public class ComputeCore implements GLCompute {
     @Override
     public ComputeLocalSize maxLocalSize() {
         return new ComputeLocalSize(
-                glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0),
-                glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1),
-                glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2));
+                this.api.glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0),
+                this.api.glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1),
+                this.api.glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2));
     }
 
     @Override
     public long maxLocalCount() {
-        return GL11.glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS);
+        return this.api.glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS);
     }
 
     @Override

@@ -18,17 +18,81 @@
  *
  */
 
-package net.daporkchop.fp2.gl.shader;
+package net.daporkchop.fp2.gl;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.GLModule;
+import net.daporkchop.fp2.common.GlobalProperties;
+import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.buffer.GLBuffer;
+import net.daporkchop.fp2.gl.compute.GLCompute;
+import net.daporkchop.fp2.gl.shader.FragmentShader;
+import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
+import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
+import net.daporkchop.fp2.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.gl.shader.VertexShader;
+
+import java.util.Set;
+import java.util.function.Supplier;
 
 /**
- * API for OpenGL shaders.
+ * Container for an OpenGL context.
  *
  * @author DaPorkchop_
  */
-public interface GLShaders extends GLModule {
+public interface GL extends AutoCloseable {
+    /**
+     * Creates a new {@link GL} instance which wraps the currently active OpenGL context.
+     * <p>
+     * The returned {@link GL} will not own the current context. Closing it will release any resources allocated by this {@link GL} instance, but the rest of the context will not
+     * be unaffected.
+     *
+     * @return a new {@link GL} instance which wraps the currently active OpenGL context
+     */
+    static GL wrapCurrent() {
+        return GlobalProperties.find(GL.class, "gl")
+                .<Supplier<Factory>>getInstanceCached("factory.supplier").get()
+                .wrapCurrent();
+    }
+
+    //
+    // GENERAL
+    //
+
+    /**
+     * @return the context's OpenGL version
+     */
+    GLVersion version();
+
+    /**
+     * @return the context's OpenGL profile
+     */
+    GLProfile profile();
+
+    /**
+     * @return all extensions supported by this context
+     */
+    Set<GLExtension> extensions();
+
+    /**
+     * Closes this OpenGL context, releasing all resources allocated by it.
+     * <p>
+     * Once this method has been called, all methods in all object instances belonging to by this instance will produce undefined behavior.
+     */
+    @Override
+    void close();
+
+    /**
+     * Creates a new OpenGL buffer.
+     *
+     * @param usage the buffer's usage hint
+     * @return a new {@link GLBuffer}
+     */
+    GLBuffer createBuffer(@NonNull BufferUsage usage);
+
+    //
+    // SHADERS
+    //
+
     /**
      * Compiles a {@link VertexShader} from the given source code.
      *
@@ -56,4 +120,25 @@ public interface GLShaders extends GLModule {
      * @throws ShaderLinkageException if shader linkage fails
      */
     ShaderProgram linkShaderProgram(@NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException;
+
+    //
+    // MODULES
+    //
+
+    /**
+     * @return the module for accessing compute shaders
+     */
+    GLCompute compute();
+
+    /**
+     * Supplies implementations of {@link GL}.
+     *
+     * @author DaPorkchop_
+     */
+    interface Factory {
+        /**
+         * @see GL#wrapCurrent()
+         */
+        GL wrapCurrent();
+    }
 }

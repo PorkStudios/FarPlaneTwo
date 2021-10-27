@@ -23,9 +23,7 @@ package net.daporkchop.fp2.gl.opengl.buffer;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL31.*;
-import static org.lwjgl.opengl.GL43.*;
+import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 
 /**
  * @author DaPorkchop_

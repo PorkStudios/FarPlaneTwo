@@ -56,8 +56,8 @@ public class GLBufferImpl implements GLBuffer {
         this.api = gl.api();
         this.usage = GLEnumUtil.from(usage);
 
-        this.id = this.api.glGenBuffers();
-        this.gl.resourceArena().register(this, this.id, this.api::glDeleteBuffers);
+        this.id = this.api.glGenBuffer();
+        this.gl.resourceArena().register(this, this.id, this.api::glDeleteBuffer);
     }
 
     @Override

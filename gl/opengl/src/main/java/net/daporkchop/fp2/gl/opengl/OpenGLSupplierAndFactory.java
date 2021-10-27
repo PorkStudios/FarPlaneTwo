@@ -22,7 +22,7 @@ package net.daporkchop.fp2.gl.opengl;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import net.daporkchop.fp2.gl.GLContext;
+import net.daporkchop.fp2.gl.GL;
 
 import java.util.function.Supplier;
 
@@ -30,14 +30,14 @@ import java.util.function.Supplier;
  * @author DaPorkchop_
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-class OpenGLSupplierAndFactory implements Supplier<GLContext.Factory>, GLContext.Factory {
+class OpenGLSupplierAndFactory implements Supplier<GL.Factory>, GL.Factory {
     @Override
-    public GLContext.Factory get() {
+    public GL.Factory get() {
         return this;
     }
 
     @Override
-    public GLContext wrapCurrent() {
+    public GL wrapCurrent() {
         return new OpenGL();
     }
 }

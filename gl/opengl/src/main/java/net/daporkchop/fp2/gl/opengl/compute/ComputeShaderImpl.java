@@ -25,13 +25,10 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.compute.ComputeGlobalSize;
 import net.daporkchop.fp2.gl.compute.ComputeLocalSize;
 import net.daporkchop.fp2.gl.compute.ComputeShader;
-import net.daporkchop.fp2.gl.lwjgl2.LWJGL2;
-import net.daporkchop.fp2.gl.lwjgl2.shader.BaseShaderImpl;
-import net.daporkchop.fp2.gl.lwjgl2.shader.BaseShaderProgramImpl;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.shader.BaseShaderImpl;
+import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramImpl;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_
@@ -40,7 +37,7 @@ import static org.lwjgl.opengl.GL43.*;
 public class ComputeShaderImpl extends BaseShaderProgramImpl implements ComputeShader {
     protected final ComputeLocalSize localSize;
 
-    public ComputeShaderImpl(@NonNull LWJGL2 gl, @NonNull ComputeLocalSize localSize, @NonNull BaseShaderImpl... shaders) throws ShaderLinkageException {
+    public ComputeShaderImpl(@NonNull OpenGL gl, @NonNull ComputeLocalSize localSize, @NonNull BaseShaderImpl... shaders) throws ShaderLinkageException {
         super(gl, shaders);
 
         this.localSize = localSize;
@@ -49,8 +46,8 @@ public class ComputeShaderImpl extends BaseShaderProgramImpl implements ComputeS
     @Override
     public void dispatch(@NonNull ComputeGlobalSize globalSize) {
         //TODO: better state management system
-        glUseProgram(this.id);
+        /*glUseProgram(this.id);
         glDispatchCompute(globalSize.x(), globalSize.y(), globalSize.z());
-        glUseProgram(0);
+        glUseProgram(0);*/
     }
 }

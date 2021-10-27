@@ -30,13 +30,4 @@ import net.daporkchop.fp2.gl.GLResource;
  * @author DaPorkchop_
  */
 public interface BaseShaderProgram extends GLResource {
-    /**
-     * Begins using this shader program.
-     */
-    void begin();
-
-    /**
-     * Stops using this shader program.
-     */
-    void end();
 }

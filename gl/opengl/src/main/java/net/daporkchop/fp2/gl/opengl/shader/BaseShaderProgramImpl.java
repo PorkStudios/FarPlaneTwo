@@ -22,48 +22,49 @@ package net.daporkchop.fp2.gl.opengl.shader;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.lwjgl2.LWJGL2;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.shader.BaseShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import org.lwjgl.opengl.GL20;
 
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL20.*;
+import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
 public abstract class BaseShaderProgramImpl implements BaseShaderProgram {
-    protected final LWJGL2 gl;
+    protected final OpenGL gl;
     protected final int id;
 
-    public BaseShaderProgramImpl(@NonNull LWJGL2 gl, @NonNull BaseShaderImpl... shaders) throws ShaderLinkageException {
+    public BaseShaderProgramImpl(@NonNull OpenGL gl, @NonNull BaseShaderImpl... shaders) throws ShaderLinkageException {
         //allocate new shader
         this.gl = gl;
-        this.id = glCreateProgram();
+
+        GLAPI api = gl.api();
+        this.id = api.glCreateProgram();
 
         //attach shaders and link, then detach shaders again
         for (BaseShaderImpl shader : shaders) {
-            glAttachShader(this.id, shader.id);
+            api.glAttachShader(this.id, shader.id);
         }
-        glLinkProgram(this.id);
+        api.glLinkProgram(this.id);
         for (BaseShaderImpl shader : shaders) {
-            glDetachShader(this.id, shader.id);
+            api.glDetachShader(this.id, shader.id);
         }
 
         //check for errors
-        if (glGetProgrami(this.id, GL_LINK_STATUS) == GL_FALSE) {
-            String log = glGetProgramInfoLog(this.id, glGetProgrami(this.id, GL_INFO_LOG_LENGTH));
+        if (api.glGetProgrami(this.id, GL_LINK_STATUS) == GL_FALSE) {
+            String log = api.glGetProgramInfoLog(this.id);
 
             //delete program
-            glDeleteProgram(this.id);
+            api.glDeleteProgram(this.id);
 
             throw new ShaderLinkageException(log);
         }
 
         //register resource for cleaning
-        this.gl.resourceArena().register(this, this.id, GL20::glDeleteProgram);
+        this.gl.resourceArena().register(this, this.id, api::glDeleteProgram);
     }
 
     @Override

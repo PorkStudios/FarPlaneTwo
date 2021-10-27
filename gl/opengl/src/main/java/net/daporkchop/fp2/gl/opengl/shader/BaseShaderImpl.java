@@ -22,46 +22,47 @@ package net.daporkchop.fp2.gl.opengl.shader;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.lwjgl2.LWJGL2;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.shader.BaseShader;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
-import org.lwjgl.opengl.GL20;
 
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL20.*;
+import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
 public abstract class BaseShaderImpl implements BaseShader {
-    protected final LWJGL2 gl;
+    protected final OpenGL gl;
 
     protected final int type;
     protected final int id;
 
-    public BaseShaderImpl(@NonNull LWJGL2 gl, int type, @NonNull String... sources) throws ShaderCompilationException {
+    public BaseShaderImpl(@NonNull OpenGL gl, int type, @NonNull String... sources) throws ShaderCompilationException {
         //allocate new shader
         this.gl = gl;
         this.type = type;
-        this.id = glCreateShader(type);
+
+        GLAPI api = gl.api();
+        this.id = api.glCreateShader(type);
 
         //set source and compile shader
-        glShaderSource(this.id, sources);
-        glCompileShader(this.id);
+        api.glShaderSource(this.id, sources);
+        api.glCompileShader(this.id);
 
         //check for errors
-        if (glGetShaderi(this.id, GL_COMPILE_STATUS) == GL_FALSE) {
-            String log = glGetShaderInfoLog(this.id, glGetShaderi(this.id, GL_INFO_LOG_LENGTH));
+        if (api.glGetShaderi(this.id, GL_COMPILE_STATUS) == GL_FALSE) {
+            String log = api.glGetShaderInfoLog(this.id);
 
             //delete shader
-            glDeleteShader(this.id);
+            api.glDeleteShader(this.id);
 
             throw new ShaderCompilationException(log);
         }
 
         //register resource for cleaning
-        this.gl.resourceArena().register(this, this.id, GL20::glDeleteShader);
+        this.gl.resourceArena().register(this, this.id, api::glDeleteShader);
     }
 
     @Override

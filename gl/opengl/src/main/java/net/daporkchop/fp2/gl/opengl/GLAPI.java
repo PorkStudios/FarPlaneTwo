@@ -57,9 +57,9 @@ public interface GLAPI {
     //
     //
 
-    int glGenBuffers();
+    int glGenBuffer();
 
-    void glDeleteBuffers(int buffer);
+    void glDeleteBuffer(int buffer);
 
     void glBindBuffer(int target, int buffer);
 
@@ -81,9 +81,43 @@ public interface GLAPI {
 
     //
     //
+    // OpenGL 2.0
+    //
+    //
+
+    int glCreateShader(int type);
+
+    void glDeleteShader(int shader);
+
+    void glShaderSource(int shader, @NonNull CharSequence... source);
+
+    void glCompileShader(int shader);
+
+    int glGetShaderi(int shader, int pname);
+
+    String glGetShaderInfoLog(int shader);
+
+    int glCreateProgram();
+
+    void glDeleteProgram(int program);
+
+    void glAttachShader(int program, int shader);
+
+    void glDetachShader(int program, int shader);
+
+    void glLinkProgram(int program);
+
+    int glGetProgrami(int program, int pname);
+
+    String glGetProgramInfoLog(int program);
+
+    //
+    //
     // OpenGL 3.0
     //
     //
 
-    String glGetStringi(int pname, int idx);
+    int glGetInteger(int pname, int idx);
+
+    String glGetString(int pname, int idx);
 }

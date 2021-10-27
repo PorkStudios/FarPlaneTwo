@@ -31,7 +31,7 @@ public interface GLResource extends AutoCloseable {
     /**
      * Closes this resource, immediately releasing any internally allocated resources.
      * <p>
-     * If not manually closed, a resource will be automatically closed when the resource instance is garbage-collected, or when all owning {@link GLContext} contexts have been closed.
+     * If not manually closed, a resource will be automatically closed when the resource instance is garbage-collected, or when all owning {@link GL} contexts have been closed.
      */
     @Override
     void close();

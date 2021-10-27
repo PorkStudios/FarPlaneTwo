@@ -29,6 +29,7 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 import org.lwjgl.opengl.ContextCapabilities;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GLContext;
 
@@ -37,6 +38,7 @@ import java.util.Comparator;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 
 /**
  * @author DaPorkchop_
@@ -86,12 +88,12 @@ public class GLAPILWJGL2 implements GLAPI {
     //
 
     @Override
-    public int glGenBuffers() {
+    public int glGenBuffer() {
         return GL15.glGenBuffers();
     }
 
     @Override
-    public void glDeleteBuffers(int buffer) {
+    public void glDeleteBuffer(int buffer) {
         GL15.glDeleteBuffers(buffer);
     }
 
@@ -166,12 +168,88 @@ public class GLAPILWJGL2 implements GLAPI {
 
     //
     //
+    // OpenGL 2.0
+    //
+    //
+
+    @Override
+    public int glCreateShader(int type) {
+        return GL20.glCreateShader(type);
+    }
+
+    @Override
+    public void glDeleteShader(int shader) {
+        GL20.glDeleteShader(shader);
+    }
+
+    @Override
+    public void glShaderSource(int shader, @NonNull CharSequence... source) {
+        GL20.glShaderSource(shader, source);
+    }
+
+    @Override
+    public void glCompileShader(int shader) {
+        GL20.glCompileShader(shader);
+    }
+
+    @Override
+    public int glGetShaderi(int shader, int pname) {
+        return GL20.glGetShaderi(shader, pname);
+    }
+
+    @Override
+    public String glGetShaderInfoLog(int shader) {
+        return GL20.glGetShaderInfoLog(shader, GL20.glGetShaderi(shader, GL_INFO_LOG_LENGTH));
+    }
+
+    @Override
+    public int glCreateProgram() {
+        return GL20.glCreateProgram();
+    }
+
+    @Override
+    public void glDeleteProgram(int program) {
+        GL20.glDeleteProgram(program);
+    }
+
+    @Override
+    public void glAttachShader(int program, int shader) {
+        GL20.glAttachShader(program, shader);
+    }
+
+    @Override
+    public void glDetachShader(int program, int shader) {
+        GL20.glDetachShader(program, shader);
+    }
+
+    @Override
+    public void glLinkProgram(int program) {
+        GL20.glLinkProgram(program);
+    }
+
+    @Override
+    public int glGetProgrami(int program, int pname) {
+        return GL20.glGetProgrami(program, pname);
+    }
+
+    @Override
+    public String glGetProgramInfoLog(int program) {
+        return GL20.glGetProgramInfoLog(program, GL20.glGetProgrami(program, GL_INFO_LOG_LENGTH));
+    }
+
+    //
+    //
     // OpenGL 3.0
     //
     //
 
     @Override
-    public String glGetStringi(int pname, int idx) {
+    public int glGetInteger(int pname, int idx) {
+        return GL30.glGetInteger(pname, idx);
+    }
+
+    @Override
+    public String glGetString(int pname, int idx) {
         return GL30.glGetStringi(pname, idx);
     }
 }

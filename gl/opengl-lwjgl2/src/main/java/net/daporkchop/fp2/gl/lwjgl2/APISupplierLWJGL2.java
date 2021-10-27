@@ -18,21 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.shader;
+package net.daporkchop.fp2.gl.lwjgl2;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.lwjgl2.LWJGL2;
-import net.daporkchop.fp2.gl.shader.GLShaders;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
+
+import java.util.function.Supplier;
 
 /**
  * @author DaPorkchop_
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-class ShadersFactory implements LWJGL2.ModuleFactory<GLShaders> {
+class APISupplierLWJGL2 implements Supplier<GLAPI> {
     @Override
-    public GLShaders create(@NonNull LWJGL2 gl) {
-        return new ShadersCore(gl); //we assume shaders are available on all hardware
+    public GLAPI get() {
+        return new GLAPILWJGL2();
     }
 }
