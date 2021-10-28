@@ -25,6 +25,8 @@ import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.compute.GLCompute;
+import net.daporkchop.fp2.gl.index.IndexFormat;
+import net.daporkchop.fp2.gl.index.IndexFormatBuilder;
 import net.daporkchop.fp2.gl.shader.FragmentShader;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
@@ -92,9 +94,14 @@ public interface GL extends AutoCloseable {
     GLBuffer createBuffer(@NonNull BufferUsage usage);
 
     /**
+     * @return a builder for constructing a new {@link IndexFormat}
+     */
+    IndexFormatBuilder.TypeSelectionStage createIndexFormat();
+
+    /**
      * @return a builder for constructing a new {@link VertexFormat}
      */
-    VertexFormatBuilder.NameSelectionStage createVertexFormat();
+    VertexFormatBuilder.LayoutSelectionStage createVertexFormat();
 
     //
     // SHADERS

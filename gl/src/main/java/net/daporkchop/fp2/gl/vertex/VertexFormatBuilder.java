@@ -41,18 +41,6 @@ public interface VertexFormatBuilder {
     /**
      * @author DaPorkchop_
      */
-    interface NameSelectionStage {
-        /**
-         * Configures the {@link VertexAttribute}'s name.
-         *
-         * @param name the name
-         */
-        LayoutSelectionStage name(@NonNull String name);
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
     interface LayoutSelectionStage {
         /**
          * Configures the {@link VertexFormat} to use interleaved attributes.

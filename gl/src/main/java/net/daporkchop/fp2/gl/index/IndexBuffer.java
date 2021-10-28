@@ -18,63 +18,43 @@
  *
  */
 
-package net.daporkchop.fp2.gl.vertex;
+package net.daporkchop.fp2.gl.index;
 
-import lombok.RequiredArgsConstructor;
-
-import static net.daporkchop.fp2.common.util.TypeSize.*;
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.GLResource;
 
 /**
- * The different primitive types allowed to be used as a vertex attribute value.
+ * A resizable array of indices in server memory.
  *
  * @author DaPorkchop_
  */
-public interface VertexAttributeType {
+public interface IndexBuffer extends GLResource {
     /**
-     * Gets the size (in bytes) of a vertex attribute using this type with the given number of components.
-     *
-     * @param components the vertex attribute component count
-     * @return the size (in bytes)
+     * @return the {@link IndexFormat} used by this buffer
      */
-    int size(int components);
+    IndexFormat format();
 
     /**
-     * Integer vertex attribute types.
-     *
-     * @author DaPorkchop_
+     * @return the number of vertices that this buffer can store
      */
-    @RequiredArgsConstructor
-    enum Integer implements VertexAttributeType {
-        BYTE(BYTE_SIZE),
-        UNSIGNED_BYTE(BYTE_SIZE),
-        SHORT(SHORT_SIZE),
-        UNSIGNED_SHORT(SHORT_SIZE),
-        INT(INT_SIZE),
-        UNSIGNED_INT(INT_SIZE);
-
-        private final int size;
-
-        @Override
-        public int size(int components) {
-            return this.size * components;
-        }
-    }
+    int capacity();
 
     /**
-     * Floating-point vertex attribute types.
+     * Sets the capacity of this index buffer.
+     * <p>
+     * If the new capacity is less than the current capacity, the buffer's contents will be truncated. If greater than the current capacity, the
+     * data will be extended with undefined contents.
      *
-     * @author DaPorkchop_
+     * @param capacity the new capacity
      */
-    @RequiredArgsConstructor
-    enum Float implements VertexAttributeType {
-        FLOAT(FLOAT_SIZE),
-        DOUBLE(DOUBLE_SIZE);
+    void resize(int capacity);
 
-        private final int size;
-
-        @Override
-        public int size(int components) {
-            return this.size * components;
-        }
-    }
+    /**
+     * Copies the index data from the given {@link IndexWriter} into this buffer.
+     *
+     * @param startIndex the destination index for the first index
+     * @param writer     a {@link IndexWriter} containing the sequence of index data to copy
+     * @throws IllegalArgumentException if {@code writer} doesn't use {@link #format()}
+     */
+    void set(int startIndex, @NonNull IndexWriter writer);
 }

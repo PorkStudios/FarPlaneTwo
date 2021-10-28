@@ -18,63 +18,42 @@
  *
  */
 
-package net.daporkchop.fp2.gl.vertex;
+package net.daporkchop.fp2.gl.index;
 
-import lombok.RequiredArgsConstructor;
-
-import static net.daporkchop.fp2.common.util.TypeSize.*;
+import net.daporkchop.fp2.common.util.capability.CloseableResource;
 
 /**
- * The different primitive types allowed to be used as a vertex attribute value.
+ * A buffer in client memory which is used for building sequences of index data.
  *
  * @author DaPorkchop_
  */
-public interface VertexAttributeType {
+public interface IndexWriter extends CloseableResource {
     /**
-     * Gets the size (in bytes) of a vertex attribute using this type with the given number of components.
-     *
-     * @param components the vertex attribute component count
-     * @return the size (in bytes)
+     * @return the {@link IndexFormat} used by this writer
      */
-    int size(int components);
+    IndexFormat format();
 
     /**
-     * Integer vertex attribute types.
-     *
-     * @author DaPorkchop_
+     * @return the number of indices
      */
-    @RequiredArgsConstructor
-    enum Integer implements VertexAttributeType {
-        BYTE(BYTE_SIZE),
-        UNSIGNED_BYTE(BYTE_SIZE),
-        SHORT(SHORT_SIZE),
-        UNSIGNED_SHORT(SHORT_SIZE),
-        INT(INT_SIZE),
-        UNSIGNED_INT(INT_SIZE);
-
-        private final int size;
-
-        @Override
-        public int size(int components) {
-            return this.size * components;
-        }
-    }
+    int size();
 
     /**
-     * Floating-point vertex attribute types.
+     * Appends a single index to this writer.
      *
-     * @author DaPorkchop_
+     * @param index the index
      */
-    @RequiredArgsConstructor
-    enum Float implements VertexAttributeType {
-        FLOAT(FLOAT_SIZE),
-        DOUBLE(DOUBLE_SIZE);
+    IndexWriter append(int index);
 
-        private final int size;
-
-        @Override
-        public int size(int components) {
-            return this.size * components;
-        }
+    /**
+     * Appends 4 indices to this writer, forming a single quad.
+     *
+     * @param oppositeCorner the index of the vertex in the corner opposite the provoking vertex
+     * @param c0             the index of one of the edge vertices
+     * @param c1             the index of the other edge vertex
+     * @param provoking      the index of the provoking vertex
+     */
+    default IndexWriter appendQuad(int oppositeCorner, int c0, int c1, int provoking) {
+        return this.append(c1).append(oppositeCorner).append(c0).append(provoking);
     }
 }

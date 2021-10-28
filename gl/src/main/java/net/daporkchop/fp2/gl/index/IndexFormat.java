@@ -18,63 +18,32 @@
  *
  */
 
-package net.daporkchop.fp2.gl.vertex;
+package net.daporkchop.fp2.gl.index;
 
-import lombok.RequiredArgsConstructor;
-
-import static net.daporkchop.fp2.common.util.TypeSize.*;
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.buffer.BufferUsage;
 
 /**
- * The different primitive types allowed to be used as a vertex attribute value.
- *
  * @author DaPorkchop_
  */
-public interface VertexAttributeType {
+public interface IndexFormat {
     /**
-     * Gets the size (in bytes) of a vertex attribute using this type with the given number of components.
-     *
-     * @param components the vertex attribute component count
-     * @return the size (in bytes)
+     * @return the size in bytes of a single index
      */
-    int size(int components);
+    int size();
 
     /**
-     * Integer vertex attribute types.
+     * Creates a new {@link IndexWriter} using this index format.
      *
-     * @author DaPorkchop_
+     * @return a new {@link IndexWriter}
      */
-    @RequiredArgsConstructor
-    enum Integer implements VertexAttributeType {
-        BYTE(BYTE_SIZE),
-        UNSIGNED_BYTE(BYTE_SIZE),
-        SHORT(SHORT_SIZE),
-        UNSIGNED_SHORT(SHORT_SIZE),
-        INT(INT_SIZE),
-        UNSIGNED_INT(INT_SIZE);
-
-        private final int size;
-
-        @Override
-        public int size(int components) {
-            return this.size * components;
-        }
-    }
+    IndexWriter createWriter();
 
     /**
-     * Floating-point vertex attribute types.
+     * Creates a new {@link IndexBuffer} using this index format.
      *
-     * @author DaPorkchop_
+     * @param usage the {@link BufferUsage} to use for the underlying OpenGL buffers
+     * @return a new {@link IndexBuffer}
      */
-    @RequiredArgsConstructor
-    enum Float implements VertexAttributeType {
-        FLOAT(FLOAT_SIZE),
-        DOUBLE(DOUBLE_SIZE);
-
-        private final int size;
-
-        @Override
-        public int size(int components) {
-            return this.size * components;
-        }
-    }
+    IndexBuffer createBuffer(@NonNull BufferUsage usage);
 }

@@ -35,26 +35,15 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class VertexFormatBuilderImpl implements VertexFormatBuilder.NameSelectionStage, VertexFormatBuilder.LayoutSelectionStage, VertexFormatBuilder.AlignmentSelectionStage, VertexFormatBuilder {
+public class VertexFormatBuilderImpl implements VertexFormatBuilder.LayoutSelectionStage, VertexFormatBuilder.AlignmentSelectionStage, VertexFormatBuilder {
     protected final OpenGL gl;
 
-    protected String name;
     protected boolean interleaved;
     protected int alignment;
 
     protected final ImmutableMap.Builder<String, VertexAttributeImpl> attributes = ImmutableMap.builder();
     protected int size;
     protected int offset;
-
-    //
-    // NameSelectionStage
-    //
-
-    @Override
-    public LayoutSelectionStage name(@NonNull String name) {
-        this.name = name;
-        return this;
-    }
 
     //
     // LayoutSelectionStage

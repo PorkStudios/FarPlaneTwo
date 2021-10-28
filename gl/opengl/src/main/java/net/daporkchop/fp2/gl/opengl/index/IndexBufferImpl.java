@@ -18,65 +18,51 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.vertex;
+package net.daporkchop.fp2.gl.opengl.index;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
-import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.vertex.VertexBuffer;
-import net.daporkchop.fp2.gl.vertex.VertexWriter;
+import net.daporkchop.fp2.gl.index.IndexBuffer;
+import net.daporkchop.fp2.gl.index.IndexWriter;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public abstract class VertexBufferImpl implements VertexBuffer {
+public class IndexBufferImpl implements IndexBuffer {
     @Getter
-    @NonNull
-    protected final VertexFormatImpl format;
+    protected final IndexFormatImpl format;
+    protected final GLBuffer buffer;
 
     @Getter
     protected int capacity;
 
-    /**
-     * @author DaPorkchop_
-     */
-    public static class Interleaved extends VertexBufferImpl {
-        protected final long stride;
-        protected final GLBuffer buffer;
+    public IndexBufferImpl(@NonNull IndexFormatImpl format, @NonNull BufferUsage usage) {
+        this.format = format;
+        this.buffer = format.gl.createBuffer(usage);
+    }
 
-        public Interleaved(@NonNull VertexFormatImpl format, @NonNull BufferUsage usage) {
-            super(format);
+    @Override
+    public void resize(int capacity) {
+        this.capacity = notNegative(capacity, "capacity");
+        this.buffer.resize(this.capacity * (long) this.format.size());
+    }
 
-            this.stride = format.size();
-            this.buffer = format.gl.createBuffer(usage);
-        }
+    @Override
+    public void close() {
+        this.buffer.close();
+    }
 
-        @Override
-        public void close() {
-            this.buffer.close();
-        }
+    @Override
+    public void set(int startIndex, @NonNull IndexWriter writerIn) {
+        IndexWriterImpl writer = (IndexWriterImpl) writerIn;
+        checkArg(writer.format() == this.format, "mismatched index formats!");
+        checkRangeLen(this.capacity, startIndex, writer.size());
 
-        @Override
-        public void resize(int capacity) {
-            this.capacity = capacity;
-
-            this.buffer.capacity(capacity * this.stride);
-        }
-
-        @Override
-        public void set(int startIndex, @NonNull VertexWriter writerIn) {
-            VertexWriterImpl.Interleaved writer = (VertexWriterImpl.Interleaved) writerIn;
-            checkArg(writer.format() == this.format, "mismatched vertex formats!");
-            checkRangeLen(this.capacity, startIndex, writer.size());
-
-            this.buffer.uploadRange(startIndex * this.stride, writer.addr, writer.size() * this.stride);
-        }
+        long size = this.format.size();
+        this.buffer.uploadRange(startIndex * size, writer.addr, writer.size() * size);
     }
 }

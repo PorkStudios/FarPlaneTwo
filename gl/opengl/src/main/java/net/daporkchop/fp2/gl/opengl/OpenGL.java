@@ -33,8 +33,10 @@ import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.compute.GLCompute;
+import net.daporkchop.fp2.gl.index.IndexFormatBuilder;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.compute.ComputeCore;
+import net.daporkchop.fp2.gl.opengl.index.IndexFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.FragmentShaderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderProgramImpl;
 import net.daporkchop.fp2.gl.opengl.shader.VertexShaderImpl;
@@ -130,7 +132,12 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public VertexFormatBuilder.NameSelectionStage createVertexFormat() {
+    public IndexFormatBuilder.TypeSelectionStage createIndexFormat() {
+        return new IndexFormatBuilderImpl(this);
+    }
+
+    @Override
+    public VertexFormatBuilder.LayoutSelectionStage createVertexFormat() {
         return new VertexFormatBuilderImpl(this);
     }
 

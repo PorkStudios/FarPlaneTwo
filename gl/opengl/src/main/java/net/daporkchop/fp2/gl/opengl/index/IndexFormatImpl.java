@@ -18,63 +18,33 @@
  *
  */
 
-package net.daporkchop.fp2.gl.vertex;
+package net.daporkchop.fp2.gl.opengl.index;
 
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-
-import static net.daporkchop.fp2.common.util.TypeSize.*;
+import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.index.IndexBuffer;
+import net.daporkchop.fp2.gl.index.IndexFormat;
+import net.daporkchop.fp2.gl.index.IndexType;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
 
 /**
- * The different primitive types allowed to be used as a vertex attribute value.
- *
  * @author DaPorkchop_
  */
-public interface VertexAttributeType {
-    /**
-     * Gets the size (in bytes) of a vertex attribute using this type with the given number of components.
-     *
-     * @param components the vertex attribute component count
-     * @return the size (in bytes)
-     */
-    int size(int components);
+@RequiredArgsConstructor
+public abstract class IndexFormatImpl implements IndexFormat {
+    @NonNull
+    protected final OpenGL gl;
+    @NonNull
+    protected final IndexType type;
 
-    /**
-     * Integer vertex attribute types.
-     *
-     * @author DaPorkchop_
-     */
-    @RequiredArgsConstructor
-    enum Integer implements VertexAttributeType {
-        BYTE(BYTE_SIZE),
-        UNSIGNED_BYTE(BYTE_SIZE),
-        SHORT(SHORT_SIZE),
-        UNSIGNED_SHORT(SHORT_SIZE),
-        INT(INT_SIZE),
-        UNSIGNED_INT(INT_SIZE);
-
-        private final int size;
-
-        @Override
-        public int size(int components) {
-            return this.size * components;
-        }
+    @Override
+    public int size() {
+        return this.type.size();
     }
 
-    /**
-     * Floating-point vertex attribute types.
-     *
-     * @author DaPorkchop_
-     */
-    @RequiredArgsConstructor
-    enum Float implements VertexAttributeType {
-        FLOAT(FLOAT_SIZE),
-        DOUBLE(DOUBLE_SIZE);
-
-        private final int size;
-
-        @Override
-        public int size(int components) {
-            return this.size * components;
-        }
+    @Override
+    public IndexBuffer createBuffer(@NonNull BufferUsage usage) {
+        return new IndexBufferImpl(this, usage);
     }
 }
