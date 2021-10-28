@@ -18,12 +18,10 @@
  *
  */
 
-package net.daporkchop.fp2.util.alloc;
+package net.daporkchop.fp2.common.util.alloc;
 
 import it.unimi.dsi.fastutil.objects.ReferenceLinkedOpenHashSet;
 import lombok.NonNull;
-import net.daporkchop.fp2.debug.util.DebugStats;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
 
 import java.util.BitSet;
 import java.util.NavigableMap;
@@ -116,19 +114,6 @@ public final class FragmentedFixedSizeAllocator implements Allocator {
             checkState(this.nonFullArenas.remove(arena));
             this.allocator.free(arena.startAddr);
         }
-    }
-
-    @DebugOnly
-    @Override
-    public DebugStats.Allocator stats() {
-        long allocations = this.allArenas.values().stream().mapToLong(Arena::cardinality).sum();
-
-        return DebugStats.Allocator.builder()
-                .heapRegions(this.allArenas.size())
-                .totalSpace(this.allArenas.size() * this.blockSize * this.arenaCapacity)
-                .allocations(allocations)
-                .allocatedSpace(allocations * this.blockSize)
-                .build();
     }
 
     /**

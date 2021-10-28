@@ -26,7 +26,7 @@ import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
-import net.daporkchop.fp2.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.RenderGlobal;

@@ -52,12 +52,24 @@ public interface VertexAttributeBuilder<V extends VertexAttribute> {
      * @author DaPorkchop_
      */
     interface TypeSelectionStage {
-        VertexAttributeBuilder<VertexAttribute.Int1> int1();
+        InterpretationSelectionStage<VertexAttribute.Int1> int1(@NonNull VertexAttributeType.Integer type);
 
-        VertexAttributeBuilder<VertexAttribute.Int2> int2();
+        InterpretationSelectionStage<VertexAttribute.Int2> int2(@NonNull VertexAttributeType.Integer type);
 
-        VertexAttributeBuilder<VertexAttribute.Int3> int3();
+        InterpretationSelectionStage<VertexAttribute.Int3> int3(@NonNull VertexAttributeType.Integer type);
 
-        VertexAttributeBuilder<VertexAttribute.Int4> int4();
+        InterpretationSelectionStage<VertexAttribute.Int4> int4(@NonNull VertexAttributeType.Integer type);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    interface InterpretationSelectionStage<V extends VertexAttribute> {
+        /**
+         * Configures the type that this vertex attribute will be interpreted as.
+         *
+         * @param interpretation the interpretation
+         */
+        VertexAttributeBuilder<V> interpretation(@NonNull VertexAttributeInterpretation interpretation);
     }
 }

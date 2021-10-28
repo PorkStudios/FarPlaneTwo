@@ -25,9 +25,6 @@ import net.daporkchop.fp2.common.util.capability.CloseableResource;
 
 /**
  * A buffer in client memory which is used for building sequences of vertex data.
- * <p>
- * Attribute values may only be written when a vertex is currently active (more precisely, between calls to {@link #beginEmptyVertex()}/{@link #beginCopiedVertex(int)} and
- * {@link #endVertex()}). Attempting to do otherwise will result in undefined behavior.
  *
  * @author DaPorkchop_
  */
@@ -43,27 +40,18 @@ public interface VertexWriter extends CloseableResource {
     int size();
 
     /**
-     * Appends a new vertex to the buffer and begins writing to it.
-     * <p>
-     * All attribute values in the new vertex are undefined.
-     */
-    VertexWriter beginEmptyVertex();
-
-    /**
-     * Appends a new vertex to the buffer and begins writing to it.
-     * <p>
-     * All attribute values in the new vertex are copied from the vertex with the given index.
-     *
-     * @param srcVertexIndex the index of the vertex from which attribute values are to be copied
-     */
-    VertexWriter beginCopiedVertex(int srcVertexIndex);
-
-    /**
-     * Finishes writing to the current vertex.
+     * Ends the current vertex and starts a new one.
      *
      * @return the index of the completed vertex
      */
     int endVertex();
+
+    /**
+     * Copies all attribute values from the given vertex to the current vertex.
+     *
+     * @param srcVertexIndex the index of the vertex from which attribute values are to be copied
+     */
+    VertexWriter copyFrom(int srcVertexIndex);
 
     /**
      * Sets the given {@link VertexAttribute.Int1} of the current vertex to the given value.
@@ -123,10 +111,10 @@ public interface VertexWriter extends CloseableResource {
      * @param attrib the {@link VertexAttribute.Int4}
      * @param argb   the ARGB8888 value. the 4 color channels correspond to the 4 components as follows:<br>
      *               <ul>
-     *                   <li>A {@code ->} 0</li>
-     *                   <li>R {@code ->} 1</li>
-     *                   <li>G {@code ->} 2</li>
-     *                   <li>B {@code ->} 3</li>
+     *                   <li>A {@code ->} 3</li>
+     *                   <li>R {@code ->} 0</li>
+     *                   <li>G {@code ->} 1</li>
+     *                   <li>B {@code ->} 2</li>
      *               </ul>
      */
     VertexWriter setARGB(@NonNull VertexAttribute.Int4 attrib, int argb);

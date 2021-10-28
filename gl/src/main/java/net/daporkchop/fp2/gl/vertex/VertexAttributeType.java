@@ -27,25 +27,52 @@ import lombok.RequiredArgsConstructor;
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public enum VertexAttributeType {
-    BYTE(Byte.BYTES),
-    UNSIGNED_BYTE(Byte.BYTES),
-    SHORT(Short.BYTES),
-    UNSIGNED_SHORT(Short.BYTES),
-    INT(Integer.BYTES),
-    UNSIGNED_INT(Integer.BYTES),
-    FLOAT(Float.BYTES);
-
-    private final int size;
-
+public interface VertexAttributeType {
     /**
      * Gets the size (in bytes) of a vertex attribute using this type with the given number of components.
      *
      * @param components the vertex attribute component count
      * @return the size (in bytes)
      */
-    public int size(int components) {
-        return this.size * components;
+    int size(int components);
+
+    /**
+     * Integer vertex attribute types.
+     *
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    enum Integer implements VertexAttributeType {
+        BYTE(Byte.BYTES),
+        UNSIGNED_BYTE(Byte.BYTES),
+        SHORT(Short.BYTES),
+        UNSIGNED_SHORT(Short.BYTES),
+        INT(java.lang.Integer.BYTES),
+        UNSIGNED_INT(java.lang.Integer.BYTES);
+
+        private final int size;
+
+        @Override
+        public int size(int components) {
+            return this.size * components;
+        }
+    }
+
+    /**
+     * Floating-point vertex attribute types.
+     *
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    enum Float implements VertexAttributeType {
+        FLOAT(java.lang.Float.BYTES),
+        DOUBLE(Double.BYTES);
+
+        private final int size;
+
+        @Override
+        public int size(int components) {
+            return this.size * components;
+        }
     }
 }

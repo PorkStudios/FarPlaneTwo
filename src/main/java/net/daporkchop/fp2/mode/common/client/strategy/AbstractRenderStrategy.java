@@ -30,8 +30,8 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
-import net.daporkchop.fp2.util.alloc.Allocator;
-import net.daporkchop.fp2.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.common.util.alloc.Allocator;
+import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 

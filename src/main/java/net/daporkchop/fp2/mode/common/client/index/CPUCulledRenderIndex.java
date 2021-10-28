@@ -30,7 +30,7 @@ import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
-import net.daporkchop.fp2.util.alloc.Allocator;
+import net.daporkchop.fp2.common.util.alloc.Allocator;
 
 import java.util.function.IntPredicate;
 

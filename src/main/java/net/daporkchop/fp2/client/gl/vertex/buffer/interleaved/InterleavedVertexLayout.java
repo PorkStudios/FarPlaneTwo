@@ -28,7 +28,7 @@ import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
 import net.daporkchop.fp2.client.gl.vertex.buffer.AbstractVertexLayout;
 import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuffer;
 import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
-import net.daporkchop.fp2.util.alloc.Allocator;
+import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.lib.common.util.PValidation.*;

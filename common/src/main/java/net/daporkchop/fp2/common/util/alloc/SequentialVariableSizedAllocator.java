@@ -18,15 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.util.alloc;
+package net.daporkchop.fp2.common.util.alloc;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectRBTreeMap;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import net.daporkchop.fp2.debug.util.DebugStats;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.common.math.PMath;
 
 import java.util.Comparator;
@@ -181,17 +179,6 @@ public final class SequentialVariableSizedAllocator implements Allocator {
             this.emptyNodes.add(this.tail);
         }
         return true;
-    }
-
-    @DebugOnly
-    @Override
-    public DebugStats.Allocator stats() {
-        return DebugStats.Allocator.builder()
-                .heapRegions(1L)
-                .totalSpace(this.capacity)
-                .allocations(this.usedNodes.size())
-                .allocatedSpace(this.usedNodes.values().stream().mapToLong(Node::size).sum())
-                .build();
     }
 
     /**

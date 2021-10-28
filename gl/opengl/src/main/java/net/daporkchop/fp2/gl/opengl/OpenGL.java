@@ -38,11 +38,13 @@ import net.daporkchop.fp2.gl.opengl.compute.ComputeCore;
 import net.daporkchop.fp2.gl.opengl.shader.FragmentShaderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderProgramImpl;
 import net.daporkchop.fp2.gl.opengl.shader.VertexShaderImpl;
+import net.daporkchop.fp2.gl.opengl.vertex.VertexFormatBuilderImpl;
 import net.daporkchop.fp2.gl.shader.FragmentShader;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.VertexShader;
+import net.daporkchop.fp2.gl.vertex.VertexFormatBuilder;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -126,6 +128,15 @@ public class OpenGL implements GL {
     public GLBuffer createBuffer(@NonNull BufferUsage usage) {
         return new GLBufferImpl(this, usage);
     }
+
+    @Override
+    public VertexFormatBuilder.NameSelectionStage createVertexFormat() {
+        return new VertexFormatBuilderImpl(this);
+    }
+
+    //
+    // SHADERS
+    //
 
     @Override
     public VertexShader compileVertexShader(@NonNull String source) throws ShaderCompilationException {

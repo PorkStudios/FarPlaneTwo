@@ -32,13 +32,11 @@ import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexLayout;
 import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.mode.common.client.bake.AbstractMultipassBakeOutputStorage;
 import net.daporkchop.fp2.mode.common.client.bake.IMultipassBakeOutputStorage;
-import net.daporkchop.fp2.util.alloc.Allocator;
-import net.daporkchop.fp2.util.alloc.SequentialFixedSizeAllocator;
-import net.daporkchop.fp2.util.alloc.SequentialVariableSizedAllocator;
+import net.daporkchop.fp2.common.util.alloc.Allocator;
+import net.daporkchop.fp2.common.util.alloc.SequentialFixedSizeAllocator;
+import net.daporkchop.fp2.common.util.alloc.SequentialVariableSizedAllocator;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.unsafe.PUnsafe;
-
-import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -229,8 +227,11 @@ public class MultipassIndexedBakeOutputStorage extends AbstractMultipassBakeOutp
     @DebugOnly
     @Override
     public DebugStats.Renderer stats() {
-        DebugStats.Allocator vertexStats = this.vertexAlloc.stats();
-        DebugStats.Allocator indexStats = Stream.of(this.indexAllocs).map(Allocator::stats).reduce(DebugStats.Allocator.ZERO, DebugStats.Allocator::add);
+        //TODO: this
+        //DebugStats.Allocator vertexStats = this.vertexAlloc.stats();
+        //DebugStats.Allocator indexStats = Stream.of(this.indexAllocs).map(Allocator::stats).reduce(DebugStats.Allocator.ZERO, DebugStats.Allocator::add);
+        DebugStats.Allocator vertexStats = DebugStats.Allocator.ZERO;
+        DebugStats.Allocator indexStats = DebugStats.Allocator.ZERO;
 
         long vertexSize = this.vertexBuffer.layout().format().vertexSize();
         long indexSize = this.indexSize;

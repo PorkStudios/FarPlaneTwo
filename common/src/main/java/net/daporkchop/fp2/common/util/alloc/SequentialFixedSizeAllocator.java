@@ -18,11 +18,9 @@
  *
  */
 
-package net.daporkchop.fp2.util.alloc;
+package net.daporkchop.fp2.common.util.alloc;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.debug.util.DebugStats;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
 
 import java.util.BitSet;
 
@@ -89,16 +87,5 @@ public final class SequentialFixedSizeAllocator extends BitSet implements Alloca
         if (slot < this.fromIndex) {
             this.fromIndex = slot;
         }
-    }
-
-    @DebugOnly
-    @Override
-    public DebugStats.Allocator stats() {
-        return DebugStats.Allocator.builder()
-                .heapRegions(1L)
-                .totalSpace(this.capacity * this.blockSize)
-                .allocations(this.cardinality())
-                .allocatedSpace(this.cardinality() * this.blockSize)
-                .build();
     }
 }

@@ -18,41 +18,22 @@
  *
  */
 
-package net.daporkchop.fp2.gl.vertex;
+package net.daporkchop.fp2.common.util;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
-
-import java.util.Map;
+import lombok.experimental.UtilityClass;
 
 /**
- * A group of {@link VertexAttribute}s which defines their layout in memory.
+ * Container class with constant values for primitive type sizes.
  *
  * @author DaPorkchop_
  */
-public interface VertexFormat {
-    /**
-     * @return all of the {@link VertexAttribute}s in this format
-     */
-    Map<String, VertexAttribute> attribs();
-
-    /**
-     * @return the size in bytes of a single vertex
-     */
-    int size();
-
-    /**
-     * Creates a new {@link VertexWriter} using this vertex format.
-     *
-     * @return a new {@link VertexWriter}
-     */
-    VertexWriter createWriter();
-
-    /**
-     * Creates a new {@link VertexBuffer} using this vertex format.
-     *
-     * @param usage the {@link BufferUsage} to use for the underlying OpenGL buffers
-     * @return a new {@link VertexBuffer}
-     */
-    VertexBuffer createBuffer(@NonNull BufferUsage usage);
+@UtilityClass
+public class TypeSize {
+    public static final int BYTE_SIZE = Byte.BYTES;
+    public static final int SHORT_SIZE = Short.BYTES;
+    public static final int CHAR_SIZE = Character.BYTES;
+    public static final int INT_SIZE = Integer.BYTES;
+    public static final int LONG_SIZE = Long.BYTES;
+    public static final int FLOAT_SIZE = Float.BYTES;
+    public static final int DOUBLE_SIZE = Double.BYTES;
 }

@@ -23,7 +23,7 @@ package net.daporkchop.fp2.client.gl.command.elements.buffer;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.DrawMode;
 import net.daporkchop.fp2.client.gl.ElementType;
-import net.daporkchop.fp2.util.alloc.Allocator;
+import net.daporkchop.fp2.common.util.alloc.Allocator;
 
 import static org.lwjgl.opengl.GL43.*;
 

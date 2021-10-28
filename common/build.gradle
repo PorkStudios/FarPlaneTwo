@@ -20,7 +20,9 @@
 
 dependencies {
     shade "net.daporkchop.lib:common:$porklibVersion"
+    shade "net.daporkchop.lib:primitive:$porklibVersion"
 
-    compile "com.google.guava:guava:$guavaVersion"
     compile "org.ow2.asm:asm-debug-all:$asmVersion"
+    compile "it.unimi.dsi:fastutil:$fastutilVersion"
+    compile "com.google.guava:guava:$guavaVersion"
 }

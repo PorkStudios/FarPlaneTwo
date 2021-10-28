@@ -23,7 +23,7 @@ package net.daporkchop.fp2.client.gl.vertex.buffer.interleaved;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.vertex.attribute.IVertexAttribute;
 import net.daporkchop.fp2.client.gl.vertex.buffer.AbstractVertexBuilder;
-import net.daporkchop.fp2.util.alloc.Allocator;
+import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.lib.common.util.PValidation.*;

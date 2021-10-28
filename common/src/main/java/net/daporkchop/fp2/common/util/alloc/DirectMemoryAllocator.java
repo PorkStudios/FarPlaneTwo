@@ -18,11 +18,9 @@
  *
  */
 
-package net.daporkchop.fp2.util.alloc;
+package net.daporkchop.fp2.common.util.alloc;
 
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.debug.util.DebugStats;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.primitive.map.LongLongMap;
 import net.daporkchop.lib.primitive.map.concurrent.LongLongConcurrentHashMap;
 import net.daporkchop.lib.unsafe.PCleaner;
@@ -31,7 +29,6 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 import java.util.function.LongConsumer;
 import java.util.stream.StreamSupport;
 
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -42,7 +39,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public final class DirectMemoryAllocator implements Allocator {
-    protected final LongLongMap allocations = new LongLongConcurrentHashMap(-1L); //TODO: replace this with a ConcurrentSkipListMap once PorkLib supports it
+    protected final LongLongMap allocations = new LongLongConcurrentHashMap(-1L); //TODO: replace this with a LongLongConcurrentSkipListMap once PorkLib supports it
 
     protected final boolean zero;
 
@@ -95,30 +92,6 @@ public final class DirectMemoryAllocator implements Allocator {
         PUnsafe.freeMemory(address);
     }
 
-    @DebugOnly
-    @Override
-    public DebugStats.Allocator stats() {
-        @DebugOnly
-        class State implements LongConsumer {
-            long size = 0L;
-            long count = 0L;
-
-            @Override
-            public void accept(long size) {
-                this.size += size;
-                this.count++;
-            }
-        }
-
-        State state = new State();
-        this.allocations.values().forEach(state);
-
-        return DebugStats.Allocator.builder()
-                .allocatedSpace(state.size).totalSpace(state.size)
-                .heapRegions(state.count).allocations(state.count)
-                .build();
-    }
-
     /**
      * Cleans up any memory allocated by a {@link DirectMemoryAllocator} which wasn't freed.
      *
@@ -134,7 +107,7 @@ public final class DirectMemoryAllocator implements Allocator {
                 return;
             }
 
-            bigWarning("%d memory blocks allocated by %s (totalling %d bytes) were not freed!",
+            System.err.printf("%d memory blocks allocated by %s (totalling %d bytes) were not freed!\n",
                     this.allocations.size(), DirectMemoryAllocator.class.getCanonicalName(), StreamSupport.stream(this.allocations.values().spliterator(), false).mapToLong(Long::longValue).sum());
             this.allocations.keySet().forEach((LongConsumer) PUnsafe::freeMemory);
         }

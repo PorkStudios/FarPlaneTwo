@@ -18,11 +18,9 @@
  *
  */
 
-package net.daporkchop.fp2.util.alloc;
+package net.daporkchop.fp2.common.util.alloc;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.debug.util.DebugStats;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.common.math.PMath;
 
 import java.util.function.LongConsumer;
@@ -65,9 +63,6 @@ public interface Allocator {
      * @param address the starting address of the region to free
      */
     void free(long address);
-
-    @DebugOnly
-    DebugStats.Allocator stats();
 
     /**
      * A callback function which computes the next size to grow the data to.

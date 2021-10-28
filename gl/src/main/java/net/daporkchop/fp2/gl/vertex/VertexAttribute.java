@@ -32,11 +32,6 @@ public interface VertexAttribute {
     String name();
 
     /**
-     * @return the number of components in this vertex attribute
-     */
-    int components();
-
-    /**
      * @return this vertex attribute's type
      */
     VertexAttributeType type();
@@ -47,15 +42,16 @@ public interface VertexAttribute {
     VertexAttributeInterpretation interpretation();
 
     /**
+     * @return the number of components in this vertex attribute
+     */
+    int components();
+
+    /**
      * A vertex attribute consisting of a single integer component.
      *
      * @author DaPorkchop_
      */
     interface Int1 extends VertexAttribute {
-        @Override
-        default int components() {
-            return 1;
-        }
     }
 
     /**
@@ -64,10 +60,6 @@ public interface VertexAttribute {
      * @author DaPorkchop_
      */
     interface Int2 extends VertexAttribute {
-        @Override
-        default int components() {
-            return 2;
-        }
     }
 
     /**
@@ -76,10 +68,6 @@ public interface VertexAttribute {
      * @author DaPorkchop_
      */
     interface Int3 extends VertexAttribute {
-        @Override
-        default int components() {
-            return 3;
-        }
     }
 
     /**
@@ -88,9 +76,5 @@ public interface VertexAttribute {
      * @author DaPorkchop_
      */
     interface Int4 extends VertexAttribute {
-        @Override
-        default int components() {
-            return 4;
-        }
     }
 }

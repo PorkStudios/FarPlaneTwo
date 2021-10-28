@@ -24,7 +24,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
-import net.daporkchop.fp2.util.alloc.Allocator;
+import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
