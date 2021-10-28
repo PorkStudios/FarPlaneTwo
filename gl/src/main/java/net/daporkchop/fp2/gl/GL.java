@@ -30,6 +30,8 @@ import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.VertexShader;
+import net.daporkchop.fp2.gl.vertex.VertexFormat;
+import net.daporkchop.fp2.gl.vertex.VertexFormatBuilder;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -88,6 +90,11 @@ public interface GL extends AutoCloseable {
      * @return a new {@link GLBuffer}
      */
     GLBuffer createBuffer(@NonNull BufferUsage usage);
+
+    /**
+     * @return a builder for constructing a new {@link VertexFormat}
+     */
+    VertexFormatBuilder.NameSelectionStage createVertexFormat();
 
     //
     // SHADERS
