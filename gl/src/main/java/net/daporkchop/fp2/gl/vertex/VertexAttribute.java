@@ -32,11 +32,6 @@ public interface VertexAttribute {
     String name();
 
     /**
-     * @return whether or not this vertex attribute is global
-     */
-    boolean global();
-
-    /**
      * @return the number of components in this vertex attribute
      */
     int components();

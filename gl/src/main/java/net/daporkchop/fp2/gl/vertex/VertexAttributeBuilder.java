@@ -45,22 +45,7 @@ public interface VertexAttributeBuilder<V extends VertexAttribute> {
          *
          * @param name the name
          */
-        GlobalSelectionStage name(@NonNull String name);
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    interface GlobalSelectionStage {
-        /**
-         * Configures the {@link VertexAttribute} to be global.
-         */
-        TypeSelectionStage global();
-
-        /**
-         * Configures the {@link VertexAttribute} to be local.
-         */
-        TypeSelectionStage local();
+        TypeSelectionStage name(@NonNull String name);
     }
 
     /**

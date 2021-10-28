@@ -20,6 +20,8 @@
 
 package net.daporkchop.fp2.gl;
 
+import net.daporkchop.fp2.common.util.capability.CloseableResource;
+
 /**
  * An arbitrary OpenGL resource.
  * <p>
@@ -27,11 +29,11 @@ package net.daporkchop.fp2.gl;
  *
  * @author DaPorkchop_
  */
-public interface GLResource extends AutoCloseable {
+public interface GLResource extends CloseableResource {
     /**
-     * Closes this resource, immediately releasing any internally allocated resources.
+     * {@inheritDoc}
      * <p>
-     * If not manually closed, a resource will be automatically closed when the resource instance is garbage-collected, or when all owning {@link GL} contexts have been closed.
+     * A {@link GLResource} will be implicitly closed when the instance is garbage-collected, {@strong or} when all owning {@link GL} contexts have been closed.
      */
     @Override
     void close();

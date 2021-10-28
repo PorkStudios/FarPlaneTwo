@@ -18,35 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.gl.vertex;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.GLResource;
+package net.daporkchop.fp2.common.util.capability;
 
 /**
- * A container which is able to store multiple {@link VertexBuffer}s.
- * <p>
- * This is conceptually implemented as an array of "slots" and an array of vertices, where a vertex consists of all local attribute values, and a slot consists of all global attribute
- * values as well as a reference to a range of the vertices array.
- *
  * @author DaPorkchop_
  */
-public interface VertexStorageSingle extends GLResource {
+public interface CloseableResource extends AutoCloseable {
     /**
-     * @return the {@link VertexFormat} used by this storage
+     * Closes this resource, immediately releasing any internally allocated resources.
+     * <p>
+     * Once closed, all of this instance's methods will produce undefined behavior when called.
+     * <p>
+     * If not manually closed, a resource will be implicitly closed when the instance is garbage-collected.
      */
-    VertexFormat format();
-
-    /**
-     * Stores the data in the given {@link VertexBuffer} in this storage.
-     *
-     * @param buffer the {@link VertexBuffer} whose data should be stored
-     * @return a handle which can be used to reference the inserted data in this storage
-     */
-    void set(@NonNull VertexBuffer buffer);
-
-    /**
-     * Clears this vertex storage, releasing
-     */
-    void clear();
+    @Override
+    void close();
 }
