@@ -25,6 +25,8 @@ import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.compute.GLCompute;
+import net.daporkchop.fp2.gl.draw.DrawBinding;
+import net.daporkchop.fp2.gl.draw.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.index.IndexFormat;
 import net.daporkchop.fp2.gl.index.IndexFormatBuilder;
 import net.daporkchop.fp2.gl.shader.FragmentShader;
@@ -45,17 +47,10 @@ import java.util.function.Supplier;
  */
 public interface GL extends AutoCloseable {
     /**
-     * Creates a new {@link GL} instance which wraps the currently active OpenGL context.
-     * <p>
-     * The returned {@link GL} will not own the current context. Closing it will release any resources allocated by this {@link GL} instance, but the rest of the context will not
-     * be unaffected.
-     *
-     * @return a new {@link GL} instance which wraps the currently active OpenGL context
+     * @return a new {@link GLBuilder}
      */
-    static GL wrapCurrent() {
-        return GlobalProperties.find(GL.class, "gl")
-                .<Supplier<Factory>>getInstanceCached("factory.supplier").get()
-                .wrapCurrent();
+    static GLBuilder.ResourceStage builder() {
+        return GlobalProperties.find(GL.class, "gl").<Supplier<GLBuilder.ResourceStage>>getInstanceCached("builder.supplier").get();
     }
 
     //
@@ -103,6 +98,11 @@ public interface GL extends AutoCloseable {
      */
     VertexFormatBuilder.LayoutSelectionStage createVertexFormat();
 
+    /**
+     * @return a builder for constructing a new {@link DrawBinding}
+     */
+    DrawBindingBuilder.ProgramStage createDrawBinding();
+
     //
     // SHADERS
     //
@@ -143,16 +143,4 @@ public interface GL extends AutoCloseable {
      * @return the module for accessing compute shaders
      */
     GLCompute compute();
-
-    /**
-     * Supplies implementations of {@link GL}.
-     *
-     * @author DaPorkchop_
-     */
-    interface Factory {
-        /**
-         * @see GL#wrapCurrent()
-         */
-        GL wrapCurrent();
-    }
 }

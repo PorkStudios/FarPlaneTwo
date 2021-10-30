@@ -18,53 +18,70 @@
  *
  */
 
-package net.daporkchop.fp2.gl.vertex;
+package net.daporkchop.fp2.gl.draw;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.index.IndexBuffer;
+import net.daporkchop.fp2.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.gl.vertex.VertexBuffer;
 
 /**
- * Builder for a {@link VertexFormat}.
+ * Builder for {@link DrawBinding}s.
  *
+ * @param <B> the type of {@link DrawBinding} to construct
  * @author DaPorkchop_
  */
-public interface VertexFormatBuilder {
+public interface DrawBindingBuilder<B extends DrawBinding> {
     /**
-     * @return a builder for constructing a new {@link VertexAttribute} which, when built, will belong to the constructed {@link VertexFormat}
+     * @return the constructed {@link B}
      */
-    VertexAttributeBuilder.NameSelectionStage attrib();
-
-    /**
-     * @return the constructed {@link VertexFormat}
-     */
-    VertexFormat build();
+    B build();
 
     /**
      * @author DaPorkchop_
      */
-    interface LayoutSelectionStage {
+    interface ProgramStage {
         /**
-         * Configures the {@link VertexFormat} to use interleaved attributes.
+         * Configures the {@link ShaderProgram} to bind the data for.
+         *
+         * @param program the program
          */
-        AlignmentSelectionStage interleaved();
-
-        /**
-         * Configures the {@link VertexFormat} to use one buffer per attribute.
-         */
-        AlignmentSelectionStage separate();
+        GlobalsStage forProgram(@NonNull ShaderProgram program);
     }
 
     /**
      * @author DaPorkchop_
      */
-    interface AlignmentSelectionStage {
+    interface GlobalsStage {
         /**
-         * Configures the {@link VertexFormat} to align each attribute to multiples of the given byte count.
+         * Defines the {@link VertexBuffer}(s) which contain the global vertex attributes.
          *
-         * @param alignment the target attribute alignment (in bytes)
+         * @param globalss the global vertex attributes
          */
-        VertexFormatBuilder alignedTo(int alignment);
+        LocalsStage withGlobals(@NonNull VertexBuffer... globalss);
+    }
 
+    /**
+     * @author DaPorkchop_
+     */
+    interface LocalsStage {
         /**
-         * Configures the {@link VertexFormat} not to do any specific alignment of vertex attributes.
+         * Defines the {@link VertexBuffer}(s) which contain the local vertex attributes.
+         *
+         * @param localss the local vertex attributes
          */
-        VertexFormatBuilder notAligned();
+        OptionallyIndexedStage withLocals(@NonNull VertexBuffer... localss);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    interface OptionallyIndexedStage extends DrawBindingBuilder<DrawBinding> {
+        /**
+         * Defines the {@link IndexBuffer} which contains the index data.
+         *
+         * @param indices the index data
+         */
+        DrawBindingBuilder<DrawBindingIndexed> withIndexes(@NonNull IndexBuffer indices);
     }
 }

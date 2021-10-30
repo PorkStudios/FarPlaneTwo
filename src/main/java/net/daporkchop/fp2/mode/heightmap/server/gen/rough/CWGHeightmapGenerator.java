@@ -26,8 +26,8 @@ import net.daporkchop.fp2.compat.cwg.CWGContext;
 import net.daporkchop.fp2.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
-import net.daporkchop.lib.common.ref.Ref;
-import net.daporkchop.lib.common.ref.ThreadRef;
+import net.daporkchop.lib.common.reference.ReferenceStrength;
+import net.daporkchop.lib.common.reference.cache.Cached;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.world.WorldServer;
@@ -61,13 +61,13 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
         return (x - HMAP_MIN) * HMAP_SIZE + z - HMAP_MIN;
     }
 
-    protected final Ref<CWGContext> ctx;
-    protected final Ref<double[]> hmapCache = ThreadRef.soft(() -> new double[sq(HMAP_SIZE)]);
+    protected final Cached<CWGContext> ctx;
+    protected final Cached<double[]> hmapCache = Cached.threadLocal(() -> new double[sq(HMAP_SIZE)], ReferenceStrength.WEAK);
 
     public CWGHeightmapGenerator(@NonNull WorldServer world) {
         super(world);
 
-        this.ctx = ThreadRef.soft(() -> new CWGContext(world, HMAP_SIZE, 2));
+        this.ctx = Cached.threadLocal(() -> new CWGContext(world, HMAP_SIZE, 2), ReferenceStrength.WEAK);
     }
 
     @Override

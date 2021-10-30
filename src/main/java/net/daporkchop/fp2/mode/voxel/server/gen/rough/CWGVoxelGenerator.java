@@ -28,8 +28,8 @@ import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.lib.common.ref.Ref;
-import net.daporkchop.lib.common.ref.ThreadRef;
+import net.daporkchop.lib.common.reference.ReferenceStrength;
+import net.daporkchop.lib.common.reference.cache.Cached;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.world.WorldServer;
@@ -43,12 +43,12 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> implements IFarGeneratorRough<VoxelPos, VoxelTile> {
-    protected final Ref<CWGContext> ctx;
+    protected final Cached<CWGContext> ctx;
 
     public CWGVoxelGenerator(@NonNull WorldServer world) {
         super(world);
 
-        this.ctx = ThreadRef.soft(() -> new CWGContext(world, CACHE_SIZE, 2));
+        this.ctx = Cached.threadLocal(() -> new CWGContext(world, CACHE_SIZE, 2), ReferenceStrength.WEAK);
     }
 
     @Override

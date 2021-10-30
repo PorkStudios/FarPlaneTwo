@@ -20,24 +20,33 @@
 
 package net.daporkchop.fp2.gl.opengl;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.gl.GL;
-
-import java.util.function.Supplier;
+import net.daporkchop.fp2.gl.GLBuilder;
 
 /**
  * @author DaPorkchop_
  */
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-class OpenGLSupplierAndFactory implements Supplier<GL.Factory>, GL.Factory {
+public class OpenGLBuilder implements GLBuilder.ResourceStage, GLBuilder {
+    protected ResourceProvider resourceProvider;
+
+    //
+    // ResourceStage
+    //
+
     @Override
-    public GL.Factory get() {
+    public GLBuilder withResourceProvider(@NonNull ResourceProvider resourceProvider) {
+        this.resourceProvider = resourceProvider;
         return this;
     }
 
+    //
+    // GLBuilder
+    //
+
     @Override
     public GL wrapCurrent() {
-        return new OpenGL();
+        return new OpenGL(this);
     }
 }

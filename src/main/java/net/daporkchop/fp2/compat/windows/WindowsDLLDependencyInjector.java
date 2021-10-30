@@ -61,23 +61,9 @@ public class WindowsDLLDependencyInjector {
         }
         RUN = true;
 
-        //create temporary directory for storing libraries in
-        Path tempDir = Files.createTempDirectory("fp2-windows-natives_" + UUID.randomUUID() + '_' + System.currentTimeMillis() + '_' + System.nanoTime());
-
         for (String lib : LIB_NAMES) {
-            Path libFile = tempDir.resolve(lib);
-
-            //copy library to temp directory
-            try (InputStream in = WindowsDLLDependencyInjector.class.getResourceAsStream(lib)) {
-                if (in == null) { //the dll couldn't be found - skip it, and let porklib:natives handle falling back to the pure-java impl once the actual module dlls fail to load
-                    continue;
-                }
-
-                Files.copy(in, libFile);
-            }
-
             //load library manually
-            NativeFeature.loadNativeLibrary(WindowsDLLDependencyInjector.class, libFile.toFile());
+            NativeFeature.loadNativeLibrary(lib, WindowsDLLDependencyInjector.class.getTypeName(), WindowsDLLDependencyInjector.class.getClassLoader());
         }
     }
 }

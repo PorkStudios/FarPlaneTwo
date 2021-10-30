@@ -35,9 +35,8 @@ import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.common.pool.handle.Handle;
-import net.daporkchop.lib.common.ref.Ref;
-import net.daporkchop.lib.common.ref.ReferenceType;
-import net.daporkchop.lib.common.ref.ThreadRef;
+import net.daporkchop.lib.common.reference.ReferenceStrength;
+import net.daporkchop.lib.common.reference.cache.Cached;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.compression.zstd.ZstdDeflater;
@@ -111,8 +110,8 @@ public class Constants {
 
     public static Logger FP2_LOG = new SimpleLogger("[fp2 bootstrap]", Level.INFO, true, false, true, false, "[yyyy/MM/dd HH:mm:ss:SSS]", null, new PropertiesUtil("log4j2.simplelog.properties"), System.out);
 
-    public static final Ref<ZstdDeflater> ZSTD_DEF = ThreadRef.soft(() -> Zstd.PROVIDER.deflater(Zstd.PROVIDER.deflateOptions()));
-    public static final Ref<ZstdInflater> ZSTD_INF = ThreadRef.soft(() -> Zstd.PROVIDER.inflater(Zstd.PROVIDER.inflateOptions()));
+    public static final Cached<ZstdDeflater> ZSTD_DEF = Cached.threadLocal(() -> Zstd.PROVIDER.deflater(Zstd.PROVIDER.deflateOptions()), ReferenceStrength.WEAK);
+    public static final Cached<ZstdInflater> ZSTD_INF = Cached.threadLocal(() -> Zstd.PROVIDER.inflater(Zstd.PROVIDER.inflateOptions()), ReferenceStrength.WEAK);
 
     public static final Gson GSON = new Gson();
     public static final Gson GSON_PRETTY = new GsonBuilder().setPrettyPrinting().create();
@@ -122,11 +121,11 @@ public class Constants {
     public static final boolean CC = !FP2_TEST && Loader.isModLoaded("cubicchunks");
     public static final boolean CWG = !FP2_TEST && Loader.isModLoaded("cubicgen");
 
-    public static final Ref<ArrayAllocator<byte[]>> ALLOC_BYTE = ThreadRef.soft(() -> ArrayAllocator.pow2(byte[]::new, ReferenceType.STRONG, 32));
-    public static final Ref<ArrayAllocator<int[]>> ALLOC_INT = ThreadRef.soft(() -> ArrayAllocator.pow2(int[]::new, ReferenceType.STRONG, 32));
-    public static final Ref<ArrayAllocator<float[]>> ALLOC_FLOAT = ThreadRef.soft(() -> ArrayAllocator.pow2(float[]::new, ReferenceType.STRONG, 32));
-    public static final Ref<ArrayAllocator<double[]>> ALLOC_DOUBLE = ThreadRef.soft(() -> ArrayAllocator.pow2(double[]::new, ReferenceType.STRONG, 32));
-    public static final Ref<ArrayAllocator<Object[]>> ALLOC_OBJECT = ThreadRef.soft(() -> ArrayAllocator.pow2(Object[]::new, ReferenceType.STRONG, 32));
+    public static final Cached<ArrayAllocator<byte[]>> ALLOC_BYTE = Cached.threadLocal(() -> ArrayAllocator.pow2(byte[]::new, ReferenceStrength.STRONG, 32), ReferenceStrength.WEAK);
+    public static final Cached<ArrayAllocator<int[]>> ALLOC_INT = Cached.threadLocal(() -> ArrayAllocator.pow2(int[]::new, ReferenceStrength.STRONG, 32), ReferenceStrength.WEAK);
+    public static final Cached<ArrayAllocator<float[]>> ALLOC_FLOAT = Cached.threadLocal(() -> ArrayAllocator.pow2(float[]::new, ReferenceStrength.STRONG, 32), ReferenceStrength.WEAK);
+    public static final Cached<ArrayAllocator<double[]>> ALLOC_DOUBLE = Cached.threadLocal(() -> ArrayAllocator.pow2(double[]::new, ReferenceStrength.STRONG, 32), ReferenceStrength.WEAK);
+    public static final Cached<ArrayAllocator<Object[]>> ALLOC_OBJECT = Cached.threadLocal(() -> ArrayAllocator.pow2(Object[]::new, ReferenceStrength.STRONG, 32), ReferenceStrength.WEAK);
 
     public static final boolean IS_DEDICATED_SERVER = !FP2_TEST && FMLCommonHandler.instance().getSide() == Side.SERVER;
     public static final boolean IS_CLIENT = !FP2_TEST && FMLCommonHandler.instance().getSide() == Side.CLIENT;

@@ -18,53 +18,36 @@
  *
  */
 
-package net.daporkchop.fp2.gl.vertex;
+package net.daporkchop.fp2.gl;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.common.util.ResourceProvider;
 
 /**
- * Builder for a {@link VertexFormat}.
+ * Builder for a {@link GL}.
  *
  * @author DaPorkchop_
  */
-public interface VertexFormatBuilder {
+public interface GLBuilder {
     /**
-     * @return a builder for constructing a new {@link VertexAttribute} which, when built, will belong to the constructed {@link VertexFormat}
+     * Creates a new {@link GL} instance which wraps the currently active OpenGL context.
+     * <p>
+     * The returned {@link GL} will not own the current context. Closing it will release any resources allocated by it {@link GL} instance, but the rest of the context will not
+     * be unaffected.
+     *
+     * @return the constructed {@link GL}
      */
-    VertexAttributeBuilder.NameSelectionStage attrib();
-
-    /**
-     * @return the constructed {@link VertexFormat}
-     */
-    VertexFormat build();
-
-    /**
-     * @author DaPorkchop_
-     */
-    interface LayoutSelectionStage {
-        /**
-         * Configures the {@link VertexFormat} to use interleaved attributes.
-         */
-        AlignmentSelectionStage interleaved();
-
-        /**
-         * Configures the {@link VertexFormat} to use one buffer per attribute.
-         */
-        AlignmentSelectionStage separate();
-    }
+    GL wrapCurrent();
 
     /**
      * @author DaPorkchop_
      */
-    interface AlignmentSelectionStage {
+    interface ResourceStage {
         /**
-         * Configures the {@link VertexFormat} to align each attribute to multiples of the given byte count.
+         * Sets the {@link ResourceProvider} which the {@link GL} will use.
          *
-         * @param alignment the target attribute alignment (in bytes)
+         * @param resourceProvider the {@link ResourceProvider}
          */
-        VertexFormatBuilder alignedTo(int alignment);
-
-        /**
-         * Configures the {@link VertexFormat} not to do any specific alignment of vertex attributes.
-         */
-        VertexFormatBuilder notAligned();
+        GLBuilder withResourceProvider(@NonNull ResourceProvider resourceProvider);
     }
 }

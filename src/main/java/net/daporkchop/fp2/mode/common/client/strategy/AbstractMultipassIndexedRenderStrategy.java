@@ -42,8 +42,6 @@ import net.daporkchop.fp2.mode.common.client.index.GPUCulledRenderIndex;
 import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
 import net.daporkchop.lib.common.util.PArrays;
 
-import java.util.function.Supplier;
-
 import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 
@@ -64,7 +62,7 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
 
     @Override
     public MultipassIndexedBakeOutput createBakeOutput() {
-        return new MultipassIndexedBakeOutput(this.vertexLayout.createBuilder(), PArrays.filled(RENDER_PASS_COUNT, ByteBuf[]::new, (Supplier<ByteBuf>) ByteBufAllocator.DEFAULT::directBuffer));
+        return new MultipassIndexedBakeOutput(this.vertexLayout.createBuilder(), PArrays.filledFrom(RENDER_PASS_COUNT, ByteBuf[]::new, ByteBufAllocator.DEFAULT::directBuffer));
     }
 
     @Override

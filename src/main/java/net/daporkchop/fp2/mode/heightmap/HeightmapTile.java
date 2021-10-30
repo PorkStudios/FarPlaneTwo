@@ -27,6 +27,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.lib.common.system.PlatformInfo;
+import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.biome.Biome;
 
@@ -128,10 +129,12 @@ public class HeightmapTile implements IFarTile {
         return i0 + ((i1 & 0xFF) * (1.0d / 256.0d));
     }
 
-    protected final long addr = PUnsafe.allocateMemory(this, TILE_SIZE_BYTES);
+    protected final long addr = PUnsafe.allocateMemory(TILE_SIZE_BYTES);
 
     public HeightmapTile() {
         this.reset();
+
+        PCleaner.cleaner(this, this.addr);
     }
 
     public boolean getLayer(int x, int z, int layer, @NonNull HeightmapData data) {

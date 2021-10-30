@@ -27,8 +27,7 @@ import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.workergroup.WorkerGroupBuilder;
 import net.daporkchop.fp2.util.threading.workergroup.WorldWorkerGroup;
 import net.daporkchop.lib.common.misc.string.PStrings;
-import net.daporkchop.lib.common.ref.Ref;
-import net.daporkchop.lib.common.ref.ThreadRef;
+import net.daporkchop.lib.common.reference.cache.Cached;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.ArrayDeque;
@@ -67,7 +66,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
     protected final Map<P, Task> tasks = new ConcurrentHashMap<>();
     protected final BlockingQueue<Task> queue = this.createTaskQueue();
 
-    protected final Ref<Deque<Task>> recursionStack = ThreadRef.late(this.recursionStackFactory());
+    protected final Cached<Deque<Task>> recursionStack = Cached.threadLocal(this.recursionStackFactory());
 
     protected final Function<P, V> function;
 

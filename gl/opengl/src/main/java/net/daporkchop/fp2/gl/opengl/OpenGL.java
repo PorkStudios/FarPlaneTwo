@@ -25,6 +25,7 @@ import com.google.common.collect.Sets;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
+import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLModule;
@@ -33,6 +34,7 @@ import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.compute.GLCompute;
+import net.daporkchop.fp2.gl.draw.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.index.IndexFormatBuilder;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.compute.ComputeCore;
@@ -68,10 +70,13 @@ public class OpenGL implements GL {
     protected final Set<GLExtension> extensions;
 
     protected final ResourceArena resourceArena = new ResourceArena();
+    protected final ResourceProvider resourceProvider;
 
     protected final GLCompute compute;
 
-    protected OpenGL() {
+    protected OpenGL(@NonNull OpenGLBuilder builder) {
+        this.resourceProvider = builder.resourceProvider;
+
         this.api = GlobalProperties.find(OpenGL.class, "opengl")
                 .<Supplier<GLAPI>>getInstance("api.supplier")
                 .get();
@@ -139,6 +144,11 @@ public class OpenGL implements GL {
     @Override
     public VertexFormatBuilder.LayoutSelectionStage createVertexFormat() {
         return new VertexFormatBuilderImpl(this);
+    }
+
+    @Override
+    public DrawBindingBuilder.ProgramStage createDrawBinding() {
+        return null; //TODO
     }
 
     //

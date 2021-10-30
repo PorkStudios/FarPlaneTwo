@@ -25,6 +25,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
@@ -100,7 +101,7 @@ public class VoxelTile implements IFarTile {
         return i0 & 0x3F;
     }
 
-    protected final long addr = PUnsafe.allocateMemory(this, TILE_SIZE);
+    protected final long addr = PUnsafe.allocateMemory(TILE_SIZE);
 
     protected int count = -1; //the number of voxels in the tile that are set
 
@@ -109,6 +110,8 @@ public class VoxelTile implements IFarTile {
 
     public VoxelTile() {
         this.reset();
+
+        PCleaner.cleaner(this, this.addr);
     }
 
     /**
