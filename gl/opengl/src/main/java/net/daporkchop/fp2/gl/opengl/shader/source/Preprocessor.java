@@ -18,18 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.shader;
+package net.daporkchop.fp2.gl.opengl.shader.source;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import net.daporkchop.fp2.common.util.Identifier;
+import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
-import net.minecraft.util.ResourceLocation;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -133,33 +138,15 @@ public class Preprocessor {
     protected static final String EXPR_PARENS_PATTERN = "\\(([^(]*?)\\)";
     protected static final Pattern EXPR_PARENS_PATTERN_COMPILED = Pattern.compile(EXPR_PARENS_PATTERN);
 
-    /**
-     * Loads and preprocesses a shader source file.
-     * <p>
-     * This will recursively load other included source files as needed.
-     *
-     * @param root   the location of the root source file
-     * @param macros the initial set of preprocessor macros to use
-     * @param loader a function to use for loading source files
-     * @return the preprocessed source code
-     */
-    public static SourceLine[] loadAndPreprocess(@NonNull ResourceLocation root, @NonNull Map<String, Object> macros, @NonNull Function<ResourceLocation, SourceLine[]> loader) {
-        return new Preprocessor(macros, loader)
-                .appendLines(root)
-                .preprocess()
-                .lines();
-    }
-
-    protected final Map<String, Object> macros;
-    protected final Function<ResourceLocation, SourceLine[]> loader;
+    protected final Map<String, Object> macros = new ObjObjOpenHashMap<>();
+    protected final ResourceProvider resourceProvider;
 
     protected Node head;
     protected Node tail;
     protected int size;
 
-    public Preprocessor(@NonNull Map<String, Object> macros, @NonNull Function<ResourceLocation, SourceLine[]> loader) {
-        this.macros = new ObjObjOpenHashMap<>(macros);
-        this.loader = loader;
+    public Preprocessor(@NonNull ResourceProvider resourceProvider) {
+        this.resourceProvider = resourceProvider;
     }
 
     //
@@ -167,12 +154,12 @@ public class Preprocessor {
     //
 
     /**
-     * Loads the source lines from the given {@link ResourceLocation} and appends them to the preprocessing buffer.
+     * Loads the source lines from the given {@link Identifier} and appends them to the preprocessing buffer.
      *
      * @param location the location of the source file to load
      */
-    public Preprocessor appendLines(@NonNull ResourceLocation location) {
-        return this.appendLines(this.loader.apply(location));
+    public Preprocessor appendLines(@NonNull Identifier location) {
+        return this.appendLines(this.loadSource(location));
     }
 
     /**
@@ -182,6 +169,18 @@ public class Preprocessor {
      */
     public Preprocessor appendLines(@NonNull SourceLine... lines) {
         Stream.of(lines).map(Node::new).forEach(this::insertAtBack);
+        return this;
+    }
+
+    /**
+     * Defines the given preprocessor macros.
+     * <p>
+     * TODO: document permitted macro values
+     *
+     * @param macros the macros
+     */
+    public Preprocessor define(@NonNull Map<String, Object> macros) {
+        this.macros.putAll(macros);
         return this;
     }
 
@@ -203,6 +202,74 @@ public class Preprocessor {
             lines[idx] = node.line;
         }
         return lines;
+    }
+
+    //
+    // INTERNAL: SOURCE FILE LOADING
+    //
+
+    @SneakyThrows(IOException.class)
+    protected SourceLine[] loadSource(@NonNull Identifier id) {
+        List<SourceLine> lines = new LinkedList<>();
+
+        //read each line and wrap it in a SourceLine
+        try (BufferedReader reader = new BufferedReader(this.resourceProvider.provideResourceAsReader(id))) {
+            for (String line; (line = reader.readLine()) != null; ) {
+                lines.add(new SourceLine(line, id, lines.size() + 1));
+            }
+        }
+
+        //strip comments
+        this.stripComments(lines);
+
+        return lines.toArray(new SourceLine[0]);
+    }
+
+    protected void stripComments(@NonNull List<SourceLine> lines) {
+        final StringBuilder builder = new StringBuilder();
+        boolean inMultilineComment = false;
+
+        for (ListIterator<SourceLine> itr = lines.listIterator(); itr.hasNext(); ) {
+            SourceLine line = itr.next();
+            String text = line.text();
+
+            builder.setLength(0);
+
+            ITERATE_CHARS:
+            for (int i = 0, len = text.length(); i < len; i++) {
+                char c = text.charAt(i);
+
+                if (inMultilineComment) { //we're currently in a multiline comment
+                    if (c == '*' && i + 1 < len && text.charAt(i + 1) == '/') { //we reached the end of the comment
+                        inMultilineComment = false;
+                        i++;
+                    } else {
+                        //no-op, skip the character
+                    }
+                } else {
+                    if (c == '/' && i + 1 < len) { //this is a potential comment start
+                        switch (text.charAt(i + 1)) {
+                            case '/': //single line comment
+                                break ITERATE_CHARS;
+                            case '*': //multiline comment
+                                inMultilineComment = true;
+                                i++;
+                                continue;
+                        }
+                    }
+
+                    //no special handling required for this char, copy it
+                    builder.append(c);
+                }
+            }
+
+            text = builder.toString();
+            if (text.isEmpty() || text.trim().isEmpty()) { //line is empty or effectively empty, discard it
+                itr.remove();
+            } else { //update line with processed text
+                itr.set(line.withText(text));
+            }
+        }
     }
 
     //
@@ -306,17 +373,17 @@ public class Preprocessor {
         String relativePath = matcher.group(INCLUDE_PATTERN_GROUP_RELATIVE);
 
         //compute source file location
-        ResourceLocation location;
+        Identifier location;
         if (absolutePath != null) {
-            location = new ResourceLocation(absolutePath);
+            location = Identifier.from(absolutePath);
         } else if (relativePath != null) {
-            location = null; //TODO
+            throw new UnsupportedOperationException("relative include path");
         } else {
             throw new IllegalStateException(node.line.toString());
         }
 
         //load source lines and append them after the current node
-        SourceLine[] lines = this.loader.apply(location);
+        SourceLine[] lines = this.loadSource(location);
         Stream.of(lines).map(Node::new).reduce(node, this::insertAfter);
 
         //delete starting node

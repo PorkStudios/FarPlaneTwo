@@ -27,11 +27,9 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.With;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.ResourceLocation;
+import net.daporkchop.fp2.common.util.Identifier;
 
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.Map;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -46,9 +44,9 @@ public final class RenderShaderBuilder extends ShaderManager.AbstractShaderBuild
     @NonNull
     protected final String programName;
 
-    protected final ResourceLocation vertexShader;
-    protected final ResourceLocation geometryShader;
-    protected final ResourceLocation fragmentShader;
+    protected final Identifier vertexShader;
+    protected final Identifier geometryShader;
+    protected final Identifier fragmentShader;
 
     @With(AccessLevel.PROTECTED)
     @NonNull

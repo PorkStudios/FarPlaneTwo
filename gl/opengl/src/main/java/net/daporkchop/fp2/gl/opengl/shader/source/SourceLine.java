@@ -18,21 +18,46 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.shader;
+package net.daporkchop.fp2.gl.opengl.shader.source;
 
+import lombok.Data;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
-import net.daporkchop.fp2.gl.shader.FragmentShader;
-import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
-
-import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
+import lombok.With;
+import net.daporkchop.fp2.common.util.Identifier;
 
 /**
+ * A single line of source code, along with metadata describing its location.
+ *
  * @author DaPorkchop_
  */
-public class FragmentShaderImpl extends BaseShaderImpl implements FragmentShader {
-    public FragmentShaderImpl(@NonNull OpenGL gl, @NonNull SourceLine... lines) throws ShaderCompilationException {
-        super(gl, GL_FRAGMENT_SHADER, lines);
+@Data
+public final class SourceLine {
+    @With
+    @NonNull
+    private final String text;
+
+    @NonNull
+    private final Identifier location;
+    private final int lineNumber;
+
+    @Override
+    public String toString() {
+        return this.toString(null, true);
+    }
+
+    public String toString(String prefix) {
+        return this.toString(prefix, true);
+    }
+
+    public String toString(String prefix, boolean includeText) {
+        StringBuilder builder = new StringBuilder();
+        if (prefix != null) {
+            builder.append(prefix).append(' ');
+        }
+        builder.append("at <").append(this.location).append(' ').append(this.lineNumber).append('>');
+        if (includeText) {
+            builder.append(": ").append(this.text);
+        }
+        return builder.toString();
     }
 }

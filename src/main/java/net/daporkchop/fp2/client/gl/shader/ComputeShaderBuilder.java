@@ -27,9 +27,9 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.With;
+import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.gl.compute.ComputeLocalSize;
 import net.minecraft.util.EnumFacing;
-import net.minecraft.util.ResourceLocation;
 
 import java.util.Collections;
 import java.util.EnumSet;
@@ -48,7 +48,7 @@ public final class ComputeShaderBuilder extends ShaderManager.AbstractShaderBuil
     @NonNull
     protected final String programName;
 
-    protected final ResourceLocation computeShader;
+    protected final Identifier computeShader;
 
     protected final ComputeLocalSize workGroupSize;
 

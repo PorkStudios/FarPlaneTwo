@@ -30,6 +30,7 @@ import net.daporkchop.fp2.gl.draw.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.index.IndexFormat;
 import net.daporkchop.fp2.gl.index.IndexFormatBuilder;
 import net.daporkchop.fp2.gl.shader.FragmentShader;
+import net.daporkchop.fp2.gl.shader.ShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
@@ -108,22 +109,14 @@ public interface GL extends AutoCloseable {
     //
 
     /**
-     * Compiles a {@link VertexShader} from the given source code.
-     *
-     * @param source the source code
-     * @return the compiled {@link VertexShader}
-     * @throws ShaderCompilationException if shader compilation fails
+     * @return a builder for constructing a new {@link VertexShader}
      */
-    VertexShader compileVertexShader(@NonNull String source) throws ShaderCompilationException;
+    ShaderBuilder.SourceStage<VertexShader> createVertexShader();
 
     /**
-     * Compiles a {@link FragmentShader} from the given source code.
-     *
-     * @param source the source code
-     * @return the compiled {@link FragmentShader}
-     * @throws ShaderCompilationException if shader compilation fails
+     * @return a builder for constructing a new {@link FragmentShader}
      */
-    FragmentShader compileFragmentShader(@NonNull String source) throws ShaderCompilationException;
+    ShaderBuilder.SourceStage<FragmentShader> createFragmentShader();
 
     /**
      * Links a {@link ShaderProgram} from the given {@link VertexShader} and {@link FragmentShader}.

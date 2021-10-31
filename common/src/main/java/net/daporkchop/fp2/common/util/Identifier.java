@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.common.util;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.lib.common.reference.HandleableReference;
@@ -46,12 +47,24 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public final class Identifier implements Comparable<Identifier> {
-    public static final Identifier EMPTY = new Identifier("", "", ":");
+    public static final String DEFAULT_NAMESPACE = "minecraft";
 
-    protected static final Cached<Matcher> STRICT_MATCHER = Cached.regex(Pattern.compile("^(?>minecraft:|([a-zA-Z0-9_.-]*):)?([a-zA-Z0-9/_.-]*)$"));
-    protected static final Cached<Matcher> LENIENT_MATCHER = Cached.regex(Pattern.compile("^(?>minecraft:|(.*?):)?(.*?)$"));
+    private static final Cached<Matcher> STRICT_MATCHER = Cached.regex(Pattern.compile("^(?>" + Pattern.quote(DEFAULT_NAMESPACE) + ":|([a-zA-Z0-9_.-]*):)?([a-zA-Z0-9/_.-]*)$"));
+    private static final Cached<Matcher> LENIENT_MATCHER = Cached.regex(Pattern.compile("^(?>" + Pattern.quote(DEFAULT_NAMESPACE) + ":|([^:]*):)?([^:]*)$"));
 
-    private static final Map<String, Reference> VALUES = new ConcurrentSkipListMap<>(String.CASE_INSENSITIVE_ORDER);
+    private static final Map<String, Reference> VALUES = new ConcurrentSkipListMap<>(String.CASE_INSENSITIVE_ORDER); //TODO: do i really want this to be case-insensitive?
+
+    /**
+     * Parses an {@link Identifier} from its text representation.
+     *
+     * @param namespace the identifier's namespace
+     * @param path      the identifier's path
+     * @return the {@link Identifier}
+     * @throws IllegalArgumentException if the given string is not a valid identifier
+     */
+    public static Identifier from(@NonNull String namespace, @NonNull String path) {
+        return from(namespace + ':' + path);
+    }
 
     /**
      * Parses an {@link Identifier} from its text representation.
@@ -60,8 +73,22 @@ public final class Identifier implements Comparable<Identifier> {
      * @return the {@link Identifier}
      * @throws IllegalArgumentException if the given string is not a valid identifier
      */
-    public static Identifier fromString(@NonNull String identifier) {
+    public static Identifier from(@NonNull String identifier) {
         return fromString0(identifier, STRICT_MATCHER);
+    }
+
+    /**
+     * Parses an {@link Identifier} from its text representation.
+     * <p>
+     * This method only applies extremely lenient validation to the identifier. Usage of this method is strongly discouraged.
+     *
+     * @param namespace the identifier's namespace
+     * @param path      the identifier's path
+     * @return the {@link Identifier}
+     * @throws IllegalArgumentException if the given string is not a valid identifier
+     */
+    public static Identifier fromLenient(@NonNull String namespace, @NonNull String path) {
+        return fromLenient(namespace + ':' + path);
     }
 
     /**
@@ -73,41 +100,42 @@ public final class Identifier implements Comparable<Identifier> {
      * @return the {@link Identifier}
      * @throws IllegalArgumentException if the given string is not a valid identifier
      */
-    public static Identifier fromStringLenient(@NonNull String identifier) {
+    public static Identifier fromLenient(@NonNull String identifier) {
         return fromString0(identifier, LENIENT_MATCHER);
     }
 
     private static Identifier fromString0(@NonNull String identifier, @NonNull Cached<Matcher> matcherRef) {
-        if (identifier.isEmpty()) { //special handling for empty string
-            return EMPTY;
-        }
+        Matcher matcher = matcherRef.get().reset(identifier);
+        checkArg(matcher.find(), "Invalid identifier: \"%s\"", identifier);
 
-        Identifier id;
-        {
-            Matcher matcher = matcherRef.get().reset(identifier);
-            checkArg(matcher.find(), "Invalid identifier: \"%s\"", identifier);
+        String namespace = PorkUtil.fallbackIfNull(matcher.group(1), DEFAULT_NAMESPACE);
+        String path = matcher.group(2);
 
-            String namespace = PorkUtil.fallbackIfNull(matcher.group(1), "minecraft");
-            String path = matcher.group(2);
-            String fullName = namespace + ':' + path;
+        return lookupOrGet(namespace, path);
+    }
 
-            //try to return existing identifier from cache
+    private static Identifier lookupOrGet(@NonNull String namespace, @NonNull String path) {
+        String fullName = namespace + ':' + path;
+
+        { //try to return existing identifier from cache
             Reference ref = VALUES.get(fullName);
+            Identifier id;
             if (ref != null && (id = ref.get()) != null) { //already cached, return it!
                 return id;
             }
-
-            id = new Identifier(namespace, path, fullName);
         }
+
+        Identifier id = new Identifier(namespace, path, fullName);
+        fullName = id.fullName; //this has been interned
 
         Reference ref = PReferenceHandler.createReference(id, Reference::new);
         Reference existingReference;
 
-        while ((existingReference = VALUES.putIfAbsent(id.fullName, ref)) != null) {
+        while ((existingReference = VALUES.putIfAbsent(fullName, ref)) != null) {
             Identifier existingId = existingReference.get();
             if (existingId != null) { //we lost the race
                 return existingId;
-            } else if (VALUES.replace(id.fullName, existingReference, ref)) { //we won the race
+            } else if (VALUES.replace(fullName, existingReference, ref)) { //we won the race
                 return id;
             }
         }
@@ -117,6 +145,7 @@ public final class Identifier implements Comparable<Identifier> {
 
     private final String namespace;
     private final String path;
+    @Getter(AccessLevel.NONE)
     private final String fullName;
     private final transient int hashCode;
 

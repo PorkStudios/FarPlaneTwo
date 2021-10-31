@@ -22,6 +22,8 @@ package net.daporkchop.fp2.client.gl.shader;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.common.util.Identifier;
+import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
@@ -41,7 +43,7 @@ class Shader {
     protected final ShaderType type;
     protected final int id;
 
-    protected Shader(@NonNull ShaderType type, @NonNull ResourceLocation name, @NonNull SourceLine... lines) {
+    protected Shader(@NonNull ShaderType type, @NonNull Identifier name, @NonNull SourceLine... lines) {
         this.type = type;
 
         //allocate shader

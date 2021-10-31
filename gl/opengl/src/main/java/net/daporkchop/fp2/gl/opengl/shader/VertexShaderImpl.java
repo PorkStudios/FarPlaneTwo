@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.opengl.shader;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.VertexShader;
 
@@ -31,7 +32,7 @@ import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
  * @author DaPorkchop_
  */
 public class VertexShaderImpl extends BaseShaderImpl implements VertexShader {
-    public VertexShaderImpl(@NonNull OpenGL gl, @NonNull String... sources) throws ShaderCompilationException {
-        super(gl, GL_VERTEX_SHADER, sources);
+    public VertexShaderImpl(@NonNull OpenGL gl, @NonNull SourceLine... lines) throws ShaderCompilationException {
+        super(gl, GL_VERTEX_SHADER, lines);
     }
 }

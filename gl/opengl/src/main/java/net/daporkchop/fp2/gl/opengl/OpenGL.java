@@ -40,10 +40,13 @@ import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.compute.ComputeCore;
 import net.daporkchop.fp2.gl.opengl.index.IndexFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.FragmentShaderImpl;
+import net.daporkchop.fp2.gl.opengl.shader.ShaderBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderProgramImpl;
 import net.daporkchop.fp2.gl.opengl.shader.VertexShaderImpl;
+import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
 import net.daporkchop.fp2.gl.opengl.vertex.VertexFormatBuilderImpl;
 import net.daporkchop.fp2.gl.shader.FragmentShader;
+import net.daporkchop.fp2.gl.shader.ShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
@@ -156,13 +159,23 @@ public class OpenGL implements GL {
     //
 
     @Override
-    public VertexShader compileVertexShader(@NonNull String source) throws ShaderCompilationException {
-        return new VertexShaderImpl(this, source);
+    public ShaderBuilder.SourceStage<VertexShader> createVertexShader() {
+        return new ShaderBuilderImpl<VertexShader>(this) {
+            @Override
+            protected VertexShader compile(@NonNull SourceLine... lines) throws ShaderCompilationException {
+                return new VertexShaderImpl(this.gl, lines);
+            }
+        };
     }
 
     @Override
-    public FragmentShader compileFragmentShader(@NonNull String source) throws ShaderCompilationException {
-        return new FragmentShaderImpl(this, source);
+    public ShaderBuilder.SourceStage<FragmentShader> createFragmentShader() {
+        return new ShaderBuilderImpl<FragmentShader>(this) {
+            @Override
+            protected FragmentShader compile(@NonNull SourceLine... lines) throws ShaderCompilationException {
+                return new FragmentShaderImpl(this.gl, lines);
+            }
+        };
     }
 
     @Override

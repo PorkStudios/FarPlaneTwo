@@ -21,10 +21,14 @@
 package net.daporkchop.fp2.common.util;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Provides binary resources based on {@link Identifier}s.
@@ -38,7 +42,30 @@ public interface ResourceProvider {
      *
      * @param id the resource id
      * @return an {@link InputStream} containing the resource data
-     * @throws FileNotFoundException if no resource with the given id could be found
+     * @throws ResourceNotFoundException if no resource with the given id could be found
      */
     InputStream provideResourceAsStream(@NonNull Identifier id) throws IOException;
+
+    /**
+     * Gets the resource with the provided {@link Identifier} as a {@link Reader} using the {@code UTF-8} charset.
+     *
+     * @param id the resource id
+     * @return a {@link Reader} containing the resource data
+     * @throws ResourceNotFoundException if no resource with the given id could be found
+     */
+    default Reader provideResourceAsReader(@NonNull Identifier id) throws IOException {
+        return this.provideResourceAsReader(id, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Gets the resource with the provided {@link Identifier} as a {@link Reader} using the given {@link Charset}.
+     *
+     * @param id      the resource id
+     * @param charset the {@link Charset}
+     * @return a {@link Reader} containing the resource data
+     * @throws ResourceNotFoundException if no resource with the given id could be found
+     */
+    default Reader provideResourceAsReader(@NonNull Identifier id, @NonNull Charset charset) throws IOException {
+        return new InputStreamReader(this.provideResourceAsStream(id), charset);
+    }
 }

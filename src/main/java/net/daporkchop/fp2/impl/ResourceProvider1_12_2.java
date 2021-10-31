@@ -18,46 +18,34 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.shader;
+package net.daporkchop.fp2.impl;
 
-import lombok.Data;
 import lombok.NonNull;
-import lombok.With;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.common.util.Identifier;
+import net.daporkchop.fp2.common.util.ResourceProvider;
+import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
+import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+
 /**
- * A single line of source code, along with metadata describing its location.
- *
  * @author DaPorkchop_
  */
-@Data
-public final class SourceLine {
-    @With
+@RequiredArgsConstructor
+public class ResourceProvider1_12_2 implements ResourceProvider {
     @NonNull
-    private final String text;
-
-    @NonNull
-    private final ResourceLocation location;
-    private final int lineNumber;
+    protected final Minecraft mc;
 
     @Override
-    public String toString() {
-        return this.toString(null, true);
-    }
-
-    public String toString(String prefix) {
-        return this.toString(prefix, true);
-    }
-
-    public String toString(String prefix, boolean includeText) {
-        StringBuilder builder = new StringBuilder();
-        if (prefix != null) {
-            builder.append(prefix).append(' ');
+    public InputStream provideResourceAsStream(@NonNull Identifier id) throws IOException {
+        try {
+            return this.mc.getResourceManager().getResource(new ResourceLocation(id.toString())).getInputStream();
+        } catch (FileNotFoundException e) {
+            throw new ResourceNotFoundException(id, e);
         }
-        builder.append("at <").append(this.location).append(' ').append(this.lineNumber).append('>');
-        if (includeText) {
-            builder.append(": ").append(this.text);
-        }
-        return builder.toString();
     }
 }

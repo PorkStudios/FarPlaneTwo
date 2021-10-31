@@ -18,21 +18,25 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.shader;
+package net.daporkchop.fp2.common.util.exception;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
-import net.daporkchop.fp2.gl.shader.FragmentShader;
-import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
+import net.daporkchop.fp2.common.util.Identifier;
+import net.daporkchop.fp2.common.util.ResourceProvider;
 
-import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
+import java.io.IOException;
 
 /**
+ * Thrown when a {@link ResourceProvider} fails to find a resource with a given {@link Identifier}.
+ *
  * @author DaPorkchop_
  */
-public class FragmentShaderImpl extends BaseShaderImpl implements FragmentShader {
-    public FragmentShaderImpl(@NonNull OpenGL gl, @NonNull SourceLine... lines) throws ShaderCompilationException {
-        super(gl, GL_FRAGMENT_SHADER, lines);
+public class ResourceNotFoundException extends IOException {
+    public ResourceNotFoundException(@NonNull Identifier id) {
+        this(id, null);
+    }
+
+    public ResourceNotFoundException(@NonNull Identifier id, Throwable cause) {
+        super("resource not found: " + id, cause);
     }
 }
