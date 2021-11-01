@@ -18,55 +18,46 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.shader;
+package net.daporkchop.fp2.gl.opengl.layout;
 
+import com.google.common.collect.ImmutableSet;
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.layout.BaseLayout;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.layout.BaseLayoutImpl;
-import net.daporkchop.fp2.gl.shader.BaseShaderProgram;
-import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
+import net.daporkchop.fp2.gl.opengl.vertex.VertexFormatImpl;
 
-import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
+import java.util.Arrays;
+import java.util.Set;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseShaderProgramImpl implements BaseShaderProgram {
+public abstract class BaseLayoutImpl implements BaseLayout {
     protected final OpenGL gl;
-    protected final int id;
+    protected final GLAPI api;
 
-    public BaseShaderProgramImpl(@NonNull OpenGL gl, @NonNull BaseLayoutImpl layout, @NonNull BaseShaderImpl... shaders) throws ShaderLinkageException {
-        this.gl = gl;
-        GLAPI api = gl.api();
+    protected final Set<VertexFormatImpl> globalFormats;
+    protected final Set<VertexFormatImpl> localFormats;
+    
+    public BaseLayoutImpl(@NonNull BaseLayoutBuilderImpl builder) {
+        this.gl = builder.gl;
+        this.api = this.gl.api();
 
-        //allocate new shader
-        this.id = api.glCreateProgram();
-        this.gl.resourceArena().register(this, this.id, api::glDeleteProgram);
-
-        //attach shaders and link, then detach shaders again
-        for (BaseShaderImpl shader : shaders) {
-            api.glAttachShader(this.id, shader.id);
-        }
-        layout.configureProgramPreLink(this.id);
-        api.glLinkProgram(this.id);
-        for (BaseShaderImpl shader : shaders) {
-            api.glDetachShader(this.id, shader.id);
+        this.globalFormats = ImmutableSet.copyOf(builder.globals);
+        if (this.globalFormats.size() != builder.globals.length) {
+            throw new IllegalArgumentException("cannot construct draw layout with duplicate global vertex formats! " + Arrays.toString(builder.globals));
         }
 
-        //check for errors
-        if (api.glGetProgrami(this.id, GL_LINK_STATUS) == GL_FALSE) {
-            String log = api.glGetProgramInfoLog(this.id);
-            throw new ShaderLinkageException(log);
+        this.localFormats = ImmutableSet.copyOf(builder.locals);
+        if (this.localFormats.size() != builder.locals.length) {
+            throw new IllegalArgumentException("cannot construct draw layout with duplicate local vertex formats! " + Arrays.toString(builder.locals));
         }
-
-        layout.configureProgramPostLink(this.id);
     }
 
-    @Override
-    public void close() {
-        this.gl.resourceArena().delete(this);
-    }
+    public abstract void configureProgramPreLink(int program);
+
+    public abstract void configureProgramPostLink(int program);
 }

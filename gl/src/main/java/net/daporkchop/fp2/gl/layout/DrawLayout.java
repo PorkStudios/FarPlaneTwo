@@ -18,21 +18,17 @@
  *
  */
 
-package net.daporkchop.fp2.gl.shader;
+package net.daporkchop.fp2.gl.layout;
 
-import net.daporkchop.fp2.gl.GLResource;
-import net.daporkchop.fp2.gl.layout.BaseLayout;
+import net.daporkchop.fp2.gl.draw.DrawBinding;
+import net.daporkchop.fp2.gl.draw.DrawBindingBuilder;
 
 /**
- * Base interface for all shader types.
- * <p>
- * This interface should generally not be implemented or used directly, it's intended for use by sub-interfaces.
- *
  * @author DaPorkchop_
  */
-public interface BaseShader<L extends BaseLayout> extends GLResource {
+public interface DrawLayout extends BaseLayout {
     /**
-     * @return the layout for this shader's inputs and outputs
+     * @return a builder for creating a new {@link DrawBinding} using this layout
      */
-    L layout();
+    DrawBindingBuilder.UniformsStage createBinding();
 }

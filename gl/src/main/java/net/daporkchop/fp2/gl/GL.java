@@ -27,11 +27,12 @@ import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.draw.DrawBinding;
 import net.daporkchop.fp2.gl.draw.DrawBindingBuilder;
+import net.daporkchop.fp2.gl.layout.DrawLayout;
+import net.daporkchop.fp2.gl.layout.LayoutBuilder;
 import net.daporkchop.fp2.gl.index.IndexFormat;
 import net.daporkchop.fp2.gl.index.IndexFormatBuilder;
 import net.daporkchop.fp2.gl.shader.FragmentShader;
 import net.daporkchop.fp2.gl.shader.ShaderBuilder;
-import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.VertexShader;
@@ -100,9 +101,9 @@ public interface GL extends AutoCloseable {
     VertexFormatBuilder.LayoutSelectionStage createVertexFormat();
 
     /**
-     * @return a builder for constructing a new {@link DrawBinding}
+     * @return a builder for constructing a new {@link DrawLayout}
      */
-    DrawBindingBuilder.ProgramStage createDrawBinding();
+    LayoutBuilder.UniformsStage<DrawLayout> createDrawLayout();
 
     //
     // SHADERS
@@ -111,22 +112,23 @@ public interface GL extends AutoCloseable {
     /**
      * @return a builder for constructing a new {@link VertexShader}
      */
-    ShaderBuilder.SourceStage<VertexShader> createVertexShader();
+    ShaderBuilder.LayoutStage<VertexShader, DrawLayout> createVertexShader();
 
     /**
      * @return a builder for constructing a new {@link FragmentShader}
      */
-    ShaderBuilder.SourceStage<FragmentShader> createFragmentShader();
+    ShaderBuilder.LayoutStage<FragmentShader, DrawLayout> createFragmentShader();
 
     /**
-     * Links a {@link ShaderProgram} from the given {@link VertexShader} and {@link FragmentShader}.
+     * Links a {@link ShaderProgram} from the given {@link VertexShader} and {@link FragmentShader}, tuned for rendering data formatted with the given {@link DrawLayout}.
      *
+     * @param layout         the {@link DrawLayout}
      * @param vertexShader   the {@link VertexShader}
      * @param fragmentShader the {@link FragmentShader}
      * @return the linked {@link ShaderProgram}
      * @throws ShaderLinkageException if shader linkage fails
      */
-    ShaderProgram linkShaderProgram(@NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException;
+    ShaderProgram linkShaderProgram(@NonNull DrawLayout layout, @NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException;
 
     //
     // MODULES

@@ -32,13 +32,15 @@ import net.daporkchop.fp2.gl.GLModule;
 import net.daporkchop.fp2.gl.GLProfile;
 import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.compute.GLCompute;
-import net.daporkchop.fp2.gl.draw.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.index.IndexFormatBuilder;
+import net.daporkchop.fp2.gl.layout.DrawLayout;
+import net.daporkchop.fp2.gl.layout.LayoutBuilder;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.compute.ComputeCore;
 import net.daporkchop.fp2.gl.opengl.index.IndexFormatBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutImpl;
 import net.daporkchop.fp2.gl.opengl.shader.FragmentShaderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderProgramImpl;
@@ -135,7 +137,7 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public GLBuffer createBuffer(@NonNull BufferUsage usage) {
+    public GLBufferImpl createBuffer(@NonNull BufferUsage usage) {
         return new GLBufferImpl(this, usage);
     }
 
@@ -150,8 +152,8 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public DrawBindingBuilder.ProgramStage createDrawBinding() {
-        return null; //TODO
+    public LayoutBuilder.UniformsStage<DrawLayout> createDrawLayout() {
+        return new DrawLayoutBuilderImpl(this);
     }
 
     //
@@ -159,28 +161,28 @@ public class OpenGL implements GL {
     //
 
     @Override
-    public ShaderBuilder.SourceStage<VertexShader> createVertexShader() {
-        return new ShaderBuilderImpl<VertexShader>(this) {
+    public ShaderBuilder.LayoutStage<VertexShader, DrawLayout> createVertexShader() {
+        return new ShaderBuilderImpl<VertexShader, DrawLayout>(this) {
             @Override
             protected VertexShader compile(@NonNull SourceLine... lines) throws ShaderCompilationException {
-                return new VertexShaderImpl(this.gl, lines);
+                return new VertexShaderImpl(this, lines);
             }
         };
     }
 
     @Override
-    public ShaderBuilder.SourceStage<FragmentShader> createFragmentShader() {
-        return new ShaderBuilderImpl<FragmentShader>(this) {
+    public ShaderBuilder.LayoutStage<FragmentShader, DrawLayout> createFragmentShader() {
+        return new ShaderBuilderImpl<FragmentShader, DrawLayout>(this) {
             @Override
             protected FragmentShader compile(@NonNull SourceLine... lines) throws ShaderCompilationException {
-                return new FragmentShaderImpl(this.gl, lines);
+                return new FragmentShaderImpl(this, lines);
             }
         };
     }
 
     @Override
-    public ShaderProgram linkShaderProgram(@NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException {
-        return new ShaderProgramImpl(this, (VertexShaderImpl) vertexShader, (FragmentShaderImpl) fragmentShader);
+    public ShaderProgram linkShaderProgram(@NonNull DrawLayout layout, @NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException {
+        return new ShaderProgramImpl(this, (DrawLayoutImpl) layout, (VertexShaderImpl) vertexShader, (FragmentShaderImpl) fragmentShader);
     }
 
     @Override

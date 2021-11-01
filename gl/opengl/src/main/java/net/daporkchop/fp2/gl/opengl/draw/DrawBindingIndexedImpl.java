@@ -18,21 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.gl.shader;
+package net.daporkchop.fp2.gl.opengl.draw;
 
-import net.daporkchop.fp2.gl.GLResource;
-import net.daporkchop.fp2.gl.layout.BaseLayout;
+import lombok.NonNull;
 
 /**
- * Base interface for all shader types.
- * <p>
- * This interface should generally not be implemented or used directly, it's intended for use by sub-interfaces.
- *
  * @author DaPorkchop_
  */
-public interface BaseShader<L extends BaseLayout> extends GLResource {
-    /**
-     * @return the layout for this shader's inputs and outputs
-     */
-    L layout();
+public class DrawBindingIndexedImpl extends DrawBindingImpl {
+    public DrawBindingIndexedImpl(@NonNull DrawBindingBuilderImpl builder) {
+        super(builder);
+    }
 }

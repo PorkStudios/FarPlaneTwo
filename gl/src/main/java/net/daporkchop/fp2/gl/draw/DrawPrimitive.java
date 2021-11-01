@@ -18,21 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.gl.shader;
-
-import net.daporkchop.fp2.gl.GLResource;
-import net.daporkchop.fp2.gl.layout.BaseLayout;
+package net.daporkchop.fp2.gl.draw;
 
 /**
- * Base interface for all shader types.
- * <p>
- * This interface should generally not be implemented or used directly, it's intended for use by sub-interfaces.
+ * The different primitive geometry types which can be rendered.
  *
  * @author DaPorkchop_
  */
-public interface BaseShader<L extends BaseLayout> extends GLResource {
-    /**
-     * @return the layout for this shader's inputs and outputs
-     */
-    L layout();
+public enum DrawPrimitive {
+    POINTS,
+    LINES,
+    TRIANGLES,
+    QUADS;
 }

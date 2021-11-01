@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.gl.opengl.shader;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
 import net.daporkchop.fp2.gl.shader.FragmentShader;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
@@ -31,8 +31,8 @@ import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 /**
  * @author DaPorkchop_
  */
-public class FragmentShaderImpl extends BaseShaderImpl implements FragmentShader {
-    public FragmentShaderImpl(@NonNull OpenGL gl, @NonNull SourceLine... lines) throws ShaderCompilationException {
-        super(gl, GL_FRAGMENT_SHADER, lines);
+public class FragmentShaderImpl extends BaseShaderImpl<DrawLayout> implements FragmentShader {
+    public FragmentShaderImpl(@NonNull ShaderBuilderImpl<?, DrawLayout> builder, @NonNull SourceLine... lines) throws ShaderCompilationException {
+        super(builder, GL_FRAGMENT_SHADER, lines);
     }
 }

@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.opengl.shader;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.layout.BaseLayout;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
@@ -39,18 +40,22 @@ import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseShaderImpl implements BaseShader {
+public abstract class BaseShaderImpl<L extends BaseLayout> implements BaseShader<L> {
     protected final OpenGL gl;
+
+    protected final L layout;
 
     protected final int type;
     protected final int id;
 
-    public BaseShaderImpl(@NonNull OpenGL gl, int type, @NonNull SourceLine... lines) throws ShaderCompilationException {
+    public BaseShaderImpl(@NonNull ShaderBuilderImpl<?, L> builder, int type, @NonNull SourceLine... lines) throws ShaderCompilationException {
         //allocate new shader
-        this.gl = gl;
+        this.gl = builder.gl;
         this.type = type;
 
-        GLAPI api = gl.api();
+        this.layout = builder.layout;
+
+        GLAPI api = this.gl.api();
         this.id = api.glCreateShader(type);
 
         //set source and compile shader

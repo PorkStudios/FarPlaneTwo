@@ -18,21 +18,14 @@
  *
  */
 
-package net.daporkchop.fp2.gl.shader;
+package net.daporkchop.fp2.gl.layout;
 
 import net.daporkchop.fp2.gl.GLResource;
-import net.daporkchop.fp2.gl.layout.BaseLayout;
 
 /**
- * Base interface for all shader types.
- * <p>
- * This interface should generally not be implemented or used directly, it's intended for use by sub-interfaces.
+ * Base interface for shader input/output layouts.
  *
  * @author DaPorkchop_
  */
-public interface BaseShader<L extends BaseLayout> extends GLResource {
-    /**
-     * @return the layout for this shader's inputs and outputs
-     */
-    L layout();
+public interface BaseLayout extends GLResource {
 }

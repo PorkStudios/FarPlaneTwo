@@ -18,21 +18,55 @@
  *
  */
 
-package net.daporkchop.fp2.gl.shader;
+package net.daporkchop.fp2.gl.opengl.layout;
 
-import net.daporkchop.fp2.gl.GLResource;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.layout.BaseLayout;
+import net.daporkchop.fp2.gl.layout.LayoutBuilder;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.vertex.VertexFormatImpl;
+import net.daporkchop.fp2.gl.vertex.VertexFormat;
+
+import java.util.stream.Stream;
 
 /**
- * Base interface for all shader types.
- * <p>
- * This interface should generally not be implemented or used directly, it's intended for use by sub-interfaces.
- *
  * @author DaPorkchop_
  */
-public interface BaseShader<L extends BaseLayout> extends GLResource {
-    /**
-     * @return the layout for this shader's inputs and outputs
-     */
-    L layout();
+@RequiredArgsConstructor
+public abstract class BaseLayoutBuilderImpl<L extends BaseLayout> implements LayoutBuilder.UniformsStage<L>, LayoutBuilder.GlobalsStage<L>, LayoutBuilder.LocalsStage<L>, LayoutBuilder<L> {
+    @NonNull
+    protected final OpenGL gl;
+
+    protected VertexFormatImpl[] globals;
+    protected VertexFormatImpl[] locals;
+
+    //
+    // UniformsStage
+    //
+
+    @Override
+    public GlobalsStage<L> withUniforms() {
+        return this;
+    }
+
+    //
+    // GlobalsStage
+    //
+
+    @Override
+    public LocalsStage<L> withGlobals(@NonNull VertexFormat... globals) {
+        this.globals = Stream.of(globals).map(VertexFormatImpl.class::cast).toArray(VertexFormatImpl[]::new);
+        return this;
+    }
+
+    //
+    // LocalsStage
+    //
+
+    @Override
+    public LayoutBuilder<L> withLocals(@NonNull VertexFormat... locals) {
+        this.locals = Stream.of(locals).map(VertexFormatImpl.class::cast).toArray(VertexFormatImpl[]::new);
+        return this;
+    }
 }

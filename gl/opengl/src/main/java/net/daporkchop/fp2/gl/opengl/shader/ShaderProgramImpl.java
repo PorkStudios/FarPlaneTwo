@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.opengl.shader;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutImpl;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 
@@ -29,7 +30,7 @@ import net.daporkchop.fp2.gl.shader.ShaderProgram;
  * @author DaPorkchop_
  */
 public class ShaderProgramImpl extends BaseShaderProgramImpl implements ShaderProgram {
-    public ShaderProgramImpl(@NonNull OpenGL gl, @NonNull BaseShaderImpl... shaders) throws ShaderLinkageException {
-        super(gl, shaders);
+    public ShaderProgramImpl(@NonNull OpenGL gl, @NonNull DrawLayoutImpl layout, @NonNull BaseShaderImpl... shaders) throws ShaderLinkageException {
+        super(gl, layout, shaders);
     }
 }

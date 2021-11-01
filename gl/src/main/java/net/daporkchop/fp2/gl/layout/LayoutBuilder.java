@@ -18,70 +18,57 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw;
+package net.daporkchop.fp2.gl.layout;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.index.IndexBuffer;
-import net.daporkchop.fp2.gl.vertex.VertexBuffer;
+import net.daporkchop.fp2.gl.vertex.VertexFormat;
 
 /**
- * Builder for {@link DrawBinding}s.
+ * Builder for {@link BaseLayout}s.
  *
- * @param <B> the type of {@link DrawBinding} to construct
+ * @param <L> the type of {@link BaseLayout} to build
  * @author DaPorkchop_
  */
-public interface DrawBindingBuilder<B extends DrawBinding> {
+public interface LayoutBuilder<L extends BaseLayout> {
     /**
-     * @return the constructed {@link B}
+     * @return the constructed {@link L}
      */
-    B build();
+    L build();
 
     /**
      * @author DaPorkchop_
      */
-    interface UniformsStage {
+    interface UniformsStage<L extends BaseLayout> {
         /**
-         * Defines the {@link VertexBuffer}(s) which contain the global vertex attributes.
+         * Defines the {@link VertexFormat}(s) used for the uniform vertex attributes.
          *
-         * @param uniforms the global vertex attributes
+         * @param uniforms the formats of the uniform vertex attributes
          */
-        //LocalsStage withUniforms(@NonNull VertexBuffer... uniforms);
-        LocalsStage withUniforms(); //TODO: implement uniforms somehow
+        //GlobalsStage<L> withUniforms(@NonNull VertexFormat... uniforms);
+        GlobalsStage<L> withUniforms(); //TODO: uniforms, somehow
     }
 
     /**
      * @author DaPorkchop_
      */
-    interface GlobalsStage {
+    interface GlobalsStage<L extends BaseLayout> {
         /**
-         * Defines the {@link VertexBuffer}(s) which contain the global vertex attributes.
+         * Defines the {@link VertexFormat}(s) used for the global vertex attributes.
          *
-         * @param globals the global vertex attributes
+         * @param globals the formats of the global vertex attributes
          */
-        LocalsStage withGlobals(@NonNull VertexBuffer... globals);
+        LocalsStage<L> withGlobals(@NonNull VertexFormat... globals);
     }
 
     /**
      * @author DaPorkchop_
      */
-    interface LocalsStage {
+    interface LocalsStage<L extends BaseLayout> {
         /**
-         * Defines the {@link VertexBuffer}(s) which contain the local vertex attributes.
+         * Defines the {@link VertexFormat}(s) used for the local vertex attributes.
          *
          * @param locals the local vertex attributes
          */
-        OptionallyIndexedStage withLocals(@NonNull VertexBuffer... locals);
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    interface OptionallyIndexedStage extends DrawBindingBuilder<DrawBinding> {
-        /**
-         * Defines the {@link IndexBuffer} which contains the index data.
-         *
-         * @param indices the index data
-         */
-        DrawBindingBuilder<DrawBindingIndexed> withIndexes(@NonNull IndexBuffer indices);
+        LayoutBuilder<L> withLocals(@NonNull VertexFormat... locals);
     }
 }

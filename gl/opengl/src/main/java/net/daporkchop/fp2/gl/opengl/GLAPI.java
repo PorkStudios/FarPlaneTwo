@@ -111,6 +111,14 @@ public interface GLAPI {
 
     String glGetProgramInfoLog(int program);
 
+    void glEnableVertexAttribArray(int index);
+
+    void glDisableVertexArray(int index);
+
+    void glVertexAttribPointer(int index, int size, int type, boolean normalized, int stride, long buffer_buffer_offset);
+
+    void glBindAttribLocation(int program, int index, @NonNull CharSequence name);
+
     //
     //
     // OpenGL 3.0
@@ -120,4 +128,20 @@ public interface GLAPI {
     int glGetInteger(int pname, int idx);
 
     String glGetString(int pname, int idx);
+
+    int glGenVertexArray();
+
+    void glDeleteVertexArray(int array);
+
+    void glBindVertexArray(int array);
+
+    void glVertexAttribIPointer(int index, int size, int type, int stride, long buffer_buffer_offset);
+
+    //
+    //
+    // OpenGL 3.3
+    //
+    //
+
+    void glVertexAttribDivisor(int index, int divisor);
 }

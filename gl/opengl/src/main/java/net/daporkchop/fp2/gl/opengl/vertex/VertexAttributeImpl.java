@@ -23,6 +23,8 @@ package net.daporkchop.fp2.gl.opengl.vertex;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
+import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.vertex.VertexAttribute;
 import net.daporkchop.fp2.gl.vertex.VertexAttributeInterpretation;
 import net.daporkchop.fp2.gl.vertex.VertexAttributeType;
@@ -65,6 +67,22 @@ public abstract class VertexAttributeImpl implements VertexAttribute {
         this.index = formatBuilder.addAttribute(this);
         this.size = formatBuilder.computeSize(this);
         this.offset = formatBuilder.computeOffset(this);
+    }
+
+    public void bind(@NonNull GLAPI api, int bindingIndex, int offset, int stride) {
+        int type = GLEnumUtil.from(this.type);
+
+        switch (this.interpretation) {
+            case INTEGER:
+                api.glVertexAttribIPointer(bindingIndex, this.reportedComponents, type, stride, offset);
+                return;
+            case FLOAT:
+            case NORMALIZED_FLOAT:
+                api.glVertexAttribPointer(bindingIndex, this.reportedComponents, type, this.interpretation == VertexAttributeInterpretation.NORMALIZED_FLOAT, stride, offset);
+                return;
+            default:
+                throw new IllegalArgumentException(this.interpretation.toString());
+        }
     }
 
     /**

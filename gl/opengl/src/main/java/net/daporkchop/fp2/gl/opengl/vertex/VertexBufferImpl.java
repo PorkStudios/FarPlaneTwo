@@ -27,6 +27,8 @@ import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
+import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 import net.daporkchop.fp2.gl.vertex.VertexBuffer;
 import net.daporkchop.fp2.gl.vertex.VertexWriter;
 
@@ -44,12 +46,14 @@ public abstract class VertexBufferImpl implements VertexBuffer {
     @Getter
     protected int capacity;
 
+    public abstract void bindAttribute(@NonNull GLAPI api, int bindingIndex, @NonNull VertexAttributeImpl attrib);
+
     /**
      * @author DaPorkchop_
      */
     public static class Interleaved extends VertexBufferImpl {
         protected final long stride;
-        protected final GLBuffer buffer;
+        protected final GLBufferImpl buffer;
 
         public Interleaved(@NonNull VertexFormatImpl format, @NonNull BufferUsage usage) {
             super(format);
@@ -77,6 +81,11 @@ public abstract class VertexBufferImpl implements VertexBuffer {
             checkRangeLen(this.capacity, startIndex, writer.size());
 
             this.buffer.uploadRange(startIndex * this.stride, writer.addr, writer.size() * this.stride);
+        }
+
+        @Override
+        public void bindAttribute(@NonNull GLAPI api, int bindingIndex, @NonNull VertexAttributeImpl attrib) {
+            this.buffer.bind(BufferTarget.ARRAY_BUFFER, target -> attrib.bind(api, bindingIndex, attrib.offset, toInt(this.stride, "stride")));
         }
     }
 }

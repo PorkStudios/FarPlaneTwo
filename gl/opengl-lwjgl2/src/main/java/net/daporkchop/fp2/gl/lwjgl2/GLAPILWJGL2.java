@@ -31,6 +31,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
+import org.lwjgl.opengl.GL33;
 import org.lwjgl.opengl.GLContext;
 
 import java.nio.ByteBuffer;
@@ -237,6 +238,26 @@ public class GLAPILWJGL2 implements GLAPI {
         return GL20.glGetProgramInfoLog(program, GL20.glGetProgrami(program, GL_INFO_LOG_LENGTH));
     }
 
+    @Override
+    public void glEnableVertexAttribArray(int index) {
+        GL20.glEnableVertexAttribArray(index);
+    }
+
+    @Override
+    public void glDisableVertexArray(int index) {
+        GL20.glDisableVertexAttribArray(index);
+    }
+
+    @Override
+    public void glVertexAttribPointer(int index, int size, int type, boolean normalized, int stride, long buffer_buffer_offset) {
+        GL20.glVertexAttribPointer(index, size, type, normalized, stride, buffer_buffer_offset);
+    }
+
+    @Override
+    public void glBindAttribLocation(int program, int index, @NonNull CharSequence name) {
+        GL20.glBindAttribLocation(program, index, name);
+    }
+
     //
     //
     // OpenGL 3.0
@@ -251,5 +272,36 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public String glGetString(int pname, int idx) {
         return GL30.glGetStringi(pname, idx);
+    }
+
+    @Override
+    public int glGenVertexArray() {
+        return GL30.glGenVertexArrays();
+    }
+
+    @Override
+    public void glDeleteVertexArray(int array) {
+        GL30.glDeleteVertexArrays(array);
+    }
+
+    @Override
+    public void glBindVertexArray(int array) {
+        GL30.glBindVertexArray(array);
+    }
+
+    @Override
+    public void glVertexAttribIPointer(int index, int size, int type, int stride, long buffer_buffer_offset) {
+        GL30.glVertexAttribIPointer(index, size, type, stride, buffer_buffer_offset);
+    }
+
+    //
+    //
+    // OpenGL 3.3
+    //
+    //
+
+    @Override
+    public void glVertexAttribDivisor(int index, int divisor) {
+        GL33.glVertexAttribDivisor(index, divisor);
     }
 }

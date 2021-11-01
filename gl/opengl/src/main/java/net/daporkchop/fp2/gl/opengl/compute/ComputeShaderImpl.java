@@ -38,7 +38,7 @@ public class ComputeShaderImpl extends BaseShaderProgramImpl implements ComputeS
     protected final ComputeLocalSize localSize;
 
     public ComputeShaderImpl(@NonNull OpenGL gl, @NonNull ComputeLocalSize localSize, @NonNull BaseShaderImpl... shaders) throws ShaderLinkageException {
-        super(gl, shaders);
+        super(gl, null, shaders);
 
         this.localSize = localSize;
     }

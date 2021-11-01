@@ -18,21 +18,28 @@
  *
  */
 
-package net.daporkchop.fp2.gl.shader;
+package net.daporkchop.fp2.gl.opengl.layout;
 
-import net.daporkchop.fp2.gl.GLResource;
-import net.daporkchop.fp2.gl.layout.BaseLayout;
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.GLExtension;
+import net.daporkchop.fp2.gl.GLVersion;
+import net.daporkchop.fp2.gl.layout.DrawLayout;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
 
 /**
- * Base interface for all shader types.
- * <p>
- * This interface should generally not be implemented or used directly, it's intended for use by sub-interfaces.
- *
  * @author DaPorkchop_
  */
-public interface BaseShader<L extends BaseLayout> extends GLResource {
-    /**
-     * @return the layout for this shader's inputs and outputs
-     */
-    L layout();
+public class DrawLayoutBuilderImpl extends BaseLayoutBuilderImpl<DrawLayout> {
+    public DrawLayoutBuilderImpl(@NonNull OpenGL gl) {
+        super(gl);
+    }
+
+    @Override
+    public DrawLayout build() {
+        if (this.gl.version().compareTo(GLVersion.OpenGL33) >= 0 || this.gl.extensions().contains(GLExtension.GL_ARB_instanced_arrays)) {
+            return new DrawLayoutImpl.Instanced(this);
+        } else {
+            throw new UnsupportedOperationException(); //TODO
+        }
+    }
 }

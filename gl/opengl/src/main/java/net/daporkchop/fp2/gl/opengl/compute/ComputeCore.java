@@ -27,9 +27,7 @@ import net.daporkchop.fp2.gl.compute.ComputeShader;
 import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.shader.BaseShaderImpl;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
-import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 
@@ -78,7 +76,7 @@ public class ComputeCore implements GLCompute {
 
     @Override
     public ComputeShader compileComputeShader(@NonNull ComputeLocalSize localSize, @NonNull String source) throws ShaderCompilationException {
-        class UnlinkedComputeShader extends BaseShaderImpl {
+        /*class UnlinkedComputeShader extends BaseShaderImpl<> {
             public UnlinkedComputeShader(@NonNull String... sources) throws ShaderCompilationException {
                 super(ComputeCore.this.gl, GL_COMPUTE_SHADER, sources);
             }
@@ -88,6 +86,8 @@ public class ComputeCore implements GLCompute {
             return new ComputeShaderImpl(this.gl, localSize, shader);
         } catch (ShaderLinkageException e) {
             throw new ShaderCompilationException("unable to link compute shader", e);
-        }
+        }*/
+
+        throw new UnsupportedOperationException();
     }
 }

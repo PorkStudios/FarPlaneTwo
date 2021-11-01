@@ -23,6 +23,7 @@ package net.daporkchop.fp2.gl.opengl;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.vertex.VertexAttributeType;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 
@@ -56,5 +57,33 @@ public class GLEnumUtil {
             default:
                 throw new IllegalArgumentException(usage.name());
         }
+    }
+
+    public int from(@NonNull VertexAttributeType type) {
+        if (type instanceof VertexAttributeType.Integer) {
+            switch ((VertexAttributeType.Integer) type) {
+                case BYTE:
+                    return GL_BYTE;
+                case UNSIGNED_BYTE:
+                    return GL_UNSIGNED_BYTE;
+                case SHORT:
+                    return GL_SHORT;
+                case UNSIGNED_SHORT:
+                    return GL_UNSIGNED_SHORT;
+                case INT:
+                    return GL_INT;
+                case UNSIGNED_INT:
+                    return GL_UNSIGNED_INT;
+            }
+        } else if (type instanceof VertexAttributeType.Float) {
+            switch ((VertexAttributeType.Float) type) {
+                case FLOAT:
+                    return GL_FLOAT;
+                case DOUBLE:
+                    return GL_DOUBLE;
+            }
+        }
+
+        throw new IllegalArgumentException(type.toString());
     }
 }

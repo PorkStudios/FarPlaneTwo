@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.shader;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.common.util.Identifier;
+import net.daporkchop.fp2.gl.layout.BaseLayout;
 
 import java.util.Map;
 
@@ -37,6 +38,18 @@ public interface ShaderBuilder<S extends BaseShader> {
      * @throws ShaderCompilationException if shader compilation fails
      */
     S build() throws ShaderCompilationException;
+
+    /**
+     * @author DaPorkchop_
+     */
+    interface LayoutStage<S extends BaseShader, L extends BaseLayout> {
+        /**
+         * Sets the {@link L} which will be used by the shader.
+         *
+         * @param layout the layout
+         */
+        SourceStage<S> forLayout(@NonNull L layout);
+    }
 
     /**
      * @author DaPorkchop_
