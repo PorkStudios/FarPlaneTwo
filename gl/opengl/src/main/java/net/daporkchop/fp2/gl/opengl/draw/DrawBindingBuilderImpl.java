@@ -56,7 +56,7 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.UniformsStage,
     //
 
     @Override
-    public LocalsStage withUniforms() {
+    public DrawBindingBuilder.GlobalsStage withUniforms() {
         return this;
     }
 

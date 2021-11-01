@@ -23,21 +23,20 @@ package net.daporkchop.fp2.gl.opengl.index;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.index.IndexBuffer;
 import net.daporkchop.fp2.gl.index.IndexWriter;
+import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
+@Getter
 public class IndexBufferImpl implements IndexBuffer {
-    @Getter
     protected final IndexFormatImpl format;
-    protected final GLBuffer buffer;
+    protected final GLBufferImpl buffer;
 
-    @Getter
     protected int capacity;
 
     public IndexBufferImpl(@NonNull IndexFormatImpl format, @NonNull BufferUsage usage) {

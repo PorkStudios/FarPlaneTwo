@@ -83,20 +83,15 @@ public interface ShaderBuilder<S extends BaseShader> {
          * @param key   the macro key
          * @param value the macro value
          */
-        AdditionalDefinesStage<S> define(@NonNull String key, @NonNull Object value);
+        DefinesStage<S> define(@NonNull String key, @NonNull Object value);
 
         /**
          * Defines multiple preprocessor macros.
          *
          * @param macros a mapping of macro keys to values
          */
-        AdditionalDefinesStage<S> defineAll(@NonNull Map<String, Object> macros);
-    }
+        DefinesStage<S> defineAll(@NonNull Map<String, Object> macros);
 
-    /**
-     * @author DaPorkchop_
-     */
-    interface AdditionalDefinesStage<S extends BaseShader> extends DefinesStage<S> {
         /**
          * Indicates that no further preprocessor macros will be defined.
          */

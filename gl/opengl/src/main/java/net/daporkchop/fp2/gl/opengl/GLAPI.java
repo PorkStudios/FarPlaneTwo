@@ -51,6 +51,20 @@ public interface GLAPI {
 
     String glGetString(int pname);
 
+    void glDrawArrays(int mode, int first, int count);
+
+    void glDrawElements(int mode, int count, int type, long indices);
+
+    void glDrawElements(int mode, int count, int type, @NonNull ByteBuffer indices);
+
+    //
+    //
+    // OpenGL 1.4
+    //
+    //
+
+    void glMultiDrawArrays(int mode, long first, long count, int drawcount);
+
     //
     //
     // OpenGL 1.5
@@ -111,6 +125,8 @@ public interface GLAPI {
 
     String glGetProgramInfoLog(int program);
 
+    void glUseProgram(int program);
+
     void glEnableVertexAttribArray(int index);
 
     void glDisableVertexArray(int index);
@@ -139,9 +155,22 @@ public interface GLAPI {
 
     //
     //
+    // OpenGL 3.2
+    //
+    //
+
+    //GL_ARB_draw_elements_base_vertex
+    void glDrawElementsBaseVertex(int mode, int count, int type, long indices, int basevertex);
+
+    //GL_ARB_draw_elements_base_vertex
+    void glMultiDrawElementsBaseVertex(int mode, long count, int type, long indices, int drawcount, long basevertex);
+
+    //
+    //
     // OpenGL 3.3
     //
     //
 
+    //GL_ARB_instanced_arrays
     void glVertexAttribDivisor(int index, int divisor);
 }

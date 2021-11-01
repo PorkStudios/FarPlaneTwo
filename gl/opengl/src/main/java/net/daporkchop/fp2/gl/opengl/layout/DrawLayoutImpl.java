@@ -63,7 +63,7 @@ public abstract class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayou
         checkIndex(index < max, "cannot use more than %d vertex attributes!", max);
 
         String name = binding.attrib().name();
-        checkArg(this.attributeBindings.putIfAbsent(name, binding) != null, "vertex attribute name registered more than once: %s", name);
+        checkArg(this.attributeBindings.putIfAbsent(name, binding) == null, "vertex attribute name registered more than once: %s", name);
     }
 
     @Override

@@ -36,29 +36,31 @@ import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 @Getter
 public abstract class BaseShaderProgramImpl implements BaseShaderProgram {
     protected final OpenGL gl;
+    protected final GLAPI api;
+
     protected final int id;
 
     public BaseShaderProgramImpl(@NonNull OpenGL gl, @NonNull BaseLayoutImpl layout, @NonNull BaseShaderImpl... shaders) throws ShaderLinkageException {
         this.gl = gl;
-        GLAPI api = gl.api();
+        this.api = gl.api();
 
         //allocate new shader
-        this.id = api.glCreateProgram();
-        this.gl.resourceArena().register(this, this.id, api::glDeleteProgram);
+        this.id = this.api.glCreateProgram();
+        this.gl.resourceArena().register(this, this.id, this.api::glDeleteProgram);
 
         //attach shaders and link, then detach shaders again
         for (BaseShaderImpl shader : shaders) {
-            api.glAttachShader(this.id, shader.id);
+            this.api.glAttachShader(this.id, shader.id);
         }
         layout.configureProgramPreLink(this.id);
-        api.glLinkProgram(this.id);
+        this.api.glLinkProgram(this.id);
         for (BaseShaderImpl shader : shaders) {
-            api.glDetachShader(this.id, shader.id);
+            this.api.glDetachShader(this.id, shader.id);
         }
 
         //check for errors
-        if (api.glGetProgrami(this.id, GL_LINK_STATUS) == GL_FALSE) {
-            String log = api.glGetProgramInfoLog(this.id);
+        if (this.api.glGetProgrami(this.id, GL_LINK_STATUS) == GL_FALSE) {
+            String log = this.api.glGetProgramInfoLog(this.id);
             throw new ShaderLinkageException(log);
         }
 
@@ -68,5 +70,18 @@ public abstract class BaseShaderProgramImpl implements BaseShaderProgram {
     @Override
     public void close() {
         this.gl.resourceArena().delete(this);
+    }
+
+    public void bind(@NonNull Runnable callback) {
+        int oldProgram = this.api.glGetInteger(GL_ACTIVE_PROGRAM);
+        assert oldProgram == 0 : "a shader is already bound!";
+
+        try {
+            this.api.glUseProgram(this.id);
+
+            callback.run();
+        } finally {
+            this.api.glUseProgram(oldProgram);
+        }
     }
 }

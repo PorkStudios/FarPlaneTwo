@@ -128,7 +128,7 @@ public final class Identifier implements Comparable<Identifier> {
         Identifier id = new Identifier(namespace, path, fullName);
         fullName = id.fullName; //this has been interned
 
-        Reference ref = PReferenceHandler.createReference(id, Reference::new);
+        Reference ref = PReferenceHandler.<Identifier, Reference>createReference(id, Reference::new);
         Reference existingReference;
 
         while ((existingReference = VALUES.putIfAbsent(fullName, ref)) != null) {
@@ -140,7 +140,7 @@ public final class Identifier implements Comparable<Identifier> {
             }
         }
 
-        throw new IllegalStateException();
+        return id;
     }
 
     private final String namespace;

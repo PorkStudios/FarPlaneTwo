@@ -18,19 +18,29 @@
  *
  */
 
-package net.daporkchop.fp2.gl;
+package net.daporkchop.fp2.gl.draw;
 
+import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 /**
- * All known OpenGL extensions.
+ * The different geometry types supported by OpenGL.
  *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public enum GLExtension {
-    GL_ARB_compatibility,
-    GL_ARB_compute_shader,
-    GL_ARB_draw_elements_base_vertex,
-    GL_ARB_instanced_arrays;
+@Getter
+public enum DrawMode {
+    POINTS(DrawPrimitive.POINTS),
+    LINES(DrawPrimitive.LINES),
+    LINE_STRIP(DrawPrimitive.LINES),
+    LINE_LOOP(DrawPrimitive.LINES),
+    TRIANGLES(DrawPrimitive.TRIANGLES),
+    TRIANGLE_STRIP(DrawPrimitive.TRIANGLES),
+    TRIANGLE_FAN(DrawPrimitive.TRIANGLES),
+    QUADS(DrawPrimitive.QUADS);
+
+    @NonNull
+    private final DrawPrimitive primitive;
 }

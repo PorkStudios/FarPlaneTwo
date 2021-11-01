@@ -24,13 +24,13 @@ import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
+import net.daporkchop.fp2.gl.command.BaseCommandBuffer;
+import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.compute.GLCompute;
-import net.daporkchop.fp2.gl.draw.DrawBinding;
-import net.daporkchop.fp2.gl.draw.DrawBindingBuilder;
-import net.daporkchop.fp2.gl.layout.DrawLayout;
-import net.daporkchop.fp2.gl.layout.LayoutBuilder;
 import net.daporkchop.fp2.gl.index.IndexFormat;
 import net.daporkchop.fp2.gl.index.IndexFormatBuilder;
+import net.daporkchop.fp2.gl.layout.DrawLayout;
+import net.daporkchop.fp2.gl.layout.LayoutBuilder;
 import net.daporkchop.fp2.gl.shader.FragmentShader;
 import net.daporkchop.fp2.gl.shader.ShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
@@ -104,6 +104,11 @@ public interface GL extends AutoCloseable {
      * @return a builder for constructing a new {@link DrawLayout}
      */
     LayoutBuilder.UniformsStage<DrawLayout> createDrawLayout();
+
+    /**
+     * @return a builder for constructing a new {@link BaseCommandBuffer}
+     */
+    CommandBufferBuilder.TypeStage createCommandBuffer();
 
     //
     // SHADERS

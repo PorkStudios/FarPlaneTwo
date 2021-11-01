@@ -37,6 +37,35 @@ import java.nio.charset.StandardCharsets;
  */
 @FunctionalInterface
 public interface ResourceProvider {
+    static ResourceProvider selectingByNamespace(@NonNull String namespace, @NonNull ResourceProvider matches, @NonNull ResourceProvider notMatches) {
+        return new ResourceProvider() {
+            @Override
+            public InputStream provideResourceAsStream(@NonNull Identifier id) throws IOException {
+                return namespace.equals(id.namespace()) ? matches.provideResourceAsStream(id) : notMatches.provideResourceAsStream(id);
+            }
+
+            @Override
+            public Reader provideResourceAsReader(@NonNull Identifier id) throws IOException {
+                return namespace.equals(id.namespace()) ? matches.provideResourceAsReader(id) : notMatches.provideResourceAsReader(id);
+            }
+
+            @Override
+            public Reader provideResourceAsReader(@NonNull Identifier id, @NonNull Charset charset) throws IOException {
+                return namespace.equals(id.namespace()) ? matches.provideResourceAsReader(id, charset) : notMatches.provideResourceAsReader(id, charset);
+            }
+        };
+    }
+
+    static ResourceProvider loadingClassResources(@NonNull Class<?> clazz) {
+        return id -> {
+            InputStream stream = clazz.getResourceAsStream(id.path());
+            if (stream != null) {
+                return stream;
+            }
+            throw new ResourceNotFoundException(id);
+        };
+    }
+
     /**
      * Gets the resource with the provided {@link Identifier} as an {@link InputStream}.
      *

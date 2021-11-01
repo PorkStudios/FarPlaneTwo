@@ -45,8 +45,8 @@ public interface DrawBindingBuilder<B extends DrawBinding> {
          *
          * @param uniforms the global vertex attributes
          */
-        //LocalsStage withUniforms(@NonNull VertexBuffer... uniforms);
-        LocalsStage withUniforms(); //TODO: implement uniforms somehow
+        //GlobalsStage withUniforms(@NonNull VertexBuffer... uniforms);
+        GlobalsStage withUniforms(); //TODO: implement uniforms somehow
     }
 
     /**

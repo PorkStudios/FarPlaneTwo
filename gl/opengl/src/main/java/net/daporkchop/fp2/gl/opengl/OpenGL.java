@@ -32,11 +32,13 @@ import net.daporkchop.fp2.gl.GLModule;
 import net.daporkchop.fp2.gl.GLProfile;
 import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.index.IndexFormatBuilder;
 import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.gl.layout.LayoutBuilder;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
+import net.daporkchop.fp2.gl.opengl.command.CommandBufferBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.compute.ComputeCore;
 import net.daporkchop.fp2.gl.opengl.index.IndexFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutBuilderImpl;
@@ -68,6 +70,8 @@ import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
  */
 @Getter
 public class OpenGL implements GL {
+    public static final String OPENGL_NAMESPACE = "fp2_gl_opengl";
+
     protected final GLAPI api;
 
     protected final GLVersion version;
@@ -80,7 +84,7 @@ public class OpenGL implements GL {
     protected final GLCompute compute;
 
     protected OpenGL(@NonNull OpenGLBuilder builder) {
-        this.resourceProvider = builder.resourceProvider;
+        this.resourceProvider = ResourceProvider.selectingByNamespace(OPENGL_NAMESPACE, ResourceProvider.loadingClassResources(OpenGL.class), builder.resourceProvider);
 
         this.api = GlobalProperties.find(OpenGL.class, "opengl")
                 .<Supplier<GLAPI>>getInstance("api.supplier")
@@ -154,6 +158,11 @@ public class OpenGL implements GL {
     @Override
     public LayoutBuilder.UniformsStage<DrawLayout> createDrawLayout() {
         return new DrawLayoutBuilderImpl(this);
+    }
+
+    @Override
+    public CommandBufferBuilder.TypeStage createCommandBuffer() {
+        return new CommandBufferBuilderImpl(this);
     }
 
     //

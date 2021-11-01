@@ -18,19 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.gl;
-
-import lombok.RequiredArgsConstructor;
+package net.daporkchop.fp2.gl.command;
 
 /**
- * All known OpenGL extensions.
+ * Command buffer for array drawing commands.
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public enum GLExtension {
-    GL_ARB_compatibility,
-    GL_ARB_compute_shader,
-    GL_ARB_draw_elements_base_vertex,
-    GL_ARB_instanced_arrays;
+public interface CommandBufferElements extends BaseCommandBuffer {
+    /**
+     * Sets the command at the given index.
+     *
+     * @param index      the command index
+     * @param count      the number of indices
+     * @param firstIndex the index of the first index
+     * @param baseVertex the index of the first vertex
+     */
+    void set(int index, int count, int firstIndex, int baseVertex);
 }

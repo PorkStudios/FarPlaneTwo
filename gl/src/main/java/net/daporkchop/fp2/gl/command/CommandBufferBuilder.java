@@ -18,19 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.gl;
+package net.daporkchop.fp2.gl.command;
 
-import lombok.RequiredArgsConstructor;
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.draw.DrawBinding;
+import net.daporkchop.fp2.gl.draw.DrawBindingIndexed;
 
 /**
- * All known OpenGL extensions.
+ * Builder for {@link BaseCommandBuffer}s.
  *
+ * @param <B> the type of command buffer to build
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public enum GLExtension {
-    GL_ARB_compatibility,
-    GL_ARB_compute_shader,
-    GL_ARB_draw_elements_base_vertex,
-    GL_ARB_instanced_arrays;
+public interface CommandBufferBuilder<B extends BaseCommandBuffer> {
+    /**
+     * @return the constructed {@link B}
+     */
+    B build();
+
+    /**
+     * @author DaPorkchop_
+     */
+    interface TypeStage {
+        OptimizeStage<CommandBufferArrays> forArrays(@NonNull DrawBinding binding);
+
+        OptimizeStage<CommandBufferElements> forElements(@NonNull DrawBindingIndexed binding);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    interface OptimizeStage<B extends BaseCommandBuffer> extends CommandBufferBuilder<B> {
+        CommandBufferBuilder<B> optimizeForCpuSelection();
+    }
 }

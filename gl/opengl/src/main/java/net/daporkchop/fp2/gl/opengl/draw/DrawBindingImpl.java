@@ -83,4 +83,15 @@ public class DrawBindingImpl implements DrawBinding {
     public void close() {
         this.gl.resourceArena().delete(this);
     }
+
+    public void bind(@NonNull Runnable callback) {
+        int oldVao = this.api.glGetInteger(GL_VERTEX_ARRAY_BINDING);
+        try {
+            this.api.glBindVertexArray(this.vao);
+
+            callback.run();
+        } finally {
+            this.api.glBindVertexArray(oldVao);
+        }
+    }
 }

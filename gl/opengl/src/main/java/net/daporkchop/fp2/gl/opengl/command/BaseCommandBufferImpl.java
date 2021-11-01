@@ -18,35 +18,48 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.index;
+package net.daporkchop.fp2.gl.opengl.command;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.index.IndexBuffer;
-import net.daporkchop.fp2.gl.index.IndexFormat;
-import net.daporkchop.fp2.gl.index.IndexType;
+import net.daporkchop.fp2.common.util.alloc.Allocator;
+import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.gl.command.BaseCommandBuffer;
+import net.daporkchop.fp2.gl.draw.DrawBinding;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Getter
-public abstract class IndexFormatImpl implements IndexFormat {
-    @NonNull
+public abstract class BaseCommandBufferImpl<B extends DrawBinding> implements BaseCommandBuffer {
     protected final OpenGL gl;
-    @NonNull
-    protected final IndexType type;
+    protected final GLAPI api;
 
-    @Override
-    public int size() {
-        return this.type.size();
+    protected final Allocator alloc = new DirectMemoryAllocator();
+
+    protected final B binding;
+
+    protected int capacity = 0;
+
+    public BaseCommandBufferImpl(@NonNull CommandBufferBuilderImpl builder) {
+        this.gl = builder.gl;
+        this.api = this.gl.api();
+
+        this.binding = uncheckedCast(builder.binding);
     }
 
     @Override
-    public IndexBuffer createBuffer(@NonNull BufferUsage usage) {
-        return new IndexBufferImpl(this, usage);
+    public void resize(int capacity) {
+        if (this.capacity != notNegative(capacity, "capacity")) {
+            this.resize0(this.capacity, capacity);
+            this.capacity = capacity;
+        }
     }
+
+    protected abstract void resize0(int oldCapacity, int newCapacity);
 }

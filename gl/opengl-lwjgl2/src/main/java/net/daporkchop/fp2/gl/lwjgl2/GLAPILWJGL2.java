@@ -28,9 +28,11 @@ import net.daporkchop.lib.common.function.throwing.EPredicate;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.lwjgl.opengl.ContextCapabilities;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
+import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
 import org.lwjgl.opengl.GLContext;
 
@@ -80,6 +82,32 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public String glGetString(int pname) {
         return GL11.glGetString(pname);
+    }
+
+    @Override
+    public void glDrawArrays(int mode, int first, int count) {
+        GL11.glDrawArrays(mode, first, count);
+    }
+
+    @Override
+    public void glDrawElements(int mode, int count, int type, long indices) {
+        GL11.glDrawElements(mode, count, type, indices);
+    }
+
+    @Override
+    public void glDrawElements(int mode, int count, int type, @NonNull ByteBuffer indices) {
+        GL11.glDrawElements(mode, count, type, indices);
+    }
+
+    //
+    //
+    // OpenGL 1.4
+    //
+    //
+
+    @Override
+    public void glMultiDrawArrays(int mode, long first, long count, int drawcount) {
+        GL14.glMultiDrawArrays(mode, DirectBufferHackery.wrapInt(first, drawcount), DirectBufferHackery.wrapInt(count, drawcount));
     }
 
     //
@@ -239,6 +267,11 @@ public class GLAPILWJGL2 implements GLAPI {
     }
 
     @Override
+    public void glUseProgram(int program) {
+        GL20.glUseProgram(program);
+    }
+
+    @Override
     public void glEnableVertexAttribArray(int index) {
         GL20.glEnableVertexAttribArray(index);
     }
@@ -292,6 +325,22 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glVertexAttribIPointer(int index, int size, int type, int stride, long buffer_buffer_offset) {
         GL30.glVertexAttribIPointer(index, size, type, stride, buffer_buffer_offset);
+    }
+
+    //
+    //
+    // OpenGL 3.2
+    //
+    //
+
+    @Override
+    public void glDrawElementsBaseVertex(int mode, int count, int type, long indices, int basevertex) {
+        GL32.glDrawElementsBaseVertex(mode, count, type, indices, basevertex);
+    }
+
+    @Override
+    public void glMultiDrawElementsBaseVertex(int mode, long count, int type, long indices, int drawcount, long basevertex) {
+        throw new UnsupportedOperationException();
     }
 
     //

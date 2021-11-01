@@ -36,7 +36,7 @@ import java.util.Map;
 /**
  * @author DaPorkchop_
  */
-public abstract class ShaderBuilderImpl<S extends BaseShader<L>, L extends BaseLayout> implements ShaderBuilder.LayoutStage<S, L>, ShaderBuilder.AdditionalSourceStage<S>, ShaderBuilder.AdditionalDefinesStage<S>, ShaderBuilder<S> {
+public abstract class ShaderBuilderImpl<S extends BaseShader<L>, L extends BaseLayout> implements ShaderBuilder.LayoutStage<S, L>, ShaderBuilder.AdditionalSourceStage<S>, ShaderBuilder.DefinesStage<S>, ShaderBuilder<S> {
     protected final OpenGL gl;
 
     protected final Preprocessor preprocessor;
@@ -75,17 +75,17 @@ public abstract class ShaderBuilderImpl<S extends BaseShader<L>, L extends BaseL
     }
 
     //
-    // DefinesStage & AdditionalDefinesStage
+    // DefinesStage
     //
 
     @Override
-    public ShaderBuilder.AdditionalDefinesStage<S> define(@NonNull String key, @NonNull Object value) {
+    public ShaderBuilder.DefinesStage<S> define(@NonNull String key, @NonNull Object value) {
         this.preprocessor.define(Collections.singletonMap(key, value));
         return this;
     }
 
     @Override
-    public ShaderBuilder.AdditionalDefinesStage<S> defineAll(@NonNull Map<String, Object> macros) {
+    public ShaderBuilder.DefinesStage<S> defineAll(@NonNull Map<String, Object> macros) {
         this.preprocessor.define(macros);
         return this;
     }
