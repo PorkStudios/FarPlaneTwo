@@ -18,58 +18,63 @@
  *
  */
 
-package net.daporkchop.fp2.gl.vertex;
-
-import lombok.NonNull;
+package net.daporkchop.fp2.gl.attribute;
 
 /**
- * Builder for a {@link VertexAttribute}.
+ * A single vertex attribute.
  *
- * @param <V> the type of vertex attribute that will be built
  * @author DaPorkchop_
  */
-public interface VertexAttributeBuilder<V extends VertexAttribute> {
+public interface Attribute {
     /**
-     * @return the built {@link V}
+     * @return this attribute's name
      */
-    V build();
+    String name();
 
     /**
+     * @return this vertex attribute's type
+     */
+    AttributeType type();
+
+    /**
+     * @return this vertex attribute's interpretation
+     */
+    AttributeInterpretation interpretation();
+
+    /**
+     * @return the number of components in this vertex attribute
+     */
+    int components();
+
+    /**
+     * A vertex attribute consisting of a single integer component.
+     *
      * @author DaPorkchop_
      */
-    interface NameSelectionStage {
-        /**
-         * Configures the {@link VertexAttribute}'s name.
-         * <p>
-         * The name must be unique across all {@link VertexAttribute}s belonging to the parent {@link VertexFormatBuilder}.
-         *
-         * @param name the name
-         */
-        TypeSelectionStage name(@NonNull String name);
+    interface Int1 extends Attribute {
     }
 
     /**
+     * A vertex attribute consisting of two integer components.
+     *
      * @author DaPorkchop_
      */
-    interface TypeSelectionStage {
-        InterpretationSelectionStage<VertexAttribute.Int1> int1(@NonNull VertexAttributeType.Integer type);
-
-        InterpretationSelectionStage<VertexAttribute.Int2> int2(@NonNull VertexAttributeType.Integer type);
-
-        InterpretationSelectionStage<VertexAttribute.Int3> int3(@NonNull VertexAttributeType.Integer type);
-
-        InterpretationSelectionStage<VertexAttribute.Int4> int4(@NonNull VertexAttributeType.Integer type);
+    interface Int2 extends Attribute {
     }
 
     /**
+     * A vertex attribute consisting of three integer components.
+     *
      * @author DaPorkchop_
      */
-    interface InterpretationSelectionStage<V extends VertexAttribute> {
-        /**
-         * Configures the type that this vertex attribute will be interpreted as.
-         *
-         * @param interpretation the interpretation
-         */
-        VertexAttributeBuilder<V> interpretation(@NonNull VertexAttributeInterpretation interpretation);
+    interface Int3 extends Attribute {
+    }
+
+    /**
+     * A vertex attribute consisting of four integer components.
+     *
+     * @author DaPorkchop_
+     */
+    interface Int4 extends Attribute {
     }
 }

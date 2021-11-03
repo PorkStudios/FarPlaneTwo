@@ -18,15 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.gl.vertex;
+package net.daporkchop.fp2.gl.attribute.instanced;
+
+import net.daporkchop.fp2.common.util.capability.CloseableResource;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeWriter;
 
 /**
- * The different ways a vertex attribute's values may be interpreted.
+ * A buffer in client memory which is used for setting a single element of instanced attribute data.
  *
  * @author DaPorkchop_
  */
-public enum VertexAttributeInterpretation {
-    INTEGER,
-    FLOAT,
-    NORMALIZED_FLOAT;
+public interface InstancedAttributeWriter extends BaseAttributeWriter<InstancedAttributeWriter>, CloseableResource {
 }

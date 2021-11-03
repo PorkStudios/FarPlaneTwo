@@ -18,19 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw;
-
-import net.daporkchop.fp2.gl.GLResource;
-import net.daporkchop.fp2.gl.shader.ShaderProgram;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
+package net.daporkchop.fp2.gl.attribute;
 
 /**
- * Maps {@link LocalAttributeBuffer}s to {@link ShaderProgram} inputs.
- * <p>
- * A binding does not own any of the buffers or programs it references. The user is responsible for creating and disposing of them properly. Disposing of a resource belonging to a binding
- * before the binding is closed will result in undefined behavior.
+ * The different ways a vertex attribute's values may be interpreted.
  *
  * @author DaPorkchop_
  */
-public interface DrawBinding extends GLResource {
+public enum AttributeInterpretation {
+    INTEGER,
+    FLOAT,
+    NORMALIZED_FLOAT;
 }

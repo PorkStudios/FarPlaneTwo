@@ -34,13 +34,13 @@ import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.VertexShader;
-import net.daporkchop.fp2.gl.vertex.VertexAttribute;
-import net.daporkchop.fp2.gl.vertex.VertexAttributeInterpretation;
-import net.daporkchop.fp2.gl.vertex.VertexAttributeType;
-import net.daporkchop.fp2.gl.vertex.VertexBuffer;
-import net.daporkchop.fp2.gl.vertex.VertexFormat;
-import net.daporkchop.fp2.gl.vertex.VertexFormatBuilder;
-import net.daporkchop.fp2.gl.vertex.VertexWriter;
+import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.AttributeInterpretation;
+import net.daporkchop.fp2.gl.attribute.AttributeType;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
@@ -98,23 +98,21 @@ public class TestLWJGL2 {
 
     @SneakyThrows({ ShaderCompilationException.class, ShaderLinkageException.class })
     private static void run(@NonNull GL gl) {
-        VertexAttribute.Int2 attrPos;
-        VertexAttribute.Int4 attrColor;
-        VertexFormat localFormat;
+        Attribute.Int2 attrPos;
+        Attribute.Int4 attrColor;
+        AttributeFormat localFormat;
 
         {
-            VertexFormatBuilder builder = gl.createVertexFormat()
-                    .interleaved()
-                    .notAligned();
+            AttributeFormatBuilder builder = gl.createAttributeFormat();
 
             attrPos = builder.attrib().name("a_pos")
-                    .int2(VertexAttributeType.Integer.BYTE)
-                    .interpretation(VertexAttributeInterpretation.FLOAT)
+                    .int2(AttributeType.Integer.BYTE)
+                    .interpretation(AttributeInterpretation.FLOAT)
                     .build();
 
             attrColor = builder.attrib().name("a_color")
-                    .int4(VertexAttributeType.Integer.UNSIGNED_BYTE)
-                    .interpretation(VertexAttributeInterpretation.NORMALIZED_FLOAT)
+                    .int4(AttributeType.Integer.UNSIGNED_BYTE)
+                    .interpretation(AttributeInterpretation.NORMALIZED_FLOAT)
                     .build();
 
             localFormat = builder.build();
@@ -138,10 +136,10 @@ public class TestLWJGL2 {
                 .build();
         ShaderProgram shaderProgram = gl.linkShaderProgram(layout, vertexShader, fragmentShader);
 
-        VertexBuffer localBuffer = localFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        LocalAttributeBuffer localBuffer = localFormat.createLocalBuffer(BufferUsage.STATIC_DRAW);
         localBuffer.resize(4);
 
-        try (VertexWriter writer = localFormat.createWriter()) {
+        try (LocalAttributeWriter writer = localFormat.createLocalWriter()) {
             writer.set(attrPos, 16, 16).setARGB(attrColor, -1).endVertex();
             writer.set(attrPos, 16, 32).setARGB(attrColor, -1).endVertex();
             writer.set(attrPos, 32, 32).setARGB(attrColor, -1).endVertex();

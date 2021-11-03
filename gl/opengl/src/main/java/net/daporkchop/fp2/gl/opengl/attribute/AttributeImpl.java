@@ -18,17 +18,17 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.vertex;
+package net.daporkchop.fp2.gl.opengl.attribute;
 
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
-import net.daporkchop.fp2.gl.vertex.VertexAttribute;
-import net.daporkchop.fp2.gl.vertex.VertexAttributeInterpretation;
-import net.daporkchop.fp2.gl.vertex.VertexAttributeType;
-import net.daporkchop.fp2.gl.vertex.VertexWriter;
+import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.AttributeInterpretation;
+import net.daporkchop.fp2.gl.attribute.AttributeType;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.stream.Stream;
@@ -40,22 +40,19 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class VertexAttributeImpl implements VertexAttribute {
+public abstract class AttributeImpl implements Attribute {
     protected final String name;
-    protected final VertexAttributeType type;
-    protected final VertexAttributeInterpretation interpretation;
+    protected final AttributeType type;
+    protected final AttributeInterpretation interpretation;
 
-    @Getter(AccessLevel.NONE)
     protected final int index;
-    @Getter(AccessLevel.NONE)
-    protected final int offset;
     protected final int size;
 
     protected final int components;
     @Getter(AccessLevel.NONE)
     protected final int reportedComponents;
 
-    public VertexAttributeImpl(@NonNull VertexAttributeBuilderImpl builder, int components) {
+    public AttributeImpl(@NonNull AttributeBuilderImpl builder, int components) {
         this.name = builder.name;
         this.type = builder.type;
         this.interpretation = builder.interpretation;
@@ -63,13 +60,12 @@ public abstract class VertexAttributeImpl implements VertexAttribute {
         this.components = components;
         this.reportedComponents = builder.reportedComponents >= 0 ? builder.reportedComponents : components;
 
-        VertexFormatBuilderImpl formatBuilder = builder.formatBuilder;
+        AttributeFormatBuilderImpl formatBuilder = builder.formatBuilder;
         this.index = formatBuilder.addAttribute(this);
-        this.size = formatBuilder.computeSize(this);
-        this.offset = formatBuilder.computeOffset(this);
+        this.size = this.type.size(this.components);
     }
 
-    public void bind(@NonNull GLAPI api, int bindingIndex, int offset, int stride) {
+    public void configureVertexAttribute(@NonNull GLAPI api, int bindingIndex, int offset, int stride) {
         int type = GLEnumUtil.from(this.type);
 
         switch (this.interpretation) {
@@ -78,7 +74,7 @@ public abstract class VertexAttributeImpl implements VertexAttribute {
                 return;
             case FLOAT:
             case NORMALIZED_FLOAT:
-                api.glVertexAttribPointer(bindingIndex, this.reportedComponents, type, this.interpretation == VertexAttributeInterpretation.NORMALIZED_FLOAT, stride, offset);
+                api.glVertexAttribPointer(bindingIndex, this.reportedComponents, type, this.interpretation == AttributeInterpretation.NORMALIZED_FLOAT, stride, offset);
                 return;
             default:
                 throw new IllegalArgumentException(this.interpretation.toString());
@@ -88,15 +84,15 @@ public abstract class VertexAttributeImpl implements VertexAttribute {
     /**
      * @author DaPorkchop_
      */
-    protected static abstract class Int1 extends VertexAttributeImpl implements VertexAttribute.Int1 {
-        public Int1(@NonNull VertexAttributeBuilderImpl builder, @NonNull VertexAttributeType.Integer... acceptableTypes) {
+    public static abstract class Int1 extends AttributeImpl implements Attribute.Int1 {
+        public Int1(@NonNull AttributeBuilderImpl builder, @NonNull AttributeType.Integer... acceptableTypes) {
             super(builder, 1);
 
             checkState(Stream.of(acceptableTypes).anyMatch(type -> type == builder.type), "tried to construct %s with invalid type %s", this.getClass().getTypeName(), builder.type);
         }
 
         /**
-         * @see VertexWriter#set(VertexAttribute.Int1, int)
+         * @see LocalAttributeWriter#set(Attribute.Int1, int)
          */
         public abstract void set(Object base, long offset, int v0);
     }
@@ -105,8 +101,8 @@ public abstract class VertexAttributeImpl implements VertexAttribute {
      * @author DaPorkchop_
      */
     public static class ByteInt1 extends Int1 {
-        public ByteInt1(@NonNull VertexAttributeBuilderImpl builder) {
-            super(builder, VertexAttributeType.Integer.BYTE, VertexAttributeType.Integer.UNSIGNED_BYTE);
+        public ByteInt1(@NonNull AttributeBuilderImpl builder) {
+            super(builder, AttributeType.Integer.BYTE, AttributeType.Integer.UNSIGNED_BYTE);
         }
 
         @Override
@@ -119,8 +115,8 @@ public abstract class VertexAttributeImpl implements VertexAttribute {
      * @author DaPorkchop_
      */
     public static class ShortInt1 extends Int1 {
-        public ShortInt1(@NonNull VertexAttributeBuilderImpl builder) {
-            super(builder, VertexAttributeType.Integer.SHORT, VertexAttributeType.Integer.UNSIGNED_SHORT);
+        public ShortInt1(@NonNull AttributeBuilderImpl builder) {
+            super(builder, AttributeType.Integer.SHORT, AttributeType.Integer.UNSIGNED_SHORT);
         }
 
         @Override
@@ -133,8 +129,8 @@ public abstract class VertexAttributeImpl implements VertexAttribute {
      * @author DaPorkchop_
      */
     public static class IntInt1 extends Int1 {
-        public IntInt1(@NonNull VertexAttributeBuilderImpl builder) {
-            super(builder, VertexAttributeType.Integer.INT, VertexAttributeType.Integer.UNSIGNED_INT);
+        public IntInt1(@NonNull AttributeBuilderImpl builder) {
+            super(builder, AttributeType.Integer.INT, AttributeType.Integer.UNSIGNED_INT);
         }
 
         @Override
@@ -146,15 +142,15 @@ public abstract class VertexAttributeImpl implements VertexAttribute {
     /**
      * @author DaPorkchop_
      */
-    protected static abstract class Int2 extends VertexAttributeImpl implements VertexAttribute.Int2 {
-        public Int2(@NonNull VertexAttributeBuilderImpl builder, @NonNull VertexAttributeType.Integer... acceptableTypes) {
+    public static abstract class Int2 extends AttributeImpl implements Attribute.Int2 {
+        public Int2(@NonNull AttributeBuilderImpl builder, @NonNull AttributeType.Integer... acceptableTypes) {
             super(builder, 2);
 
             checkState(Stream.of(acceptableTypes).anyMatch(type -> type == builder.type), "tried to construct %s with invalid type %s", this.getClass().getTypeName(), builder.type);
         }
 
         /**
-         * @see VertexWriter#set(VertexAttribute.Int2, int, int)
+         * @see LocalAttributeWriter#set(Attribute.Int2, int, int)
          */
         public abstract void set(Object base, long offset, int v0, int v1);
     }
@@ -163,8 +159,8 @@ public abstract class VertexAttributeImpl implements VertexAttribute {
      * @author DaPorkchop_
      */
     public static class ByteInt2 extends Int2 {
-        public ByteInt2(@NonNull VertexAttributeBuilderImpl builder) {
-            super(builder, VertexAttributeType.Integer.BYTE, VertexAttributeType.Integer.UNSIGNED_BYTE);
+        public ByteInt2(@NonNull AttributeBuilderImpl builder) {
+            super(builder, AttributeType.Integer.BYTE, AttributeType.Integer.UNSIGNED_BYTE);
         }
 
         @Override
@@ -178,8 +174,8 @@ public abstract class VertexAttributeImpl implements VertexAttribute {
      * @author DaPorkchop_
      */
     public static class ShortInt2 extends Int2 {
-        public ShortInt2(@NonNull VertexAttributeBuilderImpl builder) {
-            super(builder, VertexAttributeType.Integer.SHORT, VertexAttributeType.Integer.UNSIGNED_SHORT);
+        public ShortInt2(@NonNull AttributeBuilderImpl builder) {
+            super(builder, AttributeType.Integer.SHORT, AttributeType.Integer.UNSIGNED_SHORT);
         }
 
         @Override
@@ -193,8 +189,8 @@ public abstract class VertexAttributeImpl implements VertexAttribute {
      * @author DaPorkchop_
      */
     public static class IntInt2 extends Int2 {
-        public IntInt2(@NonNull VertexAttributeBuilderImpl builder) {
-            super(builder, VertexAttributeType.Integer.INT, VertexAttributeType.Integer.UNSIGNED_INT);
+        public IntInt2(@NonNull AttributeBuilderImpl builder) {
+            super(builder, AttributeType.Integer.INT, AttributeType.Integer.UNSIGNED_INT);
         }
 
         @Override
@@ -207,20 +203,20 @@ public abstract class VertexAttributeImpl implements VertexAttribute {
     /**
      * @author DaPorkchop_
      */
-    protected static abstract class Int3 extends VertexAttributeImpl implements VertexAttribute.Int3 {
-        public Int3(@NonNull VertexAttributeBuilderImpl builder, @NonNull VertexAttributeType.Integer... acceptableTypes) {
+    public static abstract class Int3 extends AttributeImpl implements Attribute.Int3 {
+        public Int3(@NonNull AttributeBuilderImpl builder, @NonNull AttributeType.Integer... acceptableTypes) {
             super(builder, 3);
 
             checkState(Stream.of(acceptableTypes).anyMatch(type -> type == builder.type), "tried to construct %s with invalid type %s", this.getClass().getTypeName(), builder.type);
         }
 
         /**
-         * @see VertexWriter#set(VertexAttribute.Int3, int, int, int)
+         * @see LocalAttributeWriter#set(Attribute.Int3, int, int, int)
          */
         public abstract void set(Object base, long offset, int v0, int v1, int v2);
 
         /**
-         * @see VertexWriter#setARGB(VertexAttribute.Int3, int)
+         * @see LocalAttributeWriter#setARGB(Attribute.Int3, int)
          */
         public void setARGB(Object base, long offset, int argb) {
             this.set(base, offset, (argb >>> 16) & 0xFF, (argb >>> 8) & 0xFF, argb & 0xFF);
@@ -231,8 +227,8 @@ public abstract class VertexAttributeImpl implements VertexAttribute {
      * @author DaPorkchop_
      */
     public static class ByteInt3 extends Int3 {
-        public ByteInt3(@NonNull VertexAttributeBuilderImpl builder) {
-            super(builder, VertexAttributeType.Integer.BYTE, VertexAttributeType.Integer.UNSIGNED_BYTE);
+        public ByteInt3(@NonNull AttributeBuilderImpl builder) {
+            super(builder, AttributeType.Integer.BYTE, AttributeType.Integer.UNSIGNED_BYTE);
         }
 
         @Override
@@ -247,8 +243,8 @@ public abstract class VertexAttributeImpl implements VertexAttribute {
      * @author DaPorkchop_
      */
     public static class ShortInt3 extends Int3 {
-        public ShortInt3(@NonNull VertexAttributeBuilderImpl builder) {
-            super(builder, VertexAttributeType.Integer.SHORT, VertexAttributeType.Integer.UNSIGNED_SHORT);
+        public ShortInt3(@NonNull AttributeBuilderImpl builder) {
+            super(builder, AttributeType.Integer.SHORT, AttributeType.Integer.UNSIGNED_SHORT);
         }
 
         @Override
@@ -263,8 +259,8 @@ public abstract class VertexAttributeImpl implements VertexAttribute {
      * @author DaPorkchop_
      */
     public static class IntInt3 extends Int3 {
-        public IntInt3(@NonNull VertexAttributeBuilderImpl builder) {
-            super(builder, VertexAttributeType.Integer.INT, VertexAttributeType.Integer.UNSIGNED_INT);
+        public IntInt3(@NonNull AttributeBuilderImpl builder) {
+            super(builder, AttributeType.Integer.INT, AttributeType.Integer.UNSIGNED_INT);
         }
 
         @Override
@@ -278,20 +274,20 @@ public abstract class VertexAttributeImpl implements VertexAttribute {
     /**
      * @author DaPorkchop_
      */
-    protected static abstract class Int4 extends VertexAttributeImpl implements VertexAttribute.Int4 {
-        public Int4(@NonNull VertexAttributeBuilderImpl builder, @NonNull VertexAttributeType.Integer... acceptableTypes) {
+    public static abstract class Int4 extends AttributeImpl implements Attribute.Int4 {
+        public Int4(@NonNull AttributeBuilderImpl builder, @NonNull AttributeType.Integer... acceptableTypes) {
             super(builder, 4);
 
             checkState(Stream.of(acceptableTypes).anyMatch(type -> type == builder.type), "tried to construct %s with invalid type %s", this.getClass().getTypeName(), builder.type);
         }
 
         /**
-         * @see VertexWriter#set(VertexAttribute.Int4, int, int, int, int)
+         * @see LocalAttributeWriter#set(Attribute.Int4, int, int, int, int)
          */
         public abstract void set(Object base, long offset, int v0, int v1, int v2, int v3);
 
         /**
-         * @see VertexWriter#setARGB(VertexAttribute.Int4, int)
+         * @see LocalAttributeWriter#setARGB(Attribute.Int4, int)
          */
         public void setARGB(Object base, long offset, int argb) {
             this.set(base, offset, (argb >>> 16) & 0xFF, (argb >>> 8) & 0xFF, argb & 0xFF, argb >>> 24);
@@ -302,8 +298,8 @@ public abstract class VertexAttributeImpl implements VertexAttribute {
      * @author DaPorkchop_
      */
     public static class ByteInt4 extends Int4 {
-        public ByteInt4(@NonNull VertexAttributeBuilderImpl builder) {
-            super(builder, VertexAttributeType.Integer.BYTE, VertexAttributeType.Integer.UNSIGNED_BYTE);
+        public ByteInt4(@NonNull AttributeBuilderImpl builder) {
+            super(builder, AttributeType.Integer.BYTE, AttributeType.Integer.UNSIGNED_BYTE);
         }
 
         @Override
@@ -319,8 +315,8 @@ public abstract class VertexAttributeImpl implements VertexAttribute {
      * @author DaPorkchop_
      */
     public static class ShortInt4 extends Int4 {
-        public ShortInt4(@NonNull VertexAttributeBuilderImpl builder) {
-            super(builder, VertexAttributeType.Integer.SHORT, VertexAttributeType.Integer.UNSIGNED_SHORT);
+        public ShortInt4(@NonNull AttributeBuilderImpl builder) {
+            super(builder, AttributeType.Integer.SHORT, AttributeType.Integer.UNSIGNED_SHORT);
         }
 
         @Override
@@ -336,8 +332,8 @@ public abstract class VertexAttributeImpl implements VertexAttribute {
      * @author DaPorkchop_
      */
     public static class IntInt4 extends Int4 {
-        public IntInt4(@NonNull VertexAttributeBuilderImpl builder) {
-            super(builder, VertexAttributeType.Integer.INT, VertexAttributeType.Integer.UNSIGNED_INT);
+        public IntInt4(@NonNull AttributeBuilderImpl builder) {
+            super(builder, AttributeType.Integer.INT, AttributeType.Integer.UNSIGNED_INT);
         }
 
         @Override

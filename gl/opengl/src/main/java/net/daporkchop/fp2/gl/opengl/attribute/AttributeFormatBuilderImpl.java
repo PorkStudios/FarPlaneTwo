@@ -18,41 +18,46 @@
  *
  */
 
-package net.daporkchop.fp2.gl.vertex;
+package net.daporkchop.fp2.gl.opengl.attribute;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
-
-import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.attribute.AttributeBuilder;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
 
 /**
- * A group of {@link VertexAttribute}s which defines their layout in memory.
- *
  * @author DaPorkchop_
  */
-public interface VertexFormat {
-    /**
-     * @return all of the {@link VertexAttribute}s in this format
-     */
-    Map<String, VertexAttribute> attribs();
+@RequiredArgsConstructor
+public class AttributeFormatBuilderImpl implements AttributeFormatBuilder {
+    protected final OpenGL gl;
 
-    /**
-     * @return the size in bytes of a single vertex
-     */
-    int size();
+    protected final ImmutableMap.Builder<String, AttributeImpl> attributes = ImmutableMap.builder();
+    protected int size;
 
-    /**
-     * Creates a new {@link VertexWriter} using this vertex format.
-     *
-     * @return a new {@link VertexWriter}
-     */
-    VertexWriter createWriter();
+    //
+    // VertexFormatBuilder
+    //
 
-    /**
-     * Creates a new {@link VertexBuffer} using this vertex format.
-     *
-     * @param usage the {@link BufferUsage} to use for the underlying OpenGL buffers
-     * @return a new {@link VertexBuffer}
-     */
-    VertexBuffer createBuffer(@NonNull BufferUsage usage);
+    @Override
+    public AttributeBuilder.NameSelectionStage attrib() {
+        return new AttributeBuilderImpl(this);
+    }
+
+    @Override
+    public AttributeFormat build() {
+        return new AttributeFormatImpl(this);
+    }
+
+    //
+    // internal
+    //
+
+    protected int addAttribute(@NonNull AttributeImpl attribute) {
+        this.attributes.put(attribute.name, attribute);
+        return this.size++;
+    }
 }

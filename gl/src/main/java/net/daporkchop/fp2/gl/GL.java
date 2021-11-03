@@ -36,8 +36,8 @@ import net.daporkchop.fp2.gl.shader.ShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.VertexShader;
-import net.daporkchop.fp2.gl.vertex.VertexFormat;
-import net.daporkchop.fp2.gl.vertex.VertexFormatBuilder;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -96,9 +96,9 @@ public interface GL extends AutoCloseable {
     IndexFormatBuilder.TypeSelectionStage createIndexFormat();
 
     /**
-     * @return a builder for constructing a new {@link VertexFormat}
+     * @return a builder for constructing a new {@link AttributeFormat}
      */
-    VertexFormatBuilder.LayoutSelectionStage createVertexFormat();
+    AttributeFormatBuilder createAttributeFormat();
 
     /**
      * @return a builder for constructing a new {@link DrawLayout}

@@ -25,7 +25,7 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.index.IndexType;
-import net.daporkchop.fp2.gl.vertex.VertexAttributeType;
+import net.daporkchop.fp2.gl.attribute.AttributeType;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 
@@ -97,9 +97,9 @@ public class GLEnumUtil {
         }
     }
 
-    public int from(@NonNull VertexAttributeType type) {
-        if (type instanceof VertexAttributeType.Integer) {
-            switch ((VertexAttributeType.Integer) type) {
+    public int from(@NonNull AttributeType type) {
+        if (type instanceof AttributeType.Integer) {
+            switch ((AttributeType.Integer) type) {
                 case BYTE:
                     return GL_BYTE;
                 case UNSIGNED_BYTE:
@@ -113,8 +113,8 @@ public class GLEnumUtil {
                 case UNSIGNED_INT:
                     return GL_UNSIGNED_INT;
             }
-        } else if (type instanceof VertexAttributeType.Float) {
-            switch ((VertexAttributeType.Float) type) {
+        } else if (type instanceof AttributeType.Float) {
+            switch ((AttributeType.Float) type) {
                 case FLOAT:
                     return GL_FLOAT;
                 case DOUBLE:

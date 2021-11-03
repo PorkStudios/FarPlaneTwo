@@ -18,63 +18,44 @@
  *
  */
 
-package net.daporkchop.fp2.gl.vertex;
+package net.daporkchop.fp2.gl.attribute.local;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.GLResource;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 
 /**
- * A single vertex attribute.
+ * A resizeable array of local attribute data in server memory.
  *
  * @author DaPorkchop_
  */
-public interface VertexAttribute {
+public interface LocalAttributeBuffer extends GLResource {
     /**
-     * @return this attribute's name
+     * @return the {@link AttributeFormat} used by this buffer
      */
-    String name();
+    AttributeFormat format();
 
     /**
-     * @return this vertex attribute's type
+     * @return the number of attribute data elements that this buffer can store
      */
-    VertexAttributeType type();
+    int capacity();
 
     /**
-     * @return this vertex attribute's interpretation
-     */
-    VertexAttributeInterpretation interpretation();
-
-    /**
-     * @return the number of components in this vertex attribute
-     */
-    int components();
-
-    /**
-     * A vertex attribute consisting of a single integer component.
+     * Sets the capacity of this buffer.
+     * <p>
+     * If the new capacity is less than the current capacity, the buffer's contents will be truncated. If greater than the current capacity, the
+     * data will be extended with undefined contents.
      *
-     * @author DaPorkchop_
+     * @param capacity the new capacity
      */
-    interface Int1 extends VertexAttribute {
-    }
+    void resize(int capacity);
 
     /**
-     * A vertex attribute consisting of two integer components.
+     * Copies the attribute data from the given {@link LocalAttributeWriter} into this buffer.
      *
-     * @author DaPorkchop_
+     * @param startIndex the destination index for the first attribute data element
+     * @param writer     a {@link LocalAttributeWriter} containing the sequence of attribute data elements to copy
+     * @throws IllegalArgumentException if {@code writer} doesn't use {@link #format()}
      */
-    interface Int2 extends VertexAttribute {
-    }
-
-    /**
-     * A vertex attribute consisting of three integer components.
-     *
-     * @author DaPorkchop_
-     */
-    interface Int3 extends VertexAttribute {
-    }
-
-    /**
-     * A vertex attribute consisting of four integer components.
-     *
-     * @author DaPorkchop_
-     */
-    interface Int4 extends VertexAttribute {
-    }
+    void set(int startIndex, @NonNull LocalAttributeWriter writer);
 }

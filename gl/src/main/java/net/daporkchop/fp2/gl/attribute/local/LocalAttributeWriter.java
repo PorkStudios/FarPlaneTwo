@@ -18,53 +18,34 @@
  *
  */
 
-package net.daporkchop.fp2.gl.vertex;
+package net.daporkchop.fp2.gl.attribute.local;
+
+import net.daporkchop.fp2.common.util.capability.CloseableResource;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeWriter;
 
 /**
- * Builder for a {@link VertexFormat}.
+ * A buffer in client memory which is used for building sequences of local attribute data.
  *
  * @author DaPorkchop_
  */
-public interface VertexFormatBuilder {
+public interface LocalAttributeWriter extends BaseAttributeWriter<LocalAttributeWriter>, CloseableResource {
     /**
-     * @return a builder for constructing a new {@link VertexAttribute} which, when built, will belong to the constructed {@link VertexFormat}
+     * @return the number of completed vertices so far
      */
-    VertexAttributeBuilder.NameSelectionStage attrib();
-
-    /**
-     * @return the constructed {@link VertexFormat}
-     */
-    VertexFormat build();
+    int size();
 
     /**
-     * @author DaPorkchop_
+     * Ends the current vertex and starts a new one.
+     *
+     * @return the index of the completed vertex
      */
-    interface LayoutSelectionStage {
-        /**
-         * Configures the {@link VertexFormat} to use interleaved attributes.
-         */
-        AlignmentSelectionStage interleaved();
-
-        /**
-         * Configures the {@link VertexFormat} to use one buffer per attribute.
-         */
-        AlignmentSelectionStage separate();
-    }
+    int endVertex();
 
     /**
-     * @author DaPorkchop_
+     * Copies all attribute values from the given vertex to the current vertex.
+     *
+     * @param srcVertexIndex the index of the vertex from which attribute values are to be copied
      */
-    interface AlignmentSelectionStage {
-        /**
-         * Configures the {@link VertexFormat} to align each attribute to multiples of the given byte count.
-         *
-         * @param alignment the target attribute alignment (in bytes)
-         */
-        VertexFormatBuilder alignedTo(int alignment);
-
-        /**
-         * Configures the {@link VertexFormat} not to do any specific alignment of vertex attributes.
-         */
-        VertexFormatBuilder notAligned();
-    }
+    LocalAttributeWriter copyFrom(int srcVertexIndex);
 }

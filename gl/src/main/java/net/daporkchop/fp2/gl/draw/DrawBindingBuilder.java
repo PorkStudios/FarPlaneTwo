@@ -22,7 +22,7 @@ package net.daporkchop.fp2.gl.draw;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.index.IndexBuffer;
-import net.daporkchop.fp2.gl.vertex.VertexBuffer;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
 
 /**
  * Builder for {@link DrawBinding}s.
@@ -41,7 +41,7 @@ public interface DrawBindingBuilder<B extends DrawBinding> {
      */
     interface UniformsStage {
         /**
-         * Defines the {@link VertexBuffer}(s) which contain the global vertex attributes.
+         * Defines the {@link LocalAttributeBuffer}(s) which contain the global vertex attributes.
          *
          * @param uniforms the global vertex attributes
          */
@@ -54,11 +54,11 @@ public interface DrawBindingBuilder<B extends DrawBinding> {
      */
     interface GlobalsStage {
         /**
-         * Defines the {@link VertexBuffer}(s) which contain the global vertex attributes.
+         * Defines the {@link LocalAttributeBuffer}(s) which contain the global vertex attributes.
          *
          * @param globals the global vertex attributes
          */
-        LocalsStage withGlobals(@NonNull VertexBuffer... globals);
+        LocalsStage withGlobals(@NonNull LocalAttributeBuffer... globals);
     }
 
     /**
@@ -66,11 +66,11 @@ public interface DrawBindingBuilder<B extends DrawBinding> {
      */
     interface LocalsStage {
         /**
-         * Defines the {@link VertexBuffer}(s) which contain the local vertex attributes.
+         * Defines the {@link LocalAttributeBuffer}(s) which contain the local vertex attributes.
          *
          * @param locals the local vertex attributes
          */
-        OptionallyIndexedStage withLocals(@NonNull VertexBuffer... locals);
+        OptionallyIndexedStage withLocals(@NonNull LocalAttributeBuffer... locals);
     }
 
     /**

@@ -18,43 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.gl.vertex;
+package net.daporkchop.fp2.gl.attribute.uniform;
 
-import lombok.NonNull;
 import net.daporkchop.fp2.gl.GLResource;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeWriter;
 
 /**
- * A resizeable array of vertices in server memory.
+ * A single uniform attribute data element.
  *
  * @author DaPorkchop_
  */
-public interface VertexBuffer extends GLResource {
-    /**
-     * @return the {@link VertexFormat} used by this buffer
-     */
-    VertexFormat format();
-
-    /**
-     * @return the number of vertices that this buffer can store
-     */
-    int capacity();
-
-    /**
-     * Sets the capacity of this vertex buffer.
-     * <p>
-     * If the new capacity is less than the current capacity, the buffer's contents will be truncated. If greater than the current capacity, the
-     * data will be extended with undefined contents.
-     *
-     * @param capacity the new capacity
-     */
-    void resize(int capacity);
-
-    /**
-     * Copies the vertex data from the given {@link VertexWriter} into this buffer.
-     *
-     * @param startIndex the destination index for the first vertex
-     * @param writer     a {@link VertexWriter} containing the sequence of vertex data to copy
-     * @throws IllegalArgumentException if {@code writer} doesn't use {@link #format()}
-     */
-    void set(int startIndex, @NonNull VertexWriter writer);
+public interface UniformAttributeBuffer extends BaseAttributeWriter<UniformAttributeBuffer>, GLResource {
 }

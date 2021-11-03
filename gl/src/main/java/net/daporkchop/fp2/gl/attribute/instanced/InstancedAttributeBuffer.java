@@ -18,63 +18,44 @@
  *
  */
 
-package net.daporkchop.fp2.gl.vertex;
+package net.daporkchop.fp2.gl.attribute.instanced;
 
-import lombok.RequiredArgsConstructor;
-
-import static net.daporkchop.fp2.common.util.TypeSize.*;
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.GLResource;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 
 /**
- * The different primitive types allowed to be used as a vertex attribute value.
+ * A resizeable array of instanced attribute data in server memory.
  *
  * @author DaPorkchop_
  */
-public interface VertexAttributeType {
+public interface InstancedAttributeBuffer extends GLResource {
     /**
-     * Gets the size (in bytes) of a vertex attribute using this type with the given number of components.
-     *
-     * @param components the vertex attribute component count
-     * @return the size (in bytes)
+     * @return the {@link AttributeFormat} used by this buffer
      */
-    int size(int components);
+    AttributeFormat format();
 
     /**
-     * Integer vertex attribute types.
-     *
-     * @author DaPorkchop_
+     * @return the number of attribute data elements that this buffer can store
      */
-    @RequiredArgsConstructor
-    enum Integer implements VertexAttributeType {
-        BYTE(BYTE_SIZE),
-        UNSIGNED_BYTE(BYTE_SIZE),
-        SHORT(SHORT_SIZE),
-        UNSIGNED_SHORT(SHORT_SIZE),
-        INT(INT_SIZE),
-        UNSIGNED_INT(INT_SIZE);
-
-        private final int size;
-
-        @Override
-        public int size(int components) {
-            return this.size * components;
-        }
-    }
+    int capacity();
 
     /**
-     * Floating-point vertex attribute types.
+     * Sets the capacity of this buffer.
+     * <p>
+     * If the new capacity is less than the current capacity, the buffer's contents will be truncated. If greater than the current capacity, the
+     * data will be extended with undefined contents.
      *
-     * @author DaPorkchop_
+     * @param capacity the new capacity
      */
-    @RequiredArgsConstructor
-    enum Float implements VertexAttributeType {
-        FLOAT(FLOAT_SIZE),
-        DOUBLE(DOUBLE_SIZE);
+    void resize(int capacity);
 
-        private final int size;
-
-        @Override
-        public int size(int components) {
-            return this.size * components;
-        }
-    }
+    /**
+     * Copies the attribute data element from the given {@link InstancedAttributeWriter} into this buffer.
+     *
+     * @param index  the destination index for the attribute data element
+     * @param writer a {@link InstancedAttributeWriter} containing the attribute data element to copy
+     * @throws IllegalArgumentException if {@code writer} doesn't use {@link #format()}
+     */
+    void set(int index, @NonNull InstancedAttributeWriter writer);
 }

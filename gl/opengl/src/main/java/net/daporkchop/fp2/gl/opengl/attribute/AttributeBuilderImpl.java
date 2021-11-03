@@ -18,14 +18,14 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.vertex;
+package net.daporkchop.fp2.gl.opengl.attribute;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.vertex.VertexAttribute;
-import net.daporkchop.fp2.gl.vertex.VertexAttributeBuilder;
-import net.daporkchop.fp2.gl.vertex.VertexAttributeInterpretation;
-import net.daporkchop.fp2.gl.vertex.VertexAttributeType;
+import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.AttributeBuilder;
+import net.daporkchop.fp2.gl.attribute.AttributeInterpretation;
+import net.daporkchop.fp2.gl.attribute.AttributeType;
 
 import java.util.function.Function;
 
@@ -35,14 +35,14 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class VertexAttributeBuilderImpl implements VertexAttributeBuilder.NameSelectionStage, VertexAttributeBuilder.TypeSelectionStage, VertexAttributeBuilder.InterpretationSelectionStage<VertexAttribute>, VertexAttributeBuilder<VertexAttribute> {
+public class AttributeBuilderImpl implements AttributeBuilder.NameSelectionStage, AttributeBuilder.TypeSelectionStage, AttributeBuilder.InterpretationSelectionStage<Attribute>, AttributeBuilder<Attribute> {
     @NonNull
-    protected final VertexFormatBuilderImpl formatBuilder;
+    protected final AttributeFormatBuilderImpl formatBuilder;
 
     protected String name;
-    protected VertexAttributeType type;
-    protected Function<VertexAttributeBuilderImpl, VertexAttributeImpl> finisher;
-    protected VertexAttributeInterpretation interpretation;
+    protected AttributeType type;
+    protected Function<AttributeBuilderImpl, AttributeImpl> finisher;
+    protected AttributeInterpretation interpretation;
 
     protected int reportedComponents = -1;
 
@@ -61,21 +61,21 @@ public class VertexAttributeBuilderImpl implements VertexAttributeBuilder.NameSe
     //
 
     @Override
-    public VertexAttributeBuilder.InterpretationSelectionStage<VertexAttribute.Int1> int1(@NonNull VertexAttributeType.Integer type) {
+    public AttributeBuilder.InterpretationSelectionStage<Attribute.Int1> int1(@NonNull AttributeType.Integer type) {
         this.type = type;
 
         switch (type) {
             case BYTE:
             case UNSIGNED_BYTE:
-                this.finisher = VertexAttributeImpl.ByteInt1::new;
+                this.finisher = AttributeImpl.ByteInt1::new;
                 break;
             case SHORT:
             case UNSIGNED_SHORT:
-                this.finisher = VertexAttributeImpl.ShortInt1::new;
+                this.finisher = AttributeImpl.ShortInt1::new;
                 break;
             case INT:
             case UNSIGNED_INT:
-                this.finisher = VertexAttributeImpl.IntInt1::new;
+                this.finisher = AttributeImpl.IntInt1::new;
                 break;
         }
 
@@ -83,21 +83,21 @@ public class VertexAttributeBuilderImpl implements VertexAttributeBuilder.NameSe
     }
 
     @Override
-    public VertexAttributeBuilder.InterpretationSelectionStage<VertexAttribute.Int2> int2(@NonNull VertexAttributeType.Integer type) {
+    public AttributeBuilder.InterpretationSelectionStage<Attribute.Int2> int2(@NonNull AttributeType.Integer type) {
         this.type = type;
 
         switch (type) {
             case BYTE:
             case UNSIGNED_BYTE:
-                this.finisher = VertexAttributeImpl.ByteInt2::new;
+                this.finisher = AttributeImpl.ByteInt2::new;
                 break;
             case SHORT:
             case UNSIGNED_SHORT:
-                this.finisher = VertexAttributeImpl.ShortInt2::new;
+                this.finisher = AttributeImpl.ShortInt2::new;
                 break;
             case INT:
             case UNSIGNED_INT:
-                this.finisher = VertexAttributeImpl.IntInt2::new;
+                this.finisher = AttributeImpl.IntInt2::new;
                 break;
         }
 
@@ -105,21 +105,21 @@ public class VertexAttributeBuilderImpl implements VertexAttributeBuilder.NameSe
     }
 
     @Override
-    public VertexAttributeBuilder.InterpretationSelectionStage<VertexAttribute.Int3> int3(@NonNull VertexAttributeType.Integer type) {
+    public AttributeBuilder.InterpretationSelectionStage<Attribute.Int3> int3(@NonNull AttributeType.Integer type) {
         this.type = type;
 
         switch (type) {
             case BYTE:
             case UNSIGNED_BYTE:
-                this.finisher = VertexAttributeImpl.ByteInt3::new;
+                this.finisher = AttributeImpl.ByteInt3::new;
                 break;
             case SHORT:
             case UNSIGNED_SHORT:
-                this.finisher = VertexAttributeImpl.ShortInt3::new;
+                this.finisher = AttributeImpl.ShortInt3::new;
                 break;
             case INT:
             case UNSIGNED_INT:
-                this.finisher = VertexAttributeImpl.IntInt3::new;
+                this.finisher = AttributeImpl.IntInt3::new;
                 break;
         }
 
@@ -127,21 +127,21 @@ public class VertexAttributeBuilderImpl implements VertexAttributeBuilder.NameSe
     }
 
     @Override
-    public VertexAttributeBuilder.InterpretationSelectionStage<VertexAttribute.Int4> int4(@NonNull VertexAttributeType.Integer type) {
+    public AttributeBuilder.InterpretationSelectionStage<Attribute.Int4> int4(@NonNull AttributeType.Integer type) {
         this.type = type;
 
         switch (type) {
             case BYTE:
             case UNSIGNED_BYTE:
-                this.finisher = VertexAttributeImpl.ByteInt4::new;
+                this.finisher = AttributeImpl.ByteInt4::new;
                 break;
             case SHORT:
             case UNSIGNED_SHORT:
-                this.finisher = VertexAttributeImpl.ShortInt4::new;
+                this.finisher = AttributeImpl.ShortInt4::new;
                 break;
             case INT:
             case UNSIGNED_INT:
-                this.finisher = VertexAttributeImpl.IntInt4::new;
+                this.finisher = AttributeImpl.IntInt4::new;
                 break;
         }
 
@@ -153,7 +153,7 @@ public class VertexAttributeBuilderImpl implements VertexAttributeBuilder.NameSe
     //
 
     @Override
-    public VertexAttributeBuilder<VertexAttribute> interpretation(@NonNull VertexAttributeInterpretation interpretation) {
+    public AttributeBuilder<Attribute> interpretation(@NonNull AttributeInterpretation interpretation) {
         this.interpretation = interpretation;
         return uncheckedCast(this);
     }
@@ -163,7 +163,7 @@ public class VertexAttributeBuilderImpl implements VertexAttributeBuilder.NameSe
     //
 
     @Override
-    public VertexAttribute build() {
+    public Attribute build() {
         return this.finisher.apply(this);
     }
 }

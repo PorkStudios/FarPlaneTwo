@@ -48,14 +48,14 @@ import net.daporkchop.fp2.gl.opengl.shader.ShaderBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderProgramImpl;
 import net.daporkchop.fp2.gl.opengl.shader.VertexShaderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
-import net.daporkchop.fp2.gl.opengl.vertex.VertexFormatBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.shader.FragmentShader;
 import net.daporkchop.fp2.gl.shader.ShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.VertexShader;
-import net.daporkchop.fp2.gl.vertex.VertexFormatBuilder;
+import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -151,8 +151,8 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public VertexFormatBuilder.LayoutSelectionStage createVertexFormat() {
-        return new VertexFormatBuilderImpl(this);
+    public AttributeFormatBuilder createAttributeFormat() {
+        return new AttributeFormatBuilderImpl(this);
     }
 
     @Override

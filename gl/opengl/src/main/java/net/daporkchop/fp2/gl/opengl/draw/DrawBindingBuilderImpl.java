@@ -28,9 +28,9 @@ import net.daporkchop.fp2.gl.draw.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.index.IndexBuffer;
 import net.daporkchop.fp2.gl.opengl.index.IndexBufferImpl;
 import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutImpl;
-import net.daporkchop.fp2.gl.opengl.vertex.VertexBufferImpl;
-import net.daporkchop.fp2.gl.opengl.vertex.VertexFormatImpl;
-import net.daporkchop.fp2.gl.vertex.VertexBuffer;
+import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -47,8 +47,8 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.UniformsStage,
     @NonNull
     protected final DrawLayoutImpl layout;
 
-    protected VertexBufferImpl[] globals;
-    protected VertexBufferImpl[] locals;
+    protected LocalAttributeBufferImpl[] globals;
+    protected LocalAttributeBufferImpl[] locals;
     protected IndexBufferImpl indices;
 
     //
@@ -65,10 +65,10 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.UniformsStage,
     //
 
     @Override
-    public DrawBindingBuilder.LocalsStage withGlobals(@NonNull VertexBuffer... globals) {
-        this.globals = Stream.of(globals).map(VertexBufferImpl.class::cast).toArray(VertexBufferImpl[]::new);
+    public DrawBindingBuilder.LocalsStage withGlobals(@NonNull LocalAttributeBuffer... globals) {
+        this.globals = Stream.of(globals).map(LocalAttributeBufferImpl.class::cast).toArray(LocalAttributeBufferImpl[]::new);
 
-        Set<VertexFormatImpl> formats = Stream.of(this.globals).map(VertexBufferImpl::format).collect(Collectors.toSet());
+        Set<AttributeFormatImpl> formats = Stream.of(this.globals).map(LocalAttributeBufferImpl::format).collect(Collectors.toSet());
         checkArg(this.layout.globalFormats().equals(formats), "global vertex format mismatch: %s (expected) != %s", this.layout.globalFormats(), formats);
 
         return this;
@@ -79,10 +79,10 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.UniformsStage,
     //
 
     @Override
-    public DrawBindingBuilder.OptionallyIndexedStage withLocals(@NonNull VertexBuffer... locals) {
-        this.locals = Stream.of(locals).map(VertexBufferImpl.class::cast).toArray(VertexBufferImpl[]::new);
+    public DrawBindingBuilder.OptionallyIndexedStage withLocals(@NonNull LocalAttributeBuffer... locals) {
+        this.locals = Stream.of(locals).map(LocalAttributeBufferImpl.class::cast).toArray(LocalAttributeBufferImpl[]::new);
 
-        Set<VertexFormatImpl> formats = Stream.of(this.locals).map(VertexBufferImpl::format).collect(Collectors.toSet());
+        Set<AttributeFormatImpl> formats = Stream.of(this.locals).map(LocalAttributeBufferImpl::format).collect(Collectors.toSet());
         checkArg(this.layout.localFormats().equals(formats), "local vertex format mismatch: %s (expected) != %s", this.layout.localFormats(), formats);
 
         return this;

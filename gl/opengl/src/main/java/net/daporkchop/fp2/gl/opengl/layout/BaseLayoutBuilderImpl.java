@@ -25,8 +25,8 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.layout.BaseLayout;
 import net.daporkchop.fp2.gl.layout.LayoutBuilder;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.vertex.VertexFormatImpl;
-import net.daporkchop.fp2.gl.vertex.VertexFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 
 import java.util.stream.Stream;
 
@@ -38,8 +38,8 @@ public abstract class BaseLayoutBuilderImpl<L extends BaseLayout> implements Lay
     @NonNull
     protected final OpenGL gl;
 
-    protected VertexFormatImpl[] globals;
-    protected VertexFormatImpl[] locals;
+    protected AttributeFormatImpl[] globals;
+    protected AttributeFormatImpl[] locals;
 
     //
     // UniformsStage
@@ -55,8 +55,8 @@ public abstract class BaseLayoutBuilderImpl<L extends BaseLayout> implements Lay
     //
 
     @Override
-    public LocalsStage<L> withGlobals(@NonNull VertexFormat... globals) {
-        this.globals = Stream.of(globals).map(VertexFormatImpl.class::cast).toArray(VertexFormatImpl[]::new);
+    public LocalsStage<L> withGlobals(@NonNull AttributeFormat... globals) {
+        this.globals = Stream.of(globals).map(AttributeFormatImpl.class::cast).toArray(AttributeFormatImpl[]::new);
         return this;
     }
 
@@ -65,8 +65,8 @@ public abstract class BaseLayoutBuilderImpl<L extends BaseLayout> implements Lay
     //
 
     @Override
-    public LayoutBuilder<L> withLocals(@NonNull VertexFormat... locals) {
-        this.locals = Stream.of(locals).map(VertexFormatImpl.class::cast).toArray(VertexFormatImpl[]::new);
+    public LayoutBuilder<L> withLocals(@NonNull AttributeFormat... locals) {
+        this.locals = Stream.of(locals).map(AttributeFormatImpl.class::cast).toArray(AttributeFormatImpl[]::new);
         return this;
     }
 }

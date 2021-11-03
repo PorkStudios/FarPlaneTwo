@@ -25,8 +25,8 @@ import net.daporkchop.fp2.gl.draw.DrawBinding;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutImpl;
-import net.daporkchop.fp2.gl.opengl.vertex.VertexBufferImpl;
-import net.daporkchop.fp2.gl.vertex.VertexFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 
 import java.util.List;
 import java.util.Map;
@@ -61,11 +61,11 @@ public class DrawBindingImpl implements DrawBinding {
             this.api.glBindVertexArray(this.vao);
 
             //collect local bindings by vertex format
-            Map<VertexFormat, List<DrawLayoutImpl.AttributeBinding>> localBindingsGrouped = this.layout.attributeBindings().values().stream()
+            Map<AttributeFormat, List<DrawLayoutImpl.AttributeBinding>> localBindingsGrouped = this.layout.attributeBindings().values().stream()
                     .collect(Collectors.groupingBy(DrawLayoutImpl.AttributeBinding::format));
 
             //configure each VAO
-            for (VertexBufferImpl buffer : builder.locals) {
+            for (LocalAttributeBufferImpl buffer : builder.locals) {
                 List<DrawLayoutImpl.AttributeBinding> localBindings = localBindingsGrouped.remove(buffer.format());
                 checkArg(localBindings != null, buffer.format());
 

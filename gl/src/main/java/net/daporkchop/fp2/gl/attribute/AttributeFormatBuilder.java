@@ -18,19 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw;
-
-import net.daporkchop.fp2.gl.GLResource;
-import net.daporkchop.fp2.gl.shader.ShaderProgram;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
+package net.daporkchop.fp2.gl.attribute;
 
 /**
- * Maps {@link LocalAttributeBuffer}s to {@link ShaderProgram} inputs.
- * <p>
- * A binding does not own any of the buffers or programs it references. The user is responsible for creating and disposing of them properly. Disposing of a resource belonging to a binding
- * before the binding is closed will result in undefined behavior.
+ * Builder for a {@link AttributeFormat}.
  *
  * @author DaPorkchop_
  */
-public interface DrawBinding extends GLResource {
+public interface AttributeFormatBuilder {
+    /**
+     * @return a builder for constructing a new {@link Attribute} which, when built, will belong to the constructed {@link AttributeFormat}
+     */
+    AttributeBuilder.NameSelectionStage attrib();
+
+    /**
+     * @return the constructed {@link AttributeFormat}
+     */
+    AttributeFormat build();
 }

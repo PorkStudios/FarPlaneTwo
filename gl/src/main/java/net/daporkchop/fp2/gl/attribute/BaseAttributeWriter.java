@@ -18,72 +18,52 @@
  *
  */
 
-package net.daporkchop.fp2.gl.vertex;
+package net.daporkchop.fp2.gl.attribute;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.common.util.capability.CloseableResource;
 
 /**
- * A buffer in client memory which is used for building sequences of vertex data.
+ * Base interface which is able to set individual attribute values.
  *
  * @author DaPorkchop_
  */
-public interface VertexWriter extends CloseableResource {
+public interface BaseAttributeWriter<B extends BaseAttributeWriter<B>> {
     /**
-     * @return the {@link VertexFormat} used by this writer
+     * @return the {@link AttributeFormat} used by this writer
      */
-    VertexFormat format();
+    AttributeFormat format();
 
     /**
-     * @return the number of completed vertices so far
-     */
-    int size();
-
-    /**
-     * Ends the current vertex and starts a new one.
+     * Sets the given {@link Attribute.Int1} of the current vertex to the given value.
      *
-     * @return the index of the completed vertex
-     */
-    int endVertex();
-
-    /**
-     * Copies all attribute values from the given vertex to the current vertex.
-     *
-     * @param srcVertexIndex the index of the vertex from which attribute values are to be copied
-     */
-    VertexWriter copyFrom(int srcVertexIndex);
-
-    /**
-     * Sets the given {@link VertexAttribute.Int1} of the current vertex to the given value.
-     *
-     * @param attrib the {@link VertexAttribute.Int1}
+     * @param attrib the {@link Attribute.Int1}
      * @param v0     the value of the 0th component
      */
-    VertexWriter set(@NonNull VertexAttribute.Int1 attrib, int v0);
+    B set(@NonNull Attribute.Int1 attrib, int v0);
 
     /**
-     * Sets the given {@link VertexAttribute.Int2} of the current vertex to the given value.
+     * Sets the given {@link Attribute.Int2} of the current vertex to the given value.
      *
-     * @param attrib the {@link VertexAttribute.Int2}
+     * @param attrib the {@link Attribute.Int2}
      * @param v0     the value of the 0th component
      * @param v1     the value of the 1st component
      */
-    VertexWriter set(@NonNull VertexAttribute.Int2 attrib, int v0, int v1);
+    B set(@NonNull Attribute.Int2 attrib, int v0, int v1);
 
     /**
-     * Sets the given {@link VertexAttribute.Int3} of the current vertex to the given value.
+     * Sets the given {@link Attribute.Int3} of the current vertex to the given value.
      *
-     * @param attrib the {@link VertexAttribute.Int3}
+     * @param attrib the {@link Attribute.Int3}
      * @param v0     the value of the 0th component
      * @param v1     the value of the 1st component
      * @param v2     the value of the 2nd component
      */
-    VertexWriter set(@NonNull VertexAttribute.Int3 attrib, int v0, int v1, int v2);
+    B set(@NonNull Attribute.Int3 attrib, int v0, int v1, int v2);
 
     /**
-     * Sets the given {@link VertexAttribute.Int3} of the current vertex to the given value.
+     * Sets the given {@link Attribute.Int3} of the current vertex to the given value.
      *
-     * @param attrib the {@link VertexAttribute.Int3}
+     * @param attrib the {@link Attribute.Int3}
      * @param argb   the ARGB8888 value. the 4 color channels correspond to the 3 components as follows:<br>
      *               <ul>
      *                   <li>A {@code ->} <i>discarded</i></li>
@@ -92,23 +72,23 @@ public interface VertexWriter extends CloseableResource {
      *                   <li>B {@code ->} 2</li>
      *               </ul>
      */
-    VertexWriter setARGB(@NonNull VertexAttribute.Int3 attrib, int argb);
+    B setARGB(@NonNull Attribute.Int3 attrib, int argb);
 
     /**
-     * Sets the given {@link VertexAttribute.Int4} of the current vertex to the given value.
+     * Sets the given {@link Attribute.Int4} of the current vertex to the given value.
      *
-     * @param attrib the {@link VertexAttribute.Int4}
+     * @param attrib the {@link Attribute.Int4}
      * @param v0     the value of the 0th component
      * @param v1     the value of the 1st component
      * @param v2     the value of the 2nd component
      * @param v3     the value of the 3rd component
      */
-    VertexWriter set(@NonNull VertexAttribute.Int4 attrib, int v0, int v1, int v2, int v3);
+    B set(@NonNull Attribute.Int4 attrib, int v0, int v1, int v2, int v3);
 
     /**
-     * Sets the given {@link VertexAttribute.Int4} of the current vertex to the given value.
+     * Sets the given {@link Attribute.Int4} of the current vertex to the given value.
      *
-     * @param attrib the {@link VertexAttribute.Int4}
+     * @param attrib the {@link Attribute.Int4}
      * @param argb   the ARGB8888 value. the 4 color channels correspond to the 4 components as follows:<br>
      *               <ul>
      *                   <li>A {@code ->} 3</li>
@@ -117,5 +97,5 @@ public interface VertexWriter extends CloseableResource {
      *                   <li>B {@code ->} 2</li>
      *               </ul>
      */
-    VertexWriter setARGB(@NonNull VertexAttribute.Int4 attrib, int argb);
+    B setARGB(@NonNull Attribute.Int4 attrib, int argb);
 }

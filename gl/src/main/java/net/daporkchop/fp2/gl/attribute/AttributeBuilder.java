@@ -18,57 +18,58 @@
  *
  */
 
-package net.daporkchop.fp2.gl.layout;
+package net.daporkchop.fp2.gl.attribute;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 
 /**
- * Builder for {@link BaseLayout}s.
+ * Builder for a {@link Attribute}.
  *
- * @param <L> the type of {@link BaseLayout} to build
+ * @param <V> the type of vertex attribute that will be built
  * @author DaPorkchop_
  */
-public interface LayoutBuilder<L extends BaseLayout> {
+public interface AttributeBuilder<V extends Attribute> {
     /**
-     * @return the constructed {@link L}
+     * @return the built {@link V}
      */
-    L build();
+    V build();
 
     /**
      * @author DaPorkchop_
      */
-    interface UniformsStage<L extends BaseLayout> {
+    interface NameSelectionStage {
         /**
-         * Defines the {@link AttributeFormat}(s) used for the uniform vertex attributes.
+         * Configures the {@link Attribute}'s name.
+         * <p>
+         * The name must be unique across all {@link Attribute}s belonging to the parent {@link AttributeFormatBuilder}.
          *
-         * @param uniforms the formats of the uniform vertex attributes
+         * @param name the name
          */
-        //GlobalsStage<L> withUniforms(@NonNull VertexFormat... uniforms);
-        GlobalsStage<L> withUniforms(); //TODO: uniforms, somehow
+        TypeSelectionStage name(@NonNull String name);
     }
 
     /**
      * @author DaPorkchop_
      */
-    interface GlobalsStage<L extends BaseLayout> {
-        /**
-         * Defines the {@link AttributeFormat}(s) used for the global vertex attributes.
-         *
-         * @param globals the formats of the global vertex attributes
-         */
-        LocalsStage<L> withGlobals(@NonNull AttributeFormat... globals);
+    interface TypeSelectionStage {
+        InterpretationSelectionStage<Attribute.Int1> int1(@NonNull AttributeType.Integer type);
+
+        InterpretationSelectionStage<Attribute.Int2> int2(@NonNull AttributeType.Integer type);
+
+        InterpretationSelectionStage<Attribute.Int3> int3(@NonNull AttributeType.Integer type);
+
+        InterpretationSelectionStage<Attribute.Int4> int4(@NonNull AttributeType.Integer type);
     }
 
     /**
      * @author DaPorkchop_
      */
-    interface LocalsStage<L extends BaseLayout> {
+    interface InterpretationSelectionStage<V extends Attribute> {
         /**
-         * Defines the {@link AttributeFormat}(s) used for the local vertex attributes.
+         * Configures the type that this vertex attribute will be interpreted as.
          *
-         * @param locals the local vertex attributes
+         * @param interpretation the interpretation
          */
-        LayoutBuilder<L> withLocals(@NonNull AttributeFormat... locals);
+        AttributeBuilder<V> interpretation(@NonNull AttributeInterpretation interpretation);
     }
 }

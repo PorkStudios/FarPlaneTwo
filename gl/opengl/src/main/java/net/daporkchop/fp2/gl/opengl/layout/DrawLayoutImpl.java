@@ -28,9 +28,9 @@ import net.daporkchop.fp2.gl.draw.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.draw.DrawBindingBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.vertex.VertexAttributeImpl;
-import net.daporkchop.fp2.gl.opengl.vertex.VertexBufferImpl;
-import net.daporkchop.fp2.gl.opengl.vertex.VertexFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 
 import java.util.Map;
@@ -49,8 +49,8 @@ public abstract class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayou
         super(builder);
 
         //register all locals as standard vertex attributes
-        for (VertexFormatImpl format : builder.locals) {
-            format.attribs().forEach((name, attrib) -> this.registerAttributeBinding(new AttributeBindingStandard(format, (VertexAttributeImpl) attrib)));
+        for (AttributeFormatImpl format : builder.locals) {
+            format.attribs().forEach((name, attrib) -> this.registerAttributeBinding(new AttributeBindingStandard(format, (AttributeImpl) attrib)));
         }
     }
 
@@ -89,9 +89,9 @@ public abstract class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayou
      * @author DaPorkchop_
      */
     public interface AttributeBinding {
-        VertexFormatImpl format();
+        AttributeFormatImpl format();
 
-        void enableAndBind(@NonNull GLAPI api, @NonNull VertexBufferImpl buffer);
+        void enableAndBind(@NonNull GLAPI api, @NonNull LocalAttributeBufferImpl buffer);
 
         void bindAttribLocation(@NonNull GLAPI api, int program);
     }
@@ -102,14 +102,14 @@ public abstract class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayou
     @Data
     protected static class AttributeBindingStandard implements AttributeBinding {
         @NonNull
-        protected final VertexFormatImpl format;
+        protected final AttributeFormatImpl format;
         @NonNull
-        protected final VertexAttributeImpl attrib;
+        protected final AttributeImpl attrib;
 
         protected int bindingIndex = -1;
 
         @Override
-        public void enableAndBind(@NonNull GLAPI api, @NonNull VertexBufferImpl buffer) {
+        public void enableAndBind(@NonNull GLAPI api, @NonNull LocalAttributeBufferImpl buffer) {
             api.glEnableVertexAttribArray(this.bindingIndex);
             buffer.bindAttribute(api, this.bindingIndex, this.attrib);
         }
@@ -125,12 +125,12 @@ public abstract class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayou
      */
     @ToString(callSuper = true)
     protected static class AttributeBindingInstanced extends AttributeBindingStandard {
-        public AttributeBindingInstanced(@NonNull VertexFormatImpl format, @NonNull VertexAttributeImpl attrib) {
+        public AttributeBindingInstanced(@NonNull AttributeFormatImpl format, @NonNull AttributeImpl attrib) {
             super(format, attrib);
         }
 
         @Override
-        public void enableAndBind(@NonNull GLAPI api, @NonNull VertexBufferImpl buffer) {
+        public void enableAndBind(@NonNull GLAPI api, @NonNull LocalAttributeBufferImpl buffer) {
             super.enableAndBind(api, buffer);
 
             api.glVertexAttribDivisor(this.bindingIndex, 1);
@@ -145,8 +145,8 @@ public abstract class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayou
             super(builder);
 
             //register all globals as instanced vertex attributes
-            for (VertexFormatImpl format : builder.globals) {
-                format.attribs().forEach((name, attrib) -> this.registerAttributeBinding(new AttributeBindingInstanced(format, (VertexAttributeImpl) attrib)));
+            for (AttributeFormatImpl format : builder.globals) {
+                format.attribs().forEach((name, attrib) -> this.registerAttributeBinding(new AttributeBindingInstanced(format, (AttributeImpl) attrib)));
             }
         }
     }

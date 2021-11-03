@@ -26,7 +26,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.layout.BaseLayout;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.vertex.VertexFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -39,8 +39,8 @@ public abstract class BaseLayoutImpl implements BaseLayout {
     protected final OpenGL gl;
     protected final GLAPI api;
 
-    protected final Set<VertexFormatImpl> globalFormats;
-    protected final Set<VertexFormatImpl> localFormats;
+    protected final Set<AttributeFormatImpl> globalFormats;
+    protected final Set<AttributeFormatImpl> localFormats;
     
     public BaseLayoutImpl(@NonNull BaseLayoutBuilderImpl builder) {
         this.gl = builder.gl;

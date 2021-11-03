@@ -18,57 +18,63 @@
  *
  */
 
-package net.daporkchop.fp2.gl.layout;
+package net.daporkchop.fp2.gl.attribute;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import lombok.RequiredArgsConstructor;
+
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 
 /**
- * Builder for {@link BaseLayout}s.
+ * The different primitive types allowed to be used as a vertex attribute value.
  *
- * @param <L> the type of {@link BaseLayout} to build
  * @author DaPorkchop_
  */
-public interface LayoutBuilder<L extends BaseLayout> {
+public interface AttributeType {
     /**
-     * @return the constructed {@link L}
+     * Gets the size (in bytes) of a vertex attribute using this type with the given number of components.
+     *
+     * @param components the vertex attribute component count
+     * @return the size (in bytes)
      */
-    L build();
+    int size(int components);
 
     /**
+     * Integer vertex attribute types.
+     *
      * @author DaPorkchop_
      */
-    interface UniformsStage<L extends BaseLayout> {
-        /**
-         * Defines the {@link AttributeFormat}(s) used for the uniform vertex attributes.
-         *
-         * @param uniforms the formats of the uniform vertex attributes
-         */
-        //GlobalsStage<L> withUniforms(@NonNull VertexFormat... uniforms);
-        GlobalsStage<L> withUniforms(); //TODO: uniforms, somehow
+    @RequiredArgsConstructor
+    enum Integer implements AttributeType {
+        BYTE(BYTE_SIZE),
+        UNSIGNED_BYTE(BYTE_SIZE),
+        SHORT(SHORT_SIZE),
+        UNSIGNED_SHORT(SHORT_SIZE),
+        INT(INT_SIZE),
+        UNSIGNED_INT(INT_SIZE);
+
+        private final int size;
+
+        @Override
+        public int size(int components) {
+            return this.size * components;
+        }
     }
 
     /**
+     * Floating-point vertex attribute types.
+     *
      * @author DaPorkchop_
      */
-    interface GlobalsStage<L extends BaseLayout> {
-        /**
-         * Defines the {@link AttributeFormat}(s) used for the global vertex attributes.
-         *
-         * @param globals the formats of the global vertex attributes
-         */
-        LocalsStage<L> withGlobals(@NonNull AttributeFormat... globals);
-    }
+    @RequiredArgsConstructor
+    enum Float implements AttributeType {
+        FLOAT(FLOAT_SIZE),
+        DOUBLE(DOUBLE_SIZE);
 
-    /**
-     * @author DaPorkchop_
-     */
-    interface LocalsStage<L extends BaseLayout> {
-        /**
-         * Defines the {@link AttributeFormat}(s) used for the local vertex attributes.
-         *
-         * @param locals the local vertex attributes
-         */
-        LayoutBuilder<L> withLocals(@NonNull AttributeFormat... locals);
+        private final int size;
+
+        @Override
+        public int size(int components) {
+            return this.size * components;
+        }
     }
 }
