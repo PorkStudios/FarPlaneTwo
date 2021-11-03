@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.gl.attribute;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
@@ -30,6 +31,11 @@ import static net.daporkchop.fp2.common.util.TypeSize.*;
  * @author DaPorkchop_
  */
 public interface AttributeType {
+    /**
+     * @return the size of a single value of this type
+     */
+    int size();
+
     /**
      * Gets the size (in bytes) of a vertex attribute using this type with the given number of components.
      *
@@ -44,6 +50,7 @@ public interface AttributeType {
      * @author DaPorkchop_
      */
     @RequiredArgsConstructor
+    @Getter
     enum Integer implements AttributeType {
         BYTE(BYTE_SIZE),
         UNSIGNED_BYTE(BYTE_SIZE),
@@ -66,6 +73,7 @@ public interface AttributeType {
      * @author DaPorkchop_
      */
     @RequiredArgsConstructor
+    @Getter
     enum Float implements AttributeType {
         FLOAT(FLOAT_SIZE),
         DOUBLE(DOUBLE_SIZE);

@@ -18,12 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.instanced;
+package net.daporkchop.fp2.gl.opengl.attribute.global;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.instanced.InstancedAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.instanced.InstancedAttributeWriter;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
@@ -34,7 +34,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class InstancedAttributeBufferImpl implements InstancedAttributeBuffer {
+public class GlobalAttributeBufferImpl implements GlobalAttributeBuffer {
     protected final AttributeFormatImpl format;
     protected final GLBufferImpl buffer;
 
@@ -42,11 +42,11 @@ public class InstancedAttributeBufferImpl implements InstancedAttributeBuffer {
 
     protected int capacity;
 
-    public InstancedAttributeBufferImpl(@NonNull AttributeFormatImpl format, @NonNull BufferUsage usage) {
+    public GlobalAttributeBufferImpl(@NonNull AttributeFormatImpl format, @NonNull BufferUsage usage) {
         this.format = format;
         this.buffer = format.gl().createBuffer(usage);
 
-        this.stride = format.totalSizeInstanced();
+        this.stride = format.stridePacked();
     }
 
     @Override
@@ -62,8 +62,8 @@ public class InstancedAttributeBufferImpl implements InstancedAttributeBuffer {
     }
 
     @Override
-    public void set(int index, @NonNull InstancedAttributeWriter _writer) {
-        InstancedAttributeWriterImpl writer = (InstancedAttributeWriterImpl) _writer;
+    public void set(int index, @NonNull GlobalAttributeWriter _writer) {
+        GlobalAttributeWriterImpl writer = (GlobalAttributeWriterImpl) _writer;
         checkArg(writer.format() == this.format, "mismatched attribute formats!");
         checkIndex(this.capacity, index);
 

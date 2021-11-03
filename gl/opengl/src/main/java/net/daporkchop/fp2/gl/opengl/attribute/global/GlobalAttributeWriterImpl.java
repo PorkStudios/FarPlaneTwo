@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.instanced;
+package net.daporkchop.fp2.gl.opengl.attribute.global;
 
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -26,7 +26,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.attribute.Attribute;
-import net.daporkchop.fp2.gl.attribute.instanced.InstancedAttributeWriter;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeImpl;
 
@@ -34,7 +34,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.AttributeImpl;
  * @author DaPorkchop_
  */
 @Getter
-public class InstancedAttributeWriterImpl implements InstancedAttributeWriter {
+public class GlobalAttributeWriterImpl implements GlobalAttributeWriter {
     protected final AttributeFormatImpl format;
     @Getter(AccessLevel.NONE)
     protected final Allocator alloc = new DirectMemoryAllocator();
@@ -42,11 +42,11 @@ public class InstancedAttributeWriterImpl implements InstancedAttributeWriter {
     protected final int[] offsets;
     protected long addr;
 
-    public InstancedAttributeWriterImpl(@NonNull AttributeFormatImpl format) {
+    public GlobalAttributeWriterImpl(@NonNull AttributeFormatImpl format) {
         this.format = format;
 
-        this.offsets = format.offsetsInstanced();
-        this.addr = this.alloc.alloc(format.totalSizeInstanced());
+        this.offsets = format.offsetsPacked();
+        this.addr = this.alloc.alloc(format.stridePacked());
     }
 
     @Override
@@ -55,43 +55,43 @@ public class InstancedAttributeWriterImpl implements InstancedAttributeWriter {
     }
 
     @Override
-    public InstancedAttributeWriter set(@NonNull Attribute.Int1 attribIn, int v0) {
-        AttributeImpl.Int1 attrib = (AttributeImpl.Int1) attribIn;
+    public GlobalAttributeWriter set(@NonNull Attribute.Int1 attribIn, int v0) {
+        AttributeImpl attrib = (AttributeImpl) attribIn;
         attrib.set(null, this.addr + this.offsets[attrib.index()], v0);
         return this;
     }
 
     @Override
-    public InstancedAttributeWriter set(@NonNull Attribute.Int2 attribIn, int v0, int v1) {
-        AttributeImpl.Int2 attrib = (AttributeImpl.Int2) attribIn;
+    public GlobalAttributeWriter set(@NonNull Attribute.Int2 attribIn, int v0, int v1) {
+        AttributeImpl attrib = (AttributeImpl) attribIn;
         attrib.set(null, this.addr + this.offsets[attrib.index()], v0, v1);
         return this;
     }
 
     @Override
-    public InstancedAttributeWriter set(@NonNull Attribute.Int3 attribIn, int v0, int v1, int v2) {
-        AttributeImpl.Int3 attrib = (AttributeImpl.Int3) attribIn;
+    public GlobalAttributeWriter set(@NonNull Attribute.Int3 attribIn, int v0, int v1, int v2) {
+        AttributeImpl attrib = (AttributeImpl) attribIn;
         attrib.set(null, this.addr + this.offsets[attrib.index()], v0, v1, v2);
         return this;
     }
 
     @Override
-    public InstancedAttributeWriter setARGB(@NonNull Attribute.Int3 attribIn, int argb) {
-        AttributeImpl.Int3 attrib = (AttributeImpl.Int3) attribIn;
+    public GlobalAttributeWriter setARGB(@NonNull Attribute.Int3 attribIn, int argb) {
+        AttributeImpl attrib = (AttributeImpl) attribIn;
         attrib.setARGB(null, this.addr + this.offsets[attrib.index()], argb);
         return this;
     }
 
     @Override
-    public InstancedAttributeWriter set(@NonNull Attribute.Int4 attribIn, int v0, int v1, int v2, int v3) {
-        AttributeImpl.Int4 attrib = (AttributeImpl.Int4) attribIn;
+    public GlobalAttributeWriter set(@NonNull Attribute.Int4 attribIn, int v0, int v1, int v2, int v3) {
+        AttributeImpl attrib = (AttributeImpl) attribIn;
         attrib.set(null, this.addr + this.offsets[attrib.index()], v0, v1, v2, v3);
         return this;
     }
 
     @Override
-    public InstancedAttributeWriter setARGB(@NonNull Attribute.Int4 attribIn, int argb) {
-        AttributeImpl.Int4 attrib = (AttributeImpl.Int4) attribIn;
+    public GlobalAttributeWriter setARGB(@NonNull Attribute.Int4 attribIn, int argb) {
+        AttributeImpl attrib = (AttributeImpl) attribIn;
         attrib.setARGB(null, this.addr + this.offsets[attrib.index()], argb);
         return this;
     }

@@ -49,7 +49,7 @@ public class LocalAttributeBufferImpl implements LocalAttributeBuffer {
         this.format = format;
         this.buffer = format.gl().createBuffer(usage);
 
-        this.stride = format.totalSizeLocal();
+        this.stride = format.stridePacked();
     }
 
     @Override
@@ -74,6 +74,6 @@ public class LocalAttributeBufferImpl implements LocalAttributeBuffer {
     }
 
     public void bindAttribute(@NonNull GLAPI api, int bindingIndex, @NonNull AttributeImpl attrib) {
-        this.buffer.bind(BufferTarget.ARRAY_BUFFER, target -> attrib.configureVertexAttribute(api, bindingIndex, this.format.offsetsLocal()[attrib.index()], toInt(this.stride, "stride")));
+        this.buffer.bind(BufferTarget.ARRAY_BUFFER, target -> attrib.configureVertexAttribute(api, bindingIndex, this.format.offsetsPacked()[attrib.index()], toInt(this.stride, "stride")));
     }
 }

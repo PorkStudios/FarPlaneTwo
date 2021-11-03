@@ -32,12 +32,12 @@ public interface Attribute {
     String name();
 
     /**
-     * @return this vertex attribute's type
+     * @return this attribute's type
      */
     AttributeType type();
 
     /**
-     * @return this vertex attribute's interpretation
+     * @return this attribute's interpretation
      */
     AttributeInterpretation interpretation();
 
@@ -47,7 +47,7 @@ public interface Attribute {
     int components();
 
     /**
-     * A vertex attribute consisting of a single integer component.
+     * An attribute consisting of a single integer component.
      *
      * @author DaPorkchop_
      */
@@ -55,7 +55,7 @@ public interface Attribute {
     }
 
     /**
-     * A vertex attribute consisting of two integer components.
+     * An attribute consisting of two integer components.
      *
      * @author DaPorkchop_
      */
@@ -63,7 +63,7 @@ public interface Attribute {
     }
 
     /**
-     * A vertex attribute consisting of three integer components.
+     * An attribute consisting of three integer components.
      *
      * @author DaPorkchop_
      */
@@ -71,7 +71,7 @@ public interface Attribute {
     }
 
     /**
-     * A vertex attribute consisting of four integer components.
+     * An attribute consisting of four integer components.
      *
      * @author DaPorkchop_
      */

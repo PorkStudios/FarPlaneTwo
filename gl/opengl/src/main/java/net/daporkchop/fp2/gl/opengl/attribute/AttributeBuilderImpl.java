@@ -41,8 +41,9 @@ public class AttributeBuilderImpl implements AttributeBuilder.NameSelectionStage
 
     protected String name;
     protected AttributeType type;
-    protected Function<AttributeBuilderImpl, AttributeImpl> finisher;
     protected AttributeInterpretation interpretation;
+
+    protected int components = -1;
 
     protected int reportedComponents = -1;
 
@@ -63,88 +64,28 @@ public class AttributeBuilderImpl implements AttributeBuilder.NameSelectionStage
     @Override
     public AttributeBuilder.InterpretationSelectionStage<Attribute.Int1> int1(@NonNull AttributeType.Integer type) {
         this.type = type;
-
-        switch (type) {
-            case BYTE:
-            case UNSIGNED_BYTE:
-                this.finisher = AttributeImpl.ByteInt1::new;
-                break;
-            case SHORT:
-            case UNSIGNED_SHORT:
-                this.finisher = AttributeImpl.ShortInt1::new;
-                break;
-            case INT:
-            case UNSIGNED_INT:
-                this.finisher = AttributeImpl.IntInt1::new;
-                break;
-        }
-
+        this.components = 1;
         return uncheckedCast(this);
     }
 
     @Override
     public AttributeBuilder.InterpretationSelectionStage<Attribute.Int2> int2(@NonNull AttributeType.Integer type) {
         this.type = type;
-
-        switch (type) {
-            case BYTE:
-            case UNSIGNED_BYTE:
-                this.finisher = AttributeImpl.ByteInt2::new;
-                break;
-            case SHORT:
-            case UNSIGNED_SHORT:
-                this.finisher = AttributeImpl.ShortInt2::new;
-                break;
-            case INT:
-            case UNSIGNED_INT:
-                this.finisher = AttributeImpl.IntInt2::new;
-                break;
-        }
-
+        this.components = 2;
         return uncheckedCast(this);
     }
 
     @Override
     public AttributeBuilder.InterpretationSelectionStage<Attribute.Int3> int3(@NonNull AttributeType.Integer type) {
         this.type = type;
-
-        switch (type) {
-            case BYTE:
-            case UNSIGNED_BYTE:
-                this.finisher = AttributeImpl.ByteInt3::new;
-                break;
-            case SHORT:
-            case UNSIGNED_SHORT:
-                this.finisher = AttributeImpl.ShortInt3::new;
-                break;
-            case INT:
-            case UNSIGNED_INT:
-                this.finisher = AttributeImpl.IntInt3::new;
-                break;
-        }
-
+        this.components = 3;
         return uncheckedCast(this);
     }
 
     @Override
     public AttributeBuilder.InterpretationSelectionStage<Attribute.Int4> int4(@NonNull AttributeType.Integer type) {
         this.type = type;
-
-        switch (type) {
-            case BYTE:
-            case UNSIGNED_BYTE:
-                this.finisher = AttributeImpl.ByteInt4::new;
-                break;
-            case SHORT:
-            case UNSIGNED_SHORT:
-                this.finisher = AttributeImpl.ShortInt4::new;
-                break;
-            case INT:
-            case UNSIGNED_INT:
-                this.finisher = AttributeImpl.IntInt4::new;
-                break;
-        }
-
+        this.components = 4;
         return uncheckedCast(this);
     }
 
@@ -164,6 +105,6 @@ public class AttributeBuilderImpl implements AttributeBuilder.NameSelectionStage
 
     @Override
     public Attribute build() {
-        return this.finisher.apply(this);
+        return AttributeGenerator.get(this);
     }
 }

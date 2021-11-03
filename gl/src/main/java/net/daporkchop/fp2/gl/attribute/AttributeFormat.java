@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.gl.attribute;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.instanced.InstancedAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.instanced.InstancedAttributeWriter;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
@@ -50,19 +50,19 @@ public interface AttributeFormat {
     UniformAttributeBuffer createUniformBuffer(@NonNull BufferUsage usage);
 
     /**
-     * Creates a new {@link InstancedAttributeWriter} using this attribute format.
+     * Creates a new {@link GlobalAttributeWriter} using this attribute format.
      *
-     * @return a new {@link InstancedAttributeWriter}
+     * @return a new {@link GlobalAttributeWriter}
      */
-    InstancedAttributeWriter createInstancedWriter();
+    GlobalAttributeWriter createGlobalWriter();
 
     /**
-     * Creates a new {@link InstancedAttributeBuffer} using this attribute format.
+     * Creates a new {@link GlobalAttributeBuffer} using this attribute format.
      *
      * @param usage the {@link BufferUsage} to use for the underlying OpenGL buffers
-     * @return a new {@link InstancedAttributeBuffer}
+     * @return a new {@link GlobalAttributeBuffer}
      */
-    InstancedAttributeBuffer createInstancedBuffer(@NonNull BufferUsage usage);
+    GlobalAttributeBuffer createGlobalBuffer(@NonNull BufferUsage usage);
 
     /**
      * Creates a new {@link LocalAttributeWriter} using this attribute format.

@@ -18,18 +18,18 @@
  *
  */
 
-package net.daporkchop.fp2.gl.attribute.instanced;
+package net.daporkchop.fp2.gl.attribute.global;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.GLResource;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 
 /**
- * A resizeable array of instanced attribute data in server memory.
+ * A resizeable array of global attribute data in server memory.
  *
  * @author DaPorkchop_
  */
-public interface InstancedAttributeBuffer extends GLResource {
+public interface GlobalAttributeBuffer extends GLResource {
     /**
      * @return the {@link AttributeFormat} used by this buffer
      */
@@ -51,11 +51,11 @@ public interface InstancedAttributeBuffer extends GLResource {
     void resize(int capacity);
 
     /**
-     * Copies the attribute data element from the given {@link InstancedAttributeWriter} into this buffer.
+     * Copies the attribute data element from the given {@link GlobalAttributeWriter} into this buffer.
      *
      * @param index  the destination index for the attribute data element
-     * @param writer a {@link InstancedAttributeWriter} containing the attribute data element to copy
+     * @param writer a {@link GlobalAttributeWriter} containing the attribute data element to copy
      * @throws IllegalArgumentException if {@code writer} doesn't use {@link #format()}
      */
-    void set(int index, @NonNull InstancedAttributeWriter writer);
+    void set(int index, @NonNull GlobalAttributeWriter writer);
 }

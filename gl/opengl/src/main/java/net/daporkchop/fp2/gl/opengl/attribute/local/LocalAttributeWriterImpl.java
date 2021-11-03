@@ -26,9 +26,9 @@ import lombok.NonNull;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeImpl;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 /**
@@ -51,7 +51,7 @@ public class LocalAttributeWriterImpl implements LocalAttributeWriter {
     public LocalAttributeWriterImpl(@NonNull AttributeFormatImpl format) {
         this.format = format;
 
-        this.stride = format.totalSizeLocal();
+        this.stride = format.stridePacked();
         this.offsets = new long[format.attribsArray().length];
 
         this.resize(16);
@@ -88,7 +88,7 @@ public class LocalAttributeWriterImpl implements LocalAttributeWriter {
 
         for (AttributeImpl attrib : this.format.attribsArray()) {
             int index = attrib.index();
-            this.offsets[index] = this.addr + this.format.offsetsLocal()[index];
+            this.offsets[index] = this.addr + this.format.offsetsPacked()[index];
         }
     }
 
@@ -98,42 +98,42 @@ public class LocalAttributeWriterImpl implements LocalAttributeWriter {
 
     @Override
     public LocalAttributeWriter set(@NonNull Attribute.Int1 attribIn, int v0) {
-        AttributeImpl.Int1 attrib = (AttributeImpl.Int1) attribIn;
+        AttributeImpl attrib = (AttributeImpl) attribIn;
         attrib.set(null, this.offset(this.index, attrib.index()), v0);
         return this;
     }
 
     @Override
     public LocalAttributeWriter set(@NonNull Attribute.Int2 attribIn, int v0, int v1) {
-        AttributeImpl.Int2 attrib = (AttributeImpl.Int2) attribIn;
+        AttributeImpl attrib = (AttributeImpl) attribIn;
         attrib.set(null, this.offset(this.index, attrib.index()), v0, v1);
         return this;
     }
 
     @Override
     public LocalAttributeWriter set(@NonNull Attribute.Int3 attribIn, int v0, int v1, int v2) {
-        AttributeImpl.Int3 attrib = (AttributeImpl.Int3) attribIn;
+        AttributeImpl attrib = (AttributeImpl) attribIn;
         attrib.set(null, this.offset(this.index, attrib.index()), v0, v1, v2);
         return this;
     }
 
     @Override
     public LocalAttributeWriter setARGB(@NonNull Attribute.Int3 attribIn, int argb) {
-        AttributeImpl.Int3 attrib = (AttributeImpl.Int3) attribIn;
+        AttributeImpl attrib = (AttributeImpl) attribIn;
         attrib.setARGB(null, this.offset(this.index, attrib.index()), argb);
         return this;
     }
 
     @Override
     public LocalAttributeWriter set(@NonNull Attribute.Int4 attribIn, int v0, int v1, int v2, int v3) {
-        AttributeImpl.Int4 attrib = (AttributeImpl.Int4) attribIn;
+        AttributeImpl attrib = (AttributeImpl) attribIn;
         attrib.set(null, this.offset(this.index, attrib.index()), v0, v1, v2, v3);
         return this;
     }
 
     @Override
     public LocalAttributeWriter setARGB(@NonNull Attribute.Int4 attribIn, int argb) {
-        AttributeImpl.Int4 attrib = (AttributeImpl.Int4) attribIn;
+        AttributeImpl attrib = (AttributeImpl) attribIn;
         attrib.setARGB(null, this.offset(this.index, attrib.index()), argb);
         return this;
     }

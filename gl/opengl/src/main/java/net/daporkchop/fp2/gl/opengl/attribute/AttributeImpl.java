@@ -23,18 +23,12 @@ package net.daporkchop.fp2.gl.opengl.attribute;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.fp2.gl.attribute.AttributeInterpretation;
 import net.daporkchop.fp2.gl.attribute.AttributeType;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
-import net.daporkchop.lib.unsafe.PUnsafe;
-
-import java.util.stream.Stream;
-
-import static net.daporkchop.fp2.common.util.TypeSize.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeWriter;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
+import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 
 /**
  * @author DaPorkchop_
@@ -46,24 +40,29 @@ public abstract class AttributeImpl implements Attribute {
     protected final AttributeInterpretation interpretation;
 
     protected final int index;
-    protected final int size;
 
-    protected final int components;
     @Getter(AccessLevel.NONE)
     protected final int reportedComponents;
 
-    public AttributeImpl(@NonNull AttributeBuilderImpl builder, int components) {
+    public AttributeImpl(@NonNull AttributeBuilderImpl builder) {
         this.name = builder.name;
         this.type = builder.type;
         this.interpretation = builder.interpretation;
 
-        this.components = components;
-        this.reportedComponents = builder.reportedComponents >= 0 ? builder.reportedComponents : components;
+        this.reportedComponents = builder.reportedComponents >= 0 ? builder.reportedComponents : this.components();
 
-        AttributeFormatBuilderImpl formatBuilder = builder.formatBuilder;
-        this.index = formatBuilder.addAttribute(this);
-        this.size = this.type.size(this.components);
+        this.index = builder.formatBuilder.addAttribute(this);
     }
+
+    /**
+     * @return the packed size of this attribute
+     */
+    public abstract int packedSize();
+
+    /**
+     * @return the unpacked size of this attribute
+     */
+    public abstract int unpackedSize();
 
     public void configureVertexAttribute(@NonNull GLAPI api, int bindingIndex, int offset, int stride) {
         int type = GLEnumUtil.from(this.type);
@@ -82,266 +81,38 @@ public abstract class AttributeImpl implements Attribute {
     }
 
     /**
-     * @author DaPorkchop_
+     * @see BaseAttributeWriter#set(Attribute.Int1, int)
      */
-    public static abstract class Int1 extends AttributeImpl implements Attribute.Int1 {
-        public Int1(@NonNull AttributeBuilderImpl builder, @NonNull AttributeType.Integer... acceptableTypes) {
-            super(builder, 1);
-
-            checkState(Stream.of(acceptableTypes).anyMatch(type -> type == builder.type), "tried to construct %s with invalid type %s", this.getClass().getTypeName(), builder.type);
-        }
-
-        /**
-         * @see LocalAttributeWriter#set(Attribute.Int1, int)
-         */
-        public abstract void set(Object base, long offset, int v0);
-    }
+    public abstract void set(Object base, long offset, int v0);
 
     /**
-     * @author DaPorkchop_
+     * @see BaseAttributeWriter#set(Attribute.Int2, int, int)
      */
-    public static class ByteInt1 extends Int1 {
-        public ByteInt1(@NonNull AttributeBuilderImpl builder) {
-            super(builder, AttributeType.Integer.BYTE, AttributeType.Integer.UNSIGNED_BYTE);
-        }
-
-        @Override
-        public void set(Object base, long offset, int v0) {
-            PUnsafe.putByte(base, offset, (byte) v0);
-        }
-    }
+    public abstract void set(Object base, long offset, int v0, int v1);
 
     /**
-     * @author DaPorkchop_
+     * @see BaseAttributeWriter#set(Attribute.Int3, int, int, int)
      */
-    public static class ShortInt1 extends Int1 {
-        public ShortInt1(@NonNull AttributeBuilderImpl builder) {
-            super(builder, AttributeType.Integer.SHORT, AttributeType.Integer.UNSIGNED_SHORT);
-        }
-
-        @Override
-        public void set(Object base, long offset, int v0) {
-            PUnsafe.putShort(base, offset, (short) v0);
-        }
-    }
+    public abstract void set(Object base, long offset, int v0, int v1, int v2);
 
     /**
-     * @author DaPorkchop_
+     * @see BaseAttributeWriter#setARGB(Attribute.Int3, int)
      */
-    public static class IntInt1 extends Int1 {
-        public IntInt1(@NonNull AttributeBuilderImpl builder) {
-            super(builder, AttributeType.Integer.INT, AttributeType.Integer.UNSIGNED_INT);
-        }
-
-        @Override
-        public void set(Object base, long offset, int v0) {
-            PUnsafe.putInt(base, offset, v0);
-        }
-    }
+    /*public void setARGB(Object base, long offset, int argb) {
+        this.set(base, offset, (argb >>> 16) & 0xFF, (argb >>> 8) & 0xFF, argb & 0xFF);
+    }*/
 
     /**
-     * @author DaPorkchop_
+     * @see BaseAttributeWriter#set(Attribute.Int4, int, int, int, int)
      */
-    public static abstract class Int2 extends AttributeImpl implements Attribute.Int2 {
-        public Int2(@NonNull AttributeBuilderImpl builder, @NonNull AttributeType.Integer... acceptableTypes) {
-            super(builder, 2);
-
-            checkState(Stream.of(acceptableTypes).anyMatch(type -> type == builder.type), "tried to construct %s with invalid type %s", this.getClass().getTypeName(), builder.type);
-        }
-
-        /**
-         * @see LocalAttributeWriter#set(Attribute.Int2, int, int)
-         */
-        public abstract void set(Object base, long offset, int v0, int v1);
-    }
+    public abstract void set(Object base, long offset, int v0, int v1, int v2, int v3);
 
     /**
-     * @author DaPorkchop_
+     * @see BaseAttributeWriter#setARGB(Attribute.Int4, int)
      */
-    public static class ByteInt2 extends Int2 {
-        public ByteInt2(@NonNull AttributeBuilderImpl builder) {
-            super(builder, AttributeType.Integer.BYTE, AttributeType.Integer.UNSIGNED_BYTE);
-        }
-
-        @Override
-        public void set(Object base, long offset, int v0, int v1) {
-            PUnsafe.putByte(base, offset + 0 * BYTE_SIZE, (byte) v0);
-            PUnsafe.putByte(base, offset + 1 * BYTE_SIZE, (byte) v1);
-        }
+    public void setARGB(Object base, long offset, int argb) {
+        this.set(base, offset, (argb >>> 16) & 0xFF, (argb >>> 8) & 0xFF, argb & 0xFF, argb >>> 24);
     }
 
-    /**
-     * @author DaPorkchop_
-     */
-    public static class ShortInt2 extends Int2 {
-        public ShortInt2(@NonNull AttributeBuilderImpl builder) {
-            super(builder, AttributeType.Integer.SHORT, AttributeType.Integer.UNSIGNED_SHORT);
-        }
-
-        @Override
-        public void set(Object base, long offset, int v0, int v1) {
-            PUnsafe.putShort(base, offset + 0 * SHORT_SIZE, (short) v0);
-            PUnsafe.putShort(base, offset + 1 * SHORT_SIZE, (short) v1);
-        }
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public static class IntInt2 extends Int2 {
-        public IntInt2(@NonNull AttributeBuilderImpl builder) {
-            super(builder, AttributeType.Integer.INT, AttributeType.Integer.UNSIGNED_INT);
-        }
-
-        @Override
-        public void set(Object base, long offset, int v0, int v1) {
-            PUnsafe.putInt(base, offset + 0 * INT_SIZE, v0);
-            PUnsafe.putInt(base, offset + 1 * INT_SIZE, v1);
-        }
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public static abstract class Int3 extends AttributeImpl implements Attribute.Int3 {
-        public Int3(@NonNull AttributeBuilderImpl builder, @NonNull AttributeType.Integer... acceptableTypes) {
-            super(builder, 3);
-
-            checkState(Stream.of(acceptableTypes).anyMatch(type -> type == builder.type), "tried to construct %s with invalid type %s", this.getClass().getTypeName(), builder.type);
-        }
-
-        /**
-         * @see LocalAttributeWriter#set(Attribute.Int3, int, int, int)
-         */
-        public abstract void set(Object base, long offset, int v0, int v1, int v2);
-
-        /**
-         * @see LocalAttributeWriter#setARGB(Attribute.Int3, int)
-         */
-        public void setARGB(Object base, long offset, int argb) {
-            this.set(base, offset, (argb >>> 16) & 0xFF, (argb >>> 8) & 0xFF, argb & 0xFF);
-        }
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public static class ByteInt3 extends Int3 {
-        public ByteInt3(@NonNull AttributeBuilderImpl builder) {
-            super(builder, AttributeType.Integer.BYTE, AttributeType.Integer.UNSIGNED_BYTE);
-        }
-
-        @Override
-        public void set(Object base, long offset, int v0, int v1, int v2) {
-            PUnsafe.putByte(base, offset + 0 * BYTE_SIZE, (byte) v0);
-            PUnsafe.putByte(base, offset + 1 * BYTE_SIZE, (byte) v1);
-            PUnsafe.putByte(base, offset + 2 * BYTE_SIZE, (byte) v2);
-        }
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public static class ShortInt3 extends Int3 {
-        public ShortInt3(@NonNull AttributeBuilderImpl builder) {
-            super(builder, AttributeType.Integer.SHORT, AttributeType.Integer.UNSIGNED_SHORT);
-        }
-
-        @Override
-        public void set(Object base, long offset, int v0, int v1, int v2) {
-            PUnsafe.putShort(base, offset + 0 * SHORT_SIZE, (short) v0);
-            PUnsafe.putShort(base, offset + 1 * SHORT_SIZE, (short) v1);
-            PUnsafe.putShort(base, offset + 2 * SHORT_SIZE, (short) v2);
-        }
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public static class IntInt3 extends Int3 {
-        public IntInt3(@NonNull AttributeBuilderImpl builder) {
-            super(builder, AttributeType.Integer.INT, AttributeType.Integer.UNSIGNED_INT);
-        }
-
-        @Override
-        public void set(Object base, long offset, int v0, int v1, int v2) {
-            PUnsafe.putInt(base, offset + 0 * INT_SIZE, v0);
-            PUnsafe.putInt(base, offset + 1 * INT_SIZE, v1);
-            PUnsafe.putInt(base, offset + 2 * INT_SIZE, v2);
-        }
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public static abstract class Int4 extends AttributeImpl implements Attribute.Int4 {
-        public Int4(@NonNull AttributeBuilderImpl builder, @NonNull AttributeType.Integer... acceptableTypes) {
-            super(builder, 4);
-
-            checkState(Stream.of(acceptableTypes).anyMatch(type -> type == builder.type), "tried to construct %s with invalid type %s", this.getClass().getTypeName(), builder.type);
-        }
-
-        /**
-         * @see LocalAttributeWriter#set(Attribute.Int4, int, int, int, int)
-         */
-        public abstract void set(Object base, long offset, int v0, int v1, int v2, int v3);
-
-        /**
-         * @see LocalAttributeWriter#setARGB(Attribute.Int4, int)
-         */
-        public void setARGB(Object base, long offset, int argb) {
-            this.set(base, offset, (argb >>> 16) & 0xFF, (argb >>> 8) & 0xFF, argb & 0xFF, argb >>> 24);
-        }
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public static class ByteInt4 extends Int4 {
-        public ByteInt4(@NonNull AttributeBuilderImpl builder) {
-            super(builder, AttributeType.Integer.BYTE, AttributeType.Integer.UNSIGNED_BYTE);
-        }
-
-        @Override
-        public void set(Object base, long offset, int v0, int v1, int v2, int v3) {
-            PUnsafe.putByte(base, offset + 0 * BYTE_SIZE, (byte) v0);
-            PUnsafe.putByte(base, offset + 1 * BYTE_SIZE, (byte) v1);
-            PUnsafe.putByte(base, offset + 2 * BYTE_SIZE, (byte) v2);
-            PUnsafe.putByte(base, offset + 3 * BYTE_SIZE, (byte) v3);
-        }
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public static class ShortInt4 extends Int4 {
-        public ShortInt4(@NonNull AttributeBuilderImpl builder) {
-            super(builder, AttributeType.Integer.SHORT, AttributeType.Integer.UNSIGNED_SHORT);
-        }
-
-        @Override
-        public void set(Object base, long offset, int v0, int v1, int v2, int v3) {
-            PUnsafe.putShort(base, offset + 0 * SHORT_SIZE, (short) v0);
-            PUnsafe.putShort(base, offset + 1 * SHORT_SIZE, (short) v1);
-            PUnsafe.putShort(base, offset + 2 * SHORT_SIZE, (short) v2);
-            PUnsafe.putShort(base, offset + 3 * SHORT_SIZE, (short) v3);
-        }
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public static class IntInt4 extends Int4 {
-        public IntInt4(@NonNull AttributeBuilderImpl builder) {
-            super(builder, AttributeType.Integer.INT, AttributeType.Integer.UNSIGNED_INT);
-        }
-
-        @Override
-        public void set(Object base, long offset, int v0, int v1, int v2, int v3) {
-            PUnsafe.putInt(base, offset + 0 * INT_SIZE, v0);
-            PUnsafe.putInt(base, offset + 1 * INT_SIZE, v1);
-            PUnsafe.putInt(base, offset + 2 * INT_SIZE, v2);
-            PUnsafe.putInt(base, offset + 3 * INT_SIZE, v3);
-        }
-    }
+    public abstract void unpack(Object srcBase, long srcOffset, Object dstBase, long dstOffset);
 }
