@@ -34,6 +34,7 @@ import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
+import org.lwjgl.opengl.GL43;
 import org.lwjgl.opengl.GLContext;
 
 import java.nio.ByteBuffer;
@@ -352,5 +353,21 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glVertexAttribDivisor(int index, int divisor) {
         GL33.glVertexAttribDivisor(index, divisor);
+    }
+
+    //
+    //
+    // OpenGL 4.3
+    //
+    //
+
+    @Override
+    public void glMultiDrawArraysIndirect(int mode, long indirect, int primcount, int stride) {
+        GL43.glMultiDrawArraysIndirect(mode, indirect, primcount, stride);
+    }
+
+    @Override
+    public void glMultiDrawElementsIndirect(int mode, int type, long indirect, int primcount, int stride) {
+        GL43.glMultiDrawElementsIndirect(mode, type, indirect, primcount, stride);
     }
 }

@@ -173,4 +173,16 @@ public interface GLAPI {
 
     //GL_ARB_instanced_arrays
     void glVertexAttribDivisor(int index, int divisor);
+
+    //
+    //
+    // OpenGL 4.3
+    //
+    //
+
+    //GL_ARB_multi_draw_indirect
+    void glMultiDrawArraysIndirect(int mode, long indirect, int primcount, int stride);
+
+    //GL_ARB_multi_draw_indirect
+    void glMultiDrawElementsIndirect(int mode, int type, long indirect, int primcount, int stride);
 }

@@ -26,7 +26,7 @@ import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -34,31 +34,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class GlobalAttributeBufferImpl implements GlobalAttributeBuffer {
-    protected final AttributeFormatImpl format;
-    protected final GLBufferImpl buffer;
-
-    protected final long stride;
-
-    protected int capacity;
-
+public class GlobalAttributeBufferImpl extends LocalAttributeBufferImpl implements GlobalAttributeBuffer {
     public GlobalAttributeBufferImpl(@NonNull AttributeFormatImpl format, @NonNull BufferUsage usage) {
-        this.format = format;
-        this.buffer = format.gl().createBuffer(usage);
-
-        this.stride = format.stridePacked();
-    }
-
-    @Override
-    public void close() {
-        this.buffer.close();
-    }
-
-    @Override
-    public void resize(int capacity) {
-        this.capacity = capacity;
-
-        this.buffer.capacity(capacity * this.stride);
+        super(format, usage);
     }
 
     @Override

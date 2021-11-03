@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.gl.draw;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
 import net.daporkchop.fp2.gl.index.IndexBuffer;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
 
@@ -54,11 +55,11 @@ public interface DrawBindingBuilder<B extends DrawBinding> {
      */
     interface GlobalsStage {
         /**
-         * Defines the {@link LocalAttributeBuffer}(s) which contain the global vertex attributes.
+         * Defines the {@link GlobalAttributeBuffer}(s) which contain the global vertex attributes.
          *
          * @param globals the global vertex attributes
          */
-        LocalsStage withGlobals(@NonNull LocalAttributeBuffer... globals);
+        LocalsStage withGlobals(@NonNull GlobalAttributeBuffer... globals);
     }
 
     /**

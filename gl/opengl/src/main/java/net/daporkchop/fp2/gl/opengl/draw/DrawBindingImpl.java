@@ -24,6 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.draw.DrawBinding;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
@@ -68,6 +69,12 @@ public class DrawBindingImpl implements DrawBinding {
             for (LocalAttributeBufferImpl buffer : builder.locals) {
                 List<DrawLayoutImpl.AttributeBinding> localBindings = localBindingsGrouped.remove(buffer.format());
                 checkArg(localBindings != null, buffer.format());
+
+                localBindings.forEach(binding -> binding.enableAndBind(this.api, buffer));
+            }
+            for (GlobalAttributeBufferImpl buffer : builder.globals) {
+                List<DrawLayoutImpl.AttributeBinding> localBindings = localBindingsGrouped.remove(buffer.format());
+                checkArg(localBindings != null, buffer.format()); //TODO: this will no longer be the case once we support something other than instanced attributes
 
                 localBindings.forEach(binding -> binding.enableAndBind(this.api, buffer));
             }

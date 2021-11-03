@@ -29,8 +29,8 @@ import net.daporkchop.fp2.gl.command.CommandBufferElements;
 import net.daporkchop.fp2.gl.draw.DrawBinding;
 import net.daporkchop.fp2.gl.draw.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.command.arrays.CommandBufferArraysImpl_MultiDraw;
-import net.daporkchop.fp2.gl.opengl.command.elements.CommandBufferElementsImpl_MultiDrawBaseVertex;
+import net.daporkchop.fp2.gl.opengl.command.arrays.CommandBufferArraysImpl_IndirectMultiDraw;
+import net.daporkchop.fp2.gl.opengl.command.elements.CommandBufferElementsImpl_IndirectMultiDraw;
 
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -82,9 +82,9 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder.TypeStage,
     @Override
     public BaseCommandBuffer build() {
         if (this.elements) {
-            return new CommandBufferElementsImpl_MultiDrawBaseVertex(this);
+            return new CommandBufferElementsImpl_IndirectMultiDraw(this);
         } else {
-            return new CommandBufferArraysImpl_MultiDraw(this);
+            return new CommandBufferArraysImpl_IndirectMultiDraw(this);
         }
     }
 }

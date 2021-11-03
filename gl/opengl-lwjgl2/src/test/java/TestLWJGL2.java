@@ -24,6 +24,8 @@ import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.CommandBufferArrays;
 import net.daporkchop.fp2.gl.draw.DrawBinding;
@@ -118,9 +120,23 @@ public class TestLWJGL2 {
             localFormat = builder.build();
         }
 
+        Attribute.Int2 attrOffset;
+        AttributeFormat globalFormat;
+
+        {
+            AttributeFormatBuilder builder = gl.createAttributeFormat();
+
+            attrOffset = builder.attrib().name("a_offset")
+                    .int2(AttributeType.Integer.BYTE)
+                    .interpretation(AttributeInterpretation.FLOAT)
+                    .build();
+
+            globalFormat = builder.build();
+        }
+
         DrawLayout layout = gl.createDrawLayout()
                 .withUniforms()
-                .withGlobals()
+                .withGlobals(globalFormat)
                 .withLocals(localFormat)
                 .build();
 
@@ -148,9 +164,21 @@ public class TestLWJGL2 {
             localBuffer.set(0, writer);
         }
 
+        GlobalAttributeBuffer globalBuffer = globalFormat.createGlobalBuffer(BufferUsage.STATIC_DRAW);
+        globalBuffer.resize(4);
+
+        try (GlobalAttributeWriter writer = globalFormat.createGlobalWriter()) {
+            for (int i = 0, x = 0; x < 2; x++) {
+                for (int y = 0; y < 2; y++, i++) {
+                    writer.set(attrOffset, x * 32, y * 32);
+                    globalBuffer.set(i, writer);
+                }
+            }
+        }
+
         DrawBinding binding = layout.createBinding()
                 .withUniforms()
-                .withGlobals()
+                .withGlobals(globalBuffer)
                 .withLocals(localBuffer)
                 .build();
 
@@ -158,8 +186,11 @@ public class TestLWJGL2 {
                 .forArrays(binding)
                 .build();
 
-        commandBufferArrays.resize(1);
+        commandBufferArrays.resize(4);
         commandBufferArrays.set(0, 0, 4);
+        commandBufferArrays.set(1, 0, 4);
+        commandBufferArrays.set(2, 0, 4);
+        commandBufferArrays.set(3, 0, 4);
 
         while (!Display.isCloseRequested()) {
             commandBufferArrays.execute(DrawMode.QUADS, shaderProgram);

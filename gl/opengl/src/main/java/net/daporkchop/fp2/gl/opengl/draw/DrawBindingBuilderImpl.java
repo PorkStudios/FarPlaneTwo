@@ -22,10 +22,12 @@ package net.daporkchop.fp2.gl.opengl.draw;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
 import net.daporkchop.fp2.gl.draw.DrawBinding;
 import net.daporkchop.fp2.gl.draw.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.draw.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.index.IndexBuffer;
+import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.index.IndexBufferImpl;
 import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
@@ -47,7 +49,7 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.UniformsStage,
     @NonNull
     protected final DrawLayoutImpl layout;
 
-    protected LocalAttributeBufferImpl[] globals;
+    protected GlobalAttributeBufferImpl[] globals;
     protected LocalAttributeBufferImpl[] locals;
     protected IndexBufferImpl indices;
 
@@ -65,10 +67,10 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.UniformsStage,
     //
 
     @Override
-    public DrawBindingBuilder.LocalsStage withGlobals(@NonNull LocalAttributeBuffer... globals) {
-        this.globals = Stream.of(globals).map(LocalAttributeBufferImpl.class::cast).toArray(LocalAttributeBufferImpl[]::new);
+    public DrawBindingBuilder.LocalsStage withGlobals(@NonNull GlobalAttributeBuffer... globals) {
+        this.globals = Stream.of(globals).map(GlobalAttributeBufferImpl.class::cast).toArray(GlobalAttributeBufferImpl[]::new);
 
-        Set<AttributeFormatImpl> formats = Stream.of(this.globals).map(LocalAttributeBufferImpl::format).collect(Collectors.toSet());
+        Set<AttributeFormatImpl> formats = Stream.of(this.globals).map(GlobalAttributeBufferImpl::format).collect(Collectors.toSet());
         checkArg(this.layout.globalFormats().equals(formats), "global vertex format mismatch: %s (expected) != %s", this.layout.globalFormats(), formats);
 
         return this;
