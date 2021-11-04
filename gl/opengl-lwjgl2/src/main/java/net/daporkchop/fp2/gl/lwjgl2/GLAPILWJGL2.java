@@ -369,6 +369,16 @@ public class GLAPILWJGL2 implements GLAPI {
         GL30.glVertexAttribIPointer(index, size, type, stride, buffer_buffer_offset);
     }
 
+    @Override
+    public void glBindBufferBase(int target, int index, int buffer) {
+        GL30.glBindBufferBase(target, index, buffer);
+    }
+
+    @Override
+    public void glBindBufferRange(int target, int index, int buffer, long offset, long size) {
+        GL30.glBindBufferRange(target, index, buffer, offset, size);
+    }
+
     //
     //
     // OpenGL 3.1
@@ -390,6 +400,16 @@ public class GLAPILWJGL2 implements GLAPI {
     // OpenGL 3.2
     //
     //
+
+    @Override
+    public long glGetLong(int pname) {
+        return GL32.glGetInteger64(pname);
+    }
+
+    @Override
+    public long glGetLong(int pname, int idx) {
+        return GL32.glGetInteger64(pname, idx);
+    }
 
     @Override
     public void glDrawElementsBaseVertex(int mode, int count, int type, long indices, int basevertex) {

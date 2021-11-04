@@ -65,6 +65,7 @@ public class UniformAttributeBufferImpl extends BaseAttributeBufferImpl implemen
     public UniformAttributeBuffer set(@NonNull Attribute.Int1 attribIn, int v0) {
         AttributeImpl attrib = (AttributeImpl) attribIn;
         attrib.setUnpacked(null, this.addr + this.offsets[attrib.index()], v0);
+        this.buffer.upload(this.addr, this.stride);
         return this;
     }
 
@@ -72,6 +73,7 @@ public class UniformAttributeBufferImpl extends BaseAttributeBufferImpl implemen
     public UniformAttributeBuffer set(@NonNull Attribute.Int2 attribIn, int v0, int v1) {
         AttributeImpl attrib = (AttributeImpl) attribIn;
         attrib.setUnpacked(null, this.addr + this.offsets[attrib.index()], v0, v1);
+        this.buffer.upload(this.addr, this.stride);
         return this;
     }
 
@@ -79,6 +81,7 @@ public class UniformAttributeBufferImpl extends BaseAttributeBufferImpl implemen
     public UniformAttributeBuffer set(@NonNull Attribute.Int3 attribIn, int v0, int v1, int v2) {
         AttributeImpl attrib = (AttributeImpl) attribIn;
         attrib.setUnpacked(null, this.addr + this.offsets[attrib.index()], v0, v1, v2);
+        this.buffer.upload(this.addr, this.stride);
         return this;
     }
 
@@ -86,6 +89,7 @@ public class UniformAttributeBufferImpl extends BaseAttributeBufferImpl implemen
     public UniformAttributeBuffer setARGB(@NonNull Attribute.Int3 attribIn, int argb) {
         AttributeImpl attrib = (AttributeImpl) attribIn;
         attrib.setUnpackedARGB(null, this.addr + this.offsets[attrib.index()], argb);
+        this.buffer.upload(this.addr, this.stride);
         return this;
     }
 
@@ -93,6 +97,7 @@ public class UniformAttributeBufferImpl extends BaseAttributeBufferImpl implemen
     public UniformAttributeBuffer set(@NonNull Attribute.Int4 attribIn, int v0, int v1, int v2, int v3) {
         AttributeImpl attrib = (AttributeImpl) attribIn;
         attrib.setUnpacked(null, this.addr + this.offsets[attrib.index()], v0, v1, v2, v3);
+        this.buffer.upload(this.addr, this.stride);
         return this;
     }
 
@@ -100,6 +105,7 @@ public class UniformAttributeBufferImpl extends BaseAttributeBufferImpl implemen
     public UniformAttributeBuffer setARGB(@NonNull Attribute.Int4 attribIn, int argb) {
         AttributeImpl attrib = (AttributeImpl) attribIn;
         attrib.setUnpackedARGB(null, this.addr + this.offsets[attrib.index()], argb);
+        this.buffer.upload(this.addr, this.stride);
         return this;
     }
 }

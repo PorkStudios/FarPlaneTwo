@@ -20,7 +20,9 @@
 
 package net.daporkchop.fp2.gl.opengl.draw;
 
+import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
 import net.daporkchop.fp2.gl.draw.DrawBinding;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
@@ -29,6 +31,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.buffer.IndexedBufferTarget;
 import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
@@ -54,6 +57,7 @@ public class DrawBindingImpl implements DrawBinding {
     protected final DrawLayoutImpl layout;
 
     protected final int vao;
+    protected final List<UniformBufferBinding> uniformBufffers;
 
     public DrawBindingImpl(@NonNull DrawBindingBuilderImpl builder) {
         this.layout = builder.layout;
@@ -83,6 +87,16 @@ public class DrawBindingImpl implements DrawBinding {
         } finally {
             this.api.glBindVertexArray(oldVao);
         }
+
+        //configure uniform buffers
+        this.uniformBufffers = this.layout.uniformBlockBindings().stream()
+                .map(blockBinding -> {
+                    UniformAttributeBufferImpl buffer = (UniformAttributeBufferImpl) buffersByFormat.remove(blockBinding.format());
+                    checkArg(buffer != null, blockBinding.format());
+
+                    return new UniformBufferBinding(buffer, blockBinding.bindingIndex());
+                })
+                .collect(Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
     }
 
     @Override
@@ -92,12 +106,25 @@ public class DrawBindingImpl implements DrawBinding {
 
     public void bind(@NonNull Runnable callback) {
         int oldVao = this.api.glGetInteger(GL_VERTEX_ARRAY_BINDING);
+
         try {
             this.api.glBindVertexArray(this.vao);
+            this.uniformBufffers.forEach(binding -> this.api.glBindBufferBase(GL_UNIFORM_BUFFER, binding.bindingIndex, binding.buffer.buffer().id()));
 
             callback.run();
         } finally {
+            this.uniformBufffers.forEach(binding -> this.api.glBindBufferBase(GL_UNIFORM_BUFFER, binding.bindingIndex, 0)); //this doesn't actually restore the old binding ID...
             this.api.glBindVertexArray(oldVao);
         }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    protected static class UniformBufferBinding {
+        @NonNull
+        protected final UniformAttributeBufferImpl buffer;
+        protected final int bindingIndex;
     }
 }

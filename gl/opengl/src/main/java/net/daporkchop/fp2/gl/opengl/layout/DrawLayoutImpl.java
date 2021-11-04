@@ -54,14 +54,14 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     protected final Map<AttributeFormatImpl, List<VertexBinding>> vertexBindingsByFormat;
 
     protected final List<VertexBinding> vertexBindings;
-    protected final List<UniformBufferBinding> uniformBufferBindings;
+    protected final List<UniformBlockBinding> uniformBlockBindings;
 
     public DrawLayoutImpl(@NonNull DrawLayoutBuilderImpl builder) {
         super(builder);
 
         //create temporary lists
         List<VertexBinding> vertexBindings = new ArrayList<>();
-        List<UniformBufferBinding> uniformBufferBindings = new ArrayList<>();
+        List<UniformBlockBinding> uniformBlockBindings = new ArrayList<>();
 
         //locals
         for (AttributeFormatImpl format : builder.locals) { //register all locals as standard vertex attributes
@@ -85,7 +85,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         //uniforms
         if (this.gl.version().compareTo(GLVersion.OpenGL31) >= 0 || this.gl.extensions().contains(GLExtension.GL_ARB_uniform_buffer_object)) { //register uniforms as uniform buffer blocks
             for (AttributeFormatImpl format : builder.uniforms) {
-                this.addUniformBuffer(uniformBufferBindings, format);
+                this.addUniformBuffer(uniformBlockBindings, format);
             }
         } else {
             throw new UnsupportedOperationException();
@@ -93,7 +93,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
 
         //make temporary lists immutable
         this.vertexBindings = ImmutableList.copyOf(vertexBindings);
-        this.uniformBufferBindings = ImmutableList.copyOf(uniformBufferBindings);
+        this.uniformBlockBindings = ImmutableList.copyOf(uniformBlockBindings);
 
         //final groupings
         this.vertexBindingsByFormat = this.vertexBindings.stream().collect(Collectors.collectingAndThen(
@@ -111,12 +111,12 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         vertexBindings.add(new VertexBinding(attrib.format(), attrib, index, instanced));
     }
 
-    protected void addUniformBuffer(@NonNull List<UniformBufferBinding> uniformBufferBindings, @NonNull AttributeFormatImpl format) {
-        int index = uniformBufferBindings.size();
+    protected void addUniformBuffer(@NonNull List<UniformBlockBinding> uniformBlockBindings, @NonNull AttributeFormatImpl format) {
+        int index = uniformBlockBindings.size();
         int max = this.api.glGetInteger(GL_MAX_UNIFORM_BUFFER_BINDINGS);
         checkIndex(index < max, "cannot use more than %d vertex attributes!", max);
 
-        uniformBufferBindings.add(new UniformBufferBinding(format, index));
+        uniformBlockBindings.add(new UniformBlockBinding(format, index));
     }
 
     @Override
@@ -131,7 +131,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
 
     @Override
     public void configureProgramPostLink(int program) {
-        this.uniformBufferBindings.forEach(binding -> binding.bindBlockLocation(this.api, program));
+        this.uniformBlockBindings.forEach(binding -> binding.bindBlockLocation(this.api, program));
     }
 
     @Override
@@ -171,10 +171,10 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
      * @author DaPorkchop_
      */
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+    @Getter
     @ToString
     @EqualsAndHashCode
-    public static class UniformBufferBinding {
-        @Getter
+    public static class UniformBlockBinding {
         protected final AttributeFormatImpl format;
 
         protected final int bindingIndex;

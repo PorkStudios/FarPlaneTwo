@@ -169,6 +169,10 @@ public interface GLAPI {
 
     void glVertexAttribIPointer(int index, int size, int type, int stride, long buffer_buffer_offset);
 
+    void glBindBufferBase(int target, int index, int buffer);
+
+    void glBindBufferRange(int target, int index, int buffer, long offset, long size);
+
     //
     //
     // OpenGL 3.1
@@ -186,6 +190,10 @@ public interface GLAPI {
     // OpenGL 3.2
     //
     //
+
+    long glGetLong(int pname);
+
+    long glGetLong(int pname, int idx);
 
     //GL_ARB_draw_elements_base_vertex
     void glDrawElementsBaseVertex(int mode, int count, int type, long indices, int basevertex);

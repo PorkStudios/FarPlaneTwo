@@ -73,7 +73,7 @@ public abstract class BaseShaderProgramImpl implements BaseShaderProgram {
     }
 
     public void bind(@NonNull Runnable callback) {
-        int oldProgram = this.api.glGetInteger(GL_ACTIVE_PROGRAM);
+        int oldProgram = this.api.glGetInteger(GL_CURRENT_PROGRAM);
         assert oldProgram == 0 : "a shader is already bound!";
 
         try {

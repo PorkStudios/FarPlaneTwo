@@ -22,17 +22,66 @@ package net.daporkchop.fp2.gl.lwjgl2;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
+import net.daporkchop.fp2.common.asm.ClassloadingUtils;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
+import net.daporkchop.lib.common.reference.ReferenceStrength;
+import net.daporkchop.lib.common.reference.cache.Cached;
+import org.lwjgl.opengl.Util;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.MethodVisitor;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.function.Supplier;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
+import static org.objectweb.asm.Opcodes.*;
 
 /**
  * @author DaPorkchop_
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 class APISupplierLWJGL2 implements Supplier<GLAPI> {
+    private static final Cached<Class<? extends GLAPI>> TRANSFORMED_CLASS_CACHE = Cached.global(
+            () -> Boolean.parseBoolean(System.getProperty("fp2.gl.debug", "false")) ? transformClass() : GLAPILWJGL2.class,
+            ReferenceStrength.WEAK);
+
+    /**
+     * Injects a call to {@link Util#checkGLError()} immediately before every function return.
+     */
+    @SneakyThrows(IOException.class)
+    private static Class<? extends GLAPI> transformClass() {
+        ClassReader reader;
+        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+
+        try (InputStream in = APISupplierLWJGL2.class.getResourceAsStream("GLAPILWJGL2.class")) {
+            reader = new ClassReader(in);
+        }
+
+        reader.accept(new ClassVisitor(ASM5, writer) {
+            @Override
+            public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
+                return new MethodVisitor(ASM5, super.visitMethod(access, name, desc, signature, exceptions)) {
+                    @Override
+                    public void visitInsn(int opcode) {
+                        if (opcode == IRETURN || opcode == LRETURN || opcode == FRETURN || opcode == DRETURN || opcode == ARETURN || opcode == RETURN) {
+                            super.visitMethodInsn(INVOKESTATIC, "org/lwjgl/opengl/Util", "checkGLError", "()V", false);
+                        }
+                        super.visitInsn(opcode);
+                    }
+                };
+            }
+        }, 0);
+
+        return uncheckedCast(ClassloadingUtils.defineHiddenClass(APISupplierLWJGL2.class.getClassLoader(), writer.toByteArray()));
+    }
+
     @Override
+    @SneakyThrows({ IllegalAccessException.class, InstantiationException.class })
     public GLAPI get() {
-        return new GLAPILWJGL2();
+        return TRANSFORMED_CLASS_CACHE.get().newInstance();
     }
 }

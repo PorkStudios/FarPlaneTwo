@@ -226,7 +226,7 @@ public class AttributeGenerator {
                 for (int i = 0; i < components; i++) {
                     mv.visitVarInsn(ALOAD, 1);
                     mv.visitVarInsn(LLOAD, 2);
-                    mv.visitLdcInsn(i * (long) type.size());
+                    mv.visitLdcInsn(i * (long) interpretationSize);
                     mv.visitInsn(LADD);
                     mv.visitVarInsn(ILOAD, 4 + i);
 
@@ -337,6 +337,12 @@ public class AttributeGenerator {
             mv.visitMaxs(0, 0);
             mv.visitEnd();
         }
+
+        /*try {
+            Files.write(Paths.get(className.replace('/', '-') + ".class"), writer.toByteArray());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }*/
 
         return ClassloadingUtils.defineHiddenClass(baseClass.getClassLoader(), writer.toByteArray());
     }

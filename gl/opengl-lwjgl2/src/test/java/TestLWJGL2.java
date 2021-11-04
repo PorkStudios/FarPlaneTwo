@@ -24,8 +24,16 @@ import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
+import net.daporkchop.fp2.gl.attribute.AttributeInterpretation;
+import net.daporkchop.fp2.gl.attribute.AttributeType;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.CommandBufferArrays;
 import net.daporkchop.fp2.gl.draw.DrawBinding;
@@ -36,13 +44,6 @@ import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.VertexShader;
-import net.daporkchop.fp2.gl.attribute.Attribute;
-import net.daporkchop.fp2.gl.attribute.AttributeInterpretation;
-import net.daporkchop.fp2.gl.attribute.AttributeType;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
@@ -101,7 +102,6 @@ public class TestLWJGL2 {
     @SneakyThrows({ ShaderCompilationException.class, ShaderLinkageException.class })
     private static void run(@NonNull GL gl) {
         Attribute.Int2 attrPos;
-        Attribute.Int4 attrColor;
         AttributeFormat localFormat;
 
         {
@@ -113,15 +113,11 @@ public class TestLWJGL2 {
                     .interpretation(AttributeInterpretation.FLOAT)
                     .build();
 
-            attrColor = builder.attrib().name("a_color")
-                    .int4(AttributeType.Integer.UNSIGNED_BYTE)
-                    .interpretation(AttributeInterpretation.NORMALIZED_FLOAT)
-                    .build();
-
             localFormat = builder.build();
         }
 
         Attribute.Int2 attrOffset;
+        Attribute.Int4 attrColor;
         AttributeFormat globalFormat;
 
         {
@@ -133,11 +129,31 @@ public class TestLWJGL2 {
                     .interpretation(AttributeInterpretation.FLOAT)
                     .build();
 
+            attrColor = builder.attrib().name("a_color")
+                    .int4(AttributeType.Integer.UNSIGNED_BYTE)
+                    .interpretation(AttributeInterpretation.NORMALIZED_FLOAT)
+                    .build();
+
             globalFormat = builder.build();
         }
 
+        Attribute.Int2 attrScale;
+        AttributeFormat uniformFormat;
+
+        {
+            AttributeFormatBuilder builder = gl.createAttributeFormat()
+                    .name("UNIFORM_0");
+
+            attrScale = builder.attrib().name("u_scale")
+                    .int2(AttributeType.Integer.UNSIGNED_BYTE)
+                    .interpretation(AttributeInterpretation.NORMALIZED_FLOAT)
+                    .build();
+
+            uniformFormat = builder.build();
+        }
+
         DrawLayout layout = gl.createDrawLayout()
-                .withUniforms()
+                .withUniforms(uniformFormat)
                 .withGlobals(globalFormat)
                 .withLocals(localFormat)
                 .build();
@@ -158,10 +174,10 @@ public class TestLWJGL2 {
         localBuffer.resize(4);
 
         try (LocalAttributeWriter writer = localFormat.createLocalWriter()) {
-            writer.set(attrPos, 16, 16).setARGB(attrColor, -1).endVertex();
-            writer.set(attrPos, 16, 32).setARGB(attrColor, -1).endVertex();
-            writer.set(attrPos, 32, 32).setARGB(attrColor, -1).endVertex();
-            writer.set(attrPos, 32, 16).setARGB(attrColor, -1).endVertex();
+            writer.set(attrPos, 16, 16).endVertex();
+            writer.set(attrPos, 16, 32).endVertex();
+            writer.set(attrPos, 32, 32).endVertex();
+            writer.set(attrPos, 32, 16).endVertex();
 
             localBuffer.set(0, writer);
         }
@@ -170,16 +186,19 @@ public class TestLWJGL2 {
         globalBuffer.resize(4);
 
         try (GlobalAttributeWriter writer = globalFormat.createGlobalWriter()) {
-            for (int i = 0, x = 0; x < 2; x++) {
-                for (int y = 0; y < 2; y++, i++) {
-                    writer.set(attrOffset, x * 32, y * 32);
+            for (int i = 0, color = -1, x = 0; x < 2; x++) {
+                for (int y = 0; y < 2; y++, color = 0xFF << (i << 3), i++) {
+                    writer.set(attrOffset, x * 32, y * 32).setARGB(attrColor, color);
                     globalBuffer.set(i, writer);
                 }
             }
         }
 
+        UniformAttributeBuffer uniformBuffer = uniformFormat.createUniformBuffer(BufferUsage.STATIC_DRAW);
+        uniformBuffer.set(attrScale, 64, 64);
+
         DrawBinding binding = layout.createBinding()
-                .withUniforms()
+                .withUniforms(uniformBuffer)
                 .withGlobals(globalBuffer)
                 .withLocals(localBuffer)
                 .build();
