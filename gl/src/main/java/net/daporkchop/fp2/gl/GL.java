@@ -98,7 +98,7 @@ public interface GL extends AutoCloseable {
     /**
      * @return a builder for constructing a new {@link AttributeFormat}
      */
-    AttributeFormatBuilder createAttributeFormat();
+    AttributeFormatBuilder.NameSelectionStage createAttributeFormat();
 
     /**
      * @return a builder for constructing a new {@link DrawLayout}

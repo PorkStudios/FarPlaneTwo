@@ -49,6 +49,8 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 public class AttributeFormatImpl implements AttributeFormat {
     protected final OpenGL gl;
 
+    protected final String name;
+
     protected final Map<String, AttributeImpl> attribs;
     protected final AttributeImpl[] attribsArray;
 
@@ -62,9 +64,15 @@ public class AttributeFormatImpl implements AttributeFormat {
 
     protected AttributeFormatImpl(@NonNull AttributeFormatBuilderImpl builder) {
         this.gl = builder.gl;
+        this.name = builder.name;
 
         this.attribs = builder.attributes.build();
         this.attribsArray = this.attribs.values().toArray(new AttributeImpl[0]);
+
+        //set the parent format of each attribute
+        for (AttributeImpl attrib : this.attribsArray) {
+            attrib.format = this;
+        }
 
         int attribCount = this.attribs.size();
 

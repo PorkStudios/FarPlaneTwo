@@ -105,7 +105,8 @@ public class TestLWJGL2 {
         AttributeFormat localFormat;
 
         {
-            AttributeFormatBuilder builder = gl.createAttributeFormat();
+            AttributeFormatBuilder builder = gl.createAttributeFormat()
+                    .name("LOCAL_0");
 
             attrPos = builder.attrib().name("a_pos")
                     .int2(AttributeType.Integer.BYTE)
@@ -124,7 +125,8 @@ public class TestLWJGL2 {
         AttributeFormat globalFormat;
 
         {
-            AttributeFormatBuilder builder = gl.createAttributeFormat();
+            AttributeFormatBuilder builder = gl.createAttributeFormat()
+                    .name("GLOBAL_0");
 
             attrOffset = builder.attrib().name("a_offset")
                     .int2(AttributeType.Integer.BYTE)

@@ -99,42 +99,42 @@ public class LocalAttributeWriterImpl implements LocalAttributeWriter {
     @Override
     public LocalAttributeWriter set(@NonNull Attribute.Int1 attribIn, int v0) {
         AttributeImpl attrib = (AttributeImpl) attribIn;
-        attrib.set(null, this.offset(this.index, attrib.index()), v0);
+        attrib.setPacked(null, this.offset(this.index, attrib.index()), v0);
         return this;
     }
 
     @Override
     public LocalAttributeWriter set(@NonNull Attribute.Int2 attribIn, int v0, int v1) {
         AttributeImpl attrib = (AttributeImpl) attribIn;
-        attrib.set(null, this.offset(this.index, attrib.index()), v0, v1);
+        attrib.setPacked(null, this.offset(this.index, attrib.index()), v0, v1);
         return this;
     }
 
     @Override
     public LocalAttributeWriter set(@NonNull Attribute.Int3 attribIn, int v0, int v1, int v2) {
         AttributeImpl attrib = (AttributeImpl) attribIn;
-        attrib.set(null, this.offset(this.index, attrib.index()), v0, v1, v2);
+        attrib.setPacked(null, this.offset(this.index, attrib.index()), v0, v1, v2);
         return this;
     }
 
     @Override
     public LocalAttributeWriter setARGB(@NonNull Attribute.Int3 attribIn, int argb) {
         AttributeImpl attrib = (AttributeImpl) attribIn;
-        attrib.setARGB(null, this.offset(this.index, attrib.index()), argb);
+        attrib.setPackedARGB(null, this.offset(this.index, attrib.index()), argb);
         return this;
     }
 
     @Override
     public LocalAttributeWriter set(@NonNull Attribute.Int4 attribIn, int v0, int v1, int v2, int v3) {
         AttributeImpl attrib = (AttributeImpl) attribIn;
-        attrib.set(null, this.offset(this.index, attrib.index()), v0, v1, v2, v3);
+        attrib.setPacked(null, this.offset(this.index, attrib.index()), v0, v1, v2, v3);
         return this;
     }
 
     @Override
     public LocalAttributeWriter setARGB(@NonNull Attribute.Int4 attribIn, int argb) {
         AttributeImpl attrib = (AttributeImpl) attribIn;
-        attrib.setARGB(null, this.offset(this.index, attrib.index()), argb);
+        attrib.setPackedARGB(null, this.offset(this.index, attrib.index()), argb);
         return this;
     }
 }

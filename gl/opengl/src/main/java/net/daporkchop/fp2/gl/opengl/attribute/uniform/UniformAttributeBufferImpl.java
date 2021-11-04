@@ -30,15 +30,14 @@ import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 
 /**
  * @author DaPorkchop_
  */
-//TODO: this currently does nothing
 @Getter
-public class UniformAttributeBufferImpl implements UniformAttributeBuffer {
-    protected final AttributeFormatImpl format;
+public class UniformAttributeBufferImpl extends BaseAttributeBufferImpl implements UniformAttributeBuffer {
     protected final GLBufferImpl buffer;
 
     @Getter(AccessLevel.NONE)
@@ -49,7 +48,7 @@ public class UniformAttributeBufferImpl implements UniformAttributeBuffer {
     protected long addr;
 
     public UniformAttributeBufferImpl(@NonNull AttributeFormatImpl format, @NonNull BufferUsage usage) {
-        this.format = format;
+        super(format);
         this.buffer = format.gl().createBuffer(usage);
 
         this.offsets = format.offsetsUnpacked();
@@ -65,42 +64,42 @@ public class UniformAttributeBufferImpl implements UniformAttributeBuffer {
     @Override
     public UniformAttributeBuffer set(@NonNull Attribute.Int1 attribIn, int v0) {
         AttributeImpl attrib = (AttributeImpl) attribIn;
-        attrib.set(null, this.addr + this.offsets[attrib.index()], v0);
+        attrib.setUnpacked(null, this.addr + this.offsets[attrib.index()], v0);
         return this;
     }
 
     @Override
     public UniformAttributeBuffer set(@NonNull Attribute.Int2 attribIn, int v0, int v1) {
         AttributeImpl attrib = (AttributeImpl) attribIn;
-        attrib.set(null, this.addr + this.offsets[attrib.index()], v0, v1);
+        attrib.setUnpacked(null, this.addr + this.offsets[attrib.index()], v0, v1);
         return this;
     }
 
     @Override
     public UniformAttributeBuffer set(@NonNull Attribute.Int3 attribIn, int v0, int v1, int v2) {
         AttributeImpl attrib = (AttributeImpl) attribIn;
-        attrib.set(null, this.addr + this.offsets[attrib.index()], v0, v1, v2);
+        attrib.setUnpacked(null, this.addr + this.offsets[attrib.index()], v0, v1, v2);
         return this;
     }
 
     @Override
     public UniformAttributeBuffer setARGB(@NonNull Attribute.Int3 attribIn, int argb) {
         AttributeImpl attrib = (AttributeImpl) attribIn;
-        attrib.setARGB(null, this.addr + this.offsets[attrib.index()], argb);
+        attrib.setUnpackedARGB(null, this.addr + this.offsets[attrib.index()], argb);
         return this;
     }
 
     @Override
     public UniformAttributeBuffer set(@NonNull Attribute.Int4 attribIn, int v0, int v1, int v2, int v3) {
         AttributeImpl attrib = (AttributeImpl) attribIn;
-        attrib.set(null, this.addr + this.offsets[attrib.index()], v0, v1, v2, v3);
+        attrib.setUnpacked(null, this.addr + this.offsets[attrib.index()], v0, v1, v2, v3);
         return this;
     }
 
     @Override
     public UniformAttributeBuffer setARGB(@NonNull Attribute.Int4 attribIn, int argb) {
         AttributeImpl attrib = (AttributeImpl) attribIn;
-        attrib.setARGB(null, this.addr + this.offsets[attrib.index()], argb);
+        attrib.setUnpackedARGB(null, this.addr + this.offsets[attrib.index()], argb);
         return this;
     }
 }

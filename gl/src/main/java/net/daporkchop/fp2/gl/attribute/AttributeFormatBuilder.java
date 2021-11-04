@@ -20,6 +20,9 @@
 
 package net.daporkchop.fp2.gl.attribute;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.layout.BaseLayout;
+
 /**
  * Builder for a {@link AttributeFormat}.
  *
@@ -35,4 +38,18 @@ public interface AttributeFormatBuilder {
      * @return the constructed {@link AttributeFormat}
      */
     AttributeFormat build();
+
+    /**
+     * @author DaPorkchop_
+     */
+    interface NameSelectionStage {
+        /**
+         * Configures the {@link AttributeFormat}'s name.
+         * <p>
+         * The name must be unique across all {@link AttributeFormat}s belonging to the parent {@link BaseLayout}.
+         *
+         * @param name the name
+         */
+        AttributeFormatBuilder name(@NonNull String name);
+    }
 }

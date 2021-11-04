@@ -21,8 +21,6 @@
 package net.daporkchop.fp2.gl.opengl.layout;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.GLExtension;
-import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 
@@ -36,10 +34,6 @@ public class DrawLayoutBuilderImpl extends BaseLayoutBuilderImpl<DrawLayout> {
 
     @Override
     public DrawLayout build() {
-        if (this.gl.version().compareTo(GLVersion.OpenGL33) >= 0 || this.gl.extensions().contains(GLExtension.GL_ARB_instanced_arrays)) {
-            return new DrawLayoutImpl.Instanced(this);
-        } else {
-            throw new UnsupportedOperationException(); //TODO
-        }
+        return new DrawLayoutImpl(this);
     }
 }

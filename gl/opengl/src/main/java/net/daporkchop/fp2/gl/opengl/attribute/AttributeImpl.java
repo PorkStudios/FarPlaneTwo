@@ -26,7 +26,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.fp2.gl.attribute.AttributeInterpretation;
 import net.daporkchop.fp2.gl.attribute.AttributeType;
-import net.daporkchop.fp2.gl.attribute.BaseAttributeWriter;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 
@@ -38,6 +37,8 @@ public abstract class AttributeImpl implements Attribute {
     protected final String name;
     protected final AttributeType type;
     protected final AttributeInterpretation interpretation;
+
+    protected AttributeFormatImpl format;
 
     protected final int index;
 
@@ -80,39 +81,27 @@ public abstract class AttributeImpl implements Attribute {
         }
     }
 
-    /**
-     * @see BaseAttributeWriter#set(Attribute.Int1, int)
-     */
-    public abstract void set(Object base, long offset, int v0);
+    public abstract void setPacked(Object base, long offset, int v0);
 
-    /**
-     * @see BaseAttributeWriter#set(Attribute.Int2, int, int)
-     */
-    public abstract void set(Object base, long offset, int v0, int v1);
+    public abstract void setPacked(Object base, long offset, int v0, int v1);
 
-    /**
-     * @see BaseAttributeWriter#set(Attribute.Int3, int, int, int)
-     */
-    public abstract void set(Object base, long offset, int v0, int v1, int v2);
+    public abstract void setPacked(Object base, long offset, int v0, int v1, int v2);
 
-    /**
-     * @see BaseAttributeWriter#setARGB(Attribute.Int3, int)
-     */
-    /*public void setARGB(Object base, long offset, int argb) {
-        this.set(base, offset, (argb >>> 16) & 0xFF, (argb >>> 8) & 0xFF, argb & 0xFF);
-    }*/
+    public abstract void setPacked(Object base, long offset, int v0, int v1, int v2, int v3);
 
-    /**
-     * @see BaseAttributeWriter#set(Attribute.Int4, int, int, int, int)
-     */
-    public abstract void set(Object base, long offset, int v0, int v1, int v2, int v3);
+    public abstract void setPackedARGB(Object base, long offset, int argb);
 
-    /**
-     * @see BaseAttributeWriter#setARGB(Attribute.Int4, int)
-     */
-    public void setARGB(Object base, long offset, int argb) {
-        this.set(base, offset, (argb >>> 16) & 0xFF, (argb >>> 8) & 0xFF, argb & 0xFF, argb >>> 24);
-    }
+    public abstract void setUnpacked(Object base, long offset, int v0);
+
+    public abstract void setUnpacked(Object base, long offset, int v0, int v1);
+
+    public abstract void setUnpacked(Object base, long offset, int v0, int v1, int v2);
+
+    public abstract void setUnpacked(Object base, long offset, int v0, int v1, int v2, int v3);
+
+    public abstract void setUnpackedARGB(Object base, long offset, int argb);
 
     public abstract void unpack(Object srcBase, long srcOffset, Object dstBase, long dstOffset);
+
+    public abstract void setUniformFromUnpacked(GLAPI api, int location, Object base, long offset);
 }

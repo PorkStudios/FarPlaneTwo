@@ -21,17 +21,25 @@
 package net.daporkchop.fp2.gl.opengl.draw;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
 import net.daporkchop.fp2.gl.draw.DrawBinding;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -56,31 +64,22 @@ public class DrawBindingImpl implements DrawBinding {
         this.vao = this.api.glGenVertexArray();
         this.gl.resourceArena().register(this, this.vao, this.api::glDeleteVertexArray);
 
-        //configure the VAO
+        //group attribute buffers by attribute format
+        Map<AttributeFormatImpl, BaseAttributeBufferImpl> buffersByFormat = Stream.of(builder.uniforms, builder.globals, builder.locals)
+                .flatMap(Stream::of)
+                .collect(Collectors.toMap(BaseAttributeBufferImpl::format, Function.identity()));
+
+        //configure all vertex attributes in the VAO
         int oldVao = this.api.glGetInteger(GL_VERTEX_ARRAY_BINDING);
         try {
             this.api.glBindVertexArray(this.vao);
 
-            //collect local bindings by vertex format
-            Map<AttributeFormat, List<DrawLayoutImpl.AttributeBinding>> localBindingsGrouped = this.layout.attributeBindings().values().stream()
-                    .collect(Collectors.groupingBy(DrawLayoutImpl.AttributeBinding::format));
+            this.layout.vertexBindingsByFormat().forEach((format, bindings) -> {
+                LocalAttributeBufferImpl buffer = (LocalAttributeBufferImpl) buffersByFormat.remove(format);
+                checkArg(buffer != null, format);
 
-            //configure each VAO
-            for (LocalAttributeBufferImpl buffer : builder.locals) {
-                List<DrawLayoutImpl.AttributeBinding> localBindings = localBindingsGrouped.remove(buffer.format());
-                checkArg(localBindings != null, buffer.format());
-
-                localBindings.forEach(binding -> binding.enableAndBind(this.api, buffer));
-            }
-            for (GlobalAttributeBufferImpl buffer : builder.globals) {
-                List<DrawLayoutImpl.AttributeBinding> localBindings = localBindingsGrouped.remove(buffer.format());
-                checkArg(localBindings != null, buffer.format()); //TODO: this will no longer be the case once we support something other than instanced attributes
-
-                localBindings.forEach(binding -> binding.enableAndBind(this.api, buffer));
-            }
-
-            //ensure every vertex format has been assigned something
-            checkArg(localBindingsGrouped.isEmpty(), localBindingsGrouped.keySet());
+                bindings.forEach(binding -> binding.enableAndBind(this.api, buffer));
+            });
         } finally {
             this.api.glBindVertexArray(oldVao);
         }

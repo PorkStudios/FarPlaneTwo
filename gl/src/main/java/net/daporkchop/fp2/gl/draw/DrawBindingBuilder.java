@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.draw;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
 import net.daporkchop.fp2.gl.index.IndexBuffer;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
 
@@ -46,8 +47,7 @@ public interface DrawBindingBuilder<B extends DrawBinding> {
          *
          * @param uniforms the global vertex attributes
          */
-        //GlobalsStage withUniforms(@NonNull VertexBuffer... uniforms);
-        GlobalsStage withUniforms(); //TODO: implement uniforms somehow
+        GlobalsStage withUniforms(@NonNull UniformAttributeBuffer... uniforms);
     }
 
     /**

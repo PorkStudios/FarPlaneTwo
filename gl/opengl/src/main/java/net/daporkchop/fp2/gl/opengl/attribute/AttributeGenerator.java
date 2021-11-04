@@ -149,45 +149,137 @@ public class AttributeGenerator {
         }
 
         if (type instanceof AttributeType.Integer) {
-            StringBuilder builder = new StringBuilder();
-            builder.append("(Ljava/lang/Object;J");
-            PStrings.appendMany(builder, 'I', components);
-            builder.append(")V");
-
-            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "set", builder.toString(), null, null);
-            mv.visitCode();
-
-            for (int i = 0; i < components; i++) {
-                mv.visitVarInsn(ALOAD, 1);
-                mv.visitVarInsn(LLOAD, 2);
-                mv.visitLdcInsn(i * (long) type.size());
-                mv.visitInsn(LADD);
-                mv.visitVarInsn(ILOAD, 4 + i);
-
-                switch ((AttributeType.Integer) type) {
-                    case BYTE:
-                    case UNSIGNED_BYTE:
-                        mv.visitInsn(I2B);
-                        mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "putByte", "(Ljava/lang/Object;JB)V", false);
-                        break;
-                    case SHORT:
-                    case UNSIGNED_SHORT:
-                        mv.visitInsn(I2S);
-                        mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "putShort", "(Ljava/lang/Object;JS)V", false);
-                        break;
-                    case INT:
-                    case UNSIGNED_INT:
-                        mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "putInt", "(Ljava/lang/Object;JI)V", false);
-                        break;
-                    default:
-                        throw new IllegalArgumentException(type.toString());
-                }
+            String setSignature;
+            {
+                StringBuilder signatureBuilder = new StringBuilder();
+                signatureBuilder.append("(Ljava/lang/Object;J");
+                PStrings.appendMany(signatureBuilder, 'I', components);
+                signatureBuilder.append(")V");
+                setSignature = signatureBuilder.toString();
             }
 
-            mv.visitInsn(RETURN);
+            { //void setPacked(Object base, long offset, int v0, ...);
+                MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "setPacked", setSignature, null, null);
+                mv.visitCode();
 
-            mv.visitMaxs(0, 0);
-            mv.visitEnd();
+                for (int i = 0; i < components; i++) {
+                    mv.visitVarInsn(ALOAD, 1);
+                    mv.visitVarInsn(LLOAD, 2);
+                    mv.visitLdcInsn(i * (long) type.size());
+                    mv.visitInsn(LADD);
+                    mv.visitVarInsn(ILOAD, 4 + i);
+
+                    unsafePutInt(mv, (AttributeType.Integer) type);
+                }
+
+                mv.visitInsn(RETURN);
+
+                mv.visitMaxs(0, 0);
+                mv.visitEnd();
+            }
+
+            if (components == 3 || components == 4) { //void setPackedARGB(Object base, long offset, int argb);
+                MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "setPackedARGB", "(Ljava/lang/Object;JI)V", null, null);
+                mv.visitCode();
+
+                mv.visitVarInsn(ALOAD, 0); //this
+                mv.visitVarInsn(ALOAD, 1); //base
+                mv.visitVarInsn(LLOAD, 2); //offset
+
+                //v0
+                mv.visitVarInsn(ILOAD, 4);
+                mv.visitLdcInsn(16);
+                mv.visitInsn(ISHR); // argb >> 16
+                mv.visitLdcInsn(0xFF);
+                mv.visitInsn(IAND); // <value> & 0xFF
+
+                //v1
+                mv.visitVarInsn(ILOAD, 4);
+                mv.visitLdcInsn(8);
+                mv.visitInsn(ISHR); // argb >> 8
+                mv.visitLdcInsn(0xFF);
+                mv.visitInsn(IAND); // <value> & 0xFF
+
+                //v2
+                mv.visitVarInsn(ILOAD, 4);
+                mv.visitLdcInsn(0xFF);
+                mv.visitInsn(IAND); // argb & 0xFF
+
+                if (components == 4) {
+                    //v3
+                    mv.visitVarInsn(ILOAD, 4);
+                    mv.visitLdcInsn(24);
+                    mv.visitInsn(IUSHR); // argb >>> 24
+                }
+
+                mv.visitMethodInsn(INVOKEVIRTUAL, className, "setPacked", setSignature, false);
+                mv.visitInsn(RETURN);
+
+                mv.visitMaxs(0, 0);
+                mv.visitEnd();
+            }
+
+            { //void setUnpacked(Object base, long offset, int v0, ...);
+                MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "setUnpacked", setSignature, null, null);
+                mv.visitCode();
+
+                for (int i = 0; i < components; i++) {
+                    mv.visitVarInsn(ALOAD, 1);
+                    mv.visitVarInsn(LLOAD, 2);
+                    mv.visitLdcInsn(i * (long) type.size());
+                    mv.visitInsn(LADD);
+                    mv.visitVarInsn(ILOAD, 4 + i);
+
+                    unpackValue(mv, type, interpretation);
+                    unsafePutUnpacked(mv, interpretation);
+                }
+
+                mv.visitInsn(RETURN);
+
+                mv.visitMaxs(0, 0);
+                mv.visitEnd();
+            }
+
+            if (components == 3 || components == 4) { //void setUnpackedARGB(Object base, long offset, int argb);
+                MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "setUnpackedARGB", "(Ljava/lang/Object;JI)V", null, null);
+                mv.visitCode();
+
+                mv.visitVarInsn(ALOAD, 0); //this
+                mv.visitVarInsn(ALOAD, 1); //base
+                mv.visitVarInsn(LLOAD, 2); //offset
+
+                //v0
+                mv.visitVarInsn(ILOAD, 4);
+                mv.visitLdcInsn(16);
+                mv.visitInsn(ISHR); // argb >> 16
+                mv.visitLdcInsn(0xFF);
+                mv.visitInsn(IAND); // <value> & 0xFF
+
+                //v1
+                mv.visitVarInsn(ILOAD, 4);
+                mv.visitLdcInsn(8);
+                mv.visitInsn(ISHR); // argb >> 8
+                mv.visitLdcInsn(0xFF);
+                mv.visitInsn(IAND); // <value> & 0xFF
+
+                //v2
+                mv.visitVarInsn(ILOAD, 4);
+                mv.visitLdcInsn(0xFF);
+                mv.visitInsn(IAND); // argb & 0xFF
+
+                if (components == 4) {
+                    //v3
+                    mv.visitVarInsn(ILOAD, 4);
+                    mv.visitLdcInsn(24);
+                    mv.visitInsn(IUSHR); // argb >>> 24
+                }
+
+                mv.visitMethodInsn(INVOKEVIRTUAL, className, "setUnpacked", setSignature, false);
+                mv.visitInsn(RETURN);
+
+                mv.visitMaxs(0, 0);
+                mv.visitEnd();
+            }
         }
 
         { //void unpack(Object srcBase, long srcOffset, Object dstBase, long dstOffset)
@@ -207,95 +299,9 @@ public class AttributeGenerator {
                 mv.visitLdcInsn(i * (long) type.size());
                 mv.visitInsn(LADD);
 
-                //load values
-                if (type instanceof AttributeType.Integer) {
-                    switch ((AttributeType.Integer) type) {
-                        case BYTE:
-                        case UNSIGNED_BYTE:
-                            mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "getByte", "(Ljava/lang/Object;J)B", false);
-                            break;
-                        case SHORT:
-                        case UNSIGNED_SHORT:
-                            mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "getShort", "(Ljava/lang/Object;J)S", false);
-                            break;
-                        case INT:
-                        case UNSIGNED_INT:
-                            mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "getInt", "(Ljava/lang/Object;J)I", false);
-                            break;
-                    }
-                } else if (type instanceof AttributeType.Float) {
-                    switch ((AttributeType.Float) type) {
-                        case FLOAT:
-                            mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "getFloat", "(Ljava/lang/Object;J)F", false);
-                            break;
-                        case DOUBLE:
-                            throw new UnsupportedOperationException(type.toString());
-                    }
-                }
-
-                //type conversion
-                switch (interpretation) {
-                    case INTEGER:
-                        if (type instanceof AttributeType.Float) {
-                            switch ((AttributeType.Float) type) {
-                                case FLOAT:
-                                    mv.visitInsn(F2I);
-                                    break;
-                                case DOUBLE:
-                                    mv.visitInsn(D2I);
-                                    break;
-                            }
-                        }
-                        break;
-                    case FLOAT:
-                        if (type instanceof AttributeType.Integer) {
-                            mv.visitInsn(I2F);
-                        }
-                        break;
-                    case NORMALIZED_FLOAT:
-                        if (type instanceof AttributeType.Integer) {
-                            mv.visitInsn(I2F);
-
-                            double factor;
-                            switch ((AttributeType.Integer) type) {
-                                case BYTE:
-                                    factor = -Byte.MIN_VALUE;
-                                    break;
-                                case UNSIGNED_BYTE:
-                                    factor = (1 << Byte.SIZE) - 1;
-                                    break;
-                                case SHORT:
-                                    factor = -Short.MIN_VALUE;
-                                    break;
-                                case UNSIGNED_SHORT:
-                                    factor = (1 << Short.SIZE) - 1;
-                                    break;
-                                case INT:
-                                    factor = -((long) Integer.MIN_VALUE);
-                                    break;
-                                case UNSIGNED_INT:
-                                    factor = (1L << (long) Integer.SIZE) - 1L;
-                                    break;
-                                default:
-                                    throw new IllegalArgumentException(type.toString());
-                            }
-
-                            mv.visitLdcInsn((float) (1.0d / factor));
-                            mv.visitInsn(FMUL);
-                        }
-                        break;
-                }
-
-                //store values
-                switch (interpretation) {
-                    case INTEGER:
-                        mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "putInt", "(Ljava/lang/Object;JI)V", false);
-                        break;
-                    case FLOAT:
-                    case NORMALIZED_FLOAT:
-                        mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "putFloat", "(Ljava/lang/Object;JF)V", false);
-                        break;
-                }
+                unsafeGetPacked(mv, type);
+                unpackValue(mv, type, interpretation);
+                unsafePutUnpacked(mv, interpretation);
             }
 
             mv.visitInsn(RETURN);
@@ -304,7 +310,171 @@ public class AttributeGenerator {
             mv.visitEnd();
         }
 
+        { //void setUniformFromUnpacked(GLAPI api, int location, Object base, long offset)
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "setUniformFromUnpacked", "(Lnet/daporkchop/fp2/gl/opengl/GLAPI;ILjava/lang/Object;J)V", null, null);
+            mv.visitCode();
+
+            mv.visitVarInsn(ALOAD, 1); //api
+            mv.visitVarInsn(ILOAD, 2); //location
+
+            for (int i = 0; i < components; i++) {
+                mv.visitVarInsn(ALOAD, 3);
+                mv.visitVarInsn(LLOAD, 4);
+                mv.visitLdcInsn(i * (long) interpretationSize);
+                mv.visitInsn(LADD);
+
+                unsafeGetUnpacked(mv, interpretation);
+            }
+
+            StringBuilder glUniformSignatureBuilder = new StringBuilder();
+            glUniformSignatureBuilder.append("(I");
+            PStrings.appendMany(glUniformSignatureBuilder, interpretation == AttributeInterpretation.INTEGER ? 'I' : 'F', components);
+            glUniformSignatureBuilder.append(")V");
+
+            mv.visitMethodInsn(INVOKEINTERFACE, "net/daporkchop/fp2/gl/opengl/GLAPI", "glUniform", glUniformSignatureBuilder.toString(), true);
+            mv.visitInsn(RETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
         return ClassloadingUtils.defineHiddenClass(baseClass.getClassLoader(), writer.toByteArray());
+    }
+
+    private void unsafeGetInt(@NonNull MethodVisitor mv, @NonNull AttributeType.Integer type) {
+        switch (type) {
+            case BYTE:
+            case UNSIGNED_BYTE:
+                mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "getByte", "(Ljava/lang/Object;J)B", false);
+                break;
+            case SHORT:
+            case UNSIGNED_SHORT:
+                mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "getShort", "(Ljava/lang/Object;J)S", false);
+                break;
+            case INT:
+            case UNSIGNED_INT:
+                mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "getInt", "(Ljava/lang/Object;J)I", false);
+                break;
+            default:
+                throw new IllegalArgumentException(type.toString());
+        }
+    }
+
+    private void unsafePutInt(@NonNull MethodVisitor mv, @NonNull AttributeType.Integer type) {
+        switch (type) {
+            case BYTE:
+            case UNSIGNED_BYTE:
+                mv.visitInsn(I2B);
+                mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "putByte", "(Ljava/lang/Object;JB)V", false);
+                break;
+            case SHORT:
+            case UNSIGNED_SHORT:
+                mv.visitInsn(I2S);
+                mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "putShort", "(Ljava/lang/Object;JS)V", false);
+                break;
+            case INT:
+            case UNSIGNED_INT:
+                mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "putInt", "(Ljava/lang/Object;JI)V", false);
+                break;
+            default:
+                throw new IllegalArgumentException(type.toString());
+        }
+    }
+
+    private void unsafeGetPacked(@NonNull MethodVisitor mv, @NonNull AttributeType type) {
+        if (type instanceof AttributeType.Integer) {
+            unsafeGetInt(mv, (AttributeType.Integer) type);
+        } else if (type instanceof AttributeType.Float) {
+            switch ((AttributeType.Float) type) {
+                case FLOAT:
+                    mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "getFloat", "(Ljava/lang/Object;J)F", false);
+                    break;
+                case DOUBLE:
+                    throw new UnsupportedOperationException(type.toString());
+                default:
+                    throw new IllegalArgumentException(type.toString());
+            }
+        }
+    }
+
+    private void unsafeGetUnpacked(@NonNull MethodVisitor mv, @NonNull AttributeInterpretation interpretation) {
+        switch (interpretation) {
+            case INTEGER:
+                mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "getInt", "(Ljava/lang/Object;J)I", false);
+                break;
+            case FLOAT:
+            case NORMALIZED_FLOAT:
+                mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "getFloat", "(Ljava/lang/Object;J)F", false);
+                break;
+            default:
+                throw new IllegalArgumentException(interpretation.toString());
+        }
+    }
+
+    private void unsafePutUnpacked(@NonNull MethodVisitor mv, @NonNull AttributeInterpretation interpretation) {
+        switch (interpretation) {
+            case INTEGER:
+                mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "putInt", "(Ljava/lang/Object;JI)V", false);
+                break;
+            case FLOAT:
+            case NORMALIZED_FLOAT:
+                mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "putFloat", "(Ljava/lang/Object;JF)V", false);
+                break;
+            default:
+                throw new IllegalArgumentException(interpretation.toString());
+        }
+    }
+
+    private void unpackValue(@NonNull MethodVisitor mv, @NonNull AttributeType type, @NonNull AttributeInterpretation interpretation) {
+        switch (interpretation) {
+            case INTEGER:
+                if (type instanceof AttributeType.Float) {
+                    switch ((AttributeType.Float) type) {
+                        case FLOAT:
+                            mv.visitInsn(F2I);
+                            break;
+                        case DOUBLE:
+                            mv.visitInsn(D2I);
+                            break;
+                        default:
+                            throw new IllegalArgumentException(type.toString());
+                    }
+                }
+                break;
+            case FLOAT:
+                if (type instanceof AttributeType.Integer) {
+                    mv.visitInsn(I2F);
+                }
+                break;
+            case NORMALIZED_FLOAT:
+                if (type instanceof AttributeType.Integer) {
+                    mv.visitInsn(I2F);
+                    mv.visitLdcInsn((float) (1.0d / inverseNormalizeFactor((AttributeType.Integer) type)));
+                    mv.visitInsn(FMUL);
+                }
+                break;
+            default:
+                throw new IllegalArgumentException(interpretation.toString());
+        }
+    }
+
+    private double inverseNormalizeFactor(@NonNull AttributeType.Integer type) {
+        switch (type) {
+            case BYTE:
+                return -Byte.MIN_VALUE;
+            case UNSIGNED_BYTE:
+                return (1 << Byte.SIZE) - 1;
+            case SHORT:
+                return -Short.MIN_VALUE;
+            case UNSIGNED_SHORT:
+                return (1 << Short.SIZE) - 1;
+            case INT:
+                return -((long) Integer.MIN_VALUE);
+            case UNSIGNED_INT:
+                return (1L << (long) Integer.SIZE) - 1L;
+            default:
+                throw new IllegalArgumentException(type.toString());
+        }
     }
 
     /**

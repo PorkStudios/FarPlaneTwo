@@ -32,14 +32,27 @@ import net.daporkchop.fp2.gl.opengl.OpenGL;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class AttributeFormatBuilderImpl implements AttributeFormatBuilder {
+public class AttributeFormatBuilderImpl implements AttributeFormatBuilder.NameSelectionStage, AttributeFormatBuilder {
     protected final OpenGL gl;
+
+    protected String name;
 
     protected final ImmutableMap.Builder<String, AttributeImpl> attributes = ImmutableMap.builder();
     protected int size;
 
     //
-    // VertexFormatBuilder
+    // NameSelectionStage
+    //
+
+    @Override
+    public AttributeFormatBuilder name(@NonNull String name) {
+        this.name = name;
+        return this;
+    }
+
+
+    //
+    // AttributeFormatBuilder
     //
 
     @Override

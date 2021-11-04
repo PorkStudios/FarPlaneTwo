@@ -18,23 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.gl;
+package net.daporkchop.fp2.gl.opengl.attribute;
 
+import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 /**
- * All known OpenGL extensions.
+ * Common parent class for attribute buffer implementations.
  *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public enum GLExtension {
-    GL_ARB_base_instance,
-    GL_ARB_compatibility,
-    GL_ARB_compute_shader,
-    GL_ARB_draw_elements_base_vertex,
-    GL_ARB_draw_indirect,
-    GL_ARB_instanced_arrays,
-    GL_ARB_multi_draw_indirect,
-    GL_ARB_uniform_buffer_object;
+@Getter
+public abstract class BaseAttributeBufferImpl {
+    @NonNull
+    protected final AttributeFormatImpl format;
 }

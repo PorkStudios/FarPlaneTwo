@@ -22,11 +22,11 @@ package net.daporkchop.fp2.gl.opengl.layout;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.layout.BaseLayout;
 import net.daporkchop.fp2.gl.layout.LayoutBuilder;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 
 import java.util.stream.Stream;
 
@@ -38,6 +38,7 @@ public abstract class BaseLayoutBuilderImpl<L extends BaseLayout> implements Lay
     @NonNull
     protected final OpenGL gl;
 
+    protected AttributeFormatImpl[] uniforms;
     protected AttributeFormatImpl[] globals;
     protected AttributeFormatImpl[] locals;
 
@@ -46,7 +47,8 @@ public abstract class BaseLayoutBuilderImpl<L extends BaseLayout> implements Lay
     //
 
     @Override
-    public GlobalsStage<L> withUniforms() {
+    public GlobalsStage<L> withUniforms(@NonNull AttributeFormat... uniforms) {
+        this.uniforms = Stream.of(uniforms).map(AttributeFormatImpl.class::cast).toArray(AttributeFormatImpl[]::new);
         return this;
     }
 

@@ -26,6 +26,7 @@ import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
@@ -37,18 +38,16 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class LocalAttributeBufferImpl implements LocalAttributeBuffer {
-    protected final AttributeFormatImpl format;
+public class LocalAttributeBufferImpl extends BaseAttributeBufferImpl implements LocalAttributeBuffer {
     protected final GLBufferImpl buffer;
-
     protected final long stride;
 
     protected int capacity;
 
     public LocalAttributeBufferImpl(@NonNull AttributeFormatImpl format, @NonNull BufferUsage usage) {
-        this.format = format;
-        this.buffer = format.gl().createBuffer(usage);
+        super(format);
 
+        this.buffer = format.gl().createBuffer(usage);
         this.stride = format.stridePacked();
     }
 

@@ -32,6 +32,7 @@ import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
+import org.lwjgl.opengl.GL31;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
 import org.lwjgl.opengl.GL43;
@@ -292,6 +293,46 @@ public class GLAPILWJGL2 implements GLAPI {
         GL20.glBindAttribLocation(program, index, name);
     }
 
+    @Override
+    public void glUniform(int location, int v0) {
+        GL20.glUniform1i(location, v0);
+    }
+
+    @Override
+    public void glUniform(int location, int v0, int v1) {
+        GL20.glUniform2i(location, v0, v1);
+    }
+
+    @Override
+    public void glUniform(int location, int v0, int v1, int v2) {
+        GL20.glUniform3i(location, v0, v1, v2);
+    }
+
+    @Override
+    public void glUniform(int location, int v0, int v1, int v2, int v3) {
+        GL20.glUniform4i(location, v0, v1, v2, v3);
+    }
+
+    @Override
+    public void glUniform(int location, float v0) {
+        GL20.glUniform1f(location, v0);
+    }
+
+    @Override
+    public void glUniform(int location, float v0, float v1) {
+        GL20.glUniform2f(location, v0, v1);
+    }
+
+    @Override
+    public void glUniform(int location, float v0, float v1, float v2) {
+        GL20.glUniform3f(location, v0, v1, v2);
+    }
+
+    @Override
+    public void glUniform(int location, float v0, float v1, float v2, float v3) {
+        GL20.glUniform4f(location, v0, v1, v2, v3);
+    }
+
     //
     //
     // OpenGL 3.0
@@ -326,6 +367,22 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glVertexAttribIPointer(int index, int size, int type, int stride, long buffer_buffer_offset) {
         GL30.glVertexAttribIPointer(index, size, type, stride, buffer_buffer_offset);
+    }
+
+    //
+    //
+    // OpenGL 3.1
+    //
+    //
+
+    @Override
+    public int glGetUniformBlockIndex(int program, @NonNull CharSequence uniformBlockName) {
+        return GL31.glGetUniformBlockIndex(program, uniformBlockName);
+    }
+
+    @Override
+    public void glUniformBlockBinding(int program, int uniformBlockIndex, int uniformBlockBinding) {
+        GL31.glUniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding);
     }
 
     //

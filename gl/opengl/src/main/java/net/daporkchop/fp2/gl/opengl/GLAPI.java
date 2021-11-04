@@ -135,6 +135,22 @@ public interface GLAPI {
 
     void glBindAttribLocation(int program, int index, @NonNull CharSequence name);
 
+    void glUniform(int location, int v0);
+
+    void glUniform(int location, int v0, int v1);
+
+    void glUniform(int location, int v0, int v1, int v2);
+
+    void glUniform(int location, int v0, int v1, int v2, int v3);
+
+    void glUniform(int location, float v0);
+
+    void glUniform(int location, float v0, float v1);
+
+    void glUniform(int location, float v0, float v1, float v2);
+
+    void glUniform(int location, float v0, float v1, float v2, float v3);
+
     //
     //
     // OpenGL 3.0
@@ -152,6 +168,18 @@ public interface GLAPI {
     void glBindVertexArray(int array);
 
     void glVertexAttribIPointer(int index, int size, int type, int stride, long buffer_buffer_offset);
+
+    //
+    //
+    // OpenGL 3.1
+    //
+    //
+
+    //GL_ARB_uniform_buffer_object
+    int glGetUniformBlockIndex(int program, @NonNull CharSequence uniformBlockName);
+
+    //GL_ARB_uniform_buffer_object
+    void glUniformBlockBinding(int program, int uniformBlockIndex, int uniformBlockBinding);
 
     //
     //

@@ -20,16 +20,20 @@
 
 package net.daporkchop.fp2.gl.opengl.layout;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.ImmutableBiMap;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.layout.BaseLayout;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeImpl;
 
-import java.util.Arrays;
-import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
@@ -39,21 +43,46 @@ public abstract class BaseLayoutImpl implements BaseLayout {
     protected final OpenGL gl;
     protected final GLAPI api;
 
-    protected final Set<AttributeFormatImpl> globalFormats;
-    protected final Set<AttributeFormatImpl> localFormats;
-    
+    protected final BiMap<String, AttributeImpl> allAttribsByName;
+    protected final BiMap<String, AttributeImpl> uniformAttribsByName;
+    protected final BiMap<String, AttributeImpl> globalAttribsByName;
+    protected final BiMap<String, AttributeImpl> localAttribsByName;
+
+    protected final BiMap<String, AttributeFormatImpl> allFormatsByName;
+    protected final BiMap<String, AttributeFormatImpl> uniformFormatsByName;
+    protected final BiMap<String, AttributeFormatImpl> globalFormatsByName;
+    protected final BiMap<String, AttributeFormatImpl> localFormatsByName;
+
     public BaseLayoutImpl(@NonNull BaseLayoutBuilderImpl builder) {
         this.gl = builder.gl;
         this.api = this.gl.api();
 
-        this.globalFormats = ImmutableSet.copyOf(builder.globals);
-        if (this.globalFormats.size() != builder.globals.length) {
-            throw new IllegalArgumentException("cannot construct draw layout with duplicate global vertex formats! " + Arrays.toString(builder.globals));
+        {
+            Collector<AttributeFormatImpl, ?, BiMap<String, AttributeFormatImpl>> formatToMapCollector = Collectors.collectingAndThen(
+                    Collectors.toMap(AttributeFormatImpl::name, Function.identity()),
+                    ImmutableBiMap::copyOf);
+
+            //collect all attribute formats into a single map (also ensures names are unique)
+            this.allFormatsByName = Stream.of(builder.uniforms, builder.globals, builder.locals).flatMap(Stream::of).collect(formatToMapCollector);
+
+            //create maps for formats, separated by usage
+            this.uniformFormatsByName = Stream.of(builder.uniforms).collect(formatToMapCollector);
+            this.globalFormatsByName = Stream.of(builder.globals).collect(formatToMapCollector);
+            this.localFormatsByName = Stream.of(builder.locals).collect(formatToMapCollector);
         }
 
-        this.localFormats = ImmutableSet.copyOf(builder.locals);
-        if (this.localFormats.size() != builder.locals.length) {
-            throw new IllegalArgumentException("cannot construct draw layout with duplicate local vertex formats! " + Arrays.toString(builder.locals));
+        {
+            Collector<AttributeImpl, ?, BiMap<String, AttributeImpl>> attribToMapCollector = Collectors.collectingAndThen(
+                    Collectors.toMap(AttributeImpl::name, Function.identity()),
+                    ImmutableBiMap::copyOf);
+
+            //collect all attributes into a single map (also ensures names are unique)
+            this.allAttribsByName = Stream.of(builder.uniforms, builder.globals, builder.locals).flatMap(Stream::of).map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
+
+            //create maps for attributes, separated by usage
+            this.uniformAttribsByName = Stream.of(builder.uniforms).map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
+            this.globalAttribsByName = Stream.of(builder.globals).map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
+            this.localAttribsByName = Stream.of(builder.locals).map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
         }
     }
 

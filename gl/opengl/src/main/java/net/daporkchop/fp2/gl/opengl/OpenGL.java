@@ -151,7 +151,7 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public AttributeFormatBuilder createAttributeFormat() {
+    public AttributeFormatBuilder.NameSelectionStage createAttributeFormat() {
         return new AttributeFormatBuilderImpl(this);
     }
 

@@ -44,8 +44,7 @@ public interface LayoutBuilder<L extends BaseLayout> {
          *
          * @param uniforms the formats of the uniform vertex attributes
          */
-        //GlobalsStage<L> withUniforms(@NonNull VertexFormat... uniforms);
-        GlobalsStage<L> withUniforms(); //TODO: uniforms, somehow
+        GlobalsStage<L> withUniforms(@NonNull AttributeFormat... uniforms);
     }
 
     /**
