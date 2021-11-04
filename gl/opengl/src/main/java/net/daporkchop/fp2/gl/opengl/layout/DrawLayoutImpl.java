@@ -29,7 +29,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.gl.opengl.GLExtension;
-import net.daporkchop.fp2.gl.opengl.GLVersion;
 import net.daporkchop.fp2.gl.draw.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
@@ -37,6 +36,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawBindingBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,7 +68,6 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
             for (AttributeImpl attrib : format.attribsArray()) {
                 this.addVertexAttribute(vertexBindings, attrib, false);
             }
-            format.attribs().forEach((name, attrib) -> this.addVertexAttribute(vertexBindings, (AttributeImpl) attrib, false));
         }
 
         //globals
@@ -125,6 +124,24 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     }
 
     @Override
+    public void prefixShaderSource(@NonNull ShaderType type, @NonNull StringBuilder builder) {
+        switch (type) {
+            case VERTEX: {
+                this.vertexBindings.forEach(binding -> binding.generateGLSL(builder));
+                this.uniformBlockBindings.forEach(binding -> binding.generateGLSL(builder));
+                break;
+            }
+            case FRAGMENT: {
+                this.uniformBlockBindings.forEach(binding -> binding.generateGLSL(builder));
+                //TODO: shader outputs
+                break;
+            }
+            default:
+                throw new IllegalArgumentException("draw layout cannot be used by " + type + " shader");
+        }
+    }
+
+    @Override
     public void configureProgramPreLink(int program) {
         this.vertexBindings.forEach(binding -> binding.bindAttribLocation(this.api, program));
     }
@@ -165,6 +182,10 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         public void bindAttribLocation(@NonNull GLAPI api, int program) {
             api.glBindAttribLocation(program, this.bindingIndex, this.attrib.name());
         }
+
+        protected void generateGLSL(@NonNull StringBuilder builder) {
+            builder.append("in ").append(this.attrib.glslName()).append(";\n");
+        }
     }
 
     /**
@@ -184,6 +205,14 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
             checkArg(blockIndex != GL_INVALID_INDEX, "unable to find uniform block: %s", this.format.name());
 
             api.glUniformBlockBinding(program, blockIndex, this.bindingIndex);
+        }
+
+        protected void generateGLSL(@NonNull StringBuilder builder) {
+            builder.append("uniform ").append(this.format.name()).append(" {\n");
+            for (AttributeImpl attrib : this.format.attribsArray()) {
+                builder.append("    ").append(attrib.glslName()).append(";\n");
+            }
+            builder.append("};\n");
         }
     }
 }

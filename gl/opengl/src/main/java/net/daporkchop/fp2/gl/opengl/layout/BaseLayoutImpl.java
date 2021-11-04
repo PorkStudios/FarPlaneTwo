@@ -29,6 +29,7 @@ import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeImpl;
+import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -85,6 +86,8 @@ public abstract class BaseLayoutImpl implements BaseLayout {
             this.localAttribsByName = Stream.of(builder.locals).map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
         }
     }
+
+    public abstract void prefixShaderSource(@NonNull ShaderType type, @NonNull StringBuilder builder);
 
     public abstract void configureProgramPreLink(int program);
 

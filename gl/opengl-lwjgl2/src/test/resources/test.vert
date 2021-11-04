@@ -1,11 +1,3 @@
-uniform UNIFORM_0 {
-    vec2 u_scale;
-};
-
-in vec4 a_color;
-in vec2 a_pos;
-in vec2 a_offset;
-
 out vec4 v_color;
 
 void main() {
