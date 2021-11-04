@@ -38,8 +38,7 @@ public enum DrawMode {
     LINE_LOOP(DrawPrimitive.LINES),
     TRIANGLES(DrawPrimitive.TRIANGLES),
     TRIANGLE_STRIP(DrawPrimitive.TRIANGLES),
-    TRIANGLE_FAN(DrawPrimitive.TRIANGLES),
-    QUADS(DrawPrimitive.QUADS);
+    TRIANGLE_FAN(DrawPrimitive.TRIANGLES);
 
     @NonNull
     private final DrawPrimitive primitive;

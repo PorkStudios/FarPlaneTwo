@@ -130,7 +130,7 @@ public class CommandBufferElementsImpl_IndirectMultiDraw extends BaseCommandBuff
     }
 
     @Override
-    public void set(int index, int count, int firstIndex, int baseVertex) {
+    public void set(int index, int firstIndex, int count, int baseVertex) {
         checkIndex(this.capacity, index);
 
         long command = this.commandsAddr + index * _SIZE;

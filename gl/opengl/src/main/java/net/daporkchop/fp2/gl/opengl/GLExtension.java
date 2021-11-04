@@ -18,8 +18,10 @@
  *
  */
 
-package net.daporkchop.fp2.gl;
+package net.daporkchop.fp2.gl.opengl;
 
+import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -29,12 +31,41 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 public enum GLExtension {
-    GL_ARB_base_instance,
-    GL_ARB_compatibility,
-    GL_ARB_compute_shader,
-    GL_ARB_draw_elements_base_vertex,
-    GL_ARB_draw_indirect,
-    GL_ARB_instanced_arrays,
-    GL_ARB_multi_draw_indirect,
-    GL_ARB_uniform_buffer_object;
+    GL_ARB_base_instance(GLVersion.OpenGL42, false),
+    GL_ARB_compatibility(GLVersion.OpenGL30, false) {
+        @Override
+        public boolean supported(@NonNull OpenGL gl) {
+            return gl.extensions().contains(this);
+        }
+    },
+    GL_ARB_compute_shader(GLVersion.OpenGL43, false),
+    GL_ARB_draw_elements_base_vertex(GLVersion.OpenGL32, false),
+    GL_ARB_draw_indirect(GLVersion.OpenGL40, false),
+    GL_ARB_instanced_arrays(GLVersion.OpenGL33, false),
+    GL_ARB_multi_draw_indirect(GLVersion.OpenGL43, false),
+    GL_ARB_uniform_buffer_object(GLVersion.OpenGL31, true);
+
+    @NonNull
+    private final GLVersion coreVersion;
+
+    @Getter
+    private final boolean glsl;
+
+    /**
+     * Checks whether or not this extension is a core feature in the given OpenGL context.
+     *
+     * @param gl the context
+     */
+    public boolean core(@NonNull OpenGL gl) {
+        return gl.version().compareTo(this.coreVersion) >= 0;
+    }
+
+    /**
+     * Checks whether or not this extension is supported in the given OpenGL context.
+     *
+     * @param gl the context
+     */
+    public boolean supported(@NonNull OpenGL gl) {
+        return gl.version().compareTo(this.coreVersion) >= 0 || gl.extensions().contains(this);
+    }
 }

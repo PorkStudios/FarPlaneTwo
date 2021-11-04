@@ -1,9 +1,7 @@
-in VS_OUT {
-    vec4 color;
-} fs_in;
+in vec4 v_color;
 
-out vec4 color;
+out vec4 f_color;
 
 void main() {
-    color = fs_in.color;
+    f_color = v_color;
 }

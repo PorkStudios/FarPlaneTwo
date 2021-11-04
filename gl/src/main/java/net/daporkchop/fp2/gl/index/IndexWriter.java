@@ -56,4 +56,17 @@ public interface IndexWriter extends CloseableResource {
     default IndexWriter appendQuad(int oppositeCorner, int c0, int c1, int provoking) {
         return this.append(c1).append(oppositeCorner).append(c0).append(provoking);
     }
+
+    /**
+     * Appends 6 indices to this writer, forming a single quad consisting of two triangles.
+     *
+     * @param oppositeCorner the index of the vertex in the corner opposite the provoking vertex
+     * @param c0             the index of one of the edge vertices
+     * @param c1             the index of the other edge vertex
+     * @param provoking      the index of the provoking vertex
+     */
+    default IndexWriter appendQuadAsTriangles(int oppositeCorner, int c0, int c1, int provoking) {
+        return this.append(oppositeCorner).append(c0).append(provoking) //first triangle
+                .append(c1).append(oppositeCorner).append(provoking); //second triangle
+    }
 }

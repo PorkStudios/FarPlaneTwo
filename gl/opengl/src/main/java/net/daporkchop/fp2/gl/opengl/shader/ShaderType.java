@@ -18,14 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.gl;
+package net.daporkchop.fp2.gl.opengl.shader;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 
 /**
- * All known OpenGL context profiles.
+ * The different types of shaders.
  *
  * @author DaPorkchop_
  */
-public enum GLProfile {
-    COMPAT,
-    CORE;
+@RequiredArgsConstructor
+@Getter
+public enum ShaderType {
+    VERTEX(GL_VERTEX_SHADER),
+    TESSELLATION_CONTROL(GL_TESS_CONTROL_SHADER),
+    TESSELLATION_EVALUATION(GL_TESS_EVALUATION_SHADER),
+    GEOMETRY(GL_GEOMETRY_SHADER),
+    FRAGMENT(GL_FRAGMENT_SHADER),
+    COMPUTE(GL_COMPUTE_SHADER);
+
+    private final int id;
 }

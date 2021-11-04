@@ -44,11 +44,11 @@ public abstract class BaseShaderImpl<L extends BaseLayout> implements BaseShader
     protected final OpenGL gl;
 
     protected final L layout;
+    protected final ShaderType type;
 
-    protected final int type;
     protected final int id;
 
-    public BaseShaderImpl(@NonNull ShaderBuilderImpl<?, L> builder, int type, @NonNull SourceLine... lines) throws ShaderCompilationException {
+    public BaseShaderImpl(@NonNull ShaderBuilderImpl<?, L> builder, @NonNull ShaderType type, @NonNull SourceLine... lines) throws ShaderCompilationException {
         //allocate new shader
         this.gl = builder.gl;
         this.type = type;
@@ -56,7 +56,7 @@ public abstract class BaseShaderImpl<L extends BaseLayout> implements BaseShader
         this.layout = builder.layout;
 
         GLAPI api = this.gl.api();
-        this.id = api.glCreateShader(type);
+        this.id = api.glCreateShader(type.id());
 
         //set source and compile shader
         api.glShaderSource(this.id, Stream.of(lines).map(SourceLine::text).collect(Collectors.joining("\n")));

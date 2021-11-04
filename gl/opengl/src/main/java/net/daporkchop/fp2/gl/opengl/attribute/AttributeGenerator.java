@@ -364,6 +364,17 @@ public class AttributeGenerator {
             default:
                 throw new IllegalArgumentException(type.toString());
         }
+
+        switch (type) {
+            case UNSIGNED_BYTE:
+                mv.visitLdcInsn(0xFF);
+                mv.visitInsn(IAND);
+                break;
+            case UNSIGNED_SHORT:
+                mv.visitLdcInsn(0xFFFF);
+                mv.visitInsn(IAND);
+                break;
+        }
     }
 
     private void unsafePutInt(@NonNull MethodVisitor mv, @NonNull AttributeType.Integer type) {

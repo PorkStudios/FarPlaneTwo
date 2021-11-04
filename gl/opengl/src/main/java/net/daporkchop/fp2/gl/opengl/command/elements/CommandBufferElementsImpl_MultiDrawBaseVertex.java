@@ -82,7 +82,7 @@ public class CommandBufferElementsImpl_MultiDrawBaseVertex extends BaseCommandBu
     }
 
     @Override
-    public void set(int index, int count, int firstIndex, int baseVertex) {
+    public void set(int index, int firstIndex, int count, int baseVertex) {
         checkIndex(this.capacity, index);
 
         PUnsafe.putInt(this.countAddr + index * (long) INT_SIZE, count);

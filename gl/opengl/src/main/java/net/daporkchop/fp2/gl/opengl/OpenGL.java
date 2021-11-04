@@ -27,16 +27,15 @@ import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLModule;
-import net.daporkchop.fp2.gl.GLProfile;
-import net.daporkchop.fp2.gl.GLVersion;
+import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.index.IndexFormatBuilder;
 import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.gl.layout.LayoutBuilder;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.command.CommandBufferBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.compute.ComputeCore;
@@ -46,16 +45,15 @@ import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutImpl;
 import net.daporkchop.fp2.gl.opengl.shader.FragmentShaderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderProgramImpl;
+import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 import net.daporkchop.fp2.gl.opengl.shader.VertexShaderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.shader.FragmentShader;
 import net.daporkchop.fp2.gl.shader.ShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.VertexShader;
-import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -104,6 +102,7 @@ public class OpenGL implements GL {
             }
 
             this.extensions = Stream.of(GLExtension.values())
+                    .filter(extension -> !extension.core(this))
                     .filter(extension -> extensionNames.contains(extension.name()))
                     .collect(Sets.toImmutableEnumSet());
         }
@@ -133,11 +132,9 @@ public class OpenGL implements GL {
         //
 
         //compute
-        if (this.version.compareTo(GLVersion.OpenGL43) >= 0 || this.extensions.contains(GLExtension.GL_ARB_compute_shader)) {
-            this.compute = new ComputeCore(this);
-        } else {
-            this.compute = GLModule.unsupportedImplementation(GLCompute.class);
-        }
+        this.compute = GLExtension.GL_ARB_compute_shader.supported(this)
+                ? new ComputeCore(this)
+                : GLModule.unsupportedImplementation(GLCompute.class);
     }
 
     @Override
@@ -171,7 +168,7 @@ public class OpenGL implements GL {
 
     @Override
     public ShaderBuilder.LayoutStage<VertexShader, DrawLayout> createVertexShader() {
-        return new ShaderBuilderImpl<VertexShader, DrawLayout>(this) {
+        return new ShaderBuilderImpl<VertexShader, DrawLayout>(this, ShaderType.VERTEX) {
             @Override
             protected VertexShader compile(@NonNull SourceLine... lines) throws ShaderCompilationException {
                 return new VertexShaderImpl(this, lines);
@@ -181,7 +178,7 @@ public class OpenGL implements GL {
 
     @Override
     public ShaderBuilder.LayoutStage<FragmentShader, DrawLayout> createFragmentShader() {
-        return new ShaderBuilderImpl<FragmentShader, DrawLayout>(this) {
+        return new ShaderBuilderImpl<FragmentShader, DrawLayout>(this, ShaderType.FRAGMENT) {
             @Override
             protected FragmentShader compile(@NonNull SourceLine... lines) throws ShaderCompilationException {
                 return new FragmentShaderImpl(this, lines);

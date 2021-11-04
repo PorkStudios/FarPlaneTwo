@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.opengl.draw;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.draw.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.opengl.index.IndexBufferImpl;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
@@ -30,7 +31,7 @@ import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
  * @author DaPorkchop_
  */
 @Getter
-public class DrawBindingIndexedImpl extends DrawBindingImpl {
+public class DrawBindingIndexedImpl extends DrawBindingImpl implements DrawBindingIndexed {
     protected final IndexBufferImpl indices;
 
     public DrawBindingIndexedImpl(@NonNull DrawBindingBuilderImpl builder) {

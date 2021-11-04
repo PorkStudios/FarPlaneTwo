@@ -28,6 +28,5 @@ package net.daporkchop.fp2.gl.draw;
 public enum DrawPrimitive {
     POINTS,
     LINES,
-    TRIANGLES,
-    QUADS;
+    TRIANGLES;
 }

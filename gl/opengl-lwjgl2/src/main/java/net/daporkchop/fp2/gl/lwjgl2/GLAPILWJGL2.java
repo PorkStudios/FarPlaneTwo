@@ -22,10 +22,14 @@ package net.daporkchop.fp2.gl.lwjgl2;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
-import net.daporkchop.fp2.gl.GLVersion;
+import net.daporkchop.fp2.gl.opengl.GLVersion;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.lib.common.function.throwing.EPredicate;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import org.lwjgl.opengl.ARBDrawElementsBaseVertex;
+import org.lwjgl.opengl.ARBInstancedArrays;
+import org.lwjgl.opengl.ARBMultiDrawIndirect;
+import org.lwjgl.opengl.ARBUniformBufferObject;
 import org.lwjgl.opengl.ContextCapabilities;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
@@ -49,6 +53,34 @@ import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
  * @author DaPorkchop_
  */
 public class GLAPILWJGL2 implements GLAPI {
+    // OpenGL 3.1
+    private final boolean GL_ARB_uniform_buffer_object;
+
+    // OpenGL 3.2
+    private final boolean GL_ARB_draw_elements_base_vertex;
+
+    // OpenGL 3.3
+    private final boolean GL_ARB_instanced_arrays;
+
+    // OpenGL 4.3
+    private final boolean GL_ARB_multi_draw_indirect;
+
+    public GLAPILWJGL2() {
+        ContextCapabilities capabilities = GLContext.getCapabilities();
+
+        // OpenGL 3.1
+        this.GL_ARB_uniform_buffer_object = !capabilities.OpenGL31 && capabilities.GL_ARB_uniform_buffer_object;
+
+        // OpenGL 3.2
+        this.GL_ARB_draw_elements_base_vertex = !capabilities.OpenGL32 && capabilities.GL_ARB_draw_elements_base_vertex;
+
+        // OpenGL 3.3
+        this.GL_ARB_instanced_arrays = !capabilities.OpenGL33 && capabilities.GL_ARB_instanced_arrays;
+
+        // OpenGL 4.3
+        this.GL_ARB_multi_draw_indirect = !capabilities.OpenGL43 && capabilities.GL_ARB_multi_draw_indirect;
+    }
+
     @Override
     public GLVersion version() {
         ContextCapabilities capabilities = GLContext.getCapabilities();
@@ -387,12 +419,20 @@ public class GLAPILWJGL2 implements GLAPI {
 
     @Override
     public int glGetUniformBlockIndex(int program, @NonNull CharSequence uniformBlockName) {
-        return GL31.glGetUniformBlockIndex(program, uniformBlockName);
+        if (this.GL_ARB_uniform_buffer_object) {
+            return ARBUniformBufferObject.glGetUniformBlockIndex(program, uniformBlockName);
+        } else {
+            return GL31.glGetUniformBlockIndex(program, uniformBlockName);
+        }
     }
 
     @Override
     public void glUniformBlockBinding(int program, int uniformBlockIndex, int uniformBlockBinding) {
-        GL31.glUniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding);
+        if (this.GL_ARB_uniform_buffer_object) {
+            ARBUniformBufferObject.glUniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding);
+        } else {
+            GL31.glUniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding);
+        }
     }
 
     //
@@ -402,18 +442,12 @@ public class GLAPILWJGL2 implements GLAPI {
     //
 
     @Override
-    public long glGetLong(int pname) {
-        return GL32.glGetInteger64(pname);
-    }
-
-    @Override
-    public long glGetLong(int pname, int idx) {
-        return GL32.glGetInteger64(pname, idx);
-    }
-
-    @Override
     public void glDrawElementsBaseVertex(int mode, int count, int type, long indices, int basevertex) {
-        GL32.glDrawElementsBaseVertex(mode, count, type, indices, basevertex);
+        if (this.GL_ARB_draw_elements_base_vertex) {
+            ARBDrawElementsBaseVertex.glDrawElementsBaseVertex(mode, count, type, indices, basevertex);
+        } else {
+            GL32.glDrawElementsBaseVertex(mode, count, type, indices, basevertex);
+        }
     }
 
     @Override
@@ -429,7 +463,11 @@ public class GLAPILWJGL2 implements GLAPI {
 
     @Override
     public void glVertexAttribDivisor(int index, int divisor) {
-        GL33.glVertexAttribDivisor(index, divisor);
+        if (this.GL_ARB_instanced_arrays) {
+            ARBInstancedArrays.glVertexAttribDivisorARB(index, divisor);
+        } else {
+            GL33.glVertexAttribDivisor(index, divisor);
+        }
     }
 
     //
@@ -440,11 +478,19 @@ public class GLAPILWJGL2 implements GLAPI {
 
     @Override
     public void glMultiDrawArraysIndirect(int mode, long indirect, int primcount, int stride) {
-        GL43.glMultiDrawArraysIndirect(mode, indirect, primcount, stride);
+        if (this.GL_ARB_multi_draw_indirect) {
+            ARBMultiDrawIndirect.glMultiDrawArraysIndirect(mode, indirect, primcount, stride);
+        } else {
+            GL43.glMultiDrawArraysIndirect(mode, indirect, primcount, stride);
+        }
     }
 
     @Override
     public void glMultiDrawElementsIndirect(int mode, int type, long indirect, int primcount, int stride) {
-        GL43.glMultiDrawElementsIndirect(mode, type, indirect, primcount, stride);
+        if (this.GL_ARB_multi_draw_indirect) {
+            ARBMultiDrawIndirect.glMultiDrawElementsIndirect(mode, type, indirect, primcount, stride);
+        } else {
+            GL43.glMultiDrawElementsIndirect(mode, type, indirect, primcount, stride);
+        }
     }
 }

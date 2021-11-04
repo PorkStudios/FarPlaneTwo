@@ -18,19 +18,14 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.shader;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.layout.DrawLayout;
-import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
-import net.daporkchop.fp2.gl.shader.FragmentShader;
-import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
+package net.daporkchop.fp2.gl.opengl;
 
 /**
+ * All known OpenGL context profiles.
+ *
  * @author DaPorkchop_
  */
-public class FragmentShaderImpl extends BaseShaderImpl<DrawLayout> implements FragmentShader {
-    public FragmentShaderImpl(@NonNull ShaderBuilderImpl<?, DrawLayout> builder, @NonNull SourceLine... lines) throws ShaderCompilationException {
-        super(builder, ShaderType.FRAGMENT, lines);
-    }
+public enum GLProfile {
+    COMPAT,
+    CORE;
 }

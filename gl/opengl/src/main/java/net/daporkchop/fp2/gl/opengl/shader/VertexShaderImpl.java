@@ -26,13 +26,11 @@ import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.VertexShader;
 
-import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
-
 /**
  * @author DaPorkchop_
  */
 public class VertexShaderImpl extends BaseShaderImpl<DrawLayout> implements VertexShader {
     public VertexShaderImpl(@NonNull ShaderBuilderImpl<?, DrawLayout> builder, @NonNull SourceLine... lines) throws ShaderCompilationException {
-        super(builder, GL_VERTEX_SHADER, lines);
+        super(builder, ShaderType.VERTEX, lines);
     }
 }

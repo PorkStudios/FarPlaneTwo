@@ -28,8 +28,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
-import net.daporkchop.fp2.gl.GLExtension;
-import net.daporkchop.fp2.gl.GLVersion;
+import net.daporkchop.fp2.gl.opengl.GLExtension;
+import net.daporkchop.fp2.gl.opengl.GLVersion;
 import net.daporkchop.fp2.gl.draw.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
@@ -72,7 +72,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         }
 
         //globals
-        if (this.gl.version().compareTo(GLVersion.OpenGL33) >= 0 || this.gl.extensions().contains(GLExtension.GL_ARB_instanced_arrays)) { //register globals as instanced vertex attributes
+        if (GLExtension.GL_ARB_instanced_arrays.supported(this.gl)) { //register globals as instanced vertex attributes
             for (AttributeFormatImpl format : builder.globals) {
                 for (AttributeImpl attrib : format.attribsArray()) {
                     this.addVertexAttribute(vertexBindings, attrib, true);
@@ -83,7 +83,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         }
 
         //uniforms
-        if (this.gl.version().compareTo(GLVersion.OpenGL31) >= 0 || this.gl.extensions().contains(GLExtension.GL_ARB_uniform_buffer_object)) { //register uniforms as uniform buffer blocks
+        if (GLExtension.GL_ARB_uniform_buffer_object.supported(this.gl)) { //register uniforms as uniform buffer blocks
             for (AttributeFormatImpl format : builder.uniforms) {
                 this.addUniformBuffer(uniformBlockBindings, format);
             }

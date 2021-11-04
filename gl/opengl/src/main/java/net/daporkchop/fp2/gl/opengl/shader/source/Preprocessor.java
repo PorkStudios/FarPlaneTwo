@@ -339,6 +339,7 @@ public class Preprocessor {
             case "endif":
                 throw new IllegalArgumentException(node.line.toString("dangling " + directiveName));
             case "version": //we don't want to process these directives ourselves, so we ignore them to let GLSL process them
+            case "extension":
                 return node.next;
             default:
                 throw new IllegalArgumentException(node.line.toString("invalid preprocessor directive"));

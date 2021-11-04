@@ -22,6 +22,8 @@ package net.daporkchop.fp2.gl;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.command.BaseCommandBuffer;
@@ -36,10 +38,7 @@ import net.daporkchop.fp2.gl.shader.ShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.VertexShader;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 
-import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -58,21 +57,6 @@ public interface GL extends AutoCloseable {
     //
     // GENERAL
     //
-
-    /**
-     * @return the context's OpenGL version
-     */
-    GLVersion version();
-
-    /**
-     * @return the context's OpenGL profile
-     */
-    GLProfile profile();
-
-    /**
-     * @return all extensions supported by this context
-     */
-    Set<GLExtension> extensions();
 
     /**
      * Closes this OpenGL context, releasing all resources allocated by it.

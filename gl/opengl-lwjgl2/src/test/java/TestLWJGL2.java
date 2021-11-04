@@ -36,8 +36,14 @@ import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.CommandBufferArrays;
+import net.daporkchop.fp2.gl.command.CommandBufferElements;
 import net.daporkchop.fp2.gl.draw.DrawBinding;
+import net.daporkchop.fp2.gl.draw.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.DrawMode;
+import net.daporkchop.fp2.gl.index.IndexBuffer;
+import net.daporkchop.fp2.gl.index.IndexFormat;
+import net.daporkchop.fp2.gl.index.IndexType;
+import net.daporkchop.fp2.gl.index.IndexWriter;
 import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.gl.shader.FragmentShader;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
@@ -45,8 +51,10 @@ import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.VertexShader;
 import org.lwjgl.LWJGLException;
+import org.lwjgl.opengl.ContextAttribs;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
+import org.lwjgl.opengl.PixelFormat;
 
 import java.io.File;
 import java.io.InputStream;
@@ -82,7 +90,7 @@ public class TestLWJGL2 {
 
         Display.setDisplayMode(new DisplayMode(512, 512));
         Display.setTitle("title");
-        Display.create();
+        Display.create(new PixelFormat(), new ContextAttribs(3, 0, ContextAttribs.CONTEXT_CORE_PROFILE_BIT_ARB, ContextAttribs.CONTEXT_FORWARD_COMPATIBLE_BIT_ARB));
 
         try (GL gl = GL.builder()
                 .withResourceProvider(id -> {
@@ -145,7 +153,7 @@ public class TestLWJGL2 {
                     .name("UNIFORM_0");
 
             attrScale = builder.attrib().name("u_scale")
-                    .int2(AttributeType.Integer.UNSIGNED_BYTE)
+                    .int2(AttributeType.Integer.BYTE)
                     .interpretation(AttributeInterpretation.NORMALIZED_FLOAT)
                     .build();
 
@@ -156,6 +164,10 @@ public class TestLWJGL2 {
                 .withUniforms(uniformFormat)
                 .withGlobals(globalFormat)
                 .withLocals(localFormat)
+                .build();
+
+        IndexFormat indexFormat = gl.createIndexFormat()
+                .type(IndexType.UNSIGNED_SHORT)
                 .build();
 
         VertexShader vertexShader = gl.createVertexShader()
@@ -182,6 +194,15 @@ public class TestLWJGL2 {
             localBuffer.set(0, writer);
         }
 
+        IndexBuffer indexBuffer = indexFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        indexBuffer.resize(6);
+
+        try (IndexWriter writer = indexFormat.createWriter()) {
+            writer.appendQuadAsTriangles(2, 1, 3, 0);
+
+            indexBuffer.set(0, writer);
+        }
+
         GlobalAttributeBuffer globalBuffer = globalFormat.createGlobalBuffer(BufferUsage.STATIC_DRAW);
         globalBuffer.resize(4);
 
@@ -195,26 +216,38 @@ public class TestLWJGL2 {
         }
 
         UniformAttributeBuffer uniformBuffer = uniformFormat.createUniformBuffer(BufferUsage.STATIC_DRAW);
-        uniformBuffer.set(attrScale, 64, 64);
 
-        DrawBinding binding = layout.createBinding()
+        DrawBindingIndexed binding = layout.createBinding()
                 .withUniforms(uniformBuffer)
                 .withGlobals(globalBuffer)
                 .withLocals(localBuffer)
+                .withIndexes(indexBuffer)
                 .build();
 
         CommandBufferArrays commandBufferArrays = gl.createCommandBuffer()
                 .forArrays(binding)
                 .build();
-
         commandBufferArrays.resize(4);
-        commandBufferArrays.set(0, 0, 4);
-        commandBufferArrays.set(1, 0, 4);
-        commandBufferArrays.set(2, 0, 4);
-        commandBufferArrays.set(3, 0, 4);
+        commandBufferArrays.set(0, 0, 3);
+        commandBufferArrays.set(1, 0, 3);
+        commandBufferArrays.set(2, 0, 3);
+        commandBufferArrays.set(3, 0, 3);
+
+        CommandBufferElements commandBufferElements = gl.createCommandBuffer()
+                .forElements(binding)
+                .build();
+        commandBufferElements.resize(4);
+        commandBufferElements.set(0, 0, 6, 0);
+        commandBufferElements.set(1, 0, 6, 0);
+        commandBufferElements.set(2, 0, 6, 0);
+        commandBufferElements.set(3, 0, 6, 0);
 
         while (!Display.isCloseRequested()) {
-            commandBufferArrays.execute(DrawMode.QUADS, shaderProgram);
+            uniformBuffer.set(attrScale, 64, 64);
+            commandBufferArrays.execute(DrawMode.TRIANGLES, shaderProgram);
+
+            uniformBuffer.set(attrScale, -128, -128);
+            commandBufferElements.execute(DrawMode.TRIANGLES, shaderProgram);
 
             Display.update();
             Display.sync(60);

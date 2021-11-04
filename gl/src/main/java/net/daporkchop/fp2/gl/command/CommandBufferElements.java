@@ -30,9 +30,9 @@ public interface CommandBufferElements extends BaseCommandBuffer {
      * Sets the command at the given index.
      *
      * @param index      the command index
-     * @param count      the number of indices
      * @param firstIndex the index of the first index
+     * @param count      the number of indices
      * @param baseVertex the index of the first vertex
      */
-    void set(int index, int count, int firstIndex, int baseVertex);
+    void set(int index, int firstIndex, int count, int baseVertex);
 }

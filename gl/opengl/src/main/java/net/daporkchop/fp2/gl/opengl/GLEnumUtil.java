@@ -77,8 +77,6 @@ public class GLEnumUtil {
                 return GL_TRIANGLE_STRIP;
             case TRIANGLE_FAN:
                 return GL_TRIANGLE_FAN;
-            case QUADS:
-                return GL_QUADS;
             default:
                 throw new IllegalArgumentException(mode.name());
         }
