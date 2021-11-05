@@ -18,39 +18,18 @@
  *
  */
 
-package net.daporkchop.fp2.gl.attribute.global;
+package net.daporkchop.fp2.gl.attribute;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
+import net.daporkchop.fp2.gl.GLResource;
 
 /**
- * A resizeable array of global attribute data in server memory.
+ * Base interface which is able to store blocks of attribute values.
  *
  * @author DaPorkchop_
  */
-public interface GlobalAttributeBuffer extends BaseAttributeBuffer {
+public interface BaseAttributeBuffer extends GLResource {
     /**
-     * @return the number of attribute data elements that this buffer can store
+     * @return the {@link AttributeFormat} used by this buffer
      */
-    int capacity();
-
-    /**
-     * Sets the capacity of this buffer.
-     * <p>
-     * If the new capacity is less than the current capacity, the buffer's contents will be truncated. If greater than the current capacity, the
-     * data will be extended with undefined contents.
-     *
-     * @param capacity the new capacity
-     */
-    void resize(int capacity);
-
-    /**
-     * Copies the attribute data element from the given {@link GlobalAttributeWriter} into this buffer.
-     *
-     * @param index  the destination index for the attribute data element
-     * @param writer a {@link GlobalAttributeWriter} containing the attribute data element to copy
-     * @throws IllegalArgumentException if {@code writer} doesn't use {@link #format()}
-     */
-    void set(int index, @NonNull GlobalAttributeWriter writer);
+    AttributeFormat format();
 }

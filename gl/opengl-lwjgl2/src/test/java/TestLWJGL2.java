@@ -109,6 +109,21 @@ public class TestLWJGL2 {
 
     @SneakyThrows({ ShaderCompilationException.class, ShaderLinkageException.class })
     private static void run(@NonNull GL gl) {
+        Attribute.Int4 outputAttrColor;
+        AttributeFormat outputFormat;
+
+        {
+            AttributeFormatBuilder builder = gl.createAttributeFormat()
+                    .name("OUTPUT_COLOR");
+
+            outputAttrColor = builder.attrib().name("f_color")
+                    .int4(AttributeType.Integer.UNSIGNED_BYTE)
+                    .interpretation(AttributeInterpretation.NORMALIZED_FLOAT)
+                    .build();
+
+            outputFormat = builder.build();
+        }
+
         Attribute.Int2 attrPos;
         AttributeFormat localFormat;
 
@@ -164,6 +179,7 @@ public class TestLWJGL2 {
                 .withUniforms(uniformFormat)
                 .withGlobals(globalFormat)
                 .withLocals(localFormat)
+                .withOutputs(outputFormat)
                 .build();
 
         IndexFormat indexFormat = gl.createIndexFormat()

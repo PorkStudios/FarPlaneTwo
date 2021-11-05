@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.gl.attribute.uniform;
 
-import net.daporkchop.fp2.gl.GLResource;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.BaseAttributeWriter;
 
 /**
@@ -28,5 +28,5 @@ import net.daporkchop.fp2.gl.attribute.BaseAttributeWriter;
  *
  * @author DaPorkchop_
  */
-public interface UniformAttributeBuffer extends BaseAttributeWriter<UniformAttributeBuffer>, GLResource {
+public interface UniformAttributeBuffer extends BaseAttributeWriter<UniformAttributeBuffer>, BaseAttributeBuffer {
 }

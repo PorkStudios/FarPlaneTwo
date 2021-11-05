@@ -23,24 +23,17 @@ package net.daporkchop.fp2.gl.opengl.draw;
 import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
 import net.daporkchop.fp2.gl.draw.DrawBinding;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.buffer.IndexedBufferTarget;
 import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -79,7 +72,7 @@ public class DrawBindingImpl implements DrawBinding {
             this.api.glBindVertexArray(this.vao);
 
             this.layout.vertexBindingsByFormat().forEach((format, bindings) -> {
-                LocalAttributeBufferImpl buffer = (LocalAttributeBufferImpl) buffersByFormat.remove(format);
+                BaseAttributeBufferImpl buffer = buffersByFormat.remove(format);
                 checkArg(buffer != null, format);
 
                 bindings.forEach(binding -> binding.enableAndBind(this.api, buffer));
@@ -97,6 +90,9 @@ public class DrawBindingImpl implements DrawBinding {
                     return new UniformBufferBinding(buffer, blockBinding.bindingIndex());
                 })
                 .collect(Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
+
+        //ensure every attribute has been used
+        checkArg(buffersByFormat.isEmpty(), "some buffers have not been bound to anything!", buffersByFormat.keySet());
     }
 
     @Override

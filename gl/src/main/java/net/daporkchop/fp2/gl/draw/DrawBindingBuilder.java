@@ -22,9 +22,9 @@ package net.daporkchop.fp2.gl.draw;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
 import net.daporkchop.fp2.gl.index.IndexBuffer;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
 
 /**
  * Builder for {@link DrawBinding}s.
@@ -43,9 +43,9 @@ public interface DrawBindingBuilder<B extends DrawBinding> {
      */
     interface UniformsStage {
         /**
-         * Defines the {@link LocalAttributeBuffer}(s) which contain the global vertex attributes.
+         * Defines the {@link LocalAttributeBuffer}(s) which contain the global attributes.
          *
-         * @param uniforms the global vertex attributes
+         * @param uniforms the global attributes
          */
         GlobalsStage withUniforms(@NonNull UniformAttributeBuffer... uniforms);
     }
@@ -55,9 +55,9 @@ public interface DrawBindingBuilder<B extends DrawBinding> {
      */
     interface GlobalsStage {
         /**
-         * Defines the {@link GlobalAttributeBuffer}(s) which contain the global vertex attributes.
+         * Defines the {@link GlobalAttributeBuffer}(s) which contain the global attributes.
          *
-         * @param globals the global vertex attributes
+         * @param globals the global attributes
          */
         LocalsStage withGlobals(@NonNull GlobalAttributeBuffer... globals);
     }
@@ -67,12 +67,14 @@ public interface DrawBindingBuilder<B extends DrawBinding> {
      */
     interface LocalsStage {
         /**
-         * Defines the {@link LocalAttributeBuffer}(s) which contain the local vertex attributes.
+         * Defines the {@link LocalAttributeBuffer}(s) which contain the local attributes.
          *
-         * @param locals the local vertex attributes
+         * @param locals the local attributes
          */
         OptionallyIndexedStage withLocals(@NonNull LocalAttributeBuffer... locals);
     }
+
+    //TODO: define shader outputs
 
     /**
      * @author DaPorkchop_

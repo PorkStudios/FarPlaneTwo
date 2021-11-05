@@ -72,7 +72,7 @@ public class LocalAttributeBufferImpl extends BaseAttributeBufferImpl implements
         this.buffer.uploadRange(startIndex * this.stride, writer.addr, writer.size() * this.stride);
     }
 
-    public void bindAttribute(@NonNull GLAPI api, int bindingIndex, @NonNull AttributeImpl attrib) {
+    public void bindVertexAttribute(@NonNull GLAPI api, int bindingIndex, @NonNull AttributeImpl attrib) {
         this.buffer.bind(BufferTarget.ARRAY_BUFFER, target -> attrib.configureVertexAttribute(api, bindingIndex, this.format.offsetsPacked()[attrib.index()], toInt(this.stride, "stride")));
     }
 }

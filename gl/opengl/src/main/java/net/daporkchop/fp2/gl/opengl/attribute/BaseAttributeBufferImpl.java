@@ -23,6 +23,7 @@ package net.daporkchop.fp2.gl.opengl.attribute;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
 
 /**
  * Common parent class for attribute buffer implementations.
@@ -31,7 +32,7 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 @Getter
-public abstract class BaseAttributeBufferImpl {
+public abstract class BaseAttributeBufferImpl implements BaseAttributeBuffer {
     @NonNull
     protected final AttributeFormatImpl format;
 }

@@ -402,6 +402,11 @@ public class GLAPILWJGL2 implements GLAPI {
     }
 
     @Override
+    public void glBindFragDataLocation(int program, int colorNumber, @NonNull CharSequence name) {
+        GL30.glBindFragDataLocation(program, colorNumber, name);
+    }
+
+    @Override
     public void glBindBufferBase(int target, int index, int buffer) {
         GL30.glBindBufferBase(target, index, buffer);
     }

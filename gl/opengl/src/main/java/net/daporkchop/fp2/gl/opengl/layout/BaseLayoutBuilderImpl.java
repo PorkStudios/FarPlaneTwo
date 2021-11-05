@@ -34,13 +34,15 @@ import java.util.stream.Stream;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public abstract class BaseLayoutBuilderImpl<L extends BaseLayout> implements LayoutBuilder.UniformsStage<L>, LayoutBuilder.GlobalsStage<L>, LayoutBuilder.LocalsStage<L>, LayoutBuilder<L> {
+public abstract class BaseLayoutBuilderImpl<L extends BaseLayout> implements LayoutBuilder.UniformsStage<L>, LayoutBuilder.GlobalsStage<L>, LayoutBuilder.LocalsStage<L>, LayoutBuilder.OutputsStage<L>, LayoutBuilder<L> {
     @NonNull
     protected final OpenGL gl;
 
     protected AttributeFormatImpl[] uniforms;
     protected AttributeFormatImpl[] globals;
     protected AttributeFormatImpl[] locals;
+
+    protected AttributeFormatImpl[] outputs;
 
     //
     // UniformsStage
@@ -67,8 +69,18 @@ public abstract class BaseLayoutBuilderImpl<L extends BaseLayout> implements Lay
     //
 
     @Override
-    public LayoutBuilder<L> withLocals(@NonNull AttributeFormat... locals) {
+    public OutputsStage<L> withLocals(@NonNull AttributeFormat... locals) {
         this.locals = Stream.of(locals).map(AttributeFormatImpl.class::cast).toArray(AttributeFormatImpl[]::new);
+        return this;
+    }
+
+    //
+    // OutputsStage
+    //
+
+    @Override
+    public LayoutBuilder<L> withOutputs(@NonNull AttributeFormat... outputs) {
+        this.outputs = Stream.of(outputs).map(AttributeFormatImpl.class::cast).toArray(AttributeFormatImpl[]::new);
         return this;
     }
 }

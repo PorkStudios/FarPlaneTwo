@@ -48,11 +48,13 @@ public abstract class BaseLayoutImpl implements BaseLayout {
     protected final BiMap<String, AttributeImpl> uniformAttribsByName;
     protected final BiMap<String, AttributeImpl> globalAttribsByName;
     protected final BiMap<String, AttributeImpl> localAttribsByName;
+    protected final BiMap<String, AttributeImpl> outputAttribsByName;
 
     protected final BiMap<String, AttributeFormatImpl> allFormatsByName;
     protected final BiMap<String, AttributeFormatImpl> uniformFormatsByName;
     protected final BiMap<String, AttributeFormatImpl> globalFormatsByName;
     protected final BiMap<String, AttributeFormatImpl> localFormatsByName;
+    protected final BiMap<String, AttributeFormatImpl> outputFormatsByName;
 
     public BaseLayoutImpl(@NonNull BaseLayoutBuilderImpl builder) {
         this.gl = builder.gl;
@@ -64,12 +66,13 @@ public abstract class BaseLayoutImpl implements BaseLayout {
                     ImmutableBiMap::copyOf);
 
             //collect all attribute formats into a single map (also ensures names are unique)
-            this.allFormatsByName = Stream.of(builder.uniforms, builder.globals, builder.locals).flatMap(Stream::of).collect(formatToMapCollector);
+            this.allFormatsByName = Stream.of(builder.uniforms, builder.globals, builder.locals, builder.outputs).flatMap(Stream::of).collect(formatToMapCollector);
 
             //create maps for formats, separated by usage
             this.uniformFormatsByName = Stream.of(builder.uniforms).collect(formatToMapCollector);
             this.globalFormatsByName = Stream.of(builder.globals).collect(formatToMapCollector);
             this.localFormatsByName = Stream.of(builder.locals).collect(formatToMapCollector);
+            this.outputFormatsByName = Stream.of(builder.outputs).collect(formatToMapCollector);
         }
 
         {
@@ -78,12 +81,13 @@ public abstract class BaseLayoutImpl implements BaseLayout {
                     ImmutableBiMap::copyOf);
 
             //collect all attributes into a single map (also ensures names are unique)
-            this.allAttribsByName = Stream.of(builder.uniforms, builder.globals, builder.locals).flatMap(Stream::of).map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
+            this.allAttribsByName = Stream.of(builder.uniforms, builder.globals, builder.locals, builder.outputs).flatMap(Stream::of).map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
 
             //create maps for attributes, separated by usage
             this.uniformAttribsByName = Stream.of(builder.uniforms).map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
             this.globalAttribsByName = Stream.of(builder.globals).map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
             this.localAttribsByName = Stream.of(builder.locals).map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
+            this.outputAttribsByName = Stream.of(builder.outputs).map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
         }
     }
 

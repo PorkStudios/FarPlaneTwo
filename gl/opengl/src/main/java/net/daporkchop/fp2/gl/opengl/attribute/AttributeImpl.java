@@ -56,24 +56,25 @@ public abstract class AttributeImpl implements Attribute {
     }
 
     /**
-     * @return the glsl type name of this attribute
+     * @return the GLSL type name of this attribute
      */
-    public String glslName() {
-        String type;
-
+    public String glslType() {
         switch (this.interpretation) {
             case INTEGER:
-                type = this.components() == 1 ? "int" : "ivec" + this.components();
-                break;
+                return this.components() == 1 ? "int" : "ivec" + this.components();
             case FLOAT:
             case NORMALIZED_FLOAT:
-                type = this.components() == 1 ? "float" : "vec" + this.components();
-                break;
+                return this.components() == 1 ? "float" : "vec" + this.components();
             default:
                 throw new IllegalArgumentException(this.interpretation.toString());
         }
+    }
 
-        return type + ' ' + this.name;
+    /**
+     * @return a GLSL variable declaration for this attribute
+     */
+    public String glslDeclaration() {
+        return this.glslType() + ' ' + this.name;
     }
 
     /**

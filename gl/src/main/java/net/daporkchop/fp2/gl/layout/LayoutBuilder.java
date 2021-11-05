@@ -40,9 +40,9 @@ public interface LayoutBuilder<L extends BaseLayout> {
      */
     interface UniformsStage<L extends BaseLayout> {
         /**
-         * Defines the {@link AttributeFormat}(s) used for the uniform vertex attributes.
+         * Defines the {@link AttributeFormat}(s) used for the uniform attributes.
          *
-         * @param uniforms the formats of the uniform vertex attributes
+         * @param uniforms the formats of the uniform attributes
          */
         GlobalsStage<L> withUniforms(@NonNull AttributeFormat... uniforms);
     }
@@ -52,9 +52,9 @@ public interface LayoutBuilder<L extends BaseLayout> {
      */
     interface GlobalsStage<L extends BaseLayout> {
         /**
-         * Defines the {@link AttributeFormat}(s) used for the global vertex attributes.
+         * Defines the {@link AttributeFormat}(s) used for the global attributes.
          *
-         * @param globals the formats of the global vertex attributes
+         * @param globals the formats of the global attributes
          */
         LocalsStage<L> withGlobals(@NonNull AttributeFormat... globals);
     }
@@ -64,10 +64,22 @@ public interface LayoutBuilder<L extends BaseLayout> {
      */
     interface LocalsStage<L extends BaseLayout> {
         /**
-         * Defines the {@link AttributeFormat}(s) used for the local vertex attributes.
+         * Defines the {@link AttributeFormat}(s) used for the local attributes.
          *
-         * @param locals the local vertex attributes
+         * @param locals the formats of the local attributes
          */
-        LayoutBuilder<L> withLocals(@NonNull AttributeFormat... locals);
+        OutputsStage<L> withLocals(@NonNull AttributeFormat... locals);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    interface OutputsStage<L extends BaseLayout> {
+        /**
+         * Defines the {@link AttributeFormat}(s) used for the output attributes.
+         *
+         * @param outputs the formats of the output attributes
+         */
+        LayoutBuilder<L> withOutputs(@NonNull AttributeFormat... outputs);
     }
 }

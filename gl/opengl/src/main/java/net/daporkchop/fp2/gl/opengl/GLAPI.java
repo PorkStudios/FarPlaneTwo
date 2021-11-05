@@ -168,6 +168,8 @@ public interface GLAPI {
 
     void glVertexAttribIPointer(int index, int size, int type, int stride, long buffer_buffer_offset);
 
+    void glBindFragDataLocation(int program, int colorNumber, @NonNull CharSequence name);
+
     void glBindBufferBase(int target, int index, int buffer);
 
     void glBindBufferRange(int target, int index, int buffer, long offset, long size);

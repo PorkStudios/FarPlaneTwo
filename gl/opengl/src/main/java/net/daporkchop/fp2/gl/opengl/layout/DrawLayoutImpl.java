@@ -34,6 +34,7 @@ import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawBindingBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
@@ -54,6 +55,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     protected final Map<AttributeFormatImpl, List<VertexBinding>> vertexBindingsByFormat;
 
     protected final List<VertexBinding> vertexBindings;
+    protected final List<FragmentColorBinding> fragmentColorBindings;
     protected final List<UniformBlockBinding> uniformBlockBindings;
 
     public DrawLayoutImpl(@NonNull DrawLayoutBuilderImpl builder) {
@@ -61,6 +63,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
 
         //create temporary lists
         List<VertexBinding> vertexBindings = new ArrayList<>();
+        List<FragmentColorBinding> fragmentColorBindings = new ArrayList<>();
         List<UniformBlockBinding> uniformBlockBindings = new ArrayList<>();
 
         //locals
@@ -90,8 +93,16 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
             throw new UnsupportedOperationException();
         }
 
+        //outputs
+        for (AttributeFormatImpl format : builder.outputs) { //register all outputs as standard fragment colors
+            for (AttributeImpl attrib : format.attribsArray()) {
+                this.addFragmentColor(fragmentColorBindings, attrib);
+            }
+        }
+
         //make temporary lists immutable
         this.vertexBindings = ImmutableList.copyOf(vertexBindings);
+        this.fragmentColorBindings = ImmutableList.copyOf(fragmentColorBindings);
         this.uniformBlockBindings = ImmutableList.copyOf(uniformBlockBindings);
 
         //final groupings
@@ -108,6 +119,14 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         checkIndex(index < max, "cannot use more than %d vertex attributes!", max);
 
         vertexBindings.add(new VertexBinding(attrib.format(), attrib, index, instanced));
+    }
+
+    protected void addFragmentColor(@NonNull List<FragmentColorBinding> fragmentColorBindings, @NonNull AttributeImpl attrib) {
+        int index = fragmentColorBindings.size();
+        int max = this.api.glGetInteger(GL_MAX_DRAW_BUFFERS);
+        checkIndex(index < max, "cannot use more than %d fragment colors!", max);
+
+        fragmentColorBindings.add(new FragmentColorBinding(attrib.format(), attrib, index));
     }
 
     protected void addUniformBuffer(@NonNull List<UniformBlockBinding> uniformBlockBindings, @NonNull AttributeFormatImpl format) {
@@ -132,8 +151,8 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
                 break;
             }
             case FRAGMENT: {
+                this.fragmentColorBindings.forEach(binding -> binding.generateGLSL(builder));
                 this.uniformBlockBindings.forEach(binding -> binding.generateGLSL(builder));
-                //TODO: shader outputs
                 break;
             }
             default:
@@ -170,9 +189,9 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         protected final int bindingIndex;
         protected final boolean instanced;
 
-        public void enableAndBind(@NonNull GLAPI api, @NonNull LocalAttributeBufferImpl buffer) {
+        public void enableAndBind(@NonNull GLAPI api, @NonNull BaseAttributeBufferImpl buffer) {
             api.glEnableVertexAttribArray(this.bindingIndex);
-            buffer.bindAttribute(api, this.bindingIndex, this.attrib);
+            ((LocalAttributeBufferImpl) buffer).bindVertexAttribute(api, this.bindingIndex, this.attrib);
 
             if (this.instanced) {
                 api.glVertexAttribDivisor(this.bindingIndex, 1);
@@ -184,7 +203,29 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         }
 
         protected void generateGLSL(@NonNull StringBuilder builder) {
-            builder.append("in ").append(this.attrib.glslName()).append(";\n");
+            builder.append("in ").append(this.attrib.glslDeclaration()).append(";\n");
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+    @ToString
+    @EqualsAndHashCode
+    public static class FragmentColorBinding {
+        @Getter
+        protected final AttributeFormatImpl format;
+        protected final AttributeImpl attrib;
+
+        protected final int colorIndex;
+
+        public void bindColorLocation(@NonNull GLAPI api, int program) {
+            api.glBindFragDataLocation(program, this.colorIndex, this.attrib.name());
+        }
+
+        protected void generateGLSL(@NonNull StringBuilder builder) {
+            builder.append("out ").append(this.attrib.glslDeclaration()).append(";\n");
         }
     }
 
@@ -210,7 +251,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         protected void generateGLSL(@NonNull StringBuilder builder) {
             builder.append("uniform ").append(this.format.name()).append(" {\n");
             for (AttributeImpl attrib : this.format.attribsArray()) {
-                builder.append("    ").append(attrib.glslName()).append(";\n");
+                builder.append("    ").append(attrib.glslDeclaration()).append(";\n");
             }
             builder.append("};\n");
         }
