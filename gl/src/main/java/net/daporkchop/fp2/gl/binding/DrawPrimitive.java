@@ -18,28 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw;
-
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+package net.daporkchop.fp2.gl.binding;
 
 /**
- * The different geometry types supported by OpenGL.
+ * The different primitive geometry types which can be rendered.
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public enum DrawMode {
-    POINTS(DrawPrimitive.POINTS),
-    LINES(DrawPrimitive.LINES),
-    LINE_STRIP(DrawPrimitive.LINES),
-    LINE_LOOP(DrawPrimitive.LINES),
-    TRIANGLES(DrawPrimitive.TRIANGLES),
-    TRIANGLE_STRIP(DrawPrimitive.TRIANGLES),
-    TRIANGLE_FAN(DrawPrimitive.TRIANGLES);
-
-    @NonNull
-    private final DrawPrimitive primitive;
+public enum DrawPrimitive {
+    POINTS,
+    LINES,
+    TRIANGLES,
+    QUADS;
 }

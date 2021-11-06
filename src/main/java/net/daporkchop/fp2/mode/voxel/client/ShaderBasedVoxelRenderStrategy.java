@@ -21,13 +21,15 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
-import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
+import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.index.IndexFormat;
+import net.daporkchop.fp2.gl.layout.DrawLayout;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
-import net.daporkchop.fp2.mode.common.client.bake.indexed.MultipassIndexedBakeOutput;
-import net.daporkchop.fp2.mode.common.client.strategy.IShaderBasedMultipassRenderStrategy;
+import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.AbstractMultipassIndexedRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
@@ -35,9 +37,39 @@ import net.daporkchop.fp2.mode.voxel.VoxelTile;
 /**
  * @author DaPorkchop_
  */
-public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRenderStrategy<VoxelPos, VoxelTile> implements IShaderBasedMultipassRenderStrategy<VoxelPos, VoxelTile, MultipassIndexedBakeOutput, DrawElementsCommand> {
-    public ShaderBasedVoxelRenderStrategy(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
-        super(mode, VoxelBaker.VERTEX_FORMAT);
+public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRenderStrategy<VoxelPos, VoxelTile> {
+    public ShaderBasedVoxelRenderStrategy(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode, @NonNull GL gl) {
+        super(mode, gl);
+    }
+
+    @Override
+    public IndexFormat indexFormat() {
+        return null;
+    }
+
+    @Override
+    public AttributeFormat globalFormat() {
+        return null;
+    }
+
+    @Override
+    public AttributeFormat vertexFormat() {
+        return null;
+    }
+
+    @Override
+    public DrawLayout drawLayout() {
+        return null;
+    }
+
+    @Override
+    public DrawShaderProgram blockShader() {
+        return null;
+    }
+
+    @Override
+    public DrawShaderProgram stencilShader() {
+        return null;
     }
 
     @Override
@@ -46,17 +78,7 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
     }
 
     @Override
-    public IRenderBaker<VoxelPos, VoxelTile, MultipassIndexedBakeOutput> createBaker() {
+    public IRenderBaker<VoxelPos, VoxelTile, IndexedBakeOutput> createBaker() {
         return new VoxelBaker();
-    }
-
-    @Override
-    public RenderShaderProgram blockShader() {
-        return VoxelShaders.BLOCK_SHADER;
-    }
-
-    @Override
-    public RenderShaderProgram stencilShader() {
-        return VoxelShaders.STENCIL_SHADER;
     }
 }

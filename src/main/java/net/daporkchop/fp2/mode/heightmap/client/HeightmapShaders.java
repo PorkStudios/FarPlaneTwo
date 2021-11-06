@@ -36,17 +36,17 @@ import static net.daporkchop.fp2.FP2.*;
  */
 @UtilityClass
 public class HeightmapShaders {
-    public static final RenderShaderProgram BLOCK_SHADER = ShaderManager.renderShaderBuilder("heightmap/block")
+    /*public static final RenderShaderProgram BLOCK_SHADER = ShaderManager.renderShaderBuilder("heightmap/block")
             .withVertexShader(Identifier.from(MODID, "shaders/vert/heightmap/heightmap.vert"))
             .withFragmentShader(Identifier.from(MODID, "shaders/frag/block.frag"))
-            .link();
+            .link();*/
 
     //public final RenderShaderProgram BLOCK_SHADER_TRANSFORM_FEEDBACK = ShaderManager.get("heightmap/xfb/block");
 
-    public final RenderShaderProgram STENCIL_SHADER = ShaderManager.renderShaderBuilder("heightmap/stencil")
+    /*public final RenderShaderProgram STENCIL_SHADER = ShaderManager.renderShaderBuilder("heightmap/stencil")
             .withVertexShader(Identifier.from(MODID, "shaders/vert/heightmap/heightmap.vert"))
             .withFragmentShader(Identifier.from(MODID, "shaders/frag/stencil.frag"))
-            .link();
+            .link();*/
 
     public static final ComputeShaderBuilder CULL_SHADER = ShaderManager.computeShaderBuilder("heightmap/cull")
             .withComputeShader(Identifier.from(MODID, "shaders/comp/heightmap/heightmap_frustum_culling.comp"))

@@ -21,9 +21,11 @@
 package net.daporkchop.fp2.mode.common.client.bake;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.command.IDrawCommand;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.gl.command.DrawCommand;
+import net.daporkchop.fp2.gl.binding.DrawBinding;
+import net.daporkchop.fp2.gl.binding.DrawBindingBuilder;
+import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.common.misc.refcount.RefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
@@ -33,7 +35,7 @@ import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
  *
  * @author DaPorkchop_
  */
-public interface IMultipassBakeOutputStorage<B extends IBakeOutput, C extends IDrawCommand> extends RefCounted {
+public interface IBakeOutputStorage<BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends RefCounted {
     /**
      * @return the number of render passes
      */
@@ -45,7 +47,7 @@ public interface IMultipassBakeOutputStorage<B extends IBakeOutput, C extends ID
      * @param output the {@link IBakeOutput} to add
      * @return a handle to the bake output
      */
-    int add(@NonNull B output);
+    int add(@NonNull BO output);
 
     /**
      * Deletes the resources allocated by a previously allocated handle.
@@ -57,24 +59,18 @@ public interface IMultipassBakeOutputStorage<B extends IBakeOutput, C extends ID
     /**
      * Gets the draw commands to be used for drawing the data associated with a previously added {@link IBakeOutput}.
      *
-     * @param handle   the handle returned by {@link #add(IBakeOutput)}
-     * @param commands an array of {@link C}s to be configured. Must be exactly {@link #passes()} elements long
+     * @param handle the handle returned by {@link #add(IBakeOutput)}
+     * @return an array of {@link #passes()} {@link DC}s
      */
-    void toDrawCommands(int handle, @NonNull C[] commands);
+    DC[] toDrawCommands(int handle);
 
-    /**
-     * Configures a {@link VertexArrayObject} for rendering the given render pass.
-     *
-     * @param vao  the (already bound) {@link VertexArrayObject} to configure
-     * @param pass the index of the render pass to configure the {@link VertexArrayObject} for
-     */
-    void configureVAO(@NonNull VertexArrayObject vao, int pass);
+    DrawBindingBuilder<DB> createDrawBinding(@NonNull DrawLayout layout, int pass);
 
     @Override
     int refCnt();
 
     @Override
-    IMultipassBakeOutputStorage<B, C> retain() throws AlreadyReleasedException;
+    IBakeOutputStorage<BO, DB, DC> retain() throws AlreadyReleasedException;
 
     @Override
     boolean release() throws AlreadyReleasedException;

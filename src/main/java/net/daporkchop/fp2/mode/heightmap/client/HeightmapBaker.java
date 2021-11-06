@@ -22,14 +22,12 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.TexUVs;
-import net.daporkchop.fp2.client.gl.vertex.attribute.IVertexAttribute;
-import net.daporkchop.fp2.client.gl.vertex.attribute.VertexAttributeInterpretation;
-import net.daporkchop.fp2.client.gl.vertex.attribute.VertexAttributeType;
-import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
 import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
+import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
 import net.daporkchop.fp2.mode.common.client.RenderConstants;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
-import net.daporkchop.fp2.mode.common.client.bake.indexed.MultipassIndexedBakeOutput;
+import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutput;
 import net.daporkchop.fp2.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
@@ -50,48 +48,25 @@ import static net.daporkchop.fp2.util.Constants.*;
  *
  * @author DaPorkchop_
  */
-public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile, MultipassIndexedBakeOutput> {
-    protected static final IVertexAttribute.Int1 ATTRIB_STATE = IVertexAttribute.Int1.builder()
-            .name("state")
-            .type(VertexAttributeType.UNSIGNED_INT)
-            .interpretation(VertexAttributeInterpretation.INTEGER)
-            .build();
-
-    protected static final IVertexAttribute.Int2 ATTRIB_LIGHT = IVertexAttribute.Int2.builder(ATTRIB_STATE)
-            .name("light")
-            .type(VertexAttributeType.UNSIGNED_BYTE)
-            .interpretation(VertexAttributeInterpretation.NORMALIZED_FLOAT)
-            .build();
-
-    protected static final IVertexAttribute.Int3 ATTRIB_COLOR = IVertexAttribute.Int3.builder(ATTRIB_LIGHT)
-            .name("color")
-            .reportedComponents(4)
-            .type(VertexAttributeType.UNSIGNED_BYTE)
-            .interpretation(VertexAttributeInterpretation.NORMALIZED_FLOAT)
-            .build();
-
-    protected static final IVertexAttribute.Int2 ATTRIB_POS_HORIZ = IVertexAttribute.Int2.builder(ATTRIB_COLOR)
-            .name("pos_horiz")
-            .type(VertexAttributeType.UNSIGNED_BYTE)
-            .interpretation(VertexAttributeInterpretation.INTEGER)
-            .build();
-
-    protected static final IVertexAttribute.Int1 ATTRIB_HEIGHT_INT = IVertexAttribute.Int1.builder(ATTRIB_POS_HORIZ)
-            .name("height_int")
-            .type(VertexAttributeType.INT)
-            .interpretation(VertexAttributeInterpretation.INTEGER)
-            .build();
-
-    protected static final IVertexAttribute.Int1 ATTRIB_HEIGHT_FRAC = IVertexAttribute.Int1.builder(ATTRIB_HEIGHT_INT)
-            .name("height_frac")
-            .type(VertexAttributeType.UNSIGNED_BYTE)
-            .interpretation(VertexAttributeInterpretation.FLOAT)
-            .build();
-
-    protected static final VertexFormat VERTEX_FORMAT = new VertexFormat("heightmap", ATTRIB_HEIGHT_FRAC);
-
+public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile, IndexedBakeOutput> {
     protected static int vertexMapIndex(int x, int z, int layer) {
         return (x * T_VERTS + z) * MAX_LAYERS + layer;
+    }
+
+    protected final Attribute.Int1 state;
+    protected final Attribute.Int2 light;
+    protected final Attribute.Int3 color;
+    protected final Attribute.Int2 posHoriz;
+    protected final Attribute.Int1 heightInt;
+    protected final Attribute.Int1 heightFrac;
+
+    public HeightmapBaker(@NonNull ShaderBasedHeightmapRenderStrategy strategy) {
+        this.state = strategy.attrLocalState;
+        this.light = strategy.attrLocalLight;
+        this.color = strategy.attrLocalColor;
+        this.posHoriz = strategy.attrLocalPosHoriz;
+        this.heightInt = strategy.attrLocalHeightInt;
+        this.heightFrac = strategy.attrLocalHeightFrac;
     }
 
     @Override
@@ -127,7 +102,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
     }
 
     @Override
-    public void bake(@NonNull HeightmapPos pos, @NonNull HeightmapTile[] srcs, @NonNull MultipassIndexedBakeOutput output) {
+    public void bake(@NonNull HeightmapPos pos, @NonNull HeightmapTile[] srcs, @NonNull IndexedBakeOutput output) {
         if (srcs[0] == null) {
             return;
         }
@@ -163,7 +138,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
                         int x = dx + (((i >> 1) & 1) << T_SHIFT);
                         int z = dz + ((i & 1) << T_SHIFT);
 
-                        writeVertex(blockX, blockZ, level, src, x, z, layer, output.verts(), blockPos, biomeAccess, data);
+                        this.writeVertex(blockX, blockZ, level, src, x, z, layer, output.verts(), blockPos, biomeAccess, data);
                         map[vertexMapIndex(x, z, layer)] = indexCounter++;
                     }
                 }
@@ -189,7 +164,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
                         continue; //skip if any of the vertices are missing
                     }
 
-                    RenderConstants.emitQuad(output.indices()[renderType(data.state)], oppositeCorner, c1, c0, provoking);
+                    output.indices()[renderType(data.state)].appendQuad(oppositeCorner, c1, c0, provoking);
                     rendered.set(vertexMapIndex(x, z, layer));
                 }
             }
@@ -223,7 +198,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
                                 continue; //skip if any of the vertices are missing
                             }
 
-                            RenderConstants.emitQuad(output.indices()[renderType(data.state)], oppositeCorner, c1, c0, provoking);
+                            output.indices()[renderType(data.state)].appendQuad(oppositeCorner, c1, c0, provoking);
                         }
                     }
                 }
@@ -231,7 +206,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         }
     }
 
-    private void writeVertex(int baseX, int baseZ, int level, HeightmapTile tile, int x, int z, int layer, IVertexBuilder out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, HeightmapData data) {
+    private void writeVertex(int baseX, int baseZ, int level, HeightmapTile tile, int x, int z, int layer, LocalAttributeWriter out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, HeightmapData data) {
         baseX += (x & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
 
@@ -243,17 +218,16 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         pos.setPos(blockX, data.height_int, blockZ);
         biomeAccess.biome(data.biome);
 
-        int vertexBase = out.appendVertex();
-
-        ATTRIB_STATE.set(out, vertexBase, TexUVs.STATEID_TO_INDEXID.get(data.state));
+        out.set(this.state, TexUVs.STATEID_TO_INDEXID.get(data.state));
 
         int blockLight = data.light & 0xF;
         int skyLight = data.light >> 4;
-        ATTRIB_LIGHT.set(out, vertexBase, blockLight | (blockLight << 4), skyLight | (skyLight << 4));
-        ATTRIB_COLOR.setRGB(out, vertexBase, MC.getBlockColors().colorMultiplier(data.state, biomeAccess, pos, 0));
+        out.set(this.light, blockLight | (blockLight << 4), skyLight | (skyLight << 4));
+        out.setARGB(this.color, MC.getBlockColors().colorMultiplier(data.state, biomeAccess, pos, 0));
 
-        ATTRIB_POS_HORIZ.set(out, vertexBase, x, z);
-        ATTRIB_HEIGHT_INT.set(out, vertexBase, data.height_int);
-        ATTRIB_HEIGHT_FRAC.set(out, vertexBase, data.height_frac);
+        out.set(this.posHoriz, x, z);
+        out.set(this.heightInt, data.height_int);
+        out.set(this.heightFrac, data.height_frac);
+        out.endVertex();
     }
 }

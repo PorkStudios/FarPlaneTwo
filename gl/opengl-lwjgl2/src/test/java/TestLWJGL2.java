@@ -36,10 +36,10 @@ import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.DrawCommandArrays;
+import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
 import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
-import net.daporkchop.fp2.gl.command.buffer.DrawCommandBuffer;
-import net.daporkchop.fp2.gl.draw.DrawBindingIndexed;
-import net.daporkchop.fp2.gl.draw.DrawMode;
+import net.daporkchop.fp2.gl.binding.DrawBindingIndexed;
+import net.daporkchop.fp2.gl.binding.DrawMode;
 import net.daporkchop.fp2.gl.index.IndexBuffer;
 import net.daporkchop.fp2.gl.index.IndexFormat;
 import net.daporkchop.fp2.gl.index.IndexType;
@@ -48,7 +48,7 @@ import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.gl.shader.FragmentShader;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.daporkchop.fp2.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.VertexShader;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.opengl.ContextAttribs;
@@ -196,7 +196,7 @@ public class TestLWJGL2 {
                 .include(Identifier.from("test.frag")).endSource()
                 .endDefines()
                 .build();
-        ShaderProgram shaderProgram = gl.linkShaderProgram(layout, vertexShader, fragmentShader);
+        DrawShaderProgram drawShaderProgram = gl.linkShaderProgram(layout, vertexShader, fragmentShader);
 
         LocalAttributeBuffer localBuffer = localFormat.createLocalBuffer(BufferUsage.STATIC_DRAW);
         localBuffer.resize(4);
@@ -260,10 +260,10 @@ public class TestLWJGL2 {
 
         while (!Display.isCloseRequested()) {
             uniformBuffer.set(attrScale, 64, 64);
-            commandBufferArrays.execute(DrawMode.TRIANGLES, shaderProgram);
+            commandBufferArrays.execute(DrawMode.TRIANGLES, drawShaderProgram);
 
             uniformBuffer.set(attrScale, -128, -128);
-            commandBufferElements.execute(DrawMode.TRIANGLES, shaderProgram);
+            commandBufferElements.execute(DrawMode.TRIANGLES, drawShaderProgram);
 
             Display.update();
             Display.sync(60);

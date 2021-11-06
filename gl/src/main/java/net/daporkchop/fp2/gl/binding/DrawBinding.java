@@ -18,14 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw;
+package net.daporkchop.fp2.gl.binding;
 
-import net.daporkchop.fp2.gl.index.IndexBuffer;
+import net.daporkchop.fp2.gl.GLResource;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
 
 /**
- * A {@link DrawBinding} which also contains a {@link IndexBuffer}, and may therefore be used by indexed rendering commands.
+ * Maps {@link LocalAttributeBuffer}s to {@link DrawShaderProgram} inputs.
+ * <p>
+ * A binding does not own any of the buffers or programs it references. The user is responsible for creating and disposing of them properly. Disposing of a resource belonging to a binding
+ * before the binding is closed will result in undefined behavior.
  *
  * @author DaPorkchop_
  */
-public interface DrawBindingIndexed extends DrawBinding {
+public interface DrawBinding extends GLResource {
 }

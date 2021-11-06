@@ -20,8 +20,8 @@
 
 package net.daporkchop.fp2.gl.layout;
 
-import net.daporkchop.fp2.gl.draw.DrawBinding;
-import net.daporkchop.fp2.gl.draw.DrawBindingBuilder;
+import net.daporkchop.fp2.gl.binding.DrawBinding;
+import net.daporkchop.fp2.gl.binding.DrawBindingBuilder;
 
 /**
  * @author DaPorkchop_

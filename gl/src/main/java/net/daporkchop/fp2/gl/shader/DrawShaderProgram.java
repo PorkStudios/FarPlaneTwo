@@ -18,36 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.draw;
-
-import lombok.Getter;
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.draw.DrawBindingIndexed;
-import net.daporkchop.fp2.gl.opengl.index.IndexBufferImpl;
-
-import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
+package net.daporkchop.fp2.gl.shader;
 
 /**
+ * An OpenGL shader program used for rendering.
+ *
  * @author DaPorkchop_
  */
-@Getter
-public class DrawBindingIndexedImpl extends DrawBindingImpl implements DrawBindingIndexed {
-    protected final IndexBufferImpl indices;
-
-    public DrawBindingIndexedImpl(@NonNull DrawBindingBuilderImpl builder) {
-        super(builder);
-
-        this.indices = builder.indices;
-
-        //bind the elements buffer to the VAO
-        int oldVao = this.api.glGetInteger(GL_VERTEX_ARRAY_BINDING);
-        int oldElementArray = this.api.glGetInteger(GL_ELEMENT_ARRAY_BUFFER_BINDING);
-        try {
-            this.api.glBindVertexArray(this.vao);
-            this.api.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this.indices.buffer().id());
-        } finally {
-            this.api.glBindVertexArray(oldVao);
-            this.api.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, oldElementArray);
-        }
-    }
+public interface DrawShaderProgram extends BaseShaderProgram {
 }

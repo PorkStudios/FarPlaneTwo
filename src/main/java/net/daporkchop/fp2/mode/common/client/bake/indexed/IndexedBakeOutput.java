@@ -18,19 +18,47 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.shader;
+package net.daporkchop.fp2.mode.common.client.bake.indexed;
 
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutImpl;
-import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.daporkchop.fp2.gl.shader.ShaderProgram;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
+import net.daporkchop.fp2.gl.index.IndexWriter;
+import net.daporkchop.fp2.mode.common.client.bake.AbstractBakeOutput;
+import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
+
+import java.util.stream.Stream;
 
 /**
+ * Implementation of {@link IBakeOutput} which contains indexed geometry in multiple render passes.
+ *
  * @author DaPorkchop_
  */
-public class ShaderProgramImpl extends BaseShaderProgramImpl implements ShaderProgram {
-    public ShaderProgramImpl(@NonNull OpenGL gl, @NonNull DrawLayoutImpl layout, @NonNull BaseShaderImpl... shaders) throws ShaderLinkageException {
-        super(gl, layout, shaders);
+@RequiredArgsConstructor
+@Getter
+public class IndexedBakeOutput extends AbstractBakeOutput {
+    @NonNull
+    protected final GlobalAttributeWriter globals;
+
+    @NonNull
+    protected final LocalAttributeWriter verts;
+
+    @NonNull
+    protected final IndexWriter[] indices;
+
+    @Override
+    protected void doRelease() {
+        this.globals.close();
+        this.verts.close();
+        for (IndexWriter writer : this.indices) {
+            writer.close();
+        }
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return this.verts.size() == 0 || Stream.of(this.indices).allMatch(writer -> writer.size() == 0);
     }
 }

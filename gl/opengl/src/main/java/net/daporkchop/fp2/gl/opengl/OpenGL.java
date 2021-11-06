@@ -29,8 +29,9 @@ import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.GLModule;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
+import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.command.buffer.DrawCommandBufferBuilder;
+import net.daporkchop.fp2.gl.command.DrawCommandBufferBuilder;
 import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.index.IndexFormatBuilder;
 import net.daporkchop.fp2.gl.layout.DrawLayout;
@@ -44,7 +45,7 @@ import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutImpl;
 import net.daporkchop.fp2.gl.opengl.shader.FragmentShaderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.shader.ShaderProgramImpl;
+import net.daporkchop.fp2.gl.opengl.shader.DrawShaderProgramImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 import net.daporkchop.fp2.gl.opengl.shader.VertexShaderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
@@ -52,7 +53,7 @@ import net.daporkchop.fp2.gl.shader.FragmentShader;
 import net.daporkchop.fp2.gl.shader.ShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.daporkchop.fp2.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.VertexShader;
 
 import java.util.Set;
@@ -143,6 +144,11 @@ public class OpenGL implements GL {
     }
 
     @Override
+    public GLBitSetBuilder createBitSet() {
+        throw new UnsupportedOperationException(); //TODO
+    }
+
+    @Override
     public IndexFormatBuilder.TypeSelectionStage createIndexFormat() {
         return new IndexFormatBuilderImpl(this);
     }
@@ -187,8 +193,8 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public ShaderProgram linkShaderProgram(@NonNull DrawLayout layout, @NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException {
-        return new ShaderProgramImpl(this, (DrawLayoutImpl) layout, (VertexShaderImpl) vertexShader, (FragmentShaderImpl) fragmentShader);
+    public DrawShaderProgram linkShaderProgram(@NonNull DrawLayout layout, @NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException {
+        return new DrawShaderProgramImpl(this, (DrawLayoutImpl) layout, (VertexShaderImpl) vertexShader, (FragmentShaderImpl) fragmentShader);
     }
 
     @Override

@@ -18,52 +18,22 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.client.strategy;
+package net.daporkchop.fp2.mode.common.client.bake;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.client.gl.command.IDrawCommand;
-import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
-import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexLayout;
-import net.daporkchop.fp2.client.gl.vertex.buffer.interleaved.InterleavedVertexLayout;
-import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.binding.DrawBinding;
 import net.daporkchop.fp2.gl.command.DrawCommand;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
-import net.daporkchop.fp2.common.util.alloc.Allocator;
-import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.gl.binding.DrawBinding;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 /**
- * Base implementation of {@link IFarRenderStrategy}.
+ * Base implementation of {@link IBakeOutputStorage}.
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFarTile, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRefCounted implements IFarRenderStrategy<POS, T, BO, DB, DC> {
-    protected final Allocator alloc = new DirectMemoryAllocator();
-
-    @NonNull
-    protected final IFarRenderMode<POS, T> mode;
-
-    @NonNull
-    protected final GL gl;
-
+public abstract class AbstractBakeOutputStorage<BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRefCounted implements IBakeOutputStorage<BO, DB, DC> {
     @Override
-    public IFarRenderStrategy<POS, T, BO, DB, DC> retain() throws AlreadyReleasedException {
+    public IBakeOutputStorage<BO, DB, DC> retain() throws AlreadyReleasedException {
         super.retain();
         return this;
-    }
-
-    @Override
-    protected void doRelease() {
-        //no-op
     }
 }

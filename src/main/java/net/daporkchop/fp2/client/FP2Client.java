@@ -24,6 +24,8 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
+import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.impl.ResourceProvider1_12_2;
 import net.daporkchop.fp2.mode.heightmap.client.HeightmapShaders;
 import net.daporkchop.fp2.mode.voxel.client.VoxelShaders;
 import net.daporkchop.fp2.net.packet.standard.client.CPacketClientConfig;
@@ -51,6 +53,12 @@ import static org.lwjgl.opengl.GL43.*;
 @UtilityClass
 @SideOnly(Side.CLIENT)
 public class FP2Client {
+    protected static GL gl;
+
+    public GL gl() {
+        return gl;
+    }
+
     /**
      * Called during {@link FMLPreInitializationEvent}.
      */
@@ -72,6 +80,10 @@ public class FP2Client {
                 unsupported("Unable to enable the OpenGL stencil buffer!\nRequired by FarPlaneTwo.");
             }
         }
+
+        gl = GL.builder()
+                .withResourceProvider(new ResourceProvider1_12_2(MC))
+                .wrapCurrent();
 
         ClientEvents.register();
 

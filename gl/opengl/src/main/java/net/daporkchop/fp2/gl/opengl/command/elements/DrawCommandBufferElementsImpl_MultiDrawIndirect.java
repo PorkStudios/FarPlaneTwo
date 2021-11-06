@@ -23,19 +23,17 @@ package net.daporkchop.fp2.gl.opengl.command.elements;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
-import net.daporkchop.fp2.gl.draw.DrawMode;
+import net.daporkchop.fp2.gl.binding.DrawMode;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
-import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferImpl;
 import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.draw.DrawBindingIndexedImpl;
+import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferImpl;
+import net.daporkchop.fp2.gl.opengl.binding.DrawBindingIndexedImpl;
 import net.daporkchop.fp2.gl.opengl.index.IndexFormatImpl;
-import net.daporkchop.fp2.gl.opengl.shader.ShaderProgramImpl;
-import net.daporkchop.fp2.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.gl.opengl.shader.DrawShaderProgramImpl;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.lib.unsafe.PUnsafe;
-
-import java.util.function.IntPredicate;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -146,16 +144,11 @@ public class DrawCommandBufferElementsImpl_MultiDrawIndirect extends DrawCommand
     }
 
     @Override
-    public void execute(@NonNull DrawMode mode, @NonNull ShaderProgram shader) {
+    public void execute(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader) {
         this.buffer.upload(this.commandsAddr, this.capacity * _SIZE);
 
-        this.buffer.bind(BufferTarget.DRAW_INDIRECT_BUFFER, target -> ((ShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
+        this.buffer.bind(BufferTarget.DRAW_INDIRECT_BUFFER, target -> ((DrawShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
             this.api.glMultiDrawElementsIndirect(GLEnumUtil.from(mode), this.indexType, 0L, this.capacity, 0);
         })));
-    }
-
-    @Override
-    public void execute(@NonNull DrawMode mode, @NonNull ShaderProgram shader, @NonNull IntPredicate selector) {
-        throw new UnsupportedOperationException();
     }
 }

@@ -18,21 +18,36 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.client.bake;
+package net.daporkchop.fp2.gl.opengl.binding;
 
-import net.daporkchop.fp2.client.gl.command.IDrawCommand;
-import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+import lombok.Getter;
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.binding.DrawBindingIndexed;
+import net.daporkchop.fp2.gl.opengl.index.IndexBufferImpl;
+
+import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 
 /**
- * Base implementation of {@link IMultipassBakeOutputStorage}.
- *
  * @author DaPorkchop_
  */
-public abstract class AbstractMultipassBakeOutputStorage<B extends IBakeOutput, C extends IDrawCommand> extends AbstractRefCounted implements IMultipassBakeOutputStorage<B, C> {
-    @Override
-    public IMultipassBakeOutputStorage<B, C> retain() throws AlreadyReleasedException {
-        super.retain();
-        return this;
+@Getter
+public class DrawBindingIndexedImpl extends DrawBindingImpl implements DrawBindingIndexed {
+    protected final IndexBufferImpl indices;
+
+    public DrawBindingIndexedImpl(@NonNull DrawBindingBuilderImpl builder) {
+        super(builder);
+
+        this.indices = builder.indices;
+
+        //bind the elements buffer to the VAO
+        int oldVao = this.api.glGetInteger(GL_VERTEX_ARRAY_BINDING);
+        int oldElementArray = this.api.glGetInteger(GL_ELEMENT_ARRAY_BUFFER_BINDING);
+        try {
+            this.api.glBindVertexArray(this.vao);
+            this.api.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this.indices.buffer().id());
+        } finally {
+            this.api.glBindVertexArray(oldVao);
+            this.api.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, oldElementArray);
+        }
     }
 }

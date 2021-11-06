@@ -18,12 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.gl.shader;
+package net.daporkchop.fp2.gl.opengl.shader;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutImpl;
+import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 
 /**
- * An OpenGL shader program used for rendering.
- *
  * @author DaPorkchop_
  */
-public interface ShaderProgram extends BaseShaderProgram {
+public class DrawShaderProgramImpl extends BaseShaderProgramImpl implements DrawShaderProgram {
+    public DrawShaderProgramImpl(@NonNull OpenGL gl, @NonNull DrawLayoutImpl layout, @NonNull BaseShaderImpl... shaders) throws ShaderLinkageException {
+        super(gl, layout, shaders);
+    }
 }

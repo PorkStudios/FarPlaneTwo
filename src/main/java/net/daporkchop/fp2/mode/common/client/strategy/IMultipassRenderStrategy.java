@@ -22,8 +22,10 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.DrawMode;
-import net.daporkchop.fp2.client.gl.command.IDrawCommand;
 import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.gl.command.DrawCommand;
+import net.daporkchop.fp2.gl.binding.DrawBinding;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
@@ -40,9 +42,9 @@ import static org.lwjgl.opengl.GL11.*;
 /**
  * @author DaPorkchop_
  */
-public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile, B extends IBakeOutput, C extends IDrawCommand> extends IFarRenderStrategy<POS, T, B, C> {
+public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends IFarRenderStrategy<POS, T, BO, DB, DC> {
     @Override
-    default void render(@NonNull IRenderIndex<POS, B, C> index, @NonNull BlockRenderLayer layer, boolean pre) {
+    default void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, @NonNull BlockRenderLayer layer, boolean pre) {
         if (layer == BlockRenderLayer.CUTOUT && !pre) {
             ((AbstractTexture) MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE)).setBlurMipmapDirect(false, MC.gameSettings.mipmapLevels > 0);
 
@@ -54,7 +56,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         }
     }
 
-    default void render(@NonNull IRenderIndex<POS, B, C> index) {
+    default void render(@NonNull IRenderIndex<POS, BO, DB, DC> index) {
         this.preRender();
 
         //in order to properly render overlapping layers while ensuring that low-detail levels always get placed on top of high-detail ones, we'll need to do the following:
@@ -94,32 +96,32 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         }
     }
 
-    default void renderSolid(@NonNull IRenderIndex<POS, B, C> index, int level) {
+    default void renderSolid(@NonNull IRenderIndex<POS, BO, DB, DC> index, int level) {
         GlStateManager.disableAlpha();
 
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         glStencilFunc(GL_LEQUAL, level, 0x7F);
-        index.draw(level, 0);
+        index.draw(level, 0, this.blockShader());
 
         GlStateManager.enableAlpha();
     }
 
-    default void renderCutout(@NonNull IRenderIndex<POS, B, C> index, int level) {
+    default void renderCutout(@NonNull IRenderIndex<POS, BO, DB, DC> index, int level) {
         MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, MC.gameSettings.mipmapLevels > 0);
 
         glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
         glStencilFunc(GL_LEQUAL, level, 0x7F);
-        index.draw(level, 1);
+        index.draw(level, 1, this.blockShader());
 
         MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
     }
 
-    default void renderTransparent(@NonNull IRenderIndex<POS, B, C> index) {
+    default void renderTransparent(@NonNull IRenderIndex<POS, BO, DB, DC> index) {
         this.renderTransparentStencilPass(index);
         this.renderTransparentFragmentPass(index);
     }
 
-    default void renderTransparentStencilPass(@NonNull IRenderIndex<POS, B, C> index) {
+    default void renderTransparentStencilPass(@NonNull IRenderIndex<POS, BO, DB, DC> index) {
         GlStateManager.colorMask(false, false, false, false);
 
         GlStateManager.depthMask(false);
@@ -128,7 +130,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         for (int level = 0; level < MAX_LODS; level++) {
             if (index.hasAnyTilesForLevel(level)) {
                 glStencilFunc(GL_GEQUAL, 0x80 | (MAX_LODS - level), 0xFF);
-                index.draw(level, 2);
+                index.draw(level, 2, this.stencilShader());
             }
         }
 
@@ -137,7 +139,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         GlStateManager.colorMask(true, true, true, true);
     }
 
-    default void renderTransparentFragmentPass(@NonNull IRenderIndex<POS, B, C> index) {
+    default void renderTransparentFragmentPass(@NonNull IRenderIndex<POS, BO, DB, DC> index) {
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
         GlStateManager.alphaFunc(GL_GREATER, 0.1f);
@@ -148,10 +150,27 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         for (int level = 0; level < MAX_LODS; level++) {
             if (index.hasAnyTilesForLevel(level)) {
                 glStencilFunc(GL_EQUAL, 0x80 | (MAX_LODS - level), 0xFF);
-                index.draw(level, 2);
+                index.draw(level, 2, this.blockShaderTransparent());
             }
         }
 
         GlStateManager.disableBlend();
     }
+
+    /**
+     * @return the shader used for rendering blocks
+     */
+    DrawShaderProgram blockShader();
+
+    /**
+     * @return the shader used for rendering blocks
+     */
+    default DrawShaderProgram blockShaderTransparent() {
+        return this.blockShader();
+    }
+
+    /**
+     * @return the shader used for preparing the stencil buffer
+     */
+    DrawShaderProgram stencilShader();
 }

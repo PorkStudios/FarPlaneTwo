@@ -18,12 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.draw;
+package net.daporkchop.fp2.gl.opengl.binding;
 
 import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.draw.DrawBinding;
+import net.daporkchop.fp2.gl.binding.DrawBinding;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;

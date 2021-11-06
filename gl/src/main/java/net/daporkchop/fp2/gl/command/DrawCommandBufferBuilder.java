@@ -18,19 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw;
+package net.daporkchop.fp2.gl.command;
 
-import net.daporkchop.fp2.gl.GLResource;
-import net.daporkchop.fp2.gl.shader.ShaderProgram;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.binding.DrawBinding;
+import net.daporkchop.fp2.gl.binding.DrawBindingIndexed;
 
 /**
- * Maps {@link LocalAttributeBuffer}s to {@link ShaderProgram} inputs.
- * <p>
- * A binding does not own any of the buffers or programs it references. The user is responsible for creating and disposing of them properly. Disposing of a resource belonging to a binding
- * before the binding is closed will result in undefined behavior.
+ * Builder for {@link DrawCommandBuffer}s.
  *
+ * @param <B> the type of command buffer to build
  * @author DaPorkchop_
  */
-public interface DrawBinding extends GLResource {
+public interface DrawCommandBufferBuilder<B extends DrawCommandBuffer> {
+    /**
+     * @return the constructed {@link B}
+     */
+    B build();
+
+    /**
+     * @author DaPorkchop_
+     */
+    interface TypeStage {
+        OptimizeStage<DrawCommandBuffer<DrawCommandArrays>> forArrays(@NonNull DrawBinding binding);
+
+        OptimizeStage<DrawCommandBuffer<DrawCommandIndexed>> forIndexed(@NonNull DrawBindingIndexed binding);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    interface OptimizeStage<B extends DrawCommandBuffer> extends DrawCommandBufferBuilder<B> {
+        DrawCommandBufferBuilder<B> optimizeForCpuSelection();
+    }
 }

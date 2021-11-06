@@ -24,10 +24,12 @@ import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
+import net.daporkchop.fp2.gl.bitset.GLBitSet;
+import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
-import net.daporkchop.fp2.gl.command.buffer.DrawCommandBuffer;
-import net.daporkchop.fp2.gl.command.buffer.DrawCommandBufferBuilder;
+import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
+import net.daporkchop.fp2.gl.command.DrawCommandBufferBuilder;
 import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.index.IndexFormat;
 import net.daporkchop.fp2.gl.index.IndexFormatBuilder;
@@ -36,7 +38,7 @@ import net.daporkchop.fp2.gl.layout.LayoutBuilder;
 import net.daporkchop.fp2.gl.shader.FragmentShader;
 import net.daporkchop.fp2.gl.shader.ShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.daporkchop.fp2.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.VertexShader;
 
 import java.util.function.Supplier;
@@ -82,6 +84,11 @@ public interface GL extends AutoCloseable {
     GLBuffer createBuffer(@NonNull BufferUsage usage);
 
     /**
+     * @return a builder for constructing a new {@link GLBitSet}
+     */
+    GLBitSetBuilder createBitSet();
+
+    /**
      * @return a builder for constructing a new {@link IndexFormat}
      */
     IndexFormatBuilder.TypeSelectionStage createIndexFormat();
@@ -116,15 +123,15 @@ public interface GL extends AutoCloseable {
     ShaderBuilder.LayoutStage<FragmentShader, DrawLayout> createFragmentShader();
 
     /**
-     * Links a {@link ShaderProgram} from the given {@link VertexShader} and {@link FragmentShader}, tuned for rendering data formatted with the given {@link DrawLayout}.
+     * Links a {@link DrawShaderProgram} from the given {@link VertexShader} and {@link FragmentShader}, tuned for rendering data formatted with the given {@link DrawLayout}.
      *
      * @param layout         the {@link DrawLayout}
      * @param vertexShader   the {@link VertexShader}
      * @param fragmentShader the {@link FragmentShader}
-     * @return the linked {@link ShaderProgram}
+     * @return the linked {@link DrawShaderProgram}
      * @throws ShaderLinkageException if shader linkage fails
      */
-    ShaderProgram linkShaderProgram(@NonNull DrawLayout layout, @NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException;
+    DrawShaderProgram linkShaderProgram(@NonNull DrawLayout layout, @NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException;
 
     //
     // MODULES

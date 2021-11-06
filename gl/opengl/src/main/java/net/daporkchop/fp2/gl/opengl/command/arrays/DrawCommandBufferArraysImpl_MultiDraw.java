@@ -22,16 +22,14 @@ package net.daporkchop.fp2.gl.opengl.command.arrays;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.command.DrawCommandArrays;
-import net.daporkchop.fp2.gl.draw.DrawMode;
+import net.daporkchop.fp2.gl.binding.DrawMode;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferImpl;
-import net.daporkchop.fp2.gl.opengl.draw.DrawBindingImpl;
-import net.daporkchop.fp2.gl.opengl.shader.ShaderProgramImpl;
-import net.daporkchop.fp2.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.gl.opengl.binding.DrawBindingImpl;
+import net.daporkchop.fp2.gl.opengl.shader.DrawShaderProgramImpl;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.lib.unsafe.PUnsafe;
-
-import java.util.function.IntPredicate;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -87,32 +85,9 @@ public class DrawCommandBufferArraysImpl_MultiDraw extends DrawCommandBufferImpl
     }
 
     @Override
-    public void execute(@NonNull DrawMode mode, @NonNull ShaderProgram shader) {
-        ((ShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
+    public void execute(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader) {
+        ((DrawShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
             this.api.glMultiDrawArrays(GLEnumUtil.from(mode), this.firstAddr, this.countAddr, this.capacity);
         }));
-    }
-
-    @Override
-    public void execute(@NonNull DrawMode mode, @NonNull ShaderProgram shader, @NonNull IntPredicate selector) {
-        int capacity = this.capacity;
-
-        //allocate temporary count buffer
-        long countAddr = this.alloc.alloc(capacity * (long) INT_SIZE);
-        try {
-            //set count to 0 if selector doesn't match
-            int idx = 0;
-            for (long off = 0L, endOff = capacity * (long) INT_SIZE; off != endOff; off += INT_SIZE, idx++) {
-                int count = PUnsafe.getInt(this.countAddr + off);
-                PUnsafe.putInt(countAddr + off, count != 0 && selector.test(idx) ? count : 0);
-            }
-
-            //actually draw something
-            ((ShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
-                this.api.glMultiDrawArrays(GLEnumUtil.from(mode), this.firstAddr, this.countAddr, this.capacity);
-            }));
-        } finally {
-            this.alloc.free(countAddr);
-        }
     }
 }

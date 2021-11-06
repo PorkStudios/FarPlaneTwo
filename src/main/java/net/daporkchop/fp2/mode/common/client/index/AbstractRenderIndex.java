@@ -20,26 +20,30 @@
 
 package net.daporkchop.fp2.mode.common.client.index;
 
+import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.client.gl.command.IDrawCommand;
-import net.daporkchop.fp2.client.gl.command.IMultipassDrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
+import net.daporkchop.fp2.common.util.alloc.Allocator;
+import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.common.util.alloc.SequentialFixedSizeAllocator;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.gl.command.DrawCommand;
+import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
+import net.daporkchop.fp2.gl.binding.DrawBinding;
+import net.daporkchop.fp2.gl.binding.DrawBindingBuilder;
+import net.daporkchop.fp2.gl.binding.DrawMode;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
-import net.daporkchop.fp2.mode.common.client.bake.IMultipassBakeOutputStorage;
+import net.daporkchop.fp2.mode.common.client.bake.IBakeOutputStorage;
 import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
-import net.daporkchop.fp2.common.util.alloc.Allocator;
-import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
-import net.daporkchop.fp2.common.util.alloc.SequentialFixedSizeAllocator;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.fp2.util.datastructure.SimpleSet;
 import net.daporkchop.lib.common.math.PMath;
@@ -48,8 +52,11 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.lang.reflect.Array;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
@@ -63,8 +70,8 @@ import static org.lwjgl.opengl.GL15.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOutput, C extends IDrawCommand> extends AbstractRefCounted implements IRenderIndex<POS, B, C> {
-    protected final IFarRenderStrategy<POS, ?, B, C> strategy;
+public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRefCounted implements IRenderIndex<POS, BO, DB, DC> {
+    protected final IFarRenderStrategy<POS, ?, BO, DB, DC> strategy;
     protected final ICullingStrategy<POS> cullingStrategy;
 
     protected final Allocator directMemoryAlloc = new DirectMemoryAllocator(true);
@@ -72,7 +79,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
     protected final SimpleSet<POS> renderablePositions;
     protected final Level[] levels;
 
-    public <T extends IFarTile> AbstractRenderIndex(@NonNull IFarRenderStrategy<POS, T, B, C> strategy) {
+    public <T extends IFarTile> AbstractRenderIndex(@NonNull IFarRenderStrategy<POS, T, BO, DB, DC> strategy) {
         this.strategy = strategy;
         this.cullingStrategy = this.strategy.cullingStrategy();
         this.renderablePositions = this.strategy.mode().directPosAccess().newPositionSet();
@@ -86,7 +93,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
     protected abstract Level createLevel(int level);
 
     @Override
-    public IRenderIndex<POS, B, C> retain() throws AlreadyReleasedException {
+    public IRenderIndex<POS, BO, DB, DC> retain() throws AlreadyReleasedException {
         super.retain();
         return this;
     }
@@ -100,7 +107,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
     }
 
     @Override
-    public void update(@NonNull Iterable<Map.Entry<POS, Optional<B>>> dataUpdates, @NonNull Iterable<Map.Entry<POS, Boolean>> renderableUpdates) {
+    public void update(@NonNull Iterable<Map.Entry<POS, Optional<BO>>> dataUpdates, @NonNull Iterable<Map.Entry<POS, Boolean>> renderableUpdates) {
         dataUpdates.forEach(update -> {
             POS pos = update.getKey();
             this.levels[pos.level()].put(pos, update.getValue().orElse(null));
@@ -125,14 +132,14 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
     }
 
     @Override
-    public void draw(int level, int pass) {
+    public void draw(int level, int pass, @NonNull DrawShaderProgram shader) {
         checkIndex(RENDER_PASS_COUNT, pass);
 
         if (FP2_DEBUG && !FP2Config.global().debug().levelZeroRendering() && level == 0) { //debug mode: skip level-0 rendering if needed
             return;
         }
 
-        this.levels[level].draw(pass);
+        this.levels[level].draw(pass, shader);
     }
 
     @DebugOnly
@@ -161,12 +168,9 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
 
         protected long storageHandlesAddr;
 
-        protected final IMultipassBakeOutputStorage<B, C> storage;
-        protected final IMultipassDrawCommandBuffer<C> commandBuffer;
-
-        protected final VertexArrayObject[] vaos = new VertexArrayObject[RENDER_PASS_COUNT];
-
-        protected final C[] tempCommands;
+        protected final IBakeOutputStorage<BO, DB, DC> storage;
+        protected final List<DB> bindings;
+        protected final DrawCommandBuffer<DC>[] commandBuffers = uncheckedCast(new DrawCommandBuffer[RENDER_PASS_COUNT]);
 
         protected boolean dirty = false;
 
@@ -178,20 +182,17 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
 
             this.positionsToSlots.defaultReturnValue(-1L);
 
-            this.commandBuffer = AbstractRenderIndex.this.strategy.createCommandBuffer();
             this.storage = AbstractRenderIndex.this.strategy.createBakeOutputStorage();
 
-            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                this.vaos[pass] = new VertexArrayObject();
-                try (VertexArrayObject vao = this.vaos[pass].bindForChange()) {
-                    this.directPosAccess.configureVAO(vao, this.positionsBuffer, toInt(this.positionSize), 0, 1);
-                    this.storage.configureVAO(vao, pass);
-                }
-            }
+            this.bindings = IntStream.range(0, RENDER_PASS_COUNT)
+                    .mapToObj(pass -> {
+                        DrawBindingBuilder<DB> builder = this.storage.createDrawBinding(AbstractRenderIndex.this.strategy.drawLayout(), pass);
+                        return builder.build();
+                    })
+                    .collect(Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
 
-            this.tempCommands = uncheckedCast(Array.newInstance(this.commandBuffer.commandClass(), RENDER_PASS_COUNT));
             for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                this.tempCommands[pass] = this.commandBuffer.newCommand();
+                this.commandBuffers[pass] = AbstractRenderIndex.this.strategy.createCommandBuffer(this.bindings.get(pass));
             }
 
             this.slotAllocator = new SequentialFixedSizeAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> {
@@ -201,13 +202,15 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
                 //resize memory blocks
                 this.positionsAddr = AbstractRenderIndex.this.directMemoryAlloc.realloc(this.positionsAddr, capacity * this.positionSize);
                 this.storageHandlesAddr = AbstractRenderIndex.this.directMemoryAlloc.realloc(this.storageHandlesAddr, capacity * Integer.BYTES);
-                this.commandBuffer.resize(toInt(capacity));
+                for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                    this.commandBuffers[pass].resize(toInt(capacity));
+                }
 
                 this.dirty = true;
             }), growFunction);
         }
 
-        public void put(@NonNull POS pos, B output) {
+        public void put(@NonNull POS pos, BO output) {
             long slot = this.positionsToSlots.getLong(pos);
 
             if (output == null) { //removal
@@ -271,14 +274,18 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
 
         protected void addDrawCommands(long slot) {
             //initialize draw commands from bake output storage
-            this.storage.toDrawCommands(PUnsafe.getInt(this.storageHandlesAddr + slot * (long) Integer.BYTES), this.tempCommands);
+            DC[] commands = this.storage.toDrawCommands(PUnsafe.getInt(this.storageHandlesAddr + slot * (long) Integer.BYTES));
 
             //store in command buffer
-            this.commandBuffer.store(this.tempCommands, toInt(slot, "slot"));
+            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                this.commandBuffers[pass].set(toInt(slot), commands[pass]);
+            }
         }
 
         protected void eraseDrawCommands(long slot) {
-            this.commandBuffer.clearRange(toInt(slot, "slot"), 1);
+            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                this.commandBuffers[pass].clear(toInt(slot));
+            }
         }
 
         public void select(@NonNull IFrustum frustum, float partialTicks) {
@@ -293,14 +300,12 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
 
         protected abstract void select0(@NonNull IFrustum frustum, float partialTicks);
 
-        public void draw(int pass) {
+        public void draw(int pass, @NonNull DrawShaderProgram shader) {
             if (this.positionsToSlots.isEmpty()) { //nothing to do
                 return;
             }
 
-            try (VertexArrayObject vao = this.vaos[pass].bind()) {
-                this.commandBuffer.draw(pass);
-            }
+            this.commandBuffers[pass].execute(DrawMode.QUADS, shader);
         }
 
         protected void upload() {
@@ -319,10 +324,11 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, B extends IBakeOu
             AbstractRenderIndex.this.directMemoryAlloc.free(this.positionsAddr);
             AbstractRenderIndex.this.directMemoryAlloc.free(this.storageHandlesAddr);
 
-            //delete all opengl objects
-            Stream.of(this.vaos).forEach(VertexArrayObject::delete);
+            //delete all gl objects
+            Stream.of(this.commandBuffers).forEach(DrawCommandBuffer::close);
+            this.bindings.forEach(DB::close);
             this.positionsBuffer.delete();
-            this.commandBuffer.release();
+            this.storage.release();
         }
 
         @DebugOnly

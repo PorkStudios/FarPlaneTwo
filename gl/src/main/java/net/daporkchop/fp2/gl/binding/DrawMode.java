@@ -18,42 +18,29 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.client.bake.indexed;
+package net.daporkchop.fp2.gl.binding;
 
-import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
-import net.daporkchop.fp2.mode.common.client.bake.AbstractBakeOutput;
-import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
-
-import java.util.stream.Stream;
 
 /**
- * Implementation of {@link IBakeOutput} which contains indexed geometry in multiple render passes.
+ * The different geometry types supported by OpenGL.
  *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
 @Getter
-public class MultipassIndexedBakeOutput extends AbstractBakeOutput {
-    @NonNull
-    protected final IVertexBuilder verts;
+public enum DrawMode {
+    POINTS(DrawPrimitive.POINTS),
+    LINES(DrawPrimitive.LINES),
+    LINE_STRIP(DrawPrimitive.LINES),
+    LINE_LOOP(DrawPrimitive.LINES),
+    TRIANGLES(DrawPrimitive.TRIANGLES),
+    TRIANGLE_STRIP(DrawPrimitive.TRIANGLES),
+    TRIANGLE_FAN(DrawPrimitive.TRIANGLES),
+    QUADS(DrawPrimitive.QUADS);
 
     @NonNull
-    protected final ByteBuf[] indices;
-
-    @Override
-    protected void doRelease() {
-        this.verts.release();
-        for (ByteBuf buf : this.indices) {
-            buf.release();
-        }
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return this.verts.size() == 0 || Stream.of(this.indices).noneMatch(ByteBuf::isReadable);
-    }
+    private final DrawPrimitive primitive;
 }

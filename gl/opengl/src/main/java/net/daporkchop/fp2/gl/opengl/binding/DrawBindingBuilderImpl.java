@@ -18,15 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.draw;
+package net.daporkchop.fp2.gl.opengl.binding;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
-import net.daporkchop.fp2.gl.draw.DrawBinding;
-import net.daporkchop.fp2.gl.draw.DrawBindingBuilder;
-import net.daporkchop.fp2.gl.draw.DrawBindingIndexed;
+import net.daporkchop.fp2.gl.binding.DrawBinding;
+import net.daporkchop.fp2.gl.binding.DrawBindingBuilder;
+import net.daporkchop.fp2.gl.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.index.IndexBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformAttributeBufferImpl;
@@ -40,7 +40,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;

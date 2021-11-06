@@ -24,7 +24,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.asm.interfaz.client.renderer.IMixinRenderGlobal;
 import net.daporkchop.fp2.client.VanillaRenderabilityTracker;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.client.gl.command.IDrawCommand;
+import net.daporkchop.fp2.gl.command.DrawCommand;
+import net.daporkchop.fp2.gl.binding.DrawBinding;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
@@ -41,29 +42,29 @@ import static net.daporkchop.fp2.util.Constants.*;
  *
  * @author DaPorkchop_
  */
-public class CPUCulledRenderIndex<POS extends IFarPos, B extends IBakeOutput, C extends IDrawCommand> extends AbstractRenderIndex<POS, B, C> {
+public class CPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRenderIndex<POS, BO, DB, DC> {
     protected static final Allocator.GrowFunction GROW_FUNCTION = Allocator.GrowFunction.pow2(1L);
 
-    public <T extends IFarTile> CPUCulledRenderIndex(@NonNull IFarRenderStrategy<POS, T, B, C> strategy) {
+    public <T extends IFarTile> CPUCulledRenderIndex(@NonNull IFarRenderStrategy<POS, T, BO, DB, DC> strategy) {
         super(strategy);
     }
 
     @Override
-    protected AbstractRenderIndex<POS, B, C>.Level createLevel(int level) {
+    protected AbstractRenderIndex<POS, BO, DB, DC>.Level createLevel(int level) {
         return new Level(level);
     }
 
     /**
      * @author DaPorkchop_
      */
-    protected class Level extends AbstractRenderIndex<POS, B, C>.Level {
+    protected class Level extends AbstractRenderIndex<POS, BO, DB, DC>.Level {
         public Level(int level) {
             super(level, GROW_FUNCTION);
         }
 
         @Override
         protected void select0(@NonNull IFrustum frustum, float partialTicks) {
-            this.commandBuffer.select(this.cull(frustum));
+            //TODO: this.commandBuffer.select(this.cull(frustum));
         }
 
         protected IntPredicate cull(@NonNull IFrustum frustum) {

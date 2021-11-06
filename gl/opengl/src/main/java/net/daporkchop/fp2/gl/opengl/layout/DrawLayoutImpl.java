@@ -29,14 +29,14 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.gl.opengl.GLExtension;
-import net.daporkchop.fp2.gl.draw.DrawBindingBuilder;
+import net.daporkchop.fp2.gl.binding.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.draw.DrawBindingBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.binding.DrawBindingBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 
 import java.util.ArrayList;

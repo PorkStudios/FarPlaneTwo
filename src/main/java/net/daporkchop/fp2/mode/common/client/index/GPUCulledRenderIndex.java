@@ -23,11 +23,12 @@ package net.daporkchop.fp2.mode.common.client.index;
 import lombok.NonNull;
 import net.daporkchop.fp2.asm.interfaz.client.renderer.IMixinRenderGlobal;
 import net.daporkchop.fp2.client.ShaderClippingStateHelper;
+import net.daporkchop.fp2.gl.command.DrawCommand;
 import net.daporkchop.fp2.gl.compute.ComputeLocalSize;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.client.gl.command.IDrawCommand;
 import net.daporkchop.fp2.client.gl.shader.ComputeShaderBuilder;
 import net.daporkchop.fp2.client.gl.shader.ComputeShaderProgram;
+import net.daporkchop.fp2.gl.binding.DrawBinding;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
@@ -45,7 +46,7 @@ import static org.lwjgl.opengl.GL43.*;
  *
  * @author DaPorkchop_
  */
-public class GPUCulledRenderIndex<POS extends IFarPos, B extends IBakeOutput, C extends IDrawCommand> extends AbstractRenderIndex<POS, B, C> {
+public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRenderIndex<POS, BO, DB, DC> {
     /**
      * The maximum permitted compute work group size.
      * <p>
@@ -67,12 +68,12 @@ public class GPUCulledRenderIndex<POS extends IFarPos, B extends IBakeOutput, C 
     protected static final int POSITIONS_BUFFER_BINDING_INDEX = 3;
     protected static final int COMMANDS_BUFFER_BINDING_INDEX = 4;
 
-    public <T extends IFarTile> GPUCulledRenderIndex(@NonNull IFarRenderStrategy<POS, T, B, C> strategy) {
+    public <T extends IFarTile> GPUCulledRenderIndex(@NonNull IFarRenderStrategy<POS, T, BO, DB, DC> strategy) {
         super(strategy);
     }
 
     @Override
-    protected AbstractRenderIndex<POS, B, C>.Level createLevel(int level) {
+    protected AbstractRenderIndex<POS, BO, DB, DC>.Level createLevel(int level) {
         return new Level(level);
     }
 
@@ -92,7 +93,7 @@ public class GPUCulledRenderIndex<POS extends IFarPos, B extends IBakeOutput, C 
     /**
      * @author DaPorkchop_
      */
-    protected class Level extends AbstractRenderIndex<POS, B, C>.Level {
+    protected class Level extends AbstractRenderIndex<POS, BO, DB, DC>.Level {
         protected final ComputeShaderProgram cullShader;
 
         public Level(int level) {
@@ -102,7 +103,7 @@ public class GPUCulledRenderIndex<POS extends IFarPos, B extends IBakeOutput, C 
                     .withWorkGroupSize(WORK_GROUP_SIZE)
                     .define("LEVEL_0", this.level == 0);
 
-            this.cullShader = this.commandBuffer.configureShader(cullShaderBuilder).link();
+            this.cullShader = null;//TODO: this.commandBuffer.configureShader(cullShaderBuilder).link();
         }
 
         @Override
@@ -115,7 +116,7 @@ public class GPUCulledRenderIndex<POS extends IFarPos, B extends IBakeOutput, C 
             }
 
             try (ComputeShaderProgram cullShader = this.cullShader.use()) { //do frustum culling
-                this.commandBuffer.select(cullShader);
+                //TODO: this.commandBuffer.select(cullShader);
             }
         }
     }

@@ -18,15 +18,29 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw;
+package net.daporkchop.fp2.gl.bitset;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
+import net.daporkchop.fp2.gl.binding.DrawMode;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 
 /**
- * The different primitive geometry types which can be rendered.
+ * Builder for {@link GLBitSet}s.
  *
  * @author DaPorkchop_
  */
-public enum DrawPrimitive {
-    POINTS,
-    LINES,
-    TRIANGLES;
+public interface GLBitSetBuilder {
+    /**
+     * Hints that a {@link GLBitSet} implementation should be chosen which is optimized for usage with {@link DrawCommandBuffer#execute(DrawMode, DrawShaderProgram, GLBitSet)}
+     * for the given {@link DrawCommandBuffer}.
+     *
+     * @param commandBuffer the {@link DrawCommandBuffer}
+     */
+    GLBitSetBuilder optimizeFor(@NonNull DrawCommandBuffer<?> commandBuffer);
+
+    /**
+     * @return the constructed {@link GLBitSet}
+     */
+    GLBitSet build();
 }

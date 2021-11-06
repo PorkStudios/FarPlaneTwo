@@ -18,39 +18,54 @@
  *
  */
 
-package net.daporkchop.fp2.gl.command.buffer;
+package net.daporkchop.fp2.gl.bitset;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.command.DrawCommandArrays;
-import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
-import net.daporkchop.fp2.gl.draw.DrawBinding;
-import net.daporkchop.fp2.gl.draw.DrawBindingIndexed;
+import net.daporkchop.fp2.gl.GLResource;
+
+import java.util.BitSet;
+import java.util.function.IntPredicate;
 
 /**
- * Builder for {@link DrawCommandBuffer}s.
+ * A {@link BitSet} in server memory.
+ * <p>
+ * Unlike a {@link BitSet}, a {@link GLBitSet} has a fixed capacity which is only resized on request. Reads outside of the capacity will always return
+ * {@code false}, and writes outside of the capacity will be silently discarded.
  *
- * @param <B> the type of command buffer to build
  * @author DaPorkchop_
  */
-public interface DrawCommandBufferBuilder<B extends DrawCommandBuffer> {
+public interface GLBitSet extends GLResource {
     /**
-     * @return the constructed {@link B}
+     * @return this bitset's capacity
      */
-    B build();
+    int capacity();
 
     /**
-     * @author DaPorkchop_
+     * Sets the capacity of this bitset.
+     * <p>
+     * If the new capacity is less than the current capacity, the bitset's contents will be truncated. If greater than the current capacity, the
+     * data will be extended with undefined contents.
+     *
+     * @param capacity the new capacity
      */
-    interface TypeStage {
-        OptimizeStage<DrawCommandBuffer<DrawCommandArrays>> forArrays(@NonNull DrawBinding binding);
-
-        OptimizeStage<DrawCommandBuffer<DrawCommandIndexed>> forIndexed(@NonNull DrawBindingIndexed binding);
-    }
+    void resize(int capacity);
 
     /**
-     * @author DaPorkchop_
+     * @return the value by which indices are offset
      */
-    interface OptimizeStage<B extends DrawCommandBuffer> extends DrawCommandBufferBuilder<B> {
-        DrawCommandBufferBuilder<B> optimizeForCpuSelection();
-    }
+    int offset();
+
+    /**
+     * Sets the value by which indices are offset.
+     *
+     * @param offset value by which indices are offset
+     */
+    void offset(int offset);
+
+    /**
+     * Calls the given {@link IntPredicate} for each index (w. offset) in this bitset's storage, and sets each bit according to the result.
+     *
+     * @param selector the {@link IntPredicate}
+     */
+    void setAll(@NonNull IntPredicate selector);
 }

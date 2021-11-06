@@ -18,15 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.gl.command.buffer;
+package net.daporkchop.fp2.gl.command;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.GLResource;
-import net.daporkchop.fp2.gl.command.DrawCommand;
-import net.daporkchop.fp2.gl.draw.DrawMode;
-import net.daporkchop.fp2.gl.shader.ShaderProgram;
-
-import java.util.function.IntPredicate;
+import net.daporkchop.fp2.gl.bitset.GLBitSet;
+import net.daporkchop.fp2.gl.binding.DrawMode;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 
 /**
  * @author DaPorkchop_
@@ -73,14 +71,12 @@ public interface DrawCommandBuffer<C extends DrawCommand> extends GLResource {
     /**
      * Executes every command in this buffer.
      */
-    void execute(@NonNull DrawMode mode, @NonNull ShaderProgram shader);
+    void execute(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader);
 
     /**
-     * Executes every command in this buffer for which the given {@link IntPredicate} returns {@code true}.
-     * <p>
-     * The {@link IntPredicate} will be called with the index of each command. Empty commands may be skipped.
-     *
-     * @param selector the {@link IntPredicate}
+     * Executes every command in this buffer for whom the corresponding bit in the given {@link GLBitSet} is {@code true}.
      */
-    void execute(@NonNull DrawMode mode, @NonNull ShaderProgram shader, @NonNull IntPredicate selector);
+    default void execute(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader, @NonNull GLBitSet selector) {
+        throw new UnsupportedOperationException();
+    }
 }

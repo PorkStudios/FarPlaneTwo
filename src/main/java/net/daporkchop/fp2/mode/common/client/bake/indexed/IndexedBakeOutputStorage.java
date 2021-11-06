@@ -20,18 +20,22 @@
 
 package net.daporkchop.fp2.mode.common.client.bake.indexed;
 
-import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.ElementType;
-import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
-import net.daporkchop.fp2.client.gl.object.GLBuffer;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
-import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuffer;
-import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexLayout;
 import net.daporkchop.fp2.debug.util.DebugStats;
-import net.daporkchop.fp2.mode.common.client.bake.AbstractMultipassBakeOutputStorage;
-import net.daporkchop.fp2.mode.common.client.bake.IMultipassBakeOutputStorage;
+import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
+import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
+import net.daporkchop.fp2.gl.binding.DrawBindingBuilder;
+import net.daporkchop.fp2.gl.binding.DrawBindingIndexed;
+import net.daporkchop.fp2.gl.index.IndexBuffer;
+import net.daporkchop.fp2.gl.index.IndexFormat;
+import net.daporkchop.fp2.gl.index.IndexWriter;
+import net.daporkchop.fp2.gl.layout.DrawLayout;
+import net.daporkchop.fp2.mode.common.client.bake.AbstractBakeOutputStorage;
+import net.daporkchop.fp2.mode.common.client.bake.IBakeOutputStorage;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.SequentialFixedSizeAllocator;
 import net.daporkchop.fp2.common.util.alloc.SequentialVariableSizedAllocator;
@@ -40,14 +44,13 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static org.lwjgl.opengl.GL15.*;
 
 /**
- * Implementation of {@link IMultipassBakeOutputStorage} which contains indexed geometry in multiple render passes.
+ * Implementation of {@link IBakeOutputStorage} which contains indexed geometry in multiple render passes.
  *
  * @author DaPorkchop_
  */
-public class MultipassIndexedBakeOutputStorage extends AbstractMultipassBakeOutputStorage<MultipassIndexedBakeOutput, DrawElementsCommand> {
+public class IndexedBakeOutputStorage extends AbstractBakeOutputStorage<IndexedBakeOutput, DrawBindingIndexed, DrawCommandIndexed> {
     /*
      * struct Slot {
      *   int baseVertex;
@@ -106,54 +109,52 @@ public class MultipassIndexedBakeOutputStorage extends AbstractMultipassBakeOutp
     protected long slotsAddr;
 
     protected final Allocator vertexAlloc;
-    protected final IVertexBuffer vertexBuffer;
+    protected final LocalAttributeBuffer vertexBuffer;
 
     protected final int indexSize;
     protected final Allocator[] indexAllocs;
-    protected final GLBuffer[] indexBuffers;
+    protected final IndexBuffer[] indexBuffers;
 
     @Getter
     protected final int passes;
 
-    public MultipassIndexedBakeOutputStorage(@NonNull Allocator alloc, @NonNull IVertexLayout vertexLayout, @NonNull ElementType type, int passes) {
+    public IndexedBakeOutputStorage(@NonNull Allocator alloc, @NonNull AttributeFormat vertexFormat, @NonNull IndexFormat indexFormat, int passes) {
         this.alloc = alloc;
+
         this.passes = positive(passes, "passes");
-        this.indexSize = type.size();
+        this.indexSize = indexFormat.size();
 
         this.slotSize = _SLOT_SIZE(passes);
         this.slotAlloc = new SequentialFixedSizeAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> this.slotsAddr = this.alloc.realloc(this.slotsAddr, capacity * this.slotSize)));
 
-        this.vertexBuffer = vertexLayout.createBuffer();
+        this.vertexBuffer = vertexFormat.createLocalBuffer(BufferUsage.STATIC_DRAW);
         this.vertexAlloc = new SequentialVariableSizedAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> this.vertexBuffer.resize(toInt(capacity))));
 
         this.indexAllocs = new Allocator[passes];
-        this.indexBuffers = new GLBuffer[passes];
+        this.indexBuffers = new IndexBuffer[passes];
         for (int pass = 0; pass < passes; pass++) {
-            GLBuffer indexBuffer = this.indexBuffers[pass] = new GLBuffer(GL_DYNAMIC_DRAW);
-            this.indexAllocs[pass] = new SequentialVariableSizedAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> {
-                try (GLBuffer buffer = indexBuffer.bind(GL_ELEMENT_ARRAY_BUFFER)) {
-                    buffer.resize(capacity);
-                }
-            }));
+            IndexBuffer indexBuffer = this.indexBuffers[pass] = indexFormat.createBuffer(BufferUsage.STATIC_DRAW);
+            this.indexAllocs[pass] = new SequentialVariableSizedAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> indexBuffer.resize(toInt(capacity))));
         }
     }
 
     @Override
     protected void doRelease() {
-        this.vertexBuffer.release();
-        for (GLBuffer indexBuffer : this.indexBuffers) {
-            indexBuffer.delete();
+        this.vertexBuffer.close();
+        for (IndexBuffer indexBuffer : this.indexBuffers) {
+            indexBuffer.close();
         }
     }
 
     @Override
-    public void configureVAO(@NonNull VertexArrayObject vao, int pass) {
-        this.vertexBuffer.configureVAO(vao);
-        vao.putElementArray(this.indexBuffers[pass]);
+    public DrawBindingBuilder<DrawBindingIndexed> createDrawBinding(@NonNull DrawLayout layout, int pass) {
+        return layout.createBinding()
+                .withIndexes(this.indexBuffers[pass])
+                .withLocals(this.vertexBuffer);
     }
 
     @Override
-    public int add(@NonNull MultipassIndexedBakeOutput output) {
+    public int add(@NonNull IndexedBakeOutput output) {
         //allocate a slot
         int handle = toInt(this.slotAlloc.alloc(1L));
         long slot = this.slotsAddr + handle * this.slotSize;
@@ -169,17 +170,12 @@ public class MultipassIndexedBakeOutputStorage extends AbstractMultipassBakeOutp
             int count = 0;
             int firstIndex = 0;
 
-            ByteBuf indices = output.indices[i];
-            if (indices.isReadable()) {
-                int readableBytes = indices.readableBytes();
-                long offset = this.indexAllocs[i].alloc(readableBytes);
+            IndexWriter indices = output.indices[i];
+            if (indices.size() > 0) {
+                count = indices.size();
+                firstIndex = toInt(this.indexAllocs[i].alloc(indices.size()));
 
-                count = readableBytes / this.indexSize;
-                firstIndex = toInt(offset / this.indexSize);
-
-                try (GLBuffer buffer = this.indexBuffers[i].bind(GL_ELEMENT_ARRAY_BUFFER)) {
-                    buffer.uploadRange(offset, indices);
-                }
+                this.indexBuffers[i].set(firstIndex, indices);
             }
 
             _pass_firstIndex(pass, firstIndex);
@@ -211,17 +207,16 @@ public class MultipassIndexedBakeOutputStorage extends AbstractMultipassBakeOutp
     }
 
     @Override
-    public void toDrawCommands(int handle, @NonNull DrawElementsCommand[] commands) {
-        long slot = this.slotsAddr + handle * this.slotSize;
+    public DrawCommandIndexed[] toDrawCommands(int handle) {
+        long slotAddr = this.slotsAddr + handle * this.slotSize;
+        int baseVertex = _slot_baseVertex(slotAddr);
 
-        int baseVertex = _slot_baseVertex(slot);
+        DrawCommandIndexed[] commands = new DrawCommandIndexed[this.passes];
         for (int i = 0; i < this.passes; i++) {
-            long pass = _slot_pass(slot, i);
-
-            commands[i].baseVertex(baseVertex)
-                    .firstIndex(_pass_firstIndex(pass))
-                    .count(_pass_count(pass));
+            long passAddr = _slot_pass(slotAddr, i);
+            commands[i] = new DrawCommandIndexed(_pass_firstIndex(passAddr), _pass_count(passAddr), baseVertex);
         }
+        return commands;
     }
 
     @DebugOnly
@@ -233,7 +228,8 @@ public class MultipassIndexedBakeOutputStorage extends AbstractMultipassBakeOutp
         DebugStats.Allocator vertexStats = DebugStats.Allocator.ZERO;
         DebugStats.Allocator indexStats = DebugStats.Allocator.ZERO;
 
-        long vertexSize = this.vertexBuffer.layout().format().vertexSize();
+        //long vertexSize = this.vertexBuffer.layout().format().vertexSize();
+        long vertexSize = 1L;
         long indexSize = this.indexSize;
 
         return DebugStats.Renderer.builder()

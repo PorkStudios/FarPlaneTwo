@@ -20,8 +20,6 @@
 
 package net.daporkchop.fp2.mode.common.client.strategy;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.DrawMode;
 import net.daporkchop.fp2.client.gl.ElementType;
@@ -29,14 +27,19 @@ import net.daporkchop.fp2.client.gl.command.IMultipassDrawCommandBuffer;
 import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
 import net.daporkchop.fp2.client.gl.command.elements.buffer.MultidrawIndirectMultipassDrawElementsCommandBuffer;
 import net.daporkchop.fp2.client.gl.command.elements.buffer.SingleDrawIndirectMultipassDrawElementsCommandBuffer;
-import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
 import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.binding.DrawBindingIndexed;
+import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
+import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
+import net.daporkchop.fp2.gl.index.IndexFormat;
+import net.daporkchop.fp2.gl.index.IndexWriter;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.common.client.bake.IMultipassBakeOutputStorage;
-import net.daporkchop.fp2.mode.common.client.bake.indexed.MultipassIndexedBakeOutput;
-import net.daporkchop.fp2.mode.common.client.bake.indexed.MultipassIndexedBakeOutputStorage;
+import net.daporkchop.fp2.mode.common.client.bake.IBakeOutputStorage;
+import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutput;
+import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutputStorage;
 import net.daporkchop.fp2.mode.common.client.index.CPUCulledRenderIndex;
 import net.daporkchop.fp2.mode.common.client.index.GPUCulledRenderIndex;
 import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
@@ -48,32 +51,34 @@ import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos, T extends IFarTile> extends AbstractRenderStrategy<POS, T, MultipassIndexedBakeOutput, DrawElementsCommand> {
-    public AbstractMultipassIndexedRenderStrategy(@NonNull IFarRenderMode<POS, T> mode, @NonNull VertexFormat vertexFormat) {
-        super(mode, vertexFormat);
+public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos, T extends IFarTile> extends AbstractRenderStrategy<POS, T, IndexedBakeOutput, DrawBindingIndexed, DrawCommandIndexed> implements IMultipassRenderStrategy<POS, T, IndexedBakeOutput, DrawBindingIndexed, DrawCommandIndexed> {
+    public AbstractMultipassIndexedRenderStrategy(@NonNull IFarRenderMode<POS, T> mode, @NonNull GL gl) {
+        super(mode, gl);
     }
 
+    public abstract IndexFormat indexFormat();
+
     @Override
-    public IRenderIndex<POS, MultipassIndexedBakeOutput, DrawElementsCommand> createIndex() {
+    public IRenderIndex<POS, IndexedBakeOutput, DrawBindingIndexed, DrawCommandIndexed> createIndex() {
         return FP2Config.global().performance().gpuFrustumCulling()
                 ? new GPUCulledRenderIndex<>(this)
                 : new CPUCulledRenderIndex<>(this);
     }
 
     @Override
-    public MultipassIndexedBakeOutput createBakeOutput() {
-        return new MultipassIndexedBakeOutput(this.vertexLayout.createBuilder(), PArrays.filledFrom(RENDER_PASS_COUNT, ByteBuf[]::new, ByteBufAllocator.DEFAULT::directBuffer));
+    public IndexedBakeOutput createBakeOutput() {
+        return new IndexedBakeOutput(this.globalFormat().createGlobalWriter(), this.vertexFormat().createLocalWriter(), PArrays.filledFrom(RENDER_PASS_COUNT, IndexWriter[]::new, this.indexFormat()::createWriter));
     }
 
     @Override
-    public IMultipassBakeOutputStorage<MultipassIndexedBakeOutput, DrawElementsCommand> createBakeOutputStorage() {
-        return new MultipassIndexedBakeOutputStorage(this.alloc, this.vertexLayout, ElementType.UNSIGNED_SHORT, RENDER_PASS_COUNT);
+    public IBakeOutputStorage<IndexedBakeOutput, DrawBindingIndexed, DrawCommandIndexed> createBakeOutputStorage() {
+        return new IndexedBakeOutputStorage(this.alloc, this.vertexFormat(), this.indexFormat(), RENDER_PASS_COUNT);
     }
 
     @Override
-    public IMultipassDrawCommandBuffer<DrawElementsCommand> createCommandBuffer() {
-        return WORKAROUND_INTEL_MULTIDRAW_NOT_WORKING
-                ? new SingleDrawIndirectMultipassDrawElementsCommandBuffer(this.alloc, RENDER_PASS_COUNT, DrawMode.QUADS, ElementType.UNSIGNED_SHORT)
-                : new MultidrawIndirectMultipassDrawElementsCommandBuffer(this.alloc, RENDER_PASS_COUNT, DrawMode.QUADS, ElementType.UNSIGNED_SHORT);
+    public DrawCommandBuffer<DrawCommandIndexed> createCommandBuffer(@NonNull DrawBindingIndexed binding) {
+        return this.gl.createCommandBuffer()
+                .forIndexed(binding)
+                .build();
     }
 }

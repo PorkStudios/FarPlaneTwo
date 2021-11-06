@@ -23,18 +23,16 @@ package net.daporkchop.fp2.gl.opengl.command.arrays;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.DrawCommandArrays;
-import net.daporkchop.fp2.gl.draw.DrawMode;
+import net.daporkchop.fp2.gl.binding.DrawMode;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferImpl;
-import net.daporkchop.fp2.gl.opengl.draw.DrawBindingImpl;
-import net.daporkchop.fp2.gl.opengl.shader.ShaderProgramImpl;
-import net.daporkchop.fp2.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.gl.opengl.binding.DrawBindingImpl;
+import net.daporkchop.fp2.gl.opengl.shader.DrawShaderProgramImpl;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.lib.unsafe.PUnsafe;
-
-import java.util.function.IntPredicate;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -132,16 +130,11 @@ public class DrawCommandBufferArraysImpl_MultiDrawIndirect extends DrawCommandBu
     }
 
     @Override
-    public void execute(@NonNull DrawMode mode, @NonNull ShaderProgram shader) {
+    public void execute(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader) {
         this.buffer.upload(this.commandsAddr, this.capacity * _SIZE);
 
-        this.buffer.bind(BufferTarget.DRAW_INDIRECT_BUFFER, target -> ((ShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
+        this.buffer.bind(BufferTarget.DRAW_INDIRECT_BUFFER, target -> ((DrawShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
             this.api.glMultiDrawArraysIndirect(GLEnumUtil.from(mode), 0L, this.capacity, 0);
         })));
-    }
-
-    @Override
-    public void execute(@NonNull DrawMode mode, @NonNull ShaderProgram shader, @NonNull IntPredicate selector) {
-        throw new UnsupportedOperationException();
     }
 }

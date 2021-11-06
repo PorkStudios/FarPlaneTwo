@@ -23,7 +23,7 @@ package net.daporkchop.fp2.gl.opengl;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.draw.DrawMode;
+import net.daporkchop.fp2.gl.binding.DrawMode;
 import net.daporkchop.fp2.gl.index.IndexType;
 import net.daporkchop.fp2.gl.attribute.AttributeType;
 
@@ -77,6 +77,8 @@ public class GLEnumUtil {
                 return GL_TRIANGLE_STRIP;
             case TRIANGLE_FAN:
                 return GL_TRIANGLE_FAN;
+            case QUADS:
+                return GL_QUADS;
             default:
                 throw new IllegalArgumentException(mode.name());
         }

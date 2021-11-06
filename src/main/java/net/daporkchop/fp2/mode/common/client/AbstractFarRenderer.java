@@ -25,6 +25,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.impl.ResourceProvider1_12_2;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -37,6 +39,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.util.BlockRenderLayer;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.lwjgl.opengl.GL15.*;
 
@@ -48,15 +51,19 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
     protected final IFarClientContext<POS, T> context;
     protected final IFarRenderMode<POS, T> mode;
 
+    protected final GL gl;
+
     protected final BakeManager<POS, T> bakeManager;
 
-    protected final GLBuffer drawCommandBuffer = new GLBuffer(GL_STREAM_DRAW);
-
-    protected final IFarRenderStrategy<POS, T, ?, ?> strategy;
+    protected final IFarRenderStrategy<POS, T, ?, ?, ?> strategy;
 
     public AbstractFarRenderer(@NonNull IFarClientContext<POS, T> context) {
         this.context = context;
         this.mode = context.mode();
+
+        this.gl = GL.builder()
+                .withResourceProvider(new ResourceProvider1_12_2(MC))
+                .wrapCurrent();
 
         this.strategy = this.strategy0();
         this.bakeManager = this.bakeManager0();
@@ -65,7 +72,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
     /**
      * @return the {@link IFarRenderStrategy} used by this renderer
      */
-    protected abstract IFarRenderStrategy<POS, T, ?, ?> strategy0();
+    protected abstract IFarRenderStrategy<POS, T, ?, ?, ?> strategy0();
 
     /**
      * @return a new {@link BakeManager}
@@ -78,6 +85,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
     public void prepare(float partialTicks, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
         checkGLError("pre fp2 select");
 
+        this.gl.runCleanup();
         this.bakeManager.index.select(frustum, partialTicks);
 
         checkGLError("post fp2 select");
@@ -102,5 +110,6 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
     protected void doRelease() {
         this.strategy.release();
         this.bakeManager.release();
+        this.gl.close();
     }
 }

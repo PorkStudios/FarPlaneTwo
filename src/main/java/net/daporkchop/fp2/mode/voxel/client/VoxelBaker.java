@@ -31,7 +31,7 @@ import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.mode.common.client.RenderConstants;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
-import net.daporkchop.fp2.mode.common.client.bake.indexed.MultipassIndexedBakeOutput;
+import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutput;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
@@ -55,7 +55,7 @@ import static net.daporkchop.fp2.util.math.MathUtil.*;
  *
  * @author DaPorkchop_
  */
-public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, MultipassIndexedBakeOutput> {
+public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBakeOutput> {
     protected static final IVertexAttribute.Int1 ATTRIB_STATE = IVertexAttribute.Int1.builder()
             .name("state")
             .type(VertexAttributeType.UNSIGNED_INT)
@@ -130,7 +130,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, MultipassIn
     }
 
     @Override
-    public void bake(@NonNull VoxelPos pos, @NonNull VoxelTile[] srcs, @NonNull MultipassIndexedBakeOutput output) {
+    public void bake(@NonNull VoxelPos pos, @NonNull VoxelTile[] srcs, @NonNull IndexedBakeOutput output) {
         if (srcs[0] == null) {
             return;
         }
@@ -141,10 +141,10 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, MultipassIn
 
         try {
             //step 1: write vertices for all source tiles, and assign indices
-            this.writeVertices(srcs, pos.blockX(), pos.blockY(), pos.blockZ(), pos.level(), map, output.verts());
+            this.writeVertices(srcs, pos.blockX(), pos.blockY(), pos.blockZ(), pos.level(), map, /* TODO: output.verts() */ null);
 
             //step 2: write indices to actually connect the vertices and build the mesh
-            this.writeIndices(srcs[0], map, output.indices());
+            this.writeIndices(srcs[0], map, /* TODO: output.indices() */ null);
         } finally {
             alloc.release(map);
         }

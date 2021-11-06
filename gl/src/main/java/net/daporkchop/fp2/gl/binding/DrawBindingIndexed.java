@@ -18,10 +18,14 @@
  *
  */
 
+package net.daporkchop.fp2.gl.binding;
+
+import net.daporkchop.fp2.gl.index.IndexBuffer;
+
 /**
- * All this stuff should really be moved to a PorkLib module at some point...
+ * A {@link DrawBinding} which also contains a {@link IndexBuffer}, and may therefore be used by indexed rendering commands.
  *
  * @author DaPorkchop_
  */
-@Deprecated
-package net.daporkchop.fp2.client.gl;
+public interface DrawBindingIndexed extends DrawBinding {
+}

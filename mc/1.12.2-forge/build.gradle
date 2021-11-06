@@ -65,7 +65,8 @@ repositories {
 }
 
 dependencies {
-    shade project(":gl:opengl-lwjgl2")
+    compile project(":gl")
+    runtime project(":gl:opengl-lwjgl2")
 
     shade("net.daporkchop.lib:compression-zstd:$porklibVersion") {
         exclude group: "io.netty"
