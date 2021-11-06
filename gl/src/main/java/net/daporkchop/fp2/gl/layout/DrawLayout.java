@@ -30,5 +30,5 @@ public interface DrawLayout extends BaseLayout {
     /**
      * @return a builder for creating a new {@link DrawBinding} using this layout
      */
-    DrawBindingBuilder.UniformsStage createBinding();
+    DrawBindingBuilder.OptionallyIndexedStage createBinding();
 }

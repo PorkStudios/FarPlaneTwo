@@ -18,20 +18,39 @@
  *
  */
 
-package net.daporkchop.fp2.gl.command;
+package net.daporkchop.fp2.gl.command.buffer;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.command.DrawCommandArrays;
+import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
+import net.daporkchop.fp2.gl.draw.DrawBinding;
+import net.daporkchop.fp2.gl.draw.DrawBindingIndexed;
 
 /**
- * Command buffer for array drawing commands.
+ * Builder for {@link DrawCommandBuffer}s.
  *
+ * @param <B> the type of command buffer to build
  * @author DaPorkchop_
  */
-public interface CommandBufferArrays extends BaseCommandBuffer {
+public interface DrawCommandBufferBuilder<B extends DrawCommandBuffer> {
     /**
-     * Sets the command at the given index.
-     *
-     * @param index the command index
-     * @param first the index of the first vertex
-     * @param count the number of vertices
+     * @return the constructed {@link B}
      */
-    void set(int index, int first, int count);
+    B build();
+
+    /**
+     * @author DaPorkchop_
+     */
+    interface TypeStage {
+        OptimizeStage<DrawCommandBuffer<DrawCommandArrays>> forArrays(@NonNull DrawBinding binding);
+
+        OptimizeStage<DrawCommandBuffer<DrawCommandIndexed>> forIndexed(@NonNull DrawBindingIndexed binding);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    interface OptimizeStage<B extends DrawCommandBuffer> extends DrawCommandBufferBuilder<B> {
+        DrawCommandBufferBuilder<B> optimizeForCpuSelection();
+    }
 }

@@ -28,59 +28,43 @@ import net.daporkchop.fp2.gl.layout.LayoutBuilder;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 
-import java.util.stream.Stream;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public abstract class BaseLayoutBuilderImpl<L extends BaseLayout> implements LayoutBuilder.UniformsStage<L>, LayoutBuilder.GlobalsStage<L>, LayoutBuilder.LocalsStage<L>, LayoutBuilder.OutputsStage<L>, LayoutBuilder<L> {
+public abstract class BaseLayoutBuilderImpl<L extends BaseLayout> implements LayoutBuilder<L> {
     @NonNull
     protected final OpenGL gl;
 
-    protected AttributeFormatImpl[] uniforms;
-    protected AttributeFormatImpl[] globals;
-    protected AttributeFormatImpl[] locals;
-
-    protected AttributeFormatImpl[] outputs;
-
-    //
-    // UniformsStage
-    //
+    protected final List<AttributeFormatImpl> uniforms = new ArrayList<>();
+    protected final List<AttributeFormatImpl> globals = new ArrayList<>();
+    protected final List<AttributeFormatImpl> locals = new ArrayList<>();
+    protected final List<AttributeFormatImpl> outputs = new ArrayList<>();
 
     @Override
-    public GlobalsStage<L> withUniforms(@NonNull AttributeFormat... uniforms) {
-        this.uniforms = Stream.of(uniforms).map(AttributeFormatImpl.class::cast).toArray(AttributeFormatImpl[]::new);
+    public LayoutBuilder<L> withUniforms(@NonNull AttributeFormat uniforms) {
+        this.uniforms.add((AttributeFormatImpl) uniforms);
         return this;
     }
 
-    //
-    // GlobalsStage
-    //
-
     @Override
-    public LocalsStage<L> withGlobals(@NonNull AttributeFormat... globals) {
-        this.globals = Stream.of(globals).map(AttributeFormatImpl.class::cast).toArray(AttributeFormatImpl[]::new);
+    public LayoutBuilder<L> withGlobals(@NonNull AttributeFormat globals) {
+        this.globals.add((AttributeFormatImpl) globals);
         return this;
     }
 
-    //
-    // LocalsStage
-    //
-
     @Override
-    public OutputsStage<L> withLocals(@NonNull AttributeFormat... locals) {
-        this.locals = Stream.of(locals).map(AttributeFormatImpl.class::cast).toArray(AttributeFormatImpl[]::new);
+    public LayoutBuilder<L> withLocals(@NonNull AttributeFormat locals) {
+        this.locals.add((AttributeFormatImpl) locals);
         return this;
     }
 
-    //
-    // OutputsStage
-    //
-
     @Override
-    public LayoutBuilder<L> withOutputs(@NonNull AttributeFormat... outputs) {
-        this.outputs = Stream.of(outputs).map(AttributeFormatImpl.class::cast).toArray(AttributeFormatImpl[]::new);
+    public LayoutBuilder<L> withOutputs(@NonNull AttributeFormat outputs) {
+        this.outputs.add((AttributeFormatImpl) outputs);
         return this;
     }
 }

@@ -23,10 +23,10 @@ package net.daporkchop.fp2.gl.attribute;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
+import net.daporkchop.fp2.gl.buffer.BufferUsage;
 
 import java.util.Map;
 

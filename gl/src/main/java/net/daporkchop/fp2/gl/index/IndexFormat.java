@@ -28,7 +28,7 @@ import net.daporkchop.fp2.gl.buffer.BufferUsage;
  */
 public interface IndexFormat {
     /**
-     * @return the size in bytes of a single index
+     * @return the size of a single index, in bytes
      */
     int size();
 

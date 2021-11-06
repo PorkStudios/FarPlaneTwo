@@ -20,35 +20,29 @@
 
 package net.daporkchop.fp2.gl.command;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.draw.DrawBinding;
-import net.daporkchop.fp2.gl.draw.DrawBindingIndexed;
+import lombok.Data;
 
 /**
- * Builder for {@link BaseCommandBuffer}s.
+ * An array drawing command.
  *
- * @param <B> the type of command buffer to build
  * @author DaPorkchop_
  */
-public interface CommandBufferBuilder<B extends BaseCommandBuffer> {
-    /**
-     * @return the constructed {@link B}
-     */
-    B build();
+@Data
+public final class DrawCommandArrays implements DrawCommand {
+    public static final DrawCommandArrays EMPTY = new DrawCommandArrays(0, 0);
 
     /**
-     * @author DaPorkchop_
+     * The index of the first vertex.
      */
-    interface TypeStage {
-        OptimizeStage<CommandBufferArrays> forArrays(@NonNull DrawBinding binding);
-
-        OptimizeStage<CommandBufferElements> forElements(@NonNull DrawBindingIndexed binding);
-    }
+    protected final int first;
 
     /**
-     * @author DaPorkchop_
+     * The number of vertices.
      */
-    interface OptimizeStage<B extends BaseCommandBuffer> extends CommandBufferBuilder<B> {
-        CommandBufferBuilder<B> optimizeForCpuSelection();
+    protected final int count;
+
+    @Override
+    public boolean isEmpty() {
+        return this.count == 0;
     }
 }

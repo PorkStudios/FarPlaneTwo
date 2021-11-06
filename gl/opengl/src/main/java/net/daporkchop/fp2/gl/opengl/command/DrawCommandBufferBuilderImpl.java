@@ -22,15 +22,15 @@ package net.daporkchop.fp2.gl.opengl.command;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.command.BaseCommandBuffer;
-import net.daporkchop.fp2.gl.command.CommandBufferArrays;
-import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
-import net.daporkchop.fp2.gl.command.CommandBufferElements;
+import net.daporkchop.fp2.gl.command.DrawCommandArrays;
+import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
+import net.daporkchop.fp2.gl.command.buffer.DrawCommandBuffer;
+import net.daporkchop.fp2.gl.command.buffer.DrawCommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.DrawBinding;
 import net.daporkchop.fp2.gl.draw.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.command.arrays.CommandBufferArraysImpl_IndirectMultiDraw;
-import net.daporkchop.fp2.gl.opengl.command.elements.CommandBufferElementsImpl_IndirectMultiDraw;
+import net.daporkchop.fp2.gl.opengl.command.arrays.DrawCommandBufferArraysImpl_MultiDrawIndirect;
+import net.daporkchop.fp2.gl.opengl.command.elements.DrawCommandBufferElementsImpl_MultiDrawIndirect;
 
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -38,7 +38,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class CommandBufferBuilderImpl implements CommandBufferBuilder.TypeStage, CommandBufferBuilder.OptimizeStage {
+public class DrawCommandBufferBuilderImpl implements DrawCommandBufferBuilder.TypeStage, DrawCommandBufferBuilder.OptimizeStage {
     @NonNull
     protected final OpenGL gl;
 
@@ -52,14 +52,14 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder.TypeStage,
     //
 
     @Override
-    public OptimizeStage<CommandBufferArrays> forArrays(@NonNull DrawBinding binding) {
+    public OptimizeStage<DrawCommandBuffer<DrawCommandArrays>> forArrays(@NonNull DrawBinding binding) {
         this.binding = binding;
         this.elements = false;
         return uncheckedCast(this);
     }
 
     @Override
-    public OptimizeStage<CommandBufferElements> forElements(@NonNull DrawBindingIndexed binding) {
+    public OptimizeStage<DrawCommandBuffer<DrawCommandIndexed>> forIndexed(@NonNull DrawBindingIndexed binding) {
         this.binding = binding;
         this.elements = true;
         return uncheckedCast(this);
@@ -70,7 +70,7 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder.TypeStage,
     //
 
     @Override
-    public CommandBufferBuilder optimizeForCpuSelection() {
+    public DrawCommandBufferBuilder optimizeForCpuSelection() {
         this.optimizeForCpuSelection = true;
         return this;
     }
@@ -80,11 +80,11 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder.TypeStage,
     //
 
     @Override
-    public BaseCommandBuffer build() {
+    public DrawCommandBuffer build() {
         if (this.elements) {
-            return new CommandBufferElementsImpl_IndirectMultiDraw(this);
+            return new DrawCommandBufferElementsImpl_MultiDrawIndirect(this);
         } else {
-            return new CommandBufferArraysImpl_IndirectMultiDraw(this);
+            return new DrawCommandBufferArraysImpl_MultiDrawIndirect(this);
         }
     }
 }

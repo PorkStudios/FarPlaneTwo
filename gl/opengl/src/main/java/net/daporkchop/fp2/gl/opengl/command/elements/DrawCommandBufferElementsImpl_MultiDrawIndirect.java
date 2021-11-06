@@ -18,18 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.command.arrays;
+package net.daporkchop.fp2.gl.opengl.command.elements;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.command.CommandBufferArrays;
+import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
-import net.daporkchop.fp2.gl.opengl.command.BaseCommandBufferImpl;
-import net.daporkchop.fp2.gl.opengl.command.CommandBufferBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.draw.DrawBindingImpl;
+import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferImpl;
+import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.draw.DrawBindingIndexedImpl;
+import net.daporkchop.fp2.gl.opengl.index.IndexFormatImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderProgramImpl;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -42,11 +43,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class CommandBufferArraysImpl_IndirectMultiDraw extends BaseCommandBufferImpl<DrawBindingImpl> implements CommandBufferArrays {
+public class DrawCommandBufferElementsImpl_MultiDrawIndirect extends DrawCommandBufferImpl<DrawCommandIndexed, DrawBindingIndexedImpl> {
     public static final long _COUNT_OFFSET = 0L;
     public static final long _INSTANCECOUNT_OFFSET = _COUNT_OFFSET + INT_SIZE;
-    public static final long _FIRST_OFFSET = _INSTANCECOUNT_OFFSET + INT_SIZE;
-    public static final long _BASEINSTANCE_OFFSET = _FIRST_OFFSET + INT_SIZE;
+    public static final long _FIRSTINDEX_OFFSET = _INSTANCECOUNT_OFFSET + INT_SIZE;
+    public static final long _BASEVERTEX_OFFSET = _FIRSTINDEX_OFFSET + INT_SIZE;
+    public static final long _BASEINSTANCE_OFFSET = _BASEVERTEX_OFFSET + INT_SIZE;
 
     public static final long _SIZE = _BASEINSTANCE_OFFSET + INT_SIZE;
 
@@ -66,12 +68,20 @@ public class CommandBufferArraysImpl_IndirectMultiDraw extends BaseCommandBuffer
         PUnsafe.putInt(cmd + _INSTANCECOUNT_OFFSET, instanceCount);
     }
 
-    public static int _first(long cmd) {
-        return PUnsafe.getInt(cmd + _FIRST_OFFSET);
+    public static int _firstIndex(long cmd) {
+        return PUnsafe.getInt(cmd + _FIRSTINDEX_OFFSET);
     }
 
-    public static void _first(long cmd, int first) {
-        PUnsafe.putInt(cmd + _FIRST_OFFSET, first);
+    public static void _firstIndex(long cmd, int firstIndex) {
+        PUnsafe.putInt(cmd + _FIRSTINDEX_OFFSET, firstIndex);
+    }
+
+    public static int _baseVertex(long cmd) {
+        return PUnsafe.getInt(cmd + _BASEVERTEX_OFFSET);
+    }
+
+    public static void _baseVertex(long cmd, int baseVertex) {
+        PUnsafe.putInt(cmd + _BASEVERTEX_OFFSET, baseVertex);
     }
 
     public static int _baseInstance(long cmd) {
@@ -86,10 +96,17 @@ public class CommandBufferArraysImpl_IndirectMultiDraw extends BaseCommandBuffer
 
     protected long commandsAddr;
 
-    public CommandBufferArraysImpl_IndirectMultiDraw(@NonNull CommandBufferBuilderImpl builder) {
+    protected final int indexType;
+    protected final int indexSize;
+
+    public DrawCommandBufferElementsImpl_MultiDrawIndirect(@NonNull DrawCommandBufferBuilderImpl builder) {
         super(builder);
 
         this.buffer = this.gl().createBuffer(BufferUsage.STREAM_DRAW);
+
+        IndexFormatImpl format = this.binding.indices().format();
+        this.indexType = GLEnumUtil.from(format.type());
+        this.indexSize = format.size();
     }
 
     @Override
@@ -108,19 +125,24 @@ public class CommandBufferArraysImpl_IndirectMultiDraw extends BaseCommandBuffer
     }
 
     @Override
-    public void clear(int index) {
-        _instanceCount(this.commandsAddr + checkIndex(this.capacity, index) * _SIZE, 0);
+    public void set(int index, @NonNull DrawCommandIndexed command) {
+        long commandAddr = this.commandsAddr + checkIndex(this.capacity, index) * _SIZE;
+        _firstIndex(commandAddr, command.firstIndex());
+        _count(commandAddr, command.count());
+        _baseVertex(commandAddr, command.baseVertex());
+        _instanceCount(commandAddr, 1);
+        _baseInstance(commandAddr, index);
     }
 
     @Override
-    public void set(int index, int first, int count) {
-        checkIndex(this.capacity, index);
+    public DrawCommandIndexed get(int index) {
+        long commandAddr = this.commandsAddr + checkIndex(this.capacity, index) * _SIZE;
+        return new DrawCommandIndexed(_firstIndex(commandAddr), _count(commandAddr), _baseVertex(commandAddr));
+    }
 
-        long command = this.commandsAddr + index * _SIZE;
-        _first(command, first);
-        _count(command, count);
-        _instanceCount(command, 1);
-        _baseInstance(command, index);
+    @Override
+    public void clear(int index) {
+        _instanceCount(this.commandsAddr + checkIndex(this.capacity, index) * _SIZE, 0);
     }
 
     @Override
@@ -128,7 +150,7 @@ public class CommandBufferArraysImpl_IndirectMultiDraw extends BaseCommandBuffer
         this.buffer.upload(this.commandsAddr, this.capacity * _SIZE);
 
         this.buffer.bind(BufferTarget.DRAW_INDIRECT_BUFFER, target -> ((ShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
-            this.api.glMultiDrawArraysIndirect(GLEnumUtil.from(mode), 0L, this.capacity, 0);
+            this.api.glMultiDrawElementsIndirect(GLEnumUtil.from(mode), this.indexType, 0L, this.capacity, 0);
         })));
     }
 

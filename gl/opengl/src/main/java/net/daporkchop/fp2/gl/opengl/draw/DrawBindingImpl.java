@@ -63,7 +63,7 @@ public class DrawBindingImpl implements DrawBinding {
 
         //group attribute buffers by attribute format
         Map<AttributeFormatImpl, BaseAttributeBufferImpl> buffersByFormat = Stream.of(builder.uniforms, builder.globals, builder.locals)
-                .flatMap(Stream::of)
+                .flatMap(List::stream)
                 .collect(Collectors.toMap(BaseAttributeBufferImpl::format, Function.identity()));
 
         //configure all vertex attributes in the VAO

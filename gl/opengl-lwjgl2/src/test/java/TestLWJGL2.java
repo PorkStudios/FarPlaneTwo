@@ -35,9 +35,9 @@ import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.command.CommandBufferArrays;
-import net.daporkchop.fp2.gl.command.CommandBufferElements;
-import net.daporkchop.fp2.gl.draw.DrawBinding;
+import net.daporkchop.fp2.gl.command.DrawCommandArrays;
+import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
+import net.daporkchop.fp2.gl.command.buffer.DrawCommandBuffer;
 import net.daporkchop.fp2.gl.draw.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.index.IndexBuffer;
@@ -234,29 +234,29 @@ public class TestLWJGL2 {
         UniformAttributeBuffer uniformBuffer = uniformFormat.createUniformBuffer(BufferUsage.STATIC_DRAW);
 
         DrawBindingIndexed binding = layout.createBinding()
+                .withIndexes(indexBuffer)
                 .withUniforms(uniformBuffer)
                 .withGlobals(globalBuffer)
                 .withLocals(localBuffer)
-                .withIndexes(indexBuffer)
                 .build();
 
-        CommandBufferArrays commandBufferArrays = gl.createCommandBuffer()
+        DrawCommandBuffer<DrawCommandArrays> commandBufferArrays = gl.createCommandBuffer()
                 .forArrays(binding)
                 .build();
         commandBufferArrays.resize(4);
-        commandBufferArrays.set(0, 0, 3);
-        commandBufferArrays.set(1, 0, 3);
-        commandBufferArrays.set(2, 0, 3);
-        commandBufferArrays.set(3, 0, 3);
+        commandBufferArrays.set(0, new DrawCommandArrays(0, 3));
+        commandBufferArrays.set(1, new DrawCommandArrays(0, 3));
+        commandBufferArrays.set(2, new DrawCommandArrays(0, 3));
+        commandBufferArrays.set(3, new DrawCommandArrays(0, 3));
 
-        CommandBufferElements commandBufferElements = gl.createCommandBuffer()
-                .forElements(binding)
+        DrawCommandBuffer<DrawCommandIndexed> commandBufferElements = gl.createCommandBuffer()
+                .forIndexed(binding)
                 .build();
         commandBufferElements.resize(4);
-        commandBufferElements.set(0, 0, 6, 0);
-        commandBufferElements.set(1, 0, 6, 0);
-        commandBufferElements.set(2, 0, 6, 0);
-        commandBufferElements.set(3, 0, 6, 0);
+        commandBufferElements.set(0, new DrawCommandIndexed(0, 6, 0));
+        commandBufferElements.set(1, new DrawCommandIndexed(0, 6, 0));
+        commandBufferElements.set(2, new DrawCommandIndexed(0, 6, 0));
+        commandBufferElements.set(3, new DrawCommandIndexed(0, 6, 0));
 
         while (!Display.isCloseRequested()) {
             uniformBuffer.set(attrScale, 64, 64);

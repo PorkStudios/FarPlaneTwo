@@ -21,18 +21,11 @@
 package net.daporkchop.fp2.gl.command;
 
 /**
- * Command buffer for array drawing commands.
- *
  * @author DaPorkchop_
  */
-public interface CommandBufferElements extends BaseCommandBuffer {
+public interface DrawCommand {
     /**
-     * Sets the command at the given index.
-     *
-     * @param index      the command index
-     * @param firstIndex the index of the first index
-     * @param count      the number of indices
-     * @param baseVertex the index of the first vertex
+     * @return whether or not this command is empty (will do nothing when executed)
      */
-    void set(int index, int firstIndex, int count, int baseVertex);
+    boolean isEmpty();
 }

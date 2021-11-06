@@ -34,47 +34,30 @@ import net.daporkchop.fp2.gl.index.IndexBuffer;
  */
 public interface DrawBindingBuilder<B extends DrawBinding> {
     /**
+     * Adds a {@link LocalAttributeBuffer} which contain uniform attributes.
+     *
+     * @param uniforms the uniform attributes
+     */
+    DrawBindingBuilder<B> withUniforms(@NonNull UniformAttributeBuffer uniforms);
+
+    /**
+     * Adds a {@link GlobalAttributeBuffer} which contain global attributes.
+     *
+     * @param globals the global attributes
+     */
+    DrawBindingBuilder<B> withGlobals(@NonNull GlobalAttributeBuffer globals);
+
+    /**
+     * Adds a {@link LocalAttributeBuffer} which contain local attributes.
+     *
+     * @param locals the local attributes
+     */
+    DrawBindingBuilder<B> withLocals(@NonNull LocalAttributeBuffer locals);
+
+    /**
      * @return the constructed {@link B}
      */
     B build();
-
-    /**
-     * @author DaPorkchop_
-     */
-    interface UniformsStage {
-        /**
-         * Defines the {@link LocalAttributeBuffer}(s) which contain the global attributes.
-         *
-         * @param uniforms the global attributes
-         */
-        GlobalsStage withUniforms(@NonNull UniformAttributeBuffer... uniforms);
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    interface GlobalsStage {
-        /**
-         * Defines the {@link GlobalAttributeBuffer}(s) which contain the global attributes.
-         *
-         * @param globals the global attributes
-         */
-        LocalsStage withGlobals(@NonNull GlobalAttributeBuffer... globals);
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    interface LocalsStage {
-        /**
-         * Defines the {@link LocalAttributeBuffer}(s) which contain the local attributes.
-         *
-         * @param locals the local attributes
-         */
-        OptionallyIndexedStage withLocals(@NonNull LocalAttributeBuffer... locals);
-    }
-
-    //TODO: define shader outputs
 
     /**
      * @author DaPorkchop_

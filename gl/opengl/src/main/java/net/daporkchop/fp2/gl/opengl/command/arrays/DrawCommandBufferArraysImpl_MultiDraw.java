@@ -21,11 +21,11 @@
 package net.daporkchop.fp2.gl.opengl.command.arrays;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.command.CommandBufferArrays;
+import net.daporkchop.fp2.gl.command.DrawCommandArrays;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
-import net.daporkchop.fp2.gl.opengl.command.BaseCommandBufferImpl;
-import net.daporkchop.fp2.gl.opengl.command.CommandBufferBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawBindingImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderProgramImpl;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
@@ -39,11 +39,11 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class CommandBufferArraysImpl_MultiDraw extends BaseCommandBufferImpl<DrawBindingImpl> implements CommandBufferArrays {
+public class DrawCommandBufferArraysImpl_MultiDraw extends DrawCommandBufferImpl<DrawCommandArrays, DrawBindingImpl> {
     protected long firstAddr;
     protected long countAddr;
 
-    public CommandBufferArraysImpl_MultiDraw(@NonNull CommandBufferBuilderImpl builder) {
+    public DrawCommandBufferArraysImpl_MultiDraw(@NonNull DrawCommandBufferBuilderImpl builder) {
         super(builder);
     }
 
@@ -65,16 +65,25 @@ public class CommandBufferArraysImpl_MultiDraw extends BaseCommandBufferImpl<Dra
     }
 
     @Override
-    public void clear(int index) {
-        PUnsafe.putInt(this.countAddr + checkIndex(this.capacity, index) * (long) INT_SIZE, 0);
+    public void set(int index, @NonNull DrawCommandArrays command) {
+        checkIndex(this.capacity, index);
+
+        PUnsafe.putInt(this.firstAddr + index * (long) INT_SIZE, command.first());
+        PUnsafe.putInt(this.countAddr + index * (long) INT_SIZE, command.count());
     }
 
     @Override
-    public void set(int index, int first, int count) {
+    public DrawCommandArrays get(int index) {
         checkIndex(this.capacity, index);
 
-        PUnsafe.putInt(this.firstAddr + index * (long) INT_SIZE, first);
-        PUnsafe.putInt(this.countAddr + index * (long) INT_SIZE, count);
+        return new DrawCommandArrays(
+                PUnsafe.getInt(this.firstAddr + index * (long) INT_SIZE),
+                PUnsafe.getInt(this.countAddr + index * (long) INT_SIZE));
+    }
+
+    @Override
+    public void clear(int index) {
+        PUnsafe.putInt(this.countAddr + checkIndex(this.capacity, index) * (long) INT_SIZE, 0);
     }
 
     @Override

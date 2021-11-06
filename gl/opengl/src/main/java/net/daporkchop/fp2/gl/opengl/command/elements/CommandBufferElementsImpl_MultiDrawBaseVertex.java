@@ -21,15 +21,16 @@
 package net.daporkchop.fp2.gl.opengl.command.elements;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.command.CommandBufferElements;
+import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
-import net.daporkchop.fp2.gl.opengl.command.BaseCommandBufferImpl;
-import net.daporkchop.fp2.gl.opengl.command.CommandBufferBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawBindingIndexedImpl;
 import net.daporkchop.fp2.gl.opengl.index.IndexFormatImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderProgramImpl;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
+import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.function.IntPredicate;
@@ -40,20 +41,23 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class CommandBufferElementsImpl_MultiDrawBaseVertex extends BaseCommandBufferImpl<DrawBindingIndexedImpl> implements CommandBufferElements {
+public class CommandBufferElementsImpl_MultiDrawBaseVertex extends DrawCommandBufferImpl<DrawCommandIndexed, DrawBindingIndexedImpl> {
     protected long countAddr;
     protected long indicesAddr;
     protected long basevertexAddr;
 
     protected final int indexType;
-    protected final int indexSize;
+    protected final int indexShift;
 
-    public CommandBufferElementsImpl_MultiDrawBaseVertex(@NonNull CommandBufferBuilderImpl builder) {
+    public CommandBufferElementsImpl_MultiDrawBaseVertex(@NonNull DrawCommandBufferBuilderImpl builder) {
         super(builder);
 
         IndexFormatImpl format = this.binding.indices().format();
         this.indexType = GLEnumUtil.from(format.type());
-        this.indexSize = format.size();
+
+        int indexSize = format.size();
+        checkArg(BinMath.isPow2(positive(indexSize, "indexSize")), "indexSize (%d) is not a power of two!", indexSize);
+        this.indexShift = Integer.numberOfTrailingZeros(indexSize);
     }
 
     @Override
@@ -77,17 +81,27 @@ public class CommandBufferElementsImpl_MultiDrawBaseVertex extends BaseCommandBu
     }
 
     @Override
-    public void clear(int index) {
-        PUnsafe.putInt(this.countAddr + checkIndex(this.capacity, index) * (long) INT_SIZE, 0);
+    public void set(int index, @NonNull DrawCommandIndexed command) {
+        checkIndex(this.capacity, index);
+
+        PUnsafe.putInt(this.countAddr + index * (long) INT_SIZE, command.count());
+        PUnsafe.putLong(this.indicesAddr + index * (long) INT_SIZE, (long) command.firstIndex() << this.indexShift);
+        PUnsafe.putInt(this.basevertexAddr + index * (long) INT_SIZE, command.baseVertex());
     }
 
     @Override
-    public void set(int index, int firstIndex, int count, int baseVertex) {
+    public DrawCommandIndexed get(int index) {
         checkIndex(this.capacity, index);
 
-        PUnsafe.putInt(this.countAddr + index * (long) INT_SIZE, count);
-        PUnsafe.putLong(this.indicesAddr + index * (long) INT_SIZE, firstIndex * (long) this.indexSize);
-        PUnsafe.putInt(this.basevertexAddr + index * (long) INT_SIZE, baseVertex);
+        return new DrawCommandIndexed(
+                toInt(PUnsafe.getLong(this.indicesAddr + index * (long) INT_SIZE) >>> this.indexShift),
+                PUnsafe.getInt(this.countAddr + index * (long) INT_SIZE),
+                PUnsafe.getInt(this.basevertexAddr + index * (long) INT_SIZE));
+    }
+
+    @Override
+    public void clear(int index) {
+        PUnsafe.putInt(this.countAddr + checkIndex(this.capacity, index) * (long) INT_SIZE, 0);
     }
 
     @Override

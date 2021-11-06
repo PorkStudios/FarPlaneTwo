@@ -26,8 +26,8 @@ import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
-import net.daporkchop.fp2.gl.command.BaseCommandBuffer;
-import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
+import net.daporkchop.fp2.gl.command.buffer.DrawCommandBuffer;
+import net.daporkchop.fp2.gl.command.buffer.DrawCommandBufferBuilder;
 import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.index.IndexFormat;
 import net.daporkchop.fp2.gl.index.IndexFormatBuilder;
@@ -59,6 +59,13 @@ public interface GL extends AutoCloseable {
     //
 
     /**
+     * Disposes of any OpenGL resources created by this context whose parent objects have been garbage-collected.
+     * <p>
+     * This should be called periodically between rendering to avoid leaking memory.
+     */
+    void runCleanup();
+
+    /**
      * Closes this OpenGL context, releasing all resources allocated by it.
      * <p>
      * Once this method has been called, all methods in all object instances belonging to by this instance will produce undefined behavior.
@@ -87,12 +94,12 @@ public interface GL extends AutoCloseable {
     /**
      * @return a builder for constructing a new {@link DrawLayout}
      */
-    LayoutBuilder.UniformsStage<DrawLayout> createDrawLayout();
+    LayoutBuilder<DrawLayout> createDrawLayout();
 
     /**
-     * @return a builder for constructing a new {@link BaseCommandBuffer}
+     * @return a builder for constructing a new {@link DrawCommandBuffer}
      */
-    CommandBufferBuilder.TypeStage createCommandBuffer();
+    DrawCommandBufferBuilder.TypeStage createCommandBuffer();
 
     //
     // SHADERS

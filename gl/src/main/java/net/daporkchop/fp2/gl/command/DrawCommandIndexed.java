@@ -20,50 +20,32 @@
 
 package net.daporkchop.fp2.gl.command;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.GLResource;
-import net.daporkchop.fp2.gl.draw.DrawMode;
-import net.daporkchop.fp2.gl.shader.ShaderProgram;
-
-import java.util.function.IntPredicate;
+import lombok.Data;
 
 /**
+ * A indexed drawing command.
+ *
  * @author DaPorkchop_
  */
-public interface BaseCommandBuffer extends GLResource {
+@Data
+public final class DrawCommandIndexed implements DrawCommand {
     /**
-     * @return the number of commands that this buffer can store
+     * The index of the first index.
      */
-    int capacity();
+    protected final int firstIndex;
 
     /**
-     * Sets the capacity of this command buffer.
-     * <p>
-     * If the new capacity is less than the current capacity, the buffer's contents will be truncated. If greater than the current capacity, the
-     * data will be extended with empty commands.
-     *
-     * @param capacity the new capacity
+     * The number of indices.
      */
-    void resize(int capacity);
+    protected final int count;
 
     /**
-     * Sets the command at the given index to an empty command.
-     *
-     * @param index the command index
+     * The index of the first vertex.
      */
-    void clear(int index);
+    protected final int baseVertex;
 
-    /**
-     * Executes every command in this buffer.
-     */
-    void execute(@NonNull DrawMode mode, @NonNull ShaderProgram shader);
-
-    /**
-     * Executes every command in this buffer for which the given {@link IntPredicate} returns {@code true}.
-     * <p>
-     * The {@link IntPredicate} will be called with the index of each command. Empty commands may be skipped.
-     *
-     * @param selector the {@link IntPredicate}
-     */
-    void execute(@NonNull DrawMode mode, @NonNull ShaderProgram shader, @NonNull IntPredicate selector);
+    @Override
+    public boolean isEmpty() {
+        return this.count == 0;
+    }
 }

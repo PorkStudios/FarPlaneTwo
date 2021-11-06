@@ -36,6 +36,8 @@ import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,59 +49,15 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class DrawBindingBuilderImpl implements DrawBindingBuilder.UniformsStage, DrawBindingBuilder.GlobalsStage, DrawBindingBuilder.LocalsStage, DrawBindingBuilder.OptionallyIndexedStage {
+public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyIndexedStage {
     @NonNull
     protected final DrawLayoutImpl layout;
 
-    protected UniformAttributeBufferImpl[] uniforms;
-    protected GlobalAttributeBufferImpl[] globals;
-    protected LocalAttributeBufferImpl[] locals;
+    protected final List<UniformAttributeBufferImpl> uniforms = new ArrayList<>();
+    protected final List<GlobalAttributeBufferImpl> globals = new ArrayList<>();
+    protected final List<LocalAttributeBufferImpl> locals = new ArrayList<>();
+
     protected IndexBufferImpl indices;
-
-    //
-    // UniformsStage
-    //
-
-    @Override
-    public DrawBindingBuilder.GlobalsStage withUniforms(@NonNull UniformAttributeBuffer... uniforms) {
-        this.uniforms = Stream.of(uniforms).map(UniformAttributeBufferImpl.class::cast).toArray(UniformAttributeBufferImpl[]::new);
-
-        Set<AttributeFormatImpl> givenFormats = Stream.of(this.uniforms).map(UniformAttributeBufferImpl::format).collect(Collectors.toSet());
-        Set<AttributeFormatImpl> expectedFormats = this.layout.uniformFormatsByName().values();
-        checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
-
-        return this;
-    }
-
-    //
-    // GlobalsStage
-    //
-
-    @Override
-    public DrawBindingBuilder.LocalsStage withGlobals(@NonNull GlobalAttributeBuffer... globals) {
-        this.globals = Stream.of(globals).map(GlobalAttributeBufferImpl.class::cast).toArray(GlobalAttributeBufferImpl[]::new);
-
-        Set<AttributeFormatImpl> givenFormats = Stream.of(this.globals).map(GlobalAttributeBufferImpl::format).collect(Collectors.toSet());
-        Set<AttributeFormatImpl> expectedFormats = this.layout.globalFormatsByName().values();
-        checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
-
-        return this;
-    }
-
-    //
-    // LocalsStage
-    //
-
-    @Override
-    public DrawBindingBuilder.OptionallyIndexedStage withLocals(@NonNull LocalAttributeBuffer... locals) {
-        this.locals = Stream.of(locals).map(LocalAttributeBufferImpl.class::cast).toArray(LocalAttributeBufferImpl[]::new);
-
-        Set<AttributeFormatImpl> givenFormats = Stream.of(this.locals).map(LocalAttributeBufferImpl::format).collect(Collectors.toSet());
-        Set<AttributeFormatImpl> expectedFormats = this.layout.localFormatsByName().values();
-        checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
-
-        return this;
-    }
 
     //
     // OptionallyIndexedStage
@@ -111,8 +69,48 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.UniformsStage,
         return uncheckedCast(this);
     }
 
+    //
+    // DrawBindingBuilder
+    //
+
+    @Override
+    public DrawBindingBuilder<DrawBinding> withUniforms(@NonNull UniformAttributeBuffer uniforms) {
+        this.uniforms.add((UniformAttributeBufferImpl) uniforms);
+        return this;
+    }
+
+    @Override
+    public DrawBindingBuilder<DrawBinding> withGlobals(@NonNull GlobalAttributeBuffer globals) {
+        this.globals.add((GlobalAttributeBufferImpl) globals);
+        return this;
+    }
+
+    @Override
+    public DrawBindingBuilder<DrawBinding> withLocals(@NonNull LocalAttributeBuffer locals) {
+        this.locals.add((LocalAttributeBufferImpl) locals);
+        return this;
+    }
+
     @Override
     public DrawBinding build() {
+        { //uniforms
+            Set<AttributeFormatImpl> givenFormats = this.uniforms.stream().map(UniformAttributeBufferImpl::format).collect(Collectors.toSet());
+            Set<AttributeFormatImpl> expectedFormats = this.layout.uniformFormatsByName().values();
+            checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
+        }
+
+        { //globals
+            Set<AttributeFormatImpl> givenFormats = this.globals.stream().map(GlobalAttributeBufferImpl::format).collect(Collectors.toSet());
+            Set<AttributeFormatImpl> expectedFormats = this.layout.globalFormatsByName().values();
+            checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
+        }
+
+        { //locals
+            Set<AttributeFormatImpl> givenFormats = this.locals.stream().map(LocalAttributeBufferImpl::format).collect(Collectors.toSet());
+            Set<AttributeFormatImpl> expectedFormats = this.layout.localFormatsByName().values();
+            checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
+        }
+
         return this.indices != null
                 ? new DrawBindingIndexedImpl(this)
                 : new DrawBindingImpl(this);

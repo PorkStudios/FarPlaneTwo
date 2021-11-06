@@ -31,6 +31,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -56,7 +57,7 @@ public abstract class BaseLayoutImpl implements BaseLayout {
     protected final BiMap<String, AttributeFormatImpl> localFormatsByName;
     protected final BiMap<String, AttributeFormatImpl> outputFormatsByName;
 
-    public BaseLayoutImpl(@NonNull BaseLayoutBuilderImpl builder) {
+    public BaseLayoutImpl(@NonNull BaseLayoutBuilderImpl<?> builder) {
         this.gl = builder.gl;
         this.api = this.gl.api();
 
@@ -66,13 +67,13 @@ public abstract class BaseLayoutImpl implements BaseLayout {
                     ImmutableBiMap::copyOf);
 
             //collect all attribute formats into a single map (also ensures names are unique)
-            this.allFormatsByName = Stream.of(builder.uniforms, builder.globals, builder.locals, builder.outputs).flatMap(Stream::of).collect(formatToMapCollector);
+            this.allFormatsByName = Stream.of(builder.uniforms, builder.globals, builder.locals, builder.outputs).flatMap(List::stream).collect(formatToMapCollector);
 
             //create maps for formats, separated by usage
-            this.uniformFormatsByName = Stream.of(builder.uniforms).collect(formatToMapCollector);
-            this.globalFormatsByName = Stream.of(builder.globals).collect(formatToMapCollector);
-            this.localFormatsByName = Stream.of(builder.locals).collect(formatToMapCollector);
-            this.outputFormatsByName = Stream.of(builder.outputs).collect(formatToMapCollector);
+            this.uniformFormatsByName = builder.uniforms.stream().collect(formatToMapCollector);
+            this.globalFormatsByName = builder.globals.stream().collect(formatToMapCollector);
+            this.localFormatsByName = builder.locals.stream().collect(formatToMapCollector);
+            this.outputFormatsByName = builder.outputs.stream().collect(formatToMapCollector);
         }
 
         {
@@ -81,13 +82,13 @@ public abstract class BaseLayoutImpl implements BaseLayout {
                     ImmutableBiMap::copyOf);
 
             //collect all attributes into a single map (also ensures names are unique)
-            this.allAttribsByName = Stream.of(builder.uniforms, builder.globals, builder.locals, builder.outputs).flatMap(Stream::of).map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
+            this.allAttribsByName = Stream.of(builder.uniforms, builder.globals, builder.locals, builder.outputs).flatMap(List::stream).map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
 
             //create maps for attributes, separated by usage
-            this.uniformAttribsByName = Stream.of(builder.uniforms).map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
-            this.globalAttribsByName = Stream.of(builder.globals).map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
-            this.localAttribsByName = Stream.of(builder.locals).map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
-            this.outputAttribsByName = Stream.of(builder.outputs).map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
+            this.uniformAttribsByName = builder.uniforms.stream().map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
+            this.globalAttribsByName = builder.globals.stream().map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
+            this.localAttribsByName = builder.locals.stream().map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
+            this.outputAttribsByName = builder.outputs.stream().map(AttributeFormatImpl::attribsArray).flatMap(Stream::of).collect(attribToMapCollector);
         }
     }
 

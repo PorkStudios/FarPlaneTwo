@@ -24,7 +24,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
-import net.daporkchop.fp2.gl.command.BaseCommandBuffer;
+import net.daporkchop.fp2.gl.command.DrawCommand;
+import net.daporkchop.fp2.gl.command.buffer.DrawCommandBuffer;
 import net.daporkchop.fp2.gl.draw.DrawBinding;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
@@ -36,7 +37,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseCommandBufferImpl<B extends DrawBinding> implements BaseCommandBuffer {
+public abstract class DrawCommandBufferImpl<C extends DrawCommand, B extends DrawBinding> implements DrawCommandBuffer<C> {
     protected final OpenGL gl;
     protected final GLAPI api;
 
@@ -46,7 +47,7 @@ public abstract class BaseCommandBufferImpl<B extends DrawBinding> implements Ba
 
     protected int capacity = 0;
 
-    public BaseCommandBufferImpl(@NonNull CommandBufferBuilderImpl builder) {
+    public DrawCommandBufferImpl(@NonNull DrawCommandBufferBuilderImpl builder) {
         this.gl = builder.gl;
         this.api = this.gl.api();
 

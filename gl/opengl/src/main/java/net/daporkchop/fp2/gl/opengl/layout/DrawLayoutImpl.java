@@ -171,7 +171,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     }
 
     @Override
-    public DrawBindingBuilder.UniformsStage createBinding() {
+    public DrawBindingBuilder.OptionallyIndexedStage createBinding() {
         return new DrawBindingBuilderImpl(this);
     }
 

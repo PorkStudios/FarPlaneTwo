@@ -31,55 +31,35 @@ import net.daporkchop.fp2.gl.attribute.AttributeFormat;
  */
 public interface LayoutBuilder<L extends BaseLayout> {
     /**
+     * Adds a {@link AttributeFormat} which contains uniform attributes.
+     *
+     * @param uniforms the formats of the uniform attributes
+     */
+    LayoutBuilder<L> withUniforms(@NonNull AttributeFormat uniforms);
+    
+    /**
+     * Adds a {@link AttributeFormat} which contains global attributes.
+     *
+     * @param globals the formats of the global attributes
+     */
+    LayoutBuilder<L> withGlobals(@NonNull AttributeFormat globals);
+    
+    /**
+     * Adds a {@link AttributeFormat} which contains local attributes.
+     *
+     * @param locals the formats of the local attributes
+     */
+    LayoutBuilder<L> withLocals(@NonNull AttributeFormat locals);
+
+    /**
+     * Adds a {@link AttributeFormat} which contains output attributes.
+     *
+     * @param outputs the formats of the output attributes
+     */
+    LayoutBuilder<L> withOutputs(@NonNull AttributeFormat outputs);
+    
+    /**
      * @return the constructed {@link L}
      */
     L build();
-
-    /**
-     * @author DaPorkchop_
-     */
-    interface UniformsStage<L extends BaseLayout> {
-        /**
-         * Defines the {@link AttributeFormat}(s) used for the uniform attributes.
-         *
-         * @param uniforms the formats of the uniform attributes
-         */
-        GlobalsStage<L> withUniforms(@NonNull AttributeFormat... uniforms);
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    interface GlobalsStage<L extends BaseLayout> {
-        /**
-         * Defines the {@link AttributeFormat}(s) used for the global attributes.
-         *
-         * @param globals the formats of the global attributes
-         */
-        LocalsStage<L> withGlobals(@NonNull AttributeFormat... globals);
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    interface LocalsStage<L extends BaseLayout> {
-        /**
-         * Defines the {@link AttributeFormat}(s) used for the local attributes.
-         *
-         * @param locals the formats of the local attributes
-         */
-        OutputsStage<L> withLocals(@NonNull AttributeFormat... locals);
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    interface OutputsStage<L extends BaseLayout> {
-        /**
-         * Defines the {@link AttributeFormat}(s) used for the output attributes.
-         *
-         * @param outputs the formats of the output attributes
-         */
-        LayoutBuilder<L> withOutputs(@NonNull AttributeFormat... outputs);
-    }
 }
