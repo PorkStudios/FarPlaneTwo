@@ -205,6 +205,8 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
     @Override
     @SneakyThrows(IOException.class)
     public void close() {
+        this.trackerManager.close();
+
         WorldChangeListenerManager.remove(this.world, this);
 
         this.scheduler.close();

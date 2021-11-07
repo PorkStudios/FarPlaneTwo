@@ -22,7 +22,6 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.gl.GL;
@@ -54,7 +53,7 @@ import static net.daporkchop.fp2.FP2.*;
  */
 @Getter
 public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexedRenderStrategy<HeightmapPos, HeightmapTile> {
-    protected final Attribute.Int3 attrGlobalPos;
+    protected final Attribute.Int3 attrGlobalTilePos;
     protected final AttributeFormat globalFormat;
 
     protected final Attribute.Int1 attrLocalState;
@@ -78,7 +77,7 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
         {
             AttributeFormatBuilder builder = gl.createAttributeFormat().name("HEIGHTMAP_GLOBAL");
 
-            this.attrGlobalPos = builder.attrib()
+            this.attrGlobalTilePos = builder.attrib()
                     .name("in_tile_position")
                     .int3(AttributeType.Integer.INT)
                     .interpretation(AttributeInterpretation.INTEGER)

@@ -20,16 +20,12 @@
 
 package net.daporkchop.fp2.mode.voxel.client;
 
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.TexUVs;
-import net.daporkchop.fp2.client.gl.vertex.attribute.IVertexAttribute;
-import net.daporkchop.fp2.client.gl.vertex.attribute.VertexAttributeInterpretation;
-import net.daporkchop.fp2.client.gl.vertex.attribute.VertexAttributeType;
-import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
-import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
-import net.daporkchop.fp2.mode.common.client.RenderConstants;
+import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
+import net.daporkchop.fp2.gl.index.IndexWriter;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutput;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
@@ -45,9 +41,9 @@ import net.minecraft.util.math.BlockPos;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.BlockType.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 
 /**
@@ -56,32 +52,6 @@ import static net.daporkchop.fp2.util.math.MathUtil.*;
  * @author DaPorkchop_
  */
 public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBakeOutput> {
-    protected static final IVertexAttribute.Int1 ATTRIB_STATE = IVertexAttribute.Int1.builder()
-            .name("state")
-            .type(VertexAttributeType.UNSIGNED_INT)
-            .interpretation(VertexAttributeInterpretation.INTEGER)
-            .build();
-
-    protected static final IVertexAttribute.Int2 ATTRIB_LIGHT = IVertexAttribute.Int2.builder(ATTRIB_STATE)
-            .name("light")
-            .type(VertexAttributeType.UNSIGNED_BYTE)
-            .interpretation(VertexAttributeInterpretation.NORMALIZED_FLOAT)
-            .build();
-
-    protected static final IVertexAttribute.Int3 ATTRIB_COLOR = IVertexAttribute.Int3.builder(ATTRIB_LIGHT)
-            .name("color")
-            .type(VertexAttributeType.UNSIGNED_BYTE)
-            .interpretation(VertexAttributeInterpretation.NORMALIZED_FLOAT)
-            .build();
-
-    protected static final IVertexAttribute.Int3 ATTRIB_POS = IVertexAttribute.Int3.builder(ATTRIB_COLOR)
-            .name("pos")
-            .type(VertexAttributeType.UNSIGNED_BYTE)
-            .interpretation(VertexAttributeInterpretation.FLOAT)
-            .build();
-
-    protected static final VertexFormat VERTEX_FORMAT = new VertexFormat("voxel", ATTRIB_POS);
-
     protected static int vertexMapIndex(int dx, int dy, int dz, int i, int edge) {
         int j = CONNECTION_INDICES[i];
         int ddx = dx + ((j >> 2) & 1);
@@ -89,6 +59,22 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         int ddz = dz + (j & 1);
 
         return ((ddx * T_VERTS + ddy) * T_VERTS + ddz) * EDGE_COUNT + edge;
+    }
+
+    protected final Attribute.Int4 tilePos;
+
+    protected final Attribute.Int1 state;
+    protected final Attribute.Int2 light;
+    protected final Attribute.Int3 color;
+    protected final Attribute.Int3 pos;
+
+    public VoxelBaker(@NonNull ShaderBasedVoxelRenderStrategy strategy) {
+        this.tilePos = strategy.attrGlobalTilePos;
+
+        this.state = strategy.attrLocalState;
+        this.light = strategy.attrLocalLight;
+        this.color = strategy.attrLocalColor;
+        this.pos = strategy.attrLocalPos;
     }
 
     @Override
@@ -135,22 +121,25 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
             return;
         }
 
+        //write globals
+        output.globals().set(this.tilePos, pos.x(), pos.y(), pos.z(), pos.level());
+
         ArrayAllocator<int[]> alloc = ALLOC_INT.get();
         int[] map = alloc.atLeast(cb(T_VERTS) * EDGE_COUNT);
         Arrays.fill(map, 0, cb(T_VERTS) * EDGE_COUNT, -1);
 
         try {
             //step 1: write vertices for all source tiles, and assign indices
-            this.writeVertices(srcs, pos.blockX(), pos.blockY(), pos.blockZ(), pos.level(), map, /* TODO: output.verts() */ null);
+            this.writeVertices(srcs, pos.blockX(), pos.blockY(), pos.blockZ(), pos.level(), map, output.verts());
 
             //step 2: write indices to actually connect the vertices and build the mesh
-            this.writeIndices(srcs[0], map, /* TODO: output.indices() */ null);
+            this.writeIndices(srcs[0], map, output.indices());
         } finally {
             alloc.release(map);
         }
     }
 
-    protected void writeVertices(VoxelTile[] srcs, int blockX, int blockY, int blockZ, int level, int[] map, IVertexBuilder verts) {
+    protected void writeVertices(VoxelTile[] srcs, int blockX, int blockY, int blockZ, int level, int[] map, LocalAttributeWriter verts) {
         final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
         final VoxelData data = new VoxelData();
@@ -179,7 +168,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         }
     }
 
-    protected int writeVertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, VoxelData data, IVertexBuilder vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, int[] map, int indexCounter) {
+    protected int writeVertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, VoxelData data, LocalAttributeWriter vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, int[] map, int indexCounter) {
         baseX += (x & T_VOXELS) << level;
         baseY += (y & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
@@ -193,46 +182,41 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         pos.setPos(blockX, blockY, blockZ);
         biomeAccess.biome(FastRegistry.getBiome(data.biome, Biomes.PLAINS));
 
-        int vertexBase = vertices.appendVertex();
-
-        IBlockState state = FastRegistry.getBlockState(data.states[0]);
-        ATTRIB_STATE.set(vertices, vertexBase, TexUVs.STATEID_TO_INDEXID.get(state));
-
         int blockLight = data.light & 0xF;
         int skyLight = data.light >> 4;
-        ATTRIB_LIGHT.set(vertices, vertexBase, blockLight | (blockLight << 4), skyLight | (skyLight << 4));
-        ATTRIB_COLOR.setRGB(vertices, vertexBase, MC.getBlockColors().colorMultiplier(state, biomeAccess, pos, 0));
+        vertices.set(this.light, blockLight | (blockLight << 4), skyLight | (skyLight << 4));
 
         int lowX = (x << POS_FRACT_SHIFT) + data.x;
         int lowY = (y << POS_FRACT_SHIFT) + data.y;
         int lowZ = (z << POS_FRACT_SHIFT) + data.z;
 
-        ATTRIB_POS.set(vertices, vertexBase, lowX, lowY, lowZ);
+        vertices.set(this.pos, lowX, lowY, lowZ);
+        int prevVertex = -1;
 
         EDGES:
         for (int edge = 0; edge < EDGE_COUNT; edge++) {
-            int currVertexBase;
-            if (edge == 0) {
-                currVertexBase = vertexBase;
-            } else {
+            if (edge != 0) {
                 for (int j = 0; j < edge; j++) {
                     if (data.states[j] == data.states[edge]) { //states match, don't duplicate vertex data for this edge
                         map[baseMapIndex + edge] = map[baseMapIndex + j];
                         continue EDGES;
                     }
                 }
-                currVertexBase = vertices.appendDuplicateVertex(vertexBase);
+                vertices.copyFrom(prevVertex);
             }
 
             IBlockState edgeState = FastRegistry.getBlockState(data.states[edge]);
-            ATTRIB_STATE.set(vertices, currVertexBase, TexUVs.STATEID_TO_INDEXID.get(edgeState));
-            ATTRIB_COLOR.setRGB(vertices, currVertexBase, MC.getBlockColors().colorMultiplier(edgeState, biomeAccess, pos, 0));
+            vertices.set(this.state, TexUVs.STATEID_TO_INDEXID.get(edgeState));
+            vertices.setARGB(this.color, MC.getBlockColors().colorMultiplier(edgeState, biomeAccess, pos, 0));
+
+            prevVertex = vertices.endVertex();
+
             map[baseMapIndex + edge] = indexCounter++;
         }
         return indexCounter;
     }
 
-    protected void writeIndices(VoxelTile src, int[] map, ByteBuf[] indices) {
+    protected void writeIndices(VoxelTile src, int[] map, IndexWriter[] indices) {
         final VoxelData data = new VoxelData();
 
         for (int j = 0; j < src.count(); j++) {
@@ -260,7 +244,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
                 }
 
                 IBlockState state = FastRegistry.getBlockState(data.states[edge]);
-                ByteBuf buf = indices[renderType(state)];
+                IndexWriter buf = indices[renderType(state)];
 
                 boolean water = state.getBlock() == Blocks.WATER;
                 if (water) {
@@ -269,7 +253,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
 
                 if ((edges & (EDGE_DIR_NEGATIVE << (edge << 1))) != 0) { //the face has the negative bit set
                     if ((edges & (EDGE_DIR_POSITIVE << (edge << 1))) != 0) { //the positive bit is set as well, output the face once before flipping
-                        RenderConstants.emitQuad(buf, oppositeCorner, c0, c1, provoking);
+                        buf.appendQuad(oppositeCorner, c0, c1, provoking);
                     }
 
                     //flip the face around
@@ -278,7 +262,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
                     c1 = i;
                 }
 
-                RenderConstants.emitQuad(buf, oppositeCorner, c0, c1, provoking);
+                buf.appendQuad(oppositeCorner, c0, c1, provoking);
             }
         }
     }
