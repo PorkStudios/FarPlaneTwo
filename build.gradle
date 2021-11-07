@@ -23,18 +23,27 @@ System.setProperty("fp2Version", "$fp2VersionMajor." + ('git rev-list --count HE
 allprojects {
     ext {
         fp2Version = System.getProperty("fp2Version")
+
+        ideaSyncActive = "true".equalsIgnoreCase(System.getProperty("idea.sync.active"))
     }
 }
 
 subprojects {
     apply plugin: "java"
+    apply plugin: "java-library"
+
+    if (ideaSyncActive.toBoolean()) {
+        apply plugin: "idea"
+    }
 
     version = "$fp2Version"
     group = "net.daporkchop.fp2"
 
-    compileJava {
-        sourceCompatibility = targetCompatibility = "$javaVersion"
+    if (ideaSyncActive.toBoolean()) {
+        idea.module.inheritOutputDirs = true
     }
+
+    compileJava.sourceCompatibility = compileJava.targetCompatibility = "$javaVersion"
 
     tasks.withType(JavaCompile) {
         options.encoding = "UTF-8"
@@ -42,7 +51,10 @@ subprojects {
 
     configurations {
         shade
-        compile.extendsFrom shade
+        implementation.extendsFrom shade
+
+        shadeOnly
+        runtimeOnly.extendsFrom shadeOnly
     }
 
     repositories {
@@ -61,7 +73,7 @@ subprojects {
         compileOnly "org.projectlombok:lombok:$lombokVersion"
         annotationProcessor "org.projectlombok:lombok:$lombokVersion"
 
-        testCompile "junit:junit:$junitVersion"
+        testImplementation "junit:junit:$junitVersion"
         testCompileOnly "org.projectlombok:lombok:$lombokVersion"
         testAnnotationProcessor "org.projectlombok:lombok:$lombokVersion"
     }

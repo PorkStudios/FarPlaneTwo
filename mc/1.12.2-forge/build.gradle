@@ -31,20 +31,48 @@ buildscript {
         }
     }
     dependencies {
-        classpath "net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT"
-        classpath "org.spongepowered:mixingradle:0.6-SNAPSHOT"
+        classpath "net.minecraftforge.gradle:ForgeGradle:5.1.+"
+        classpath "org.spongepowered:mixingradle:0.7-SNAPSHOT"
     }
 }
 
-apply plugin: "net.minecraftforge.gradle.forge"
+apply plugin: "net.minecraftforge.gradle"
 apply plugin: "org.spongepowered.mixin"
 apply plugin: "maven-publish"
 
 ext {
     //minecraft things
     mcpmappingsVersion = "stable_39"
-    minecraftforgeVersion = "14.23.5.2847"
+    minecraftforgeVersion = "14.23.5.2855"
     minecraftVersion = "1.12.2"
+}
+
+minecraft {
+    // The mappings can be changed at any time, and must be in the following format.
+    // snapshot_YYYYMMDD   Snapshot are built nightly.
+    // stable_#            Stables are built at the discretion of the MCP team.
+    // Use non-default mappings at your own risk. they may not always work.
+    // Simply re-run your setup task after changing the mappings to update your workspace.
+    //mappings channel: 'snapshot', version: '20171003-1.12'
+    mappings "stable", "39-1.12"
+
+    accessTransformer = file("../../src/main/resources/META-INF/fp2_at.cfg")
+
+    runs {
+        client {
+            workingDirectory "../../run"
+
+            property "forge.logging.markers", "SCAN,REGISTRIES,REGISTRYDUMP"
+            property "forge.logging.console.level", "debug"
+        }
+
+        server {
+            workingDirectory "../../run"
+
+            property "forge.logging.markers", "SCAN,REGISTRIES,REGISTRYDUMP"
+            property "forge.logging.console.level", "debug"
+        }
+    }
 }
 
 sourceSets.main {
@@ -62,11 +90,18 @@ repositories {
         name = "elytradev"
         url = "https://repo.elytradev.com"
     }
+    maven {
+        url = "https://jitpack.io"
+    }
 }
 
 dependencies {
-    compile project(":gl")
-    runtime project(":gl:opengl-lwjgl2")
+    minecraft "net.minecraftforge:forge:$minecraftVersion-$minecraftforgeVersion"
+
+    api project(":gl")
+    shadeOnly project(":gl:opengl-lwjgl2")
+
+    shade project(":common")
 
     shade("net.daporkchop.lib:compression-zstd:$porklibVersion") {
         exclude group: "io.netty"
@@ -81,22 +116,24 @@ dependencies {
         exclude group: "io.netty"
     }
 
-    compile "net.daporkchop:forgerocks:$rocksdbVersion-$minecraftVersion"
+    implementation "net.daporkchop:forgerocks:$rocksdbVersion-$minecraftVersion"
 
-    deobfCompile "io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT"
-    deobfCompile "io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT"
+    implementation "io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT:dev"
+    //implementation "com.github.OpenCubicChunks.CubicChunks:cubicchunks:355923c35c:dev"
+    implementation "io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT:dev"
+    //implementation fg.deobf("io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT")
 
-    if ("true".equalsIgnoreCase(System.getProperty("idea.sync.active"))) {
+    if (ideaSyncActive.toBoolean()) {
         //intellij is present - we don't want it to register mixin as an annotation processor, so we just add it as a standard dependency.
         //  if we don't do this, the intellij annotation processors will get totally screwed up
-        compile "org.spongepowered:mixin:$mixinVersion"
+        implementation "org.spongepowered:mixin:$mixinVersion"
     } else {
         //register mixin as a standard annotation processor
         annotationProcessor "org.spongepowered:mixin:$mixinVersion:processor"
     }
 }
 
-minecraft {
+/*minecraft {
     version = "$minecraftVersion-$minecraftforgeVersion"
     runDir = "../../run"
     mappings = "$mcpmappingsVersion"
@@ -117,19 +154,19 @@ minecraft {
     ]
     clientJvmArgs += args
     serverJvmArgs += args
-}
+}*/
 
 processResources {
     // this will ensure that this task is redone when the versions change.
     inputs.property "version", project.version
-    inputs.property "mcversion", project.minecraft.version
+    inputs.property "mcversion", project.minecraftVersion
 
     // replace stuff in mcmod.info, nothing else
     from(sourceSets.main.resources.srcDirs) {
         include "mcmod.info"
 
         // replace version and mcversion
-        expand "version": project.version, "mcversion": project.minecraft.version
+        expand "version": project.version, "mcversion": project.minecraftVersion
     }
 
     // copy everything else except the mcmod.info
@@ -139,13 +176,7 @@ processResources {
 }
 
 mixin {
-    defaultObfuscationEnv searge
     add sourceSets.main, "mixins.fp2.refmap.json"
-}
-
-reobf.jar {
-    mappingType = "SEARGE"
-    classpath = sourceSets.main.compileClasspath
 }
 
 jar {
@@ -176,6 +207,12 @@ jar {
         )
     }
 }
+
+// Example configuration to allow publishing using the maven-publish task
+// This is the preferred method to reobfuscate your jar file
+jar.finalizedBy('reobfJar')
+// However if you are in a multi-project build, dev time needs unobfed jar files, so you can delay the obfuscation until publishing by doing
+//publish.dependsOn('reobfJar')
 
 if (System.getProperty("os.name", "").toLowerCase().replaceAll("[^a-z0-9]+", "").startsWith("windows")) {
     System.out.println("You are running Windows, which is bad and you should feel bad.\nThis means that native libraries will not be built.")
@@ -245,4 +282,4 @@ task preIntellijRuns {
         })
     }
 }
-genIntellijRuns.dependsOn(preIntellijRuns)
+//genIntellijRuns.dependsOn(preIntellijRuns)

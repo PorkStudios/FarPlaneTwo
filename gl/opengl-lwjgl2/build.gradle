@@ -19,11 +19,13 @@
  */
 
 dependencies {
-    shade project(":gl:opengl")
+    implementation project(":gl:opengl")
 
-    compile "org.lwjgl.lwjgl:lwjgl:$lwjgl2Version"
-    compile "org.lwjgl.lwjgl:lwjgl_util:$lwjgl2Version"
+    implementation "org.lwjgl.lwjgl:lwjgl:$lwjgl2Version"
+    implementation "org.lwjgl.lwjgl:lwjgl_util:$lwjgl2Version"
 
-    compile "org.lwjgl.lwjgl:lwjgl-platform:$lwjgl2Version:natives-linux"
-    compile "org.lwjgl.lwjgl:lwjgl-platform:$lwjgl2Version:natives-windows"
+    implementation "org.lwjgl.lwjgl:lwjgl-platform:$lwjgl2Version:natives-linux"
+    implementation "org.lwjgl.lwjgl:lwjgl-platform:$lwjgl2Version:natives-windows"
+
+    implementation "org.ow2.asm:asm-debug-all:$asmVersion"
 }

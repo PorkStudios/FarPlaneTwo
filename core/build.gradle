@@ -19,7 +19,7 @@
  */
 
 dependencies {
-    shade project(":gl")
+    implementation project(":gl")
 
-    compile "org.rocksdb:rocksdbjni:$rocksdbVersion"
+    implementation "org.rocksdb:rocksdbjni:$rocksdbVersion"
 }
