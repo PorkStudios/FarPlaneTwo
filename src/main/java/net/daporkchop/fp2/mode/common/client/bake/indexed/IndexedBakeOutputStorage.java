@@ -25,6 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
@@ -108,6 +109,8 @@ public class IndexedBakeOutputStorage extends AbstractBakeOutputStorage<IndexedB
     protected final long slotSize;
     protected long slotsAddr;
 
+    protected final GlobalAttributeBuffer globalBuffer;
+
     protected final Allocator vertexAlloc;
     protected final LocalAttributeBuffer vertexBuffer;
 
@@ -118,14 +121,19 @@ public class IndexedBakeOutputStorage extends AbstractBakeOutputStorage<IndexedB
     @Getter
     protected final int passes;
 
-    public IndexedBakeOutputStorage(@NonNull Allocator alloc, @NonNull AttributeFormat vertexFormat, @NonNull IndexFormat indexFormat, int passes) {
+    public IndexedBakeOutputStorage(@NonNull Allocator alloc, @NonNull AttributeFormat globalFormat, @NonNull AttributeFormat vertexFormat, @NonNull IndexFormat indexFormat, int passes) {
         this.alloc = alloc;
 
         this.passes = positive(passes, "passes");
         this.indexSize = indexFormat.size();
 
+        this.globalBuffer = globalFormat.createGlobalBuffer(BufferUsage.STATIC_DRAW);
+
         this.slotSize = _SLOT_SIZE(passes);
-        this.slotAlloc = new SequentialFixedSizeAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> this.slotsAddr = this.alloc.realloc(this.slotsAddr, capacity * this.slotSize)));
+        this.slotAlloc = new SequentialFixedSizeAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> {
+            this.slotsAddr = this.alloc.realloc(this.slotsAddr, capacity * this.slotSize);
+            this.globalBuffer.resize(toInt(capacity));
+        }));
 
         this.vertexBuffer = vertexFormat.createLocalBuffer(BufferUsage.STATIC_DRAW);
         this.vertexAlloc = new SequentialVariableSizedAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> this.vertexBuffer.resize(toInt(capacity))));
@@ -150,23 +158,27 @@ public class IndexedBakeOutputStorage extends AbstractBakeOutputStorage<IndexedB
     public DrawBindingBuilder<DrawBindingIndexed> createDrawBinding(@NonNull DrawLayout layout, int pass) {
         return layout.createBinding()
                 .withIndexes(this.indexBuffers[pass])
-                .withLocals(this.vertexBuffer);
+                .withLocals(this.vertexBuffer)
+                .withGlobals(this.globalBuffer);
     }
 
     @Override
     public int add(@NonNull IndexedBakeOutput output) {
         //allocate a slot
         int handle = toInt(this.slotAlloc.alloc(1L));
-        long slot = this.slotsAddr + handle * this.slotSize;
+        long slotAddr = this.slotsAddr + handle * this.slotSize;
+
+        //upload global data
+        this.globalBuffer.set(handle, output.globals);
 
         //allocate and upload vertex data
         int baseVertex = toInt(this.vertexAlloc.alloc(output.verts.size()));
-        _slot_baseVertex(slot, baseVertex);
+        _slot_baseVertex(slotAddr, baseVertex);
         this.vertexBuffer.set(baseVertex, output.verts);
 
         //for each pass, allocate and upload index data if needed
         for (int i = 0; i < this.passes; i++) {
-            long pass = _slot_pass(slot, i);
+            long passAddr = _slot_pass(slotAddr, i);
             int count = 0;
             int firstIndex = 0;
 
@@ -178,8 +190,8 @@ public class IndexedBakeOutputStorage extends AbstractBakeOutputStorage<IndexedB
                 this.indexBuffers[i].set(firstIndex, indices);
             }
 
-            _pass_firstIndex(pass, firstIndex);
-            _pass_count(pass, count);
+            _pass_firstIndex(passAddr, firstIndex);
+            _pass_count(passAddr, count);
         }
 
         return handle;
@@ -189,17 +201,17 @@ public class IndexedBakeOutputStorage extends AbstractBakeOutputStorage<IndexedB
     public void delete(int handle) {
         //free slot
         this.slotAlloc.free(handle);
-        long slot = this.slotsAddr + handle * this.slotSize;
+        long slotAddr = this.slotsAddr + handle * this.slotSize;
 
         //free vertex data
-        this.vertexAlloc.free(_slot_baseVertex(slot));
+        this.vertexAlloc.free(_slot_baseVertex(slotAddr));
 
         //for each pass, free index data if needed
         for (int i = 0; i < this.passes; i++) {
-            long pass = _slot_pass(slot, i);
+            long passAddr = _slot_pass(slotAddr, i);
 
-            if (_pass_count(pass) > 0) {
-                this.indexAllocs[i].free(_pass_firstIndex(pass) * (long) this.indexSize);
+            if (_pass_count(passAddr) > 0) {
+                this.indexAllocs[i].free(_pass_firstIndex(passAddr));
             }
         }
 

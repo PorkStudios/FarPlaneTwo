@@ -27,7 +27,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.common.asm.ClassloadingUtils;
 import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.fp2.gl.attribute.AttributeInterpretation;
@@ -45,17 +44,20 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.objectweb.asm.Opcodes.*;
 
 /**
+ * Generates implementations of {@link AttributeImpl}.
+ *
  * @author DaPorkchop_
  */
-@UtilityClass
 public class AttributeGenerator {
+    private static final boolean DISABLE_WRITE = false;
+
     protected final LoadingCache<Key, Class<?>> CACHE = CacheBuilder.newBuilder()
             .weakValues()
-            .build(CacheLoader.from(AttributeGenerator::generate));
+            .build(CacheLoader.from(this::generate));
 
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
     public <A extends AttributeImpl> A get(@NonNull AttributeBuilderImpl builder) {
-        Class<A> clazz = uncheckedCast(CACHE.getUnchecked(new Key(builder.type, builder.interpretation, builder.components)));
+        Class<A> clazz = uncheckedCast(this.CACHE.getUnchecked(new Key(builder.type, builder.interpretation, builder.components)));
         Constructor<A> constructor = clazz.getDeclaredConstructor(AttributeBuilderImpl.class);
         constructor.setAccessible(true);
         return constructor.newInstance(builder);
@@ -169,7 +171,7 @@ public class AttributeGenerator {
                     mv.visitInsn(LADD);
                     mv.visitVarInsn(ILOAD, 4 + i);
 
-                    unsafePutInt(mv, (AttributeType.Integer) type);
+                    this.unsafePutInt(mv, (AttributeType.Integer) type);
                 }
 
                 mv.visitInsn(RETURN);
@@ -230,8 +232,8 @@ public class AttributeGenerator {
                     mv.visitInsn(LADD);
                     mv.visitVarInsn(ILOAD, 4 + i);
 
-                    unpackValue(mv, type, interpretation);
-                    unsafePutUnpacked(mv, interpretation);
+                    this.unpackValue(mv, type, interpretation);
+                    this.unsafePutUnpacked(mv, interpretation);
                 }
 
                 mv.visitInsn(RETURN);
@@ -299,9 +301,9 @@ public class AttributeGenerator {
                 mv.visitLdcInsn(i * (long) type.size());
                 mv.visitInsn(LADD);
 
-                unsafeGetPacked(mv, type);
-                unpackValue(mv, type, interpretation);
-                unsafePutUnpacked(mv, interpretation);
+                this.unsafeGetPacked(mv, type);
+                this.unpackValue(mv, type, interpretation);
+                this.unsafePutUnpacked(mv, interpretation);
             }
 
             mv.visitInsn(RETURN);
@@ -323,7 +325,7 @@ public class AttributeGenerator {
                 mv.visitLdcInsn(i * (long) interpretationSize);
                 mv.visitInsn(LADD);
 
-                unsafeGetUnpacked(mv, interpretation);
+                this.unsafeGetUnpacked(mv, interpretation);
             }
 
             StringBuilder glUniformSignatureBuilder = new StringBuilder();
@@ -378,6 +380,10 @@ public class AttributeGenerator {
     }
 
     private void unsafePutInt(@NonNull MethodVisitor mv, @NonNull AttributeType.Integer type) {
+        if (DISABLE_WRITE) {
+            return;
+        }
+
         switch (type) {
             case BYTE:
             case UNSIGNED_BYTE:
@@ -400,7 +406,7 @@ public class AttributeGenerator {
 
     private void unsafeGetPacked(@NonNull MethodVisitor mv, @NonNull AttributeType type) {
         if (type instanceof AttributeType.Integer) {
-            unsafeGetInt(mv, (AttributeType.Integer) type);
+            this.unsafeGetInt(mv, (AttributeType.Integer) type);
         } else if (type instanceof AttributeType.Float) {
             switch ((AttributeType.Float) type) {
                 case FLOAT:
@@ -429,6 +435,10 @@ public class AttributeGenerator {
     }
 
     private void unsafePutUnpacked(@NonNull MethodVisitor mv, @NonNull AttributeInterpretation interpretation) {
+        if (DISABLE_WRITE) {
+            return;
+        }
+
         switch (interpretation) {
             case INTEGER:
                 mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "putInt", "(Ljava/lang/Object;JI)V", false);
@@ -466,7 +476,7 @@ public class AttributeGenerator {
             case NORMALIZED_FLOAT:
                 if (type instanceof AttributeType.Integer) {
                     mv.visitInsn(I2F);
-                    mv.visitLdcInsn((float) (1.0d / inverseNormalizeFactor((AttributeType.Integer) type)));
+                    mv.visitLdcInsn((float) (1.0d / this.inverseNormalizeFactor((AttributeType.Integer) type)));
                     mv.visitInsn(FMUL);
                 }
                 break;

@@ -72,7 +72,7 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
 
     @Override
     public IBakeOutputStorage<IndexedBakeOutput, DrawBindingIndexed, DrawCommandIndexed> createBakeOutputStorage() {
-        return new IndexedBakeOutputStorage(this.alloc, this.vertexFormat(), this.indexFormat(), RENDER_PASS_COUNT);
+        return new IndexedBakeOutputStorage(this.alloc, this.globalFormat(), this.vertexFormat(), this.indexFormat(), RENDER_PASS_COUNT);
     }
 
     @Override

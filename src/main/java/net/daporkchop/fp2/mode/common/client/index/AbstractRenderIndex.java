@@ -31,6 +31,8 @@ import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.common.util.alloc.SequentialFixedSizeAllocator;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
+import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.DrawCommand;
 import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
 import net.daporkchop.fp2.gl.binding.DrawBinding;
@@ -60,6 +62,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -162,10 +165,6 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
 
         protected long capacity = -1L;
 
-        protected final long positionSize;
-        protected final GLBuffer positionsBuffer = new GLBuffer(GL_STREAM_DRAW);
-        protected long positionsAddr;
-
         protected long storageHandlesAddr;
 
         protected final IBakeOutputStorage<BO, DB, DC> storage;
@@ -178,7 +177,6 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
             this.level = level;
 
             this.directPosAccess = AbstractRenderIndex.this.strategy.mode().directPosAccess();
-            this.positionSize = PMath.roundUp(this.directPosAccess.posSize(), EFFECTIVE_VERTEX_ATTRIBUTE_ALIGNMENT);
 
             this.positionsToSlots.defaultReturnValue(-1L);
 
@@ -200,8 +198,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
                 this.capacity = capacity;
 
                 //resize memory blocks
-                this.positionsAddr = AbstractRenderIndex.this.directMemoryAlloc.realloc(this.positionsAddr, capacity * this.positionSize);
-                this.storageHandlesAddr = AbstractRenderIndex.this.directMemoryAlloc.realloc(this.storageHandlesAddr, capacity * Integer.BYTES);
+                this.storageHandlesAddr = AbstractRenderIndex.this.directMemoryAlloc.realloc(this.storageHandlesAddr, capacity * INT_SIZE);
                 for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
                     this.commandBuffers[pass].resize(toInt(capacity));
                 }
@@ -227,9 +224,6 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
                     this.delete(slot);
                 } else { //slot doesn't exist, allocate a new one for this position
                     this.positionsToSlots.put(pos, slot = this.slotAllocator.alloc(1L));
-
-                    //initialize slot fields
-                    this.directPosAccess.storePos(pos, this.positionsAddr + slot * this.positionSize);
                 }
 
                 //add bake output to storage
@@ -311,23 +305,17 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
         protected void upload() {
             if (this.dirty) { //re-upload all data if needed
                 this.dirty = false;
-
-                try (GLBuffer positionsBuffer = this.positionsBuffer.bind(GL_ARRAY_BUFFER)) {
-                    positionsBuffer.upload(this.positionsAddr, this.capacity * this.positionSize);
-                }
             }
         }
 
         @Override
         public void close() {
             //free all direct memory allocations
-            AbstractRenderIndex.this.directMemoryAlloc.free(this.positionsAddr);
             AbstractRenderIndex.this.directMemoryAlloc.free(this.storageHandlesAddr);
 
             //delete all gl objects
             Stream.of(this.commandBuffers).forEach(DrawCommandBuffer::close);
             this.bindings.forEach(DB::close);
-            this.positionsBuffer.delete();
             this.storage.release();
         }
 

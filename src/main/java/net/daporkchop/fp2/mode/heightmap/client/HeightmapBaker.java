@@ -53,6 +53,8 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         return (x * T_VERTS + z) * MAX_LAYERS + layer;
     }
 
+    protected final Attribute.Int3 tilePos;
+
     protected final Attribute.Int1 state;
     protected final Attribute.Int2 light;
     protected final Attribute.Int3 color;
@@ -61,6 +63,8 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
     protected final Attribute.Int1 heightFrac;
 
     public HeightmapBaker(@NonNull ShaderBasedHeightmapRenderStrategy strategy) {
+        this.tilePos = strategy.attrGlobalPos;
+
         this.state = strategy.attrLocalState;
         this.light = strategy.attrLocalLight;
         this.color = strategy.attrLocalColor;
@@ -106,6 +110,9 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         if (srcs[0] == null) {
             return;
         }
+
+        //write globals
+        output.globals().set(this.tilePos, pos.x(), pos.z(), pos.level());
 
         final int level = pos.level();
         final int blockX = pos.blockX();

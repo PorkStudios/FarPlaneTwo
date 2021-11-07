@@ -88,7 +88,7 @@ public final class DirectMemoryAllocator implements Allocator {
 
     @Override
     public void free(long address) {
-        checkArg(this.allocations.remove(address) >= 0L, "can't free address 0x016x (which isn't owned by this allocator)", address);
+        checkArg(this.allocations.remove(address) >= 0L, "can't free address 0x%016x (which isn't owned by this allocator)", address);
         PUnsafe.freeMemory(address);
     }
 

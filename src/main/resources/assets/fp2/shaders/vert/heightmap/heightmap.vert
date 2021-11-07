@@ -23,22 +23,6 @@
 #include <"fp2:shaders/vert/common.vert">
 #include <"fp2:shaders/vert/fog.vert">
 
-//
-//
-// VERTEX ATTRIBUTES
-//
-//
-
-layout(location = 0) in ivec3 in_tile_position;
-
-layout(location = 1) in int in_state;
-layout(location = 2) in vec2 in_light;
-layout(location = 3) in vec3 in_color;
-
-layout(location = 4) in ivec2 in_pos_horiz;
-layout(location = 5) in int in_height_int;
-layout(location = 6) in float in_height_frac;
-
 ivec3 getLowOffsetPre(int level) {
     return ivec3(in_pos_horiz.x << level, in_height_int, in_pos_horiz.y << level);
 }

@@ -37,6 +37,7 @@ import net.daporkchop.fp2.gl.index.IndexFormatBuilder;
 import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.gl.layout.LayoutBuilder;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeGenerator;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.compute.ComputeCore;
@@ -82,6 +83,8 @@ public class OpenGL implements GL {
 
     protected final GLCompute compute;
 
+    protected final AttributeGenerator attributeGenerator = new AttributeGenerator();
+
     protected OpenGL(@NonNull OpenGLBuilder builder) {
         this.resourceProvider = ResourceProvider.selectingByNamespace(OPENGL_NAMESPACE, ResourceProvider.loadingClassResources(OpenGL.class), builder.resourceProvider);
 
@@ -105,7 +108,7 @@ public class OpenGL implements GL {
             this.extensions = Stream.of(GLExtension.values())
                     .filter(extension -> !extension.core(this))
                     .filter(extension -> extensionNames.contains(extension.name()))
-                    .collect(Sets.toImmutableEnumSet());
+                    .collect(Collectors.collectingAndThen(Collectors.toSet(), ImmutableSet::copyOf));
         }
 
         { //get profile

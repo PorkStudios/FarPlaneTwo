@@ -168,7 +168,7 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glBufferData(int target, long data_size, long data, int usage) {
         if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
-            GL15.glBufferData(target, DirectBufferHackery.wrapInt(data, (int) data_size), usage);
+            GL15.glBufferData(target, DirectBufferHackery.wrapByte(data, (int) data_size), usage);
         } else { //LWJGL2 doesn't expose glBufferData with 64-bit data_size...
             //allocate storage and then delegate to glBufferSubData
             GL15.glBufferData(target, data_size, usage);
@@ -184,7 +184,7 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glBufferSubData(int target, long offset, long data_size, long data) {
         if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
-            GL15.glBufferSubData(target, offset, DirectBufferHackery.wrapInt(data, (int) data_size));
+            GL15.glBufferSubData(target, offset, DirectBufferHackery.wrapByte(data, (int) data_size));
         } else { //LWJGL2 doesn't expose glBufferSubData with 64-bit data_size...
             //upload data in increments of Integer.MAX_VALUE
             for (long uploaded = 0L; uploaded < data_size; ) {
@@ -203,7 +203,7 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glGetBufferSubData(int target, long offset, long data_size, long data) {
         if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
-            GL15.glGetBufferSubData(target, offset, DirectBufferHackery.wrapInt(data, (int) data_size));
+            GL15.glGetBufferSubData(target, offset, DirectBufferHackery.wrapByte(data, (int) data_size));
         } else { //LWJGL2 doesn't expose glGetBufferSubData with 64-bit data_size...
             //download data in increments of Integer.MAX_VALUE
             for (long downloaded = 0L; downloaded < data_size; ) {

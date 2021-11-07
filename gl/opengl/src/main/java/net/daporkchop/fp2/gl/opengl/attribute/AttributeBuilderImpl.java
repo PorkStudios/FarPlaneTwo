@@ -105,6 +105,6 @@ public class AttributeBuilderImpl implements AttributeBuilder.NameSelectionStage
 
     @Override
     public Attribute build() {
-        return AttributeGenerator.get(this);
+        return this.formatBuilder.gl.attributeGenerator().get(this);
     }
 }

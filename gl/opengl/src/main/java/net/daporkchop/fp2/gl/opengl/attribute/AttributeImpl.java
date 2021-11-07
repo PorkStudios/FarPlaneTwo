@@ -23,6 +23,7 @@ package net.daporkchop.fp2.gl.opengl.attribute;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.ToString;
 import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.fp2.gl.attribute.AttributeInterpretation;
 import net.daporkchop.fp2.gl.attribute.AttributeType;
@@ -33,11 +34,13 @@ import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
  * @author DaPorkchop_
  */
 @Getter
+@ToString
 public abstract class AttributeImpl implements Attribute {
     protected final String name;
     protected final AttributeType type;
     protected final AttributeInterpretation interpretation;
 
+    @ToString.Exclude
     protected AttributeFormatImpl format;
 
     protected final int index;

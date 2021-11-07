@@ -26,11 +26,11 @@ import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.lib.common.util.PorkUtil;
-import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -138,7 +138,7 @@ public class Preprocessor {
     protected static final String EXPR_PARENS_PATTERN = "\\(([^(]*?)\\)";
     protected static final Pattern EXPR_PARENS_PATTERN_COMPILED = Pattern.compile(EXPR_PARENS_PATTERN);
 
-    protected final Map<String, Object> macros = new ObjObjOpenHashMap<>();
+    protected final Map<String, Object> macros = new HashMap<>();
     protected final ResourceProvider resourceProvider;
 
     protected Node head;

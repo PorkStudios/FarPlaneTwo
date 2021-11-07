@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.opengl.attribute;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.ToString;
 import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
@@ -46,12 +47,15 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
+@ToString(onlyExplicitlyIncluded = true)
 public class AttributeFormatImpl implements AttributeFormat {
     protected final OpenGL gl;
 
+    @ToString.Include
     protected final String name;
 
     protected final Map<String, AttributeImpl> attribs;
+    @ToString.Include(name = "attribs")
     protected final AttributeImpl[] attribsArray;
 
     protected final int[] offsetsPacked;

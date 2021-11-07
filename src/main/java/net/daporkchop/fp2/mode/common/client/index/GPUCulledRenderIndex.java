@@ -109,7 +109,7 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
         @Override
         protected void select0(@NonNull IFrustum frustum, float partialTicks) {
             //bind SSBOs
-            this.positionsBuffer.bindBase(GL_SHADER_STORAGE_BUFFER, POSITIONS_BUFFER_BINDING_INDEX);
+            //TODO: this.positionsBuffer.bindBase(GL_SHADER_STORAGE_BUFFER, POSITIONS_BUFFER_BINDING_INDEX);
 
             if (this.level == 0) { //level-0: we should bind the vanilla renderability info (for use in shader) and use the level-0 shader
                 ((IMixinRenderGlobal) MC.renderGlobal).fp2_vanillaRenderabilityTracker().bindForShaderUse();

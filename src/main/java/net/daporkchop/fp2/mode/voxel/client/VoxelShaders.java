@@ -36,17 +36,17 @@ import static net.daporkchop.fp2.FP2.*;
  */
 @UtilityClass
 public class VoxelShaders {
-    public static final RenderShaderProgram BLOCK_SHADER = ShaderManager.renderShaderBuilder("voxel/block")
+    /*public static final RenderShaderProgram BLOCK_SHADER = ShaderManager.renderShaderBuilder("voxel/block")
             .withVertexShader(Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
             .withFragmentShader(Identifier.from(MODID, "shaders/frag/block.frag"))
-            .link();
+            .link();*/
 
     //public static final RenderShaderProgram BLOCK_SHADER_TRANSFORM_FEEDBACK = ShaderManager.get("voxel/xfb/block");
 
-    public static final RenderShaderProgram STENCIL_SHADER = ShaderManager.renderShaderBuilder("voxel/stencil")
+    /*public static final RenderShaderProgram STENCIL_SHADER = ShaderManager.renderShaderBuilder("voxel/stencil")
             .withVertexShader(Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
             .withFragmentShader(Identifier.from(MODID, "shaders/frag/stencil.frag"))
-            .link();
+            .link();*/
 
     public static final ComputeShaderBuilder CULL_SHADER = ShaderManager.computeShaderBuilder("voxel/cull")
             .withComputeShader(Identifier.from(MODID, "shaders/comp/voxel/voxel_frustum_culling.comp"))

@@ -60,7 +60,7 @@ public class LocalAttributeBufferImpl extends BaseAttributeBufferImpl implements
     public void resize(int capacity) {
         this.capacity = capacity;
 
-        this.buffer.capacity(capacity * this.stride);
+        this.buffer.resize(capacity * this.stride);
     }
 
     @Override

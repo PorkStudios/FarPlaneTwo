@@ -72,11 +72,11 @@ public class CPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
                 ICullingStrategy<POS> cullingStrategy = CPUCulledRenderIndex.this.cullingStrategy;
                 VanillaRenderabilityTracker vanillaRenderabilityTracker = ((IMixinRenderGlobal) MC.renderGlobal).fp2_vanillaRenderabilityTracker();
                 return slot -> {
-                    long posAddr = this.positionsAddr + slot * this.positionSize;
+                    long posAddr = 0L; //TODO: this.positionsAddr + slot * this.positionSize;
                     return !cullingStrategy.blockedByVanilla(vanillaRenderabilityTracker, posAddr) && this.directPosAccess.inFrustum(posAddr, frustum);
                 };
             } else { //all other levels are only tested for frustum intersection
-                return slot -> this.directPosAccess.inFrustum(this.positionsAddr + slot * this.positionSize, frustum);
+                return null; //TODO: slot -> this.directPosAccess.inFrustum(this.positionsAddr + slot * this.positionSize, frustum);
             }
         }
     }
