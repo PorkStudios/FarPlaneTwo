@@ -19,8 +19,8 @@
  */
 
 dependencies {
-    implementation project(":common")
+    implementationShade project(":common")
 
-    implementation "org.ow2.asm:asm-debug-all:$asmVersion"
-    implementation "io.netty:netty-all:$nettyVersion"
+    implementationProvided "org.ow2.asm:asm-debug-all:$asmVersion"
+    implementationProvided "io.netty:netty-all:$nettyVersion"
 }

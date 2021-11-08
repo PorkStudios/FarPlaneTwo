@@ -18,6 +18,10 @@
  *
  */
 
+import org.gradle.api.internal.artifacts.dependencies.DefaultProjectDependency
+
+
+
 //this can't be set in gradle.properties since it's dynamic
 System.setProperty("fp2Version", "$fp2VersionMajor." + ('git rev-list --count HEAD'.execute().text.trim()))
 allprojects {
@@ -43,18 +47,85 @@ subprojects {
         idea.module.inheritOutputDirs = true
     }
 
+    java.toolchain.languageVersion = JavaLanguageVersion.of(8)
     compileJava.sourceCompatibility = compileJava.targetCompatibility = "$javaVersion"
 
     tasks.withType(JavaCompile) {
         options.encoding = "UTF-8"
+        options.headerOutputDirectory.convention(null) // https://github.com/gradle/gradle/issues/12904
+    }
+
+    ext.inherit0 = { Object... args ->
+        if (args[0] instanceof Project) {
+            String path = ((Project) args[0]).path
+            dependencies {
+                provided_ project(path: path, configuration: "provided_")
+            }
+        }
+    }
+
+    ext.shade = { Object... args ->
+        if (args.length == 1 && args[0] instanceof DefaultProjectDependency) {
+            String path = ((DefaultProjectDependency) args[0]).dependencyProject.path
+            dependencies {
+                inherit0 args
+                shade_ args {
+                    transitive = false
+                }
+                shade_ project(path: path, configuration: "shade_")
+            }
+        } else {
+            dependencies {
+                shade_ args
+            }
+        }
+    }
+
+    ext.apiShade = { Object... args ->
+        dependencies {
+            inherit0 args
+            api args
+            shade args
+        }
+    }
+
+    ext.implementationProvided = { Object... args ->
+        dependencies {
+            inherit0 args
+            compileOnly args
+            provided_ args
+        }
+    }
+
+    ext.implementationShade = { Object... args ->
+        dependencies {
+            inherit0 args
+            implementation args
+            shade args
+        }
+    }
+
+    ext.runtimeOnlyProvided = { Object... args ->
+        dependencies {
+            inherit0 args
+            runtimeOnly args
+            provided_ args
+        }
+    }
+
+    ext.runtimeOnlyShade = { Object... args ->
+        dependencies {
+            inherit0 args
+            runtimeOnly args
+            shade args
+        }
     }
 
     configurations {
-        shade
-        implementation.extendsFrom shade
+        shade_
+        provided_
 
-        shadeOnly
-        runtimeOnly.extendsFrom shadeOnly
+        provided_.extendsFrom runtime
     }
 
     repositories {
@@ -72,6 +143,8 @@ subprojects {
     dependencies {
         compileOnly "org.projectlombok:lombok:$lombokVersion"
         annotationProcessor "org.projectlombok:lombok:$lombokVersion"
+
+        testImplementation project(path: project.path, configuration: "provided_")
 
         testImplementation "junit:junit:$junitVersion"
         testCompileOnly "org.projectlombok:lombok:$lombokVersion"
