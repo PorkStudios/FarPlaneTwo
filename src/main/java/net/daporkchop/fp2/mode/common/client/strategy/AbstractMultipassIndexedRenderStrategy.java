@@ -21,12 +21,6 @@
 package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.DrawMode;
-import net.daporkchop.fp2.client.gl.ElementType;
-import net.daporkchop.fp2.client.gl.command.IMultipassDrawCommandBuffer;
-import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
-import net.daporkchop.fp2.client.gl.command.elements.buffer.MultidrawIndirectMultipassDrawElementsCommandBuffer;
-import net.daporkchop.fp2.client.gl.command.elements.buffer.SingleDrawIndirectMultipassDrawElementsCommandBuffer;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.binding.DrawBindingIndexed;
@@ -45,7 +39,6 @@ import net.daporkchop.fp2.mode.common.client.index.GPUCulledRenderIndex;
 import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
 import net.daporkchop.lib.common.util.PArrays;
 
-import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 
 /**
