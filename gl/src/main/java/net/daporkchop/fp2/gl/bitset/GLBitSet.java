@@ -51,16 +51,18 @@ public interface GLBitSet extends GLResource {
     void resize(int capacity);
 
     /**
-     * @return the value by which indices are offset
+     * Sets the bit at the given index to {@code true}.
+     *
+     * @param index the index
      */
-    int offset();
+    void set(int index);
 
     /**
-     * Sets the value by which indices are offset.
+     * Sets the bit at the given index to {@code false}.
      *
-     * @param offset value by which indices are offset
+     * @param index the index
      */
-    void offset(int offset);
+    void clear(int index);
 
     /**
      * Sets all bits to {@code false}.
@@ -70,7 +72,7 @@ public interface GLBitSet extends GLResource {
     /**
      * Sets all bits which intersect the given source {@link GLBitSet} to the source value, and all other bits to {@code false}.
      *
-     * @param src the {@link GLBitSet} to copy values from
+     * @param src the {@link GLBitSet}
      */
     void set(@NonNull GLBitSet src);
 
@@ -80,4 +82,20 @@ public interface GLBitSet extends GLResource {
      * @param selector the {@link IntPredicate}
      */
     void set(@NonNull IntPredicate selector);
+
+    /**
+     * Sets all bits which intersect the given source {@link GLBitSet} to the logical AND of their current value with the corresponding given values.
+     *
+     * @param src the {@link GLBitSet}
+     */
+    void and(@NonNull GLBitSet src);
+
+    /**
+     * Sets all bits in this bitset to the logical AND of their current value combined with the result of the given {@link IntPredicate} for the the corresponding index.
+     * <p>
+     * The {@link IntPredicate} may not be called for bits which are already {@code false}.
+     *
+     * @param selector the {@link IntPredicate}
+     */
+    void and(@NonNull IntPredicate selector);
 }

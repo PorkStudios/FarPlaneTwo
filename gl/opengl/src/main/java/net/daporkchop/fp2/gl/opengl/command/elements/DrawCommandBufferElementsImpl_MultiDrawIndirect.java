@@ -166,7 +166,7 @@ public class DrawCommandBufferElementsImpl_MultiDrawIndirect extends DrawCommand
     protected void executeMappedClient(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader, @NonNull AbstractGLBitSet selector) {
         long dstCommands = PUnsafe.allocateMemory(this.capacity * _SIZE);
         try {
-            selector.mapClient(0, this.capacity, (bitsBase, bitsOffset) -> {
+            selector.mapClient(this.capacity, (bitsBase, bitsOffset) -> {
                 long srcCommandAddr = this.commandsAddr;
                 long dstCommandAddr = dstCommands;
                 for (int bitIndex = 0; bitIndex < this.capacity; bitsOffset += INT_SIZE) {

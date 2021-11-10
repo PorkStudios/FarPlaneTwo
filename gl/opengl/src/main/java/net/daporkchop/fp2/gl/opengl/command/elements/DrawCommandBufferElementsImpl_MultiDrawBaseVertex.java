@@ -121,7 +121,7 @@ public class DrawCommandBufferElementsImpl_MultiDrawBaseVertex extends DrawComma
     protected void executeMappedClient(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader, @NonNull AbstractGLBitSet selector) {
         long dstCounts = PUnsafe.allocateMemory(this.capacity * (long) INT_SIZE);
         try {
-            selector.mapClient(0, this.capacity, (bitsBase, bitsOffset) -> {
+            selector.mapClient(this.capacity, (bitsBase, bitsOffset) -> {
                 long srcCountAddr = this.countAddr;
                 long dstCountAddr = dstCounts;
                 for (int bitIndex = 0; bitIndex < this.capacity; bitsOffset += INT_SIZE) {

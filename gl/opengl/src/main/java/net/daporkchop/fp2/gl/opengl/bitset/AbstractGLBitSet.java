@@ -29,6 +29,8 @@ import net.daporkchop.lib.common.math.PMath;
 
 import java.util.function.ObjLongConsumer;
 
+import static net.daporkchop.lib.common.util.PValidation.*;
+
 /**
  * @author DaPorkchop_
  */
@@ -37,9 +39,11 @@ import java.util.function.ObjLongConsumer;
 public abstract class AbstractGLBitSet implements GLBitSet {
     public static final int BITS_PER_WORD = Integer.SIZE;
     public static final int BIT_WORD_SHIFT = Integer.numberOfTrailingZeros(BITS_PER_WORD);
+    public static final int BIT_WORD_MASK = BITS_PER_WORD - 1;
 
     public static final int BYTES_PER_WORD = Integer.BYTES;
     public static final int BYTE_WORD_SHIFT = Integer.numberOfTrailingZeros(BYTES_PER_WORD);
+    public static final int BYTE_WORD_MASK = BYTES_PER_WORD - 1;
 
     public static int words(int bits) {
         return PMath.roundUp(bits, BITS_PER_WORD) >> BIT_WORD_SHIFT;
@@ -48,5 +52,15 @@ public abstract class AbstractGLBitSet implements GLBitSet {
     @NonNull
     protected final OpenGL gl;
 
-    public abstract void mapClient(int off, int len, @NonNull ObjLongConsumer<Object> callback);
+    protected int capacity;
+    protected int words;
+
+    @Override
+    public void resize(int capacity) {
+        this.resize0(this.capacity, this.words, this.capacity = notNegative(capacity, "capacity"), this.words = words(capacity));
+    }
+
+    protected abstract void resize0(int oldCapacity, int oldWords, int newCapacity, int newWords);
+
+    public abstract void mapClient(int len, @NonNull ObjLongConsumer<Object> callback);
 }

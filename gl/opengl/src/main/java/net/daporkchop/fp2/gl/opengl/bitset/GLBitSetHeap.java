@@ -23,12 +23,17 @@ package net.daporkchop.fp2.gl.opengl.bitset;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.util.Arrays;
 import java.util.function.IntPredicate;
 import java.util.function.ObjLongConsumer;
 
+import static java.lang.Math.*;
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -37,10 +42,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Getter
 public class GLBitSetHeap extends AbstractGLBitSet {
     @Getter(AccessLevel.NONE)
-    protected int[] arr;
-
-    protected int capacity;
-    protected int offset;
+    protected int[] arr = PorkUtil.EMPTY_INT_ARRAY;
 
     public GLBitSetHeap(@NonNull OpenGL gl) {
         super(gl);
@@ -52,25 +54,69 @@ public class GLBitSetHeap extends AbstractGLBitSet {
     }
 
     @Override
-    public void resize(int capacity) {
-        this.arr = new int[words(notNegative(capacity, "capacity"))];
-        this.capacity = capacity;
+    protected void resize0(int oldCapacity, int oldWords, int newCapacity, int newWords) {
+        this.arr = Arrays.copyOf(this.arr, newWords);
     }
 
     @Override
-    public void offset(int offset) {
-        this.offset = offset;
+    public void mapClient(int len, @NonNull ObjLongConsumer<Object> callback) {
+        int[] arr;
+        if (notNegative(len, "len") <= this.capacity) { //requested range is within this bitset's capacity, re-use it
+            arr = this.arr;
+        } else { //requested range is larger than this bitset's capacity, allocate a temporary array and copy stuff into it
+            arr = new int[words(len)];
+            System.arraycopy(this.arr, 0, arr, 0, this.words);
+        }
+
+        callback.accept(arr, PUnsafe.ARRAY_INT_BASE_OFFSET);
+    }
+
+    @Override
+    public void set(int index) {
+        this.arr[checkIndex(this.capacity, index) >> BIT_WORD_SHIFT] |= 1 << index;
+    }
+
+    @Override
+    public void clear(int index) {
+        this.arr[checkIndex(this.capacity, index) >> BIT_WORD_SHIFT] &= ~(1 << index);
+    }
+
+    @Override
+    public void clear() {
+        Arrays.fill(this.arr, 0);
+    }
+
+    @Override
+    public void set(@NonNull GLBitSet _src) {
+        AbstractGLBitSet src = (AbstractGLBitSet) _src;
+        if (this.capacity == 0) { //this bitset is empty, do nothing
+            return;
+        } else if (src.capacity == 0) { //other bitset is empty, nothing intersects, so clear this bitset
+            this.clear();
+            return;
+        }
+
+        //copy shared data
+        int sharedBits = min(this.capacity, src.capacity);
+        int sharedWords = min(this.words, src.words);
+        src.mapClient(sharedBits, (base, offset) -> PUnsafe.copyMemory(base, offset, this.arr, PUnsafe.ARRAY_INT_BASE_OFFSET, sharedWords * (long) BYTES_PER_WORD));
+
+        //clear any bits beyond this bitset's capacity
+        this.arr[sharedWords - 1] &= (1 << this.capacity) - 1;
+
+        //fill rest of data with zeroes
+        Arrays.fill(this.arr, sharedWords, this.words, 0);
     }
 
     @Override
     public void set(@NonNull IntPredicate selector) {
         final int[] arr = this.arr;
 
-        for (int wordIndex = 0, idx = this.offset, end = idx + this.capacity; idx < end; wordIndex++) {
+        for (int wordIndex = 0, bitIndex = 0, endBitIndex = this.capacity; bitIndex < endBitIndex; wordIndex++) {
             int word = 0;
-            for (int bit = 0; idx < end && bit < BITS_PER_WORD; bit++, idx++) {
-                if (selector.test(idx)) {
-                    word |= 1 << bit;
+            for (int mask = 1; mask != 0 && bitIndex < endBitIndex; mask <<= 1, bitIndex++) {
+                if (selector.test(bitIndex)) {
+                    word |= mask;
                 }
             }
             arr[wordIndex] = word;
@@ -78,15 +124,45 @@ public class GLBitSetHeap extends AbstractGLBitSet {
     }
 
     @Override
-    public void mapClient(int off, int len, @NonNull ObjLongConsumer<Object> callback) {
-        if (notNegative(len, "len") == 0) {
-            callback.accept(null, 0L);
+    public void and(@NonNull GLBitSet _src) {
+        AbstractGLBitSet src = (AbstractGLBitSet) _src;
+        if (this.capacity == 0) { //this bitset is empty, do nothing
             return;
-        } else if (off == this.offset && len <= this.capacity) {
-            callback.accept(this.arr, PUnsafe.ARRAY_INT_BASE_OFFSET);
+        } else if (src.capacity == 0) { //other bitset is empty, nothing intersects, so clear this bitset
+            this.clear();
             return;
         }
 
-        throw new UnsupportedOperationException("unimplemented");
+        //AND shared data
+        int sharedBits = min(this.capacity, src.capacity);
+        int sharedWords = min(this.words, src.words);
+        src.mapClient(sharedBits, (base, offset) -> {
+            for (int wordIndex = 0; wordIndex < sharedWords; wordIndex++, offset += BYTES_PER_WORD) {
+                this.arr[wordIndex] &= PUnsafe.getInt(base, offset);
+            }
+        });
+
+        //fill rest of data with zeroes
+        Arrays.fill(this.arr, sharedWords, this.words, 0);
+    }
+
+    @Override
+    public void and(@NonNull IntPredicate selector) {
+        final int[] arr = this.arr;
+
+        for (int wordIndex = 0, bitIndex = 0, endBitIndex = this.capacity; bitIndex < endBitIndex; wordIndex++) {
+            int word = arr[wordIndex];
+            if (word == 0) { //all bits are false, no need to use the selector at all
+                bitIndex += BITS_PER_WORD;
+                continue;
+            }
+
+            for (int mask = 1; mask != 0 && bitIndex < endBitIndex; mask <<= 1, bitIndex++) {
+                if ((word & mask) != 0 && !selector.test(bitIndex)) {
+                    word &= ~mask;
+                }
+            }
+            arr[wordIndex] = word;
+        }
     }
 }

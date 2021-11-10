@@ -64,7 +64,8 @@ public class CPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
 
         @Override
         protected void select0(@NonNull IFrustum frustum, float partialTicks) {
-            this.selectionBitSet.set(this.cull(frustum));
+            this.bitsSelection.set(this.bitsValid);
+            this.bitsSelection.and(this.cull(frustum));
         }
 
         protected IntPredicate cull(@NonNull IFrustum frustum) {

@@ -270,7 +270,7 @@ public class TestLWJGL2 {
         while (!Display.isCloseRequested()) {
             glClear(GL_COLOR_BUFFER_BIT);
 
-            bitSet.set(i -> true || ThreadLocalRandom.current().nextBoolean());
+            bitSet.set(i -> ThreadLocalRandom.current().nextBoolean());
 
             uniformBuffer.set(attrScale, 64, 64);
             commandBufferArrays.execute(DrawMode.TRIANGLES, drawShaderProgram, bitSet);
