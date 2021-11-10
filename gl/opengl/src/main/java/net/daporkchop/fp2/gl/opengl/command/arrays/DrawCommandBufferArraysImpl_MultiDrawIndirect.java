@@ -21,10 +21,12 @@
 package net.daporkchop.fp2.gl.opengl.command.arrays;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.DrawCommandArrays;
 import net.daporkchop.fp2.gl.binding.DrawMode;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
+import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferBuilderImpl;
@@ -34,6 +36,7 @@ import net.daporkchop.fp2.gl.opengl.shader.DrawShaderProgramImpl;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -132,9 +135,42 @@ public class DrawCommandBufferArraysImpl_MultiDrawIndirect extends DrawCommandBu
     @Override
     public void execute(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader) {
         this.buffer.upload(this.commandsAddr, this.capacity * _SIZE);
-
         this.buffer.bind(BufferTarget.DRAW_INDIRECT_BUFFER, target -> ((DrawShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
             this.api.glMultiDrawArraysIndirect(GLEnumUtil.from(mode), 0L, this.capacity, 0);
         })));
+    }
+
+    @Override
+    public void execute(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader, @NonNull GLBitSet _selector) {
+        AbstractGLBitSet selector = (AbstractGLBitSet) _selector;
+
+        this.executeMappedClient(mode, shader, selector);
+    }
+
+    protected void executeMappedClient(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader, @NonNull AbstractGLBitSet selector) {
+        long dstCommands = PUnsafe.allocateMemory(this.capacity * _SIZE);
+        try {
+            selector.mapClient(0, this.capacity, (bitsBase, bitsOffset) -> {
+                long srcCommandAddr = this.commandsAddr;
+                long dstCommandAddr = dstCommands;
+                for (int bitIndex = 0; bitIndex < this.capacity; bitsOffset += INT_SIZE) {
+                    int word = PUnsafe.getInt(bitsBase, bitsOffset);
+
+                    for (int endBit = min(bitIndex + Integer.SIZE, this.capacity); bitIndex < endBit; bitIndex++, srcCommandAddr += _SIZE, dstCommandAddr += _SIZE) {
+                        _first(dstCommandAddr, _first(srcCommandAddr));
+                        _count(dstCommandAddr, _count(srcCommandAddr));
+                        _baseInstance(dstCommandAddr, _baseInstance(srcCommandAddr));
+                        _instanceCount(dstCommandAddr, _instanceCount(srcCommandAddr) & (word >>> bitIndex));
+                    }
+                }
+            });
+
+            this.buffer.upload(dstCommands, this.capacity * _SIZE);
+            this.buffer.bind(BufferTarget.DRAW_INDIRECT_BUFFER, target -> ((DrawShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
+                this.api.glMultiDrawArraysIndirect(GLEnumUtil.from(mode), 0L, this.capacity, 0);
+            })));
+        } finally {
+            PUnsafe.freeMemory(dstCommands);
+        }
     }
 }

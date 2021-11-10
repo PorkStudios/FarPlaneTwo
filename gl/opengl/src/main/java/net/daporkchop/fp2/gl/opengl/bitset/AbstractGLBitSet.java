@@ -18,13 +18,35 @@
  *
  */
 
-dependencies {
-    apiShade project(":gl")
-    apiShade project(":common")
+package net.daporkchop.fp2.gl.opengl.bitset;
 
-    implementationShade "net.daporkchop.lib:primitive-lambda:$porklibVersion"
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.bitset.GLBitSet;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.lib.common.math.PMath;
 
-    implementationProvided "org.ow2.asm:asm-debug-all:$asmVersion"
-    implementationProvided "com.google.guava:guava:$guavaVersion"
-    implementationProvided "io.netty:netty-all:$nettyVersion"
+import java.util.function.ObjLongConsumer;
+
+/**
+ * @author DaPorkchop_
+ */
+@RequiredArgsConstructor
+@Getter
+public abstract class AbstractGLBitSet implements GLBitSet {
+    public static final int BITS_PER_WORD = Integer.SIZE;
+    public static final int BIT_WORD_SHIFT = Integer.numberOfTrailingZeros(BITS_PER_WORD);
+
+    public static final int BYTES_PER_WORD = Integer.BYTES;
+    public static final int BYTE_WORD_SHIFT = Integer.numberOfTrailingZeros(BYTES_PER_WORD);
+
+    public static int words(int bits) {
+        return PMath.roundUp(bits, BITS_PER_WORD) >> BIT_WORD_SHIFT;
+    }
+
+    @NonNull
+    protected final OpenGL gl;
+
+    public abstract void mapClient(int off, int len, @NonNull ObjLongConsumer<Object> callback);
 }

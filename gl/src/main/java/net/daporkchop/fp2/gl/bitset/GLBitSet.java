@@ -63,9 +63,21 @@ public interface GLBitSet extends GLResource {
     void offset(int offset);
 
     /**
-     * Calls the given {@link IntPredicate} for each index (w. offset) in this bitset's storage, and sets each bit according to the result.
+     * Sets all bits to {@code false}.
+     */
+    void clear();
+
+    /**
+     * Sets all bits which intersect the given source {@link GLBitSet} to the source value, and all other bits to {@code false}.
+     *
+     * @param src the {@link GLBitSet} to copy values from
+     */
+    void set(@NonNull GLBitSet src);
+
+    /**
+     * Sets all bits to the value returned by the given {@link IntPredicate} for the the corresponding index.
      *
      * @param selector the {@link IntPredicate}
      */
-    void setAll(@NonNull IntPredicate selector);
+    void set(@NonNull IntPredicate selector);
 }

@@ -18,13 +18,30 @@
  *
  */
 
-dependencies {
-    apiShade project(":gl")
-    apiShade project(":common")
+package net.daporkchop.fp2.gl.opengl.bitset;
 
-    implementationShade "net.daporkchop.lib:primitive-lambda:$porklibVersion"
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.bitset.GLBitSet;
+import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
+import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
 
-    implementationProvided "org.ow2.asm:asm-debug-all:$asmVersion"
-    implementationProvided "com.google.guava:guava:$guavaVersion"
-    implementationProvided "io.netty:netty-all:$nettyVersion"
+/**
+ * @author DaPorkchop_
+ */
+@RequiredArgsConstructor
+public class GLBitSetBuilderImpl implements GLBitSetBuilder {
+    @NonNull
+    protected final OpenGL gl;
+
+    @Override
+    public GLBitSetBuilder optimizeFor(@NonNull DrawCommandBuffer<?> commandBuffer) {
+        return this;
+    }
+
+    @Override
+    public GLBitSet build() {
+        return new GLBitSetHeap(this.gl);
+    }
 }

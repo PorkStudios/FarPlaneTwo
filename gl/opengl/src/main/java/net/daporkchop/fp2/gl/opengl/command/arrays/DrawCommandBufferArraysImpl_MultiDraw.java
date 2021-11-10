@@ -21,9 +21,12 @@
 package net.daporkchop.fp2.gl.opengl.command.arrays;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.command.DrawCommandArrays;
 import net.daporkchop.fp2.gl.binding.DrawMode;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
+import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
+import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferImpl;
 import net.daporkchop.fp2.gl.opengl.binding.DrawBindingImpl;
@@ -31,6 +34,7 @@ import net.daporkchop.fp2.gl.opengl.shader.DrawShaderProgramImpl;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -89,5 +93,36 @@ public class DrawCommandBufferArraysImpl_MultiDraw extends DrawCommandBufferImpl
         ((DrawShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
             this.api.glMultiDrawArrays(GLEnumUtil.from(mode), this.firstAddr, this.countAddr, this.capacity);
         }));
+    }
+
+    @Override
+    public void execute(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader, @NonNull GLBitSet _selector) {
+        AbstractGLBitSet selector = (AbstractGLBitSet) _selector;
+
+        this.executeMappedClient(mode, shader, selector);
+    }
+
+    protected void executeMappedClient(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader, @NonNull AbstractGLBitSet selector) {
+        long dstCounts = PUnsafe.allocateMemory(this.capacity * (long) INT_SIZE);
+        try {
+            selector.mapClient(0, this.capacity, (bitsBase, bitsOffset) -> {
+                long srcCountAddr = this.countAddr;
+                long dstCountAddr = dstCounts;
+                for (int bitIndex = 0; bitIndex < this.capacity; bitsOffset += INT_SIZE) {
+                    int word = PUnsafe.getInt(bitsBase, bitsOffset);
+
+                    for (int mask = 1; mask != 0 && bitIndex < this.capacity; mask <<= 1, bitIndex++, srcCountAddr += INT_SIZE, dstCountAddr += INT_SIZE) {
+                        PUnsafe.putInt(dstCountAddr, PUnsafe.getInt(srcCountAddr) & (-(word & mask) >> 31));
+                        PUnsafe.putInt(dstCountAddr, 3);
+                    }
+                }
+            });
+
+            ((DrawShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
+                this.api.glMultiDrawArrays(GLEnumUtil.from(mode), this.firstAddr, this.countAddr, this.capacity);
+            }));
+        } finally {
+            PUnsafe.freeMemory(dstCounts);
+        }
     }
 }

@@ -64,7 +64,7 @@ public class CPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
 
         @Override
         protected void select0(@NonNull IFrustum frustum, float partialTicks) {
-            //TODO: this.commandBuffer.select(this.cull(frustum));
+            this.selectionBitSet.set(this.cull(frustum));
         }
 
         protected IntPredicate cull(@NonNull IFrustum frustum) {
@@ -72,11 +72,11 @@ public class CPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
                 ICullingStrategy<POS> cullingStrategy = CPUCulledRenderIndex.this.cullingStrategy;
                 VanillaRenderabilityTracker vanillaRenderabilityTracker = ((IMixinRenderGlobal) MC.renderGlobal).fp2_vanillaRenderabilityTracker();
                 return slot -> {
-                    long posAddr = 0L; //TODO: this.positionsAddr + slot * this.positionSize;
+                    long posAddr = this.positionsAddr + slot * this.positionSize;
                     return !cullingStrategy.blockedByVanilla(vanillaRenderabilityTracker, posAddr) && this.directPosAccess.inFrustum(posAddr, frustum);
                 };
             } else { //all other levels are only tested for frustum intersection
-                return null; //TODO: slot -> this.directPosAccess.inFrustum(this.positionsAddr + slot * this.positionSize, frustum);
+                return slot -> this.directPosAccess.inFrustum(this.positionsAddr + slot * this.positionSize, frustum);
             }
         }
     }

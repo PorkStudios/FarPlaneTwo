@@ -21,9 +21,11 @@
 package net.daporkchop.fp2.gl.opengl.command.elements;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.binding.DrawMode;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
+import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
 import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferImpl;
 import net.daporkchop.fp2.gl.opengl.binding.DrawBindingIndexedImpl;
@@ -39,7 +41,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class CommandBufferElementsImpl_MultiDrawBaseVertex extends DrawCommandBufferImpl<DrawCommandIndexed, DrawBindingIndexedImpl> {
+public class DrawCommandBufferElementsImpl_MultiDrawBaseVertex extends DrawCommandBufferImpl<DrawCommandIndexed, DrawBindingIndexedImpl> {
     protected long countAddr;
     protected long indicesAddr;
     protected long basevertexAddr;
@@ -47,7 +49,7 @@ public class CommandBufferElementsImpl_MultiDrawBaseVertex extends DrawCommandBu
     protected final int indexType;
     protected final int indexShift;
 
-    public CommandBufferElementsImpl_MultiDrawBaseVertex(@NonNull DrawCommandBufferBuilderImpl builder) {
+    public DrawCommandBufferElementsImpl_MultiDrawBaseVertex(@NonNull DrawCommandBufferBuilderImpl builder) {
         super(builder);
 
         IndexFormatImpl format = this.binding.indices().format();
@@ -107,5 +109,35 @@ public class CommandBufferElementsImpl_MultiDrawBaseVertex extends DrawCommandBu
         ((DrawShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
             this.api.glMultiDrawElementsBaseVertex(GLEnumUtil.from(mode), this.countAddr, this.indexType, this.indicesAddr, this.capacity, this.basevertexAddr);
         }));
+    }
+
+    @Override
+    public void execute(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader, @NonNull GLBitSet _selector) {
+        AbstractGLBitSet selector = (AbstractGLBitSet) _selector;
+
+        this.executeMappedClient(mode, shader, selector);
+    }
+
+    protected void executeMappedClient(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader, @NonNull AbstractGLBitSet selector) {
+        long dstCounts = PUnsafe.allocateMemory(this.capacity * (long) INT_SIZE);
+        try {
+            selector.mapClient(0, this.capacity, (bitsBase, bitsOffset) -> {
+                long srcCountAddr = this.countAddr;
+                long dstCountAddr = dstCounts;
+                for (int bitIndex = 0; bitIndex < this.capacity; bitsOffset += INT_SIZE) {
+                    int word = PUnsafe.getInt(bitsBase, bitsOffset);
+
+                    for (int mask = 1; mask != 0 && bitIndex < this.capacity; mask <<= 1, bitIndex++, srcCountAddr += INT_SIZE, dstCountAddr += INT_SIZE) {
+                        PUnsafe.putInt(dstCountAddr, PUnsafe.getInt(srcCountAddr) & (-(word & mask) >> 31));
+                    }
+                }
+            });
+
+            ((DrawShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
+                this.api.glMultiDrawElementsBaseVertex(GLEnumUtil.from(mode), dstCounts, this.indexType, this.indicesAddr, this.capacity, this.basevertexAddr);
+            }));
+        } finally {
+            PUnsafe.freeMemory(dstCounts);
+        }
     }
 }

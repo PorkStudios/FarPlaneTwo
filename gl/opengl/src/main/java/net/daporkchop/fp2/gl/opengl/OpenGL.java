@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.gl.opengl;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
@@ -38,23 +37,24 @@ import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.gl.layout.LayoutBuilder;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeGenerator;
+import net.daporkchop.fp2.gl.opengl.bitset.GLBitSetBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.compute.ComputeCore;
 import net.daporkchop.fp2.gl.opengl.index.IndexFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutImpl;
+import net.daporkchop.fp2.gl.opengl.shader.DrawShaderProgramImpl;
 import net.daporkchop.fp2.gl.opengl.shader.FragmentShaderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.shader.DrawShaderProgramImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 import net.daporkchop.fp2.gl.opengl.shader.VertexShaderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.FragmentShader;
 import net.daporkchop.fp2.gl.shader.ShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.VertexShader;
 
 import java.util.Set;
@@ -148,7 +148,7 @@ public class OpenGL implements GL {
 
     @Override
     public GLBitSetBuilder createBitSet() {
-        throw new UnsupportedOperationException(); //TODO
+        return new GLBitSetBuilderImpl(this);
     }
 
     @Override

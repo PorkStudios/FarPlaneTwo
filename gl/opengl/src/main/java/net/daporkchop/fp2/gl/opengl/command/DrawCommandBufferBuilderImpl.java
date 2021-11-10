@@ -22,14 +22,16 @@ package net.daporkchop.fp2.gl.opengl.command;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.command.DrawCommandArrays;
-import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
-import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
-import net.daporkchop.fp2.gl.command.DrawCommandBufferBuilder;
 import net.daporkchop.fp2.gl.binding.DrawBinding;
 import net.daporkchop.fp2.gl.binding.DrawBindingIndexed;
+import net.daporkchop.fp2.gl.command.DrawCommandArrays;
+import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
+import net.daporkchop.fp2.gl.command.DrawCommandBufferBuilder;
+import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.command.arrays.DrawCommandBufferArraysImpl_MultiDraw;
 import net.daporkchop.fp2.gl.opengl.command.arrays.DrawCommandBufferArraysImpl_MultiDrawIndirect;
+import net.daporkchop.fp2.gl.opengl.command.elements.DrawCommandBufferElementsImpl_MultiDrawBaseVertex;
 import net.daporkchop.fp2.gl.opengl.command.elements.DrawCommandBufferElementsImpl_MultiDrawIndirect;
 
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -82,9 +84,13 @@ public class DrawCommandBufferBuilderImpl implements DrawCommandBufferBuilder.Ty
     @Override
     public DrawCommandBuffer build() {
         if (this.elements) {
-            return new DrawCommandBufferElementsImpl_MultiDrawIndirect(this);
+            return this.optimizeForCpuSelection
+                    ? new DrawCommandBufferElementsImpl_MultiDrawBaseVertex(this)
+                    : new DrawCommandBufferElementsImpl_MultiDrawIndirect(this);
         } else {
-            return new DrawCommandBufferArraysImpl_MultiDrawIndirect(this);
+            return this.optimizeForCpuSelection
+                    ? new DrawCommandBufferArraysImpl_MultiDraw(this)
+                    : new DrawCommandBufferArraysImpl_MultiDrawIndirect(this);
         }
     }
 }

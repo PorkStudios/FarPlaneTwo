@@ -32,6 +32,7 @@ import net.daporkchop.fp2.common.util.alloc.SequentialFixedSizeAllocator;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
+import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.DrawCommand;
 import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
@@ -165,11 +166,16 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
 
         protected long capacity = -1L;
 
+        protected final long positionSize;
+        protected long positionsAddr;
+
         protected long storageHandlesAddr;
 
         protected final IBakeOutputStorage<BO, DB, DC> storage;
         protected final List<DB> bindings;
         protected final DrawCommandBuffer<DC>[] commandBuffers = uncheckedCast(new DrawCommandBuffer[RENDER_PASS_COUNT]);
+
+        protected final GLBitSet selectionBitSet;
 
         protected boolean dirty = false;
 
@@ -177,6 +183,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
             this.level = level;
 
             this.directPosAccess = AbstractRenderIndex.this.strategy.mode().directPosAccess();
+            this.positionSize = this.directPosAccess.posSize();
 
             this.positionsToSlots.defaultReturnValue(-1L);
 
@@ -193,15 +200,21 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
                 this.commandBuffers[pass] = AbstractRenderIndex.this.strategy.createCommandBuffer(this.bindings.get(pass));
             }
 
+            this.selectionBitSet = AbstractRenderIndex.this.strategy.gl().createBitSet()
+                    .optimizeFor(this.commandBuffers[0])
+                    .build();
+
             this.slotAllocator = new SequentialFixedSizeAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> {
                 checkArg(capacity > this.capacity, "newCapacity (%d) must be greater than current capacity (%d)", capacity, this.capacity);
                 this.capacity = capacity;
 
                 //resize memory blocks
+                this.positionsAddr = AbstractRenderIndex.this.directMemoryAlloc.realloc(this.positionsAddr, capacity * this.positionSize);
                 this.storageHandlesAddr = AbstractRenderIndex.this.directMemoryAlloc.realloc(this.storageHandlesAddr, capacity * INT_SIZE);
                 for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
                     this.commandBuffers[pass].resize(toInt(capacity));
                 }
+                this.selectionBitSet.resize(toInt(capacity));
 
                 this.dirty = true;
             }), growFunction);
@@ -224,6 +237,9 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
                     this.delete(slot);
                 } else { //slot doesn't exist, allocate a new one for this position
                     this.positionsToSlots.put(pos, slot = this.slotAllocator.alloc(1L));
+
+                    //initialize slot fields
+                    this.directPosAccess.storePos(pos, this.positionsAddr + slot * this.positionSize);
                 }
 
                 //add bake output to storage
@@ -299,7 +315,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
                 return;
             }
 
-            this.commandBuffers[pass].execute(DrawMode.QUADS, shader);
+            this.commandBuffers[pass].execute(DrawMode.QUADS, shader, this.selectionBitSet);
         }
 
         protected void upload() {
@@ -311,9 +327,11 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
         @Override
         public void close() {
             //free all direct memory allocations
+            AbstractRenderIndex.this.directMemoryAlloc.free(this.positionsAddr);
             AbstractRenderIndex.this.directMemoryAlloc.free(this.storageHandlesAddr);
 
             //delete all gl objects
+            this.selectionBitSet.close();
             Stream.of(this.commandBuffers).forEach(DrawCommandBuffer::close);
             this.bindings.forEach(DB::close);
             this.storage.release();

@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.command.DrawCommand;
 import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
@@ -45,6 +46,8 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, BO 
     IFarRenderMode<POS, T> mode();
 
     ICullingStrategy<POS> cullingStrategy();
+
+    GL gl();
 
     AttributeFormat globalFormat();
 

@@ -34,6 +34,7 @@ import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
+import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.DrawCommandArrays;
 import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
@@ -59,6 +60,9 @@ import org.lwjgl.opengl.PixelFormat;
 import java.io.File;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.util.concurrent.ThreadLocalRandom;
+
+import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author DaPorkchop_
@@ -258,9 +262,18 @@ public class TestLWJGL2 {
         commandBufferElements.set(2, new DrawCommandIndexed(0, 6, 0));
         commandBufferElements.set(3, new DrawCommandIndexed(0, 6, 0));
 
+        GLBitSet bitSet = gl.createBitSet()
+                .optimizeFor(commandBufferElements)
+                .build();
+        bitSet.resize(4);
+
         while (!Display.isCloseRequested()) {
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            bitSet.set(i -> true || ThreadLocalRandom.current().nextBoolean());
+
             uniformBuffer.set(attrScale, 64, 64);
-            commandBufferArrays.execute(DrawMode.TRIANGLES, drawShaderProgram);
+            commandBufferArrays.execute(DrawMode.TRIANGLES, drawShaderProgram, bitSet);
 
             uniformBuffer.set(attrScale, -128, -128);
             commandBufferElements.execute(DrawMode.TRIANGLES, drawShaderProgram);
