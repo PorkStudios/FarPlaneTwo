@@ -150,6 +150,19 @@ public class AttributeGenerator {
             mv.visitEnd();
         }
 
+        { //int unpackedTextureFormat()
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "unpackedTextureFormat", "()I", null, null);
+            mv.visitCode();
+
+            mv.visitFieldInsn(GETSTATIC, "net/daporkchop/fp2/gl/opengl/OpenGLConstants",
+                    "GL_" + "RGBA".substring(0, components) + "32" + (interpretation == AttributeInterpretation.INTEGER ? 'I' : 'F'),
+                    "I");
+            mv.visitInsn(IRETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
         if (type instanceof AttributeType.Integer) {
             String setSignature;
             {
@@ -340,11 +353,11 @@ public class AttributeGenerator {
             mv.visitEnd();
         }
 
-        /*try {
-            Files.write(Paths.get(className.replace('/', '-') + ".class"), writer.toByteArray());
-        } catch (IOException e) {
+        try {
+            java.nio.file.Files.write(java.nio.file.Paths.get(className.replace('/', '-') + ".class"), writer.toByteArray());
+        } catch (java.io.IOException e) {
             throw new RuntimeException(e);
-        }*/
+        }
 
         return ClassloadingUtils.defineHiddenClass(baseClass.getClassLoader(), writer.toByteArray());
     }

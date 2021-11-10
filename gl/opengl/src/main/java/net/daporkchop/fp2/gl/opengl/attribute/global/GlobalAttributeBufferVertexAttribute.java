@@ -34,14 +34,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class GlobalAttributeBufferImpl extends LocalAttributeBufferImpl implements GlobalAttributeBuffer {
-    public GlobalAttributeBufferImpl(@NonNull AttributeFormatImpl format, @NonNull BufferUsage usage) {
+public class GlobalAttributeBufferVertexAttribute extends LocalAttributeBufferImpl implements GlobalAttributeBuffer {
+    public GlobalAttributeBufferVertexAttribute(@NonNull AttributeFormatImpl format, @NonNull BufferUsage usage) {
         super(format, usage);
     }
 
     @Override
     public void set(int index, @NonNull GlobalAttributeWriter _writer) {
-        GlobalAttributeWriterImpl writer = (GlobalAttributeWriterImpl) _writer;
+        GlobalAttributeWriterPacked writer = (GlobalAttributeWriterPacked) _writer;
         checkArg(writer.format() == this.format, "mismatched attribute formats!");
         checkIndex(this.capacity, index);
 

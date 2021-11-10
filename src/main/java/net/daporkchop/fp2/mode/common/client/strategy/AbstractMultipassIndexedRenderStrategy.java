@@ -53,7 +53,7 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
 
     @Override
     public IRenderIndex<POS, IndexedBakeOutput, DrawBindingIndexed, DrawCommandIndexed> createIndex() {
-        return FP2Config.global().performance().gpuFrustumCulling()
+        return false && FP2Config.global().performance().gpuFrustumCulling()
                 ? new GPUCulledRenderIndex<>(this)
                 : new CPUCulledRenderIndex<>(this);
     }

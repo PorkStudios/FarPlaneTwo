@@ -29,6 +29,7 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 import org.lwjgl.opengl.ARBDrawElementsBaseVertex;
 import org.lwjgl.opengl.ARBInstancedArrays;
 import org.lwjgl.opengl.ARBMultiDrawIndirect;
+import org.lwjgl.opengl.ARBShaderImageLoadStore;
 import org.lwjgl.opengl.ARBUniformBufferObject;
 import org.lwjgl.opengl.ContextCapabilities;
 import org.lwjgl.opengl.GL11;
@@ -39,14 +40,17 @@ import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL31;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
+import org.lwjgl.opengl.GL42;
 import org.lwjgl.opengl.GL43;
 import org.lwjgl.opengl.GLContext;
 
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.util.Comparator;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 
 /**
@@ -62,6 +66,9 @@ public class GLAPILWJGL2 implements GLAPI {
     // OpenGL 3.3
     private final boolean GL_ARB_instanced_arrays;
 
+    // OpenGL 4.2
+    private final boolean GL_ARB_shader_image_load_store;
+
     // OpenGL 4.3
     private final boolean GL_ARB_multi_draw_indirect;
 
@@ -76,6 +83,9 @@ public class GLAPILWJGL2 implements GLAPI {
 
         // OpenGL 3.3
         this.GL_ARB_instanced_arrays = !capabilities.OpenGL33 && capabilities.GL_ARB_instanced_arrays;
+
+        // OpenGL 4.2
+        this.GL_ARB_shader_image_load_store = !capabilities.OpenGL42 && capabilities.GL_ARB_shader_image_load_store;
 
         // OpenGL 4.3
         this.GL_ARB_multi_draw_indirect = !capabilities.OpenGL43 && capabilities.GL_ARB_multi_draw_indirect;
@@ -131,6 +141,16 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glDrawElements(int mode, int count, int type, @NonNull ByteBuffer indices) {
         GL11.glDrawElements(mode, count, type, indices);
+    }
+
+    @Override
+    public int glGenTexture() {
+        return GL11.glGenTextures();
+    }
+
+    @Override
+    public void glDeleteTexture(int texture) {
+        GL11.glDeleteTextures(texture);
     }
 
     //
@@ -472,6 +492,21 @@ public class GLAPILWJGL2 implements GLAPI {
             ARBInstancedArrays.glVertexAttribDivisorARB(index, divisor);
         } else {
             GL33.glVertexAttribDivisor(index, divisor);
+        }
+    }
+
+    //
+    //
+    // OpenGL 4.2
+    //
+    //
+
+    @Override
+    public void glMemoryBarrier(int barriers) {
+        if (this.GL_ARB_shader_image_load_store) {
+            ARBShaderImageLoadStore.glMemoryBarrier(barriers);
+        } else {
+            GL42.glMemoryBarrier(barriers);
         }
     }
 

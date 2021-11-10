@@ -34,7 +34,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.AttributeImpl;
  * @author DaPorkchop_
  */
 @Getter
-public class GlobalAttributeWriterImpl implements GlobalAttributeWriter {
+public class GlobalAttributeWriterPacked implements GlobalAttributeWriter {
     protected final AttributeFormatImpl format;
     @Getter(AccessLevel.NONE)
     protected final Allocator alloc = new DirectMemoryAllocator();
@@ -42,7 +42,7 @@ public class GlobalAttributeWriterImpl implements GlobalAttributeWriter {
     protected final int[] offsets;
     protected long addr;
 
-    public GlobalAttributeWriterImpl(@NonNull AttributeFormatImpl format) {
+    public GlobalAttributeWriterPacked(@NonNull AttributeFormatImpl format) {
         this.format = format;
 
         this.offsets = format.offsetsPacked();

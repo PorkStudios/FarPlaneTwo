@@ -56,6 +56,10 @@ public interface GLAPI {
 
     void glDrawElements(int mode, int count, int type, @NonNull ByteBuffer indices);
 
+    int glGenTexture();
+
+    void glDeleteTexture(int texture);
+
     //
     //
     // OpenGL 1.4
@@ -206,6 +210,15 @@ public interface GLAPI {
 
     //GL_ARB_instanced_arrays
     void glVertexAttribDivisor(int index, int divisor);
+
+    //
+    //
+    // OpenGL 4.2
+    //
+    //
+
+    //GL_ARB_shader_image_load_store
+    void glMemoryBarrier(int barriers);
 
     //
     //

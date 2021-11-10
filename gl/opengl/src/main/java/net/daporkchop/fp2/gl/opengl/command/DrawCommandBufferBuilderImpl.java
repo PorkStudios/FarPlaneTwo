@@ -29,10 +29,10 @@ import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
 import net.daporkchop.fp2.gl.command.DrawCommandBufferBuilder;
 import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.command.arrays.DrawCommandBufferArraysImpl_MultiDraw;
-import net.daporkchop.fp2.gl.opengl.command.arrays.DrawCommandBufferArraysImpl_MultiDrawIndirect;
-import net.daporkchop.fp2.gl.opengl.command.elements.DrawCommandBufferElementsImpl_MultiDrawBaseVertex;
-import net.daporkchop.fp2.gl.opengl.command.elements.DrawCommandBufferElementsImpl_MultiDrawIndirect;
+import net.daporkchop.fp2.gl.opengl.command.arrays.CommandBufferMultiDrawArrays;
+import net.daporkchop.fp2.gl.opengl.command.arrays.CommandBufferMultiDrawArraysIndirect;
+import net.daporkchop.fp2.gl.opengl.command.elements.CommandBufferMultiDrawElementsBaseVertex;
+import net.daporkchop.fp2.gl.opengl.command.elements.CommandBufferMultiDrawElementsIndirect;
 
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -85,12 +85,12 @@ public class DrawCommandBufferBuilderImpl implements DrawCommandBufferBuilder.Ty
     public DrawCommandBuffer build() {
         if (this.elements) {
             return this.optimizeForCpuSelection
-                    ? new DrawCommandBufferElementsImpl_MultiDrawBaseVertex(this)
-                    : new DrawCommandBufferElementsImpl_MultiDrawIndirect(this);
+                    ? new CommandBufferMultiDrawElementsBaseVertex(this)
+                    : new CommandBufferMultiDrawElementsIndirect(this);
         } else {
             return this.optimizeForCpuSelection
-                    ? new DrawCommandBufferArraysImpl_MultiDraw(this)
-                    : new DrawCommandBufferArraysImpl_MultiDrawIndirect(this);
+                    ? new CommandBufferMultiDrawArrays(this)
+                    : new CommandBufferMultiDrawArraysIndirect(this);
         }
     }
 }

@@ -90,6 +90,8 @@ public abstract class AttributeImpl implements Attribute {
      */
     public abstract int unpackedSize();
 
+    public abstract int unpackedTextureFormat();
+
     public void configureVertexAttribute(@NonNull GLAPI api, int bindingIndex, int offset, int stride) {
         int type = GLEnumUtil.from(this.type);
 

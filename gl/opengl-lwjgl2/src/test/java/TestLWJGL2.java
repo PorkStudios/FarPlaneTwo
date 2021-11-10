@@ -95,6 +95,7 @@ public class TestLWJGL2 {
         Display.setDisplayMode(new DisplayMode(512, 512));
         Display.setTitle("title");
         Display.create(new PixelFormat(), new ContextAttribs(3, 0, ContextAttribs.CONTEXT_CORE_PROFILE_BIT_ARB, ContextAttribs.CONTEXT_FORWARD_COMPATIBLE_BIT_ARB));
+        //Display.create();
 
         try (GL gl = GL.builder()
                 .withResourceProvider(id -> {

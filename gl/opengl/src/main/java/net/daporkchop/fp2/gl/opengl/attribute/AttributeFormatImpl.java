@@ -32,8 +32,8 @@ import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeWriterImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeBufferVertexAttribute;
+import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeWriterPacked;
 import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeWriterImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformAttributeBufferImpl;
@@ -120,12 +120,12 @@ public class AttributeFormatImpl implements AttributeFormat {
 
     @Override
     public GlobalAttributeWriter createGlobalWriter() {
-        return new GlobalAttributeWriterImpl(this);
+        return new GlobalAttributeWriterPacked(this);
     }
 
     @Override
     public GlobalAttributeBuffer createGlobalBuffer(@NonNull BufferUsage usage) {
-        return new GlobalAttributeBufferImpl(this, usage);
+        return new GlobalAttributeBufferVertexAttribute(this, usage);
     }
 
     @Override

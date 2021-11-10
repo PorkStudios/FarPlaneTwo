@@ -18,69 +18,85 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.command.arrays;
+package net.daporkchop.fp2.gl.opengl.command.elements;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
-import net.daporkchop.fp2.gl.command.DrawCommandArrays;
+import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.binding.DrawMode;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
-import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferImpl;
-import net.daporkchop.fp2.gl.opengl.binding.DrawBindingImpl;
+import net.daporkchop.fp2.gl.opengl.binding.DrawBindingIndexedImpl;
+import net.daporkchop.fp2.gl.opengl.index.IndexFormatImpl;
 import net.daporkchop.fp2.gl.opengl.shader.DrawShaderProgramImpl;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
+import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
-import static java.lang.Math.*;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-public class DrawCommandBufferArraysImpl_MultiDraw extends DrawCommandBufferImpl<DrawCommandArrays, DrawBindingImpl> {
-    protected long firstAddr;
+public class CommandBufferMultiDrawElementsBaseVertex extends DrawCommandBufferImpl<DrawCommandIndexed, DrawBindingIndexedImpl> {
     protected long countAddr;
+    protected long indicesAddr;
+    protected long basevertexAddr;
 
-    public DrawCommandBufferArraysImpl_MultiDraw(@NonNull DrawCommandBufferBuilderImpl builder) {
+    protected final int indexType;
+    protected final int indexShift;
+
+    public CommandBufferMultiDrawElementsBaseVertex(@NonNull DrawCommandBufferBuilderImpl builder) {
         super(builder);
+
+        IndexFormatImpl format = this.binding.indices().format();
+        this.indexType = GLEnumUtil.from(format.type());
+
+        int indexSize = format.size();
+        checkArg(BinMath.isPow2(positive(indexSize, "indexSize")), "indexSize (%d) is not a power of two!", indexSize);
+        this.indexShift = Integer.numberOfTrailingZeros(indexSize);
     }
 
     @Override
     protected void resize0(int oldCapacity, int newCapacity) {
-        this.firstAddr = this.alloc.realloc(this.firstAddr, newCapacity * (long) INT_SIZE);
         this.countAddr = this.alloc.realloc(this.countAddr, newCapacity * (long) INT_SIZE);
+        this.indicesAddr = this.alloc.realloc(this.indicesAddr, newCapacity * (long) LONG_SIZE);
+        this.basevertexAddr = this.alloc.realloc(this.basevertexAddr, newCapacity * (long) INT_SIZE);
 
         if (newCapacity > oldCapacity) { //zero out the commands
-            PUnsafe.setMemory(this.firstAddr + oldCapacity * (long) INT_SIZE, (newCapacity - oldCapacity) * (long) INT_SIZE, (byte) 0);
             PUnsafe.setMemory(this.countAddr + oldCapacity * (long) INT_SIZE, (newCapacity - oldCapacity) * (long) INT_SIZE, (byte) 0);
+            PUnsafe.setMemory(this.indicesAddr + oldCapacity * (long) LONG_SIZE, (newCapacity - oldCapacity) * (long) LONG_SIZE, (byte) 0);
+            PUnsafe.setMemory(this.basevertexAddr + oldCapacity * (long) INT_SIZE, (newCapacity - oldCapacity) * (long) INT_SIZE, (byte) 0);
         }
     }
 
     @Override
     public void close() {
-        this.alloc.free(this.firstAddr);
         this.alloc.free(this.countAddr);
+        this.alloc.free(this.indicesAddr);
+        this.alloc.free(this.basevertexAddr);
     }
 
     @Override
-    public void set(int index, @NonNull DrawCommandArrays command) {
+    public void set(int index, @NonNull DrawCommandIndexed command) {
         checkIndex(this.capacity, index);
 
-        PUnsafe.putInt(this.firstAddr + index * (long) INT_SIZE, command.first());
         PUnsafe.putInt(this.countAddr + index * (long) INT_SIZE, command.count());
+        PUnsafe.putLong(this.indicesAddr + index * (long) INT_SIZE, (long) command.firstIndex() << this.indexShift);
+        PUnsafe.putInt(this.basevertexAddr + index * (long) INT_SIZE, command.baseVertex());
     }
 
     @Override
-    public DrawCommandArrays get(int index) {
+    public DrawCommandIndexed get(int index) {
         checkIndex(this.capacity, index);
 
-        return new DrawCommandArrays(
-                PUnsafe.getInt(this.firstAddr + index * (long) INT_SIZE),
-                PUnsafe.getInt(this.countAddr + index * (long) INT_SIZE));
+        return new DrawCommandIndexed(
+                toInt(PUnsafe.getLong(this.indicesAddr + index * (long) INT_SIZE) >>> this.indexShift),
+                PUnsafe.getInt(this.countAddr + index * (long) INT_SIZE),
+                PUnsafe.getInt(this.basevertexAddr + index * (long) INT_SIZE));
     }
 
     @Override
@@ -91,7 +107,7 @@ public class DrawCommandBufferArraysImpl_MultiDraw extends DrawCommandBufferImpl
     @Override
     public void execute(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader) {
         ((DrawShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
-            this.api.glMultiDrawArrays(GLEnumUtil.from(mode), this.firstAddr, this.countAddr, this.capacity);
+            this.api.glMultiDrawElementsBaseVertex(GLEnumUtil.from(mode), this.countAddr, this.indexType, this.indicesAddr, this.capacity, this.basevertexAddr);
         }));
     }
 
@@ -113,13 +129,12 @@ public class DrawCommandBufferArraysImpl_MultiDraw extends DrawCommandBufferImpl
 
                     for (int mask = 1; mask != 0 && bitIndex < this.capacity; mask <<= 1, bitIndex++, srcCountAddr += INT_SIZE, dstCountAddr += INT_SIZE) {
                         PUnsafe.putInt(dstCountAddr, PUnsafe.getInt(srcCountAddr) & (-(word & mask) >> 31));
-                        PUnsafe.putInt(dstCountAddr, 3);
                     }
                 }
             });
 
             ((DrawShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
-                this.api.glMultiDrawArrays(GLEnumUtil.from(mode), this.firstAddr, this.countAddr, this.capacity);
+                this.api.glMultiDrawElementsBaseVertex(GLEnumUtil.from(mode), dstCounts, this.indexType, this.indicesAddr, this.capacity, this.basevertexAddr);
             }));
         } finally {
             PUnsafe.freeMemory(dstCounts);
