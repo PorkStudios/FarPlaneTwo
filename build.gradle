@@ -20,8 +20,6 @@
 
 import org.gradle.api.internal.artifacts.dependencies.DefaultProjectDependency
 
-
-
 //this can't be set in gradle.properties since it's dynamic
 System.setProperty("fp2Version", "$fp2VersionMajor." + ('git rev-list --count HEAD'.execute().text.trim()))
 allprojects {

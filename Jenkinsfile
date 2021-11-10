@@ -59,11 +59,6 @@ pipeline {
         buildDiscarder(logRotator(artifactNumToKeepStr: '5'))
     }
     stages {
-        stage("Prepare workspace") {
-            steps {
-                sh "./gradlew setupCiWorkspace"
-            }
-        }
         stage("Natives") {
             steps {
                 sh "./gradlew compileNatives -x test -x publish"
@@ -75,7 +70,7 @@ pipeline {
             }
             post {
                 success {
-                    archiveArtifacts artifacts: "build/libs/*.jar", fingerprint: true
+                    archiveArtifacts artifacts: "mc/*/build/libs/*.jar", fingerprint: true
                 }
             }
         }
