@@ -28,8 +28,11 @@ import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeBufferTexture;
 import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutImpl;
+import net.daporkchop.fp2.gl.opengl.texture.TextureImpl;
+import net.daporkchop.fp2.gl.opengl.texture.TextureTarget;
 
 import java.util.List;
 import java.util.Map;
@@ -50,7 +53,8 @@ public class DrawBindingImpl implements DrawBinding {
     protected final DrawLayoutImpl layout;
 
     protected final int vao;
-    protected final List<UniformBufferBinding> uniformBufffers;
+    protected final List<UniformBufferBinding> uniformBuffers;
+    protected final List<TextureBinding> textures;
 
     public DrawBindingImpl(@NonNull DrawBindingBuilderImpl builder) {
         this.layout = builder.layout;
@@ -82,12 +86,23 @@ public class DrawBindingImpl implements DrawBinding {
         }
 
         //configure uniform buffers
-        this.uniformBufffers = this.layout.uniformBlockBindings().stream()
+        this.uniformBuffers = this.layout.uniformBlockBindings().stream()
                 .map(blockBinding -> {
                     UniformAttributeBufferImpl buffer = (UniformAttributeBufferImpl) buffersByFormat.remove(blockBinding.format());
                     checkArg(buffer != null, blockBinding.format());
 
                     return new UniformBufferBinding(buffer, blockBinding.bindingIndex());
+                })
+                .collect(Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
+
+        //configure textures
+        this.textures = this.layout.textureBindings().stream()
+                .flatMap(textureBinding -> {
+                    GlobalAttributeBufferTexture buffer = (GlobalAttributeBufferTexture) buffersByFormat.remove(textureBinding.format());
+                    checkArg(buffer != null, textureBinding.format());
+
+                    return Stream.of(textureBinding.format().attribsArray())
+                            .map(attrib -> new TextureBinding(buffer.textures()[attrib.index()], textureBinding.unit() + attrib.index(), textureBinding.target()));
                 })
                 .collect(Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
 
@@ -105,11 +120,19 @@ public class DrawBindingImpl implements DrawBinding {
 
         try {
             this.api.glBindVertexArray(this.vao);
-            this.uniformBufffers.forEach(binding -> this.api.glBindBufferBase(GL_UNIFORM_BUFFER, binding.bindingIndex, binding.buffer.buffer().id()));
+            this.uniformBuffers.forEach(binding -> this.api.glBindBufferBase(GL_UNIFORM_BUFFER, binding.bindingIndex, binding.buffer.buffer().id()));
+            this.textures.forEach(binding -> {
+                this.api.glActiveTexture(GL_TEXTURE0 + binding.unit);
+                this.api.glBindTexture(binding.target.target(), binding.texture.id());
+            });
 
             callback.run();
         } finally {
-            this.uniformBufffers.forEach(binding -> this.api.glBindBufferBase(GL_UNIFORM_BUFFER, binding.bindingIndex, 0)); //this doesn't actually restore the old binding ID...
+            this.textures.forEach(binding -> { //this doesn't actually restore the old binding ID...
+                this.api.glActiveTexture(GL_TEXTURE0 + binding.unit);
+                this.api.glBindTexture(binding.target.target(), 0);
+            });
+            this.uniformBuffers.forEach(binding -> this.api.glBindBufferBase(GL_UNIFORM_BUFFER, binding.bindingIndex, 0)); //this doesn't actually restore the old binding ID...
             this.api.glBindVertexArray(oldVao);
         }
     }
@@ -122,5 +145,17 @@ public class DrawBindingImpl implements DrawBinding {
         @NonNull
         protected final UniformAttributeBufferImpl buffer;
         protected final int bindingIndex;
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    protected static class TextureBinding {
+        @NonNull
+        protected final TextureImpl texture;
+        protected final int unit;
+        @NonNull
+        protected final TextureTarget target;
     }
 }

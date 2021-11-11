@@ -125,7 +125,7 @@ public class AttributeGenerator {
             mv.visitEnd();
         }
 
-        { //int unpackedSize()
+        { //int unpackedSizeStd140()
             int componentCount;
             switch (components) {
                 case 1:
@@ -140,10 +140,21 @@ public class AttributeGenerator {
                     throw new IllegalArgumentException(String.valueOf(components));
             }
 
-            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "unpackedSize", "()I", null, null);
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "unpackedSizeStd140", "()I", null, null);
             mv.visitCode();
 
             mv.visitLdcInsn(interpretationSize * componentCount);
+            mv.visitInsn(IRETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
+        { //int unpackedSizeTexture()
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "unpackedSizeTexture", "()I", null, null);
+            mv.visitCode();
+
+            mv.visitLdcInsn(interpretationSize * components);
             mv.visitInsn(IRETURN);
 
             mv.visitMaxs(0, 0);
@@ -353,10 +364,12 @@ public class AttributeGenerator {
             mv.visitEnd();
         }
 
-        try {
-            java.nio.file.Files.write(java.nio.file.Paths.get(className.replace('/', '-') + ".class"), writer.toByteArray());
-        } catch (java.io.IOException e) {
-            throw new RuntimeException(e);
+        if (false) {
+            try {
+                java.nio.file.Files.write(java.nio.file.Paths.get(className.replace('/', '-') + ".class"), writer.toByteArray());
+            } catch (java.io.IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         return ClassloadingUtils.defineHiddenClass(baseClass.getClassLoader(), writer.toByteArray());

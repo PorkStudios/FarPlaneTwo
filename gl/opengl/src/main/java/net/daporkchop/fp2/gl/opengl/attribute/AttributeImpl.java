@@ -86,9 +86,11 @@ public abstract class AttributeImpl implements Attribute {
     public abstract int packedSize();
 
     /**
-     * @return the unpacked size of this attribute
+     * @return the unpacked size of a single component of this attribute
      */
-    public abstract int unpackedSize();
+    public abstract int unpackedSizeStd140();
+
+    public abstract int unpackedSizeTexture();
 
     public abstract int unpackedTextureFormat();
 

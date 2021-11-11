@@ -18,26 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute;
+package net.daporkchop.fp2.gl.opengl.texture;
 
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
+
+import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 
 /**
- * Common parent class for attribute buffer implementations.
- *
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
 @Getter
-public abstract class BaseAttributeBufferImpl implements BaseAttributeBuffer {
-    protected final OpenGL gl;
-    protected final AttributeFormatImpl format;
+public enum TextureTarget {
+    TEXTURE_BUFFER("samplerBuffer", GL_TEXTURE_BUFFER);
 
-    public BaseAttributeBufferImpl(@NonNull AttributeFormatImpl format) {
-        this.gl = format.gl();
-        this.format = format;
-    }
+    @NonNull
+    private final String glslSamplerName;
+    private final int target;
 }

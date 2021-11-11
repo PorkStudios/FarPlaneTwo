@@ -188,8 +188,10 @@ if (System.getProperty("os.name", "").toLowerCase().replaceAll("[^a-z0-9]+", "")
     compileJava.dependsOn(compileNatives)
 
     task cleanNatives(type: Exec) {
-        workingDir "$projectDir"
-        commandLine "make", "clean"
+        workingDir "$projectDir/../.."
+        commandLine "make",
+                "-f", "src/main/native/project.mk",
+                "clean"
     }
 
     clean.dependsOn(cleanNatives)

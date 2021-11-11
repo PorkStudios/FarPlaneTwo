@@ -162,7 +162,7 @@ public enum GLExtension {
     GL_ARB_pipeline_statistics_query(GLVersion.OpenGL46, false),
     GL_ARB_transform_feedback_overflow_query(GLVersion.OpenGL46, false),
     GL_ARB_indirect_parameters(GLVersion.OpenGL46, false),
-    GL_ARB_shader_draw_parameters(GLVersion.OpenGL46, false),
+    GL_ARB_shader_draw_parameters(GLVersion.OpenGL46, true),
     GL_ARB_gl_spirv(GLVersion.OpenGL46, false),
     GL_ARB_spirv_extensions(GLVersion.OpenGL46, false),
     ;

@@ -60,6 +60,16 @@ public interface GLAPI {
 
     void glDeleteTexture(int texture);
 
+    void glBindTexture(int target, int texture);
+
+    //
+    //
+    // OpenGL 1.3
+    //
+    //
+
+    void glActiveTexture(int texture);
+
     //
     //
     // OpenGL 1.4
@@ -138,6 +148,8 @@ public interface GLAPI {
 
     void glBindAttribLocation(int program, int index, @NonNull CharSequence name);
 
+    int glGetUniformLocation(int program, @NonNull CharSequence name);
+
     void glUniform(int location, int v0);
 
     void glUniform(int location, int v0, int v1);
@@ -183,6 +195,9 @@ public interface GLAPI {
     // OpenGL 3.1
     //
     //
+
+    //GL_ARB_texture_buffer_object
+    void glTexBuffer(int target, int internalFormat, int buffer);
 
     //GL_ARB_uniform_buffer_object
     int glGetUniformBlockIndex(int program, @NonNull CharSequence uniformBlockName);

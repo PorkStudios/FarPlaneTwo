@@ -28,6 +28,7 @@ import net.daporkchop.fp2.gl.binding.DrawBinding;
 import net.daporkchop.fp2.gl.binding.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.index.IndexBuffer;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeBufferVertexAttribute;
 import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.index.IndexBufferImpl;
@@ -53,7 +54,7 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyInde
     protected final DrawLayoutImpl layout;
 
     protected final List<UniformAttributeBufferImpl> uniforms = new ArrayList<>();
-    protected final List<GlobalAttributeBufferVertexAttribute> globals = new ArrayList<>();
+    protected final List<BaseAttributeBufferImpl> globals = new ArrayList<>();
     protected final List<LocalAttributeBufferImpl> locals = new ArrayList<>();
 
     protected IndexBufferImpl indices;
@@ -80,7 +81,7 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyInde
 
     @Override
     public DrawBindingBuilder<DrawBinding> withGlobals(@NonNull GlobalAttributeBuffer globals) {
-        this.globals.add((GlobalAttributeBufferVertexAttribute) globals);
+        this.globals.add((BaseAttributeBufferImpl) globals);
         return this;
     }
 
@@ -99,7 +100,7 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyInde
         }
 
         { //globals
-            Set<AttributeFormatImpl> givenFormats = this.globals.stream().map(GlobalAttributeBufferVertexAttribute::format).collect(Collectors.toSet());
+            Set<AttributeFormatImpl> givenFormats = this.globals.stream().map(BaseAttributeBufferImpl::format).collect(Collectors.toSet());
             Set<AttributeFormatImpl> expectedFormats = this.layout.globalFormatsByName().values();
             checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
         }

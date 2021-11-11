@@ -47,7 +47,7 @@ public class LocalAttributeBufferImpl extends BaseAttributeBufferImpl implements
     public LocalAttributeBufferImpl(@NonNull AttributeFormatImpl format, @NonNull BufferUsage usage) {
         super(format);
 
-        this.buffer = format.gl().createBuffer(usage);
+        this.buffer = this.gl.createBuffer(usage);
         this.stride = format.stridePacked();
     }
 

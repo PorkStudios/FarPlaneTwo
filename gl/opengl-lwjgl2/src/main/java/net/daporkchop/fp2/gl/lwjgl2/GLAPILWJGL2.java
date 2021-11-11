@@ -30,9 +30,11 @@ import org.lwjgl.opengl.ARBDrawElementsBaseVertex;
 import org.lwjgl.opengl.ARBInstancedArrays;
 import org.lwjgl.opengl.ARBMultiDrawIndirect;
 import org.lwjgl.opengl.ARBShaderImageLoadStore;
+import org.lwjgl.opengl.ARBTextureBufferObject;
 import org.lwjgl.opengl.ARBUniformBufferObject;
 import org.lwjgl.opengl.ContextCapabilities;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
@@ -58,6 +60,7 @@ import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
  */
 public class GLAPILWJGL2 implements GLAPI {
     // OpenGL 3.1
+    private final boolean GL_ARB_texture_buffer_object;
     private final boolean GL_ARB_uniform_buffer_object;
 
     // OpenGL 3.2
@@ -76,6 +79,7 @@ public class GLAPILWJGL2 implements GLAPI {
         ContextCapabilities capabilities = GLContext.getCapabilities();
 
         // OpenGL 3.1
+        this.GL_ARB_texture_buffer_object = !capabilities.OpenGL31 && capabilities.GL_ARB_texture_buffer_object;
         this.GL_ARB_uniform_buffer_object = !capabilities.OpenGL31 && capabilities.GL_ARB_uniform_buffer_object;
 
         // OpenGL 3.2
@@ -151,6 +155,22 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glDeleteTexture(int texture) {
         GL11.glDeleteTextures(texture);
+    }
+
+    @Override
+    public void glBindTexture(int target, int texture) {
+        GL11.glBindTexture(target, texture);
+    }
+
+    //
+    //
+    // OpenGL 1.3
+    //
+    //
+
+    @Override
+    public void glActiveTexture(int texture) {
+        GL13.glActiveTexture(texture);
     }
 
     //
@@ -346,6 +366,11 @@ public class GLAPILWJGL2 implements GLAPI {
     }
 
     @Override
+    public int glGetUniformLocation(int program, @NonNull CharSequence name) {
+        return GL20.glGetUniformLocation(program, name);
+    }
+
+    @Override
     public void glUniform(int location, int v0) {
         GL20.glUniform1i(location, v0);
     }
@@ -441,6 +466,15 @@ public class GLAPILWJGL2 implements GLAPI {
     // OpenGL 3.1
     //
     //
+
+    @Override
+    public void glTexBuffer(int target, int internalFormat, int buffer) {
+        if (this.GL_ARB_texture_buffer_object) {
+            ARBTextureBufferObject.glTexBufferARB(target, internalFormat, buffer);
+        } else {
+            GL31.glTexBuffer(target, internalFormat, buffer);
+        }
+    }
 
     @Override
     public int glGetUniformBlockIndex(int program, @NonNull CharSequence uniformBlockName) {

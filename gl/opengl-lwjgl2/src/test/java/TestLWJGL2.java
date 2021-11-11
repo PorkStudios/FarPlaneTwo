@@ -95,6 +95,7 @@ public class TestLWJGL2 {
         Display.setDisplayMode(new DisplayMode(512, 512));
         Display.setTitle("title");
         Display.create(new PixelFormat(), new ContextAttribs(3, 0, ContextAttribs.CONTEXT_CORE_PROFILE_BIT_ARB, ContextAttribs.CONTEXT_FORWARD_COMPATIBLE_BIT_ARB));
+        //Display.create(new PixelFormat(), new ContextAttribs(3, 3, ContextAttribs.CONTEXT_CORE_PROFILE_BIT_ARB, ContextAttribs.CONTEXT_FORWARD_COMPATIBLE_BIT_ARB));
         //Display.create();
 
         try (GL gl = GL.builder()
@@ -230,7 +231,7 @@ public class TestLWJGL2 {
         try (GlobalAttributeWriter writer = globalFormat.createGlobalWriter()) {
             for (int i = 0, color = -1, x = 0; x < 2; x++) {
                 for (int y = 0; y < 2; y++, color = 0xFF << (i << 3), i++) {
-                    writer.set(attrOffset, x * 32, y * 32).setARGB(attrColor, color);
+                    writer.set(attrOffset, x * 32, y * 32).setARGB(attrColor, 0xFF000000 | color);
                     globalBuffer.set(i, writer);
                 }
             }

@@ -31,7 +31,9 @@ import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.opengl.GLExtension;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeBufferTexture;
 import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeBufferVertexAttribute;
 import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeWriterPacked;
 import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
@@ -62,9 +64,11 @@ public class AttributeFormatImpl implements AttributeFormat {
     protected final int[] sizesPacked;
     protected final int stridePacked;
 
-    protected final int[] offsetsUnpacked;
-    protected final int[] sizesUnpacked;
-    protected final int strideUnpacked;
+    protected final int[] offsetsUnpackedStd140;
+    protected final int[] sizesUnpackedStd140;
+    protected final int strideUnpackedStd140;
+
+    protected final int[] stridesTexture;
 
     protected AttributeFormatImpl(@NonNull AttributeFormatBuilderImpl builder) {
         this.gl = builder.gl;
@@ -92,20 +96,26 @@ public class AttributeFormatImpl implements AttributeFormat {
         }
         this.stridePacked = offset;
 
-        //unpacked
-        this.offsetsUnpacked = new int[attribCount];
-        this.sizesUnpacked = new int[attribCount];
+        //unpacked (std140)
+        this.offsetsUnpackedStd140 = new int[attribCount];
+        this.sizesUnpackedStd140 = new int[attribCount];
         offset = 0;
         for (int i = 0; i < attribCount; i++) {
-            int size = this.attribsArray[i].unpackedSize();
-            int nextSize = this.attribsArray[(i + 1) % attribCount].unpackedSize();
+            int size = this.attribsArray[i].unpackedSizeStd140();
+            int nextSize = this.attribsArray[(i + 1) % attribCount].unpackedSizeStd140();
             int effectiveSize = PMath.roundUp(size, nextSize);
 
-            this.offsetsUnpacked[i] = offset;
-            this.sizesUnpacked[i] = effectiveSize;
+            this.offsetsUnpackedStd140[i] = offset;
+            this.sizesUnpackedStd140[i] = effectiveSize;
             offset += effectiveSize;
         }
-        this.strideUnpacked = offset;
+        this.strideUnpackedStd140 = offset;
+
+        //unpacked (texture)
+        this.stridesTexture = new int[attribCount];
+        for (int i = 0; i < attribCount; i++) {
+            this.stridesTexture[i] = this.attribsArray[i].unpackedSizeTexture();
+        }
     }
 
     @Override
@@ -125,7 +135,11 @@ public class AttributeFormatImpl implements AttributeFormat {
 
     @Override
     public GlobalAttributeBuffer createGlobalBuffer(@NonNull BufferUsage usage) {
-        return new GlobalAttributeBufferVertexAttribute(this, usage);
+        if (GLExtension.GL_ARB_instanced_arrays.supported(this.gl)) {
+            return new GlobalAttributeBufferVertexAttribute(this, usage);
+        } else {
+            return new GlobalAttributeBufferTexture(this, usage);
+        }
     }
 
     @Override

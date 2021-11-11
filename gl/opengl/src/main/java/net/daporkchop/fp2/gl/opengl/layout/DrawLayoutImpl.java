@@ -28,16 +28,19 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
+import net.daporkchop.fp2.gl.attribute.AttributeInterpretation;
 import net.daporkchop.fp2.gl.binding.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLExtension;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.binding.DrawBindingBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
+import net.daporkchop.fp2.gl.opengl.texture.TextureTarget;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,6 +60,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     protected final List<VertexBinding> vertexBindings;
     protected final List<FragmentColorBinding> fragmentColorBindings;
     protected final List<UniformBlockBinding> uniformBlockBindings;
+    protected final List<TextureBinding> textureBindings;
 
     public DrawLayoutImpl(@NonNull DrawLayoutBuilderImpl builder) {
         super(builder);
@@ -65,6 +69,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         List<VertexBinding> vertexBindings = new ArrayList<>();
         List<FragmentColorBinding> fragmentColorBindings = new ArrayList<>();
         List<UniformBlockBinding> uniformBlockBindings = new ArrayList<>();
+        List<TextureBinding> textureBindings = new ArrayList<>();
 
         //locals
         for (AttributeFormatImpl format : builder.locals) { //register all locals as standard vertex attributes
@@ -79,6 +84,10 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
                 for (AttributeImpl attrib : format.attribsArray()) {
                     this.addVertexAttribute(vertexBindings, attrib, true);
                 }
+            }
+        } else if (GLExtension.GL_ARB_texture_buffer_object.supported(this.gl)) { //register globals as texture buffers
+            for (AttributeFormatImpl format : builder.globals) {
+                this.addTexture(textureBindings, format, TextureTarget.TEXTURE_BUFFER);
             }
         } else {
             throw new UnsupportedOperationException();
@@ -104,6 +113,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         this.vertexBindings = ImmutableList.copyOf(vertexBindings);
         this.fragmentColorBindings = ImmutableList.copyOf(fragmentColorBindings);
         this.uniformBlockBindings = ImmutableList.copyOf(uniformBlockBindings);
+        this.textureBindings = ImmutableList.copyOf(textureBindings);
 
         //final groupings
         this.vertexBindingsByFormat = this.vertexBindings.stream().collect(Collectors.collectingAndThen(
@@ -137,6 +147,14 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         uniformBlockBindings.add(new UniformBlockBinding(format, index));
     }
 
+    protected void addTexture(@NonNull List<TextureBinding> textureBindings, @NonNull AttributeFormatImpl format, @NonNull TextureTarget target) {
+        int unit = textureBindings.size() + 2;
+        int max = this.api.glGetInteger(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
+        checkIndex(unit + format.attribsArray().length <= max, "cannot use more than %d texture units!", max);
+
+        textureBindings.add(new TextureBinding(format, unit, target));
+    }
+
     @Override
     public void close() {
         //no-op
@@ -148,6 +166,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
             case VERTEX: {
                 this.vertexBindings.forEach(binding -> binding.generateGLSL(builder));
                 this.uniformBlockBindings.forEach(binding -> binding.generateGLSL(builder));
+                this.textureBindings.forEach(binding -> binding.generateGLSL(this.gl, builder));
                 break;
             }
             case FRAGMENT: {
@@ -168,6 +187,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     @Override
     public void configureProgramPostLink(int program) {
         this.uniformBlockBindings.forEach(binding -> binding.bindBlockLocation(this.api, program));
+        this.textureBindings.forEach(binding -> binding.bindSamplerLocation(this.api, program));
     }
 
     @Override
@@ -254,6 +274,51 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
                 builder.append("    ").append(attrib.glslDeclaration()).append(";\n");
             }
             builder.append("};\n");
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+    @Getter
+    @ToString
+    @EqualsAndHashCode
+    public static class TextureBinding {
+        protected final AttributeFormatImpl format;
+
+        protected final int unit;
+        @NonNull
+        protected final TextureTarget target;
+
+        protected void generateGLSL(@NonNull OpenGL gl, @NonNull StringBuilder builder) {
+            for (AttributeImpl attrib : this.format.attribsArray()) {
+                builder.append("uniform ")
+                        .append(attrib.interpretation() == AttributeInterpretation.INTEGER ? "i" : "").append(this.target.glslSamplerName()).append(' ')
+                        .append("_sampler_").append(attrib.name()).append(";\n");
+                builder.append("#define ").append(attrib.name()).append(" (")
+                        .append("texelFetch(_sampler_").append(attrib.name()).append(", ")
+                        .append(GLExtension.GL_ARB_shader_draw_parameters.core(gl) ? "gl_DrawID" : "gl_DrawIDARB")
+                        .append(").").append("rgba", 0, attrib.components())
+                        .append(")\n");
+            }
+        }
+
+        public void bindSamplerLocation(@NonNull GLAPI api, int program) {
+            int oldProgram = api.glGetInteger(GL_CURRENT_PROGRAM);
+            try {
+                api.glUseProgram(program);
+
+                for (AttributeImpl attrib : this.format.attribsArray()) {
+                    String name = "_sampler_" + attrib.name();
+                    int location = api.glGetUniformLocation(program, name);
+                    checkArg(location >= 0, "unable to find sampler uniform: %s", name);
+
+                    api.glUniform(location, this.unit + attrib.index());
+                }
+            } finally {
+                api.glUseProgram(oldProgram);
+            }
         }
     }
 }

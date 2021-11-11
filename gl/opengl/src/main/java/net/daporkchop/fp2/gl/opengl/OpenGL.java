@@ -50,6 +50,7 @@ import net.daporkchop.fp2.gl.opengl.shader.ShaderBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 import net.daporkchop.fp2.gl.opengl.shader.VertexShaderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
+import net.daporkchop.fp2.gl.opengl.texture.TextureImpl;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.FragmentShader;
 import net.daporkchop.fp2.gl.shader.ShaderBuilder;
@@ -139,6 +140,10 @@ public class OpenGL implements GL {
         this.compute = GLExtension.GL_ARB_compute_shader.supported(this)
                 ? new ComputeCore(this)
                 : GLModule.unsupportedImplementation(GLCompute.class);
+    }
+
+    public TextureImpl createTexture() {
+        return new TextureImpl(this);
     }
 
     @Override

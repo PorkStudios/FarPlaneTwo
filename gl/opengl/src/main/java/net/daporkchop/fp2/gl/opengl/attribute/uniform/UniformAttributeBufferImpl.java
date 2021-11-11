@@ -49,11 +49,11 @@ public class UniformAttributeBufferImpl extends BaseAttributeBufferImpl implemen
 
     public UniformAttributeBufferImpl(@NonNull AttributeFormatImpl format, @NonNull BufferUsage usage) {
         super(format);
-        this.buffer = format.gl().createBuffer(usage);
+        this.buffer = this.gl.createBuffer(usage);
 
-        this.offsets = format.offsetsUnpacked();
-        this.stride = format.strideUnpacked();
-        this.addr = this.alloc.alloc(format.strideUnpacked());
+        this.offsets = format.offsetsUnpackedStd140();
+        this.stride = format.strideUnpackedStd140();
+        this.addr = this.alloc.alloc(format.strideUnpackedStd140());
     }
 
     @Override
