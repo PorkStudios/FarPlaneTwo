@@ -28,7 +28,7 @@ import lombok.With;
  * @author DaPorkchop_
  */
 @Data
-final class GLSLMatrixType implements GLSLType {
+public final class GLSLMatrixType implements GLSLType {
     @With
     @NonNull
     private final GLSLPrimitiveType primitive;

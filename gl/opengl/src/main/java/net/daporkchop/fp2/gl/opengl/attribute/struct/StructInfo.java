@@ -40,14 +40,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class StructInfo<T> {
-    protected final Class<T> clazz;
-    protected final List<StructMember<T>> members;
+public class StructInfo<S> {
+    protected final Class<S> clazz;
+    protected final List<StructMember<S>> members;
 
-    public StructInfo(@NonNull Class<T> clazz) {
+    public StructInfo(@NonNull Class<S> clazz) {
         this.clazz = clazz;
 
-        ImmutableList.Builder<StructMember<T>> builder = ImmutableList.builder();
+        ImmutableList.Builder<StructMember<S>> builder = ImmutableList.builder();
         Map<String, Field> fieldsByName = Stream.of(clazz.getFields())
                 .collect(Collectors.toMap(Field::getName, Function.identity(), (a, b) -> {
                             throw new IllegalArgumentException(a + " " + b);
@@ -89,13 +89,5 @@ public class StructInfo<T> {
         builder.append("struct ").append(this.clazz.getSimpleName()).append(" {\n");
         this.members.forEach(member -> builder.append("    ").append(member.unpackedStage.glslType().declaration(member.name)).append(";\n"));
         builder.append("};\n");
-    }
-
-    public void writePacked(@NonNull MethodVisitor mv, int structLvtIndex, int outputBaseLvtIndex, int outputOffsetLvtIndex) {
-        this.members.forEach(member -> member.storeStageOutput(mv, member.packedStage, structLvtIndex, outputBaseLvtIndex, outputOffsetLvtIndex));
-    }
-
-    public void writeUnpacked(@NonNull MethodVisitor mv, int structLvtIndex, int outputBaseLvtIndex, int outputOffsetLvtIndex) {
-        this.members.forEach(member -> member.storeStageOutput(mv, member.unpackedStage, structLvtIndex, outputBaseLvtIndex, outputOffsetLvtIndex));
     }
 }

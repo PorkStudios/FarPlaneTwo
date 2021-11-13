@@ -26,15 +26,22 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.Locale;
 
+import static net.daporkchop.fp2.common.util.TypeSize.*;
+
 /**
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
 @Getter
 public enum GLSLPrimitiveType implements GLSLType {
-    INVALID("<invalid>") {
+    INVALID("<invalid>", -1) {
         @Override
-        public @NonNull String typePrefix() {
+        public String typePrefix() {
+            throw new UnsupportedOperationException(this.toString());
+        }
+
+        @Override
+        public int size() {
             throw new UnsupportedOperationException(this.toString());
         }
 
@@ -43,12 +50,14 @@ public enum GLSLPrimitiveType implements GLSLType {
             throw new UnsupportedOperationException(this.toString());
         }
     },
-    INT("i"),
-    UINT("u"),
-    FLOAT("");
+    INT("i", INT_SIZE),
+    UINT("u", INT_SIZE),
+    FLOAT("", FLOAT_SIZE);
 
     @NonNull
     private final String typePrefix;
+
+    private final int size;
 
     @Override
     public String declaration(@NonNull String fieldName) {

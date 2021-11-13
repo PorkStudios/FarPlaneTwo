@@ -33,23 +33,24 @@ import org.objectweb.asm.Type;
 import java.lang.reflect.Field;
 import java.util.List;
 
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.objectweb.asm.Opcodes.*;
 
 /**
  * @author DaPorkchop_
  */
-public class StructMember<T> {
+public class StructMember<S> {
     //what have i done
     //dear god this is horrible
 
-    protected final Class<T> clazz;
+    protected final Class<S> clazz;
     protected final String name;
 
     protected final Stage packedStage;
     protected final Stage unpackedStage;
 
-    public StructMember(@NonNull Class<T> clazz, @NonNull String name, @NonNull Attrib attrib, @NonNull List<Field> fields) {
+    public StructMember(@NonNull Class<S> clazz, @NonNull String name, @NonNull Attrib attrib, @NonNull List<Field> fields) {
         this.clazz = clazz;
         this.name = name;
 
@@ -99,12 +100,14 @@ public class StructMember<T> {
         this.unpackedStage = prevStage;
     }
 
-    public void storeStageOutput(@NonNull MethodVisitor mv, @NonNull Stage stage, int structLvtIndex, int outputBaseLvtIndex, int outputOffsetLvtIndex) {
+    public void storeStageOutput(@NonNull MethodVisitor mv, @NonNull Stage stage, int structLvtIndex, int outputBaseLvtIndex, int outputOffsetLvtIndex, long outputOffset) {
         stage.preLoadComponents(mv, structLvtIndex);
 
         for (int componentIndex = 0; componentIndex < stage.components(); componentIndex++) {
             mv.visitVarInsn(ALOAD, outputBaseLvtIndex);
             mv.visitVarInsn(LLOAD, outputOffsetLvtIndex);
+            mv.visitLdcInsn(componentIndex * (long) stage.componentType().stride() + outputOffset);
+            mv.visitInsn(LADD);
 
             stage.loadComponent(mv, structLvtIndex, componentIndex);
             stage.componentType().unsafePut(mv);
@@ -131,6 +134,8 @@ public class StructMember<T> {
             }
         }
 
+        int stride();
+
         boolean integer();
 
         boolean floatingPoint();
@@ -147,7 +152,7 @@ public class StructMember<T> {
          * @author DaPorkchop_
          */
         enum Int implements ComponentType {
-            UNSIGNED_BYTE(1.0f / 0xFF, null, GLSLPrimitiveType.INVALID) {
+            UNSIGNED_BYTE(BYTE_SIZE, 1.0f / 0xFF, null, GLSLPrimitiveType.INVALID) {
                 @Override
                 public void arrayLoad(@NonNull MethodVisitor mv) {
                     BYTE.arrayLoad(mv);
@@ -165,7 +170,7 @@ public class StructMember<T> {
                     BYTE.makeUnsigned(mv);
                 }
             },
-            BYTE(1.0f / 0x80, UNSIGNED_BYTE, GLSLPrimitiveType.INVALID) {
+            BYTE(BYTE_SIZE, 1.0f / 0x80, UNSIGNED_BYTE, GLSLPrimitiveType.INVALID) {
                 @Override
                 public void makeUnsigned(@NonNull MethodVisitor mv) {
                     mv.visitLdcInsn(0xFF);
@@ -188,7 +193,7 @@ public class StructMember<T> {
                     mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "getByte", "(Ljava/lang/Object;J)B", false);
                 }
             },
-            UNSIGNED_SHORT(1.0f / 0xFFFF, null, GLSLPrimitiveType.INVALID) {
+            UNSIGNED_SHORT(SHORT_SIZE, 1.0f / 0xFFFF, null, GLSLPrimitiveType.INVALID) {
                 @Override
                 public void arrayLoad(@NonNull MethodVisitor mv) {
                     SHORT.arrayLoad(mv);
@@ -206,7 +211,7 @@ public class StructMember<T> {
                     SHORT.makeUnsigned(mv);
                 }
             },
-            SHORT(1.0f / 0x8000, UNSIGNED_SHORT, GLSLPrimitiveType.INVALID) {
+            SHORT(SHORT_SIZE, 1.0f / 0x8000, UNSIGNED_SHORT, GLSLPrimitiveType.INVALID) {
                 @Override
                 public void makeUnsigned(@NonNull MethodVisitor mv) {
                     mv.visitLdcInsn(0xFFFF);
@@ -229,7 +234,7 @@ public class StructMember<T> {
                     mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "getShort", "(Ljava/lang/Object;J)S", false);
                 }
             },
-            UNSIGNED_INT(1.0f / 0xFFFFFFFFL, null, GLSLPrimitiveType.UINT) {
+            UNSIGNED_INT(INT_SIZE, 1.0f / 0xFFFFFFFFL, null, GLSLPrimitiveType.UINT) {
                 @Override
                 public void arrayLoad(@NonNull MethodVisitor mv) {
                     INT.arrayLoad(mv);
@@ -247,7 +252,7 @@ public class StructMember<T> {
                     INT.makeUnsigned(mv);
                 }
             },
-            INT(1.0f / 0x80000000L, UNSIGNED_INT, GLSLPrimitiveType.UINT) {
+            INT(INT_SIZE, 1.0f / 0x80000000L, UNSIGNED_INT, GLSLPrimitiveType.UINT) {
                 @Override
                 public void makeUnsigned(@NonNull MethodVisitor mv) {
                     //no-op, we can't make this unsigned...
@@ -269,13 +274,16 @@ public class StructMember<T> {
                 }
             };
 
+            @Getter
+            protected final int stride;
             protected final float normalizeFactor;
             protected final Int unsignedType;
 
             @Getter
             protected final GLSLPrimitiveType glslPrimitive;
 
-            Int(float normalizeFactor, Int unsignedType, @NonNull GLSLPrimitiveType glslPrimitive) {
+            Int(int stride, float normalizeFactor, Int unsignedType, @NonNull GLSLPrimitiveType glslPrimitive) {
+                this.stride = stride;
                 this.normalizeFactor = normalizeFactor;
                 this.unsignedType = PorkUtil.fallbackIfNull(unsignedType, this);
                 this.glslPrimitive = glslPrimitive;
@@ -315,6 +323,11 @@ public class StructMember<T> {
          */
         enum Floating implements ComponentType {
             FLOAT {
+                @Override
+                public int stride() {
+                    return FLOAT_SIZE;
+                }
+
                 @Override
                 public GLSLPrimitiveType glslPrimitive() {
                     return GLSLPrimitiveType.FLOAT;

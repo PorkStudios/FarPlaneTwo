@@ -18,25 +18,18 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.type;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.translator;
 
-import lombok.Data;
 import lombok.NonNull;
-import lombok.With;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 
 /**
  * @author DaPorkchop_
  */
-@Data
-public final class GLSLVectorType implements GLSLType {
-    @With
-    @NonNull
-    private final GLSLPrimitiveType primitive;
-
-    private final int components;
-
-    @Override
-    public String declaration(@NonNull String fieldName) {
-        return this.primitive.typePrefix() + "vec" + this.components + ' ' + fieldName;
+public abstract class InterleavedStructTranslator<S> extends StructTranslator<S, InterleavedStructLayout<S>> {
+    public InterleavedStructTranslator(@NonNull InterleavedStructLayout<S> layout) {
+        super(layout);
     }
+
+    public abstract void copy(@NonNull S struct, Object dstBase, long dstOffset);
 }

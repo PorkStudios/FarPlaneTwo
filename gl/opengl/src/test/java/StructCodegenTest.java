@@ -18,18 +18,13 @@
  *
  */
 
-import net.daporkchop.fp2.common.asm.ClassloadingUtils;
 import net.daporkchop.fp2.gl.attribute.Attrib;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
-import net.daporkchop.lib.unsafe.PUnsafe;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodVisitor;
-
-import java.nio.file.Files;
-import java.nio.file.Paths;
-
-import static net.daporkchop.lib.common.util.PorkUtil.*;
-import static org.objectweb.asm.Opcodes.*;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.TranslatorGenerator;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.VertexAttributeLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.translator.InterleavedStructTranslator;
 
 /**
  * @author DaPorkchop_
@@ -84,51 +79,7 @@ public class StructCodegenTest {
             System.out.println(builder);
         }
 
-        String className = "TestClass";
-
-        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
-        writer.visit(V1_8, ACC_FINAL, className, null, "java/lang/Object", new String[]{
-                "StructCodegenTest$Writer"
-        });
-
-        {
-            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "writePacked", "(LStructCodegenTest;Ljava/lang/Object;J)V", null, null);
-            mv.visitCode();
-
-            info.writePacked(mv, 1, 2, 3);
-            mv.visitInsn(RETURN);
-
-            mv.visitMaxs(0, 0);
-            mv.visitEnd();
-        }
-
-        {
-            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "writeUnpacked", "(LStructCodegenTest;Ljava/lang/Object;J)V", null, null);
-            mv.visitCode();
-
-            info.writeUnpacked(mv, 1, 2, 3);
-            mv.visitInsn(RETURN);
-
-            mv.visitMaxs(0, 0);
-            mv.visitEnd();
-        }
-
-        writer.visitEnd();
-
-        Files.write(Paths.get(className + ".class"), writer.toByteArray());
-
-        Class<?> clazz = ClassloadingUtils.defineHiddenClass(StructCodegenTest.class.getClassLoader(), writer.toByteArray());
-        Writer instance = PUnsafe.allocateInstance(uncheckedCast(clazz));
-
-        StructCodegenTest struct = new StructCodegenTest();
-        float[] arr = new float[1024];
-        instance.writeUnpacked(struct, arr, PUnsafe.ARRAY_FLOAT_BASE_OFFSET);
-        int i = 0;
-    }
-
-    public interface Writer {
-        void writePacked(StructCodegenTest struct, Object base, long offset);
-
-        void writeUnpacked(StructCodegenTest struct, Object base, long offset);
+        InterleavedStructTranslator<StructCodegenTest> translatorStd140 = new TranslatorGenerator().getInterleaved(GLSLLayout.STD140.layout(info));
+        InterleavedStructTranslator<StructCodegenTest> translatorVA = new TranslatorGenerator().getInterleaved(VertexAttributeLayout.interleaved(info));
     }
 }

@@ -18,25 +18,22 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.type;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.layout;
 
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
-import lombok.With;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 /**
  * @author DaPorkchop_
  */
-@Data
-public final class GLSLVectorType implements GLSLType {
-    @With
+@SuperBuilder
+@Getter
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public class SeparateStructLayout<S> extends StructLayout<S> {
     @NonNull
-    private final GLSLPrimitiveType primitive;
-
-    private final int components;
-
-    @Override
-    public String declaration(@NonNull String fieldName) {
-        return this.primitive.typePrefix() + "vec" + this.components + ' ' + fieldName;
-    }
+    private final long[] memberStrides;
 }

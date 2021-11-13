@@ -18,25 +18,35 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.type;
+package net.daporkchop.fp2.gl.opengl.attribute.struct;
 
-import lombok.Data;
 import lombok.NonNull;
-import lombok.With;
+import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 
 /**
  * @author DaPorkchop_
  */
-@Data
-public final class GLSLVectorType implements GLSLType {
-    @With
-    @NonNull
-    private final GLSLPrimitiveType primitive;
+@UtilityClass
+public class VertexAttributeLayout {
+    public <S> InterleavedStructLayout<S> interleaved(@NonNull StructInfo<S> structInfo) {
+        int memberCount = structInfo.members.size();
+        long[] memberOffsets = new long[memberCount];
 
-    private final int components;
+        long offset = 0L;
+        for (int i = 0; i < memberCount; i++) {
+            memberOffsets[i] = offset;
 
-    @Override
-    public String declaration(@NonNull String fieldName) {
-        return this.primitive.typePrefix() + "vec" + this.components + ' ' + fieldName;
+            StructMember.Stage stage = structInfo.members.get(i).packedStage;
+            offset += stage.components() * (long) stage.componentType().stride();
+        }
+
+        return InterleavedStructLayout.<S>builder()
+                .structInfo(structInfo)
+                .layoutName("vertex_attribute_interleaved")
+                .unpacked(false)
+                .memberOffsets(memberOffsets)
+                .stride(offset)
+                .build();
     }
 }
