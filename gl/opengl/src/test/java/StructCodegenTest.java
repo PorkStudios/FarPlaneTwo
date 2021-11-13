@@ -67,14 +67,22 @@ public class StructCodegenTest {
     @Attrib(transform = Attrib.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGB)
     public int attrColorRGB_int;
 
-    @Attrib(transform = Attrib.Transformation.ARRAY_TO_MAT4x4)
+    @Attrib(transform = Attrib.Transformation.ARRAY_TO_MATRIX, matrixDimension = @Attrib.MatrixDimension(columns = 4, rows = 4))
     public float[] fMatrix = new float[16];
 
-    @Attrib(transform = Attrib.Transformation.ARRAY_TO_MAT4x4, convert = { Attrib.Conversion.TO_UNSIGNED, Attrib.Conversion.TO_NORMALIZED_FLOAT})
+    @Attrib(transform = Attrib.Transformation.ARRAY_TO_MATRIX,
+            convert = { Attrib.Conversion.TO_UNSIGNED, Attrib.Conversion.TO_NORMALIZED_FLOAT },
+            matrixDimension = @Attrib.MatrixDimension(columns = 4, rows = 4))
     public short[] normalizedUshortMatrix = new short[16];
 
     public static void main(String... args) throws Throwable {
         StructInfo<StructCodegenTest> info = new StructInfo<>(StructCodegenTest.class);
+
+        {
+            StringBuilder builder = new StringBuilder();
+            info.glslStructDefinition(builder);
+            System.out.println(builder);
+        }
 
         String className = "TestClass";
 
@@ -120,6 +128,7 @@ public class StructCodegenTest {
 
     public interface Writer {
         void writePacked(StructCodegenTest struct, Object base, long offset);
+
         void writeUnpacked(StructCodegenTest struct, Object base, long offset);
     }
 }

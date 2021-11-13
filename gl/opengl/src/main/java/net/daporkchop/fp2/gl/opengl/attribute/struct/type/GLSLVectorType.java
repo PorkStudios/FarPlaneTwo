@@ -20,40 +20,23 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.type;
 
+import lombok.Data;
 import lombok.NonNull;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
+import lombok.With;
 
 /**
  * @author DaPorkchop_
  */
-public interface GLSLType {
-    static GLSLType vec(@NonNull GLSLPrimitiveType primitive, int elements) {
-        switch (elements) {
-            case 1:
-                return primitive;
-            case 2:
-            case 3:
-            case 4:
-                return new GLSLVectorType(primitive, elements);
-            default:
-                throw new IllegalArgumentException("cannot create vector with " + elements + " elements");
-        }
-    }
+@Data
+final class GLSLVectorType implements GLSLType {
+    @With
+    @NonNull
+    private final GLSLPrimitiveType primitive;
 
-    static GLSLType mat(@NonNull GLSLPrimitiveType primitive, int columns, int rows) {
-        checkArg(columns >= 2 && columns <= 4 && rows >= 2 && rows <= 4, "cannot create %dx%d matrix", columns, rows);
-        return new GLSLMatrixType(primitive, columns, rows);
-    }
+    private final int components;
 
-    String declaration(@NonNull String fieldName);
-
-    GLSLPrimitiveType primitive();
-
-    GLSLType withPrimitive(@NonNull GLSLPrimitiveType primitive);
-
-    default GLSLType ensureValid() {
-        checkArg(this.primitive() != GLSLPrimitiveType.INVALID, "invalid type: %s", this);
-        return this;
+    @Override
+    public String declaration(@NonNull String fieldName) {
+        return this.primitive.typePrefix() + "vec" + this.components + ' ' + fieldName;
     }
 }

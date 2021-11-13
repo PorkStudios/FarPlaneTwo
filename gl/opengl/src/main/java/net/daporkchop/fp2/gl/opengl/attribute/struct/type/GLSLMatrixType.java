@@ -20,38 +20,24 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.type;
 
-import lombok.AccessLevel;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import lombok.With;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-@Getter
-public final class GLSLAggregateType implements GLSLType {
-    public static GLSLAggregateType vec2(@NonNull GLSLPrimitiveType type) {
-        return new GLSLAggregateType(type, "vec2", 2);
-    }
-
-    public static GLSLAggregateType vec3(@NonNull GLSLPrimitiveType type) {
-        return new GLSLAggregateType(type, "vec3", 3);
-    }
-
-    public static GLSLAggregateType vec4(@NonNull GLSLPrimitiveType type) {
-        return new GLSLAggregateType(type, "vec4", 4);
-    }
-
+@Data
+final class GLSLMatrixType implements GLSLType {
+    @With
     @NonNull
-    private final GLSLPrimitiveType componentType;
-    @NonNull
-    private final String typeName;
+    private final GLSLPrimitiveType primitive;
 
-    private final int components;
+    private final int columns;
+    private final int rows;
 
     @Override
     public String declaration(@NonNull String fieldName) {
-        return this.componentType.typePrefix() + this.typeName + ' ' + fieldName;
+        return this.primitive.typePrefix() + "mat" + this.columns + 'x' + this.rows + ' ' + fieldName;
     }
 }

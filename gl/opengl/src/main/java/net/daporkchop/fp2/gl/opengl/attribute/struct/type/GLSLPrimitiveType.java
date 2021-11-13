@@ -32,6 +32,17 @@ import java.util.Locale;
 @RequiredArgsConstructor
 @Getter
 public enum GLSLPrimitiveType implements GLSLType {
+    INVALID("<invalid>") {
+        @Override
+        public @NonNull String typePrefix() {
+            throw new UnsupportedOperationException(this.toString());
+        }
+
+        @Override
+        public String declaration(@NonNull String fieldName) {
+            throw new UnsupportedOperationException(this.toString());
+        }
+    },
     INT("i"),
     UINT("u"),
     FLOAT("");
@@ -42,5 +53,15 @@ public enum GLSLPrimitiveType implements GLSLType {
     @Override
     public String declaration(@NonNull String fieldName) {
         return this.name().toLowerCase(Locale.ROOT) + ' ' + fieldName;
+    }
+
+    @Override
+    public GLSLPrimitiveType primitive() {
+        return this;
+    }
+
+    @Override
+    public GLSLType withPrimitive(@NonNull GLSLPrimitiveType primitive) {
+        return primitive;
     }
 }

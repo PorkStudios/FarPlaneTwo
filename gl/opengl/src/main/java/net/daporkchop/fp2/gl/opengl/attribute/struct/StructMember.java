@@ -23,6 +23,8 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.Attrib;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 import net.daporkchop.lib.common.util.PorkUtil;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -31,7 +33,6 @@ import org.objectweb.asm.Type;
 import java.lang.reflect.Field;
 import java.util.List;
 
-import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.objectweb.asm.Opcodes.*;
 
@@ -43,30 +44,35 @@ public class StructMember<T> {
     //dear god this is horrible
 
     protected final Class<T> clazz;
+    protected final String name;
 
     protected final Stage packedStage;
     protected final Stage unpackedStage;
 
-    public StructMember(@NonNull Class<T> clazz, @NonNull Attrib attrib, @NonNull List<Field> fields) {
+    public StructMember(@NonNull Class<T> clazz, @NonNull String name, @NonNull Attrib attrib, @NonNull List<Field> fields) {
         this.clazz = clazz;
+        this.name = name;
 
         switch (attrib.transform()) {
             case UNCHANGED:
-                if (fields.size() == 1) {
-                    this.packedStage = new ScalarInputStage(fields.get(0));
-                } else {
-                    this.packedStage = new VectorInputStage(fields.toArray(new Field[0]));
-                }
+                this.packedStage = new VectorInputStage(fields.toArray(new Field[0]));
                 break;
             case INT_ARGB8_TO_BYTE_VECTOR_RGB:
             case INT_ARGB8_TO_BYTE_VECTOR_RGBA:
-                checkArg(fields.size() == 1, "%s requires exactly one field, but got %d", attrib.transform(), fields.size());
+                checkArg(fields.size() == 1, "%s requires exactly one field, but got %s", attrib.transform(), fields);
                 this.packedStage = new IntARGB8ToByteVectorInputStage(fields.get(0), attrib.transform() == Attrib.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA);
                 break;
-            case ARRAY_TO_MAT4x4:
-                checkArg(fields.size() == 1, "%s requires exactly one field, but got %d", attrib.transform(), fields.size());
-                this.packedStage = new MatrixInputStage(fields.get(0), 4);
+            case ARRAY_TO_MATRIX: {
+                checkArg(fields.size() == 1, "%s requires exactly one field, but got %s", attrib.transform(), fields);
+
+                Attrib.MatrixDimension matrixDimension = attrib.matrixDimension();
+                @SuppressWarnings("deprecation")
+                boolean _default = matrixDimension._default();
+                checkArg(!_default, "matrixDimension must be set!");
+
+                this.packedStage = new MatrixInputStage(fields.get(0), matrixDimension.columns(), matrixDimension.rows());
                 break;
+            }
             default:
                 throw new UnsupportedOperationException(attrib.transform().toString());
         }
@@ -129,6 +135,8 @@ public class StructMember<T> {
 
         boolean floatingPoint();
 
+        GLSLPrimitiveType glslPrimitive();
+
         void arrayLoad(@NonNull MethodVisitor mv);
 
         void unsafePut(@NonNull MethodVisitor mv);
@@ -139,7 +147,7 @@ public class StructMember<T> {
          * @author DaPorkchop_
          */
         enum Int implements ComponentType {
-            UNSIGNED_BYTE(1.0f / 0xFF, null) {
+            UNSIGNED_BYTE(1.0f / 0xFF, null, GLSLPrimitiveType.INVALID) {
                 @Override
                 public void arrayLoad(@NonNull MethodVisitor mv) {
                     BYTE.arrayLoad(mv);
@@ -157,7 +165,7 @@ public class StructMember<T> {
                     BYTE.makeUnsigned(mv);
                 }
             },
-            BYTE(1.0f / 0x80, UNSIGNED_BYTE) {
+            BYTE(1.0f / 0x80, UNSIGNED_BYTE, GLSLPrimitiveType.INVALID) {
                 @Override
                 public void makeUnsigned(@NonNull MethodVisitor mv) {
                     mv.visitLdcInsn(0xFF);
@@ -180,7 +188,7 @@ public class StructMember<T> {
                     mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "getByte", "(Ljava/lang/Object;J)B", false);
                 }
             },
-            UNSIGNED_SHORT(1.0f / 0xFFFF, null) {
+            UNSIGNED_SHORT(1.0f / 0xFFFF, null, GLSLPrimitiveType.INVALID) {
                 @Override
                 public void arrayLoad(@NonNull MethodVisitor mv) {
                     SHORT.arrayLoad(mv);
@@ -198,7 +206,7 @@ public class StructMember<T> {
                     SHORT.makeUnsigned(mv);
                 }
             },
-            SHORT(1.0f / 0x8000, UNSIGNED_SHORT) {
+            SHORT(1.0f / 0x8000, UNSIGNED_SHORT, GLSLPrimitiveType.INVALID) {
                 @Override
                 public void makeUnsigned(@NonNull MethodVisitor mv) {
                     mv.visitLdcInsn(0xFFFF);
@@ -221,7 +229,7 @@ public class StructMember<T> {
                     mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "getShort", "(Ljava/lang/Object;J)S", false);
                 }
             },
-            UNSIGNED_INT(1.0f / 0xFFFFFFFFL, null) {
+            UNSIGNED_INT(1.0f / 0xFFFFFFFFL, null, GLSLPrimitiveType.UINT) {
                 @Override
                 public void arrayLoad(@NonNull MethodVisitor mv) {
                     INT.arrayLoad(mv);
@@ -239,7 +247,7 @@ public class StructMember<T> {
                     INT.makeUnsigned(mv);
                 }
             },
-            INT(1.0f / 0x80000000L, UNSIGNED_INT) {
+            INT(1.0f / 0x80000000L, UNSIGNED_INT, GLSLPrimitiveType.UINT) {
                 @Override
                 public void makeUnsigned(@NonNull MethodVisitor mv) {
                     //no-op, we can't make this unsigned...
@@ -264,9 +272,13 @@ public class StructMember<T> {
             protected final float normalizeFactor;
             protected final Int unsignedType;
 
-            Int(float normalizeFactor, Int unsignedType) {
+            @Getter
+            protected final GLSLPrimitiveType glslPrimitive;
+
+            Int(float normalizeFactor, Int unsignedType, @NonNull GLSLPrimitiveType glslPrimitive) {
                 this.normalizeFactor = normalizeFactor;
                 this.unsignedType = PorkUtil.fallbackIfNull(unsignedType, this);
+                this.glslPrimitive = glslPrimitive;
             }
 
             public void makeInt(@NonNull MethodVisitor mv) {
@@ -304,6 +316,11 @@ public class StructMember<T> {
         enum Floating implements ComponentType {
             FLOAT {
                 @Override
+                public GLSLPrimitiveType glslPrimitive() {
+                    return GLSLPrimitiveType.FLOAT;
+                }
+
+                @Override
                 public void arrayLoad(@NonNull MethodVisitor mv) {
                     mv.visitInsn(FALOAD);
                 }
@@ -339,41 +356,11 @@ public class StructMember<T> {
 
         int components();
 
+        GLSLType glslType();
+
         void preLoadComponents(@NonNull MethodVisitor mv, int structLvtIndex);
 
         void loadComponent(@NonNull MethodVisitor mv, int structLvtIndex, int componentIndex);
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    protected static class ScalarInputStage implements Stage {
-        @Getter
-        protected final ComponentType componentType;
-        protected final Field field;
-
-        public ScalarInputStage(@NonNull Field field) {
-            this.componentType = ComponentType.from(field.getType());
-            this.field = field;
-        }
-
-        @Override
-        public int components() {
-            return 1;
-        }
-
-        @Override
-        public void preLoadComponents(@NonNull MethodVisitor mv, int structLvtIndex) {
-            //no-op
-        }
-
-        @Override
-        public void loadComponent(@NonNull MethodVisitor mv, int structLvtIndex, int componentIndex) {
-            checkIndex(1, componentIndex);
-
-            mv.visitVarInsn(ALOAD, structLvtIndex);
-            mv.visitFieldInsn(GETFIELD, Type.getInternalName(this.field.getDeclaringClass()), this.field.getName(), Type.getDescriptor(this.field.getType()));
-        }
     }
 
     /**
@@ -397,6 +384,11 @@ public class StructMember<T> {
         @Override
         public int components() {
             return this.fields.length;
+        }
+
+        @Override
+        public GLSLType glslType() {
+            return GLSLType.vec(this.componentType.glslPrimitive(), this.components());
         }
 
         @Override
@@ -438,6 +430,11 @@ public class StructMember<T> {
         }
 
         @Override
+        public GLSLType glslType() {
+            return GLSLType.vec(GLSLPrimitiveType.UINT, this.components());
+        }
+
+        @Override
         public void preLoadComponents(@NonNull MethodVisitor mv, int structLvtIndex) {
             //no-op
         }
@@ -464,15 +461,27 @@ public class StructMember<T> {
         protected final ComponentType componentType;
         protected final Field field;
 
-        @Getter
-        protected final int components;
+        protected final int columns;
+        protected final int rows;
 
-        public MatrixInputStage(@NonNull Field field, int size) {
+        public MatrixInputStage(@NonNull Field field, int columns, int rows) {
             checkArg(field.getType().isArray(), "not an array: %s", field);
+            checkArg(columns >= 2 && columns <= 4 && rows >= 2 && rows <= 4, "cannot create %dx%d matrix", columns, rows);
 
             this.field = field;
             this.componentType = ComponentType.from(field.getType().getComponentType());
-            this.components = multiplyExact(positive(size, "size"), size);
+            this.columns = columns;
+            this.rows = rows;
+        }
+
+        @Override
+        public int components() {
+            return this.columns * this.rows;
+        }
+
+        @Override
+        public GLSLType glslType() {
+            return GLSLType.mat(this.componentType.glslPrimitive(), this.columns, this.rows);
         }
 
         @Override
@@ -482,12 +491,12 @@ public class StructMember<T> {
             mv.visitVarInsn(ALOAD, structLvtIndex);
             mv.visitFieldInsn(GETFIELD, Type.getInternalName(this.field.getDeclaringClass()), this.field.getName(), Type.getDescriptor(this.field.getType()));
             mv.visitInsn(ARRAYLENGTH);
-            mv.visitLdcInsn(this.components);
+            mv.visitLdcInsn(this.components());
             mv.visitJumpInsn(IF_ICMPEQ, label);
 
             mv.visitTypeInsn(NEW, "java/lang/IllegalArgumentException");
             mv.visitInsn(DUP);
-            mv.visitLdcInsn(this.field + ": array length must be " + this.components);
+            mv.visitLdcInsn(this.field + ": array length must be " + this.components());
             mv.visitMethodInsn(INVOKESPECIAL, "java/lang/IllegalArgumentException", "<init>", "(Ljava/lang/String;)V", false);
             mv.visitInsn(ATHROW);
 
@@ -496,7 +505,7 @@ public class StructMember<T> {
 
         @Override
         public void loadComponent(@NonNull MethodVisitor mv, int structLvtIndex, int componentIndex) {
-            checkIndex(this.components, componentIndex);
+            checkIndex(this.components(), componentIndex);
 
             mv.visitVarInsn(ALOAD, structLvtIndex);
             mv.visitFieldInsn(GETFIELD, Type.getInternalName(this.field.getDeclaringClass()), this.field.getName(), Type.getDescriptor(this.field.getType()));
@@ -525,6 +534,11 @@ public class StructMember<T> {
         @Override
         public int components() {
             return this.prev.components();
+        }
+
+        @Override
+        public GLSLType glslType() {
+            return this.prev.glslType().withPrimitive(this.componentType.glslPrimitive());
         }
 
         @Override
@@ -565,6 +579,11 @@ public class StructMember<T> {
         }
 
         @Override
+        public GLSLType glslType() {
+            return this.prev.glslType().withPrimitive(GLSLPrimitiveType.FLOAT);
+        }
+
+        @Override
         public void preLoadComponents(@NonNull MethodVisitor mv, int structLvtIndex) {
             this.prev.preLoadComponents(mv, structLvtIndex);
         }
@@ -602,6 +621,11 @@ public class StructMember<T> {
         }
 
         @Override
+        public GLSLType glslType() {
+            return this.prev.glslType().withPrimitive(GLSLPrimitiveType.FLOAT);
+        }
+
+        @Override
         public void preLoadComponents(@NonNull MethodVisitor mv, int structLvtIndex) {
             this.prev.preLoadComponents(mv, structLvtIndex);
         }
@@ -635,6 +659,11 @@ public class StructMember<T> {
         @Override
         public int components() {
             return this.prev.components();
+        }
+
+        @Override
+        public GLSLType glslType() {
+            return this.prev.glslType().withPrimitive(this.componentType.glslPrimitive());
         }
 
         @Override

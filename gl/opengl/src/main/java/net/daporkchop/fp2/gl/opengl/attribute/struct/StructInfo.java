@@ -65,14 +65,14 @@ public class StructInfo<T> {
 
             if (attrib.vectorAxes().length == 0) {
                 fieldsByName.remove(name);
-                builder.add(new StructMember<>(clazz, attrib, ImmutableList.of(field)));
+                builder.add(new StructMember<>(clazz, name, attrib, ImmutableList.of(field)));
             } else {
                 String[] vectorAxes = attrib.vectorAxes();
                 checkArg(name.endsWith(vectorAxes[0]), "name doesn't end in %s: %s", vectorAxes[0], field);
 
                 String baseName = name.substring(0, name.length() - vectorAxes[0].length());
 
-                builder.add(new StructMember<>(clazz, attrib, Stream.of(vectorAxes)
+                builder.add(new StructMember<>(clazz, name, attrib, Stream.of(vectorAxes)
                         .map(axisSuffix -> {
                             Field componentField = fieldsByName.remove(baseName + axisSuffix);
                             checkArg(componentField != null, "no such field: %s%s", baseName, axisSuffix);
@@ -83,6 +83,12 @@ public class StructInfo<T> {
         }
 
         this.members = builder.build();
+    }
+
+    public void glslStructDefinition(@NonNull StringBuilder builder) {
+        builder.append("struct ").append(this.clazz.getSimpleName()).append(" {\n");
+        this.members.forEach(member -> builder.append("    ").append(member.unpackedStage.glslType().declaration(member.name)).append(";\n"));
+        builder.append("};\n");
     }
 
     public void writePacked(@NonNull MethodVisitor mv, int structLvtIndex, int outputBaseLvtIndex, int outputOffsetLvtIndex) {

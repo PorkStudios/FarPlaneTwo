@@ -33,6 +33,8 @@ import java.lang.annotation.Target;
 public @interface Attrib {
     String[] vectorAxes() default {};
 
+    MatrixDimension matrixDimension() default @MatrixDimension(_default = true, columns = -1, rows = -1);
+
     Transformation transform() default Transformation.UNCHANGED;
 
     Conversion[] convert() default {};
@@ -58,11 +60,11 @@ public @interface Attrib {
          */
         INT_ARGB8_TO_BYTE_VECTOR_RGBA,
         /**
-         * The source type is a single primitive array with exactly 16 elements.
+         * The source type is a single primitive array with exactly {@code columns * rows} elements.
          * <p>
-         * It is interpreted as column-major 4x4 matrix.
+         * It is interpreted as column-major matrix, with the matrix dimensions taken from the {@link #matrixDimension()} property (which must be set).
          */
-        ARRAY_TO_MAT4x4;
+        ARRAY_TO_MATRIX;
     }
 
     /**
@@ -84,5 +86,25 @@ public @interface Attrib {
          * to the range {@code [0, 1]}.
          */
         TO_NORMALIZED_FLOAT;
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({})
+    @interface MatrixDimension {
+        @Deprecated
+        boolean _default() default false;
+
+        /**
+         * @return the number of columns. Must be in range {@code [2, 4]}
+         */
+        int columns();
+
+        /**
+         * @return the number of rows. Must be in range {@code [2, 4]}
+         */
+        int rows();
     }
 }
