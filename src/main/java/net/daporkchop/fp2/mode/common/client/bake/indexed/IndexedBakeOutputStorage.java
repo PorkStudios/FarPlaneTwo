@@ -109,10 +109,10 @@ public class IndexedBakeOutputStorage<SG, SL> extends AbstractBakeOutputStorage<
     protected final long slotSize;
     protected long slotsAddr;
 
-    protected final GlobalAttributeBuffer globalBuffer;
+    protected final GlobalAttributeBuffer<SG> globalBuffer;
 
     protected final Allocator vertexAlloc;
-    protected final LocalAttributeBuffer vertexBuffer;
+    protected final LocalAttributeBuffer<SL> vertexBuffer;
 
     protected final int indexSize;
     protected final Allocator[] indexAllocs;
@@ -163,7 +163,7 @@ public class IndexedBakeOutputStorage<SG, SL> extends AbstractBakeOutputStorage<
     }
 
     @Override
-    public int add(@NonNull IndexedBakeOutput output) {
+    public int add(@NonNull IndexedBakeOutput<SG, SL> output) {
         //allocate a slot
         int handle = toInt(this.slotAlloc.alloc(1L));
         long slotAddr = this.slotsAddr + handle * this.slotSize;

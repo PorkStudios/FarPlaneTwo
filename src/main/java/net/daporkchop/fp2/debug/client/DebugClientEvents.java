@@ -27,6 +27,7 @@ import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.debug.util.DebugUtils;
 import net.daporkchop.fp2.net.packet.debug.client.CPacketDebugDropAllTiles;
+import net.daporkchop.fp2.net.packet.standard.client.CPacketClientConfig;
 import net.minecraft.client.gui.GuiIngameMenu;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
@@ -50,8 +51,9 @@ public class DebugClientEvents {
             ShaderManager.reload(true);
         }
         if (DebugKeyBindings.DROP_TILES.isPressed()) {
-            PROTOCOL_DEBUG.sendToServer(new CPacketDebugDropAllTiles());
-            DebugUtils.clientMsg("§aReloading all tiles");
+            PROTOCOL_FP2.sendToServer(new CPacketClientConfig().config(null));
+            PROTOCOL_FP2.sendToServer(new CPacketClientConfig().config(FP2Config.global()));
+            DebugUtils.clientMsg("§aReloading session");
         }
         if (DebugKeyBindings.REBUILD_UVS.isPressed()) {
             TexUVs.reloadUVs();

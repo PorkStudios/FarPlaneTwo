@@ -21,22 +21,21 @@
 package net.daporkchop.fp2.mode.common.client.index;
 
 import com.google.common.collect.ImmutableList;
-import it.unimi.dsi.fastutil.objects.Object2LongMap;
-import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
-import net.daporkchop.fp2.common.util.alloc.SequentialFixedSizeAllocator;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.gl.binding.DrawBinding;
+import net.daporkchop.fp2.gl.binding.DrawBindingBuilder;
+import net.daporkchop.fp2.gl.binding.DrawMode;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.command.DrawCommand;
 import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
-import net.daporkchop.fp2.gl.binding.DrawBinding;
-import net.daporkchop.fp2.gl.binding.DrawBindingBuilder;
-import net.daporkchop.fp2.gl.binding.DrawMode;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
@@ -48,7 +47,6 @@ import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.fp2.util.datastructure.SimpleSet;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
-import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.lang.reflect.Array;
@@ -59,7 +57,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.common.util.TypeSize.*;
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -127,7 +125,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
 
     @Override
     public boolean hasAnyTilesForLevel(int level) {
-        return !this.levels[level].positionsToSlots.isEmpty();
+        return !this.levels[level].positionsToHandles.isEmpty();
     }
 
     @Override
@@ -156,15 +154,12 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
         protected final IFarDirectPosAccess<POS> directPosAccess;
         protected final int level;
 
-        protected final Allocator slotAllocator;
-        protected final Object2LongMap<POS> positionsToSlots = new Object2LongOpenHashMap<>();
-
-        protected long capacity = -1L;
+        protected final Object2IntMap<POS> positionsToHandles = new Object2IntOpenHashMap<>();
 
         protected final long positionSize;
         protected long positionsAddr;
 
-        protected long storageHandlesAddr;
+        protected int capacity = -1;
 
         protected final IBakeOutputStorage<BO, DB, DC> storage;
         protected final List<DB> bindings;
@@ -173,15 +168,18 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
         protected final GLBitSet bitsValid;
         protected final GLBitSet bitsSelection;
 
+        protected final Allocator.GrowFunction growFunction;
+
         protected boolean dirty = false;
 
         public Level(int level, @NonNull Allocator.GrowFunction growFunction) {
             this.level = level;
+            this.growFunction = growFunction;
 
             this.directPosAccess = AbstractRenderIndex.this.strategy.mode().directPosAccess();
             this.positionSize = this.directPosAccess.posSize();
 
-            this.positionsToSlots.defaultReturnValue(-1L);
+            this.positionsToHandles.defaultReturnValue(-1);
 
             this.storage = AbstractRenderIndex.this.strategy.createBakeOutputStorage();
 
@@ -201,57 +199,53 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
             this.bitsValid = builder.build();
             this.bitsSelection = builder.build();
 
-            this.slotAllocator = new SequentialFixedSizeAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> {
-                checkArg(capacity > this.capacity, "newCapacity (%d) must be greater than current capacity (%d)", capacity, this.capacity);
-                this.capacity = capacity;
+            this.grow();
+        }
 
-                //resize memory blocks
-                this.positionsAddr = AbstractRenderIndex.this.directMemoryAlloc.realloc(this.positionsAddr, capacity * this.positionSize);
-                this.storageHandlesAddr = AbstractRenderIndex.this.directMemoryAlloc.realloc(this.storageHandlesAddr, capacity * INT_SIZE);
-                for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                    this.commandBuffers[pass].resize(toInt(capacity));
-                }
-                this.bitsValid.resize(toInt(capacity));
-                this.bitsSelection.resize(toInt(capacity));
+        public void grow() {
+            this.capacity = toInt(this.growFunction.grow(this.capacity, 1));
 
-                this.dirty = true;
-            }), growFunction);
+            //resize memory blocks
+            this.positionsAddr = AbstractRenderIndex.this.directMemoryAlloc.realloc(this.positionsAddr, this.capacity * this.positionSize);
+            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                this.commandBuffers[pass].resize(this.capacity);
+            }
+            this.bitsValid.resize(this.capacity);
+            this.bitsSelection.resize(this.capacity);
+
+            this.dirty = true;
         }
 
         public void put(@NonNull POS pos, BO output) {
-            long slot = this.positionsToSlots.getLong(pos);
+            int handle = this.positionsToHandles.removeInt(pos);
+            if (handle >= 0) { //the position was already inserted, remove it
+                //delete the bake output from the storage using the saved handle
+                this.storage.delete(handle);
 
-            if (output == null) { //removal
-                if (slot >= 0L) { //slot already exists, delete old data and then free the slot
-                    this.positionsToSlots.remove(pos);
-                    this.delete(slot);
+                //erase draw commands from the command buffer
+                this.eraseDrawCommands(handle);
 
-                    this.slotAllocator.free(slot);
-                    this.bitsValid.clear(toInt(slot));
-                } else { //slot doesn't exist, do nothing
-                    return;
-                }
-            } else { //insertion
-                if (slot >= 0L) { //slot already exists, delete old data so we can replace it
-                    this.delete(slot);
-                } else { //slot doesn't exist, allocate a new one for this position
-                    this.positionsToSlots.put(pos, slot = this.slotAllocator.alloc(1L));
-                    this.bitsValid.set(toInt(slot));
+                //mark the index as invalid
+                this.bitsValid.clear(handle);
+            }
 
-                    //initialize slot fields
-                    this.directPosAccess.storePos(pos, this.positionsAddr + slot * this.positionSize);
-                }
-
+            if (output != null) { //insertion
                 //add bake output to storage
                 //  doing this now that any old render data's been deleted minimizes resource wastage (e.g. allowing VBO space to be re-used by the new data)
-                int handle = this.storage.add(output);
+                handle = this.storage.add(output);
 
-                //save handle
-                PUnsafe.putInt(this.storageHandlesAddr + slot * (long) INT_SIZE, handle);
+                while (handle >= this.capacity) { //the handle is bigger than the current limit
+                    this.grow();
+                }
+
+                this.positionsToHandles.put(pos, handle);
+                this.bitsValid.set(handle);
+
+                this.directPosAccess.storePos(pos, this.positionsAddr + handle * this.positionSize);
 
                 //if the node is selectable, set its render outputs
                 if (pos.level() == 0 || AbstractRenderIndex.this.renderablePositions.contains(pos)) {
-                    this.addDrawCommands(slot);
+                    this.addDrawCommands(handle);
                 }
             }
 
@@ -259,47 +253,39 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
         }
 
         public void updateSelectable(@NonNull POS pos, boolean selectable) {
-            long slot = this.positionsToSlots.getLong(pos);
+            int handle = this.positionsToHandles.getInt(pos);
 
             if (selectable) {
                 if (AbstractRenderIndex.this.renderablePositions.add(pos) //we made the tile be renderable, so now we should update the render commands
-                    && pos.level() != 0 && slot >= 0L) {
-                    this.addDrawCommands(slot);
+                    && pos.level() != 0 && handle >= 0) {
+                    this.addDrawCommands(handle);
                 }
             } else {
                 if (AbstractRenderIndex.this.renderablePositions.remove(pos) //we made the tile be non-renderable, so now we should delete the render commands
-                    && pos.level() != 0 && slot >= 0L) {
-                    this.eraseDrawCommands(slot);
+                    && pos.level() != 0 && handle >= 0) {
+                    this.eraseDrawCommands(handle);
                 }
             }
         }
 
-        protected void delete(long slot) {
-            //delete the bake output from the storage using the saved handle
-            this.storage.delete(PUnsafe.getInt(this.storageHandlesAddr + slot * (long) Integer.BYTES));
-
-            //erase draw commands from the command buffer
-            this.eraseDrawCommands(slot);
-        }
-
-        protected void addDrawCommands(long slot) {
+        protected void addDrawCommands(int handle) {
             //initialize draw commands from bake output storage
-            DC[] commands = this.storage.toDrawCommands(PUnsafe.getInt(this.storageHandlesAddr + slot * (long) Integer.BYTES));
+            DC[] commands = this.storage.toDrawCommands(handle);
 
             //store in command buffer
             for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                this.commandBuffers[pass].set(toInt(slot), commands[pass]);
+                this.commandBuffers[pass].set(handle, commands[pass]);
             }
         }
 
-        protected void eraseDrawCommands(long slot) {
+        protected void eraseDrawCommands(int handle) {
             for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                this.commandBuffers[pass].clear(toInt(slot));
+                this.commandBuffers[pass].clear(handle);
             }
         }
 
         public void select(@NonNull IFrustum frustum, float partialTicks) {
-            if (this.positionsToSlots.isEmpty()) { //nothing to do
+            if (this.positionsToHandles.isEmpty()) { //nothing to do
                 return;
             }
 
@@ -311,7 +297,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
         protected abstract void select0(@NonNull IFrustum frustum, float partialTicks);
 
         public void draw(int pass, @NonNull DrawShaderProgram shader) {
-            if (this.positionsToSlots.isEmpty()) { //nothing to do
+            if (this.positionsToHandles.isEmpty()) { //nothing to do
                 return;
             }
 
@@ -328,7 +314,6 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
         public void close() {
             //free all direct memory allocations
             AbstractRenderIndex.this.directMemoryAlloc.free(this.positionsAddr);
-            AbstractRenderIndex.this.directMemoryAlloc.free(this.storageHandlesAddr);
 
             //delete all gl objects
             this.bitsValid.close();
@@ -341,7 +326,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
         @DebugOnly
         protected DebugStats.Renderer stats() {
             return DebugStats.Renderer.builder()
-                    .bakedTilesWithData(this.positionsToSlots.size())
+                    .bakedTilesWithData(this.positionsToHandles.size())
                     .build()
                     .add(this.storage.stats());
         }
