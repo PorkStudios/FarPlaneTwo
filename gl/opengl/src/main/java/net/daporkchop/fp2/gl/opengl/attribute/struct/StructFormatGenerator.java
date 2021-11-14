@@ -48,7 +48,7 @@ import static org.objectweb.asm.Opcodes.*;
 /**
  * @author DaPorkchop_
  */
-public class FormatGenerator {
+public class StructFormatGenerator {
     protected final Cache<StructLayout<?>, StructFormat<?, ?>> cache = CacheBuilder.newBuilder()
             .weakValues()
             .build();

@@ -27,8 +27,6 @@ import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.GLExtension;
@@ -36,8 +34,6 @@ import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeBufferTexture;
 import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeBufferVertexAttribute;
 import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeWriterPacked;
-import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeWriterImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformAttributeBufferImpl;
 import net.daporkchop.lib.common.math.PMath;
 
@@ -140,15 +136,5 @@ public class AttributeFormatImpl implements AttributeFormat {
         } else {
             return new GlobalAttributeBufferTexture(this, usage);
         }
-    }
-
-    @Override
-    public LocalAttributeWriter createLocalWriter() {
-        return new LocalAttributeWriterImpl(this);
-    }
-
-    @Override
-    public LocalAttributeBuffer createLocalBuffer(@NonNull BufferUsage usage) {
-        return new LocalAttributeBufferImpl(this, usage);
     }
 }

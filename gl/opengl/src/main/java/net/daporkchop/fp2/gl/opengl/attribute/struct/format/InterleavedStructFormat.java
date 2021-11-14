@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.format;
 
+import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
@@ -28,10 +29,24 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLay
 /**
  * @author DaPorkchop_
  */
+@Getter
 public abstract class InterleavedStructFormat<S> extends StructFormat<S, InterleavedStructLayout<S>> {
+    protected final long stride;
+
     public InterleavedStructFormat(@NonNull InterleavedStructLayout<S> layout) {
         super(layout);
+
+        this.stride = layout.stride();
     }
+
+    /**
+     * Loads the fields from the given struct instance, translates them to the layout format, and writes them to the given destination.
+     *
+     * @param struct    the struct
+     * @param dstBase   the destination base instance
+     * @param dstOffset the destination base offset
+     */
+    public abstract void copy(@NonNull S struct, Object dstBase, long dstOffset);
 
     /**
      * Configures the current VAO with this format's attributes at the given attribute indices.
@@ -42,13 +57,4 @@ public abstract class InterleavedStructFormat<S> extends StructFormat<S, Interle
      * @param attributeIndices an array for converting struct member indices to vertex attribute indices
      */
     public abstract void configureVAO(@NonNull GLAPI api, @NonNull int[] attributeIndices);
-
-    /**
-     * Loads the fields from the given struct instance, translates them to the layout format, and writes them to the given destination.
-     *
-     * @param struct    the struct
-     * @param dstBase   the destination base instance
-     * @param dstOffset the destination base offset
-     */
-    public abstract void copy(@NonNull S struct, Object dstBase, long dstOffset);
 }

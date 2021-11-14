@@ -25,9 +25,12 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.common.util.ResourceProvider;
+import net.daporkchop.fp2.common.util.alloc.Allocator;
+import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.GLModule;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.DrawCommandBufferBuilder;
@@ -37,6 +40,8 @@ import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.gl.layout.LayoutBuilder;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeGenerator;
+import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.StructFormatGenerator;
 import net.daporkchop.fp2.gl.opengl.bitset.GLBitSetBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferBuilderImpl;
@@ -84,7 +89,10 @@ public class OpenGL implements GL {
 
     protected final GLCompute compute;
 
+    protected final Allocator directMemoryAllocator = new DirectMemoryAllocator();
+
     protected final AttributeGenerator attributeGenerator = new AttributeGenerator();
+    protected final StructFormatGenerator structFormatGenerator = new StructFormatGenerator();
 
     protected OpenGL(@NonNull OpenGLBuilder builder) {
         this.resourceProvider = ResourceProvider.selectingByNamespace(OPENGL_NAMESPACE, ResourceProvider.loadingClassResources(OpenGL.class), builder.resourceProvider);
@@ -159,6 +167,11 @@ public class OpenGL implements GL {
     @Override
     public IndexFormatBuilder.TypeSelectionStage createIndexFormat() {
         return new IndexFormatBuilderImpl(this);
+    }
+
+    @Override
+    public <S> LocalAttributeFormat<S> createLocalFormat(@NonNull Class<S> clazz) {
+        return new LocalAttributeFormatImpl<>(this, clazz);
     }
 
     @Override

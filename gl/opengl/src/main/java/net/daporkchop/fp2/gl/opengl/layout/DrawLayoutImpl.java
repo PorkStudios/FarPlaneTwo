@@ -37,14 +37,21 @@ import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.common.VertexAttributeBuffer;
+import net.daporkchop.fp2.gl.opengl.attribute.common.VertexAttributeFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeBufferVertexAttribute;
+import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLMatrixType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 import net.daporkchop.fp2.gl.opengl.binding.DrawBindingBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 import net.daporkchop.fp2.gl.opengl.texture.TextureTarget;
+import net.daporkchop.lib.common.util.PArrays;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
@@ -56,8 +63,10 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Getter
 public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     protected final Map<AttributeFormatImpl, List<VertexBinding>> vertexBindingsByFormat;
+    protected final Map<VertexAttributeFormat, VertexAttributeBindings> vertexAttributeBindingsByFormat;
 
     protected final List<VertexBinding> vertexBindings;
+    protected final List<VertexAttributeBindings> vertexAttributeBindings;
     protected final List<FragmentColorBinding> fragmentColorBindings;
     protected final List<UniformBlockBinding> uniformBlockBindings;
     protected final List<TextureBinding> textureBindings;
@@ -67,15 +76,14 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
 
         //create temporary lists
         List<VertexBinding> vertexBindings = new ArrayList<>();
+        ImmutableList.Builder<VertexAttributeBindings> vertexAttributeBindings = ImmutableList.builder();
         List<FragmentColorBinding> fragmentColorBindings = new ArrayList<>();
         List<UniformBlockBinding> uniformBlockBindings = new ArrayList<>();
         List<TextureBinding> textureBindings = new ArrayList<>();
 
         //locals
-        for (AttributeFormatImpl format : builder.locals) { //register all locals as standard vertex attributes
-            for (AttributeImpl attrib : format.attribsArray()) {
-                this.addVertexAttribute(vertexBindings, attrib, false);
-            }
+        for (LocalAttributeFormatImpl<?> format : builder.locals) { //register all locals as standard vertex attributes
+            vertexAttributeBindings.add(new VertexAttributeBindings(format, false));
         }
 
         //globals
@@ -111,6 +119,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
 
         //make temporary lists immutable
         this.vertexBindings = ImmutableList.copyOf(vertexBindings);
+        this.vertexAttributeBindings = vertexAttributeBindings.build();
         this.fragmentColorBindings = ImmutableList.copyOf(fragmentColorBindings);
         this.uniformBlockBindings = ImmutableList.copyOf(uniformBlockBindings);
         this.textureBindings = ImmutableList.copyOf(textureBindings);
@@ -121,6 +130,31 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
                         VertexBinding::format,
                         Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf)),
                 ImmutableMap::copyOf));
+        this.vertexAttributeBindingsByFormat = this.vertexAttributeBindings.stream().collect(Collectors.collectingAndThen(
+                Collectors.toMap(
+                        VertexAttributeBindings::format,
+                        Function.identity()),
+                ImmutableMap::copyOf));
+
+        //final configuration
+        this.configureVertexAttributes();
+    }
+
+    protected void configureVertexAttributes() {
+        int index = this.vertexBindings.size();
+        int max = this.api.glGetInteger(GL_MAX_VERTEX_ATTRIBS);
+
+        for (VertexAttributeBindings bindings : this.vertexAttributeBindings) {
+            int[] attributeIndices = bindings.attributeIndices;
+
+            for (int i = 0; i < attributeIndices.length; i++) {
+                checkIndex(index < max, "cannot use more than %d vertex attributes!", max);
+                attributeIndices[i] = index;
+
+                GLSLType type = bindings.format.attributeFields().get(i).type();
+                index += type instanceof GLSLMatrixType ? ((GLSLMatrixType) type).columns() : 1;
+            }
+        }
     }
 
     protected void addVertexAttribute(@NonNull List<VertexBinding> vertexBindings, @NonNull AttributeImpl attrib, boolean instanced) {
@@ -165,6 +199,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         switch (type) {
             case VERTEX: {
                 this.vertexBindings.forEach(binding -> binding.generateGLSL(builder));
+                this.vertexAttributeBindings.forEach(binding -> binding.generateGLSL(builder));
                 this.uniformBlockBindings.forEach(binding -> binding.generateGLSL(builder));
                 this.textureBindings.forEach(binding -> binding.generateGLSL(this.gl, builder));
                 break;
@@ -182,6 +217,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     @Override
     public void configureProgramPreLink(int program) {
         this.vertexBindings.forEach(binding -> binding.bindAttribLocation(this.api, program));
+        this.vertexAttributeBindings.forEach(binding -> binding.bindAttribLocation(this.api, program));
     }
 
     @Override
@@ -193,6 +229,47 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     @Override
     public DrawBindingBuilder.OptionallyIndexedStage createBinding() {
         return new DrawBindingBuilderImpl(this);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @ToString
+    @EqualsAndHashCode
+    public static class VertexAttributeBindings {
+        @Getter
+        protected final VertexAttributeFormat format;
+        protected final int[] attributeIndices;
+
+        protected final boolean instanced;
+
+        protected VertexAttributeBindings(@NonNull VertexAttributeFormat format, boolean instanced) {
+            this.format = format;
+            this.attributeIndices = PArrays.filled(format.attributeFields().size(), -1);
+            this.instanced = instanced;
+        }
+
+        public void enableAndBind(@NonNull GLAPI api, @NonNull VertexAttributeBuffer buffer) {
+            for (int attributeIndex : this.attributeIndices) {
+                api.glEnableVertexAttribArray(attributeIndex);
+
+                if (this.instanced) {
+                    api.glVertexAttribDivisor(attributeIndex, 1);
+                }
+            }
+
+            buffer.configureVAO(this.attributeIndices);
+        }
+
+        public void bindAttribLocation(@NonNull GLAPI api, int program) {
+            for (int i = 0; i < this.attributeIndices.length; i++) {
+                api.glBindAttribLocation(program, this.attributeIndices[i], this.format.attributeFields().get(i).name());
+            }
+        }
+
+        protected void generateGLSL(@NonNull StringBuilder builder) {
+            this.format.attributeFields().forEach(field -> builder.append("in ").append(field.type().declaration(field.name())).append(";\n"));
+        }
     }
 
     /**
@@ -211,7 +288,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
 
         public void enableAndBind(@NonNull GLAPI api, @NonNull BaseAttributeBufferImpl buffer) {
             api.glEnableVertexAttribArray(this.bindingIndex);
-            ((LocalAttributeBufferImpl) buffer).bindVertexAttribute(api, this.bindingIndex, this.attrib);
+            ((GlobalAttributeBufferVertexAttribute) buffer).bindVertexAttribute(api, this.bindingIndex, this.attrib);
 
             if (this.instanced) {
                 api.glVertexAttribDivisor(this.bindingIndex, 1);

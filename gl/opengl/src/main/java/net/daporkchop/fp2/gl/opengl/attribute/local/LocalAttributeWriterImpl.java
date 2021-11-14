@@ -20,46 +20,40 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.local;
 
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.common.util.alloc.Allocator;
-import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
-import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeImpl;
-import net.daporkchop.lib.unsafe.PUnsafe;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public class LocalAttributeWriterImpl implements LocalAttributeWriter {
-    protected final AttributeFormatImpl format;
-    @Getter(AccessLevel.NONE)
-    protected final Allocator alloc = new DirectMemoryAllocator();
+public class LocalAttributeWriterImpl<S> implements LocalAttributeWriter<S> {
+    protected final OpenGL gl;
+    protected final InterleavedStructFormat<S> structFormat;
 
+    protected long baseAddr;
     protected final long stride;
-    protected final long[] offsets;
-
-    protected long addr;
 
     protected int index;
     protected int capacity;
 
-    public LocalAttributeWriterImpl(@NonNull AttributeFormatImpl format) {
-        this.format = format;
+    public LocalAttributeWriterImpl(@NonNull LocalAttributeFormatImpl<S> format) {
+        this.gl = format.gl();
+        this.structFormat = format.structFormat();
 
-        this.stride = format.stridePacked();
-        this.offsets = new long[format.attribsArray().length];
+        this.stride = this.structFormat.stride();
 
         this.resize(16);
     }
 
     @Override
     public void close() {
-        this.alloc.free(this.addr);
+        this.gl.directMemoryAllocator().free(this.baseAddr);
     }
 
     @Override
@@ -68,73 +62,19 @@ public class LocalAttributeWriterImpl implements LocalAttributeWriter {
     }
 
     @Override
-    public int endVertex() {
+    public int put(@NonNull S struct) {
         if (this.index + 1 == this.capacity) { //grow buffer if needed
             this.resize(this.capacity << 1);
         }
+
+        this.structFormat.copy(struct, null, this.baseAddr + this.index * this.stride);
         return this.index++;
     }
 
-    @Override
-    public LocalAttributeWriter copyFrom(int srcVertexIndex) {
-        //who needs parameter validation anyway, amiright?
-        PUnsafe.copyMemory(srcVertexIndex * this.stride + this.addr, this.index * this.stride + this.addr, this.stride);
-        return this;
-    }
-
     protected void resize(int capacity) {
+        checkArg(capacity > this.capacity, "cannot resize from %d to %d", this.capacity, capacity);
+
         this.capacity = capacity;
-        this.addr = this.alloc.realloc(this.addr, capacity * this.stride);
-
-        for (AttributeImpl attrib : this.format.attribsArray()) {
-            int index = attrib.index();
-            this.offsets[index] = this.addr + this.format.offsetsPacked()[index];
-        }
-    }
-
-    protected long offset(int vertexIndex, int attributeIndex) {
-        return vertexIndex * this.stride + this.offsets[attributeIndex];
-    }
-
-    @Override
-    public LocalAttributeWriter set(@NonNull Attribute.Int1 attribIn, int v0) {
-        AttributeImpl attrib = (AttributeImpl) attribIn;
-        attrib.setPacked(null, this.offset(this.index, attrib.index()), v0);
-        return this;
-    }
-
-    @Override
-    public LocalAttributeWriter set(@NonNull Attribute.Int2 attribIn, int v0, int v1) {
-        AttributeImpl attrib = (AttributeImpl) attribIn;
-        attrib.setPacked(null, this.offset(this.index, attrib.index()), v0, v1);
-        return this;
-    }
-
-    @Override
-    public LocalAttributeWriter set(@NonNull Attribute.Int3 attribIn, int v0, int v1, int v2) {
-        AttributeImpl attrib = (AttributeImpl) attribIn;
-        attrib.setPacked(null, this.offset(this.index, attrib.index()), v0, v1, v2);
-        return this;
-    }
-
-    @Override
-    public LocalAttributeWriter setARGB(@NonNull Attribute.Int3 attribIn, int argb) {
-        AttributeImpl attrib = (AttributeImpl) attribIn;
-        attrib.setPackedARGB(null, this.offset(this.index, attrib.index()), argb);
-        return this;
-    }
-
-    @Override
-    public LocalAttributeWriter set(@NonNull Attribute.Int4 attribIn, int v0, int v1, int v2, int v3) {
-        AttributeImpl attrib = (AttributeImpl) attribIn;
-        attrib.setPacked(null, this.offset(this.index, attrib.index()), v0, v1, v2, v3);
-        return this;
-    }
-
-    @Override
-    public LocalAttributeWriter setARGB(@NonNull Attribute.Int4 attribIn, int argb) {
-        AttributeImpl attrib = (AttributeImpl) attribIn;
-        attrib.setPackedARGB(null, this.offset(this.index, attrib.index()), argb);
-        return this;
+        this.baseAddr = this.gl.directMemoryAllocator().realloc(this.baseAddr, capacity * this.stride);
     }
 }

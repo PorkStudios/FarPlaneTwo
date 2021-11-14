@@ -22,15 +22,25 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct.format;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
+
+import java.util.List;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Getter
 public abstract class StructFormat<S, L extends StructLayout<S>> {
-    @NonNull
-    protected final L layout;
+    protected final String layoutName;
+
+    protected final String structName;
+    protected final List<GLSLField> glslFields;
+
+    public StructFormat(@NonNull L layout) {
+        this.layoutName = layout.layoutName();
+
+        this.structName = layout.structInfo().name();
+        this.glslFields = layout.structInfo().memberFields();
+    }
 }

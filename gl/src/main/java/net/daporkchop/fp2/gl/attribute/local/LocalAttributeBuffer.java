@@ -21,14 +21,14 @@
 package net.daporkchop.fp2.gl.attribute.local;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
+import net.daporkchop.fp2.gl.GLResource;
 
 /**
  * A resizeable array of local attribute data in server memory.
  *
  * @author DaPorkchop_
  */
-public interface LocalAttributeBuffer extends BaseAttributeBuffer {
+public interface LocalAttributeBuffer<S> extends GLResource {
     /**
      * @return the number of attribute data elements that this buffer can store
      */
@@ -49,7 +49,6 @@ public interface LocalAttributeBuffer extends BaseAttributeBuffer {
      *
      * @param startIndex the destination index for the first attribute data element
      * @param writer     a {@link LocalAttributeWriter} containing the sequence of attribute data elements to copy
-     * @throws IllegalArgumentException if {@code writer} doesn't use {@link #format()}
      */
-    void set(int startIndex, @NonNull LocalAttributeWriter writer);
+    void set(int startIndex, @NonNull LocalAttributeWriter<S> writer);
 }

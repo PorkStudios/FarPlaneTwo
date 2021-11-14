@@ -30,6 +30,8 @@ import net.daporkchop.fp2.gl.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.index.IndexBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeBufferVertexAttribute;
+import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.index.IndexBufferImpl;
 import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutImpl;
@@ -55,7 +57,7 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyInde
 
     protected final List<UniformAttributeBufferImpl> uniforms = new ArrayList<>();
     protected final List<BaseAttributeBufferImpl> globals = new ArrayList<>();
-    protected final List<LocalAttributeBufferImpl> locals = new ArrayList<>();
+    protected final List<LocalAttributeBufferImpl<?>> locals = new ArrayList<>();
 
     protected IndexBufferImpl indices;
 
@@ -86,7 +88,7 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyInde
     }
 
     @Override
-    public DrawBindingBuilder<DrawBinding> withLocals(@NonNull LocalAttributeBuffer locals) {
+    public DrawBindingBuilder<DrawBinding> withLocals(@NonNull LocalAttributeBuffer<?> locals) {
         this.locals.add((LocalAttributeBufferImpl) locals);
         return this;
     }
@@ -106,8 +108,8 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyInde
         }
 
         { //locals
-            Set<AttributeFormatImpl> givenFormats = this.locals.stream().map(LocalAttributeBufferImpl::format).collect(Collectors.toSet());
-            Set<AttributeFormatImpl> expectedFormats = this.layout.localFormatsByName().values();
+            Set<LocalAttributeFormatImpl<?>> givenFormats = this.locals.stream().map(LocalAttributeBufferImpl::format).collect(Collectors.toSet());
+            Set<LocalAttributeFormatImpl<?>> expectedFormats = this.layout.localFormatsByName().values();
             checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
         }
 

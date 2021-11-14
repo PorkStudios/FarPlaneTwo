@@ -25,8 +25,12 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
+import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -34,9 +38,33 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class GlobalAttributeBufferVertexAttribute extends LocalAttributeBufferImpl implements GlobalAttributeBuffer {
+public class GlobalAttributeBufferVertexAttribute extends BaseAttributeBufferImpl implements GlobalAttributeBuffer {
+    protected final GLBufferImpl buffer;
+    protected final long stride;
+
+    protected int capacity;
+
     public GlobalAttributeBufferVertexAttribute(@NonNull AttributeFormatImpl format, @NonNull BufferUsage usage) {
-        super(format, usage);
+        super(format);
+
+        this.buffer = this.gl.createBuffer(usage);
+        this.stride = format.stridePacked();
+    }
+
+    @Override
+    public void close() {
+        this.buffer.close();
+    }
+
+    @Override
+    public void resize(int capacity) {
+        this.capacity = capacity;
+
+        this.buffer.resize(capacity * this.stride);
+    }
+
+    public void bindVertexAttribute(@NonNull GLAPI api, int bindingIndex, @NonNull AttributeImpl attrib) {
+        this.buffer.bind(BufferTarget.ARRAY_BUFFER, target -> attrib.configureVertexAttribute(api, bindingIndex, this.format.offsetsPacked()[attrib.index()], toInt(this.stride, "stride")));
     }
 
     @Override

@@ -18,27 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.gl.attribute.local;
+package net.daporkchop.fp2.gl.opengl.attribute.common;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.common.util.capability.CloseableResource;
 
 /**
- * A buffer in client memory which is used for building sequences of local attribute data.
- *
  * @author DaPorkchop_
  */
-public interface LocalAttributeWriter<S> extends CloseableResource {
-    /**
-     * @return the number of vertices written so far
-     */
-    int size();
-
-    /**
-     * Appends a new vertex with data from the given {@link S}.
-     *
-     * @param struct the struct containing the vertex data
-     * @return the index of the completed vertex
-     */
-    int put(@NonNull S struct);
+public interface VertexAttributeBuffer {
+    void configureVAO(@NonNull int[] attributeIndices);
 }

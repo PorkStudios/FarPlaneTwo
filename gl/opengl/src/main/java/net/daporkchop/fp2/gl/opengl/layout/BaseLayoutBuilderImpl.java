@@ -23,10 +23,12 @@ package net.daporkchop.fp2.gl.opengl.layout;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
 import net.daporkchop.fp2.gl.layout.BaseLayout;
 import net.daporkchop.fp2.gl.layout.LayoutBuilder;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeFormatImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +43,7 @@ public abstract class BaseLayoutBuilderImpl<L extends BaseLayout> implements Lay
 
     protected final List<AttributeFormatImpl> uniforms = new ArrayList<>();
     protected final List<AttributeFormatImpl> globals = new ArrayList<>();
-    protected final List<AttributeFormatImpl> locals = new ArrayList<>();
+    protected final List<LocalAttributeFormatImpl<?>> locals = new ArrayList<>();
     protected final List<AttributeFormatImpl> outputs = new ArrayList<>();
 
     @Override
@@ -57,8 +59,8 @@ public abstract class BaseLayoutBuilderImpl<L extends BaseLayout> implements Lay
     }
 
     @Override
-    public LayoutBuilder<L> withLocals(@NonNull AttributeFormat locals) {
-        this.locals.add((AttributeFormatImpl) locals);
+    public LayoutBuilder<L> withLocals(@NonNull LocalAttributeFormat<?> locals) {
+        this.locals.add((LocalAttributeFormatImpl<?>) locals);
         return this;
     }
 

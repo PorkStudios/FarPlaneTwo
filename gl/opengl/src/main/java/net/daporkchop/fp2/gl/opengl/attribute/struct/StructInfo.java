@@ -21,9 +21,11 @@
 package net.daporkchop.fp2.gl.opengl.attribute.struct;
 
 import com.google.common.collect.ImmutableList;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.Attrib;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 import org.objectweb.asm.MethodVisitor;
 
 import java.lang.reflect.Field;
@@ -40,6 +42,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
+@EqualsAndHashCode(of = "clazz")
 public class StructInfo<S> {
     protected final Class<S> clazz;
     protected final List<StructMember<S>> members;
@@ -72,7 +75,7 @@ public class StructInfo<S> {
 
                 String baseName = name.substring(0, name.length() - vectorAxes[0].length());
 
-                builder.add(new StructMember<>(clazz, name, attrib, Stream.of(vectorAxes)
+                builder.add(new StructMember<>(clazz, baseName, attrib, Stream.of(vectorAxes)
                         .map(axisSuffix -> {
                             Field componentField = fieldsByName.remove(baseName + axisSuffix);
                             checkArg(componentField != null, "no such field: %s%s", baseName, axisSuffix);
@@ -83,6 +86,16 @@ public class StructInfo<S> {
         }
 
         this.members = builder.build();
+    }
+
+    public String name() {
+        return this.clazz.getSimpleName();
+    }
+
+    public List<GLSLField> memberFields() {
+        return this.members.stream()
+                .map(member -> new GLSLField(member.unpackedStage.glslType(), member.name))
+                .collect(Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
     }
 
     public void glslStructDefinition(@NonNull StringBuilder builder) {

@@ -24,6 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
@@ -92,6 +93,8 @@ public interface GL extends AutoCloseable {
      * @return a builder for constructing a new {@link IndexFormat}
      */
     IndexFormatBuilder.TypeSelectionStage createIndexFormat();
+
+    <S> LocalAttributeFormat<S> createLocalFormat(@NonNull Class<S> clazz);
 
     /**
      * @return a builder for constructing a new {@link AttributeFormat}

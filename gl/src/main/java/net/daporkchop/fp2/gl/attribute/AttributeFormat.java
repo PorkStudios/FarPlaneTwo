@@ -63,19 +63,4 @@ public interface AttributeFormat {
      * @return a new {@link GlobalAttributeBuffer}
      */
     GlobalAttributeBuffer createGlobalBuffer(@NonNull BufferUsage usage);
-
-    /**
-     * Creates a new {@link LocalAttributeWriter} using this attribute format.
-     *
-     * @return a new {@link LocalAttributeWriter}
-     */
-    LocalAttributeWriter createLocalWriter();
-
-    /**
-     * Creates a new {@link LocalAttributeBuffer} using this attribute format.
-     *
-     * @param usage the {@link BufferUsage} to use for the underlying OpenGL buffers
-     * @return a new {@link LocalAttributeBuffer}
-     */
-    LocalAttributeBuffer createLocalBuffer(@NonNull BufferUsage usage);
 }

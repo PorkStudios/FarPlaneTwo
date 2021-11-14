@@ -26,8 +26,8 @@ import net.daporkchop.fp2.gl.buffer.BufferUsage;
 /**
  * @author DaPorkchop_
  */
-public interface LocalAttributeFormat<T> {
-    //LocalAttributeWriter<T> createWriter();
+public interface LocalAttributeFormat<S> {
+    LocalAttributeWriter<S> createWriter();
 
-    //LocalAttributeBuffer<T> createBuffer(@NonNull BufferUsage usage);
+    LocalAttributeBuffer<S> createBuffer(@NonNull BufferUsage usage);
 }

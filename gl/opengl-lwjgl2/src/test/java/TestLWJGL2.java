@@ -19,11 +19,14 @@
  */
 
 import com.google.common.base.Strings;
+import lombok.Data;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.Attrib;
 import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
@@ -32,6 +35,7 @@ import net.daporkchop.fp2.gl.attribute.AttributeType;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
@@ -130,20 +134,7 @@ public class TestLWJGL2 {
             outputFormat = builder.build();
         }
 
-        Attribute.Int2 attrPos;
-        AttributeFormat localFormat;
-
-        {
-            AttributeFormatBuilder builder = gl.createAttributeFormat()
-                    .name("LOCAL_0");
-
-            attrPos = builder.attrib().name("a_pos")
-                    .int2(AttributeType.Integer.BYTE)
-                    .interpretation(AttributeInterpretation.FLOAT)
-                    .build();
-
-            localFormat = builder.build();
-        }
+        LocalAttributeFormat<LocalAttribs> localFormat = gl.createLocalFormat(LocalAttribs.class);
 
         Attribute.Int2 attrOffset;
         Attribute.Int4 attrColor;
@@ -204,14 +195,14 @@ public class TestLWJGL2 {
                 .build();
         DrawShaderProgram drawShaderProgram = gl.linkShaderProgram(layout, vertexShader, fragmentShader);
 
-        LocalAttributeBuffer localBuffer = localFormat.createLocalBuffer(BufferUsage.STATIC_DRAW);
+        LocalAttributeBuffer<LocalAttribs> localBuffer = localFormat.createBuffer(BufferUsage.STATIC_DRAW);
         localBuffer.resize(4);
 
-        try (LocalAttributeWriter writer = localFormat.createLocalWriter()) {
-            writer.set(attrPos, 16, 16).endVertex();
-            writer.set(attrPos, 16, 32).endVertex();
-            writer.set(attrPos, 32, 32).endVertex();
-            writer.set(attrPos, 32, 16).endVertex();
+        try (LocalAttributeWriter<LocalAttribs> writer = localFormat.createWriter()) {
+            writer.put(new LocalAttribs((byte) 16, (byte) 16));
+            writer.put(new LocalAttribs((byte) 16, (byte) 32));
+            writer.put(new LocalAttribs((byte) 32, (byte) 32));
+            writer.put(new LocalAttribs((byte) 32, (byte) 16));
 
             localBuffer.set(0, writer);
         }
@@ -283,5 +274,12 @@ public class TestLWJGL2 {
             Display.update();
             Display.sync(60);
         }
+    }
+
+    @Data
+    public static class LocalAttribs {
+        @Attrib(vectorAxes = {"X", "Y"}, convert = Attrib.Conversion.TO_FLOAT)
+        public final byte a_posX;
+        public final byte a_posY;
     }
 }

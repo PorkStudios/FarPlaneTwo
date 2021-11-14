@@ -52,7 +52,7 @@ public interface DrawBindingBuilder<B extends DrawBinding> {
      *
      * @param locals the local attributes
      */
-    DrawBindingBuilder<B> withLocals(@NonNull LocalAttributeBuffer locals);
+    DrawBindingBuilder<B> withLocals(@NonNull LocalAttributeBuffer<?> locals);
 
     /**
      * @return the constructed {@link B}

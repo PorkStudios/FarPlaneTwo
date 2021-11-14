@@ -21,7 +21,7 @@
 import net.daporkchop.fp2.gl.attribute.Attrib;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLBlockMemoryLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.FormatGenerator;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.StructFormatGenerator;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.VertexAttributeLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 
@@ -78,7 +78,7 @@ public class StructCodegenTest {
             System.out.println(builder);
         }
 
-        InterleavedStructFormat<StructCodegenTest> formatStd140 = new FormatGenerator().getInterleaved(GLSLBlockMemoryLayout.STD140.layout(info));
-        InterleavedStructFormat<StructCodegenTest> formatVA = new FormatGenerator().getInterleaved(VertexAttributeLayout.interleaved(info));
+        InterleavedStructFormat<StructCodegenTest> formatStd140 = new StructFormatGenerator().getInterleaved(GLSLBlockMemoryLayout.STD140.layout(info));
+        InterleavedStructFormat<StructCodegenTest> formatVA = new StructFormatGenerator().getInterleaved(VertexAttributeLayout.interleaved(info));
     }
 }

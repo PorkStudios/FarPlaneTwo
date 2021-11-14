@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.layout;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
 
 /**
  * Builder for {@link BaseLayout}s.
@@ -49,7 +50,7 @@ public interface LayoutBuilder<L extends BaseLayout> {
      *
      * @param locals the formats of the local attributes
      */
-    LayoutBuilder<L> withLocals(@NonNull AttributeFormat locals);
+    LayoutBuilder<L> withLocals(@NonNull LocalAttributeFormat<?> locals);
 
     /**
      * Adds a {@link AttributeFormat} which contains output attributes.

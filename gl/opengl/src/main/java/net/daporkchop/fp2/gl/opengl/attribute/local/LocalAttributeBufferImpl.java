@@ -22,15 +22,14 @@ package net.daporkchop.fp2.gl.opengl.attribute.local;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
-import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
+import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.common.VertexAttributeBuffer;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
+import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
+import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -38,17 +37,23 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class LocalAttributeBufferImpl extends BaseAttributeBufferImpl implements LocalAttributeBuffer {
+public class LocalAttributeBufferImpl<S> implements LocalAttributeBuffer<S>, VertexAttributeBuffer {
+    protected final OpenGL gl;
+    protected final LocalAttributeFormatImpl<S> format;
+    protected final InterleavedStructFormat<S> structFormat;
+
     protected final GLBufferImpl buffer;
     protected final long stride;
 
     protected int capacity;
 
-    public LocalAttributeBufferImpl(@NonNull AttributeFormatImpl format, @NonNull BufferUsage usage) {
-        super(format);
+    public LocalAttributeBufferImpl(@NonNull LocalAttributeFormatImpl<S> format, @NonNull BufferUsage usage) {
+        this.gl = format.gl();
+        this.format = format;
+        this.structFormat = format.structFormat();
 
         this.buffer = this.gl.createBuffer(usage);
-        this.stride = format.stridePacked();
+        this.stride = format.structFormat().stride();
     }
 
     @Override
@@ -58,21 +63,21 @@ public class LocalAttributeBufferImpl extends BaseAttributeBufferImpl implements
 
     @Override
     public void resize(int capacity) {
-        this.capacity = capacity;
-
+        this.capacity = notNegative(capacity, "capacity");
         this.buffer.resize(capacity * this.stride);
     }
 
     @Override
-    public void set(int startIndex, @NonNull LocalAttributeWriter _writer) {
-        LocalAttributeWriterImpl writer = (LocalAttributeWriterImpl) _writer;
-        checkArg(writer.format() == this.format, "mismatched attribute formats!");
+    public void set(int startIndex, @NonNull LocalAttributeWriter<S> _writer) {
+        LocalAttributeWriterImpl<S> writer = (LocalAttributeWriterImpl<S>) _writer;
+        checkArg(writer.structFormat() == this.structFormat, "mismatched struct formats!");
         checkRangeLen(this.capacity, startIndex, writer.size());
 
-        this.buffer.uploadRange(startIndex * this.stride, writer.addr, writer.size() * this.stride);
+        this.buffer.uploadRange(startIndex * this.stride, writer.baseAddr, writer.size() * this.stride);
     }
 
-    public void bindVertexAttribute(@NonNull GLAPI api, int bindingIndex, @NonNull AttributeImpl attrib) {
-        this.buffer.bind(BufferTarget.ARRAY_BUFFER, target -> attrib.configureVertexAttribute(api, bindingIndex, this.format.offsetsPacked()[attrib.index()], toInt(this.stride, "stride")));
+    @Override
+    public void configureVAO(@NonNull int[] attributeIndices) {
+        this.buffer.bind(BufferTarget.ARRAY_BUFFER, target -> this.structFormat.configureVAO(this.gl.api(), attributeIndices));
     }
 }

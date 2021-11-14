@@ -20,8 +20,46 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.local;
 
+import lombok.Getter;
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
+import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.common.VertexAttributeFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.VertexAttributeLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
+
+import java.util.List;
+
 /**
  * @author DaPorkchop_
  */
-public class LocalAttributeFormatImpl {
+@Getter
+public class LocalAttributeFormatImpl<S> implements LocalAttributeFormat<S>, VertexAttributeFormat {
+    protected final OpenGL gl;
+    protected final InterleavedStructFormat<S> structFormat;
+
+    public LocalAttributeFormatImpl(@NonNull OpenGL gl, @NonNull Class<S> clazz) {
+        this.gl = gl;
+        this.structFormat = gl.structFormatGenerator().getInterleaved(VertexAttributeLayout.interleaved(new StructInfo<>(clazz)));
+    }
+
+    @Override
+    public List<GLSLField> attributeFields() {
+        return this.structFormat.glslFields();
+    }
+
+    @Override
+    public LocalAttributeWriter<S> createWriter() {
+        return new LocalAttributeWriterImpl<>(this);
+    }
+
+    @Override
+    public LocalAttributeBuffer<S> createBuffer(@NonNull BufferUsage usage) {
+        return new LocalAttributeBufferImpl<>(this, usage);
+    }
 }

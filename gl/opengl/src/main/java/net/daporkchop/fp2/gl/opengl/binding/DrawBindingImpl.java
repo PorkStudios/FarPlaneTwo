@@ -28,7 +28,10 @@ import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.common.VertexAttributeBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeBufferTexture;
+import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutImpl;
 import net.daporkchop.fp2.gl.opengl.texture.TextureImpl;
@@ -66,9 +69,13 @@ public class DrawBindingImpl implements DrawBinding {
         this.gl.resourceArena().register(this, this.vao, this.api::glDeleteVertexArray);
 
         //group attribute buffers by attribute format
-        Map<AttributeFormatImpl, BaseAttributeBufferImpl> buffersByFormat = Stream.of(builder.uniforms, builder.globals, builder.locals)
+        Map<AttributeFormatImpl, BaseAttributeBufferImpl> buffersByFormatOld = Stream.of(builder.uniforms, builder.globals)
                 .flatMap(List::stream)
                 .collect(Collectors.toMap(BaseAttributeBufferImpl::format, Function.identity()));
+
+        Map<LocalAttributeFormatImpl<?>, LocalAttributeBufferImpl<?>> buffersByFormat = Stream.of(builder.locals)
+                .flatMap(List::stream)
+                .collect(Collectors.toMap(LocalAttributeBufferImpl::format, Function.identity()));
 
         //configure all vertex attributes in the VAO
         int oldVao = this.api.glGetInteger(GL_VERTEX_ARRAY_BINDING);
@@ -76,10 +83,17 @@ public class DrawBindingImpl implements DrawBinding {
             this.api.glBindVertexArray(this.vao);
 
             this.layout.vertexBindingsByFormat().forEach((format, bindings) -> {
-                BaseAttributeBufferImpl buffer = buffersByFormat.remove(format);
+                BaseAttributeBufferImpl buffer = buffersByFormatOld.remove(format);
                 checkArg(buffer != null, format);
 
                 bindings.forEach(binding -> binding.enableAndBind(this.api, buffer));
+            });
+
+            this.layout.vertexAttributeBindingsByFormat().forEach((format, binding) -> {
+                VertexAttributeBuffer buffer = buffersByFormat.remove(format);
+                checkArg(buffer != null, format);
+
+                binding.enableAndBind(this.api, buffer);
             });
         } finally {
             this.api.glBindVertexArray(oldVao);
@@ -88,7 +102,7 @@ public class DrawBindingImpl implements DrawBinding {
         //configure uniform buffers
         this.uniformBuffers = this.layout.uniformBlockBindings().stream()
                 .map(blockBinding -> {
-                    UniformAttributeBufferImpl buffer = (UniformAttributeBufferImpl) buffersByFormat.remove(blockBinding.format());
+                    UniformAttributeBufferImpl buffer = (UniformAttributeBufferImpl) buffersByFormatOld.remove(blockBinding.format());
                     checkArg(buffer != null, blockBinding.format());
 
                     return new UniformBufferBinding(buffer, blockBinding.bindingIndex());
@@ -98,7 +112,7 @@ public class DrawBindingImpl implements DrawBinding {
         //configure textures
         this.textures = this.layout.textureBindings().stream()
                 .flatMap(textureBinding -> {
-                    GlobalAttributeBufferTexture buffer = (GlobalAttributeBufferTexture) buffersByFormat.remove(textureBinding.format());
+                    GlobalAttributeBufferTexture buffer = (GlobalAttributeBufferTexture) buffersByFormatOld.remove(textureBinding.format());
                     checkArg(buffer != null, textureBinding.format());
 
                     return Stream.of(textureBinding.format().attribsArray())
@@ -107,6 +121,7 @@ public class DrawBindingImpl implements DrawBinding {
                 .collect(Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
 
         //ensure every attribute has been used
+        checkArg(buffersByFormatOld.isEmpty(), "some buffers have not been bound to anything!", buffersByFormatOld.keySet());
         checkArg(buffersByFormat.isEmpty(), "some buffers have not been bound to anything!", buffersByFormat.keySet());
     }
 
