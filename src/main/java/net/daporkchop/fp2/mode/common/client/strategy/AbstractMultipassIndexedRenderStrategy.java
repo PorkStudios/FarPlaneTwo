@@ -23,6 +23,8 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
 import net.daporkchop.fp2.gl.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
 import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
@@ -44,28 +46,32 @@ import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos, T extends IFarTile> extends AbstractRenderStrategy<POS, T, IndexedBakeOutput, DrawBindingIndexed, DrawCommandIndexed> implements IMultipassRenderStrategy<POS, T, IndexedBakeOutput, DrawBindingIndexed, DrawCommandIndexed> {
+public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos, T extends IFarTile, SG, SL> extends AbstractRenderStrategy<POS, T, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> implements IMultipassRenderStrategy<POS, T, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> {
     public AbstractMultipassIndexedRenderStrategy(@NonNull IFarRenderMode<POS, T> mode, @NonNull GL gl) {
         super(mode, gl);
     }
 
     public abstract IndexFormat indexFormat();
 
+    public abstract GlobalAttributeFormat<SG> globalFormat();
+
+    public abstract LocalAttributeFormat<SL> vertexFormat();
+
     @Override
-    public IRenderIndex<POS, IndexedBakeOutput, DrawBindingIndexed, DrawCommandIndexed> createIndex() {
+    public IRenderIndex<POS, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> createIndex() {
         return false && FP2Config.global().performance().gpuFrustumCulling()
                 ? new GPUCulledRenderIndex<>(this)
                 : new CPUCulledRenderIndex<>(this);
     }
 
     @Override
-    public IndexedBakeOutput createBakeOutput() {
-        return new IndexedBakeOutput(this.globalFormat().createGlobalWriter(), this.vertexFormat().createLocalWriter(), PArrays.filledFrom(RENDER_PASS_COUNT, IndexWriter[]::new, this.indexFormat()::createWriter));
+    public IndexedBakeOutput<SG, SL> createBakeOutput() {
+        return new IndexedBakeOutput<>(this.globalFormat().createWriter(), this.vertexFormat().createWriter(), PArrays.filledFrom(RENDER_PASS_COUNT, IndexWriter[]::new, this.indexFormat()::createWriter));
     }
 
     @Override
-    public IBakeOutputStorage<IndexedBakeOutput, DrawBindingIndexed, DrawCommandIndexed> createBakeOutputStorage() {
-        return new IndexedBakeOutputStorage(this.alloc, this.globalFormat(), this.vertexFormat(), this.indexFormat(), RENDER_PASS_COUNT);
+    public IBakeOutputStorage<IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> createBakeOutputStorage() {
+        return new IndexedBakeOutputStorage<>(this.alloc, this.globalFormat(), this.vertexFormat(), this.indexFormat(), RENDER_PASS_COUNT);
     }
 
     @Override

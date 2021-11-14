@@ -48,10 +48,6 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, BO 
 
     GL gl();
 
-    AttributeFormat globalFormat();
-
-    AttributeFormat vertexFormat();
-
     DrawLayout drawLayout();
 
     IRenderIndex<POS, BO, DB, DC> createIndex();

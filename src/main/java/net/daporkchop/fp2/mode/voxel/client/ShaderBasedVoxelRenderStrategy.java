@@ -25,6 +25,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
 import net.daporkchop.fp2.gl.index.IndexFormat;
 import net.daporkchop.fp2.gl.index.IndexType;
 import net.daporkchop.fp2.gl.layout.DrawLayout;
@@ -40,6 +42,8 @@ import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.AbstractMultipassIndexedRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.mode.voxel.client.struct.VoxelGlobalAttributes;
+import net.daporkchop.fp2.mode.voxel.client.struct.VoxelLocalAttributes;
 
 import static net.daporkchop.fp2.FP2.*;
 
@@ -47,15 +51,9 @@ import static net.daporkchop.fp2.FP2.*;
  * @author DaPorkchop_
  */
 @Getter
-public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRenderStrategy<VoxelPos, VoxelTile> {
-    protected final Attribute.Int4 attrGlobalTilePos;
-    protected final AttributeFormat globalFormat;
-
-    protected final Attribute.Int1 attrLocalState;
-    protected final Attribute.Int2 attrLocalLight;
-    protected final Attribute.Int3 attrLocalColor;
-    protected final Attribute.Int3 attrLocalPos;
-    protected final AttributeFormat vertexFormat;
+public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRenderStrategy<VoxelPos, VoxelTile, VoxelGlobalAttributes, VoxelLocalAttributes> {
+    protected final GlobalAttributeFormat<VoxelGlobalAttributes> globalFormat;
+    protected final LocalAttributeFormat<VoxelLocalAttributes> vertexFormat;
 
     protected final IndexFormat indexFormat;
 
@@ -63,51 +61,12 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
 
     protected final DrawShaderProgram blockShader;
     protected final DrawShaderProgram stencilShader;
-    
+
     public ShaderBasedVoxelRenderStrategy(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode, @NonNull GL gl) {
         super(mode, gl);
 
-        {
-            AttributeFormatBuilder builder = gl.createAttributeFormat().name("VOXEL_GLOBAL");
-
-            this.attrGlobalTilePos = builder.attrib()
-                    .name("in_tile_position")
-                    .int4(AttributeType.Integer.INT)
-                    .interpretation(AttributeInterpretation.INTEGER)
-                    .build();
-
-            this.globalFormat = builder.build();
-        }
-
-        {
-            AttributeFormatBuilder builder = gl.createAttributeFormat().name("VOXEL_LOCAL");
-
-            this.attrLocalState = builder.attrib()
-                    .name("in_state")
-                    .int1(AttributeType.Integer.UNSIGNED_INT)
-                    .interpretation(AttributeInterpretation.INTEGER)
-                    .build();
-
-            this.attrLocalLight = builder.attrib()
-                    .name("in_light")
-                    .int2(AttributeType.Integer.UNSIGNED_BYTE)
-                    .interpretation(AttributeInterpretation.NORMALIZED_FLOAT)
-                    .build();
-
-            this.attrLocalColor = builder.attrib()
-                    .name("in_color")
-                    .int3(AttributeType.Integer.UNSIGNED_BYTE)
-                    .interpretation(AttributeInterpretation.NORMALIZED_FLOAT)
-                    .build();
-
-            this.attrLocalPos = builder.attrib()
-                    .name("in_pos")
-                    .int3(AttributeType.Integer.UNSIGNED_BYTE)
-                    .interpretation(AttributeInterpretation.FLOAT)
-                    .build();
-
-            this.vertexFormat = builder.build();
-        }
+        this.globalFormat = gl.createGlobalFormat(VoxelGlobalAttributes.class);
+        this.vertexFormat = gl.createLocalFormat(VoxelLocalAttributes.class);
 
         this.indexFormat = gl.createIndexFormat()
                 .type(IndexType.UNSIGNED_SHORT)
@@ -150,7 +109,7 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
     }
 
     @Override
-    public IRenderBaker<VoxelPos, VoxelTile, IndexedBakeOutput> createBaker() {
-        return new VoxelBaker(this);
+    public IRenderBaker<VoxelPos, VoxelTile, IndexedBakeOutput<VoxelGlobalAttributes, VoxelLocalAttributes>> createBaker() {
+        return new VoxelBaker();
     }
 }

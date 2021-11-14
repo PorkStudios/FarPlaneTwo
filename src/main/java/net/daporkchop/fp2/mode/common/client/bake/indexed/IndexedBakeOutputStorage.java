@@ -24,7 +24,9 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.binding.DrawBindingBuilder;
@@ -49,7 +51,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public class IndexedBakeOutputStorage extends AbstractBakeOutputStorage<IndexedBakeOutput, DrawBindingIndexed, DrawCommandIndexed> {
+public class IndexedBakeOutputStorage<SG, SL> extends AbstractBakeOutputStorage<IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> {
     /*
      * struct Slot {
      *   int baseVertex;
@@ -119,13 +121,13 @@ public class IndexedBakeOutputStorage extends AbstractBakeOutputStorage<IndexedB
     @Getter
     protected final int passes;
 
-    public IndexedBakeOutputStorage(@NonNull Allocator alloc, @NonNull AttributeFormat globalFormat, @NonNull AttributeFormat vertexFormat, @NonNull IndexFormat indexFormat, int passes) {
+    public IndexedBakeOutputStorage(@NonNull Allocator alloc, @NonNull GlobalAttributeFormat<SG> globalFormat, @NonNull LocalAttributeFormat<SL> vertexFormat, @NonNull IndexFormat indexFormat, int passes) {
         this.alloc = alloc;
 
         this.passes = positive(passes, "passes");
         this.indexSize = indexFormat.size();
 
-        this.globalBuffer = globalFormat.createGlobalBuffer(BufferUsage.STATIC_DRAW);
+        this.globalBuffer = globalFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
         this.slotSize = _SLOT_SIZE(passes);
         this.slotAlloc = new SequentialFixedSizeAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> {
@@ -133,7 +135,7 @@ public class IndexedBakeOutputStorage extends AbstractBakeOutputStorage<IndexedB
             this.globalBuffer.resize(toInt(capacity));
         }));
 
-        this.vertexBuffer = vertexFormat.createLocalBuffer(BufferUsage.STATIC_DRAW);
+        this.vertexBuffer = vertexFormat.createBuffer(BufferUsage.STATIC_DRAW);
         this.vertexAlloc = new SequentialVariableSizedAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> this.vertexBuffer.resize(toInt(capacity))));
 
         this.indexAllocs = new Allocator[passes];

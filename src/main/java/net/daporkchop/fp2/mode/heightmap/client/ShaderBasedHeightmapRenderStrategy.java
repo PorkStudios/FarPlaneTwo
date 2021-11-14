@@ -25,6 +25,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
 import net.daporkchop.fp2.gl.index.IndexFormat;
 import net.daporkchop.fp2.gl.index.IndexType;
 import net.daporkchop.fp2.gl.layout.DrawLayout;
@@ -40,6 +42,8 @@ import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.AbstractMultipassIndexedRenderStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
+import net.daporkchop.fp2.mode.heightmap.client.struct.HeightmapGlobalAttributes;
+import net.daporkchop.fp2.mode.heightmap.client.struct.HeightmapLocalAttributes;
 
 import static net.daporkchop.fp2.FP2.*;
 
@@ -47,17 +51,9 @@ import static net.daporkchop.fp2.FP2.*;
  * @author DaPorkchop_
  */
 @Getter
-public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexedRenderStrategy<HeightmapPos, HeightmapTile> {
-    protected final Attribute.Int3 attrGlobalTilePos;
-    protected final AttributeFormat globalFormat;
-
-    protected final Attribute.Int1 attrLocalState;
-    protected final Attribute.Int2 attrLocalLight;
-    protected final Attribute.Int3 attrLocalColor;
-    protected final Attribute.Int2 attrLocalPosHoriz;
-    protected final Attribute.Int1 attrLocalHeightInt;
-    protected final Attribute.Int1 attrLocalHeightFrac;
-    protected final AttributeFormat vertexFormat;
+public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexedRenderStrategy<HeightmapPos, HeightmapTile, HeightmapGlobalAttributes, HeightmapLocalAttributes> {
+    protected final GlobalAttributeFormat<HeightmapGlobalAttributes> globalFormat;
+    protected final LocalAttributeFormat<HeightmapLocalAttributes> vertexFormat;
 
     protected final IndexFormat indexFormat;
 
@@ -69,63 +65,9 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
     public ShaderBasedHeightmapRenderStrategy(@NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode, @NonNull GL gl) {
         super(mode, gl);
 
-        {
-            AttributeFormatBuilder builder = gl.createAttributeFormat().name("HEIGHTMAP_GLOBAL");
-
-            this.attrGlobalTilePos = builder.attrib()
-                    .name("in_tile_position")
-                    .int3(AttributeType.Integer.INT)
-                    .interpretation(AttributeInterpretation.INTEGER)
-                    .build();
-
-            this.globalFormat = builder.build();
-        }
-
-        {
-            AttributeFormatBuilder builder = gl.createAttributeFormat().name("HEIGHTMAP_LOCAL");
-
-            this.attrLocalState = builder.attrib()
-                    .name("in_state")
-                    .int1(AttributeType.Integer.UNSIGNED_INT)
-                    .interpretation(AttributeInterpretation.INTEGER)
-                    .build();
-
-            this.attrLocalLight = builder.attrib()
-                    .name("in_light")
-                    .int2(AttributeType.Integer.UNSIGNED_BYTE)
-                    .interpretation(AttributeInterpretation.NORMALIZED_FLOAT)
-                    .build();
-
-            this.attrLocalColor = builder.attrib()
-                    .name("in_color")
-                    .int3(AttributeType.Integer.UNSIGNED_BYTE)
-                    .interpretation(AttributeInterpretation.NORMALIZED_FLOAT)
-                    .build();
-
-            this.attrLocalPosHoriz = builder.attrib()
-                    .name("in_pos_horiz")
-                    .int2(AttributeType.Integer.UNSIGNED_BYTE)
-                    .interpretation(AttributeInterpretation.INTEGER)
-                    .build();
-
-            this.attrLocalHeightInt = builder.attrib()
-                    .name("in_height_int")
-                    .int1(AttributeType.Integer.UNSIGNED_INT)
-                    .interpretation(AttributeInterpretation.INTEGER)
-                    .build();
-
-            this.attrLocalHeightFrac = builder.attrib()
-                    .name("in_height_frac")
-                    .int1(AttributeType.Integer.UNSIGNED_BYTE)
-                    .interpretation(AttributeInterpretation.FLOAT)
-                    .build();
-
-            this.vertexFormat = builder.build();
-        }
-
-        this.indexFormat = gl.createIndexFormat()
-                .type(IndexType.UNSIGNED_SHORT)
-                .build();
+        this.globalFormat = gl.createGlobalFormat(HeightmapGlobalAttributes.class);
+        this.vertexFormat = gl.createLocalFormat(HeightmapLocalAttributes.class);
+        this.indexFormat = gl.createIndexFormat().type(IndexType.UNSIGNED_SHORT).build();
 
         this.drawLayout = gl.createDrawLayout()
                 .withGlobals(this.globalFormat)
@@ -164,7 +106,7 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
     }
 
     @Override
-    public IRenderBaker<HeightmapPos, HeightmapTile, IndexedBakeOutput> createBaker() {
-        return new HeightmapBaker(this);
+    public IRenderBaker<HeightmapPos, HeightmapTile, IndexedBakeOutput<HeightmapGlobalAttributes, HeightmapLocalAttributes>> createBaker() {
+        return new HeightmapBaker();
     }
 }

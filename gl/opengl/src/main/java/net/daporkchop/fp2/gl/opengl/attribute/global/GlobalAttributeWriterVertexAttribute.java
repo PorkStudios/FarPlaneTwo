@@ -51,7 +51,7 @@ public class GlobalAttributeWriterVertexAttribute<S> implements GlobalAttributeW
     }
 
     @Override
-    public void put(@NonNull S struct) {
+    public void set(@NonNull S struct) {
         this.structFormat.copy(struct, null, this.addr);
     }
 }

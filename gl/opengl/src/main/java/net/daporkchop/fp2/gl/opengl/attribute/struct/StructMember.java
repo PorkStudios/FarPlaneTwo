@@ -55,14 +55,15 @@ public class StructMember<S> {
         this.clazz = clazz;
         this.name = name;
 
+        Stage packedStage;
         switch (attribute.transform()) {
             case UNCHANGED:
-                this.packedStage = new VectorInputStage(fields.toArray(new Field[0]));
+                packedStage = new VectorInputStage(fields.toArray(new Field[0]));
                 break;
             case INT_ARGB8_TO_BYTE_VECTOR_RGB:
             case INT_ARGB8_TO_BYTE_VECTOR_RGBA:
                 checkArg(fields.size() == 1, "%s requires exactly one field, but got %s", attribute.transform(), fields);
-                this.packedStage = new IntARGB8ToByteVectorInputStage(fields.get(0), attribute.transform() == Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA);
+                packedStage = new IntARGB8ToByteVectorInputStage(fields.get(0), attribute.transform() == Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA);
                 break;
             case ARRAY_TO_MATRIX: {
                 checkArg(fields.size() == 1, "%s requires exactly one field, but got %s", attribute.transform(), fields);
@@ -72,18 +73,22 @@ public class StructMember<S> {
                 boolean _default = matrixDimension._default();
                 checkArg(!_default, "matrixDimension must be set!");
 
-                this.packedStage = new MatrixInputStage(fields.get(0), matrixDimension.columns(), matrixDimension.rows());
+                packedStage = new MatrixInputStage(fields.get(0), matrixDimension.columns(), matrixDimension.rows());
                 break;
             }
             default:
                 throw new UnsupportedOperationException(attribute.transform().toString());
         }
 
-        Stage prevStage = this.packedStage;
+        Stage prevStage = packedStage;
         for (Attribute.Conversion conversion : attribute.convert()) {
             switch (conversion) {
                 case TO_UNSIGNED:
-                    prevStage = new ToUnsignedConversionStage(prevStage);
+                    if (packedStage == prevStage) {
+                        packedStage = prevStage = new ToUnsignedConversionStage(prevStage);
+                    } else {
+                        prevStage = new ToUnsignedConversionStage(prevStage);
+                    }
                     break;
                 case TO_FLOAT:
                     prevStage = new ToFloatConversionStage(prevStage, false);
@@ -98,6 +103,8 @@ public class StructMember<S> {
         if (prevStage.componentType().integer()) { //we have to extend other integer types to int
             prevStage = new ToIntConversionStage(prevStage);
         }
+
+        this.packedStage = packedStage;
         this.unpackedStage = prevStage;
     }
 
@@ -253,7 +260,7 @@ public class StructMember<S> {
                     INT.makeUnsigned(mv);
                 }
             },
-            INT(INT_SIZE, 1.0f / 0x80000000L, UNSIGNED_INT, GLSLPrimitiveType.UINT) {
+            INT(INT_SIZE, 1.0f / 0x80000000L, UNSIGNED_INT, GLSLPrimitiveType.INT) {
                 @Override
                 public void makeUnsigned(@NonNull MethodVisitor mv) {
                     //no-op, we can't make this unsigned...

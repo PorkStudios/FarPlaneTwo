@@ -168,7 +168,7 @@ public class TestLWJGL2 {
         try (GlobalAttributeWriter<GlobalAttribs> writer = globalFormat.createWriter()) {
             for (int i = 0, color = -1, x = 0; x < 2; x++) {
                 for (int y = 0; y < 2; y++, color = 0xFF << (i << 3), i++) {
-                    writer.put(new GlobalAttribs((byte) (x * 32), (byte) (y * 32), 0xFF000000 | color));
+                    writer.set(new GlobalAttribs((byte) (x * 32), (byte) (y * 32), 0xFF000000 | color));
                     globalBuffer.set(i, writer);
                 }
             }

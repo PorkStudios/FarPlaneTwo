@@ -24,16 +24,16 @@
 #include <"fp2:shaders/vert/fog.vert">
 
 ivec3 getLowOffsetPre(int level) {
-    return ivec3(in_pos_horiz.x << level, in_height_int, in_pos_horiz.y << level);
+    return ivec3(a_posHoriz.x << level, a_heightInt, a_posHoriz.y << level);
 }
 
 vec3 getLowOffsetPost() {
-    return vec3(0., in_height_frac / 256., 0.);
+    return vec3(0., a_heightFrac / 256., 0.);
 }
 
 void main() {
     //convert position to vec3 afterwards to minimize precision loss
-    ivec4 tile_position = ivec4(in_tile_position.x, 0, in_tile_position.yz);
+    ivec4 tile_position = ivec4(a_tilePos.x, 0, a_tilePos.yz);
     ivec3 relative_tile_position = (tile_position.xyz << tile_position.w << T_SHIFT) - glState.camera.position_floor;
     vec3 relativePos = vec3(relative_tile_position + getLowOffsetPre(tile_position.w)) + getLowOffsetPost() - glState.camera.position_fract;
 
@@ -47,7 +47,7 @@ void main() {
     vs_out.pos = vs_out.base_pos = vec3(relativePos);
 
     //copy trivial attributes
-    vs_out.light = in_light;
-    vs_out.state = in_state;
-    vs_out.color = computeVertexColor(in_color.rgb, ivec4(in_tile_position.x, 0, in_tile_position.yz));
+    vs_out.light = a_light;
+    vs_out.state = a_state;
+    vs_out.color = computeVertexColor(a_color.rgb, ivec4(a_tilePos.x, 0, a_tilePos.yz));
 }

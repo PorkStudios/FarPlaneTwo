@@ -29,5 +29,5 @@ import net.daporkchop.fp2.gl.attribute.BaseAttributeWriter;
  * @author DaPorkchop_
  */
 public interface GlobalAttributeWriter<S> extends BaseAttributeWriter<S, GlobalAttributeFormat<S>> {
-    void put(@NonNull S struct);
+    void set(@NonNull S struct);
 }

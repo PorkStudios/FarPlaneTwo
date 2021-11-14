@@ -18,47 +18,41 @@
  *
  */
 
-package net.daporkchop.fp2.mode.common.client.bake.indexed;
+package net.daporkchop.fp2.mode.heightmap.client.struct;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
-import net.daporkchop.fp2.gl.index.IndexWriter;
-import net.daporkchop.fp2.mode.common.client.bake.AbstractBakeOutput;
-import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
-
-import java.util.stream.Stream;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import net.daporkchop.fp2.gl.attribute.Attribute;
 
 /**
- * Implementation of {@link IBakeOutput} which contains indexed geometry in multiple render passes.
- *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public class IndexedBakeOutput<SG, SL> extends AbstractBakeOutput {
-    @NonNull
-    protected final GlobalAttributeWriter<SG> globals;
+@AllArgsConstructor
+@NoArgsConstructor
+public class HeightmapLocalAttributes {
+    @Attribute
+    public int a_state;
 
-    @NonNull
-    protected final LocalAttributeWriter<SL> verts;
+    @Attribute(
+            vectorAxes = { "Block", "Sky" },
+            convert = { Attribute.Conversion.TO_UNSIGNED, Attribute.Conversion.TO_NORMALIZED_FLOAT })
+    public byte a_lightBlock;
+    public byte a_lightSky;
 
-    @NonNull
-    protected final IndexWriter[] indices;
+    @Attribute(
+            transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGB,
+            convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
+    public int a_color;
 
-    @Override
-    protected void doRelease() {
-        this.globals.close();
-        this.verts.close();
-        for (IndexWriter writer : this.indices) {
-            writer.close();
-        }
-    }
+    @Attribute(
+            vectorAxes = { "X", "Z" },
+            convert = Attribute.Conversion.TO_UNSIGNED)
+    public byte a_posHorizX;
+    public byte a_posHorizZ;
 
-    @Override
-    public boolean isEmpty() {
-        return this.verts.size() == 0 || Stream.of(this.indices).allMatch(writer -> writer.size() == 0);
-    }
+    @Attribute(convert = Attribute.Conversion.TO_UNSIGNED)
+    public int a_heightInt;
+
+    @Attribute(convert = { Attribute.Conversion.TO_UNSIGNED, Attribute.Conversion.TO_FLOAT })
+    public byte a_heightFrac;
 }
