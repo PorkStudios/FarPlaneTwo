@@ -22,9 +22,11 @@ package net.daporkchop.fp2.gl.opengl.attribute;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeFormat;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Common parent class for attribute buffer implementations.
@@ -32,12 +34,18 @@ import net.daporkchop.fp2.gl.opengl.OpenGL;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseAttributeBufferImpl implements BaseAttributeBuffer {
+public abstract class BaseAttributeBufferImpl<S, F extends BaseAttributeFormatImpl<S>, F_EXTERNAL extends BaseAttributeFormat<S>> implements BaseAttributeBuffer<S, F_EXTERNAL> {
     protected final OpenGL gl;
-    protected final AttributeFormatImpl format;
+    private final F formatImpl;
 
-    public BaseAttributeBufferImpl(@NonNull AttributeFormatImpl format) {
+    public BaseAttributeBufferImpl(@NonNull F format) {
         this.gl = format.gl();
-        this.format = format;
+        this.formatImpl = format;
+    }
+
+    @Override
+    @Deprecated
+    public F_EXTERNAL format() {
+        return uncheckedCast(this.formatImpl);
     }
 }

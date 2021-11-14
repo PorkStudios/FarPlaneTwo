@@ -23,7 +23,6 @@ package net.daporkchop.fp2.mode.voxel.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
-import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
 import net.daporkchop.fp2.gl.index.IndexWriter;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;

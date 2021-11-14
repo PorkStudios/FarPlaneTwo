@@ -18,15 +18,17 @@
  *
  */
 
-package net.daporkchop.fp2.gl.attribute;
+package net.daporkchop.fp2.gl.attribute.global;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeFormat;
+import net.daporkchop.fp2.gl.buffer.BufferUsage;
 
 /**
- * The different ways a vertex attribute's values may be interpreted.
- *
  * @author DaPorkchop_
  */
-public enum AttributeInterpretation {
-    INTEGER,
-    FLOAT,
-    NORMALIZED_FLOAT;
+public interface GlobalAttributeFormat<S> extends BaseAttributeFormat<S> {
+    GlobalAttributeWriter<S> createWriter();
+
+    GlobalAttributeBuffer<S> createBuffer(@NonNull BufferUsage usage);
 }

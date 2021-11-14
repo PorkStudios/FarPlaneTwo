@@ -20,13 +20,8 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.common;
 
-import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
-
-import java.util.List;
-
 /**
  * @author DaPorkchop_
  */
 public interface VertexAttributeFormat {
-    List<GLSLField> attributeFields();
 }

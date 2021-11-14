@@ -20,82 +20,16 @@
 
 package net.daporkchop.fp2.gl.attribute;
 
-import lombok.NonNull;
+import net.daporkchop.fp2.common.util.capability.CloseableResource;
 
 /**
- * Base interface which is able to set individual attribute values.
+ * Base interface which is able to temporary store blocks of attribute data.
  *
  * @author DaPorkchop_
  */
-public interface BaseAttributeWriter<B extends BaseAttributeWriter<B>> {
+public interface BaseAttributeWriter<S, F extends BaseAttributeFormat<S>> extends CloseableResource {
     /**
-     * @return the {@link AttributeFormat} used by this writer
+     * @return the {@link BaseAttributeFormat} used by this writer
      */
-    AttributeFormat format();
-
-    /**
-     * Sets the given {@link Attribute.Int1} of the current vertex to the given value.
-     *
-     * @param attrib the {@link Attribute.Int1}
-     * @param v0     the value of the 0th component
-     */
-    B set(@NonNull Attribute.Int1 attrib, int v0);
-
-    /**
-     * Sets the given {@link Attribute.Int2} of the current vertex to the given value.
-     *
-     * @param attrib the {@link Attribute.Int2}
-     * @param v0     the value of the 0th component
-     * @param v1     the value of the 1st component
-     */
-    B set(@NonNull Attribute.Int2 attrib, int v0, int v1);
-
-    /**
-     * Sets the given {@link Attribute.Int3} of the current vertex to the given value.
-     *
-     * @param attrib the {@link Attribute.Int3}
-     * @param v0     the value of the 0th component
-     * @param v1     the value of the 1st component
-     * @param v2     the value of the 2nd component
-     */
-    B set(@NonNull Attribute.Int3 attrib, int v0, int v1, int v2);
-
-    /**
-     * Sets the given {@link Attribute.Int3} of the current vertex to the given value.
-     *
-     * @param attrib the {@link Attribute.Int3}
-     * @param argb   the ARGB8888 value. the 4 color channels correspond to the 3 components as follows:<br>
-     *               <ul>
-     *                   <li>A {@code ->} <i>discarded</i></li>
-     *                   <li>R {@code ->} 0</li>
-     *                   <li>G {@code ->} 1</li>
-     *                   <li>B {@code ->} 2</li>
-     *               </ul>
-     */
-    B setARGB(@NonNull Attribute.Int3 attrib, int argb);
-
-    /**
-     * Sets the given {@link Attribute.Int4} of the current vertex to the given value.
-     *
-     * @param attrib the {@link Attribute.Int4}
-     * @param v0     the value of the 0th component
-     * @param v1     the value of the 1st component
-     * @param v2     the value of the 2nd component
-     * @param v3     the value of the 3rd component
-     */
-    B set(@NonNull Attribute.Int4 attrib, int v0, int v1, int v2, int v3);
-
-    /**
-     * Sets the given {@link Attribute.Int4} of the current vertex to the given value.
-     *
-     * @param attrib the {@link Attribute.Int4}
-     * @param argb   the ARGB8888 value. the 4 color channels correspond to the 4 components as follows:<br>
-     *               <ul>
-     *                   <li>A {@code ->} 3</li>
-     *                   <li>R {@code ->} 0</li>
-     *                   <li>G {@code ->} 1</li>
-     *                   <li>B {@code ->} 2</li>
-     *               </ul>
-     */
-    B setARGB(@NonNull Attribute.Int4 attrib, int argb);
+    F format();
 }

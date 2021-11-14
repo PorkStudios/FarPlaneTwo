@@ -23,9 +23,10 @@ package net.daporkchop.fp2.gl.opengl.attribute.local;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.VertexAttributeBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
@@ -37,9 +38,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class LocalAttributeBufferImpl<S> implements LocalAttributeBuffer<S>, VertexAttributeBuffer {
-    protected final OpenGL gl;
-    protected final LocalAttributeFormatImpl<S> format;
+public class LocalAttributeBufferImpl<S> extends BaseAttributeBufferImpl<S, LocalAttributeFormatImpl<S>, LocalAttributeFormat<S>> implements LocalAttributeBuffer<S>, VertexAttributeBuffer {
     protected final InterleavedStructFormat<S> structFormat;
 
     protected final GLBufferImpl buffer;
@@ -48,8 +47,7 @@ public class LocalAttributeBufferImpl<S> implements LocalAttributeBuffer<S>, Ver
     protected int capacity;
 
     public LocalAttributeBufferImpl(@NonNull LocalAttributeFormatImpl<S> format, @NonNull BufferUsage usage) {
-        this.gl = format.gl();
-        this.format = format;
+        super(format);
         this.structFormat = format.structFormat();
 
         this.buffer = this.gl.createBuffer(usage);

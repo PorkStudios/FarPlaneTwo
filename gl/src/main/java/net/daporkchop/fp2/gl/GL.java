@@ -22,9 +22,9 @@ package net.daporkchop.fp2.gl;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
@@ -36,10 +36,10 @@ import net.daporkchop.fp2.gl.index.IndexFormat;
 import net.daporkchop.fp2.gl.index.IndexFormatBuilder;
 import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.gl.layout.LayoutBuilder;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.FragmentShader;
 import net.daporkchop.fp2.gl.shader.ShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.VertexShader;
 
 import java.util.function.Supplier;
@@ -94,12 +94,11 @@ public interface GL extends AutoCloseable {
      */
     IndexFormatBuilder.TypeSelectionStage createIndexFormat();
 
-    <S> LocalAttributeFormat<S> createLocalFormat(@NonNull Class<S> clazz);
+    <S> UniformAttributeFormat<S> createUniformFormat(@NonNull Class<S> clazz);
 
-    /**
-     * @return a builder for constructing a new {@link AttributeFormat}
-     */
-    AttributeFormatBuilder.NameSelectionStage createAttributeFormat();
+    <S> GlobalAttributeFormat<S> createGlobalFormat(@NonNull Class<S> clazz);
+
+    <S> LocalAttributeFormat<S> createLocalFormat(@NonNull Class<S> clazz);
 
     /**
      * @return a builder for constructing a new {@link DrawLayout}

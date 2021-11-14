@@ -24,9 +24,7 @@ import com.google.common.collect.ImmutableList;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.Attrib;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
-import org.objectweb.asm.MethodVisitor;
+import net.daporkchop.fp2.gl.attribute.Attribute;
 
 import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
@@ -59,23 +57,23 @@ public class StructInfo<S> {
 
         while (!fieldsByName.isEmpty()) {
             Field field = fieldsByName.values().stream()
-                    .filter(f -> f.getAnnotation(Attrib.class) != null)
+                    .filter(f -> f.getAnnotation(Attribute.class) != null)
                     .findAny()
                     .orElseThrow(() -> new IllegalStateException("no annotated fields remain: " + fieldsByName));
 
             String name = field.getName();
-            Attrib attrib = field.getAnnotation(Attrib.class);
+            Attribute attribute = field.getAnnotation(Attribute.class);
 
-            if (attrib.vectorAxes().length == 0) {
+            if (attribute.vectorAxes().length == 0) {
                 fieldsByName.remove(name);
-                builder.add(new StructMember<>(clazz, name, attrib, ImmutableList.of(field)));
+                builder.add(new StructMember<>(clazz, name, attribute, ImmutableList.of(field)));
             } else {
-                String[] vectorAxes = attrib.vectorAxes();
+                String[] vectorAxes = attribute.vectorAxes();
                 checkArg(name.endsWith(vectorAxes[0]), "name doesn't end in %s: %s", vectorAxes[0], field);
 
                 String baseName = name.substring(0, name.length() - vectorAxes[0].length());
 
-                builder.add(new StructMember<>(clazz, baseName, attrib, Stream.of(vectorAxes)
+                builder.add(new StructMember<>(clazz, baseName, attribute, Stream.of(vectorAxes)
                         .map(axisSuffix -> {
                             Field componentField = fieldsByName.remove(baseName + axisSuffix);
                             checkArg(componentField != null, "no such field: %s%s", baseName, axisSuffix);

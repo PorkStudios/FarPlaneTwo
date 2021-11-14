@@ -34,6 +34,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Getter
 public class LocalAttributeWriterImpl<S> implements LocalAttributeWriter<S> {
     protected final OpenGL gl;
+    protected final LocalAttributeFormatImpl<S> format;
     protected final InterleavedStructFormat<S> structFormat;
 
     protected long baseAddr;
@@ -44,6 +45,7 @@ public class LocalAttributeWriterImpl<S> implements LocalAttributeWriter<S> {
 
     public LocalAttributeWriterImpl(@NonNull LocalAttributeFormatImpl<S> format) {
         this.gl = format.gl();
+        this.format = format;
         this.structFormat = format.structFormat();
 
         this.stride = this.structFormat.stride();

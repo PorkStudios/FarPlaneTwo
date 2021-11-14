@@ -22,7 +22,6 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.TexUVs;
-import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutput;

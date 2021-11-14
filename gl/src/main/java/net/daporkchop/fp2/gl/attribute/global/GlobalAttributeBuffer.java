@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.gl.attribute.global;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
 
 /**
@@ -29,7 +28,7 @@ import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
  *
  * @author DaPorkchop_
  */
-public interface GlobalAttributeBuffer extends BaseAttributeBuffer {
+public interface GlobalAttributeBuffer<S> extends BaseAttributeBuffer<S, GlobalAttributeFormat<S>> {
     /**
      * @return the number of attribute data elements that this buffer can store
      */
@@ -50,7 +49,6 @@ public interface GlobalAttributeBuffer extends BaseAttributeBuffer {
      *
      * @param index  the destination index for the attribute data element
      * @param writer a {@link GlobalAttributeWriter} containing the attribute data element to copy
-     * @throws IllegalArgumentException if {@code writer} doesn't use {@link #format()}
      */
-    void set(int index, @NonNull GlobalAttributeWriter writer);
+    void set(int index, @NonNull GlobalAttributeWriter<S> writer);
 }

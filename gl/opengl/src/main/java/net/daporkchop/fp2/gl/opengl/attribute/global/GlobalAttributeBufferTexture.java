@@ -20,29 +20,10 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.global;
 
-import lombok.Getter;
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.GLResource;
-import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
-import net.daporkchop.fp2.gl.opengl.texture.TextureImpl;
-import net.daporkchop.lib.unsafe.PUnsafe;
-
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
-import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
-
 /**
  * @author DaPorkchop_
  */
-@Getter
+/*@Getter
 public class GlobalAttributeBufferTexture extends BaseAttributeBufferImpl implements GlobalAttributeBuffer {
     protected final TextureImpl[] textures;
     protected final GLBufferImpl[] buffers;
@@ -110,4 +91,4 @@ public class GlobalAttributeBufferTexture extends BaseAttributeBufferImpl implem
             PUnsafe.freeMemory(buf);
         }
     }
-}
+}*/

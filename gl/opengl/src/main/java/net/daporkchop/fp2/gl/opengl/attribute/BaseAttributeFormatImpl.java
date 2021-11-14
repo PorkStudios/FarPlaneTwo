@@ -18,16 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.gl.attribute.global;
+package net.daporkchop.fp2.gl.opengl.attribute;
 
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.BaseAttributeWriter;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeFormat;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
+
+import java.util.List;
 
 /**
- * A buffer in client memory which is used for setting a single element of global attribute data.
- *
  * @author DaPorkchop_
  */
-public interface GlobalAttributeWriter<S> extends BaseAttributeWriter<S, GlobalAttributeFormat<S>> {
-    void put(@NonNull S struct);
+@RequiredArgsConstructor
+@Getter
+public abstract class BaseAttributeFormatImpl<S> implements BaseAttributeFormat<S> {
+    @NonNull
+    protected final OpenGL gl;
+
+    public abstract String name();
+
+    public abstract List<GLSLField> attributeFields();
 }

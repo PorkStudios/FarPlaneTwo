@@ -21,23 +21,19 @@
 import com.google.common.base.Strings;
 import lombok.Data;
 import lombok.NonNull;
-import lombok.Setter;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.attribute.Attrib;
 import net.daporkchop.fp2.gl.attribute.Attribute;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
-import net.daporkchop.fp2.gl.attribute.AttributeInterpretation;
-import net.daporkchop.fp2.gl.attribute.AttributeType;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.DrawCommandArrays;
@@ -119,64 +115,14 @@ public class TestLWJGL2 {
 
     @SneakyThrows({ ShaderCompilationException.class, ShaderLinkageException.class })
     private static void run(@NonNull GL gl) {
-        Attribute.Int4 outputAttrColor;
-        AttributeFormat outputFormat;
-
-        {
-            AttributeFormatBuilder builder = gl.createAttributeFormat()
-                    .name("OUTPUT_COLOR");
-
-            outputAttrColor = builder.attrib().name("f_color")
-                    .int4(AttributeType.Integer.UNSIGNED_BYTE)
-                    .interpretation(AttributeInterpretation.NORMALIZED_FLOAT)
-                    .build();
-
-            outputFormat = builder.build();
-        }
-
         LocalAttributeFormat<LocalAttribs> localFormat = gl.createLocalFormat(LocalAttribs.class);
-
-        Attribute.Int2 attrOffset;
-        Attribute.Int4 attrColor;
-        AttributeFormat globalFormat;
-
-        {
-            AttributeFormatBuilder builder = gl.createAttributeFormat()
-                    .name("GLOBAL_0");
-
-            attrOffset = builder.attrib().name("a_offset")
-                    .int2(AttributeType.Integer.BYTE)
-                    .interpretation(AttributeInterpretation.FLOAT)
-                    .build();
-
-            attrColor = builder.attrib().name("a_color")
-                    .int4(AttributeType.Integer.UNSIGNED_BYTE)
-                    .interpretation(AttributeInterpretation.NORMALIZED_FLOAT)
-                    .build();
-
-            globalFormat = builder.build();
-        }
-
-        Attribute.Int2 attrScale;
-        AttributeFormat uniformFormat;
-
-        {
-            AttributeFormatBuilder builder = gl.createAttributeFormat()
-                    .name("UNIFORM_0");
-
-            attrScale = builder.attrib().name("u_scale")
-                    .int2(AttributeType.Integer.BYTE)
-                    .interpretation(AttributeInterpretation.NORMALIZED_FLOAT)
-                    .build();
-
-            uniformFormat = builder.build();
-        }
+        GlobalAttributeFormat<GlobalAttribs> globalFormat = gl.createGlobalFormat(GlobalAttribs.class);
+        UniformAttributeFormat<UniformAttribs> uniformFormat = gl.createUniformFormat(UniformAttribs.class);
 
         DrawLayout layout = gl.createDrawLayout()
                 .withUniforms(uniformFormat)
                 .withGlobals(globalFormat)
                 .withLocals(localFormat)
-                .withOutputs(outputFormat)
                 .build();
 
         IndexFormat indexFormat = gl.createIndexFormat()
@@ -216,19 +162,19 @@ public class TestLWJGL2 {
             indexBuffer.set(0, writer);
         }
 
-        GlobalAttributeBuffer globalBuffer = globalFormat.createGlobalBuffer(BufferUsage.STATIC_DRAW);
+        GlobalAttributeBuffer<GlobalAttribs> globalBuffer = globalFormat.createBuffer(BufferUsage.STATIC_DRAW);
         globalBuffer.resize(4);
 
-        try (GlobalAttributeWriter writer = globalFormat.createGlobalWriter()) {
+        try (GlobalAttributeWriter<GlobalAttribs> writer = globalFormat.createWriter()) {
             for (int i = 0, color = -1, x = 0; x < 2; x++) {
                 for (int y = 0; y < 2; y++, color = 0xFF << (i << 3), i++) {
-                    writer.set(attrOffset, x * 32, y * 32).setARGB(attrColor, 0xFF000000 | color);
+                    writer.put(new GlobalAttribs((byte) (x * 32), (byte) (y * 32), 0xFF000000 | color));
                     globalBuffer.set(i, writer);
                 }
             }
         }
 
-        UniformAttributeBuffer uniformBuffer = uniformFormat.createUniformBuffer(BufferUsage.STATIC_DRAW);
+        UniformAttributeBuffer<UniformAttribs> uniformBuffer = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
         DrawBindingIndexed binding = layout.createBinding()
                 .withIndexes(indexBuffer)
@@ -265,10 +211,10 @@ public class TestLWJGL2 {
 
             bitSet.set(i -> ThreadLocalRandom.current().nextBoolean());
 
-            uniformBuffer.set(attrScale, 64, 64);
+            uniformBuffer.set(new UniformAttribs((byte) 32, (byte) 32));
             commandBufferArrays.execute(DrawMode.TRIANGLES, drawShaderProgram, bitSet);
 
-            uniformBuffer.set(attrScale, -128, -128);
+            uniformBuffer.set(new UniformAttribs((byte) -128, (byte) -128));
             commandBufferElements.execute(DrawMode.TRIANGLES, drawShaderProgram);
 
             Display.update();
@@ -278,8 +224,25 @@ public class TestLWJGL2 {
 
     @Data
     public static class LocalAttribs {
-        @Attrib(vectorAxes = {"X", "Y"}, convert = Attrib.Conversion.TO_FLOAT)
+        @Attribute(vectorAxes = {"X", "Y"}, convert = Attribute.Conversion.TO_FLOAT)
         public final byte a_posX;
         public final byte a_posY;
+    }
+
+    @Data
+    public static class GlobalAttribs {
+        @Attribute(vectorAxes = {"X", "Y"}, convert = Attribute.Conversion.TO_FLOAT)
+        public final byte a_offsetX;
+        public final byte a_offsetY;
+
+        @Attribute(transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
+        public final int a_color;
+    }
+
+    @Data
+    public static class UniformAttribs {
+        @Attribute(vectorAxes = {"X", "Y"}, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
+        public final byte u_scaleX;
+        public final byte u_scaleY;
     }
 }

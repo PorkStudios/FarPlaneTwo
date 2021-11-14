@@ -23,7 +23,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.Attrib;
+import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 import net.daporkchop.lib.common.util.PorkUtil;
@@ -51,23 +51,23 @@ public class StructMember<S> {
     protected final Stage packedStage;
     protected final Stage unpackedStage;
 
-    public StructMember(@NonNull Class<S> clazz, @NonNull String name, @NonNull Attrib attrib, @NonNull List<Field> fields) {
+    public StructMember(@NonNull Class<S> clazz, @NonNull String name, @NonNull Attribute attribute, @NonNull List<Field> fields) {
         this.clazz = clazz;
         this.name = name;
 
-        switch (attrib.transform()) {
+        switch (attribute.transform()) {
             case UNCHANGED:
                 this.packedStage = new VectorInputStage(fields.toArray(new Field[0]));
                 break;
             case INT_ARGB8_TO_BYTE_VECTOR_RGB:
             case INT_ARGB8_TO_BYTE_VECTOR_RGBA:
-                checkArg(fields.size() == 1, "%s requires exactly one field, but got %s", attrib.transform(), fields);
-                this.packedStage = new IntARGB8ToByteVectorInputStage(fields.get(0), attrib.transform() == Attrib.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA);
+                checkArg(fields.size() == 1, "%s requires exactly one field, but got %s", attribute.transform(), fields);
+                this.packedStage = new IntARGB8ToByteVectorInputStage(fields.get(0), attribute.transform() == Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA);
                 break;
             case ARRAY_TO_MATRIX: {
-                checkArg(fields.size() == 1, "%s requires exactly one field, but got %s", attrib.transform(), fields);
+                checkArg(fields.size() == 1, "%s requires exactly one field, but got %s", attribute.transform(), fields);
 
-                Attrib.MatrixDimension matrixDimension = attrib.matrixDimension();
+                Attribute.MatrixDimension matrixDimension = attribute.matrixDimension();
                 @SuppressWarnings("deprecation")
                 boolean _default = matrixDimension._default();
                 checkArg(!_default, "matrixDimension must be set!");
@@ -76,11 +76,11 @@ public class StructMember<S> {
                 break;
             }
             default:
-                throw new UnsupportedOperationException(attrib.transform().toString());
+                throw new UnsupportedOperationException(attribute.transform().toString());
         }
 
         Stage prevStage = this.packedStage;
-        for (Attrib.Conversion conversion : attrib.convert()) {
+        for (Attribute.Conversion conversion : attribute.convert()) {
             switch (conversion) {
                 case TO_UNSIGNED:
                     prevStage = new ToUnsignedConversionStage(prevStage);

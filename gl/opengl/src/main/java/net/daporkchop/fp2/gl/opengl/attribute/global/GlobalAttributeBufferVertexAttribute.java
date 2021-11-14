@@ -23,12 +23,12 @@ package net.daporkchop.fp2.gl.opengl.attribute.global;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.common.VertexAttributeBuffer;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 
@@ -38,17 +38,20 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class GlobalAttributeBufferVertexAttribute extends BaseAttributeBufferImpl implements GlobalAttributeBuffer {
+public class GlobalAttributeBufferVertexAttribute<S> extends BaseAttributeBufferImpl<S, GlobalAttributeFormatVertexAttribute<S>, GlobalAttributeFormat<S>> implements GlobalAttributeBuffer<S>, VertexAttributeBuffer {
+    protected final InterleavedStructFormat<S> structFormat;
+
     protected final GLBufferImpl buffer;
     protected final long stride;
 
     protected int capacity;
 
-    public GlobalAttributeBufferVertexAttribute(@NonNull AttributeFormatImpl format, @NonNull BufferUsage usage) {
+    public GlobalAttributeBufferVertexAttribute(@NonNull GlobalAttributeFormatVertexAttribute<S> format, @NonNull BufferUsage usage) {
         super(format);
+        this.structFormat = format.structFormat();
 
         this.buffer = this.gl.createBuffer(usage);
-        this.stride = format.stridePacked();
+        this.stride = format.structFormat().stride();
     }
 
     @Override
@@ -58,21 +61,25 @@ public class GlobalAttributeBufferVertexAttribute extends BaseAttributeBufferImp
 
     @Override
     public void resize(int capacity) {
-        this.capacity = capacity;
-
+        this.capacity = notNegative(capacity, "capacity");
         this.buffer.resize(capacity * this.stride);
     }
 
-    public void bindVertexAttribute(@NonNull GLAPI api, int bindingIndex, @NonNull AttributeImpl attrib) {
-        this.buffer.bind(BufferTarget.ARRAY_BUFFER, target -> attrib.configureVertexAttribute(api, bindingIndex, this.format.offsetsPacked()[attrib.index()], toInt(this.stride, "stride")));
-    }
-
     @Override
-    public void set(int index, @NonNull GlobalAttributeWriter _writer) {
-        GlobalAttributeWriterPacked writer = (GlobalAttributeWriterPacked) _writer;
-        checkArg(writer.format() == this.format, "mismatched attribute formats!");
+    public void set(int index, @NonNull GlobalAttributeWriter<S> _writer) {
+        GlobalAttributeWriterVertexAttribute<S> writer = (GlobalAttributeWriterVertexAttribute<S>) _writer;
+        checkArg(writer.structFormat() == this.structFormat, "mismatched struct formats!");
         checkIndex(this.capacity, index);
 
         this.buffer.uploadRange(index * this.stride, writer.addr, this.stride);
+    }
+
+    @Override
+    public void configureVAO(@NonNull int[] attributeIndices) {
+        this.buffer.bind(BufferTarget.ARRAY_BUFFER, target -> this.structFormat.configureVAO(this.gl.api(), attributeIndices));
+
+        for (int attributeIndex : attributeIndices) { //configure divisors
+            this.gl.api().glVertexAttribDivisor(attributeIndex, 1);
+        }
     }
 }

@@ -18,7 +18,7 @@
  *
  */
 
-import net.daporkchop.fp2.gl.attribute.Attrib;
+import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLBlockMemoryLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructFormatGenerator;
@@ -29,44 +29,44 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFor
  * @author DaPorkchop_
  */
 public class StructCodegenTest {
-    @Attrib(convert = Attrib.Conversion.TO_FLOAT)
+    @Attribute(convert = Attribute.Conversion.TO_FLOAT)
     public int attrIntAsFloat;
 
-    @Attrib(convert = Attrib.Conversion.TO_NORMALIZED_FLOAT)
+    @Attribute(convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
     public int attrIntAsNormalizedFloat;
 
-    @Attrib(convert = Attrib.Conversion.TO_UNSIGNED)
+    @Attribute(convert = Attribute.Conversion.TO_UNSIGNED)
     public short attrUnsignedShortAsInt;
 
-    @Attrib(convert = Attrib.Conversion.TO_NORMALIZED_FLOAT)
+    @Attribute(convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
     public byte attrByteAsNormalizedFloat;
 
-    @Attrib(convert = { Attrib.Conversion.TO_UNSIGNED, Attrib.Conversion.TO_FLOAT })
+    @Attribute(convert = { Attribute.Conversion.TO_UNSIGNED, Attribute.Conversion.TO_FLOAT })
     public byte attrByteAsUnsignedFloat;
 
-    @Attrib(vectorAxes = { "X", "_Y", "Z" }, convert = Attrib.Conversion.TO_NORMALIZED_FLOAT)
+    @Attribute(vectorAxes = { "X", "_Y", "Z" }, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
     public short attrVecShortAsNormalizedIntX;
     public short attrVecShortAsNormalizedInt_Y;
     public short attrVecShortAsNormalizedIntZ;
 
-    @Attrib(transform = Attrib.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGB, convert = Attrib.Conversion.TO_NORMALIZED_FLOAT)
+    @Attribute(transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGB, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
     public int attrColorRGB;
 
-    @Attrib(transform = Attrib.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA, convert = Attrib.Conversion.TO_NORMALIZED_FLOAT)
+    @Attribute(transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
     public int attrColorARGB;
 
-    @Attrib(transform = Attrib.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGB, convert = Attrib.Conversion.TO_FLOAT)
+    @Attribute(transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGB, convert = Attribute.Conversion.TO_FLOAT)
     public int attrColorRGB_notNormalized;
 
-    @Attrib(transform = Attrib.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGB)
+    @Attribute(transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGB)
     public int attrColorRGB_int;
 
-    @Attrib(transform = Attrib.Transformation.ARRAY_TO_MATRIX, matrixDimension = @Attrib.MatrixDimension(columns = 4, rows = 4))
+    @Attribute(transform = Attribute.Transformation.ARRAY_TO_MATRIX, matrixDimension = @Attribute.MatrixDimension(columns = 4, rows = 4))
     public float[] fMatrix = new float[16];
 
-    @Attrib(transform = Attrib.Transformation.ARRAY_TO_MATRIX,
-            convert = { Attrib.Conversion.TO_UNSIGNED, Attrib.Conversion.TO_NORMALIZED_FLOAT },
-            matrixDimension = @Attrib.MatrixDimension(columns = 4, rows = 4))
+    @Attribute(transform = Attribute.Transformation.ARRAY_TO_MATRIX,
+            convert = { Attribute.Conversion.TO_UNSIGNED, Attribute.Conversion.TO_NORMALIZED_FLOAT },
+            matrixDimension = @Attribute.MatrixDimension(columns = 4, rows = 4))
     public short[] normalizedUshortMatrix = new short[16];
 
     public static void main(String... args) throws Throwable {

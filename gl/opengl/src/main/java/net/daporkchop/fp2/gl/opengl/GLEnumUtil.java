@@ -25,7 +25,6 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.binding.DrawMode;
 import net.daporkchop.fp2.gl.index.IndexType;
-import net.daporkchop.fp2.gl.attribute.AttributeType;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 
@@ -95,33 +94,5 @@ public class GLEnumUtil {
             default:
                 throw new IllegalArgumentException(type.name());
         }
-    }
-
-    public int from(@NonNull AttributeType type) {
-        if (type instanceof AttributeType.Integer) {
-            switch ((AttributeType.Integer) type) {
-                case BYTE:
-                    return GL_BYTE;
-                case UNSIGNED_BYTE:
-                    return GL_UNSIGNED_BYTE;
-                case SHORT:
-                    return GL_SHORT;
-                case UNSIGNED_SHORT:
-                    return GL_UNSIGNED_SHORT;
-                case INT:
-                    return GL_INT;
-                case UNSIGNED_INT:
-                    return GL_UNSIGNED_INT;
-            }
-        } else if (type instanceof AttributeType.Float) {
-            switch ((AttributeType.Float) type) {
-                case FLOAT:
-                    return GL_FLOAT;
-                case DOUBLE:
-                    return GL_DOUBLE;
-            }
-        }
-
-        throw new IllegalArgumentException(type.toString());
     }
 }

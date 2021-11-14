@@ -20,13 +20,14 @@
 
 package net.daporkchop.fp2.gl.attribute.uniform;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.BaseAttributeWriter;
 
 /**
  * A single uniform attribute data element.
  *
  * @author DaPorkchop_
  */
-public interface UniformAttributeBuffer extends BaseAttributeWriter<UniformAttributeBuffer>, BaseAttributeBuffer {
+public interface UniformAttributeBuffer<S> extends BaseAttributeBuffer<S, UniformAttributeFormat<S>> {
+    void set(@NonNull S struct);
 }

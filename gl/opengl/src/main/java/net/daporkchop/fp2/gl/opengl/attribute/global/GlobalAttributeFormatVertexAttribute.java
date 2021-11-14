@@ -18,48 +18,54 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.layout;
+package net.daporkchop.fp2.gl.opengl.attribute.global;
 
+import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeFormat;
-import net.daporkchop.fp2.gl.layout.BaseLayout;
-import net.daporkchop.fp2.gl.layout.LayoutBuilder;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
+import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.common.VertexAttributeFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.VertexAttributeLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public abstract class BaseLayoutBuilderImpl<L extends BaseLayout> implements LayoutBuilder<L> {
-    @NonNull
-    protected final OpenGL gl;
+@Getter
+public class GlobalAttributeFormatVertexAttribute<S> extends BaseAttributeFormatImpl<S> implements GlobalAttributeFormat<S>, VertexAttributeFormat {
+    protected final InterleavedStructFormat<S> structFormat;
 
-    protected final List<BaseAttributeFormatImpl<?>> uniforms = new ArrayList<>();
-    protected final List<BaseAttributeFormatImpl<?>> globals = new ArrayList<>();
-    protected final List<BaseAttributeFormatImpl<?>> locals = new ArrayList<>();
+    public GlobalAttributeFormatVertexAttribute(@NonNull OpenGL gl, @NonNull Class<S> clazz) {
+        super(gl);
 
-    @Override
-    public LayoutBuilder<L> withUniforms(@NonNull UniformAttributeFormat<?> uniforms) {
-        this.uniforms.add((BaseAttributeFormatImpl<?>) uniforms);
-        return this;
+        this.structFormat = gl.structFormatGenerator().getInterleaved(VertexAttributeLayout.interleaved(new StructInfo<>(clazz)));
     }
 
     @Override
-    public LayoutBuilder<L> withGlobals(@NonNull GlobalAttributeFormat<?> globals) {
-        this.globals.add((BaseAttributeFormatImpl<?>) globals);
-        return this;
+    public String name() {
+        return this.structFormat.structName();
     }
 
     @Override
-    public LayoutBuilder<L> withLocals(@NonNull LocalAttributeFormat<?> locals) {
-        this.locals.add((BaseAttributeFormatImpl<?>) locals);
-        return this;
+    public List<GLSLField> attributeFields() {
+        return this.structFormat.glslFields();
+    }
+
+    @Override
+    public GlobalAttributeWriter<S> createWriter() {
+        return new GlobalAttributeWriterVertexAttribute<>(this);
+    }
+
+    @Override
+    public GlobalAttributeBuffer<S> createBuffer(@NonNull BufferUsage usage) {
+        return new GlobalAttributeBufferVertexAttribute<>(this, usage);
     }
 }

@@ -33,4 +33,11 @@ public final class GLSLField {
     protected final GLSLType type;
     @NonNull
     protected final String name;
+
+    /**
+     * @return the GLSL declaration for this field
+     */
+    public String declaration() {
+        return this.type.declaration(this.name);
+    }
 }

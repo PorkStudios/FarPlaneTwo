@@ -23,8 +23,6 @@ package net.daporkchop.fp2.mode.common.client.bake.indexed;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.debug.util.DebugStats;
-import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;

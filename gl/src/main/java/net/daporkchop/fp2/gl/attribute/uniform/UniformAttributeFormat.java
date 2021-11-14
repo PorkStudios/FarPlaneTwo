@@ -18,59 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute;
+package net.daporkchop.fp2.gl.attribute.uniform;
 
-import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.AttributeBuilder;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeFormat;
+import net.daporkchop.fp2.gl.buffer.BufferUsage;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public class AttributeFormatBuilderImpl implements AttributeFormatBuilder.NameSelectionStage, AttributeFormatBuilder {
-    protected final OpenGL gl;
-
-    protected String name;
-
-    protected final ImmutableMap.Builder<String, AttributeImpl> attributes = ImmutableMap.builder();
-    protected int size;
-
-    //
-    // NameSelectionStage
-    //
-
-    @Override
-    public AttributeFormatBuilder name(@NonNull String name) {
-        this.name = name;
-        return this;
-    }
-
-
-    //
-    // AttributeFormatBuilder
-    //
-
-    @Override
-    public AttributeBuilder.NameSelectionStage attrib() {
-        return new AttributeBuilderImpl(this);
-    }
-
-    @Override
-    public AttributeFormat build() {
-        return new AttributeFormatImpl(this);
-    }
-
-    //
-    // internal
-    //
-
-    protected int addAttribute(@NonNull AttributeImpl attribute) {
-        this.attributes.put(attribute.name, attribute);
-        return this.size++;
-    }
+public interface UniformAttributeFormat<S> extends BaseAttributeFormat<S> {
+    UniformAttributeBuffer<S> createBuffer(@NonNull BufferUsage usage);
 }

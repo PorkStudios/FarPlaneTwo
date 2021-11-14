@@ -21,14 +21,14 @@
 package net.daporkchop.fp2.gl.attribute.local;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.GLResource;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
 
 /**
  * A resizeable array of local attribute data in server memory.
  *
  * @author DaPorkchop_
  */
-public interface LocalAttributeBuffer<S> extends GLResource {
+public interface LocalAttributeBuffer<S> extends BaseAttributeBuffer<S, LocalAttributeFormat<S>> {
     /**
      * @return the number of attribute data elements that this buffer can store
      */

@@ -18,16 +18,10 @@
  *
  */
 
-package net.daporkchop.fp2.gl.attribute.global;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.BaseAttributeWriter;
+package net.daporkchop.fp2.gl.attribute;
 
 /**
- * A buffer in client memory which is used for setting a single element of global attribute data.
- *
  * @author DaPorkchop_
  */
-public interface GlobalAttributeWriter<S> extends BaseAttributeWriter<S, GlobalAttributeFormat<S>> {
-    void put(@NonNull S struct);
+public interface BaseAttributeFormat<S> {
 }

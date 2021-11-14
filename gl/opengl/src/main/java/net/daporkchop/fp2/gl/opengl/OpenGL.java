@@ -29,8 +29,9 @@ import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.GLModule;
-import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.DrawCommandBufferBuilder;
@@ -38,10 +39,10 @@ import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.index.IndexFormatBuilder;
 import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.gl.layout.LayoutBuilder;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeGenerator;
+import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeFormatVertexAttribute;
 import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructFormatGenerator;
+import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformAttributeFormatBlock;
 import net.daporkchop.fp2.gl.opengl.bitset.GLBitSetBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferBuilderImpl;
@@ -91,7 +92,6 @@ public class OpenGL implements GL {
 
     protected final Allocator directMemoryAllocator = new DirectMemoryAllocator();
 
-    protected final AttributeGenerator attributeGenerator = new AttributeGenerator();
     protected final StructFormatGenerator structFormatGenerator = new StructFormatGenerator();
 
     protected OpenGL(@NonNull OpenGLBuilder builder) {
@@ -170,13 +170,18 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public <S> LocalAttributeFormat<S> createLocalFormat(@NonNull Class<S> clazz) {
-        return new LocalAttributeFormatImpl<>(this, clazz);
+    public <S> UniformAttributeFormat<S> createUniformFormat(@NonNull Class<S> clazz) {
+        return new UniformAttributeFormatBlock<>(this, clazz);
     }
 
     @Override
-    public AttributeFormatBuilder.NameSelectionStage createAttributeFormat() {
-        return new AttributeFormatBuilderImpl(this);
+    public <S> GlobalAttributeFormat<S> createGlobalFormat(@NonNull Class<S> clazz) {
+        return new GlobalAttributeFormatVertexAttribute<>(this, clazz);
+    }
+
+    @Override
+    public <S> LocalAttributeFormat<S> createLocalFormat(@NonNull Class<S> clazz) {
+        return new LocalAttributeFormatImpl<>(this, clazz);
     }
 
     @Override

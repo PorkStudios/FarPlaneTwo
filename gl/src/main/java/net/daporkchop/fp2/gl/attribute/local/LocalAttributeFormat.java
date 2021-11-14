@@ -21,12 +21,13 @@
 package net.daporkchop.fp2.gl.attribute.local;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeFormat;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 
 /**
  * @author DaPorkchop_
  */
-public interface LocalAttributeFormat<S> {
+public interface LocalAttributeFormat<S> extends BaseAttributeFormat<S> {
     LocalAttributeWriter<S> createWriter();
 
     LocalAttributeBuffer<S> createBuffer(@NonNull BufferUsage usage);

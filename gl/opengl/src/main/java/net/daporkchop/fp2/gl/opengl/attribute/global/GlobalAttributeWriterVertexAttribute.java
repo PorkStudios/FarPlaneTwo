@@ -18,38 +18,40 @@
  *
  */
 
-package net.daporkchop.fp2.gl.attribute;
+package net.daporkchop.fp2.gl.opengl.attribute.global;
 
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.layout.BaseLayout;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 
 /**
- * Builder for a {@link AttributeFormat}.
- *
  * @author DaPorkchop_
  */
-public interface AttributeFormatBuilder {
-    /**
-     * @return a builder for constructing a new {@link Attribute} which, when built, will belong to the constructed {@link AttributeFormat}
-     */
-    AttributeBuilder.NameSelectionStage attrib();
+@Getter
+public class GlobalAttributeWriterVertexAttribute<S> implements GlobalAttributeWriter<S> {
+    protected final OpenGL gl;
+    protected final GlobalAttributeFormatVertexAttribute<S> format;
+    protected final InterleavedStructFormat<S> structFormat;
 
-    /**
-     * @return the constructed {@link AttributeFormat}
-     */
-    AttributeFormat build();
+    protected final long addr;
 
-    /**
-     * @author DaPorkchop_
-     */
-    interface NameSelectionStage {
-        /**
-         * Configures the {@link AttributeFormat}'s name.
-         * <p>
-         * The name must be unique across all {@link AttributeFormat}s belonging to the parent {@link BaseLayout}.
-         *
-         * @param name the name
-         */
-        AttributeFormatBuilder name(@NonNull String name);
+    public GlobalAttributeWriterVertexAttribute(@NonNull GlobalAttributeFormatVertexAttribute<S> format) {
+        this.gl = format.gl();
+        this.format = format;
+        this.structFormat = format.structFormat();
+
+        this.addr = this.gl.directMemoryAllocator().alloc(this.structFormat.stride());
+    }
+
+    @Override
+    public void close() {
+        this.gl.directMemoryAllocator().free(this.addr);
+    }
+
+    @Override
+    public void put(@NonNull S struct) {
+        this.structFormat.copy(struct, null, this.addr);
     }
 }

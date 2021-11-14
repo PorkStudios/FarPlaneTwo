@@ -18,54 +18,48 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.local;
+package net.daporkchop.fp2.gl.opengl.attribute.uniform;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeFormat;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.common.VertexAttributeFormat;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.VertexAttributeLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.common.UniformBlockBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
-
-import java.util.List;
+import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public class LocalAttributeFormatImpl<S> extends BaseAttributeFormatImpl<S> implements LocalAttributeFormat<S>, VertexAttributeFormat {
+public class UniformAttributeBufferBlock<S> extends BaseAttributeBufferImpl<S, UniformAttributeFormatBlock<S>, UniformAttributeFormat<S>> implements UniformAttributeBuffer<S>, UniformBlockBuffer {
     protected final InterleavedStructFormat<S> structFormat;
 
-    public LocalAttributeFormatImpl(@NonNull OpenGL gl, @NonNull Class<S> clazz) {
-        super(gl);
+    protected final GLBufferImpl internalBuffer;
 
-        this.structFormat = gl.structFormatGenerator().getInterleaved(VertexAttributeLayout.interleaved(new StructInfo<>(clazz)));
+    protected final long addr;
+    protected final long stride;
+
+    public UniformAttributeBufferBlock(@NonNull UniformAttributeFormatBlock<S> format, @NonNull BufferUsage usage) {
+        super(format);
+        this.structFormat = format.structFormat();
+
+        this.internalBuffer = this.gl.createBuffer(usage);
+        this.stride = format.structFormat().stride();
+        this.addr = this.gl.directMemoryAllocator().alloc(this.stride);
     }
 
     @Override
-    public String name() {
-        return this.structFormat.structName();
+    public void close() {
+        this.gl.directMemoryAllocator().free(this.addr);
+        this.internalBuffer.close();
     }
 
     @Override
-    public List<GLSLField> attributeFields() {
-        return this.structFormat.glslFields();
-    }
-
-    @Override
-    public LocalAttributeWriter<S> createWriter() {
-        return new LocalAttributeWriterImpl<>(this);
-    }
-
-    @Override
-    public LocalAttributeBuffer<S> createBuffer(@NonNull BufferUsage usage) {
-        return new LocalAttributeBufferImpl<>(this, usage);
+    public void set(@NonNull S struct) {
+        this.structFormat.copy(struct, null, this.addr);
+        this.internalBuffer.upload(this.addr, this.stride);
     }
 }

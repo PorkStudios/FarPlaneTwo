@@ -21,8 +21,9 @@
 package net.daporkchop.fp2.gl.layout;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeFormat;
 
 /**
  * Builder for {@link BaseLayout}s.
@@ -32,32 +33,25 @@ import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
  */
 public interface LayoutBuilder<L extends BaseLayout> {
     /**
-     * Adds a {@link AttributeFormat} which contains uniform attributes.
+     * Adds a {@link UniformAttributeFormat} which contains uniform attributes.
      *
      * @param uniforms the formats of the uniform attributes
      */
-    LayoutBuilder<L> withUniforms(@NonNull AttributeFormat uniforms);
+    LayoutBuilder<L> withUniforms(@NonNull UniformAttributeFormat<?> uniforms);
     
     /**
-     * Adds a {@link AttributeFormat} which contains global attributes.
+     * Adds a {@link GlobalAttributeFormat} which contains global attributes.
      *
      * @param globals the formats of the global attributes
      */
-    LayoutBuilder<L> withGlobals(@NonNull AttributeFormat globals);
+    LayoutBuilder<L> withGlobals(@NonNull GlobalAttributeFormat<?> globals);
     
     /**
-     * Adds a {@link AttributeFormat} which contains local attributes.
+     * Adds a {@link LocalAttributeFormat} which contains local attributes.
      *
      * @param locals the formats of the local attributes
      */
     LayoutBuilder<L> withLocals(@NonNull LocalAttributeFormat<?> locals);
-
-    /**
-     * Adds a {@link AttributeFormat} which contains output attributes.
-     *
-     * @param outputs the formats of the output attributes
-     */
-    LayoutBuilder<L> withOutputs(@NonNull AttributeFormat outputs);
     
     /**
      * @return the constructed {@link L}

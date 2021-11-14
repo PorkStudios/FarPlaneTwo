@@ -38,14 +38,14 @@ public interface DrawBindingBuilder<B extends DrawBinding> {
      *
      * @param uniforms the uniform attributes
      */
-    DrawBindingBuilder<B> withUniforms(@NonNull UniformAttributeBuffer uniforms);
+    DrawBindingBuilder<B> withUniforms(@NonNull UniformAttributeBuffer<?> uniforms);
 
     /**
      * Adds a {@link GlobalAttributeBuffer} which contain global attributes.
      *
      * @param globals the global attributes
      */
-    DrawBindingBuilder<B> withGlobals(@NonNull GlobalAttributeBuffer globals);
+    DrawBindingBuilder<B> withGlobals(@NonNull GlobalAttributeBuffer<?> globals);
 
     /**
      * Adds a {@link LocalAttributeBuffer} which contain local attributes.

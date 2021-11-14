@@ -29,14 +29,9 @@ import net.daporkchop.fp2.gl.binding.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.index.IndexBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeBufferVertexAttribute;
-import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
-import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.index.IndexBufferImpl;
 import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
 
 import java.util.ArrayList;
@@ -55,9 +50,9 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyInde
     @NonNull
     protected final DrawLayoutImpl layout;
 
-    protected final List<UniformAttributeBufferImpl> uniforms = new ArrayList<>();
-    protected final List<BaseAttributeBufferImpl> globals = new ArrayList<>();
-    protected final List<LocalAttributeBufferImpl<?>> locals = new ArrayList<>();
+    protected final List<BaseAttributeBufferImpl<?, ?, ?>> uniforms = new ArrayList<>();
+    protected final List<BaseAttributeBufferImpl<?, ?, ?>> globals = new ArrayList<>();
+    protected final List<BaseAttributeBufferImpl<?, ?, ?>> locals = new ArrayList<>();
 
     protected IndexBufferImpl indices;
 
@@ -76,40 +71,40 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyInde
     //
 
     @Override
-    public DrawBindingBuilder<DrawBinding> withUniforms(@NonNull UniformAttributeBuffer uniforms) {
-        this.uniforms.add((UniformAttributeBufferImpl) uniforms);
+    public DrawBindingBuilder<DrawBinding> withUniforms(@NonNull UniformAttributeBuffer<?> uniforms) {
+        this.uniforms.add((BaseAttributeBufferImpl<?, ?, ?>) uniforms);
         return this;
     }
 
     @Override
-    public DrawBindingBuilder<DrawBinding> withGlobals(@NonNull GlobalAttributeBuffer globals) {
-        this.globals.add((BaseAttributeBufferImpl) globals);
+    public DrawBindingBuilder<DrawBinding> withGlobals(@NonNull GlobalAttributeBuffer<?> globals) {
+        this.globals.add((BaseAttributeBufferImpl<?, ?, ?>) globals);
         return this;
     }
 
     @Override
     public DrawBindingBuilder<DrawBinding> withLocals(@NonNull LocalAttributeBuffer<?> locals) {
-        this.locals.add((LocalAttributeBufferImpl) locals);
+        this.locals.add((BaseAttributeBufferImpl<?, ?, ?>) locals);
         return this;
     }
 
     @Override
     public DrawBinding build() {
         { //uniforms
-            Set<AttributeFormatImpl> givenFormats = this.uniforms.stream().map(UniformAttributeBufferImpl::format).collect(Collectors.toSet());
-            Set<AttributeFormatImpl> expectedFormats = this.layout.uniformFormatsByName().values();
+            Set<BaseAttributeFormatImpl<?>> givenFormats = this.uniforms.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
+            Set<BaseAttributeFormatImpl<?>> expectedFormats = this.layout.uniformFormatsByName().values();
             checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
         }
 
         { //globals
-            Set<AttributeFormatImpl> givenFormats = this.globals.stream().map(BaseAttributeBufferImpl::format).collect(Collectors.toSet());
-            Set<AttributeFormatImpl> expectedFormats = this.layout.globalFormatsByName().values();
+            Set<BaseAttributeFormatImpl<?>> givenFormats = this.globals.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
+            Set<BaseAttributeFormatImpl<?>> expectedFormats = this.layout.globalFormatsByName().values();
             checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
         }
 
         { //locals
-            Set<LocalAttributeFormatImpl<?>> givenFormats = this.locals.stream().map(LocalAttributeBufferImpl::format).collect(Collectors.toSet());
-            Set<LocalAttributeFormatImpl<?>> expectedFormats = this.layout.localFormatsByName().values();
+            Set<BaseAttributeFormatImpl<?>> givenFormats = this.locals.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
+            Set<BaseAttributeFormatImpl<?>> expectedFormats = this.layout.localFormatsByName().values();
             checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
         }
 

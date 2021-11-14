@@ -21,14 +21,14 @@
 package net.daporkchop.fp2.gl.attribute.local;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.common.util.capability.CloseableResource;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeWriter;
 
 /**
  * A buffer in client memory which is used for building sequences of local attribute data.
  *
  * @author DaPorkchop_
  */
-public interface LocalAttributeWriter<S> extends CloseableResource {
+public interface LocalAttributeWriter<S> extends BaseAttributeWriter<S, LocalAttributeFormat<S>> {
     /**
      * @return the number of vertices written so far
      */
