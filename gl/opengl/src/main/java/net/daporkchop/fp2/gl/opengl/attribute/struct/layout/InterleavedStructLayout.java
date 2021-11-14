@@ -36,6 +36,8 @@ import lombok.experimental.SuperBuilder;
 public class InterleavedStructLayout<S> extends StructLayout<S> {
     @NonNull
     private final long[] memberOffsets;
+    @NonNull
+    private final long[][] memberComponentOffsets;
 
     private final long stride;
 }

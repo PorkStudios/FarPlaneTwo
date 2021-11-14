@@ -24,21 +24,32 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 
+import java.util.List;
+
 /**
  * @author DaPorkchop_
  */
 @UtilityClass
 public class VertexAttributeLayout {
     public <S> InterleavedStructLayout<S> interleaved(@NonNull StructInfo<S> structInfo) {
-        int memberCount = structInfo.members.size();
+        List<StructMember<S>> members = structInfo.members();
+        int memberCount = structInfo.members().size();
+
         long[] memberOffsets = new long[memberCount];
+        long[][] memberComponentOffsets = new long[memberCount][];
 
         long offset = 0L;
         for (int i = 0; i < memberCount; i++) {
-            memberOffsets[i] = offset;
+            StructMember.Stage stage = members.get(i).packedStage;
 
-            StructMember.Stage stage = structInfo.members.get(i).packedStage;
+            memberOffsets[i] = offset;
             offset += stage.components() * (long) stage.componentType().stride();
+
+            long componentOffset = 0L;
+            long[] componentOffsets = memberComponentOffsets[i] = new long[stage.components()];
+            for (int component = 0; component < stage.components(); component++, componentOffset += stage.componentType().stride()) {
+                componentOffsets[component] = componentOffset;
+            }
         }
 
         return InterleavedStructLayout.<S>builder()
@@ -46,6 +57,7 @@ public class VertexAttributeLayout {
                 .layoutName("vertex_attribute_interleaved")
                 .unpacked(false)
                 .memberOffsets(memberOffsets)
+                .memberComponentOffsets(memberComponentOffsets)
                 .stride(offset)
                 .build();
     }

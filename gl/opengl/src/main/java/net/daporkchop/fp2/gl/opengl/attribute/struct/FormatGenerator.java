@@ -25,35 +25,41 @@ import com.google.common.cache.CacheBuilder;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.asm.ClassloadingUtils;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
+import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.translator.InterleavedStructTranslator;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.translator.StructTranslator;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLMatrixType;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureWriter;
 
+import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.objectweb.asm.Opcodes.*;
 
 /**
  * @author DaPorkchop_
  */
-public class TranslatorGenerator {
-    protected final Cache<StructLayout<?>, StructTranslator<?, ?>> translatorCache = CacheBuilder.newBuilder()
+public class FormatGenerator {
+    protected final Cache<StructLayout<?>, StructFormat<?, ?>> cache = CacheBuilder.newBuilder()
             .weakValues()
             .build();
 
     @SneakyThrows(ExecutionException.class)
-    public <S> InterleavedStructTranslator<S> getInterleaved(@NonNull InterleavedStructLayout<S> layout) {
-        return uncheckedCast(this.translatorCache.get(layout, () -> this.generateInterleaved(layout)));
+    public <S> InterleavedStructFormat<S> getInterleaved(@NonNull InterleavedStructLayout<S> layout) {
+        return uncheckedCast(this.cache.get(layout, () -> this.generateInterleaved(layout)));
     }
 
-    private <S> InterleavedStructTranslator<S> generateInterleaved(@NonNull InterleavedStructLayout<S> layout) throws Exception {
-        String baseClassName = Type.getInternalName(InterleavedStructTranslator.class);
+    private <S> InterleavedStructFormat<S> generateInterleaved(@NonNull InterleavedStructLayout<S> layout) throws Exception {
+        String baseClassName = Type.getInternalName(InterleavedStructFormat.class);
         String className = baseClassName + '$' + layout.layoutName() + '$' + Type.getInternalName(layout.structInfo().clazz()).replace("/", "__");
         String structName = Type.getInternalName(layout.structInfo().clazz());
 
@@ -99,9 +105,62 @@ public class TranslatorGenerator {
             mv.visitVarInsn(ASTORE, 1);
 
             //copy each member type
-            for (int i = 0; i < layout.structInfo().members.size(); i++) {
-                StructMember<S> member = layout.structInfo().members.get(i);
-                member.storeStageOutput(mv, layout.unpacked() ? member.unpackedStage : member.packedStage, 1, 2, 3, layout.memberOffsets()[i]);
+            List<StructMember<S>> members = layout.structInfo().members();
+            for (int i = 0; i < members.size(); i++) {
+                StructMember<S> member = members.get(i);
+                StructMember.Stage stage = layout.unpacked() ? member.unpackedStage : member.packedStage;
+                member.storeStageOutput(mv, stage, 1, 2, 3, layout.memberOffsets()[i]);
+            }
+
+            mv.visitInsn(RETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
+        { //void configureVAO(GLAPI api, int[] attributeIndices)
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "configureVAO", '(' + Type.getDescriptor(GLAPI.class) + "[I)V", null, null);
+
+            //configure attribute for each member
+            List<StructMember<S>> members = layout.structInfo().members();
+            for (int i = 0; i < members.size(); i++) {
+                StructMember<S> member = members.get(i);
+                StructMember.Stage srcStage = layout.unpacked() ? member.unpackedStage : member.packedStage;
+                StructMember.Stage unpackedStage = member.unpackedStage;
+
+                int columns = 1;
+                int rows = unpackedStage.components();
+
+                if (unpackedStage.glslType() instanceof GLSLMatrixType) {
+                    GLSLMatrixType mat = (GLSLMatrixType) unpackedStage.glslType();
+                    columns = mat.columns();
+                    rows = mat.rows();
+                }
+
+                for (int column = 0; column < columns; column++) {
+                    mv.visitVarInsn(ALOAD, 1); //api.<method>(
+                    mv.visitVarInsn(ALOAD, 2); //GLuint index = attributeIndices[i] + column,
+                    mv.visitLdcInsn(i);
+                    mv.visitInsn(IALOAD);
+                    mv.visitLdcInsn(column);
+                    mv.visitInsn(IADD);
+
+                    mv.visitLdcInsn(rows); //GLint size,
+                    mv.visitFieldInsn(GETSTATIC, Type.getInternalName(OpenGLConstants.class), "GL_" + srcStage.componentType(), "I"); //GLenum type,
+
+                    if (unpackedStage.componentType().floatingPoint()) { //GLboolean normalized,
+                        mv.visitLdcInsn(unpackedStage.isNormalizedFloat());
+                    }
+
+                    mv.visitLdcInsn(toInt(layout.stride(), "stride")); //GLsizei stride,
+                    mv.visitLdcInsn(layout.memberOffsets()[i] + layout.memberComponentOffsets()[i][column * rows]); //const void* pointer);
+
+                    if (unpackedStage.componentType().floatingPoint()) { //<method>
+                        mv.visitMethodInsn(INVOKEINTERFACE, Type.getInternalName(GLAPI.class), "glVertexAttribPointer", "(IIIZIJ)V", true);
+                    } else {
+                        mv.visitMethodInsn(INVOKEINTERFACE, Type.getInternalName(GLAPI.class), "glVertexAttribIPointer", "(IIIIJ)V", true);
+                    }
+                }
             }
 
             mv.visitInsn(RETURN);
@@ -112,7 +171,7 @@ public class TranslatorGenerator {
 
         writer.visitEnd();
 
-        if (true) {
+        if (false) {
             try {
                 java.nio.file.Files.write(java.nio.file.Paths.get(className.replace('/', '-') + ".class"), writer.toByteArray());
             } catch (java.io.IOException e) {
@@ -120,7 +179,7 @@ public class TranslatorGenerator {
             }
         }
 
-        Class<InterleavedStructTranslator<S>> clazz = uncheckedCast(ClassloadingUtils.defineHiddenClass(InterleavedStructTranslator.class.getClassLoader(), writer.toByteArray()));
+        Class<InterleavedStructFormat<S>> clazz = uncheckedCast(ClassloadingUtils.defineHiddenClass(InterleavedStructFormat.class.getClassLoader(), writer.toByteArray()));
         return clazz.getConstructor(InterleavedStructLayout.class).newInstance(layout);
     }
 }

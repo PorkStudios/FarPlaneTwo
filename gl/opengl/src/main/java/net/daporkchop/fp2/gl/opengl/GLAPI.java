@@ -144,7 +144,7 @@ public interface GLAPI {
 
     void glDisableVertexArray(int index);
 
-    void glVertexAttribPointer(int index, int size, int type, boolean normalized, int stride, long buffer_buffer_offset);
+    void glVertexAttribPointer(int index, int size, int type, boolean normalized, int stride, long pointer);
 
     void glBindAttribLocation(int program, int index, @NonNull CharSequence name);
 
@@ -182,7 +182,7 @@ public interface GLAPI {
 
     void glBindVertexArray(int array);
 
-    void glVertexAttribIPointer(int index, int size, int type, int stride, long buffer_buffer_offset);
+    void glVertexAttribIPointer(int index, int size, int type, int stride, long pointer);
 
     void glBindFragDataLocation(int program, int colorNumber, @NonNull CharSequence name);
 

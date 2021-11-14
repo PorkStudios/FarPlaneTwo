@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.translator;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.format;
 
 import lombok.Getter;
 import lombok.NonNull;
@@ -30,7 +30,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
  */
 @RequiredArgsConstructor
 @Getter
-public abstract class StructTranslator<S, L extends StructLayout<S>> {
+public abstract class StructFormat<S, L extends StructLayout<S>> {
     @NonNull
     protected final L layout;
 }

@@ -29,25 +29,42 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLVectorType;
 import net.daporkchop.lib.common.math.PMath;
 
+import java.util.Locale;
 import java.util.Objects;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 
 /**
+ * Memory layout types supported for GLSL interface blocks.
+ *
  * @author DaPorkchop_
+ * @see <a href="https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Memory_layout>OpenGL Wiki</a>
  */
-public enum GLSLLayout {
+public enum GLSLBlockMemoryLayout {
+    /**
+     * The {@code std140} layout.
+     *
+     * @see <a href="https://www.khronos.org/registry/OpenGL/specs/gl/glspec45.core.pdf#page=159>OpenGL 4.5, Section 7.6.2.2, page 137</a>
+     */
     STD140 {
-        private AlignmentSize alignmentSize(@NonNull GLSLType type) {
+        private MemberLayout alignmentSize(@NonNull GLSLType type) {
             long alignment;
             long size;
+            long[] componentOffsets;
 
             if (type instanceof GLSLPrimitiveType) {
                 alignment = size = ((GLSLPrimitiveType) type).size();
+                componentOffsets = new long[1];
             } else if (type instanceof GLSLVectorType) {
                 GLSLVectorType vec = (GLSLVectorType) type;
                 alignment = size = vec.primitive().size() * (vec.components() == 3 ? 4L : vec.components());
+
+                componentOffsets = IntStream.range(0, vec.components())
+                        .mapToLong(i -> i * (long) vec.primitive().size())
+                        .toArray();
             } else if (type instanceof GLSLMatrixType) {
                 GLSLMatrixType mat = (GLSLMatrixType) type;
 
@@ -55,58 +72,77 @@ public enum GLSLLayout {
                 //array element alignment+size is always in multiples of vec4
                 alignment = PMath.roundUp(mat.primitive().size() * mat.rows(), FLOAT_SIZE * 4);
                 size = alignment * mat.columns();
+
+                componentOffsets = new long[mat.columns() * mat.rows()];
+                long offset = 0L;
+                for (int i = 0, column = 0; column < mat.columns(); column++) {
+                    for (int row = 0; row < mat.rows(); row++, i++, offset += mat.primitive().size()) {
+                        componentOffsets[i] = offset;
+                    }
+                    offset = PMath.roundUp(offset, FLOAT_SIZE * 4);
+                }
             } else {
                 throw new IllegalArgumentException(Objects.toString(type));
             }
 
-            return new AlignmentSize(alignment, size);
+            return new MemberLayout(alignment, size, componentOffsets);
         }
 
         @Override
         public <S> InterleavedStructLayout<S> layout(@NonNull StructInfo<S> structInfo) {
             int memberCount = structInfo.members.size();
             long[] memberOffsets = new long[memberCount];
+            long[][] memberComponentOffsets = new long[memberCount][];
 
             GLSLType[] types = structInfo.members.stream()
                     .map(member -> member.unpackedStage.glslType())
                     .toArray(GLSLType[]::new);
 
-            AlignmentSize[] alignmentSizes = Stream.of(types)
+            MemberLayout[] memberLayouts = Stream.of(types)
                     .map(this::alignmentSize)
-                    .toArray(AlignmentSize[]::new);
+                    .toArray(MemberLayout[]::new);
 
             long offset = 0L;
             for (int i = 0; i < memberCount; i++) {
-                AlignmentSize alignmentSize = alignmentSizes[i];
+                MemberLayout memberLayout = memberLayouts[i];
 
                 //pad to alignment
-                offset = PMath.roundUp(offset, alignmentSize.alignment);
+                offset = PMath.roundUp(offset, memberLayout.alignment);
                 memberOffsets[i] = offset;
+                memberComponentOffsets[i] = memberLayout.componentOffsets;
 
                 //offset by member size
-                offset += alignmentSize.size;
+                offset += memberLayout.size;
             }
 
-            //"struct alignment will be the alignment for the biggest structure member [...], rounded up to a multiple of the size of a vec4."
-            //TODO: does that mean the member with the biggest alignment, or the biggest total size? logically i would assume it's the former, but the text seems to
-            // imply the latter...
+            //If the member is a structure, the base alignment of the structure is N, where N is the largest base alignment value of any of
+            // its members, and rounded up to the base alignment of a vec4.
             long structAlignment = PMath.roundUp(
-                    Stream.of(alignmentSizes)
-                            .mapToLong(AlignmentSize::alignment)
+                    Stream.of(memberLayouts)
+                            .mapToLong(MemberLayout::alignment)
                             .max().orElse(0L),
                     FLOAT_SIZE * 4);
+            long stride = PMath.roundUp(offset, structAlignment);
 
             return InterleavedStructLayout.<S>builder()
                     .structInfo(structInfo)
-                    .layoutName("std140")
+                    .layoutName(this.name().toLowerCase(Locale.ROOT).intern())
                     .unpacked(true)
                     .memberOffsets(memberOffsets)
-                    .stride(PMath.roundUp(offset, structAlignment))
+                    .memberComponentOffsets(memberComponentOffsets)
+                    .stride(stride)
                     .build();
         }
     };
 
-    public abstract <S> InterleavedStructLayout<S> layout(@NonNull StructInfo<S> structInfo);
+    /**
+     * Creates an {@link InterleavedStructLayout} for the given {@link StructInfo} compatible with this memory layout.
+     *
+     * @param structInfo the struct info
+     * @param <S>        the struct type
+     * @return the {@link InterleavedStructLayout}
+     */
+    public abstract  <S> InterleavedStructLayout<S> layout(@NonNull StructInfo<S> structInfo);
 
     /**
      * A simple tuple containing a struct member's alignment and size.
@@ -114,8 +150,11 @@ public enum GLSLLayout {
      * @author DaPorkchop_
      */
     @Data
-    private static class AlignmentSize {
+    private static class MemberLayout {
         public final long alignment;
         public final long size;
+
+        @NonNull
+        public final long[] componentOffsets;
     }
 }

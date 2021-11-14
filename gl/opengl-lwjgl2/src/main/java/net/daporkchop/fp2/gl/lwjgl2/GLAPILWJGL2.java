@@ -356,8 +356,8 @@ public class GLAPILWJGL2 implements GLAPI {
     }
 
     @Override
-    public void glVertexAttribPointer(int index, int size, int type, boolean normalized, int stride, long buffer_buffer_offset) {
-        GL20.glVertexAttribPointer(index, size, type, normalized, stride, buffer_buffer_offset);
+    public void glVertexAttribPointer(int index, int size, int type, boolean normalized, int stride, long pointer) {
+        GL20.glVertexAttribPointer(index, size, type, normalized, stride, pointer);
     }
 
     @Override
@@ -442,8 +442,8 @@ public class GLAPILWJGL2 implements GLAPI {
     }
 
     @Override
-    public void glVertexAttribIPointer(int index, int size, int type, int stride, long buffer_buffer_offset) {
-        GL30.glVertexAttribIPointer(index, size, type, stride, buffer_buffer_offset);
+    public void glVertexAttribIPointer(int index, int size, int type, int stride, long pointer) {
+        GL30.glVertexAttribIPointer(index, size, type, stride, pointer);
     }
 
     @Override

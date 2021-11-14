@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.Attrib;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
@@ -85,10 +86,10 @@ public class StructMember<S> {
                     prevStage = new ToUnsignedConversionStage(prevStage);
                     break;
                 case TO_FLOAT:
-                    prevStage = new ToFloatConversionStage(prevStage);
+                    prevStage = new ToFloatConversionStage(prevStage, false);
                     break;
                 case TO_NORMALIZED_FLOAT:
-                    prevStage = new ToNormalizedFloatConversionStage(prevStage);
+                    prevStage = new ToFloatConversionStage(prevStage, true);
                     break;
                 default:
                     throw new UnsupportedOperationException(conversion.toString());
@@ -369,6 +370,8 @@ public class StructMember<S> {
 
         int components();
 
+        boolean isNormalizedFloat();
+
         GLSLType glslType();
 
         void preLoadComponents(@NonNull MethodVisitor mv, int structLvtIndex);
@@ -379,7 +382,22 @@ public class StructMember<S> {
     /**
      * @author DaPorkchop_
      */
-    protected static class VectorInputStage implements Stage {
+    protected static abstract class InputStage implements Stage {
+        @Override
+        public boolean isNormalizedFloat() {
+            return false;
+        }
+
+        @Override
+        public void preLoadComponents(@NonNull MethodVisitor mv, int structLvtIndex) {
+            //no-op
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    protected static class VectorInputStage extends InputStage {
         @Getter
         protected final ComponentType componentType;
         protected final Field[] fields;
@@ -405,11 +423,6 @@ public class StructMember<S> {
         }
 
         @Override
-        public void preLoadComponents(@NonNull MethodVisitor mv, int structLvtIndex) {
-            //no-op
-        }
-
-        @Override
         public void loadComponent(@NonNull MethodVisitor mv, int structLvtIndex, int componentIndex) {
             Field field = this.fields[componentIndex];
 
@@ -421,7 +434,7 @@ public class StructMember<S> {
     /**
      * @author DaPorkchop_
      */
-    protected static class IntARGB8ToByteVectorInputStage implements Stage {
+    protected static class IntARGB8ToByteVectorInputStage extends InputStage {
         protected final Field field;
         protected final boolean alpha;
 
@@ -448,11 +461,6 @@ public class StructMember<S> {
         }
 
         @Override
-        public void preLoadComponents(@NonNull MethodVisitor mv, int structLvtIndex) {
-            //no-op
-        }
-
-        @Override
         public void loadComponent(@NonNull MethodVisitor mv, int structLvtIndex, int componentIndex) {
             checkIndex(this.components(), componentIndex);
 
@@ -469,7 +477,7 @@ public class StructMember<S> {
     /**
      * @author DaPorkchop_
      */
-    protected static class MatrixInputStage implements Stage {
+    protected static class MatrixInputStage extends InputStage {
         @Getter
         protected final ComponentType componentType;
         protected final Field field;
@@ -530,18 +538,14 @@ public class StructMember<S> {
     /**
      * @author DaPorkchop_
      */
-    protected static class ToUnsignedConversionStage implements Stage {
+    @RequiredArgsConstructor
+    protected static abstract class ConversionStage implements Stage {
+        @NonNull
         protected final Stage prev;
 
-        @Getter
-        protected final ComponentType.Int componentType;
-        protected final ComponentType.Int prevComponentType;
-
-        public ToUnsignedConversionStage(@NonNull Stage prev) {
-            this.prev = prev;
-
-            this.prevComponentType = (ComponentType.Int) prev.componentType();
-            this.componentType = this.prevComponentType.unsignedType;
+        @Override
+        public ComponentType componentType() {
+            return this.prev.componentType();
         }
 
         @Override
@@ -550,8 +554,13 @@ public class StructMember<S> {
         }
 
         @Override
+        public boolean isNormalizedFloat() {
+            return this.prev.isNormalizedFloat();
+        }
+
+        @Override
         public GLSLType glslType() {
-            return this.prev.glslType().withPrimitive(this.componentType.glslPrimitive());
+            return this.prev.glslType().withPrimitive(this.componentType().glslPrimitive());
         }
 
         @Override
@@ -562,6 +571,27 @@ public class StructMember<S> {
         @Override
         public void loadComponent(@NonNull MethodVisitor mv, int structLvtIndex, int componentIndex) {
             this.prev.loadComponent(mv, structLvtIndex, componentIndex);
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    protected static class ToUnsignedConversionStage extends ConversionStage {
+        @Getter
+        protected final ComponentType.Int componentType;
+        protected final ComponentType.Int prevComponentType;
+
+        public ToUnsignedConversionStage(@NonNull Stage prev) {
+            super(prev);
+
+            this.prevComponentType = (ComponentType.Int) prev.componentType();
+            this.componentType = this.prevComponentType.unsignedType;
+        }
+
+        @Override
+        public void loadComponent(@NonNull MethodVisitor mv, int structLvtIndex, int componentIndex) {
+            super.loadComponent(mv, structLvtIndex, componentIndex);
             this.prevComponentType.makeUnsigned(mv);
         }
     }
@@ -569,16 +599,16 @@ public class StructMember<S> {
     /**
      * @author DaPorkchop_
      */
-    protected static class ToFloatConversionStage implements Stage {
-        protected final Stage prev;
-
+    protected static class ToFloatConversionStage extends ConversionStage {
         protected final ComponentType.Int prevComponentType;
+        protected final boolean normalized;
 
-        public ToFloatConversionStage(@NonNull Stage prev) {
-            this.prev = prev;
+        public ToFloatConversionStage(@NonNull Stage prev, boolean normalized) {
+            super(prev);
 
             checkArg(!prev.componentType().floatingPoint(), "already a floating-point type: %s", prev);
             this.prevComponentType = (ComponentType.Int) prev.componentType();
+            this.normalized = normalized;
         }
 
         @Override
@@ -587,81 +617,32 @@ public class StructMember<S> {
         }
 
         @Override
-        public int components() {
-            return this.prev.components();
-        }
-
-        @Override
-        public GLSLType glslType() {
-            return this.prev.glslType().withPrimitive(GLSLPrimitiveType.FLOAT);
-        }
-
-        @Override
-        public void preLoadComponents(@NonNull MethodVisitor mv, int structLvtIndex) {
-            this.prev.preLoadComponents(mv, structLvtIndex);
+        public boolean isNormalizedFloat() {
+            return this.normalized || super.isNormalizedFloat();
         }
 
         @Override
         public void loadComponent(@NonNull MethodVisitor mv, int structLvtIndex, int componentIndex) {
-            this.prev.loadComponent(mv, structLvtIndex, componentIndex);
-            this.prevComponentType.makeFloat(mv);
+            super.loadComponent(mv, structLvtIndex, componentIndex);
+
+            if (this.normalized) {
+                this.prevComponentType.makeNormalizedFloat(mv);
+            } else {
+                this.prevComponentType.makeFloat(mv);
+            }
         }
     }
 
     /**
      * @author DaPorkchop_
      */
-    protected static class ToNormalizedFloatConversionStage implements Stage {
-        protected final Stage prev;
-
-        protected final ComponentType.Int prevComponentType;
-
-        public ToNormalizedFloatConversionStage(@NonNull Stage prev) {
-            this.prev = prev;
-
-            checkArg(!prev.componentType().floatingPoint(), "already a floating-point type: %s", prev);
-            this.prevComponentType = (ComponentType.Int) prev.componentType();
-        }
-
-        @Override
-        public ComponentType componentType() {
-            return ComponentType.Floating.FLOAT;
-        }
-
-        @Override
-        public int components() {
-            return this.prev.components();
-        }
-
-        @Override
-        public GLSLType glslType() {
-            return this.prev.glslType().withPrimitive(GLSLPrimitiveType.FLOAT);
-        }
-
-        @Override
-        public void preLoadComponents(@NonNull MethodVisitor mv, int structLvtIndex) {
-            this.prev.preLoadComponents(mv, structLvtIndex);
-        }
-
-        @Override
-        public void loadComponent(@NonNull MethodVisitor mv, int structLvtIndex, int componentIndex) {
-            this.prev.loadComponent(mv, structLvtIndex, componentIndex);
-            this.prevComponentType.makeNormalizedFloat(mv);
-        }
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    protected static class ToIntConversionStage implements Stage {
-        protected final Stage prev;
-
+    protected static class ToIntConversionStage extends ConversionStage {
         @Getter
         protected final ComponentType.Int componentType;
         protected final ComponentType.Int prevComponentType;
 
         public ToIntConversionStage(@NonNull Stage prev) {
-            this.prev = prev;
+            super(prev);
 
             this.prevComponentType = (ComponentType.Int) prev.componentType();
             this.componentType = this.prevComponentType.unsignedType == this.prevComponentType
@@ -670,23 +651,8 @@ public class StructMember<S> {
         }
 
         @Override
-        public int components() {
-            return this.prev.components();
-        }
-
-        @Override
-        public GLSLType glslType() {
-            return this.prev.glslType().withPrimitive(this.componentType.glslPrimitive());
-        }
-
-        @Override
-        public void preLoadComponents(@NonNull MethodVisitor mv, int structLvtIndex) {
-            this.prev.preLoadComponents(mv, structLvtIndex);
-        }
-
-        @Override
         public void loadComponent(@NonNull MethodVisitor mv, int structLvtIndex, int componentIndex) {
-            this.prev.loadComponent(mv, structLvtIndex, componentIndex);
+            super.loadComponent(mv, structLvtIndex, componentIndex);
             this.prevComponentType.makeInt(mv);
         }
     }
