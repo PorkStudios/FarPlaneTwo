@@ -24,12 +24,10 @@ import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.lib.common.system.OperatingSystem;
 import net.daporkchop.lib.common.system.PlatformInfo;
-import net.daporkchop.lib.natives.NativeFeature;
 
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.UUID;
 
 /**
  * Forcibly injects a few DLLs into the native library search path in order to allow Windows to load native libs compiled with GCC correctly.
@@ -47,7 +45,7 @@ public class WindowsDLLDependencyInjector {
             "libstdc++-6.dll"
     };
 
-    private static boolean RUN = false;
+    private static boolean HAS_RUN = false;
 
     /**
      * Injects the native library dependencies into the search path.
@@ -56,14 +54,28 @@ public class WindowsDLLDependencyInjector {
     public synchronized void inject() {
         if (PlatformInfo.OPERATING_SYSTEM != OperatingSystem.Windows) {
             return; //do nothing if we're not on windows
-        } else if (RUN) {
+        } else if (HAS_RUN) {
             return; //do nothing if the dependencies have already been injected
         }
-        RUN = true;
+        HAS_RUN = true;
+
+        //create temporary directory for storing libraries in
+        Path tempDir = Files.createTempDirectory("fp2-windows-natives");
 
         for (String lib : LIB_NAMES) {
+            Path libFile = tempDir.resolve(lib);
+
+            //copy library to temp directory
+            try (InputStream in = WindowsDLLDependencyInjector.class.getResourceAsStream(lib)) {
+                if (in == null) { //the dll couldn't be found - skip it, and let porklib:natives handle falling back to the pure-java impl once the actual module dlls fail to load
+                    continue;
+                }
+
+                Files.copy(in, libFile);
+            }
+
             //load library manually
-            NativeFeature.loadNativeLibrary(lib, WindowsDLLDependencyInjector.class.getTypeName(), WindowsDLLDependencyInjector.class.getClassLoader());
+            System.load(libFile.toAbsolutePath().toString());
         }
     }
 }
