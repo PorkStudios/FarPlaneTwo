@@ -181,6 +181,19 @@ public final class SequentialVariableSizedAllocator implements Allocator {
         return true;
     }
 
+    @Override
+    public Stats stats() {
+        long allocations = this.usedNodes.size();
+        long allocatedSpace = this.usedNodes.values().stream().mapToLong(Node::size).sum();
+
+        return Stats.builder()
+                .heapRegions(1L)
+                .allocations(allocations)
+                .allocatedSpace(allocatedSpace)
+                .totalSpace(this.capacity)
+                .build();
+    }
+
     /**
      * @author DaPorkchop_
      */

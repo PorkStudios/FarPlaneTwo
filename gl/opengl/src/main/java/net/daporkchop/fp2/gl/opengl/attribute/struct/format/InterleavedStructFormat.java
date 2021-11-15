@@ -39,6 +39,11 @@ public abstract class InterleavedStructFormat<S> extends StructFormat<S, Interle
         this.stride = layout.stride();
     }
 
+    @Override
+    public long totalSize() {
+        return this.stride;
+    }
+
     /**
      * Loads the fields from the given struct instance, translates them to the layout format, and writes them to the given destination.
      *

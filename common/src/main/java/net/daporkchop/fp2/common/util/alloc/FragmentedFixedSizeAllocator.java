@@ -116,6 +116,21 @@ public final class FragmentedFixedSizeAllocator implements Allocator {
         }
     }
 
+    @Override
+    public Stats stats() {
+        long heapRegions = this.allArenas.size();
+        long allocations = this.nonFullArenas.stream()
+                .mapToLong(Arena::cardinality)
+                .reduce((heapRegions - this.nonFullArenas.size()) * (long) this.arenaCapacity, Long::sum);
+
+        return Stats.builder()
+                .heapRegions(heapRegions)
+                .allocations(allocations)
+                .allocatedSpace(allocations * this.blockSize)
+                .totalSpace(heapRegions * this.blockSize * this.arenaCapacity)
+                .build();
+    }
+
     /**
      * @author DaPorkchop_
      */

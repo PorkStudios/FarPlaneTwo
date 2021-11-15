@@ -88,4 +88,16 @@ public final class SequentialFixedSizeAllocator extends BitSet implements Alloca
             this.fromIndex = slot;
         }
     }
+
+    @Override
+    public Stats stats() {
+        long allocations = this.cardinality();
+
+        return Stats.builder()
+                .heapRegions(1L)
+                .allocations(allocations)
+                .allocatedSpace(allocations * this.blockSize)
+                .totalSpace(this.capacity)
+                .build();
+    }
 }

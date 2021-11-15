@@ -29,33 +29,16 @@ import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.UniformBlockFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLBlockMemoryLayout;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
-
-import java.util.List;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public class UniformAttributeFormatBlock<S> extends BaseAttributeFormatImpl<S> implements UniformAttributeFormat<S>, UniformBlockFormat {
-    protected final InterleavedStructFormat<S> structFormat;
-
+public class UniformAttributeFormatBlock<S> extends BaseAttributeFormatImpl<S, InterleavedStructFormat<S>> implements UniformAttributeFormat<S>, UniformBlockFormat {
     public UniformAttributeFormatBlock(@NonNull OpenGL gl, @NonNull Class<S> clazz) {
-        super(gl);
-
-        this.structFormat = gl.structFormatGenerator().getInterleaved(GLSLBlockMemoryLayout.STD140.layout(new StructInfo<>(clazz)));
-    }
-
-    @Override
-    public String name() {
-        return this.structFormat.structName();
-    }
-
-    @Override
-    public List<GLSLField> attributeFields() {
-        return this.structFormat.glslFields();
+        super(gl, gl.structFormatGenerator().getInterleaved(GLSLBlockMemoryLayout.STD140.layout(new StructInfo<>(clazz))));
     }
 
     @Override

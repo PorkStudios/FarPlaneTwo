@@ -43,4 +43,9 @@ public abstract class StructFormat<S, L extends StructLayout<S>> {
         this.structName = layout.structInfo().name();
         this.glslFields = layout.structInfo().memberFields();
     }
+
+    /**
+     * @return the total size of a struct, in bytes
+     */
+    public abstract long totalSize();
 }

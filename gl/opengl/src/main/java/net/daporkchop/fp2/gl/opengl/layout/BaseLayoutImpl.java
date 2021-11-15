@@ -45,10 +45,10 @@ public abstract class BaseLayoutImpl implements BaseLayout {
     protected final OpenGL gl;
     protected final GLAPI api;
 
-    protected final BiMap<String, BaseAttributeFormatImpl<?>> allFormatsByName;
-    protected final BiMap<String, BaseAttributeFormatImpl<?>> uniformFormatsByName;
-    protected final BiMap<String, BaseAttributeFormatImpl<?>> globalFormatsByName;
-    protected final BiMap<String, BaseAttributeFormatImpl<?>> localFormatsByName;
+    protected final BiMap<String, BaseAttributeFormatImpl<?, ?>> allFormatsByName;
+    protected final BiMap<String, BaseAttributeFormatImpl<?, ?>> uniformFormatsByName;
+    protected final BiMap<String, BaseAttributeFormatImpl<?, ?>> globalFormatsByName;
+    protected final BiMap<String, BaseAttributeFormatImpl<?, ?>> localFormatsByName;
 
     protected final BiMap<String, GLSLField> allAttribsByName;
     protected final BiMap<String, GLSLField> uniformAttribsByName;
@@ -60,7 +60,7 @@ public abstract class BaseLayoutImpl implements BaseLayout {
         this.api = this.gl.api();
 
         {
-            Collector<BaseAttributeFormatImpl<?>, ?, BiMap<String, BaseAttributeFormatImpl<?>>> formatToMapCollector = Collectors.collectingAndThen(
+            Collector<BaseAttributeFormatImpl<?, ?>, ?, BiMap<String, BaseAttributeFormatImpl<?, ?>>> formatToMapCollector = Collectors.collectingAndThen(
                     Collectors.toMap(BaseAttributeFormatImpl::name, Function.identity()),
                     ImmutableBiMap::copyOf);
 

@@ -18,39 +18,29 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute;
+package net.daporkchop.fp2.common.util.stats;
 
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.BaseAttributeFormat;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
-
-import java.util.List;
 
 /**
+ * An immutable type containing
+ *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public abstract class BaseAttributeFormatImpl<S, SF extends StructFormat<S, ?>> implements BaseAttributeFormat<S> {
-    @NonNull
-    protected final OpenGL gl;
-    @NonNull
-    protected final SF structFormat;
+public interface Statistics<S extends Statistics<S>> {
+    /**
+     * Adds the given {@link S} instance to this instance, returning a new instance with the result.
+     *
+     * @param other the other instance
+     * @return an instance with the result
+     */
+    S add(@NonNull S other);
 
-    public String name() {
-        return this.structFormat.structName();
-    }
-
-    public List<GLSLField> attributeFields() {
-        return this.structFormat.glslFields();
-    }
-
-    @Override
-    public long size() {
-        return this.structFormat.totalSize();
-    }
+    /**
+     * Subtracts the given {@link S} instance from this instance, returning a new instance with the result.
+     *
+     * @param other the other instance
+     * @return an instance with the result
+     */
+    S sub(@NonNull S other);
 }

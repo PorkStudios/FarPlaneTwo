@@ -24,4 +24,8 @@ package net.daporkchop.fp2.gl.attribute;
  * @author DaPorkchop_
  */
 public interface BaseAttributeFormat<S> {
+    /**
+     * @return the number of bytes used by a single struct
+     */
+    long size();
 }

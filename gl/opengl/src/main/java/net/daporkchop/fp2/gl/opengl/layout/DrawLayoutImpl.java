@@ -59,7 +59,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
-    protected final Map<BaseAttributeFormatImpl<?>, VertexAttributeBindings> vertexAttributeBindingsByFormat;
+    protected final Map<BaseAttributeFormatImpl<?, ?>, VertexAttributeBindings> vertexAttributeBindingsByFormat;
 
     protected final List<FragmentColorBinding> fragmentColorBindings;
     protected final List<VertexAttributeBindings> vertexAttributeBindings;
@@ -200,10 +200,10 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     @EqualsAndHashCode
     public static class VertexAttributeBindings {
         @Getter
-        protected final BaseAttributeFormatImpl<?> format;
+        protected final BaseAttributeFormatImpl<?, ?> format;
         protected final int[] attributeIndices;
 
-        protected VertexAttributeBindings(@NonNull BaseAttributeFormatImpl<?> format) {
+        protected VertexAttributeBindings(@NonNull BaseAttributeFormatImpl<?, ?> format) {
             this.format = format;
             this.attributeIndices = PArrays.filled(format.attributeFields().size(), -1);
         }
@@ -256,7 +256,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     @EqualsAndHashCode
     public static class UniformBlockBinding {
         @NonNull
-        protected final BaseAttributeFormatImpl<?> format;
+        protected final BaseAttributeFormatImpl<?, ?> format;
 
         protected int bindingIndex = -1;
 

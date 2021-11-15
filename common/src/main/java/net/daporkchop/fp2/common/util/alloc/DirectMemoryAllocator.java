@@ -92,6 +92,17 @@ public final class DirectMemoryAllocator implements Allocator {
         PUnsafe.freeMemory(address);
     }
 
+    @Override
+    public Stats stats() {
+        long allocations = this.allocations.size();
+        long totalSpace = StreamSupport.stream(this.allocations.values().spliterator(), false).mapToLong(Long::longValue).sum();
+
+        return Stats.builder()
+                .heapRegions(allocations).allocations(allocations)
+                .allocatedSpace(totalSpace).totalSpace(totalSpace)
+                .build();
+    }
+
     /**
      * Cleans up any memory allocated by a {@link DirectMemoryAllocator} which wasn't freed.
      *

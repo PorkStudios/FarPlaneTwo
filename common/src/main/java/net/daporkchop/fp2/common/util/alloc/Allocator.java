@@ -20,7 +20,10 @@
 
 package net.daporkchop.fp2.common.util.alloc;
 
+import lombok.Builder;
+import lombok.Data;
 import lombok.NonNull;
+import net.daporkchop.fp2.common.util.stats.AbstractLongStatistics;
 import net.daporkchop.lib.common.math.PMath;
 
 import java.util.function.LongConsumer;
@@ -63,6 +66,11 @@ public interface Allocator {
      * @param address the starting address of the region to free
      */
     void free(long address);
+
+    /**
+     * @return a {@link Stats} instance describing this allocator's current state
+     */
+    Stats stats();
 
     /**
      * A callback function which computes the next size to grow the data to.
@@ -148,5 +156,20 @@ public interface Allocator {
          * @param newCapacity the new capacity
          */
         void sbrk(long newCapacity);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Builder
+    @Data
+    final class Stats extends AbstractLongStatistics<Stats> {
+        public static final Stats ZERO = builder().build();
+
+        private final long heapRegions;
+        private final long allocations;
+
+        private final long allocatedSpace;
+        private final long totalSpace;
     }
 }

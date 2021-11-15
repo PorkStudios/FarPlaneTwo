@@ -41,25 +41,25 @@ public abstract class BaseLayoutBuilderImpl<L extends BaseLayout> implements Lay
     @NonNull
     protected final OpenGL gl;
 
-    protected final List<BaseAttributeFormatImpl<?>> uniforms = new ArrayList<>();
-    protected final List<BaseAttributeFormatImpl<?>> globals = new ArrayList<>();
-    protected final List<BaseAttributeFormatImpl<?>> locals = new ArrayList<>();
+    protected final List<BaseAttributeFormatImpl<?, ?>> uniforms = new ArrayList<>();
+    protected final List<BaseAttributeFormatImpl<?, ?>> globals = new ArrayList<>();
+    protected final List<BaseAttributeFormatImpl<?, ?>> locals = new ArrayList<>();
 
     @Override
     public LayoutBuilder<L> withUniforms(@NonNull UniformAttributeFormat<?> uniforms) {
-        this.uniforms.add((BaseAttributeFormatImpl<?>) uniforms);
+        this.uniforms.add((BaseAttributeFormatImpl<?, ?>) uniforms);
         return this;
     }
 
     @Override
     public LayoutBuilder<L> withGlobals(@NonNull GlobalAttributeFormat<?> globals) {
-        this.globals.add((BaseAttributeFormatImpl<?>) globals);
+        this.globals.add((BaseAttributeFormatImpl<?, ?>) globals);
         return this;
     }
 
     @Override
     public LayoutBuilder<L> withLocals(@NonNull LocalAttributeFormat<?> locals) {
-        this.locals.add((BaseAttributeFormatImpl<?>) locals);
+        this.locals.add((BaseAttributeFormatImpl<?, ?>) locals);
         return this;
     }
 }

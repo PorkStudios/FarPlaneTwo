@@ -64,7 +64,7 @@ public class DrawBindingImpl implements DrawBinding {
         this.gl.resourceArena().register(this, this.vao, this.api::glDeleteVertexArray);
 
         //group attribute buffers by attribute format
-        Map<BaseAttributeFormatImpl<?>, BaseAttributeBufferImpl<?, ?, ?>> buffersByFormat = Stream.of(builder.uniforms, builder.globals, builder.locals)
+        Map<BaseAttributeFormatImpl<?, ?>, BaseAttributeBufferImpl<?, ?, ?>> buffersByFormat = Stream.of(builder.uniforms, builder.globals, builder.locals)
                 .flatMap(List::stream)
                 .collect(Collectors.toMap(BaseAttributeBufferImpl::formatImpl, Function.identity()));
 

@@ -91,20 +91,20 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyInde
     @Override
     public DrawBinding build() {
         { //uniforms
-            Set<BaseAttributeFormatImpl<?>> givenFormats = this.uniforms.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
-            Set<BaseAttributeFormatImpl<?>> expectedFormats = this.layout.uniformFormatsByName().values();
+            Set<BaseAttributeFormatImpl<?, ?>> givenFormats = this.uniforms.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
+            Set<BaseAttributeFormatImpl<?, ?>> expectedFormats = this.layout.uniformFormatsByName().values();
             checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
         }
 
         { //globals
-            Set<BaseAttributeFormatImpl<?>> givenFormats = this.globals.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
-            Set<BaseAttributeFormatImpl<?>> expectedFormats = this.layout.globalFormatsByName().values();
+            Set<BaseAttributeFormatImpl<?, ?>> givenFormats = this.globals.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
+            Set<BaseAttributeFormatImpl<?, ?>> expectedFormats = this.layout.globalFormatsByName().values();
             checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
         }
 
         { //locals
-            Set<BaseAttributeFormatImpl<?>> givenFormats = this.locals.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
-            Set<BaseAttributeFormatImpl<?>> expectedFormats = this.layout.localFormatsByName().values();
+            Set<BaseAttributeFormatImpl<?, ?>> givenFormats = this.locals.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
+            Set<BaseAttributeFormatImpl<?, ?>> expectedFormats = this.layout.localFormatsByName().values();
             checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
         }
 

@@ -24,19 +24,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.common.util.stats.AbstractLongStatistics;
+import net.daporkchop.fp2.common.util.stats.Statistics;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
-import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import java.lang.reflect.Modifier;
-import java.util.IdentityHashMap;
-import java.util.Map;
-import java.util.stream.Stream;
-
 import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Container class for various structs containing statistics useful while debugging.
@@ -49,90 +44,9 @@ public class DebugStats {
     /**
      * @author DaPorkchop_
      */
-    public interface $Stats<S extends $Stats<S>> {
-        /**
-         * Adds the given {@link S} instance to this instance, returning a new instance with the result.
-         *
-         * @param other the other instance
-         * @return an instance with the result
-         */
-        S add(@NonNull S other);
-
-        /**
-         * Subtracts the given {@link S} instance from this instance, returning a new instance with the result.
-         *
-         * @param other the other instance
-         * @return an instance with the result
-         */
-        S sub(@NonNull S other);
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public abstract class $AbstractSimpleIntegerStats<S extends $AbstractSimpleIntegerStats<S>> implements $Stats<S> {
-        private static final Map<Class<? extends $AbstractSimpleIntegerStats>, long[]> OFFSETS_CACHE = new IdentityHashMap<>();
-
-        private static long[] offsets(@NonNull Class<? extends $AbstractSimpleIntegerStats> clazz) {
-            long[] offsets = OFFSETS_CACHE.get(clazz);
-            return offsets != null ? offsets : computeOffsets(clazz);
-        }
-
-        private static long[] computeOffsets(@NonNull Class<? extends $AbstractSimpleIntegerStats> clazz) {
-            long[] offsets = Stream.of(clazz.getDeclaredFields())
-                    .filter(field -> (field.getModifiers() & Modifier.STATIC) == 0)
-                    .peek(field -> checkState(field.getType() == long.class, "field type must be long: %s", field))
-                    .mapToLong(PUnsafe::objectFieldOffset)
-                    .sorted()
-                    .toArray();
-
-            synchronized (OFFSETS_CACHE) {
-                OFFSETS_CACHE.putIfAbsent(clazz, offsets);
-            }
-
-            return offsets;
-        }
-
-        @Override
-        public S add(@NonNull S other) {
-            S out = uncheckedCast(PUnsafe.allocateInstance(this.getClass()));
-            for (long offset : offsets(this.getClass())) {
-                PUnsafe.putLong(out, offset, PUnsafe.getLong(this, offset) + PUnsafe.getLong(other, offset));
-            }
-            return out;
-        }
-
-        @Override
-        public S sub(@NonNull S other) {
-            S out = uncheckedCast(PUnsafe.allocateInstance(this.getClass()));
-            for (long offset : offsets(this.getClass())) {
-                PUnsafe.putLong(out, offset, PUnsafe.getLong(this, offset) - PUnsafe.getLong(other, offset));
-            }
-            return out;
-        }
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
     @Builder
     @Data
-    public static final class Allocator extends $AbstractSimpleIntegerStats<Allocator> {
-        public static final Allocator ZERO = builder().build();
-
-        protected final long heapRegions;
-        protected final long allocations;
-
-        protected final long allocatedSpace;
-        protected final long totalSpace;
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    @Builder
-    @Data
-    public static final class TileSnapshot extends $AbstractSimpleIntegerStats<TileSnapshot> {
+    public static final class TileSnapshot extends AbstractLongStatistics<TileSnapshot> {
         public static final TileSnapshot ZERO = builder().build();
 
         protected final long allocatedSpace;
@@ -146,7 +60,7 @@ public class DebugStats {
      */
     @Builder
     @Data
-    public static final class Tracking extends $AbstractSimpleIntegerStats<Tracking> {
+    public static final class Tracking extends AbstractLongStatistics<Tracking> {
         public static final Tracking ZERO = builder().build();
 
         protected final long tilesLoaded;
@@ -168,7 +82,7 @@ public class DebugStats {
     @Builder
     @Data
     @SideOnly(Side.CLIENT)
-    public static final class TileCache extends $AbstractSimpleIntegerStats<TileCache> {
+    public static final class TileCache extends AbstractLongStatistics<TileCache> {
         public static final TileCache ZERO = builder().build();
 
         protected final long tileCount;
@@ -186,7 +100,7 @@ public class DebugStats {
     @Builder
     @Data
     @SideOnly(Side.CLIENT)
-    public static final class Renderer implements $Stats<Renderer> {
+    public static final class Renderer implements Statistics<Renderer> {
         public static final Renderer ZERO = builder().build();
 
         protected final long bakedTiles;
