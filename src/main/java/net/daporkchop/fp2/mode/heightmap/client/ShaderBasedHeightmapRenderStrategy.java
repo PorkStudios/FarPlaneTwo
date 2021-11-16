@@ -70,6 +70,7 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
         this.indexFormat = gl.createIndexFormat().type(IndexType.UNSIGNED_SHORT).build();
 
         this.drawLayout = gl.createDrawLayout()
+                .withUniforms(this.uniformFormat)
                 .withGlobals(this.globalFormat)
                 .withLocals(this.vertexFormat)
                 .build();

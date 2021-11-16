@@ -20,10 +20,9 @@
 
 buildscript {
     repositories {
-        jcenter()
         maven {
-            name = "DaPorkchop_"
-            url = "https://maven.daporkchop.net/"
+            name = "Minecraft Forge"
+            url = "https://maven.minecraftforge.net/"
         }
         maven {
             name = "SpongePowered"
@@ -40,7 +39,6 @@ plugins {
     id "com.github.johnrengelman.shadow" version "7.1.0"
 }
 
-apply plugin: "maven-publish"
 apply plugin: "net.minecraftforge.gradle"
 apply plugin: "org.spongepowered.mixin"
 
@@ -235,44 +233,6 @@ reobf {
 
 shadowJar.finalizedBy reobfShadowJar
 build.dependsOn shadowJar
-
-/*task sourceJar2(type: Jar) { //workaround for srg2sourge bug
-    from sourceSets.main.allSource
-}*/
-
-/*publishing {
-    repositories {
-        if (project.hasProperty("daporkchopMavenUsername") && project.hasProperty("daporkchopMavenPassword")) {
-            maven {
-                credentials {
-                    username = "$daporkchopMavenUsername"
-                    password = "$daporkchopMavenPassword"
-                }
-
-                name = "DaPorkchop_"
-                url = version.endsWith("SNAPSHOT") ? "https://maven.daporkchop.net/snapshot/" : "https://maven.daporkchop.net/release/"
-            }
-        }
-    }
-
-    publications {
-        maven(MavenPublication) {
-            groupId = "net.daporkchop"
-            artifactId = "fp2"
-            version = "$fp2VersionMajor-$minecraftVersion-SNAPSHOT"
-
-            from components.java
-
-            artifacts.clear()
-            artifact jar {
-                classifier null
-            }
-            artifact sourceJar2 {
-                classifier "sources"
-            }
-        }
-    }
-}*/
 
 task preIntellijRuns {
     doFirst {

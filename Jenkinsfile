@@ -84,14 +84,14 @@ pipeline {
                 }
             }
         }
-        stage("Publish") {
+        /*stage("Publish") {
             when {
                 branch "master"
             }
             steps {
                 sh "./gradlew publish -x compileNatives -x test -x publishToMavenLocal"
             }
-        }
+        }*/
     }
 
     post {

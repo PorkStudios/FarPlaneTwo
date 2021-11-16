@@ -112,35 +112,6 @@
 
 //
 //
-// UNIFORMS
-//
-//
-
-// OpenGL state
-
-struct GlCamera {
-    mat4 modelviewprojection;
-
-    ivec3 position_floor;
-    vec3 position_fract;
-};
-
-struct GlFog {
-    vec4 color;
-
-    float density;
-    float start;
-    float end;
-    float scale;
-};
-
-layout(std140, binding = 0) uniform GLSTATE {
-    GlCamera camera;
-    GlFog fog;
-} glState;
-
-//
-//
 // BUFFERS
 //
 //
@@ -203,7 +174,7 @@ vec4 fromRGB(int rgb)   {
 // vertex transformation
 
 vec4 cameraTransform(vec4 point) {
-    return glState.camera.modelviewprojection * point;
+    return u_modelViewProjectionMatrix * point;
 }
 
 vec4 cameraTransform(vec3 point)   {

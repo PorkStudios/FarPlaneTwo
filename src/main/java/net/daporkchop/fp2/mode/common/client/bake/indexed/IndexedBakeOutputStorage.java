@@ -27,6 +27,7 @@ import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.binding.DrawBindingBuilder;
@@ -53,7 +54,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public class IndexedBakeOutputStorage<SG, SL> extends AbstractBakeOutputStorage<IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> {
+public class IndexedBakeOutputStorage<SU, SG, SL> extends AbstractBakeOutputStorage<IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> {
     /*
      * struct Slot {
      *   int baseVertex;
@@ -111,6 +112,7 @@ public class IndexedBakeOutputStorage<SG, SL> extends AbstractBakeOutputStorage<
     protected final long slotSize;
     protected long slotsAddr;
 
+    protected final UniformAttributeBuffer<SU> uniformBuffer;
     protected final GlobalAttributeBuffer<SG> globalBuffer;
 
     protected final Allocator vertexAlloc;
@@ -123,12 +125,13 @@ public class IndexedBakeOutputStorage<SG, SL> extends AbstractBakeOutputStorage<
     @Getter
     protected final int passes;
 
-    public IndexedBakeOutputStorage(@NonNull Allocator alloc, @NonNull GlobalAttributeFormat<SG> globalFormat, @NonNull LocalAttributeFormat<SL> vertexFormat, @NonNull IndexFormat indexFormat, int passes) {
+    public IndexedBakeOutputStorage(@NonNull Allocator alloc, @NonNull UniformAttributeBuffer<SU> uniformBuffer, @NonNull GlobalAttributeFormat<SG> globalFormat, @NonNull LocalAttributeFormat<SL> vertexFormat, @NonNull IndexFormat indexFormat, int passes) {
         this.alloc = alloc;
 
         this.passes = positive(passes, "passes");
         this.indexSize = indexFormat.size();
 
+        this.uniformBuffer = uniformBuffer;
         this.globalBuffer = globalFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
         this.slotSize = _SLOT_SIZE(passes);
@@ -160,8 +163,9 @@ public class IndexedBakeOutputStorage<SG, SL> extends AbstractBakeOutputStorage<
     public DrawBindingBuilder<DrawBindingIndexed> createDrawBinding(@NonNull DrawLayout layout, int pass) {
         return layout.createBinding()
                 .withIndexes(this.indexBuffers[pass])
-                .withLocals(this.vertexBuffer)
-                .withGlobals(this.globalBuffer);
+                .withUniforms(this.uniformBuffer)
+                .withGlobals(this.globalBuffer)
+                .withLocals(this.vertexBuffer);
     }
 
     @Override

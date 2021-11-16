@@ -24,14 +24,14 @@ import lombok.NonNull;
 import net.daporkchop.fp2.asm.interfaz.client.renderer.IMixinRenderGlobal;
 import net.daporkchop.fp2.client.VanillaRenderabilityTracker;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.gl.command.DrawCommand;
+import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.gl.binding.DrawBinding;
+import net.daporkchop.fp2.gl.command.DrawCommand;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
-import net.daporkchop.fp2.common.util.alloc.Allocator;
 
 import java.util.function.IntPredicate;
 

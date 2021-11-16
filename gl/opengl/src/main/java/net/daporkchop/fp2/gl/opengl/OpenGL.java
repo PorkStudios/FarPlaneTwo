@@ -70,6 +70,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 
 /**
@@ -93,6 +94,8 @@ public class OpenGL implements GL {
     protected final Allocator directMemoryAllocator = new DirectMemoryAllocator();
 
     protected final StructFormatGenerator structFormatGenerator = new StructFormatGenerator();
+
+    protected final int vertexAttributeAlignment;
 
     protected OpenGL(@NonNull OpenGLBuilder builder) {
         this.resourceProvider = ResourceProvider.selectingByNamespace(OPENGL_NAMESPACE, ResourceProvider.loadingClassResources(OpenGL.class), builder.resourceProvider);
@@ -148,6 +151,21 @@ public class OpenGL implements GL {
         this.compute = GLExtension.GL_ARB_compute_shader.supported(this)
                 ? new ComputeCore(this)
                 : GLModule.unsupportedImplementation(GLCompute.class);
+
+        //compatibility hacks
+        this.vertexAttributeAlignment = this.isOfficialAmdDriver() ? INT_SIZE : 1;
+    }
+
+    private boolean isOfficialAmdDriver() {
+        String brand = this.api.glGetString(GL_VENDOR) + ' ' + this.api.glGetString(GL_VERSION) + ' ' + this.api.glGetString(GL_RENDERER);
+
+        return (brand.contains("AMD") || brand.contains("ATI")) && !brand.contains("Mesa");
+    }
+
+    private boolean isOfficialIntelDriver() {
+        String brand = this.api.glGetString(GL_VENDOR) + ' ' + this.api.glGetString(GL_VERSION) + ' ' + this.api.glGetString(GL_RENDERER);
+
+        return (brand.contains("Intel")) && !brand.contains("Mesa");
     }
 
     public TextureImpl createTexture() {

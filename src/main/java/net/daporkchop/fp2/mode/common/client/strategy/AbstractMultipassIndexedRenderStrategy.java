@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.client.GlStateUniformAttributes;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
@@ -42,6 +43,7 @@ import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
 import net.daporkchop.lib.common.util.PArrays;
 
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -71,7 +73,7 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
 
     @Override
     public IBakeOutputStorage<IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> createBakeOutputStorage() {
-        return new IndexedBakeOutputStorage<>(this.alloc, this.globalFormat(), this.vertexFormat(), this.indexFormat(), RENDER_PASS_COUNT);
+        return new IndexedBakeOutputStorage<>(this.alloc, this.uniformBuffer, this.globalFormat(), this.vertexFormat(), this.indexFormat(), RENDER_PASS_COUNT);
     }
 
     @Override
@@ -79,5 +81,12 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
         return this.gl.createCommandBuffer()
                 .forIndexed(binding)
                 .build();
+    }
+
+    @Override
+    public void preRender() {
+        IMultipassRenderStrategy.super.preRender();
+
+        this.uniformBuffer.set(new GlStateUniformAttributes().initFromGlState(MC.getRenderPartialTicks(), MC));
     }
 }

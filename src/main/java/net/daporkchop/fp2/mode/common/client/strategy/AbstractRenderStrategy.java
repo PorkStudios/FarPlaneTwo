@@ -22,16 +22,19 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.client.GlStateUniformAttributes;
+import net.daporkchop.fp2.common.util.alloc.Allocator;
+import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeFormat;
 import net.daporkchop.fp2.gl.binding.DrawBinding;
+import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.DrawCommand;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
-import net.daporkchop.fp2.common.util.alloc.Allocator;
-import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
@@ -40,16 +43,23 @@ import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Getter
 public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFarTile, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRefCounted implements IFarRenderStrategy<POS, T, BO, DB, DC> {
     protected final Allocator alloc = new DirectMemoryAllocator();
 
-    @NonNull
     protected final IFarRenderMode<POS, T> mode;
-
-    @NonNull
     protected final GL gl;
+
+    protected final UniformAttributeFormat<GlStateUniformAttributes> uniformFormat;
+    protected final UniformAttributeBuffer<GlStateUniformAttributes> uniformBuffer;
+
+    public AbstractRenderStrategy(@NonNull IFarRenderMode<POS, T> mode, @NonNull GL gl) {
+        this.mode = mode;
+        this.gl = gl;
+
+        this.uniformFormat = gl.createUniformFormat(GlStateUniformAttributes.class);
+        this.uniformBuffer = this.uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
+    }
 
     @Override
     public IFarRenderStrategy<POS, T, BO, DB, DC> retain() throws AlreadyReleasedException {
@@ -59,6 +69,6 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
 
     @Override
     protected void doRelease() {
-        //no-op
+        this.uniformBuffer.close();
     }
 }

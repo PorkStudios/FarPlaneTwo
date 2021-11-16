@@ -57,7 +57,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static java.lang.Math.*;
 import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -185,8 +184,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
 
             this.bindings = IntStream.range(0, RENDER_PASS_COUNT)
                     .mapToObj(pass -> {
-                        DrawBindingBuilder<DB> builder = this.storage.createDrawBinding(AbstractRenderIndex.this.strategy.drawLayout(), pass);
-                        return builder.build();
+                        return this.storage.createDrawBinding(AbstractRenderIndex.this.strategy.drawLayout(), pass).build();
                     })
                     .collect(Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
 

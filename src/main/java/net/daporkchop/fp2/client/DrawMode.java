@@ -40,9 +40,6 @@ public enum DrawMode implements AutoCloseable {
 
             TexUVs.bind();
 
-            ShaderGlStateHelper.update(MC.getRenderPartialTicks(), MC);
-            ShaderGlStateHelper.bind();
-
             return this;
         }
 

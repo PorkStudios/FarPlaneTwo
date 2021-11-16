@@ -22,7 +22,9 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
+import net.daporkchop.lib.common.math.PMath;
 
 import java.util.List;
 
@@ -31,19 +33,21 @@ import java.util.List;
  */
 @UtilityClass
 public class VertexAttributeLayout {
-    public <S> InterleavedStructLayout<S> interleaved(@NonNull StructInfo<S> structInfo) {
+    public <S> InterleavedStructLayout<S> interleaved(@NonNull OpenGL gl, @NonNull StructInfo<S> structInfo) {
         List<StructMember<S>> members = structInfo.members();
         int memberCount = structInfo.members().size();
 
         long[] memberOffsets = new long[memberCount];
         long[][] memberComponentOffsets = new long[memberCount][];
 
+        long alignment = gl.vertexAttributeAlignment();
+
         long offset = 0L;
         for (int i = 0; i < memberCount; i++) {
             StructMember.Stage stage = members.get(i).packedStage;
 
             memberOffsets[i] = offset;
-            offset += stage.components() * (long) stage.componentType().stride();
+            offset += PMath.roundUp(stage.components() * (long) stage.componentType().stride(), alignment);
 
             long componentOffset = 0L;
             long[] componentOffsets = memberComponentOffsets[i] = new long[stage.components()];

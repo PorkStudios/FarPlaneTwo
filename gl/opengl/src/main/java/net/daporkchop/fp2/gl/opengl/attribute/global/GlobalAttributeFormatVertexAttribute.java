@@ -39,7 +39,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFor
 @Getter
 public class GlobalAttributeFormatVertexAttribute<S> extends BaseAttributeFormatImpl<S, InterleavedStructFormat<S>> implements GlobalAttributeFormat<S>, VertexAttributeFormat {
     public GlobalAttributeFormatVertexAttribute(@NonNull OpenGL gl, @NonNull Class<S> clazz) {
-        super(gl, gl.structFormatGenerator().getInterleaved(VertexAttributeLayout.interleaved(new StructInfo<>(clazz))));
+        super(gl, gl.structFormatGenerator().getInterleaved(VertexAttributeLayout.interleaved(gl, new StructInfo<>(clazz))));
     }
 
     @Override

@@ -22,9 +22,9 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.binding.DrawBinding;
 import net.daporkchop.fp2.gl.command.DrawCommand;
 import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
-import net.daporkchop.fp2.gl.binding.DrawBinding;
 import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;

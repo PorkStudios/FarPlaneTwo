@@ -24,8 +24,6 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.client.gl.object.IGLBuffer;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.voxel.util.VoxelPosSet;
 import net.daporkchop.fp2.util.datastructure.SimpleSet;
@@ -38,7 +36,6 @@ import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static org.lwjgl.opengl.GL11.*;
 
 /**
  * Implementation of {@link IFarDirectPosAccess} for {@link VoxelPos}.
@@ -189,12 +186,6 @@ public class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos> {
         double d = 1 << _level(addr);
         double f = d * T_VOXELS;
         return frustum.intersectsBB(x * f, y * f, z * f, (x + 1.0d) * f + d, (y + 1.0d) * f + d, (z + 1.0d) * f + d);
-    }
-
-    @SideOnly(Side.CLIENT)
-    @Override
-    public void configureVAO(@NonNull VertexArrayObject vao, @NonNull IGLBuffer buffer, int stride, int offset, int divisor) {
-        vao.attrI(buffer, 4, GL_INT, stride, offset, divisor);
     }
 
     @Override

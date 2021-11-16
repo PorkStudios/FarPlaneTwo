@@ -21,17 +21,16 @@
 package net.daporkchop.fp2.client;
 
 import lombok.NonNull;
-import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
-import net.daporkchop.fp2.client.gl.camera.Frustum;
-import net.daporkchop.fp2.client.gl.object.GLBuffer;
-import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
+import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
+
+import java.nio.FloatBuffer;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.compat.of.OFHelper.*;
@@ -39,125 +38,114 @@ import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.minecraft.util.math.MathHelper.*;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL31.*;
 
 /**
  * @author DaPorkchop_
  */
-@UtilityClass
-public class ShaderGlStateHelper {
-    private final GLBuffer BUFFER = new GLBuffer(GL_STREAM_DRAW);
+public class GlStateUniformAttributes {
+    @Attribute(
+            transform = Attribute.Transformation.ARRAY_TO_MATRIX,
+            matrixDimension = @Attribute.MatrixDimension(columns = 4, rows = 4))
+    public final float[] u_modelViewProjectionMatrix = new float[16];
 
-    private final int OFFSET_CAMERA = 0;
-    private final int SIZE_CAMERA = MAT4_SIZE + IVEC3_SIZE + VEC3_SIZE;
+    @Attribute(vectorAxes = {"X", "Y", "Z"})
+    public int u_positionFloorX;
+    public int u_positionFloorY;
+    public int u_positionFloorZ;
 
-    private final int OFFSET_FOG = OFFSET_CAMERA + SIZE_CAMERA;
-    private final int SIZE_FOG = VEC4_SIZE + 4 * FLOAT_SIZE;
+    @Attribute(vectorAxes = {"X", "Y", "Z"})
+    public float u_positionFracX;
+    public float u_positionFracY;
+    public float u_positionFracZ;
 
-    private final int TOTAL_SIZE = OFFSET_FOG + SIZE_FOG;
+    @Attribute(vectorAxes = {"R", "G", "B", "A"})
+    public float u_fogColorR;
+    public float u_fogColorG;
+    public float u_fogColorB;
+    public float u_fogColorA;
 
-    private final long DATA = PUnsafe.allocateMemory(TOTAL_SIZE);
-    private final long ADDR_CAMERA = DATA + OFFSET_CAMERA;
-    private final long ADDR_FOG = DATA + OFFSET_FOG;
+    @Attribute
+    public float u_fogDensity;
 
-    public void update(float partialTicks, @NonNull Minecraft mc) {
+    @Attribute
+    public float u_fogStart;
+
+    @Attribute
+    public float u_fogEnd;
+
+    @Attribute
+    public float u_fogScale;
+
+    public GlStateUniformAttributes initFromGlState(float partialTicks, @NonNull Minecraft mc) {
         //optifine compatibility: disable fog if it's turned off, because optifine only does this itself if no vanilla terrain is being rendered
         //  (e.g. it's all being discarded in frustum culling)
         if (OF && (PUnsafe.getInt(mc.gameSettings, OF_FOGTYPE_OFFSET) == OF_OFF && PUnsafe.getBoolean(mc.entityRenderer, OF_ENTITYRENDERER_FOGSTANDARD_OFFSET))) {
             GlStateManager.disableFog();
         }
 
-        Frustum.INSTANCE.initFromGlState();
-
         { //camera
-            long addr = ADDR_CAMERA;
-
-            //mat4 modelviewprojection
-            modelViewProjectionMatrix(addr);
-            addr += MAT4_SIZE;
+            this.initModelViewProjectionMatrix();
 
             Entity entity = mc.getRenderViewEntity();
             double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
             double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks;
             double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
 
-            //ivec3 position_floor
-            PUnsafe.putInt(addr + 0 * INT_SIZE, floorI(x));
-            PUnsafe.putInt(addr + 1 * INT_SIZE, floorI(y));
-            PUnsafe.putInt(addr + 2 * INT_SIZE, floorI(z));
-            addr += IVEC3_SIZE;
+            this.u_positionFloorX = floorI(x);
+            this.u_positionFloorY = floorI(y);
+            this.u_positionFloorZ = floorI(z);
 
-            //vec3 position_fract
-            PUnsafe.putFloat(addr + 0 * FLOAT_SIZE, (float) frac(x));
-            PUnsafe.putFloat(addr + 1 * FLOAT_SIZE, (float) frac(y));
-            PUnsafe.putFloat(addr + 2 * FLOAT_SIZE, (float) frac(z));
-            addr += VEC3_SIZE;
+            this.u_positionFracX = (float) frac(x);
+            this.u_positionFracY = (float) frac(y);
+            this.u_positionFracZ = (float) frac(z);
         }
 
         { //fog
-            long addr = ADDR_FOG;
+            this.initFogColor();
 
-            //vec4 color
-            glGetFloat(GL_FOG_COLOR, DirectBufferHackery.wrapFloat(addr, 16)); //buffer needs to fit 16 elements, but only the first 4 will be used
-            addr += VEC4_SIZE;
-
-            //float density
-            PUnsafe.putFloat(addr, glGetFloat(GL_FOG_DENSITY));
-            addr += FLOAT_SIZE;
-
-            //float start
-            float start = glGetFloat(GL_FOG_START);
-            PUnsafe.putFloat(addr, start);
-            addr += FLOAT_SIZE;
-
-            //float end
-            float end = glGetFloat(GL_FOG_END);
-            PUnsafe.putFloat(addr, end);
-            addr += FLOAT_SIZE;
-
-            //float scale
-            PUnsafe.putFloat(addr, 1.0f / (end - start));
-            addr += FLOAT_SIZE;
-
-            ShaderManager.changeDefines()
-                    .define("FP2_FOG_ENABLED", glGetBoolean(GL_FOG))
-                    .define("FP2_FOG_MODE", glGetInteger(GL_FOG_MODE))
-                    .apply();
+            this.u_fogDensity = glGetFloat(GL_FOG_DENSITY);
+            float start = this.u_fogStart = glGetFloat(GL_FOG_START);
+            float end = this.u_fogEnd = glGetFloat(GL_FOG_END);
+            this.u_fogScale = 1.0f / (end - start);
         }
 
-        try (GLBuffer buffer = BUFFER.bind(GL_UNIFORM_BUFFER)) { //upload
-            buffer.upload(DATA, TOTAL_SIZE);
-        }
+        return this;
     }
 
-    private void modelViewProjectionMatrix(long dst) {
+    private void initModelViewProjectionMatrix() {
         ArrayAllocator<float[]> alloc = ALLOC_FLOAT.get();
 
         float[] modelView = alloc.atLeast(MAT4_ELEMENTS);
         float[] projection = alloc.atLeast(MAT4_ELEMENTS);
-        float[] modelViewProjection = alloc.atLeast(MAT4_ELEMENTS);
         try {
             //load both matrices into arrays
             MatrixHelper.getFloatMatrixFromGL(GL_MODELVIEW_MATRIX, modelView);
             MatrixHelper.getFloatMatrixFromGL(GL_PROJECTION_MATRIX, projection);
 
             //pre-multiply matrices on CPU to avoid having to do it per-vertex on GPU
-            MatrixHelper.multiply4x4(projection, modelView, modelViewProjection);
+            MatrixHelper.multiply4x4(projection, modelView, this.u_modelViewProjectionMatrix);
 
             //offset the projected points' depth values to avoid z-fighting with vanilla terrain
-            MatrixHelper.offsetDepth(modelViewProjection, ReversedZ.REVERSED ? -0.00001f : 0.00001f);
-
-            //copy result to destination address
-            PUnsafe.copyMemory(modelViewProjection, PUnsafe.ARRAY_FLOAT_BASE_OFFSET, null, dst, MAT4_SIZE);
+            MatrixHelper.offsetDepth(this.u_modelViewProjectionMatrix, ReversedZ.REVERSED ? -0.00001f : 0.00001f);
         } finally {
-            alloc.release(modelViewProjection);
             alloc.release(projection);
             alloc.release(modelView);
         }
     }
 
-    public void bind() {
-        BUFFER.bindBase(GL_UNIFORM_BUFFER, 0);
+    private void initFogColor() {
+        //buffer needs to fit 16 elements, but only the first 4 will be used
+        long addr = PUnsafe.allocateMemory(16 * FLOAT_SIZE);
+        try {
+            FloatBuffer buffer = DirectBufferHackery.wrapFloat(addr, 16);
+            glGetFloat(GL_FOG_COLOR, buffer);
+
+            this.u_fogColorR = buffer.get(0);
+            this.u_fogColorG = buffer.get(1);
+            this.u_fogColorB = buffer.get(2);
+            this.u_fogColorA = buffer.get(3);
+        } finally {
+            PUnsafe.freeMemory(addr);
+        }
     }
 }
