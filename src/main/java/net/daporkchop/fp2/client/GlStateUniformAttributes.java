@@ -48,17 +48,17 @@ public class GlStateUniformAttributes {
             matrixDimension = @Attribute.MatrixDimension(columns = 4, rows = 4))
     public final float[] u_modelViewProjectionMatrix = new float[16];
 
-    @Attribute(vectorAxes = {"X", "Y", "Z"})
+    @Attribute(vectorAxes = { "X", "Y", "Z" })
     public int u_positionFloorX;
     public int u_positionFloorY;
     public int u_positionFloorZ;
 
-    @Attribute(vectorAxes = {"X", "Y", "Z"})
+    @Attribute(vectorAxes = { "X", "Y", "Z" })
     public float u_positionFracX;
     public float u_positionFracY;
     public float u_positionFracZ;
 
-    @Attribute(vectorAxes = {"R", "G", "B", "A"})
+    @Attribute(vectorAxes = { "R", "G", "B", "A" })
     public float u_fogColorR;
     public float u_fogColorG;
     public float u_fogColorB;
@@ -104,9 +104,9 @@ public class GlStateUniformAttributes {
             this.initFogColor();
 
             this.u_fogDensity = glGetFloat(GL_FOG_DENSITY);
-            float start = this.u_fogStart = glGetFloat(GL_FOG_START);
-            float end = this.u_fogEnd = glGetFloat(GL_FOG_END);
-            this.u_fogScale = 1.0f / (end - start);
+            this.u_fogStart = glGetFloat(GL_FOG_START);
+            this.u_fogEnd = glGetFloat(GL_FOG_END);
+            this.u_fogScale = 1.0f / (this.u_fogEnd - this.u_fogStart);
         }
 
         return this;

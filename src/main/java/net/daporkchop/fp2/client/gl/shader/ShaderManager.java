@@ -58,23 +58,8 @@ public class ShaderManager {
     @Getter
     protected Map<String, Object> GLOBAL_DEFINES = Collections.emptyMap();
 
-    public RenderShaderBuilder renderShaderBuilder(@NonNull String programName) {
-        return new RenderShaderBuilder(programName);
-    }
-
     public ComputeShaderBuilder computeShaderBuilder(@NonNull String programName) {
         return new ComputeShaderBuilder(programName);
-    }
-
-    /**
-     * Obtains a shader program with the given name.
-     *
-     * @param programName the name of the shader to get
-     * @return the shader program with the given name
-     */
-    @Deprecated
-    public RenderShaderProgram get(@NonNull String programName) {
-        return renderShaderBuilder(programName).link();
     }
 
     protected Shader get(@NonNull Identifier name, @NonNull Map<String, Object> macros, @NonNull ShaderType type) {
@@ -134,23 +119,6 @@ public class ShaderManager {
         return text;
     }*/
 
-    public DefinesChangeBatch changeDefines() {
-        return new DefinesChangeBatch();
-    }
-
-    @SuppressWarnings("unchecked")
-    public void reload(boolean message) {
-        try {
-            SHADER_CACHE.asMap().forEach(AbstractShaderBuilder::reload);
-            if (message) {
-                DebugUtils.clientMsg("§a" + SHADER_CACHE.size() + " shaders successfully reloaded.");
-            }
-        } catch (Exception e) {
-            FP2_LOG.error("shader reload failed", e);
-            DebugUtils.clientMsg("§cshaders reload failed (check console).");
-        }
-    }
-
     public static abstract class AbstractShaderBuilder<B extends AbstractShaderBuilder<B, S>, S extends ShaderProgram<S>> {
         public S link() {
             return uncheckedCast(SHADER_CACHE.getUnchecked(this));
@@ -173,41 +141,5 @@ public class ShaderManager {
 
         @Override
         public abstract boolean equals(Object obj);
-    }
-
-    @NoArgsConstructor(access = AccessLevel.PROTECTED)
-    public static final class DefinesChangeBatch {
-        protected final Map<String, Object> originals = GLOBAL_DEFINES;
-        protected final Map<String, Object> updated = new Object2ObjectOpenHashMap<>(this.originals);
-        protected boolean dirty = false;
-
-        public DefinesChangeBatch undefine(@NonNull String name) {
-            if (this.updated.remove(name) != null) {
-                this.dirty = true;
-            }
-            return this;
-        }
-
-        public DefinesChangeBatch define(@NonNull String name) {
-            return this.define(name, true);
-        }
-
-        public DefinesChangeBatch define(@NonNull String name, @NonNull Object value) {
-            if (!Objects.equals(this.updated.put(name, value), value)) {
-                this.dirty = true;
-            }
-            return this;
-        }
-
-        public void apply() {
-            if (GLOBAL_DEFINES != this.originals) {
-                throw new ConcurrentModificationException();
-            }
-
-            if (this.dirty) { //avoid doing an expensive shader reload if nothing changed
-                GLOBAL_DEFINES = ImmutableMap.copyOf(this.updated);
-                reload(false);
-            }
-        }
     }
 }

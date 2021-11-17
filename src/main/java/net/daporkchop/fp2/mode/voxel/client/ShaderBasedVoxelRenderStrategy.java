@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.voxel.client;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.daporkchop.fp2.client.gl.shader.reload.ReloadableShaderProgram;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
@@ -59,8 +60,8 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
 
     protected final DrawLayout drawLayout;
 
-    protected final DrawShaderProgram blockShader;
-    protected final DrawShaderProgram stencilShader;
+    protected final ReloadableShaderProgram<DrawShaderProgram> blockShader;
+    protected final ReloadableShaderProgram<DrawShaderProgram> stencilShader;
 
     public ShaderBasedVoxelRenderStrategy(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode, @NonNull GL gl) {
         super(mode, gl);
@@ -78,30 +79,22 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
                 .withLocals(this.vertexFormat)
                 .build();
 
-        try (
-                VertexShader vertexShader = gl.createVertexShader().forLayout(this.drawLayout)
-                        .include(Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
-                        .endSource()
-                        .defineAll(ShaderManager.GLOBAL_DEFINES())
-                        .endDefines()
-                        .build();
-                FragmentShader fragmentShader = gl.createFragmentShader().forLayout(this.drawLayout)
-                        .include(Identifier.from(MODID, "shaders/frag/block.frag"))
-                        .endSource()
-                        .defineAll(ShaderManager.GLOBAL_DEFINES())
-                        .endDefines()
-                        .build();
-                FragmentShader fragmentShaderStencil = gl.createFragmentShader().forLayout(this.drawLayout)
-                        .include(Identifier.from(MODID, "shaders/frag/stencil.frag"))
-                        .endSource()
-                        .defineAll(ShaderManager.GLOBAL_DEFINES())
-                        .endDefines()
-                        .build()) {
-            this.blockShader = gl.linkShaderProgram(this.drawLayout, vertexShader, fragmentShader);
-            this.stencilShader = gl.linkShaderProgram(this.drawLayout, vertexShader, fragmentShaderStencil);
-        } catch (ShaderCompilationException | ShaderLinkageException e) {
-            throw new IllegalStateException(e);
-        }
+        this.blockShader = ReloadableShaderProgram.draw(gl, this.drawLayout, this.macros,
+                Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"),
+                Identifier.from(MODID, "shaders/frag/block.frag"));
+        this.stencilShader = ReloadableShaderProgram.draw(gl, this.drawLayout, this.macros,
+                Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"),
+                Identifier.from(MODID, "shaders/frag/stencil.frag"));
+    }
+
+    @Override
+    public DrawShaderProgram blockShader() {
+        return this.blockShader.get();
+    }
+
+    @Override
+    public DrawShaderProgram stencilShader() {
+        return this.stencilShader.get();
     }
 
     @Override
@@ -112,5 +105,13 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
     @Override
     public IRenderBaker<VoxelPos, VoxelTile, IndexedBakeOutput<VoxelGlobalAttributes, VoxelLocalAttributes>> createBaker() {
         return new VoxelBaker();
+    }
+
+    @Override
+    protected void doRelease() {
+        super.doRelease();
+
+        this.blockShader.close();
+        this.stencilShader.close();
     }
 }

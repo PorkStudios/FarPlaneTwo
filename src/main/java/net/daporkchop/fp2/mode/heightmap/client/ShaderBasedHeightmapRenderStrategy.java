@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.daporkchop.fp2.client.gl.shader.reload.ReloadableShaderProgram;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
@@ -31,10 +31,6 @@ import net.daporkchop.fp2.gl.index.IndexFormat;
 import net.daporkchop.fp2.gl.index.IndexType;
 import net.daporkchop.fp2.gl.layout.DrawLayout;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
-import net.daporkchop.fp2.gl.shader.FragmentShader;
-import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
-import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.daporkchop.fp2.gl.shader.VertexShader;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
@@ -59,8 +55,8 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
 
     protected final DrawLayout drawLayout;
 
-    protected final DrawShaderProgram blockShader;
-    protected final DrawShaderProgram stencilShader;
+    protected final ReloadableShaderProgram<DrawShaderProgram> blockShader;
+    protected final ReloadableShaderProgram<DrawShaderProgram> stencilShader;
 
     public ShaderBasedHeightmapRenderStrategy(@NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode, @NonNull GL gl) {
         super(mode, gl);
@@ -75,30 +71,22 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
                 .withLocals(this.vertexFormat)
                 .build();
 
-        try (
-                VertexShader vertexShader = gl.createVertexShader().forLayout(this.drawLayout)
-                        .include(Identifier.from(MODID, "shaders/vert/heightmap/heightmap.vert"))
-                        .endSource()
-                        .defineAll(ShaderManager.GLOBAL_DEFINES())
-                        .endDefines()
-                        .build();
-                FragmentShader fragmentShader = gl.createFragmentShader().forLayout(this.drawLayout)
-                        .include(Identifier.from(MODID, "shaders/frag/block.frag"))
-                        .endSource()
-                        .defineAll(ShaderManager.GLOBAL_DEFINES())
-                        .endDefines()
-                        .build();
-                FragmentShader fragmentShaderStencil = gl.createFragmentShader().forLayout(this.drawLayout)
-                        .include(Identifier.from(MODID, "shaders/frag/stencil.frag"))
-                        .endSource()
-                        .defineAll(ShaderManager.GLOBAL_DEFINES())
-                        .endDefines()
-                        .build()) {
-            this.blockShader = gl.linkShaderProgram(this.drawLayout, vertexShader, fragmentShader);
-            this.stencilShader = gl.linkShaderProgram(this.drawLayout, vertexShader, fragmentShaderStencil);
-        } catch (ShaderCompilationException | ShaderLinkageException e) {
-            throw new IllegalStateException(e);
-        }
+        this.blockShader = ReloadableShaderProgram.draw(gl, this.drawLayout, this.macros,
+                Identifier.from(MODID, "shaders/vert/heightmap/heightmap.vert"),
+                Identifier.from(MODID, "shaders/frag/block.frag"));
+        this.stencilShader = ReloadableShaderProgram.draw(gl, this.drawLayout, this.macros,
+                Identifier.from(MODID, "shaders/vert/heightmap/heightmap.vert"),
+                Identifier.from(MODID, "shaders/frag/stencil.frag"));
+    }
+
+    @Override
+    public DrawShaderProgram blockShader() {
+        return this.blockShader.get();
+    }
+
+    @Override
+    public DrawShaderProgram stencilShader() {
+        return this.stencilShader.get();
     }
 
     @Override
@@ -109,5 +97,13 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
     @Override
     public IRenderBaker<HeightmapPos, HeightmapTile, IndexedBakeOutput<HeightmapGlobalAttributes, HeightmapLocalAttributes>> createBaker() {
         return new HeightmapBaker();
+    }
+
+    @Override
+    protected void doRelease() {
+        super.doRelease();
+
+        this.blockShader.close();
+        this.stencilShader.close();
     }
 }

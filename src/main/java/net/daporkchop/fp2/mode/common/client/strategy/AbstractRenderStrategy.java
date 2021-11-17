@@ -22,7 +22,9 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.client.FP2Client;
 import net.daporkchop.fp2.client.GlStateUniformAttributes;
+import net.daporkchop.fp2.client.gl.shader.reload.ShaderMacros;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.GL;
@@ -38,6 +40,8 @@ import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
+import static org.lwjgl.opengl.GL11.*;
+
 /**
  * Base implementation of {@link IFarRenderStrategy}.
  *
@@ -52,6 +56,8 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
 
     protected final UniformAttributeFormat<GlStateUniformAttributes> uniformFormat;
     protected final UniformAttributeBuffer<GlStateUniformAttributes> uniformBuffer;
+
+    protected final ShaderMacros.Mutable macros = new ShaderMacros.Mutable(FP2Client.GLOBAL_SHADER_MACROS);
 
     public AbstractRenderStrategy(@NonNull IFarRenderMode<POS, T> mode, @NonNull GL gl) {
         this.mode = mode;
@@ -70,5 +76,10 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
     @Override
     protected void doRelease() {
         this.uniformBuffer.close();
+    }
+
+    protected void preRender() {
+        this.macros.define("FP2_FOG_ENABLED", glGetBoolean(GL_FOG));
+        this.macros.define("FP2_FOG_MODE", glGetInteger(GL_FOG_MODE));
     }
 }

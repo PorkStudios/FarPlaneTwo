@@ -22,7 +22,6 @@ package net.daporkchop.fp2.debug.util;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -35,7 +34,6 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 @UtilityClass
-@DebugOnly
 public class DebugUtils {
     public static final String CHAT_PREFIX = "§8§l[§9FarPlaneTwo Debug§8§l]§r ";
 

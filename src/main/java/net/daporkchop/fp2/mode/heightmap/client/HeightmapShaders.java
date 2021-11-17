@@ -22,7 +22,6 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gl.shader.ComputeShaderBuilder;
-import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.minecraft.util.EnumFacing;

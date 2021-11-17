@@ -23,6 +23,7 @@ package net.daporkchop.fp2.debug.client;
 import net.daporkchop.fp2.asm.core.client.gui.IGuiScreen;
 import net.daporkchop.fp2.client.TexUVs;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.daporkchop.fp2.client.gl.shader.reload.ReloadShadersEvent;
 import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.debug.util.DebugUtils;
@@ -48,7 +49,7 @@ public class DebugClientEvents {
     @SubscribeEvent
     public void keyInput(InputEvent.KeyInputEvent event) {
         if (DebugKeyBindings.RELOAD_SHADERS.isPressed()) {
-            ShaderManager.reload(true);
+            ReloadShadersEvent.fire();
         }
         if (DebugKeyBindings.DROP_TILES.isPressed()) {
             PROTOCOL_FP2.sendToServer(new CPacketClientConfig().config(null));

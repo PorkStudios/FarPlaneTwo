@@ -34,8 +34,8 @@ vec3 getLowOffsetPost() {
 void main() {
     //convert position to vec3 afterwards to minimize precision loss
     ivec4 tile_position = ivec4(a_tilePos.x, 0, a_tilePos.yz);
-    ivec3 relative_tile_position = (tile_position.xyz << tile_position.w << T_SHIFT) - glState.camera.position_floor;
-    vec3 relativePos = vec3(relative_tile_position + getLowOffsetPre(tile_position.w)) + getLowOffsetPost() - glState.camera.position_fract;
+    ivec3 relative_tile_position = (tile_position.xyz << tile_position.w << T_SHIFT) - u_positionFloor;
+    vec3 relativePos = vec3(relative_tile_position + getLowOffsetPre(tile_position.w)) + getLowOffsetPost() - u_positionFrac;
 
     //set fog depth based on vertex distance to camera
     setFog(relativePos);

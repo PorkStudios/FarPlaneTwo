@@ -85,6 +85,7 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
 
     @Override
     public void preRender() {
+        super.preRender();
         IMultipassRenderStrategy.super.preRender();
 
         this.uniformBuffer.set(new GlStateUniformAttributes().initFromGlState(MC.getRenderPartialTicks(), MC));

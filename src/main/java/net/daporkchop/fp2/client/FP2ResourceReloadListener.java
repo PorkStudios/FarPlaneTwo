@@ -20,9 +20,8 @@
 
 package net.daporkchop.fp2.client;
 
-import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.daporkchop.fp2.client.gl.shader.reload.ReloadShadersEvent;
 import net.minecraft.client.resources.IResourceManager;
-import net.minecraft.client.resources.IResourceManagerReloadListener;
 import net.minecraftforge.client.resource.IResourceType;
 import net.minecraftforge.client.resource.ISelectiveResourceReloadListener;
 import net.minecraftforge.client.resource.VanillaResourceType;
@@ -42,7 +41,7 @@ public class FP2ResourceReloadListener implements ISelectiveResourceReloadListen
             TexUVs.reloadUVs();
         }
         if (resourcePredicate.test(VanillaResourceType.SHADERS)) {
-            ShaderManager.reload(true);
+            ReloadShadersEvent.fire();
         }
     }
 }
