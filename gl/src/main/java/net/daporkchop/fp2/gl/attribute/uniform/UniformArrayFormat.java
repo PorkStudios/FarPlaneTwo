@@ -18,11 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.common;
+package net.daporkchop.fp2.gl.attribute.uniform;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeFormat;
+import net.daporkchop.fp2.gl.buffer.BufferUsage;
 
 /**
  * @author DaPorkchop_
  */
-public interface UniformBlockFormat {
-    String interfaceBlockLayout();
+public interface UniformArrayFormat<S> extends BaseAttributeFormat<S> {
+    UniformArrayBuffer<S> createBuffer(@NonNull BufferUsage usage);
 }

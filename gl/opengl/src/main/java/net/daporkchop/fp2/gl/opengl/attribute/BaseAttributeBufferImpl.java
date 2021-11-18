@@ -26,6 +26,8 @@ import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.BaseAttributeFormat;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 
+import java.util.stream.Stream;
+
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -47,5 +49,9 @@ public abstract class BaseAttributeBufferImpl<S, F extends BaseAttributeFormatIm
     @Deprecated
     public F_EXTERNAL format() {
         return uncheckedCast(this.formatImpl);
+    }
+
+    public Stream<BaseAttributeBufferImpl<?, ?, ?>> selfAndChildren() {
+        return Stream.of(this);
     }
 }

@@ -21,13 +21,12 @@
 package net.daporkchop.fp2.debug.client;
 
 import net.daporkchop.fp2.asm.core.client.gui.IGuiScreen;
-import net.daporkchop.fp2.client.TexUVs;
-import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.daporkchop.fp2.client.texture.ReloadTextureUVsEvent;
+import net.daporkchop.fp2.client.texture.TextureUVs;
 import net.daporkchop.fp2.client.gl.shader.reload.ReloadShadersEvent;
 import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.debug.util.DebugUtils;
-import net.daporkchop.fp2.net.packet.debug.client.CPacketDebugDropAllTiles;
 import net.daporkchop.fp2.net.packet.standard.client.CPacketClientConfig;
 import net.minecraft.client.gui.GuiIngameMenu;
 import net.minecraft.client.gui.GuiMainMenu;
@@ -57,8 +56,7 @@ public class DebugClientEvents {
             DebugUtils.clientMsg("§aReloading session");
         }
         if (DebugKeyBindings.REBUILD_UVS.isPressed()) {
-            TexUVs.reloadUVs();
-            DebugUtils.clientMsg("§aRebuilt texture UVs");
+            ReloadTextureUVsEvent.fire();
         }
 
         FP2Config oldConfig = FP2Config.global();

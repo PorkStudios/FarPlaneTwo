@@ -31,6 +31,7 @@ import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.GLModule;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
@@ -42,6 +43,7 @@ import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
 import net.daporkchop.fp2.gl.opengl.attribute.global.DrawGlobalFormatVertexAttribute;
 import net.daporkchop.fp2.gl.opengl.attribute.local.DrawLocalFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructFormatGenerator;
+import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformArrayFormatShaderStorageBlock;
 import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformFormatBlock;
 import net.daporkchop.fp2.gl.opengl.bitset.GLBitSetBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
@@ -193,12 +195,17 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public <S> DrawGlobalFormat<S> createGlobalFormat(@NonNull Class<S> clazz) {
+    public <S> UniformArrayFormat<S> createUniformArrayFormat(@NonNull Class<S> clazz) {
+        return new UniformArrayFormatShaderStorageBlock<>(this, clazz);
+    }
+
+    @Override
+    public <S> DrawGlobalFormat<S> createDrawGlobalFormat(@NonNull Class<S> clazz) {
         return new DrawGlobalFormatVertexAttribute<>(this, clazz);
     }
 
     @Override
-    public <S> DrawLocalFormat<S> createLocalFormat(@NonNull Class<S> clazz) {
+    public <S> DrawLocalFormat<S> createDrawLocalFormat(@NonNull Class<S> clazz) {
         return new DrawLocalFormatImpl<>(this, clazz);
     }
 

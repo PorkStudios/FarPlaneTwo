@@ -61,8 +61,8 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
     public ShaderBasedVoxelRenderStrategy(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode, @NonNull GL gl) {
         super(mode, gl);
 
-        this.globalFormat = gl.createGlobalFormat(VoxelGlobalAttributes.class);
-        this.vertexFormat = gl.createLocalFormat(VoxelLocalAttributes.class);
+        this.globalFormat = gl.createDrawGlobalFormat(VoxelGlobalAttributes.class);
+        this.vertexFormat = gl.createDrawLocalFormat(VoxelLocalAttributes.class);
 
         this.indexFormat = gl.createIndexFormat()
                 .type(IndexType.UNSIGNED_SHORT)
@@ -70,6 +70,8 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
 
         this.drawLayout = gl.createDrawLayout()
                 .withUniforms(this.uniformFormat)
+                .withUniformArrays(this.textureUVs.listsFormat())
+                .withUniformArrays(this.textureUVs.quadsFormat())
                 .withGlobals(this.globalFormat)
                 .withLocals(this.vertexFormat)
                 .build();

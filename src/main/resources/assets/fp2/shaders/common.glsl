@@ -116,24 +116,6 @@
 //
 //
 
-// Texture UVs
-
-layout(std430, binding = 0) readonly buffer QUAD_LISTS {
-    ivec2 quad_lists[];
-};
-
-struct BakedQuad {
-    float minU; //written out to avoid padding
-    float minV;
-    float maxU;
-    float maxV;
-    float tintFactor;
-};
-
-layout(std430, binding = 1) readonly buffer QUAD_DATA {
-    BakedQuad quad_data[];
-};
-
 #if LEVEL_0
 // Vanilla renderability index
 
@@ -152,24 +134,6 @@ layout(std430, binding = 6) readonly buffer VANILLA_RENDERABILITY {
 // UTILITIES
 //
 //
-
-// color unpacking
-
-vec4 fromARGB(uint argb)   {
-    return vec4(uvec4(argb) >> uvec4(16, 8, 0, 24) & uint(0xFF)) / 255.;
-}
-
-vec4 fromARGB(int argb)   {
-    return fromARGB(uint(argb));
-}
-
-vec4 fromRGB(uint rgb)   {
-    return fromARGB(uint(0xFF000000) | rgb);
-}
-
-vec4 fromRGB(int rgb)   {
-    return fromRGB(uint(rgb));
-}
 
 // vertex transformation
 

@@ -18,11 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.common;
+package net.daporkchop.fp2.gl.attribute.uniform;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
 
 /**
+ * An array of uniform structs.
+ *
  * @author DaPorkchop_
  */
-public interface UniformBlockFormat {
-    String interfaceBlockLayout();
+public interface UniformArrayBuffer<S> extends BaseAttributeBuffer<S, UniformArrayFormat<S>> {
+    void set(@NonNull S[] structs);
 }

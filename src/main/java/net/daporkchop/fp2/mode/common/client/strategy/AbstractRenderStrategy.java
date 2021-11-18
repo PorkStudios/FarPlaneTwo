@@ -25,6 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.FP2Client;
 import net.daporkchop.fp2.client.GlStateUniformAttributes;
 import net.daporkchop.fp2.client.gl.shader.reload.ShaderMacros;
+import net.daporkchop.fp2.client.texture.TextureUVs;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.GL;
@@ -57,6 +58,8 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
     protected final UniformFormat<GlStateUniformAttributes> uniformFormat;
     protected final UniformBuffer<GlStateUniformAttributes> uniformBuffer;
 
+    protected final TextureUVs textureUVs;
+
     protected final ShaderMacros.Mutable macros = new ShaderMacros.Mutable(FP2Client.GLOBAL_SHADER_MACROS);
 
     public AbstractRenderStrategy(@NonNull IFarRenderMode<POS, T> mode, @NonNull GL gl) {
@@ -65,6 +68,8 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
 
         this.uniformFormat = gl.createUniformFormat(GlStateUniformAttributes.class);
         this.uniformBuffer = this.uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
+
+        this.textureUVs = new TextureUVs(gl);
     }
 
     @Override
@@ -75,6 +80,7 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
 
     @Override
     protected void doRelease() {
+        this.textureUVs.close();
         this.uniformBuffer.close();
     }
 

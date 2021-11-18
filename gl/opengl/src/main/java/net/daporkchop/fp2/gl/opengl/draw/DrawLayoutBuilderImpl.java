@@ -24,6 +24,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
@@ -42,24 +43,31 @@ public class DrawLayoutBuilderImpl implements DrawLayoutBuilder {
     protected final OpenGL gl;
 
     protected final List<BaseAttributeFormatImpl<?, ?>> uniforms = new ArrayList<>();
+    protected final List<BaseAttributeFormatImpl<?, ?>> uniformArrays = new ArrayList<>();
     protected final List<BaseAttributeFormatImpl<?, ?>> globals = new ArrayList<>();
     protected final List<BaseAttributeFormatImpl<?, ?>> locals = new ArrayList<>();
 
     @Override
-    public DrawLayoutBuilder withUniforms(@NonNull UniformFormat<?> uniforms) {
-        this.uniforms.add((BaseAttributeFormatImpl<?, ?>) uniforms);
+    public DrawLayoutBuilder withUniforms(@NonNull UniformFormat<?> format) {
+        this.uniforms.add((BaseAttributeFormatImpl<?, ?>) format);
         return this;
     }
 
     @Override
-    public DrawLayoutBuilder withGlobals(@NonNull DrawGlobalFormat<?> globals) {
-        this.globals.add((BaseAttributeFormatImpl<?, ?>) globals);
+    public DrawLayoutBuilder withUniformArrays(@NonNull UniformArrayFormat<?> format) {
+        this.uniformArrays.add((BaseAttributeFormatImpl<?, ?>) format);
         return this;
     }
 
     @Override
-    public DrawLayoutBuilder withLocals(@NonNull DrawLocalFormat<?> locals) {
-        this.locals.add((BaseAttributeFormatImpl<?, ?>) locals);
+    public DrawLayoutBuilder withGlobals(@NonNull DrawGlobalFormat<?> format) {
+        this.globals.add((BaseAttributeFormatImpl<?, ?>) format);
+        return this;
+    }
+
+    @Override
+    public DrawLayoutBuilder withLocals(@NonNull DrawLocalFormat<?> format) {
+        this.locals.add((BaseAttributeFormatImpl<?, ?>) format);
         return this;
     }
 

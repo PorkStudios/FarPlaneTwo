@@ -23,6 +23,7 @@ package net.daporkchop.fp2.gl.opengl.draw.binding;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalBuffer;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
@@ -51,6 +52,7 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyInde
     protected final DrawLayoutImpl layout;
 
     protected final List<BaseAttributeBufferImpl<?, ?, ?>> uniforms = new ArrayList<>();
+    protected final List<BaseAttributeBufferImpl<?, ?, ?>> uniformArrays = new ArrayList<>();
     protected final List<BaseAttributeBufferImpl<?, ?, ?>> globals = new ArrayList<>();
     protected final List<BaseAttributeBufferImpl<?, ?, ?>> locals = new ArrayList<>();
 
@@ -71,20 +73,26 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyInde
     //
 
     @Override
-    public DrawBindingBuilder<DrawBinding> withUniforms(@NonNull UniformBuffer<?> uniforms) {
-        this.uniforms.add((BaseAttributeBufferImpl<?, ?, ?>) uniforms);
+    public DrawBindingBuilder<DrawBinding> withUniforms(@NonNull UniformBuffer<?> buffer) {
+        this.uniforms.add((BaseAttributeBufferImpl<?, ?, ?>) buffer);
         return this;
     }
 
     @Override
-    public DrawBindingBuilder<DrawBinding> withGlobals(@NonNull DrawGlobalBuffer<?> globals) {
-        this.globals.add((BaseAttributeBufferImpl<?, ?, ?>) globals);
+    public DrawBindingBuilder<DrawBinding> withUniformArrays(@NonNull UniformArrayBuffer<?> buffer) {
+        this.uniformArrays.add((BaseAttributeBufferImpl<?, ?, ?>) buffer);
         return this;
     }
 
     @Override
-    public DrawBindingBuilder<DrawBinding> withLocals(@NonNull DrawLocalBuffer<?> locals) {
-        this.locals.add((BaseAttributeBufferImpl<?, ?, ?>) locals);
+    public DrawBindingBuilder<DrawBinding> withGlobals(@NonNull DrawGlobalBuffer<?> buffer) {
+        this.globals.add((BaseAttributeBufferImpl<?, ?, ?>) buffer);
+        return this;
+    }
+
+    @Override
+    public DrawBindingBuilder<DrawBinding> withLocals(@NonNull DrawLocalBuffer<?> buffer) {
+        this.locals.add((BaseAttributeBufferImpl<?, ?, ?>) buffer);
         return this;
     }
 
@@ -93,6 +101,12 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyInde
         { //uniforms
             Set<BaseAttributeFormatImpl<?, ?>> givenFormats = this.uniforms.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
             Set<BaseAttributeFormatImpl<?, ?>> expectedFormats = this.layout.uniformFormatsByName().values();
+            checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
+        }
+
+        { //uniform arrays
+            Set<BaseAttributeFormatImpl<?, ?>> givenFormats = this.uniformArrays.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
+            Set<BaseAttributeFormatImpl<?, ?>> expectedFormats = this.layout.uniformArrayFormatsByName().values();
             checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
         }
 

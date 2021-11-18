@@ -246,4 +246,10 @@ public interface GLAPI {
 
     //GL_ARB_multi_draw_indirect
     void glMultiDrawElementsIndirect(int mode, int type, long indirect, int primcount, int stride);
+
+    //GL_ARB_program_interface_query
+    int glGetProgramResourceIndex(int program, int programInterface, @NonNull CharSequence name);
+
+    //GL_ARB_shader_storage_buffer_object
+    void glShaderStorageBlockBinding(int program, int storageBlockIndex, int storageBlockBinding);
 }

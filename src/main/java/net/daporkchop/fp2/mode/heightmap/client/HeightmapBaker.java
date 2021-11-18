@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.TexUVs;
+import net.daporkchop.fp2.client.texture.TextureUVs;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutput;
@@ -204,7 +204,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         pos.setPos(blockX, data.height_int, blockZ);
         biomeAccess.biome(data.biome);
 
-        attributes.a_state = TexUVs.STATEID_TO_INDEXID.get(data.state);
+        attributes.a_state = TextureUVs.STATEID_TO_INDEXID.get(data.state);
 
         int blockLight = data.light & 0xF;
         int skyLight = data.light >> 4;

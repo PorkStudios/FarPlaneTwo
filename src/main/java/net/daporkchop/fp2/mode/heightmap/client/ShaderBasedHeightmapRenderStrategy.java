@@ -61,8 +61,8 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
     public ShaderBasedHeightmapRenderStrategy(@NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode, @NonNull GL gl) {
         super(mode, gl);
 
-        this.globalFormat = gl.createGlobalFormat(HeightmapGlobalAttributes.class);
-        this.vertexFormat = gl.createLocalFormat(HeightmapLocalAttributes.class);
+        this.globalFormat = gl.createDrawGlobalFormat(HeightmapGlobalAttributes.class);
+        this.vertexFormat = gl.createDrawLocalFormat(HeightmapLocalAttributes.class);
         this.indexFormat = gl.createIndexFormat().type(IndexType.UNSIGNED_SHORT).build();
 
         this.drawLayout = gl.createDrawLayout()

@@ -23,6 +23,7 @@ package net.daporkchop.fp2.gl.draw.binding;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalBuffer;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 
@@ -34,25 +35,32 @@ import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
  */
 public interface DrawBindingBuilder<B extends DrawBinding> {
     /**
-     * Adds a {@link DrawLocalBuffer} which contain uniform attributes.
+     * Adds a {@link UniformBuffer} which contains uniform attributes.
      *
-     * @param uniforms the uniform attributes
+     * @param buffer the uniform attributes
      */
-    DrawBindingBuilder<B> withUniforms(@NonNull UniformBuffer<?> uniforms);
+    DrawBindingBuilder<B> withUniforms(@NonNull UniformBuffer<?> buffer);
 
     /**
-     * Adds a {@link DrawGlobalBuffer} which contain global attributes.
+     * Adds a {@link UniformArrayBuffer} which contains uniform array attributes.
      *
-     * @param globals the global attributes
+     * @param buffer the uniform attributes
      */
-    DrawBindingBuilder<B> withGlobals(@NonNull DrawGlobalBuffer<?> globals);
+    DrawBindingBuilder<B> withUniformArrays(@NonNull UniformArrayBuffer<?> buffer);
 
     /**
-     * Adds a {@link DrawLocalBuffer} which contain local attributes.
+     * Adds a {@link DrawGlobalBuffer} which contains global attributes.
      *
-     * @param locals the local attributes
+     * @param buffer the global attributes
      */
-    DrawBindingBuilder<B> withLocals(@NonNull DrawLocalBuffer<?> locals);
+    DrawBindingBuilder<B> withGlobals(@NonNull DrawGlobalBuffer<?> buffer);
+
+    /**
+     * Adds a {@link DrawLocalBuffer} which contains local attributes.
+     *
+     * @param buffer the local attributes
+     */
+    DrawBindingBuilder<B> withLocals(@NonNull DrawLocalBuffer<?> buffer);
 
     /**
      * @return the constructed {@link B}

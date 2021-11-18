@@ -122,6 +122,23 @@ public class StructMember<S> {
         }
     }
 
+    public void copyStageOutput(@NonNull MethodVisitor mv, @NonNull Stage stage, int srcBaseLvtIndex, int srcOffsetLvtIndex, int dstBaseLvtIndex, int dstOffsetLvtIndex, long outputOffset) {
+        for (int componentIndex = 0; componentIndex < stage.components(); componentIndex++) {
+            mv.visitVarInsn(ALOAD, dstBaseLvtIndex);
+            mv.visitVarInsn(LLOAD, dstOffsetLvtIndex);
+            mv.visitLdcInsn(componentIndex * (long) stage.componentType().stride() + outputOffset);
+            mv.visitInsn(LADD);
+
+            mv.visitVarInsn(ALOAD, srcBaseLvtIndex);
+            mv.visitVarInsn(LLOAD, srcOffsetLvtIndex);
+            mv.visitLdcInsn(componentIndex * (long) stage.componentType().stride() + outputOffset);
+            mv.visitInsn(LADD);
+
+            stage.componentType().unsafeGet(mv);
+            stage.componentType().unsafePut(mv);
+        }
+    }
+
     /**
      * @author DaPorkchop_
      */
@@ -384,6 +401,8 @@ public class StructMember<S> {
         void preLoadComponents(@NonNull MethodVisitor mv, int structLvtIndex);
 
         void loadComponent(@NonNull MethodVisitor mv, int structLvtIndex, int componentIndex);
+
+        void cloneStruct(@NonNull MethodVisitor mv, int srcStructLvtIndex, int dstStructLvtIndex);
     }
 
     /**
@@ -436,6 +455,16 @@ public class StructMember<S> {
             mv.visitVarInsn(ALOAD, structLvtIndex);
             mv.visitFieldInsn(GETFIELD, Type.getInternalName(field.getDeclaringClass()), field.getName(), Type.getDescriptor(field.getType()));
         }
+
+        @Override
+        public void cloneStruct(@NonNull MethodVisitor mv, int srcStructLvtIndex, int dstStructLvtIndex) {
+            for (Field field : this.fields) {
+                mv.visitVarInsn(ALOAD, dstStructLvtIndex);
+                mv.visitVarInsn(ALOAD, srcStructLvtIndex);
+                mv.visitFieldInsn(GETFIELD, Type.getInternalName(field.getDeclaringClass()), field.getName(), Type.getDescriptor(field.getType()));
+                mv.visitFieldInsn(PUTFIELD, Type.getInternalName(field.getDeclaringClass()), field.getName(), Type.getDescriptor(field.getType()));
+            }
+        }
     }
 
     /**
@@ -478,6 +507,14 @@ public class StructMember<S> {
             mv.visitInsn(ISHR);
             mv.visitLdcInsn(0xFF);
             mv.visitInsn(IAND);
+        }
+
+        @Override
+        public void cloneStruct(@NonNull MethodVisitor mv, int srcStructLvtIndex, int dstStructLvtIndex) {
+            mv.visitVarInsn(ALOAD, dstStructLvtIndex);
+            mv.visitVarInsn(ALOAD, srcStructLvtIndex);
+            mv.visitFieldInsn(GETFIELD, Type.getInternalName(this.field.getDeclaringClass()), this.field.getName(), "I");
+            mv.visitFieldInsn(PUTFIELD, Type.getInternalName(this.field.getDeclaringClass()), this.field.getName(), "I");
         }
     }
 
@@ -540,6 +577,15 @@ public class StructMember<S> {
             mv.visitLdcInsn(componentIndex);
             this.componentType.arrayLoad(mv);
         }
+
+        @Override
+        public void cloneStruct(@NonNull MethodVisitor mv, int srcStructLvtIndex, int dstStructLvtIndex) {
+            mv.visitVarInsn(ALOAD, dstStructLvtIndex);
+            mv.visitVarInsn(ALOAD, srcStructLvtIndex);
+            mv.visitFieldInsn(GETFIELD, Type.getInternalName(this.field.getDeclaringClass()), this.field.getName(), Type.getDescriptor(this.field.getType()));
+            mv.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(this.field.getType()), "clone", Type.getMethodDescriptor(Type.getType(this.field.getType())), false);
+            mv.visitFieldInsn(PUTFIELD, Type.getInternalName(this.field.getDeclaringClass()), this.field.getName(), Type.getDescriptor(this.field.getType()));
+        }
     }
 
     /**
@@ -578,6 +624,11 @@ public class StructMember<S> {
         @Override
         public void loadComponent(@NonNull MethodVisitor mv, int structLvtIndex, int componentIndex) {
             this.prev.loadComponent(mv, structLvtIndex, componentIndex);
+        }
+
+        @Override
+        public void cloneStruct(@NonNull MethodVisitor mv, int srcStructLvtIndex, int dstStructLvtIndex) {
+            this.prev.cloneStruct(mv, srcStructLvtIndex, dstStructLvtIndex);
         }
     }
 

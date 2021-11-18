@@ -23,6 +23,8 @@ package net.daporkchop.fp2.gl.opengl.attribute.common;
 /**
  * @author DaPorkchop_
  */
-public interface UniformBlockFormat {
+public interface ShaderStorageBlockFormat {
+    boolean isArray();
+
     String interfaceBlockLayout();
 }

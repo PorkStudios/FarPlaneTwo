@@ -18,50 +18,41 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw;
+package net.daporkchop.fp2.gl.opengl.attribute.uniform;
 
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
+import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.common.ShaderStorageBlockFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLBlockMemoryLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 
 /**
- * Builder for {@link DrawLayout}s.
- *
  * @author DaPorkchop_
  */
-public interface DrawLayoutBuilder {
-    /**
-     * Adds a {@link UniformFormat} which contains uniform attributes.
-     *
-     * @param format the format of the uniform attributes
-     */
-    DrawLayoutBuilder withUniforms(@NonNull UniformFormat<?> format);
+@Getter
+public class UniformArrayFormatShaderStorageBlock<S> extends BaseAttributeFormatImpl<S, InterleavedStructFormat<S>> implements UniformArrayFormat<S>, ShaderStorageBlockFormat {
+    public UniformArrayFormatShaderStorageBlock(@NonNull OpenGL gl, @NonNull Class<S> clazz) {
+        super(gl, gl.structFormatGenerator().getInterleaved(GLSLBlockMemoryLayout.STD140.layout(new StructInfo<>(clazz))));
+    }
 
-    /**
-     * Adds a {@link UniformArrayFormat} which contains uniform array attributes.
-     *
-     * @param format the format of the uniform array attributes
-     */
-    DrawLayoutBuilder withUniformArrays(@NonNull UniformArrayFormat<?> format);
+    @Override
+    public UniformArrayBuffer<S> createBuffer(@NonNull BufferUsage usage) {
+        return new UniformArrayBufferShaderStorageBlock<>(this, usage);
+    }
 
-    /**
-     * Adds a {@link DrawGlobalFormat} which contains global attributes.
-     *
-     * @param format the format of the global attributes
-     */
-    DrawLayoutBuilder withGlobals(@NonNull DrawGlobalFormat<?> format);
+    @Override
+    public boolean isArray() {
+        return true;
+    }
 
-    /**
-     * Adds a {@link DrawLocalFormat} which contains local attributes.
-     *
-     * @param format the format of the local attributes
-     */
-    DrawLayoutBuilder withLocals(@NonNull DrawLocalFormat<?> format);
-
-    /**
-     * @return the constructed {@link DrawLayout}
-     */
-    DrawLayout build();
+    @Override
+    public String interfaceBlockLayout() {
+        return this.structFormat.layoutName();
+    }
 }

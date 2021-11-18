@@ -18,22 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.client;
+package net.daporkchop.fp2.client.texture;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
-import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.client.gl.object.GLBuffer;
+import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
+import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.lib.common.util.PorkUtil;
-import net.daporkchop.lib.math.vector.i.Vec2i;
 import net.daporkchop.lib.primitive.map.ObjIntMap;
 import net.daporkchop.lib.primitive.map.open.ObjIntOpenHashMap;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.renderer.BlockModelShapes;
@@ -42,8 +44,9 @@ import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.EnumFacing;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,21 +54,16 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.compat.of.OFHelper.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL43.*;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * Global terrain info used by terrain rendering shaders.
  *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class TexUVs {
-    public static final GLBuffer QUAD_LISTS = new GLBuffer(GL_STATIC_DRAW);
-    public static final GLBuffer QUAD_DATA = new GLBuffer(GL_STATIC_DRAW);
-
+@Getter
+public class TextureUVs extends AbstractReleasable {
     private static final Map<IBlockState, StateFaceReplacer> STATE_TO_REPLACER = new IdentityHashMap<>();
     private static final StateFaceReplacer DEFAULT_REPLACER = (state, face) -> state;
 
@@ -143,10 +141,55 @@ public class TexUVs {
         });
 
         //reload texture UVs for the first time
-        reloadUVs();
+        ReloadTextureUVsEvent.fire();
     }
 
-    public static void reloadUVs() {
+    protected final GL gl;
+
+    protected final UniformArrayFormat<QuadList> listsFormat;
+    protected final UniformArrayBuffer<QuadList> listsBuffer;
+
+    protected final UniformArrayFormat<PackedBakedQuad> quadsFormat;
+    protected final UniformArrayBuffer<PackedBakedQuad> quadsBuffer;
+
+    public TextureUVs(@NonNull GL gl) {
+        this.gl = gl;
+
+        this.listsFormat = gl.createUniformArrayFormat(QuadList.class);
+        this.listsBuffer = this.listsFormat.createBuffer(BufferUsage.STATIC_DRAW);
+
+        this.quadsFormat = gl.createUniformArrayFormat(PackedBakedQuad.class);
+        this.quadsBuffer = this.quadsFormat.createBuffer(BufferUsage.STATIC_DRAW);
+
+        this.reloadUVs();
+
+        MinecraftForge.EVENT_BUS.register(this);
+    }
+
+    @Override
+    protected void doRelease() {
+        MinecraftForge.EVENT_BUS.unregister(this);
+
+        this.quadsBuffer.close();
+        this.listsBuffer.close();
+    }
+
+    /**
+     * @deprecated internal API, do not touch!
+     */
+    @Deprecated
+    @SubscribeEvent
+    public void _onReload(@NonNull ReloadTextureUVsEvent event) {
+        try {
+            this.reloadUVs();
+
+            event.handleSuccess();
+        } catch (Throwable t) {
+            event.handleFailure(t);
+        }
+    }
+
+    protected void reloadUVs() {
         if (MC.getTextureMapBlocks() == null) { //texture map hasn't been initialized yet, meaning the game is still starting
             return;
         }
@@ -211,43 +254,22 @@ public class TexUVs {
 
         STATEID_TO_INDEXID = stateIdToIndexId;
 
-        @SuppressWarnings("deprecation")
-        ByteBuf buffer = ByteBufAllocator.DEFAULT.directBuffer().order(ByteOrder.nativeOrder());
-        try {
-            List<Vec2i> quadIdToList = new ArrayList<>(distinctQuadsById.size());
-            int quadIndices = 0;
-            for (int i = 0, len = distinctQuadsById.size(); i < len; i++) {
-                List<PackedBakedQuad> quads = distinctQuadsById.get(i);
-                quadIdToList.add(new Vec2i(quadIndices, quadIndices += quads.size()));
-                for (PackedBakedQuad quad : quads) {
-                    buffer.writeFloat(quad.minU).writeFloat(quad.minV)
-                            .writeFloat(quad.maxU).writeFloat(quad.maxV)
-                            .writeFloat(quad.tintFactor);
-                }
-            }
-            try (GLBuffer ssbo = QUAD_DATA.bind(GL_SHADER_STORAGE_BUFFER)) { //upload data
-                ssbo.upload(buffer.memoryAddress(), buffer.readableBytes());
-            }
-
-            buffer.clear();
-
-            for (int[] faceIds : distinctIndicesById) {
-                for (int i : faceIds) {
-                    Vec2i list = quadIdToList.get(i);
-                    buffer.writeInt(list.getX()).writeInt(list.getY());
-                }
-            }
-            try (GLBuffer ssbo = QUAD_LISTS.bind(GL_SHADER_STORAGE_BUFFER)) { //upload data
-                ssbo.upload(buffer.memoryAddress(), buffer.readableBytes());
-            }
-        } finally {
-            buffer.release();
+        QuadList[] quadIdToList = new QuadList[distinctQuadsById.size()];
+        List<PackedBakedQuad> quadsOut = new ArrayList<>(distinctQuadsById.size());
+        for (int i = 0, len = distinctQuadsById.size(); i < len; i++) {
+            List<PackedBakedQuad> quads = distinctQuadsById.get(i);
+            quadIdToList[i] =new QuadList(quadsOut.size(), quadsOut.size() + quads.size());
+            quadsOut.addAll(quads);
         }
-    }
+        this.quadsBuffer.set(quadsOut.toArray(new PackedBakedQuad[0]));
 
-    public static void bind() {
-        QUAD_LISTS.bindBase(GL_SHADER_STORAGE_BUFFER, 0);
-        QUAD_DATA.bindBase(GL_SHADER_STORAGE_BUFFER, 1);
+        List<QuadList> listsOut = new ArrayList<>(quadIdToList.length);
+        for (int[] faceIds : distinctIndicesById) {
+            for (int i : faceIds) {
+                listsOut.add(quadIdToList[i]);
+            }
+        }
+        this.listsBuffer.set(listsOut.toArray(new QuadList[0]));
     }
 
     /**
@@ -271,12 +293,26 @@ public class TexUVs {
      */
     @AllArgsConstructor
     @EqualsAndHashCode
-    private static class PackedBakedQuad {
-        public final float minU;
-        public final float minV;
-        public final float maxU;
-        public final float maxV;
-        public final float tintFactor;
+    public static class QuadList {
+        @Attribute(vectorAxes = { "First", "Last" }, convert = Attribute.Conversion.TO_UNSIGNED)
+        public final int ua_texQuadListFirst;
+        public final int ua_texQuadListLast;
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @AllArgsConstructor
+    @EqualsAndHashCode
+    public static class PackedBakedQuad {
+        @Attribute(vectorAxes = { "S", "T", "P", "Q" })
+        public final float ua_texQuadCoordS;
+        public final float ua_texQuadCoordT;
+        public final float ua_texQuadCoordP;
+        public final float ua_texQuadCoordQ;
+
+        @Attribute
+        public final float ua_texQuadTint;
 
         public PackedBakedQuad(TextureAtlasSprite sprite, float tintFactor) {
             this(sprite.getMinU(), sprite.getMinV(), sprite.getMaxU(), sprite.getMaxV(), tintFactor);

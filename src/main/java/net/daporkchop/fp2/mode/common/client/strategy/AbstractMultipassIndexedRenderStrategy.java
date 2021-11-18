@@ -26,6 +26,7 @@ import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.command.DrawCommandBuffer;
 import net.daporkchop.fp2.gl.draw.command.DrawCommandIndexed;
@@ -81,6 +82,13 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
         return this.gl.createCommandBuffer()
                 .forIndexed(binding)
                 .build();
+    }
+
+    @Override
+    public DrawBindingBuilder<DrawBindingIndexed> configureDrawBinding(@NonNull DrawBindingBuilder<DrawBindingIndexed> builder) {
+        return builder
+                .withUniformArrays(this.textureUVs.listsBuffer())
+                .withUniformArrays(this.textureUVs.quadsBuffer());
     }
 
     @Override

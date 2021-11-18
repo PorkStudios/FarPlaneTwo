@@ -28,6 +28,7 @@ import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.common.ShaderStorageBlockBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.common.UniformBlockBuffer;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
@@ -51,6 +52,7 @@ public class DrawBindingImpl implements DrawBinding {
     protected final DrawLayoutImpl layout;
 
     protected final int vao;
+    protected final List<ShaderStorageBufferBinding> shaderStorageBuffers;
     protected final List<UniformBufferBinding> uniformBuffers;
     //protected final List<TextureBinding> textures;
 
@@ -64,8 +66,9 @@ public class DrawBindingImpl implements DrawBinding {
         this.gl.resourceArena().register(this, this.vao, this.api::glDeleteVertexArray);
 
         //group attribute buffers by attribute format
-        Map<BaseAttributeFormatImpl<?, ?>, BaseAttributeBufferImpl<?, ?, ?>> buffersByFormat = Stream.of(builder.uniforms, builder.globals, builder.locals)
+        Map<BaseAttributeFormatImpl<?, ?>, BaseAttributeBufferImpl<?, ?, ?>> buffersByFormat = Stream.of(builder.uniforms, builder.uniformArrays, builder.globals, builder.locals)
                 .flatMap(List::stream)
+                .flatMap(BaseAttributeBufferImpl::selfAndChildren)
                 .collect(Collectors.toMap(BaseAttributeBufferImpl::formatImpl, Function.identity()));
 
         //configure all vertex attributes in the VAO
@@ -82,6 +85,16 @@ public class DrawBindingImpl implements DrawBinding {
         } finally {
             this.api.glBindVertexArray(oldVao);
         }
+
+        //configure shader storage buffers
+        this.shaderStorageBuffers = this.layout.shaderStorageBlockBindings().stream()
+                .map(blockBinding -> {
+                    BaseAttributeBufferImpl<?, ?, ?> buffer = buffersByFormat.remove(blockBinding.format());
+                    checkArg(buffer != null, blockBinding.format());
+
+                    return new ShaderStorageBufferBinding(((ShaderStorageBlockBuffer) buffer).internalBuffer(), blockBinding.bindingIndex());
+                })
+                .collect(Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
 
         //configure uniform buffers
         this.uniformBuffers = this.layout.uniformBlockBindings().stream()
@@ -118,6 +131,7 @@ public class DrawBindingImpl implements DrawBinding {
 
         try {
             this.api.glBindVertexArray(this.vao);
+            this.shaderStorageBuffers.forEach(binding -> this.api.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding.bindingIndex, binding.buffer.id()));
             this.uniformBuffers.forEach(binding -> this.api.glBindBufferBase(GL_UNIFORM_BUFFER, binding.bindingIndex, binding.buffer.id()));
             /*this.textures.forEach(binding -> {
                 this.api.glActiveTexture(GL_TEXTURE0 + binding.unit);
@@ -131,8 +145,19 @@ public class DrawBindingImpl implements DrawBinding {
                 this.api.glBindTexture(binding.target.target(), 0);
             });*/
             this.uniformBuffers.forEach(binding -> this.api.glBindBufferBase(GL_UNIFORM_BUFFER, binding.bindingIndex, 0)); //this doesn't actually restore the old binding ID...
+            this.shaderStorageBuffers.forEach(binding -> this.api.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding.bindingIndex, 0)); //this doesn't actually restore the old binding ID...
             this.api.glBindVertexArray(oldVao);
         }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    protected static class ShaderStorageBufferBinding {
+        @NonNull
+        protected final GLBufferImpl buffer;
+        protected final int bindingIndex;
     }
 
     /**

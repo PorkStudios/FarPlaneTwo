@@ -38,7 +38,6 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureWriter;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -96,6 +95,31 @@ public class StructFormatGenerator {
             mv.visitEnd();
         }
 
+        { //Object clone(Object struct)
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "clone", "(Ljava/lang/Object;)V", null, null);
+
+            //make sure struct can be cast to requested type
+            mv.visitVarInsn(ALOAD, 1);
+            mv.visitTypeInsn(CHECKCAST, structName);
+            mv.visitVarInsn(ASTORE, 1);
+
+            //allocate new instance
+            mv.visitLdcInsn(Type.getObjectType(structName));
+            mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "allocateInstance", "(Ljava/lang/Class;)Ljava/lang/Object;", false);
+            mv.visitTypeInsn(CHECKCAST, structName);
+            mv.visitVarInsn(ASTORE, 2);
+
+            //copy each field
+            for (StructMember<S> member : layout.structInfo().members()) {
+                member.packedStage.cloneStruct(mv, 1, 2);
+            }
+
+            mv.visitInsn(RETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
         { //void copy(Object struct, Object dstBase, long dstOffset)
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copy", "(Ljava/lang/Object;Ljava/lang/Object;J)V", null, null);
 
@@ -110,6 +134,23 @@ public class StructFormatGenerator {
                 StructMember<S> member = members.get(i);
                 StructMember.Stage stage = layout.unpacked() ? member.unpackedStage : member.packedStage;
                 member.storeStageOutput(mv, stage, 1, 2, 3, layout.memberOffsets()[i]);
+            }
+
+            mv.visitInsn(RETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
+        { //void copy(Object srcBase, long srcOffset, Object dstBase, long dstOffset)
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copy", "(Ljava/lang/Object;JLjava/lang/Object;J)V", null, null);
+
+            //copy each member type
+            List<StructMember<S>> members = layout.structInfo().members();
+            for (int i = 0; i < members.size(); i++) {
+                StructMember<S> member = members.get(i);
+                StructMember.Stage stage = layout.unpacked() ? member.unpackedStage : member.packedStage;
+                member.copyStageOutput(mv, stage, 1, 2, 4, 5, layout.memberOffsets()[i]);
             }
 
             mv.visitInsn(RETURN);

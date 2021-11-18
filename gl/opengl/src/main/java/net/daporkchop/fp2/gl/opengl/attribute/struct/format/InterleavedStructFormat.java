@@ -54,6 +54,16 @@ public abstract class InterleavedStructFormat<S> extends StructFormat<S, Interle
     public abstract void copy(@NonNull S struct, Object dstBase, long dstOffset);
 
     /**
+     * Copies fields in the layout format from the given source to the given destination.
+     *
+     * @param srcBase   the source base instance
+     * @param srcOffset the source base offset
+     * @param dstBase   the destination base instance
+     * @param dstOffset the destination base offset
+     */
+    public abstract void copy(Object srcBase, long srcOffset, Object dstBase, long dstOffset);
+
+    /**
      * Configures the current VAO with this format's attributes at the given attribute indices.
      * <p>
      * This assumes the VAO is currently bound, and that the buffer which will contain the vertex data is bound to {@link OpenGLConstants#GL_ARRAY_BUFFER}.

@@ -29,6 +29,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
@@ -52,5 +53,9 @@ public abstract class BaseAttributeFormatImpl<S, SF extends StructFormat<S, ?>> 
     @Override
     public long size() {
         return this.structFormat.totalSize();
+    }
+
+    public Stream<BaseAttributeFormatImpl<?, ?>> selfAndChildren() {
+        return Stream.of(this);
     }
 }

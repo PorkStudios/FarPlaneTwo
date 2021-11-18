@@ -48,4 +48,12 @@ public abstract class StructFormat<S, L extends StructLayout<S>> {
      * @return the total size of a struct, in bytes
      */
     public abstract long totalSize();
+
+    /**
+     * Creates a deep clone of the given struct instance.
+     *
+     * @param struct the source instance
+     * @return the cloned instance
+     */
+    public abstract S clone(@NonNull S struct);
 }

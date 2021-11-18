@@ -32,25 +32,27 @@ import net.daporkchop.fp2.gl.attribute.global.DrawGlobalWriter;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
+import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
+import net.daporkchop.fp2.gl.draw.binding.DrawMode;
 import net.daporkchop.fp2.gl.draw.command.DrawCommandArrays;
 import net.daporkchop.fp2.gl.draw.command.DrawCommandBuffer;
 import net.daporkchop.fp2.gl.draw.command.DrawCommandIndexed;
-import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
-import net.daporkchop.fp2.gl.draw.binding.DrawMode;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
-import net.daporkchop.fp2.gl.draw.DrawLayout;
+import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
+import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
-import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.opengl.ContextAttribs;
 import org.lwjgl.opengl.Display;
@@ -115,12 +117,14 @@ public class TestLWJGL2 {
 
     @SneakyThrows({ ShaderCompilationException.class, ShaderLinkageException.class })
     private static void run(@NonNull GL gl) {
-        DrawLocalFormat<LocalAttribs> localFormat = gl.createLocalFormat(LocalAttribs.class);
-        DrawGlobalFormat<GlobalAttribs> globalFormat = gl.createGlobalFormat(GlobalAttribs.class);
         UniformFormat<UniformAttribs> uniformFormat = gl.createUniformFormat(UniformAttribs.class);
+        UniformArrayFormat<UniformArrayAttribs> uniformArrayFormat = gl.createUniformArrayFormat(UniformArrayAttribs.class);
+        DrawGlobalFormat<GlobalAttribs> globalFormat = gl.createDrawGlobalFormat(GlobalAttribs.class);
+        DrawLocalFormat<LocalAttribs> localFormat = gl.createDrawLocalFormat(LocalAttribs.class);
 
         DrawLayout layout = gl.createDrawLayout()
                 .withUniforms(uniformFormat)
+                .withUniformArrays(uniformArrayFormat)
                 .withGlobals(globalFormat)
                 .withLocals(localFormat)
                 .build();
@@ -170,11 +174,19 @@ public class TestLWJGL2 {
             }
         }
 
+        UniformArrayBuffer<UniformArrayAttribs> uniformArrayBuffer = uniformArrayFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        uniformArrayBuffer.set(new UniformArrayAttribs[]{
+                new UniformArrayAttribs(0.5f, 1.0f, 1.0f),
+                new UniformArrayAttribs(1.0f, 0.5f, 1.0f),
+                new UniformArrayAttribs(1.0f, 1.0f, 0.5f),
+        });
+
         UniformBuffer<UniformAttribs> uniformBuffer = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
         DrawBindingIndexed binding = layout.createBinding()
                 .withIndexes(indexBuffer)
                 .withUniforms(uniformBuffer)
+                .withUniformArrays(uniformArrayBuffer)
                 .withGlobals(globalBuffer)
                 .withLocals(localBuffer)
                 .build();
@@ -219,15 +231,23 @@ public class TestLWJGL2 {
     }
 
     @Data
-    public static class LocalAttribs {
-        @Attribute(vectorAxes = {"X", "Y"}, convert = Attribute.Conversion.TO_FLOAT)
-        public final byte a_posX;
-        public final byte a_posY;
+    public static class UniformAttribs {
+        @Attribute(vectorAxes = { "X", "Y" }, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
+        public final byte u_scaleX;
+        public final byte u_scaleY;
+    }
+
+    @Data
+    public static class UniformArrayAttribs {
+        @Attribute(vectorAxes = { "R", "G", "B" })
+        public final float ua_colorFactorR;
+        public final float ua_colorFactorG;
+        public final float ua_colorFactorB;
     }
 
     @Data
     public static class GlobalAttribs {
-        @Attribute(vectorAxes = {"X", "Y"}, convert = Attribute.Conversion.TO_FLOAT)
+        @Attribute(vectorAxes = { "X", "Y" }, convert = Attribute.Conversion.TO_FLOAT)
         public final byte a_offsetX;
         public final byte a_offsetY;
 
@@ -236,9 +256,9 @@ public class TestLWJGL2 {
     }
 
     @Data
-    public static class UniformAttribs {
-        @Attribute(vectorAxes = {"X", "Y"}, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
-        public final byte u_scaleX;
-        public final byte u_scaleY;
+    public static class LocalAttribs {
+        @Attribute(vectorAxes = { "X", "Y" }, convert = Attribute.Conversion.TO_FLOAT)
+        public final byte a_posX;
+        public final byte a_posY;
     }
 }

@@ -24,23 +24,24 @@ import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
-import net.daporkchop.fp2.gl.draw.command.DrawCommandBuffer;
-import net.daporkchop.fp2.gl.draw.command.DrawCommandBufferBuilder;
 import net.daporkchop.fp2.gl.compute.GLCompute;
-import net.daporkchop.fp2.gl.draw.index.IndexFormat;
-import net.daporkchop.fp2.gl.draw.index.IndexFormatBuilder;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
+import net.daporkchop.fp2.gl.draw.command.DrawCommandBuffer;
+import net.daporkchop.fp2.gl.draw.command.DrawCommandBufferBuilder;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexFormatBuilder;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
+import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 
 import java.util.function.Supplier;
 
@@ -94,11 +95,41 @@ public interface GL extends AutoCloseable {
      */
     IndexFormatBuilder.TypeSelectionStage createIndexFormat();
 
+    /**
+     * Gets a {@link UniformFormat} for the given struct class.
+     *
+     * @param clazz the struct class
+     * @param <S>   the struct type
+     * @return a {@link UniformFormat}
+     */
     <S> UniformFormat<S> createUniformFormat(@NonNull Class<S> clazz);
 
-    <S> DrawGlobalFormat<S> createGlobalFormat(@NonNull Class<S> clazz);
+    /**
+     * Gets a {@link UniformArrayFormat} for the given struct class.
+     *
+     * @param clazz the struct class
+     * @param <S>   the struct type
+     * @return a {@link UniformArrayFormat}
+     */
+    <S> UniformArrayFormat<S> createUniformArrayFormat(@NonNull Class<S> clazz);
 
-    <S> DrawLocalFormat<S> createLocalFormat(@NonNull Class<S> clazz);
+    /**
+     * Gets a {@link DrawGlobalFormat} for the given struct class.
+     *
+     * @param clazz the struct class
+     * @param <S>   the struct type
+     * @return a {@link DrawGlobalFormat}
+     */
+    <S> DrawGlobalFormat<S> createDrawGlobalFormat(@NonNull Class<S> clazz);
+
+    /**
+     * Gets a {@link DrawLocalFormat} for the given struct class.
+     *
+     * @param clazz the struct class
+     * @param <S>   the struct type
+     * @return a {@link DrawLocalFormat}
+     */
+    <S> DrawLocalFormat<S> createDrawLocalFormat(@NonNull Class<S> clazz);
 
     /**
      * @return a builder for constructing a new {@link DrawLayout}

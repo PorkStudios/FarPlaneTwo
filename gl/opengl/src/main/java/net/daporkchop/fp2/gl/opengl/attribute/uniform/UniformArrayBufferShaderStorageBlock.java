@@ -22,32 +22,49 @@ package net.daporkchop.fp2.gl.opengl.attribute.uniform;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.common.UniformBlockFormat;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLBlockMemoryLayout;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.common.ShaderStorageBlockBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
+import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public class UniformFormatBlock<S> extends BaseAttributeFormatImpl<S, InterleavedStructFormat<S>> implements UniformFormat<S>, UniformBlockFormat {
-    public UniformFormatBlock(@NonNull OpenGL gl, @NonNull Class<S> clazz) {
-        super(gl, gl.structFormatGenerator().getInterleaved(GLSLBlockMemoryLayout.STD140.layout(new StructInfo<>(clazz))));
+public class UniformArrayBufferShaderStorageBlock<S> extends BaseAttributeBufferImpl<S, UniformArrayFormatShaderStorageBlock<S>, UniformArrayFormat<S>> implements UniformArrayBuffer<S>, ShaderStorageBlockBuffer {
+    protected final InterleavedStructFormat<S> structFormat;
+
+    protected final GLBufferImpl internalBuffer;
+
+    protected final long stride;
+
+    public UniformArrayBufferShaderStorageBlock(@NonNull UniformArrayFormatShaderStorageBlock<S> format, @NonNull BufferUsage usage) {
+        super(format);
+        this.structFormat = format.structFormat();
+
+        this.internalBuffer = this.gl.createBuffer(usage);
+        this.stride = format.structFormat().stride();
     }
 
     @Override
-    public UniformBuffer<S> createBuffer(@NonNull BufferUsage usage) {
-        return new UniformBufferBlock<>(this, usage);
+    public void close() {
+        this.internalBuffer.close();
     }
 
     @Override
-    public String interfaceBlockLayout() {
-        return this.structFormat.layoutName();
+    public void set(@NonNull S[] structs) {
+        //set buffer capacity
+        this.internalBuffer.capacity(structs.length * this.stride);
+
+        //map the entire buffer write-only and copy the structs into it
+        this.internalBuffer.map(false, true, addr -> {
+            for (S struct : structs) {
+                this.structFormat.copy(struct, null, addr);
+                addr += this.stride;
+            }
+        });
     }
 }

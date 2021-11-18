@@ -30,6 +30,7 @@ import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
+import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawMode;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
@@ -183,7 +184,9 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
 
             this.bindings = IntStream.range(0, RENDER_PASS_COUNT)
                     .mapToObj(pass -> {
-                        return this.storage.createDrawBinding(AbstractRenderIndex.this.strategy.drawLayout(), pass).build();
+                        DrawBindingBuilder<DB> builder = this.storage.createDrawBinding(AbstractRenderIndex.this.strategy.drawLayout(), pass);
+                        builder = AbstractRenderIndex.this.strategy.configureDrawBinding(builder);
+                        return builder.build();
                     })
                     .collect(Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
 

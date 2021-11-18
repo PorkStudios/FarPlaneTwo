@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.TexUVs;
+import net.daporkchop.fp2.client.texture.TextureUVs;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
@@ -187,7 +187,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
             }
 
             IBlockState state = FastRegistry.getBlockState(data.states[edge]);
-            attributes.a_state = TexUVs.STATEID_TO_INDEXID.get(state);
+            attributes.a_state = TextureUVs.STATEID_TO_INDEXID.get(state);
             attributes.a_color = MC.getBlockColors().colorMultiplier(state, biomeAccess, pos, 0);
 
             map[baseMapIndex + edge] = vertices.put(attributes);

@@ -22,14 +22,16 @@ package net.daporkchop.fp2.gl.lwjgl2;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
-import net.daporkchop.fp2.gl.opengl.GLVersion;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
+import net.daporkchop.fp2.gl.opengl.GLVersion;
 import net.daporkchop.lib.common.function.throwing.EPredicate;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.lwjgl.opengl.ARBDrawElementsBaseVertex;
 import org.lwjgl.opengl.ARBInstancedArrays;
 import org.lwjgl.opengl.ARBMultiDrawIndirect;
+import org.lwjgl.opengl.ARBProgramInterfaceQuery;
 import org.lwjgl.opengl.ARBShaderImageLoadStore;
+import org.lwjgl.opengl.ARBShaderStorageBufferObject;
 import org.lwjgl.opengl.ARBTextureBufferObject;
 import org.lwjgl.opengl.ARBUniformBufferObject;
 import org.lwjgl.opengl.ContextCapabilities;
@@ -47,12 +49,10 @@ import org.lwjgl.opengl.GL43;
 import org.lwjgl.opengl.GLContext;
 
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 import java.util.Comparator;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 
 /**
@@ -74,6 +74,8 @@ public class GLAPILWJGL2 implements GLAPI {
 
     // OpenGL 4.3
     private final boolean GL_ARB_multi_draw_indirect;
+    private final boolean GL_ARB_program_interface_query;
+    private final boolean GL_ARB_shader_storage_buffer_object;
 
     public GLAPILWJGL2() {
         ContextCapabilities capabilities = GLContext.getCapabilities();
@@ -93,6 +95,8 @@ public class GLAPILWJGL2 implements GLAPI {
 
         // OpenGL 4.3
         this.GL_ARB_multi_draw_indirect = !capabilities.OpenGL43 && capabilities.GL_ARB_multi_draw_indirect;
+        this.GL_ARB_program_interface_query = !capabilities.OpenGL43 && capabilities.GL_ARB_program_interface_query;
+        this.GL_ARB_shader_storage_buffer_object = !capabilities.OpenGL43 && capabilities.GL_ARB_shader_storage_buffer_object;
     }
 
     @Override
@@ -565,6 +569,24 @@ public class GLAPILWJGL2 implements GLAPI {
             ARBMultiDrawIndirect.glMultiDrawElementsIndirect(mode, type, indirect, primcount, stride);
         } else {
             GL43.glMultiDrawElementsIndirect(mode, type, indirect, primcount, stride);
+        }
+    }
+
+    @Override
+    public int glGetProgramResourceIndex(int program, int programInterface, @NonNull CharSequence name) {
+        if (this.GL_ARB_program_interface_query) {
+            return ARBProgramInterfaceQuery.glGetProgramResourceIndex(program, programInterface, name);
+        } else {
+            return GL43.glGetProgramResourceIndex(program, programInterface, name);
+        }
+    }
+
+    @Override
+    public void glShaderStorageBlockBinding(int program, int storageBlockIndex, int storageBlockBinding) {
+        if (this.GL_ARB_shader_storage_buffer_object) {
+            ARBShaderStorageBufferObject.glShaderStorageBlockBinding(program, storageBlockIndex, storageBlockBinding);
+        } else {
+            GL43.glShaderStorageBlockBinding(program, storageBlockIndex, storageBlockBinding);
         }
     }
 }
