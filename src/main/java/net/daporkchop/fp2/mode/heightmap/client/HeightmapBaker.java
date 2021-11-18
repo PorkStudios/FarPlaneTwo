@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.TexUVs;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
+import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutput;
 import net.daporkchop.fp2.mode.heightmap.HeightmapData;
@@ -192,7 +192,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         }
     }
 
-    private int writeVertex(int baseX, int baseZ, int level, HeightmapTile tile, int x, int z, int layer, LocalAttributeWriter<HeightmapLocalAttributes> out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, HeightmapData data, HeightmapLocalAttributes attributes) {
+    private int writeVertex(int baseX, int baseZ, int level, HeightmapTile tile, int x, int z, int layer, DrawLocalWriter<HeightmapLocalAttributes> out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, HeightmapData data, HeightmapLocalAttributes attributes) {
         baseX += (x & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
 

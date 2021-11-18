@@ -23,19 +23,19 @@ package net.daporkchop.fp2.mode.common.client.bake.indexed;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.debug.util.DebugStats;
-import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.global.DrawGlobalBuffer;
+import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
+import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
+import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
-import net.daporkchop.fp2.gl.binding.DrawBindingBuilder;
-import net.daporkchop.fp2.gl.binding.DrawBindingIndexed;
-import net.daporkchop.fp2.gl.index.IndexBuffer;
-import net.daporkchop.fp2.gl.index.IndexFormat;
-import net.daporkchop.fp2.gl.index.IndexWriter;
-import net.daporkchop.fp2.gl.layout.DrawLayout;
+import net.daporkchop.fp2.gl.draw.command.DrawCommandIndexed;
+import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
+import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
+import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexWriter;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.mode.common.client.bake.AbstractBakeOutputStorage;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutputStorage;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
@@ -112,11 +112,11 @@ public class IndexedBakeOutputStorage<SU, SG, SL> extends AbstractBakeOutputStor
     protected final long slotSize;
     protected long slotsAddr;
 
-    protected final UniformAttributeBuffer<SU> uniformBuffer;
-    protected final GlobalAttributeBuffer<SG> globalBuffer;
+    protected final UniformBuffer<SU> uniformBuffer;
+    protected final DrawGlobalBuffer<SG> globalBuffer;
 
     protected final Allocator vertexAlloc;
-    protected final LocalAttributeBuffer<SL> vertexBuffer;
+    protected final DrawLocalBuffer<SL> vertexBuffer;
 
     protected final int indexSize;
     protected final Allocator[] indexAllocs;
@@ -125,7 +125,7 @@ public class IndexedBakeOutputStorage<SU, SG, SL> extends AbstractBakeOutputStor
     @Getter
     protected final int passes;
 
-    public IndexedBakeOutputStorage(@NonNull Allocator alloc, @NonNull UniformAttributeBuffer<SU> uniformBuffer, @NonNull GlobalAttributeFormat<SG> globalFormat, @NonNull LocalAttributeFormat<SL> vertexFormat, @NonNull IndexFormat indexFormat, int passes) {
+    public IndexedBakeOutputStorage(@NonNull Allocator alloc, @NonNull UniformBuffer<SU> uniformBuffer, @NonNull DrawGlobalFormat<SG> globalFormat, @NonNull DrawLocalFormat<SL> vertexFormat, @NonNull IndexFormat indexFormat, int passes) {
         this.alloc = alloc;
 
         this.passes = positive(passes, "passes");

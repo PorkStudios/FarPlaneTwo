@@ -22,7 +22,8 @@ package net.daporkchop.fp2.gl.compute;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.GLModule;
-import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
+import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
+import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 
 /**
  * API for OpenGL compute shaders.
@@ -53,10 +54,22 @@ public interface GLCompute extends GLModule {
     long maxLocalCount();
 
     /**
-     * Compiles a {@link ComputeShader} from the given source code.
-     * <p>
-     * Note: OpenGL technically requires compute shaders to be compiled and then linked in separate stages. This method combines both stages into one, since there's little point in linking
-     * in a separate stage.
+     * @return a builder for creating a new {@link ComputeLayout}
      */
-    ComputeShader compileComputeShader(@NonNull ComputeLocalSize localSize, @NonNull String source) throws ShaderCompilationException;
+    ComputeLayoutBuilder createComputeLayout(@NonNull ComputeLocalSize localSize);
+
+    /**
+     * @return a builder for constructing a new {@link ComputeShader}
+     */
+    BaseShaderBuilder<ComputeShader> createComputeShader(@NonNull ComputeLayout layout);
+
+    /**
+     * Links a {@link ComputeShaderProgram} from the given {@link ComputeShader}, tuned for computing data formatted with the given {@link ComputeLayout}.
+     *
+     * @param layout        the {@link ComputeLayout}
+     * @param computeShader the {@link ComputeShader}
+     * @return the linked {@link ComputeShaderProgram}
+     * @throws ShaderLinkageException if shader linkage fails
+     */
+    ComputeShaderProgram linkShaderProgram(@NonNull ComputeLayout layout, @NonNull ComputeShader computeShader) throws ShaderLinkageException;
 }

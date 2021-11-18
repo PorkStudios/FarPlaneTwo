@@ -20,24 +20,10 @@
 
 package net.daporkchop.fp2.gl.compute;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.shader.BaseShaderProgram;
+import net.daporkchop.fp2.gl.shader.BaseShader;
 
 /**
- * An OpenGL compute shader.
- *
  * @author DaPorkchop_
  */
-public interface ComputeShader extends BaseShaderProgram {
-    /**
-     * @return this compute shader's local size
-     */
-    ComputeLocalSize localSize();
-
-    /**
-     * Dispatches this compute shader.
-     *
-     * @param globalSize the global size of the dispatch
-     */
-    void dispatch(@NonNull ComputeGlobalSize globalSize);
+public interface ComputeShader extends BaseShader<ComputeLayout> {
 }

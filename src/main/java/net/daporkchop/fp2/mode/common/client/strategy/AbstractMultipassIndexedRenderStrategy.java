@@ -24,13 +24,13 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.GlStateUniformAttributes;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
-import net.daporkchop.fp2.gl.binding.DrawBindingIndexed;
-import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
-import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
-import net.daporkchop.fp2.gl.index.IndexFormat;
-import net.daporkchop.fp2.gl.index.IndexWriter;
+import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
+import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
+import net.daporkchop.fp2.gl.draw.command.DrawCommandBuffer;
+import net.daporkchop.fp2.gl.draw.command.DrawCommandIndexed;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -55,9 +55,9 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
 
     public abstract IndexFormat indexFormat();
 
-    public abstract GlobalAttributeFormat<SG> globalFormat();
+    public abstract DrawGlobalFormat<SG> globalFormat();
 
-    public abstract LocalAttributeFormat<SL> vertexFormat();
+    public abstract DrawLocalFormat<SL> vertexFormat();
 
     @Override
     public IRenderIndex<POS, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> createIndex() {

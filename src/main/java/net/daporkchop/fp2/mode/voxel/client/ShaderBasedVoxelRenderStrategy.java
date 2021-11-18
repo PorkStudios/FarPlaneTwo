@@ -22,20 +22,15 @@ package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.client.gl.shader.reload.ReloadableShaderProgram;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
-import net.daporkchop.fp2.gl.index.IndexFormat;
-import net.daporkchop.fp2.gl.index.IndexType;
-import net.daporkchop.fp2.gl.layout.DrawLayout;
-import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
-import net.daporkchop.fp2.gl.shader.FragmentShader;
-import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
-import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.daporkchop.fp2.gl.shader.VertexShader;
+import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
+import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexType;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
+import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
@@ -53,8 +48,8 @@ import static net.daporkchop.fp2.FP2.*;
  */
 @Getter
 public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRenderStrategy<VoxelPos, VoxelTile, VoxelGlobalAttributes, VoxelLocalAttributes> {
-    protected final GlobalAttributeFormat<VoxelGlobalAttributes> globalFormat;
-    protected final LocalAttributeFormat<VoxelLocalAttributes> vertexFormat;
+    protected final DrawGlobalFormat<VoxelGlobalAttributes> globalFormat;
+    protected final DrawLocalFormat<VoxelLocalAttributes> vertexFormat;
 
     protected final IndexFormat indexFormat;
 

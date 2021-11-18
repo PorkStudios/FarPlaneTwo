@@ -22,10 +22,10 @@ package net.daporkchop.fp2.mode.common.client.bake;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.debug.util.DebugStats;
-import net.daporkchop.fp2.gl.command.DrawCommand;
-import net.daporkchop.fp2.gl.binding.DrawBinding;
-import net.daporkchop.fp2.gl.binding.DrawBindingBuilder;
-import net.daporkchop.fp2.gl.layout.DrawLayout;
+import net.daporkchop.fp2.gl.draw.command.DrawCommand;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
+import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.common.misc.refcount.RefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;

@@ -23,9 +23,9 @@ package net.daporkchop.fp2.mode.common.client.bake.indexed;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
-import net.daporkchop.fp2.gl.index.IndexWriter;
+import net.daporkchop.fp2.gl.attribute.global.DrawGlobalWriter;
+import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
+import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.fp2.mode.common.client.bake.AbstractBakeOutput;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 
@@ -40,10 +40,10 @@ import java.util.stream.Stream;
 @Getter
 public class IndexedBakeOutput<SG, SL> extends AbstractBakeOutput {
     @NonNull
-    protected final GlobalAttributeWriter<SG> globals;
+    protected final DrawGlobalWriter<SG> globals;
 
     @NonNull
-    protected final LocalAttributeWriter<SL> verts;
+    protected final DrawLocalWriter<SL> verts;
 
     @NonNull
     protected final IndexWriter[] indices;

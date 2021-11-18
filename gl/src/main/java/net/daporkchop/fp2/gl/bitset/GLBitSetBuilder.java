@@ -21,9 +21,9 @@
 package net.daporkchop.fp2.gl.bitset;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
-import net.daporkchop.fp2.gl.binding.DrawMode;
-import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.draw.command.DrawCommandBuffer;
+import net.daporkchop.fp2.gl.draw.binding.DrawMode;
+import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 
 /**
  * Builder for {@link GLBitSet}s.

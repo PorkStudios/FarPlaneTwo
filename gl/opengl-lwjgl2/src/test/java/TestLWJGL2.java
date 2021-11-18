@@ -26,31 +26,31 @@ import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.Attribute;
-import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeWriter;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeWriter;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.global.DrawGlobalBuffer;
+import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
+import net.daporkchop.fp2.gl.attribute.global.DrawGlobalWriter;
+import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
+import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.command.DrawCommandArrays;
-import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
-import net.daporkchop.fp2.gl.command.DrawCommandIndexed;
-import net.daporkchop.fp2.gl.binding.DrawBindingIndexed;
-import net.daporkchop.fp2.gl.binding.DrawMode;
-import net.daporkchop.fp2.gl.index.IndexBuffer;
-import net.daporkchop.fp2.gl.index.IndexFormat;
-import net.daporkchop.fp2.gl.index.IndexType;
-import net.daporkchop.fp2.gl.index.IndexWriter;
-import net.daporkchop.fp2.gl.layout.DrawLayout;
-import net.daporkchop.fp2.gl.shader.FragmentShader;
+import net.daporkchop.fp2.gl.draw.command.DrawCommandArrays;
+import net.daporkchop.fp2.gl.draw.command.DrawCommandBuffer;
+import net.daporkchop.fp2.gl.draw.command.DrawCommandIndexed;
+import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
+import net.daporkchop.fp2.gl.draw.binding.DrawMode;
+import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexType;
+import net.daporkchop.fp2.gl.draw.index.IndexWriter;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
+import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
-import net.daporkchop.fp2.gl.shader.VertexShader;
+import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.opengl.ContextAttribs;
 import org.lwjgl.opengl.Display;
@@ -115,9 +115,9 @@ public class TestLWJGL2 {
 
     @SneakyThrows({ ShaderCompilationException.class, ShaderLinkageException.class })
     private static void run(@NonNull GL gl) {
-        LocalAttributeFormat<LocalAttribs> localFormat = gl.createLocalFormat(LocalAttribs.class);
-        GlobalAttributeFormat<GlobalAttribs> globalFormat = gl.createGlobalFormat(GlobalAttribs.class);
-        UniformAttributeFormat<UniformAttribs> uniformFormat = gl.createUniformFormat(UniformAttribs.class);
+        DrawLocalFormat<LocalAttribs> localFormat = gl.createLocalFormat(LocalAttribs.class);
+        DrawGlobalFormat<GlobalAttribs> globalFormat = gl.createGlobalFormat(GlobalAttribs.class);
+        UniformFormat<UniformAttribs> uniformFormat = gl.createUniformFormat(UniformAttribs.class);
 
         DrawLayout layout = gl.createDrawLayout()
                 .withUniforms(uniformFormat)
@@ -129,22 +129,18 @@ public class TestLWJGL2 {
                 .type(IndexType.UNSIGNED_SHORT)
                 .build();
 
-        VertexShader vertexShader = gl.createVertexShader()
-                .forLayout(layout)
-                .include(Identifier.from("test.vert")).endSource()
-                .endDefines()
+        VertexShader vertexShader = gl.createVertexShader(layout)
+                .include(Identifier.from("test.vert"))
                 .build();
-        FragmentShader fragmentShader = gl.createFragmentShader()
-                .forLayout(layout)
-                .include(Identifier.from("test.frag")).endSource()
-                .endDefines()
+        FragmentShader fragmentShader = gl.createFragmentShader(layout)
+                .include(Identifier.from("test.frag"))
                 .build();
         DrawShaderProgram drawShaderProgram = gl.linkShaderProgram(layout, vertexShader, fragmentShader);
 
-        LocalAttributeBuffer<LocalAttribs> localBuffer = localFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        DrawLocalBuffer<LocalAttribs> localBuffer = localFormat.createBuffer(BufferUsage.STATIC_DRAW);
         localBuffer.resize(4);
 
-        try (LocalAttributeWriter<LocalAttribs> writer = localFormat.createWriter()) {
+        try (DrawLocalWriter<LocalAttribs> writer = localFormat.createWriter()) {
             writer.put(new LocalAttribs((byte) 16, (byte) 16));
             writer.put(new LocalAttribs((byte) 16, (byte) 32));
             writer.put(new LocalAttribs((byte) 32, (byte) 32));
@@ -162,10 +158,10 @@ public class TestLWJGL2 {
             indexBuffer.set(0, writer);
         }
 
-        GlobalAttributeBuffer<GlobalAttribs> globalBuffer = globalFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        DrawGlobalBuffer<GlobalAttribs> globalBuffer = globalFormat.createBuffer(BufferUsage.STATIC_DRAW);
         globalBuffer.resize(4);
 
-        try (GlobalAttributeWriter<GlobalAttribs> writer = globalFormat.createWriter()) {
+        try (DrawGlobalWriter<GlobalAttribs> writer = globalFormat.createWriter()) {
             for (int i = 0, color = -1, x = 0; x < 2; x++) {
                 for (int y = 0; y < 2; y++, color = 0xFF << (i << 3), i++) {
                     writer.set(new GlobalAttribs((byte) (x * 32), (byte) (y * 32), 0xFF000000 | color));
@@ -174,7 +170,7 @@ public class TestLWJGL2 {
             }
         }
 
-        UniformAttributeBuffer<UniformAttribs> uniformBuffer = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        UniformBuffer<UniformAttribs> uniformBuffer = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
         DrawBindingIndexed binding = layout.createBinding()
                 .withIndexes(indexBuffer)

@@ -48,7 +48,7 @@ public abstract class BaseShaderImpl<L extends BaseLayout> implements BaseShader
 
     protected final int id;
 
-    public BaseShaderImpl(@NonNull ShaderBuilderImpl<?, L> builder, @NonNull ShaderType type, @NonNull SourceLine... lines) throws ShaderCompilationException {
+    public BaseShaderImpl(@NonNull BaseShaderBuilderImpl<?, L> builder, @NonNull ShaderType type, @NonNull SourceLine... lines) throws ShaderCompilationException {
         //allocate new shader
         this.gl = builder.gl;
         this.type = type;

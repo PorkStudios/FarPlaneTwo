@@ -24,13 +24,13 @@ import lombok.NonNull;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.common.util.capability.CloseableResource;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.layout.DrawLayout;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.shader.BaseShaderProgram;
-import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
-import net.daporkchop.fp2.gl.shader.FragmentShader;
+import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.daporkchop.fp2.gl.shader.VertexShader;
+import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 
 import java.util.function.Supplier;
 
@@ -43,15 +43,13 @@ public interface ReloadableShaderProgram<P extends BaseShaderProgram> extends Su
             @Override
             protected void reload(@NonNull ShaderMacros.Immutable macrosSnapshot) throws ShaderCompilationException, ShaderLinkageException {
                 try (
-                        VertexShader vertexShader = gl.createVertexShader()
-                                .forLayout(layout)
-                                .include(vertexShaderSource).endSource()
-                                .defineAll(macrosSnapshot.macros()).endDefines()
+                        VertexShader vertexShader = gl.createVertexShader(layout)
+                                .defineAll(macrosSnapshot.macros())
+                                .include(vertexShaderSource)
                                 .build();
-                        FragmentShader fragmentShader = gl.createFragmentShader()
-                                .forLayout(layout)
-                                .include(fragmentShaderSource).endSource()
-                                .defineAll(macrosSnapshot.macros()).endDefines()
+                        FragmentShader fragmentShader = gl.createFragmentShader(layout)
+                                .defineAll(macrosSnapshot.macros())
+                                .include(fragmentShaderSource)
                                 .build()) {
                     this.program = gl.linkShaderProgram(layout, vertexShader, fragmentShader);
                 }

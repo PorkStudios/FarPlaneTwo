@@ -28,11 +28,11 @@ import net.daporkchop.fp2.client.gl.shader.reload.ShaderMacros;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeFormat;
-import net.daporkchop.fp2.gl.binding.DrawBinding;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.command.DrawCommand;
+import net.daporkchop.fp2.gl.draw.command.DrawCommand;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -54,8 +54,8 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
     protected final IFarRenderMode<POS, T> mode;
     protected final GL gl;
 
-    protected final UniformAttributeFormat<GlStateUniformAttributes> uniformFormat;
-    protected final UniformAttributeBuffer<GlStateUniformAttributes> uniformBuffer;
+    protected final UniformFormat<GlStateUniformAttributes> uniformFormat;
+    protected final UniformBuffer<GlStateUniformAttributes> uniformBuffer;
 
     protected final ShaderMacros.Mutable macros = new ShaderMacros.Mutable(FP2Client.GLOBAL_SHADER_MACROS);
 

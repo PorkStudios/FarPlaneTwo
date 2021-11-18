@@ -23,8 +23,8 @@ package net.daporkchop.fp2.gl.opengl;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.binding.DrawMode;
-import net.daporkchop.fp2.gl.index.IndexType;
+import net.daporkchop.fp2.gl.draw.binding.DrawMode;
+import net.daporkchop.fp2.gl.draw.index.IndexType;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 

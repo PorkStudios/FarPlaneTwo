@@ -22,25 +22,25 @@ package net.daporkchop.fp2.gl;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
-import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
+import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
-import net.daporkchop.fp2.gl.command.DrawCommandBuffer;
-import net.daporkchop.fp2.gl.command.DrawCommandBufferBuilder;
+import net.daporkchop.fp2.gl.draw.command.DrawCommandBuffer;
+import net.daporkchop.fp2.gl.draw.command.DrawCommandBufferBuilder;
 import net.daporkchop.fp2.gl.compute.GLCompute;
-import net.daporkchop.fp2.gl.index.IndexFormat;
-import net.daporkchop.fp2.gl.index.IndexFormatBuilder;
-import net.daporkchop.fp2.gl.layout.DrawLayout;
-import net.daporkchop.fp2.gl.layout.LayoutBuilder;
-import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
-import net.daporkchop.fp2.gl.shader.FragmentShader;
-import net.daporkchop.fp2.gl.shader.ShaderBuilder;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexFormatBuilder;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
+import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
+import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
+import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.daporkchop.fp2.gl.shader.VertexShader;
+import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 
 import java.util.function.Supplier;
 
@@ -94,16 +94,16 @@ public interface GL extends AutoCloseable {
      */
     IndexFormatBuilder.TypeSelectionStage createIndexFormat();
 
-    <S> UniformAttributeFormat<S> createUniformFormat(@NonNull Class<S> clazz);
+    <S> UniformFormat<S> createUniformFormat(@NonNull Class<S> clazz);
 
-    <S> GlobalAttributeFormat<S> createGlobalFormat(@NonNull Class<S> clazz);
+    <S> DrawGlobalFormat<S> createGlobalFormat(@NonNull Class<S> clazz);
 
-    <S> LocalAttributeFormat<S> createLocalFormat(@NonNull Class<S> clazz);
+    <S> DrawLocalFormat<S> createLocalFormat(@NonNull Class<S> clazz);
 
     /**
      * @return a builder for constructing a new {@link DrawLayout}
      */
-    LayoutBuilder<DrawLayout> createDrawLayout();
+    DrawLayoutBuilder createDrawLayout();
 
     /**
      * @return a builder for constructing a new {@link DrawCommandBuffer}
@@ -117,12 +117,12 @@ public interface GL extends AutoCloseable {
     /**
      * @return a builder for constructing a new {@link VertexShader}
      */
-    ShaderBuilder.LayoutStage<VertexShader, DrawLayout> createVertexShader();
+    BaseShaderBuilder<VertexShader> createVertexShader(@NonNull DrawLayout layout);
 
     /**
      * @return a builder for constructing a new {@link FragmentShader}
      */
-    ShaderBuilder.LayoutStage<FragmentShader, DrawLayout> createFragmentShader();
+    BaseShaderBuilder<FragmentShader> createFragmentShader(@NonNull DrawLayout layout);
 
     /**
      * Links a {@link DrawShaderProgram} from the given {@link VertexShader} and {@link FragmentShader}, tuned for rendering data formatted with the given {@link DrawLayout}.

@@ -25,12 +25,12 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.shader.reload.ReloadableShaderProgram;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
-import net.daporkchop.fp2.gl.index.IndexFormat;
-import net.daporkchop.fp2.gl.index.IndexType;
-import net.daporkchop.fp2.gl.layout.DrawLayout;
-import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
+import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexType;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
+import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
@@ -48,8 +48,8 @@ import static net.daporkchop.fp2.FP2.*;
  */
 @Getter
 public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexedRenderStrategy<HeightmapPos, HeightmapTile, HeightmapGlobalAttributes, HeightmapLocalAttributes> {
-    protected final GlobalAttributeFormat<HeightmapGlobalAttributes> globalFormat;
-    protected final LocalAttributeFormat<HeightmapLocalAttributes> vertexFormat;
+    protected final DrawGlobalFormat<HeightmapGlobalAttributes> globalFormat;
+    protected final DrawLocalFormat<HeightmapLocalAttributes> vertexFormat;
 
     protected final IndexFormat indexFormat;
 

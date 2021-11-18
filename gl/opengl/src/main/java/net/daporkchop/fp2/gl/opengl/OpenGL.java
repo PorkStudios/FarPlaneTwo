@@ -29,40 +29,40 @@ import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.GLModule;
-import net.daporkchop.fp2.gl.attribute.global.GlobalAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.local.LocalAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
+import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.command.DrawCommandBufferBuilder;
+import net.daporkchop.fp2.gl.draw.command.DrawCommandBufferBuilder;
 import net.daporkchop.fp2.gl.compute.GLCompute;
-import net.daporkchop.fp2.gl.index.IndexFormatBuilder;
-import net.daporkchop.fp2.gl.layout.DrawLayout;
-import net.daporkchop.fp2.gl.layout.LayoutBuilder;
-import net.daporkchop.fp2.gl.opengl.attribute.global.GlobalAttributeFormatVertexAttribute;
-import net.daporkchop.fp2.gl.opengl.attribute.local.LocalAttributeFormatImpl;
+import net.daporkchop.fp2.gl.draw.index.IndexFormatBuilder;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
+import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
+import net.daporkchop.fp2.gl.opengl.attribute.global.DrawGlobalFormatVertexAttribute;
+import net.daporkchop.fp2.gl.opengl.attribute.local.DrawLocalFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructFormatGenerator;
-import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformAttributeFormatBlock;
+import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformFormatBlock;
 import net.daporkchop.fp2.gl.opengl.bitset.GLBitSetBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
-import net.daporkchop.fp2.gl.opengl.command.DrawCommandBufferBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.compute.ComputeCore;
-import net.daporkchop.fp2.gl.opengl.index.IndexFormatBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.layout.DrawLayoutImpl;
-import net.daporkchop.fp2.gl.opengl.shader.DrawShaderProgramImpl;
-import net.daporkchop.fp2.gl.opengl.shader.FragmentShaderImpl;
-import net.daporkchop.fp2.gl.opengl.shader.ShaderBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.draw.command.DrawCommandBufferBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.compute.ComputeImpl;
+import net.daporkchop.fp2.gl.opengl.draw.index.IndexFormatBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
+import net.daporkchop.fp2.gl.opengl.draw.shader.DrawShaderProgramImpl;
+import net.daporkchop.fp2.gl.opengl.draw.shader.FragmentShaderImpl;
+import net.daporkchop.fp2.gl.opengl.shader.BaseShaderBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
-import net.daporkchop.fp2.gl.opengl.shader.VertexShaderImpl;
+import net.daporkchop.fp2.gl.opengl.draw.shader.VertexShaderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
 import net.daporkchop.fp2.gl.opengl.texture.TextureImpl;
-import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
-import net.daporkchop.fp2.gl.shader.FragmentShader;
-import net.daporkchop.fp2.gl.shader.ShaderBuilder;
+import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
+import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.daporkchop.fp2.gl.shader.VertexShader;
+import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -149,7 +149,7 @@ public class OpenGL implements GL {
 
         //compute
         this.compute = GLExtension.GL_ARB_compute_shader.supported(this)
-                ? new ComputeCore(this)
+                ? new ComputeImpl(this)
                 : GLModule.unsupportedImplementation(GLCompute.class);
 
         //compatibility hacks
@@ -188,22 +188,22 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public <S> UniformAttributeFormat<S> createUniformFormat(@NonNull Class<S> clazz) {
-        return new UniformAttributeFormatBlock<>(this, clazz);
+    public <S> UniformFormat<S> createUniformFormat(@NonNull Class<S> clazz) {
+        return new UniformFormatBlock<>(this, clazz);
     }
 
     @Override
-    public <S> GlobalAttributeFormat<S> createGlobalFormat(@NonNull Class<S> clazz) {
-        return new GlobalAttributeFormatVertexAttribute<>(this, clazz);
+    public <S> DrawGlobalFormat<S> createGlobalFormat(@NonNull Class<S> clazz) {
+        return new DrawGlobalFormatVertexAttribute<>(this, clazz);
     }
 
     @Override
-    public <S> LocalAttributeFormat<S> createLocalFormat(@NonNull Class<S> clazz) {
-        return new LocalAttributeFormatImpl<>(this, clazz);
+    public <S> DrawLocalFormat<S> createLocalFormat(@NonNull Class<S> clazz) {
+        return new DrawLocalFormatImpl<>(this, clazz);
     }
 
     @Override
-    public LayoutBuilder<DrawLayout> createDrawLayout() {
+    public DrawLayoutBuilder createDrawLayout() {
         return new DrawLayoutBuilderImpl(this);
     }
 
@@ -217,8 +217,8 @@ public class OpenGL implements GL {
     //
 
     @Override
-    public ShaderBuilder.LayoutStage<VertexShader, DrawLayout> createVertexShader() {
-        return new ShaderBuilderImpl<VertexShader, DrawLayout>(this, ShaderType.VERTEX) {
+    public BaseShaderBuilder<VertexShader> createVertexShader(@NonNull DrawLayout layout) {
+        return new BaseShaderBuilderImpl<VertexShader, DrawLayout>(this, ShaderType.VERTEX, layout) {
             @Override
             protected VertexShader compile(@NonNull SourceLine... lines) throws ShaderCompilationException {
                 return new VertexShaderImpl(this, lines);
@@ -227,8 +227,8 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public ShaderBuilder.LayoutStage<FragmentShader, DrawLayout> createFragmentShader() {
-        return new ShaderBuilderImpl<FragmentShader, DrawLayout>(this, ShaderType.FRAGMENT) {
+    public BaseShaderBuilder<FragmentShader> createFragmentShader(@NonNull DrawLayout layout) {
+        return new BaseShaderBuilderImpl<FragmentShader, DrawLayout>(this, ShaderType.FRAGMENT, layout) {
             @Override
             protected FragmentShader compile(@NonNull SourceLine... lines) throws ShaderCompilationException {
                 return new FragmentShaderImpl(this, lines);

@@ -20,8 +20,8 @@
 
 package net.daporkchop.fp2.mode.common.client.bake;
 
-import net.daporkchop.fp2.gl.command.DrawCommand;
-import net.daporkchop.fp2.gl.binding.DrawBinding;
+import net.daporkchop.fp2.gl.draw.command.DrawCommand;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
