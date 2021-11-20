@@ -32,12 +32,13 @@ import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 @RequiredArgsConstructor
 @Getter
 public enum TextureTarget {
-    TEXTURE_2D("sampler2D", 2, GL_TEXTURE_2D, GL_TEXTURE_BINDING_2D),
-    TEXTURE_BUFFER("samplerBuffer", 1, GL_TEXTURE_BUFFER, GL_TEXTURE_BINDING_BUFFER);
+    TEXTURE_2D("sampler2D", 2, 2, GL_TEXTURE_2D, GL_TEXTURE_BINDING_2D),
+    TEXTURE_BUFFER("samplerBuffer", 1, -1, GL_TEXTURE_BUFFER, GL_TEXTURE_BINDING_BUFFER);
 
     @NonNull
     private final String glslSamplerName;
-    private final int glslSamplerCoordinates;
+    private final int coordVectorComponents;
+    private final int gradientVectorComponents;
 
     private final int target;
     private final int binding;

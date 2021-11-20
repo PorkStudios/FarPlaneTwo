@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-$today.year DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,34 +18,14 @@
  *
  */
 
-#define FRAG_BLOCK
+package net.daporkchop.fp2.mode.common.client.strategy.texture;
 
-#include <"fp2:shaders/frag/common.frag">
-#include <"fp2:shaders/frag/fog.frag">
+import net.daporkchop.fp2.gl.attribute.Attribute;
 
-void main() {
-    vec3 normal = normalVector();
-
-    vec4 frag_color;
-#if FP2_DEBUG_COLORS_ENABLED
-#if FP2_DEBUG_COLORS_MODE == FP2_DEBUG_COLORS_MODE_LEVEL || FP2_DEBUG_COLORS_MODE == FP2_DEBUG_COLORS_MODE_POSITION
-    frag_color = vec4(fs_in.color * diffuseLight(normal), 1.);
-#elif FP2_DEBUG_COLORS_MODE == FP2_DEBUG_COLORS_MODE_NORMAL
-    frag_color = vec4(normal * normal, 1.);
-#endif
-#else
-    //initial block texture sample
-    frag_color = sampleTerrain(normal);
-
-    //block/sky light
-    frag_color *= t_lightmap(fs_in.light);
-
-    //shading
-    frag_color.rgb *= diffuseLight(normal);
-#endif
-
-    //fog
-    frag_color = addFog(frag_color);
-
-    color = frag_color;
+/**
+ * @author DaPorkchop_
+ */
+public class LightmapTextureAttribute {
+    @Attribute(transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
+    public final int t_lightmap = 0;
 }

@@ -56,7 +56,6 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -404,9 +403,9 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
 
                 String name = "sampler_" + this.format.attributeFields().get(0).name();
                 int location = api.glGetUniformLocation(program, name);
-                checkArg(location >= 0, "unable to find sampler uniform: %s", name);
-
-                api.glUniform(location, this.unit);
+                if (location >= 0) { //sampler may have been optimized out, so only set it if it's present
+                    api.glUniform(location, this.unit);
+                }
             } finally {
                 api.glUseProgram(oldProgram);
             }
@@ -416,9 +415,14 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
             GLSLField field = this.format.attributeFields().get(0);
             builder.append("uniform ").append(this.target.glslSamplerName()).append(" sampler_").append(field.name()).append(";\n");
 
-            builder.append(field.declaration()).append("(in vec").append(this.target.glslSamplerCoordinates()).append(" coord) {\n");
+            builder.append(field.declaration()).append("(in vec").append(this.target.coordVectorComponents()).append(" coord) {\n");
             builder.append("    return texture(sampler_").append(field.name()).append(", coord);\n");
-            //builder.append("    return textureLod(sampler_").append(field.name()).append(", coord, 0.0);\n");
+            builder.append("}\n");
+
+            builder.append(field.declaration()).append("(in vec").append(this.target.coordVectorComponents()).append(" coord, ")
+                    .append("in vec").append(this.target.gradientVectorComponents()).append(" gradX, ")
+                    .append("in vec").append(this.target.gradientVectorComponents()).append(" gradY) {\n");
+            builder.append("    return textureGrad(sampler_").append(field.name()).append(", coord, gradX, gradY);\n");
             builder.append("}\n");
         }
     }

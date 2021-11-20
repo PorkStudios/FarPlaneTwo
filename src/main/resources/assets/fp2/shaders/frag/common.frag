@@ -25,16 +25,6 @@
 
 //
 //
-// TEXTURES
-//
-//
-
-//textures
-layout(binding = 0) uniform sampler2D terrain_texture;
-layout(binding = 1) uniform sampler2D lightmap_texture;
-
-//
-//
 // INPUTS
 //
 //
@@ -90,7 +80,7 @@ vec4 sampleTerrain(vec3 normal)  {
     vec4 quadCoords = ua_texQuadCoord(list.x);
 
     vec2 uv = mix(quadCoords.st, quadCoords.pq, factor);
-    vec4 color_out = textureGrad(terrain_texture, mix(quadCoords.st, quadCoords.pq, fract(factor)), dFdx(uv), dFdy(uv));
+    vec4 color_out = t_terrain(mix(quadCoords.st, quadCoords.pq, fract(factor)), dFdx(uv), dFdy(uv));
 
     //apply tint if the quad allows it (branchless implementation)
     color_out.rgb *= max(fs_in.color, vec3(ua_texQuadTint(list.x)));
@@ -102,7 +92,7 @@ vec4 sampleTerrain(vec3 normal)  {
 
         //raw color
         uv = mix(quadCoords.st, quadCoords.pq, factor);
-        vec4 frag_color = textureGrad(terrain_texture, mix(quadCoords.st, quadCoords.pq, fract(factor)), dFdx(uv), dFdy(uv));
+        vec4 frag_color = t_terrain(mix(quadCoords.st, quadCoords.pq, fract(factor)), dFdx(uv), dFdy(uv));
 
         //possibly apply tint (branchless implementation)
         frag_color.rgb *= max(fs_in.color, vec3(ua_texQuadTint(i)));

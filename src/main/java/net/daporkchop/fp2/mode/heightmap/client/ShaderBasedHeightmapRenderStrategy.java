@@ -67,8 +67,12 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
 
         this.drawLayout = gl.createDrawLayout()
                 .withUniforms(this.uniformFormat)
+                .withUniformArrays(this.textureUVs.listsFormat())
+                .withUniformArrays(this.textureUVs.quadsFormat())
                 .withGlobals(this.globalFormat)
                 .withLocals(this.vertexFormat)
+                .withTexture(this.textureFormatTerrain)
+                .withTexture(this.textureFormatLightmap)
                 .build();
 
         this.blockShader = ReloadableShaderProgram.draw(gl, this.drawLayout, this.macros,

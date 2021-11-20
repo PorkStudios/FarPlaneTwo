@@ -128,11 +128,14 @@ public class DrawBindingImpl implements DrawBinding {
     public void bind(@NonNull Runnable callback) {
         int oldVao = this.api.glGetInteger(GL_VERTEX_ARRAY_BINDING);
 
+        int oldTexUnit = this.api.glGetInteger(GL_ACTIVE_TEXTURE);
+
         try {
             this.api.glBindVertexArray(this.vao);
             this.shaderStorageBuffers.forEach(binding -> this.api.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding.bindingIndex, binding.buffer.id()));
             this.textures.forEach(binding -> {
                 this.api.glActiveTexture(GL_TEXTURE0 + binding.unit);
+                binding.prevId = this.api.glGetInteger(binding.target.binding());
                 this.api.glBindTexture(binding.target.target(), binding.id);
             });
             this.uniformBuffers.forEach(binding -> this.api.glBindBufferBase(GL_UNIFORM_BUFFER, binding.bindingIndex, binding.buffer.id()));
@@ -142,8 +145,9 @@ public class DrawBindingImpl implements DrawBinding {
             this.uniformBuffers.forEach(binding -> this.api.glBindBufferBase(GL_UNIFORM_BUFFER, binding.bindingIndex, 0)); //this doesn't actually restore the old binding ID...
             this.textures.forEach(binding -> { //this doesn't actually restore the old binding ID...
                 this.api.glActiveTexture(GL_TEXTURE0 + binding.unit);
-                this.api.glBindTexture(binding.target.target(), 0);
+                this.api.glBindTexture(binding.target.target(), binding.prevId);
             });
+            this.api.glActiveTexture(oldTexUnit);
             this.shaderStorageBuffers.forEach(binding -> this.api.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding.bindingIndex, 0)); //this doesn't actually restore the old binding ID...
             this.api.glBindVertexArray(oldVao);
         }
@@ -168,6 +172,8 @@ public class DrawBindingImpl implements DrawBinding {
         @NonNull
         protected final TextureTarget target;
         protected final int id;
+
+        protected int prevId = -1;
     }
 
     /**

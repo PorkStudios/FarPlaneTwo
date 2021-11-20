@@ -29,6 +29,8 @@ import net.daporkchop.fp2.client.texture.TextureUVs;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
+import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
@@ -38,9 +40,12 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
+import net.daporkchop.fp2.mode.common.client.strategy.texture.LightmapTextureAttribute;
+import net.daporkchop.fp2.mode.common.client.strategy.texture.TerrainTextureAttribute;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
+import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
 
 /**
@@ -58,6 +63,11 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
     protected final UniformFormat<GlStateUniformAttributes> uniformFormat;
     protected final UniformBuffer<GlStateUniformAttributes> uniformBuffer;
 
+    protected final TextureFormat2D<TerrainTextureAttribute> textureFormatTerrain;
+    protected final Texture2D<TerrainTextureAttribute> textureTerrain;
+    protected final TextureFormat2D<LightmapTextureAttribute> textureFormatLightmap;
+    protected final Texture2D<LightmapTextureAttribute> textureLightmap;
+
     protected final TextureUVs textureUVs;
 
     protected final ShaderMacros.Mutable macros = new ShaderMacros.Mutable(FP2Client.GLOBAL_SHADER_MACROS);
@@ -68,6 +78,11 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
 
         this.uniformFormat = gl.createUniformFormat(GlStateUniformAttributes.class);
         this.uniformBuffer = this.uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
+
+        this.textureFormatTerrain = gl.createTextureFormat2D(TerrainTextureAttribute.class);
+        this.textureTerrain = this.textureFormatTerrain.wrapExternalTexture(MC.getTextureMapBlocks().getGlTextureId());
+        this.textureFormatLightmap = gl.createTextureFormat2D(LightmapTextureAttribute.class);
+        this.textureLightmap = this.textureFormatLightmap.wrapExternalTexture(MC.getTextureManager().getTexture(MC.entityRenderer.locationLightMap).getGlTextureId());
 
         this.textureUVs = new TextureUVs(gl);
     }
