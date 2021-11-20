@@ -18,31 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.texture;
+package net.daporkchop.fp2.gl.attribute.texture;
 
-import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.GLResource;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-public class TextureImpl implements GLResource {
-    protected final OpenGL gl;
-
-    protected final int id;
-
-    public TextureImpl(@NonNull OpenGL gl) {
-        this.gl = gl;
-
-        this.id = this.gl.api().glGenTexture();
-        this.gl.resourceArena().register(this, this.id, this.gl.api()::glDeleteTexture);
-    }
-
-    @Override
-    public void close() {
-        this.gl.resourceArena().delete(this);
-    }
+public interface TextureWriter2D<S> extends BaseTextureWriter<S, TextureFormat2D<S>> {
+    /**
+     * Sets the texel at the given coordinates.
+     *
+     * @param x      the X coordinate
+     * @param y      the Y coordinate
+     * @param struct a {@link S} instance containing the texel data
+     */
+    void set(int x, int y, @NonNull S struct);
 }

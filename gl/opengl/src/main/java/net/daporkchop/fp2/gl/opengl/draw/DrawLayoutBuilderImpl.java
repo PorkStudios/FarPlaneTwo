@@ -24,6 +24,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
@@ -33,6 +34,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
@@ -46,6 +48,7 @@ public class DrawLayoutBuilderImpl implements DrawLayoutBuilder {
     protected final List<BaseAttributeFormatImpl<?, ?>> uniformArrays = new ArrayList<>();
     protected final List<BaseAttributeFormatImpl<?, ?>> globals = new ArrayList<>();
     protected final List<BaseAttributeFormatImpl<?, ?>> locals = new ArrayList<>();
+    protected final List<BaseAttributeFormatImpl<?, ?>> textures = new ArrayList<>();
 
     @Override
     public DrawLayoutBuilder withUniforms(@NonNull UniformFormat<?> format) {
@@ -72,7 +75,21 @@ public class DrawLayoutBuilderImpl implements DrawLayoutBuilder {
     }
 
     @Override
+    public DrawLayoutBuilder withTexture(@NonNull TextureFormat2D<?> format) {
+        this.textures.add((BaseAttributeFormatImpl<?, ?>) format);
+        return this;
+    }
+
+    @Override
     public DrawLayout build() {
         return new DrawLayoutImpl(this);
+    }
+
+    public Stream<BaseAttributeFormatImpl<?, ?>> allFormats() {
+        return Stream.of(this.uniforms, this.uniformArrays, this.globals, this.locals, this.textures).flatMap(List::stream);
+    }
+
+    public Stream<BaseAttributeFormatImpl<?, ?>> allFormatsAndChildren() {
+        return this.allFormats().flatMap(BaseAttributeFormatImpl::selfAndChildren);
     }
 }

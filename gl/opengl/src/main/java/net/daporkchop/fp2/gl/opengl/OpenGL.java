@@ -31,40 +31,41 @@ import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.GLModule;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.draw.command.DrawCommandBufferBuilder;
 import net.daporkchop.fp2.gl.compute.GLCompute;
-import net.daporkchop.fp2.gl.draw.index.IndexFormatBuilder;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
+import net.daporkchop.fp2.gl.draw.command.DrawCommandBufferBuilder;
+import net.daporkchop.fp2.gl.draw.index.IndexFormatBuilder;
+import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
+import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 import net.daporkchop.fp2.gl.opengl.attribute.global.DrawGlobalFormatVertexAttribute;
 import net.daporkchop.fp2.gl.opengl.attribute.local.DrawLocalFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructFormatGenerator;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormat2DImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformArrayFormatShaderStorageBlock;
 import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformFormatBlock;
 import net.daporkchop.fp2.gl.opengl.bitset.GLBitSetBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
-import net.daporkchop.fp2.gl.opengl.draw.command.DrawCommandBufferBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.compute.ComputeImpl;
-import net.daporkchop.fp2.gl.opengl.draw.index.IndexFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
+import net.daporkchop.fp2.gl.opengl.draw.command.DrawCommandBufferBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.draw.index.IndexFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.DrawShaderProgramImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.FragmentShaderImpl;
+import net.daporkchop.fp2.gl.opengl.draw.shader.VertexShaderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.BaseShaderBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
-import net.daporkchop.fp2.gl.opengl.draw.shader.VertexShaderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
-import net.daporkchop.fp2.gl.opengl.texture.TextureImpl;
-import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
-import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -170,10 +171,6 @@ public class OpenGL implements GL {
         return (brand.contains("Intel")) && !brand.contains("Mesa");
     }
 
-    public TextureImpl createTexture() {
-        return new TextureImpl(this);
-    }
-
     @Override
     public GLBufferImpl createBuffer(@NonNull BufferUsage usage) {
         return new GLBufferImpl(this, usage);
@@ -182,6 +179,11 @@ public class OpenGL implements GL {
     @Override
     public GLBitSetBuilder createBitSet() {
         return new GLBitSetBuilderImpl(this);
+    }
+
+    @Override
+    public <S> TextureFormat2D<S> createTextureFormat2D(@NonNull Class<S> clazz) {
+        return new TextureFormat2DImpl<>(this, clazz);
     }
 
     @Override

@@ -26,12 +26,16 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.asm.ClassloadingUtils;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.TextureStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLMatrixType;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
@@ -77,48 +81,18 @@ public class StructFormatGenerator {
         }
 
         { //constructor
-            SignatureWriter signature = new SignatureWriter();
-            signature.visitParameterType();
-            signature.visitClassType(Type.getInternalName(InterleavedStructLayout.class));
-            signature.visitEnd();
-            signature.visitReturnType();
-            signature.visitBaseType('V');
-
-            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "<init>", signature.toString(), null, null);
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, Type.getObjectType(Type.getInternalName(InterleavedStructLayout.class))), null, null);
 
             mv.visitVarInsn(ALOAD, 0);
             mv.visitVarInsn(ALOAD, 1);
-            mv.visitMethodInsn(INVOKESPECIAL, baseClassName, "<init>", signature.toString(), false);
+            mv.visitMethodInsn(INVOKESPECIAL, baseClassName, "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, Type.getObjectType(Type.getInternalName(InterleavedStructLayout.class))), false);
             mv.visitInsn(RETURN);
 
             mv.visitMaxs(0, 0);
             mv.visitEnd();
         }
 
-        { //Object clone(Object struct)
-            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "clone", "(Ljava/lang/Object;)V", null, null);
-
-            //make sure struct can be cast to requested type
-            mv.visitVarInsn(ALOAD, 1);
-            mv.visitTypeInsn(CHECKCAST, structName);
-            mv.visitVarInsn(ASTORE, 1);
-
-            //allocate new instance
-            mv.visitLdcInsn(Type.getObjectType(structName));
-            mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "allocateInstance", "(Ljava/lang/Class;)Ljava/lang/Object;", false);
-            mv.visitTypeInsn(CHECKCAST, structName);
-            mv.visitVarInsn(ASTORE, 2);
-
-            //copy each field
-            for (StructMember<S> member : layout.structInfo().members()) {
-                member.packedStage.cloneStruct(mv, 1, 2);
-            }
-
-            mv.visitInsn(RETURN);
-
-            mv.visitMaxs(0, 0);
-            mv.visitEnd();
-        }
+        this.generateClone(writer, layout.structInfo());
 
         { //void copy(Object struct, Object dstBase, long dstOffset)
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copy", "(Ljava/lang/Object;Ljava/lang/Object;J)V", null, null);
@@ -222,5 +196,145 @@ public class StructFormatGenerator {
 
         Class<InterleavedStructFormat<S>> clazz = uncheckedCast(ClassloadingUtils.defineHiddenClass(InterleavedStructFormat.class.getClassLoader(), writer.toByteArray()));
         return clazz.getConstructor(InterleavedStructLayout.class).newInstance(layout);
+    }
+
+    @SneakyThrows(ExecutionException.class)
+    public <S> TextureStructFormat<S> getTexture(@NonNull TextureStructLayout<S> layout) {
+        return uncheckedCast(this.cache.get(layout, () -> this.generateTexture(layout)));
+    }
+
+    private <S> TextureStructFormat<S> generateTexture(@NonNull TextureStructLayout<S> layout) throws Exception {
+        StructMember<S> member = layout.structInfo().members().get(0);
+        StructMember.Stage stage = layout.unpacked() ? member.unpackedStage : member.packedStage;
+        StructMember.Stage unpackedStage = member.unpackedStage;
+
+        String baseClassName = Type.getInternalName(TextureStructFormat.class);
+        String className = baseClassName + '$' + layout.layoutName() + '$' + Type.getInternalName(layout.structInfo().clazz()).replace("/", "__");
+        String structName = Type.getInternalName(layout.structInfo().clazz());
+
+        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+
+        {
+            SignatureWriter signature = new SignatureWriter();
+            signature.visitSuperclass();
+            signature.visitClassType(baseClassName);
+            signature.visitTypeArgument('=');
+            signature.visitClassType(structName);
+            signature.visitEnd();
+            signature.visitEnd();
+
+            writer.visit(V1_8, ACC_PUBLIC | ACC_FINAL, className, signature.toString(), baseClassName, null);
+        }
+
+        { //constructor
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, Type.getObjectType(Type.getInternalName(TextureStructLayout.class))), null, null);
+
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitVarInsn(ALOAD, 1);
+
+            { //int textureInternalFormat
+                String components = "RGBA".substring(0, unpackedStage.components());
+                int bitDepth = stage.componentType().stride() * Byte.SIZE;
+                String suffix;
+                if (stage.componentType().integer()) {
+                    suffix = unpackedStage.isNormalizedFloat()
+                            ? ((StructMember.ComponentType.Int) stage.componentType()).unsigned() ? "" : "_SNORM"
+                            : ((StructMember.ComponentType.Int) stage.componentType()).unsigned() ? "UI" : "I";
+                } else {
+                    suffix = "F";
+                }
+                mv.visitFieldInsn(GETSTATIC, Type.getInternalName(OpenGLConstants.class), "GL_" + components + bitDepth + suffix, "I");
+            }
+
+            { //int textureFormat
+                String components = "RGBA".substring(0, unpackedStage.components());
+                String suffix = unpackedStage.componentType().integer() ? "_INTEGER" : "";
+                mv.visitFieldInsn(GETSTATIC, Type.getInternalName(OpenGLConstants.class), "GL_" + components + suffix, "I");
+            }
+
+            { //int textureType
+                mv.visitFieldInsn(GETSTATIC, Type.getInternalName(OpenGLConstants.class), "GL_" + stage.componentType(), "I");
+            }
+
+            mv.visitMethodInsn(INVOKESPECIAL, baseClassName, "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, Type.getObjectType(Type.getInternalName(TextureStructLayout.class)), Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE), false);
+            mv.visitInsn(RETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
+        this.generateClone(writer, layout.structInfo());
+
+        { //void copy(Object struct, Object dstBase, long dstOffset)
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copy", "(Ljava/lang/Object;Ljava/lang/Object;J)V", null, null);
+
+            //make sure struct can be cast to requested type
+            mv.visitVarInsn(ALOAD, 1);
+            mv.visitTypeInsn(CHECKCAST, structName);
+            mv.visitVarInsn(ASTORE, 1);
+
+            //copy each member type
+            member.storeStageOutput(mv, stage, 1, 2, 3, 0L);
+
+            mv.visitInsn(RETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
+        { //void copy(Object srcBase, long srcOffset, Object dstBase, long dstOffset)
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copy", "(Ljava/lang/Object;JLjava/lang/Object;J)V", null, null);
+
+            //copy each member type
+            member.copyStageOutput(mv, stage, 1, 2, 4, 5, 0L);
+
+            mv.visitInsn(RETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
+        writer.visitEnd();
+
+        if (false) {
+            try {
+                java.nio.file.Files.write(java.nio.file.Paths.get(className.replace('/', '-') + ".class"), writer.toByteArray());
+            } catch (java.io.IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        Class<TextureStructFormat<S>> clazz = uncheckedCast(ClassloadingUtils.defineHiddenClass(TextureStructFormat.class.getClassLoader(), writer.toByteArray()));
+        return clazz.getConstructor(TextureStructLayout.class).newInstance(layout);
+    }
+
+    private <S> void generateClone(@NonNull ClassVisitor cv, @NonNull StructInfo<S> structInfo) {
+        String structName = Type.getInternalName(structInfo.clazz());
+
+        { //Object clone(Object struct)
+            MethodVisitor mv = cv.visitMethod(ACC_PUBLIC, "clone", "(Ljava/lang/Object;)Ljava/lang/Object;", null, null);
+
+            //make sure struct can be cast to requested type
+            mv.visitVarInsn(ALOAD, 1);
+            mv.visitTypeInsn(CHECKCAST, structName);
+            mv.visitVarInsn(ASTORE, 1);
+
+            //allocate new instance
+            mv.visitLdcInsn(Type.getObjectType(structName));
+            mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "allocateInstance", "(Ljava/lang/Class;)Ljava/lang/Object;", false);
+            mv.visitTypeInsn(CHECKCAST, structName);
+            mv.visitVarInsn(ASTORE, 2);
+
+            //copy each field
+            for (StructMember<S> member : structInfo.members()) {
+                member.packedStage.cloneStruct(mv, 1, 2);
+            }
+
+            mv.visitVarInsn(ALOAD, 2);
+            mv.visitInsn(ARETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
     }
 }

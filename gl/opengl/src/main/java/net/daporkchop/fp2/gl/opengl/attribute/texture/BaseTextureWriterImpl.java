@@ -18,37 +18,34 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.global;
+package net.daporkchop.fp2.gl.opengl.attribute.texture;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalBuffer;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalWriter;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.texture.BaseTextureFormat;
+import net.daporkchop.fp2.gl.attribute.texture.BaseTextureWriter;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.common.VertexAttributeFormat;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.StructLayouts;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public class DrawGlobalFormatVertexAttribute<S> extends BaseAttributeFormatImpl<S, InterleavedStructFormat<S>> implements DrawGlobalFormat<S>, VertexAttributeFormat {
-    public DrawGlobalFormatVertexAttribute(@NonNull OpenGL gl, @NonNull Class<S> clazz) {
-        super(gl, gl.structFormatGenerator().getInterleaved(StructLayouts.vertexAttributesInterleaved(gl, new StructInfo<>(clazz))));
+public abstract class BaseTextureWriterImpl<S, F extends BaseTextureFormatImpl<S>, F_EXTERNAL extends BaseTextureFormat<S>> implements BaseTextureWriter<S, F_EXTERNAL> {
+    protected final OpenGL gl;
+    protected final F formatImpl;
+    protected final TextureStructFormat<S> structFormat;
+
+    public BaseTextureWriterImpl(@NonNull F format) {
+        this.gl = format.gl();
+        this.formatImpl = format;
+        this.structFormat = format.structFormat();
     }
 
     @Override
-    public DrawGlobalWriter<S> createWriter() {
-        return new DrawGlobalWriterVertexAttribute<>(this);
-    }
-
-    @Override
-    public DrawGlobalBuffer<S> createBuffer(@NonNull BufferUsage usage) {
-        return new DrawGlobalBufferVertexAttribute<>(this, usage);
+    public F_EXTERNAL format() {
+        return uncheckedCast(this.formatImpl);
     }
 }

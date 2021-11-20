@@ -54,9 +54,11 @@ public interface GLModule {
         {
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "supported", "()Z", null, null);
             mv.visitCode();
+
             mv.visitLdcInsn(false);
             mv.visitInsn(IRETURN);
-            mv.visitMaxs(1, 0);
+
+            mv.visitMaxs(0, 0);
             mv.visitEnd();
         }
 
@@ -68,11 +70,13 @@ public interface GLModule {
 
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, method.getName(), Type.getMethodDescriptor(method), null, null);
             mv.visitCode();
+
             mv.visitTypeInsn(NEW, "java/lang/UnsupportedOperationException");
             mv.visitInsn(DUP);
             mv.visitMethodInsn(INVOKESPECIAL, "java/lang/UnsupportedOperationException", "<init>", "()V", false);
             mv.visitInsn(ATHROW);
-            mv.visitMaxs(2, 0);
+
+            mv.visitMaxs(0, 0);
             mv.visitEnd();
         }
 

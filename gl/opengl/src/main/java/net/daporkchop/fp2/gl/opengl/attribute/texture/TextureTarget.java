@@ -18,37 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.local;
+package net.daporkchop.fp2.gl.opengl.attribute.texture;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.common.VertexAttributeFormat;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.StructLayouts;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
+import lombok.RequiredArgsConstructor;
+
+import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 
 /**
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
 @Getter
-public class DrawLocalFormatImpl<S> extends BaseAttributeFormatImpl<S, InterleavedStructFormat<S>> implements DrawLocalFormat<S>, VertexAttributeFormat {
-    public DrawLocalFormatImpl(@NonNull OpenGL gl, @NonNull Class<S> clazz) {
-        super(gl, gl.structFormatGenerator().getInterleaved(StructLayouts.vertexAttributesInterleaved(gl, new StructInfo<>(clazz))));
-    }
+public enum TextureTarget {
+    TEXTURE_2D("sampler2D", 2, GL_TEXTURE_2D, GL_TEXTURE_BINDING_2D),
+    TEXTURE_BUFFER("samplerBuffer", 1, GL_TEXTURE_BUFFER, GL_TEXTURE_BINDING_BUFFER);
 
-    @Override
-    public DrawLocalWriter<S> createWriter() {
-        return new DrawLocalWriterImpl<>(this);
-    }
+    @NonNull
+    private final String glslSamplerName;
+    private final int glslSamplerCoordinates;
 
-    @Override
-    public DrawLocalBuffer<S> createBuffer(@NonNull BufferUsage usage) {
-        return new DrawLocalBufferImpl<>(this, usage);
-    }
+    private final int target;
+    private final int binding;
 }

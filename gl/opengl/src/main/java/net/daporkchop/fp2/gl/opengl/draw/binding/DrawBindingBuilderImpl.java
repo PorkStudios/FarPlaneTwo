@@ -23,6 +23,8 @@ package net.daporkchop.fp2.gl.opengl.draw.binding;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalBuffer;
+import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
+import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
@@ -31,14 +33,14 @@ import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.draw.index.IndexBufferImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
+import net.daporkchop.fp2.gl.opengl.draw.index.IndexBufferImpl;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -55,6 +57,7 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyInde
     protected final List<BaseAttributeBufferImpl<?, ?, ?>> uniformArrays = new ArrayList<>();
     protected final List<BaseAttributeBufferImpl<?, ?, ?>> globals = new ArrayList<>();
     protected final List<BaseAttributeBufferImpl<?, ?, ?>> locals = new ArrayList<>();
+    protected final List<BaseAttributeBufferImpl<?, ?, ?>> textures = new ArrayList<>();
 
     protected IndexBufferImpl indices;
 
@@ -97,6 +100,12 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyInde
     }
 
     @Override
+    public DrawBindingBuilder<DrawBinding> withTexture(@NonNull Texture2D<?> texture) {
+        this.textures.add((BaseAttributeBufferImpl<?, ?, ?>) texture);
+        return this;
+    }
+
+    @Override
     public DrawBinding build() {
         { //uniforms
             Set<BaseAttributeFormatImpl<?, ?>> givenFormats = this.uniforms.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
@@ -122,8 +131,22 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyInde
             checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
         }
 
+        { //textures
+            Set<BaseAttributeFormatImpl<?, ?>> givenFormats = this.textures.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
+            Set<BaseAttributeFormatImpl<?, ?>> expectedFormats = this.layout.textureFormatsByName().values();
+            checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
+        }
+
         return this.indices != null
                 ? new DrawBindingIndexedImpl(this)
                 : new DrawBindingImpl(this);
+    }
+
+    public Stream<BaseAttributeBufferImpl<?, ?, ?>> allBuffers() {
+        return Stream.of(this.uniforms, this.uniformArrays, this.globals, this.locals, this.textures).flatMap(List::stream);
+    }
+
+    public Stream<BaseAttributeBufferImpl<?, ?, ?>> allBuffersAndChildren() {
+        return this.allBuffers().flatMap(BaseAttributeBufferImpl::selfAndChildren);
     }
 }

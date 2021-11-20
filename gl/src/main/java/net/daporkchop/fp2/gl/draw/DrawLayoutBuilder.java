@@ -23,6 +23,7 @@ package net.daporkchop.fp2.gl.draw;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 
@@ -33,32 +34,39 @@ import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
  */
 public interface DrawLayoutBuilder {
     /**
-     * Adds a {@link UniformFormat} which contains uniform attributes.
+     * Adds a {@link UniformFormat}.
      *
      * @param format the format of the uniform attributes
      */
     DrawLayoutBuilder withUniforms(@NonNull UniformFormat<?> format);
 
     /**
-     * Adds a {@link UniformArrayFormat} which contains uniform array attributes.
+     * Adds a {@link UniformArrayFormat}.
      *
      * @param format the format of the uniform array attributes
      */
     DrawLayoutBuilder withUniformArrays(@NonNull UniformArrayFormat<?> format);
 
     /**
-     * Adds a {@link DrawGlobalFormat} which contains global attributes.
+     * Adds a {@link DrawGlobalFormat}.
      *
      * @param format the format of the global attributes
      */
     DrawLayoutBuilder withGlobals(@NonNull DrawGlobalFormat<?> format);
 
     /**
-     * Adds a {@link DrawLocalFormat} which contains local attributes.
+     * Adds a {@link DrawLocalFormat}.
      *
      * @param format the format of the local attributes
      */
     DrawLayoutBuilder withLocals(@NonNull DrawLocalFormat<?> format);
+
+    /**
+     * Adds a {@link TextureFormat2D}.
+     *
+     * @param format the format of the texture
+     */
+    DrawLayoutBuilder withTexture(@NonNull TextureFormat2D<?> format);
 
     /**
      * @return the constructed {@link DrawLayout}

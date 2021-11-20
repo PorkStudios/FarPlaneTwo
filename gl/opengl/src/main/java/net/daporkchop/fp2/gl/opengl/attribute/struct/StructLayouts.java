@@ -24,16 +24,19 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.TextureStructLayout;
 import net.daporkchop.lib.common.math.PMath;
 
 import java.util.List;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
 @UtilityClass
-public class VertexAttributeLayout {
-    public <S> InterleavedStructLayout<S> interleaved(@NonNull OpenGL gl, @NonNull StructInfo<S> structInfo) {
+public class StructLayouts {
+    public <S> InterleavedStructLayout<S> vertexAttributesInterleaved(@NonNull OpenGL gl, @NonNull StructInfo<S> structInfo) {
         List<StructMember<S>> members = structInfo.members();
         int memberCount = structInfo.members().size();
 
@@ -63,6 +66,21 @@ public class VertexAttributeLayout {
                 .memberOffsets(memberOffsets)
                 .memberComponentOffsets(memberComponentOffsets)
                 .stride(offset)
+                .build();
+    }
+
+    public <S> TextureStructLayout<S> texture(@NonNull OpenGL gl, @NonNull StructInfo<S> structInfo) {
+        List<StructMember<S>> members = structInfo.members();
+        checkArg(members.size() == 1, "expected exactly one attribute, but found %d! %s", members.size(), structInfo);
+
+        StructMember.Stage stage = members.get(0).packedStage;
+
+        return TextureStructLayout.<S>builder()
+                .structInfo(structInfo)
+                .layoutName("texture")
+                .unpacked(false)
+                .componentStride(stage.componentType().stride())
+                .stride(stage.components() * (long) stage.componentType().stride())
                 .build();
     }
 }

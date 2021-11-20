@@ -62,6 +62,42 @@ public interface GLAPI {
 
     void glBindTexture(int target, int texture);
 
+    void glTexParameter(int target, int pname, int param);
+
+    void glTexParameter(int target, int pname, float param);
+
+    int glGetTexParameterInteger(int target, int pname);
+
+    void glTexImage1D(int target, int level, int internalformat, int width, int format, int type, long data);
+
+    void glTexImage1D(int target, int level, int internalformat, int width, int format, int type, @NonNull ByteBuffer data);
+
+    void glTexImage2D(int target, int level, int internalformat, int width, int height, int format, int type, long data);
+
+    void glTexImage2D(int target, int level, int internalformat, int width, int height, int format, int type, @NonNull ByteBuffer data);
+
+    void glTexSubImage1D(int target, int level, int xoffset, int width, int format, int type, long data);
+
+    void glTexSubImage1D(int target, int level, int xoffset, int width, int format, int type, @NonNull ByteBuffer data);
+
+    void glTexSubImage2D(int target, int level, int xoffset, int yoffset, int width, int height, int format, int type, long data);
+
+    void glTexSubImage2D(int target, int level, int xoffset, int yoffset, int width, int height, int format, int type, @NonNull ByteBuffer data);
+
+    //
+    //
+    // OpenGL 1.2
+    //
+    //
+
+    void glTexImage3D(int target, int level, int internalformat, int width, int height, int depth, int format, int type, long data);
+
+    void glTexImage3D(int target, int level, int internalformat, int width, int height, int depth, int format, int type, @NonNull ByteBuffer data);
+
+    void glTexSubImage3D(int target, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, int format, int type, long data);
+
+    void glTexSubImage3D(int target, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, int format, int type, @NonNull ByteBuffer data);
+
     //
     //
     // OpenGL 1.3

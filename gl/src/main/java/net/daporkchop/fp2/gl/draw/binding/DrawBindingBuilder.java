@@ -23,6 +23,7 @@ package net.daporkchop.fp2.gl.draw.binding;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalBuffer;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
+import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
@@ -61,6 +62,13 @@ public interface DrawBindingBuilder<B extends DrawBinding> {
      * @param buffer the local attributes
      */
     DrawBindingBuilder<B> withLocals(@NonNull DrawLocalBuffer<?> buffer);
+
+    /**
+     * Adds a {@link DrawLocalBuffer} which contains a 2D texture.
+     *
+     * @param texture the texture
+     */
+    DrawBindingBuilder<B> withTexture(@NonNull Texture2D<?> texture);
 
     /**
      * @return the constructed {@link B}

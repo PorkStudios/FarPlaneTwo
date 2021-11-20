@@ -42,6 +42,7 @@ import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
+import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 
 import java.util.function.Supplier;
 
@@ -89,6 +90,15 @@ public interface GL extends AutoCloseable {
      * @return a builder for constructing a new {@link GLBitSet}
      */
     GLBitSetBuilder createBitSet();
+
+    /**
+     * Gets a {@link TextureFormat2D} for the given struct class.
+     *
+     * @param clazz the struct class
+     * @param <S>   the struct type
+     * @return a {@link TextureFormat2D}
+     */
+    <S> TextureFormat2D<S> createTextureFormat2D(@NonNull Class<S> clazz);
 
     /**
      * @return a builder for constructing a new {@link IndexFormat}

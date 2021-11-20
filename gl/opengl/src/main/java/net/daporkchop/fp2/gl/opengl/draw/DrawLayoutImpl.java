@@ -36,6 +36,7 @@ import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.ShaderStorageBlockFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.common.TextureFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.common.UniformBlockFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.common.VertexAttributeBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.common.VertexAttributeFormat;
@@ -43,6 +44,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLMatrixType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureTarget;
 import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.layout.BaseLayoutImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
@@ -69,20 +71,22 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     protected final BiMap<String, BaseAttributeFormatImpl<?, ?>> uniformArrayFormatsByName;
     protected final BiMap<String, BaseAttributeFormatImpl<?, ?>> globalFormatsByName;
     protected final BiMap<String, BaseAttributeFormatImpl<?, ?>> localFormatsByName;
+    protected final BiMap<String, BaseAttributeFormatImpl<?, ?>> textureFormatsByName;
 
     protected final BiMap<String, GLSLField> allAttribsByName;
     protected final BiMap<String, GLSLField> uniformAttribsByName;
     protected final BiMap<String, GLSLField> uniformArrayAttribsByName;
     protected final BiMap<String, GLSLField> globalAttribsByName;
     protected final BiMap<String, GLSLField> localAttribsByName;
+    protected final BiMap<String, GLSLField> textureAttribsByName;
 
     protected final Map<BaseAttributeFormatImpl<?, ?>, VertexAttributeBindings> vertexAttributeBindingsByFormat;
 
     protected final List<FragmentColorBinding> fragmentColorBindings;
     protected final List<ShaderStorageBlockBinding> shaderStorageBlockBindings;
+    protected final List<TextureBinding> textureBindings;
     protected final List<VertexAttributeBindings> vertexAttributeBindings;
     protected final List<UniformBlockBinding> uniformBlockBindings;
-    //protected final List<TextureBinding> textureBindings;
 
     public DrawLayoutImpl(@NonNull DrawLayoutBuilderImpl builder) {
         super(builder.gl);
@@ -93,13 +97,14 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
                     ImmutableBiMap::copyOf);
 
             //collect all attribute formats into a single map (also ensures names are unique)
-            this.allFormatsByName = Stream.of(builder.uniforms, builder.uniformArrays, builder.globals, builder.locals).flatMap(List::stream).flatMap(BaseAttributeFormatImpl::selfAndChildren).collect(formatToMapCollector);
+            this.allFormatsByName = builder.allFormatsAndChildren().collect(formatToMapCollector);
 
             //create maps for formats, separated by usage
             this.uniformFormatsByName = builder.uniforms.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).collect(formatToMapCollector);
             this.uniformArrayFormatsByName = builder.uniformArrays.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).collect(formatToMapCollector);
             this.globalFormatsByName = builder.globals.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).collect(formatToMapCollector);
             this.localFormatsByName = builder.locals.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).collect(formatToMapCollector);
+            this.textureFormatsByName = builder.textures.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).collect(formatToMapCollector);
         }
 
         {
@@ -108,29 +113,34 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
                     ImmutableBiMap::copyOf);
 
             //collect all attributes into a single map (also ensures names are unique)
-            this.allAttribsByName = Stream.of(builder.uniforms, builder.uniformArrays, builder.globals, builder.locals).flatMap(List::stream).flatMap(BaseAttributeFormatImpl::selfAndChildren).map(BaseAttributeFormatImpl::attributeFields).flatMap(List::stream).collect(attribToMapCollector);
+            this.allAttribsByName = builder.allFormatsAndChildren().map(BaseAttributeFormatImpl::attributeFields).flatMap(List::stream).collect(attribToMapCollector);
 
             //create maps for attributes, separated by usage
             this.uniformAttribsByName = builder.uniforms.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).map(BaseAttributeFormatImpl::attributeFields).flatMap(List::stream).collect(attribToMapCollector);
             this.uniformArrayAttribsByName = builder.uniformArrays.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).map(BaseAttributeFormatImpl::attributeFields).flatMap(List::stream).collect(attribToMapCollector);
             this.globalAttribsByName = builder.globals.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).map(BaseAttributeFormatImpl::attributeFields).flatMap(List::stream).collect(attribToMapCollector);
             this.localAttribsByName = builder.locals.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).map(BaseAttributeFormatImpl::attributeFields).flatMap(List::stream).collect(attribToMapCollector);
+            this.textureAttribsByName = builder.textures.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).map(BaseAttributeFormatImpl::attributeFields).flatMap(List::stream).collect(attribToMapCollector);
         }
 
         //create temporary lists
         ImmutableList.Builder<FragmentColorBinding> fragmentColorBindings = ImmutableList.builder();
         ImmutableList.Builder<ShaderStorageBlockBinding> shaderStorageBlockBindings = ImmutableList.builder();
+        ImmutableList.Builder<TextureBinding> textureBindings = ImmutableList.builder();
         ImmutableList.Builder<VertexAttributeBindings> vertexAttributeBindings = ImmutableList.builder();
         ImmutableList.Builder<UniformBlockBinding> uniformBlockBindings = ImmutableList.builder();
-        //ImmutableList.Builder<TextureBinding> textureBindings = ImmutableList.builder();
 
         //register everything
-        Stream.of(builder.uniforms, builder.uniformArrays, builder.globals, builder.locals).flatMap(List::stream).flatMap(BaseAttributeFormatImpl::selfAndChildren)
+        builder.allFormatsAndChildren()
                 .forEach(format -> {
                     boolean handled = false;
                     if (format instanceof ShaderStorageBlockFormat) {
                         handled = true;
                         shaderStorageBlockBindings.add(new ShaderStorageBlockBinding(format));
+                    }
+                    if (format instanceof TextureFormat) {
+                        handled = true;
+                        textureBindings.add(new TextureBinding(format));
                     }
                     if (format instanceof VertexAttributeFormat) {
                         handled = true;
@@ -151,9 +161,9 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         //make temporary lists immutable
         this.fragmentColorBindings = fragmentColorBindings.build();
         this.shaderStorageBlockBindings = shaderStorageBlockBindings.build();
+        this.textureBindings = textureBindings.build();
         this.vertexAttributeBindings = vertexAttributeBindings.build();
         this.uniformBlockBindings = uniformBlockBindings.build();
-        //this.textureBindings = textureBindings.build();
 
         //final groupings
         this.vertexAttributeBindingsByFormat = this.vertexAttributeBindings.stream().collect(Collectors.collectingAndThen(
@@ -165,6 +175,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         //final configuration
         this.configureFragmentColors();
         this.configureShaderStorageBlocks();
+        this.configureTextures();
         this.configureVertexAttributes();
         this.configureUniformBlocks();
     }
@@ -186,6 +197,18 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         for (ShaderStorageBlockBinding binding : this.shaderStorageBlockBindings) {
             checkIndex(index < max, "cannot use more than %d shader storage buffers!", max);
             binding.bindingIndex = index++;
+        }
+    }
+
+    protected void configureTextures() {
+        int[] indices = new int[TextureTarget.values().length];
+        int max = this.api.glGetInteger(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
+
+        for (TextureBinding binding : this.textureBindings) {
+            int targetIndex = binding.target.ordinal();
+
+            checkIndex(indices[targetIndex] < max, "cannot use more than %d texture units!", max);
+            binding.unit = indices[targetIndex]++;
         }
     }
 
@@ -216,14 +239,6 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         }
     }
 
-    /*protected void addTexture(@NonNull List<TextureBinding> textureBindings, @NonNull AttributeFormatImpl format, @NonNull TextureTarget target) {
-        int unit = textureBindings.size() + 2;
-        int max = this.api.glGetInteger(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
-        checkIndex(unit + format.attribsArray().length <= max, "cannot use more than %d texture units!", max);
-
-        textureBindings.add(new TextureBinding(format, unit, target));
-    }*/
-
     @Override
     public void close() {
         //no-op
@@ -234,14 +249,15 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         switch (type) {
             case VERTEX: {
                 this.shaderStorageBlockBindings.forEach(binding -> binding.generateGLSL(builder));
+                this.textureBindings.forEach(binding -> binding.generateGLSL(builder));
                 this.vertexAttributeBindings.forEach(binding -> binding.generateGLSL(builder));
                 this.uniformBlockBindings.forEach(binding -> binding.generateGLSL(builder));
-                //this.textureBindings.forEach(binding -> binding.generateGLSL(this.gl, builder));
                 break;
             }
             case FRAGMENT: {
                 this.fragmentColorBindings.forEach(binding -> binding.generateGLSL(builder));
                 this.shaderStorageBlockBindings.forEach(binding -> binding.generateGLSL(builder));
+                this.textureBindings.forEach(binding -> binding.generateGLSL(builder));
                 this.uniformBlockBindings.forEach(binding -> binding.generateGLSL(builder));
                 break;
             }
@@ -258,13 +274,33 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     @Override
     public void configureProgramPostLink(int program) {
         this.shaderStorageBlockBindings.forEach(binding -> binding.bindBlockLocation(this.api, program));
+        this.textureBindings.forEach(binding -> binding.bindSamplerLocations(this.api, program));
         this.uniformBlockBindings.forEach(binding -> binding.bindBlockLocation(this.api, program));
-        //this.textureBindings.forEach(binding -> binding.bindSamplerLocation(this.api, program));
     }
 
     @Override
     public DrawBindingBuilder.OptionallyIndexedStage createBinding() {
         return new DrawBindingBuilderImpl(this);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+    @ToString
+    @EqualsAndHashCode
+    public static class FragmentColorBinding {
+        protected final GLSLField field = new GLSLField(GLSLType.vec(GLSLPrimitiveType.FLOAT, 4), "f_color");
+
+        protected int colorIndex = -1;
+
+        public void bindColorLocation(@NonNull GLAPI api, int program) {
+            api.glBindFragDataLocation(program, this.colorIndex, this.field.name());
+        }
+
+        protected void generateGLSL(@NonNull StringBuilder builder) {
+            builder.append("out ").append(this.field.declaration()).append(";\n");
+        }
     }
 
     /**
@@ -298,26 +334,6 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
 
         protected void generateGLSL(@NonNull StringBuilder builder) {
             this.format.attributeFields().forEach(field -> builder.append("in ").append(field.declaration()).append(";\n"));
-        }
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-    @ToString
-    @EqualsAndHashCode
-    public static class FragmentColorBinding {
-        protected final GLSLField field = new GLSLField(GLSLType.vec(GLSLPrimitiveType.FLOAT, 4), "f_color");
-
-        protected int colorIndex = -1;
-
-        public void bindColorLocation(@NonNull GLAPI api, int program) {
-            api.glBindFragDataLocation(program, this.colorIndex, this.field.name());
-        }
-
-        protected void generateGLSL(@NonNull StringBuilder builder) {
-            builder.append("out ").append(this.field.declaration()).append(";\n");
         }
     }
 
@@ -367,6 +383,49 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     /**
      * @author DaPorkchop_
      */
+    @Getter
+    @ToString
+    @EqualsAndHashCode
+    public static class TextureBinding {
+        protected final BaseAttributeFormatImpl<?, ?> format;
+        protected final TextureTarget target;
+
+        protected int unit = -1;
+
+        protected TextureBinding(@NonNull BaseAttributeFormatImpl<?, ?> format) {
+            this.format = format;
+            this.target = ((TextureFormat) format).target();
+        }
+
+        public void bindSamplerLocations(@NonNull GLAPI api, int program) {
+            int oldProgram = api.glGetInteger(GL_CURRENT_PROGRAM);
+            try {
+                api.glUseProgram(program);
+
+                String name = "sampler_" + this.format.attributeFields().get(0).name();
+                int location = api.glGetUniformLocation(program, name);
+                checkArg(location >= 0, "unable to find sampler uniform: %s", name);
+
+                api.glUniform(location, this.unit);
+            } finally {
+                api.glUseProgram(oldProgram);
+            }
+        }
+
+        protected void generateGLSL(@NonNull StringBuilder builder) {
+            GLSLField field = this.format.attributeFields().get(0);
+            builder.append("uniform ").append(this.target.glslSamplerName()).append(" sampler_").append(field.name()).append(";\n");
+
+            builder.append(field.declaration()).append("(in vec").append(this.target.glslSamplerCoordinates()).append(" coord) {\n");
+            builder.append("    return texture(sampler_").append(field.name()).append(", coord);\n");
+            //builder.append("    return textureLod(sampler_").append(field.name()).append(", coord, 0.0);\n");
+            builder.append("}\n");
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
     @Getter
     @ToString
@@ -390,49 +449,4 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
             builder.append("};\n");
         }
     }
-
-    /**
-     * @author DaPorkchop_
-     */
-    /*@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-    @Getter
-    @ToString
-    @EqualsAndHashCode
-    public static class TextureBinding {
-        protected final AttributeFormatImpl format;
-
-        protected final int unit;
-        @NonNull
-        protected final TextureTarget target;
-
-        protected void generateGLSL(@NonNull OpenGL gl, @NonNull StringBuilder builder) {
-            for (AttributeImpl attrib : this.format.attribsArray()) {
-                builder.append("uniform ")
-                        .append(attrib.interpretation() == AttributeInterpretation.INTEGER ? "i" : "").append(this.target.glslSamplerName()).append(' ')
-                        .append("_sampler_").append(attrib.name()).append(";\n");
-                builder.append("#define ").append(attrib.name()).append(" (")
-                        .append("texelFetch(_sampler_").append(attrib.name()).append(", ")
-                        .append(GLExtension.GL_ARB_shader_draw_parameters.core(gl) ? "gl_DrawID" : "gl_DrawIDARB")
-                        .append(").").append("rgba", 0, attrib.components())
-                        .append(")\n");
-            }
-        }
-
-        public void bindSamplerLocation(@NonNull GLAPI api, int program) {
-            int oldProgram = api.glGetInteger(GL_CURRENT_PROGRAM);
-            try {
-                api.glUseProgram(program);
-
-                for (AttributeImpl attrib : this.format.attribsArray()) {
-                    String name = "_sampler_" + attrib.name();
-                    int location = api.glGetUniformLocation(program, name);
-                    checkArg(location >= 0, "unable to find sampler uniform: %s", name);
-
-                    api.glUniform(location, this.unit + attrib.index());
-                }
-            } finally {
-                api.glUseProgram(oldProgram);
-            }
-        }
-    }*/
 }

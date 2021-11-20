@@ -332,6 +332,10 @@ public class StructMember<S> {
                 mv.visitInsn(FMUL);
             }
 
+            public boolean unsigned() {
+                return this.unsignedType == this;
+            }
+
             @Override
             public boolean integer() {
                 return true;

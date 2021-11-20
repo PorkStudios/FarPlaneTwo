@@ -36,6 +36,7 @@ import org.lwjgl.opengl.ARBTextureBufferObject;
 import org.lwjgl.opengl.ARBUniformBufferObject;
 import org.lwjgl.opengl.ContextCapabilities;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL15;
@@ -164,6 +165,93 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glBindTexture(int target, int texture) {
         GL11.glBindTexture(target, texture);
+    }
+
+    @Override
+    public void glTexParameter(int target, int pname, int param) {
+        GL11.glTexParameteri(target, pname, param);
+    }
+
+    @Override
+    public void glTexParameter(int target, int pname, float param) {
+        GL11.glTexParameterf(target, pname, param);
+    }
+
+    @Override
+    public int glGetTexParameterInteger(int target, int pname) {
+        return GL11.glGetTexParameteri(target, pname);
+    }
+
+    @Override
+    public void glTexImage1D(int target, int level, int internalformat, int width, int format, int type, long data) {
+        GL11.glTexImage1D(target, level, internalformat, width, 0, format, type, data == 0L
+                ? null
+                : DirectBufferHackery.wrapByte(data, UtilsLWJGL2.calculateTexImage1DStorage(format, type, width)));
+    }
+
+    @Override
+    public void glTexImage1D(int target, int level, int internalformat, int width, int format, int type, @NonNull ByteBuffer data) {
+        GL11.glTexImage1D(target, level, internalformat, width, 0, format, type, data);
+    }
+
+    @Override
+    public void glTexImage2D(int target, int level, int internalformat, int width, int height, int format, int type, long data) {
+        GL11.glTexImage2D(target, level, internalformat, width, height, 0, format, type, data == 0L
+                ? null
+                : DirectBufferHackery.wrapByte(data, UtilsLWJGL2.calculateTexImage2DStorage(format, type, width, height)));
+    }
+
+    @Override
+    public void glTexImage2D(int target, int level, int internalformat, int width, int height, int format, int type, @NonNull ByteBuffer data) {
+        GL11.glTexImage2D(target, level, internalformat, width, height, 0, format, type, data);
+    }
+
+    @Override
+    public void glTexSubImage1D(int target, int level, int xoffset, int width, int format, int type, long data) {
+        GL11.glTexSubImage1D(target, level, xoffset, width, format, type, DirectBufferHackery.wrapByte(data, UtilsLWJGL2.calculateTexImage1DStorage(format, type, width)));
+    }
+
+    @Override
+    public void glTexSubImage1D(int target, int level, int xoffset, int width, int format, int type, @NonNull ByteBuffer data) {
+        GL11.glTexSubImage1D(target, level, xoffset, width, format, type, data);
+    }
+
+    @Override
+    public void glTexSubImage2D(int target, int level, int xoffset, int yoffset, int width, int height, int format, int type, long data) {
+        GL11.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, DirectBufferHackery.wrapByte(data, UtilsLWJGL2.calculateTexImage2DStorage(format, type, width, height)));
+    }
+
+    @Override
+    public void glTexSubImage2D(int target, int level, int xoffset, int yoffset, int width, int height, int format, int type, @NonNull ByteBuffer data) {
+        GL11.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, data);
+    }
+
+    //
+    //
+    // OpenGL 1.2
+    //
+    //
+
+    @Override
+    public void glTexImage3D(int target, int level, int internalformat, int width, int height, int depth, int format, int type, long data) {
+        GL12.glTexImage3D(target, level, internalformat, width, height, depth, 0, format, type, data == 0L
+                ? null
+                : DirectBufferHackery.wrapByte(data, UtilsLWJGL2.calculateTexImage3DStorage(format, type, width, height, depth)));
+    }
+
+    @Override
+    public void glTexImage3D(int target, int level, int internalformat, int width, int height, int depth, int format, int type, @NonNull ByteBuffer data) {
+        GL12.glTexImage3D(target, level, internalformat, width, height, depth, 0, format, type, data);
+    }
+
+    @Override
+    public void glTexSubImage3D(int target, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, int format, int type, long data) {
+        GL12.glTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, DirectBufferHackery.wrapByte(data, UtilsLWJGL2.calculateTexImage3DStorage(format, type, width, height, depth)));
+    }
+
+    @Override
+    public void glTexSubImage3D(int target, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, int format, int type, @NonNull ByteBuffer data) {
+        GL12.glTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, data);
     }
 
     //

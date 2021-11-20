@@ -32,6 +32,9 @@ import net.daporkchop.fp2.gl.attribute.global.DrawGlobalWriter;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
+import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
+import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
+import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
@@ -121,12 +124,14 @@ public class TestLWJGL2 {
         UniformArrayFormat<UniformArrayAttribs> uniformArrayFormat = gl.createUniformArrayFormat(UniformArrayAttribs.class);
         DrawGlobalFormat<GlobalAttribs> globalFormat = gl.createDrawGlobalFormat(GlobalAttribs.class);
         DrawLocalFormat<LocalAttribs> localFormat = gl.createDrawLocalFormat(LocalAttribs.class);
+        TextureFormat2D<TextureAttribs> textureFormat = gl.createTextureFormat2D(TextureAttribs.class);
 
         DrawLayout layout = gl.createDrawLayout()
                 .withUniforms(uniformFormat)
                 .withUniformArrays(uniformArrayFormat)
                 .withGlobals(globalFormat)
                 .withLocals(localFormat)
+                .withTexture(textureFormat)
                 .build();
 
         IndexFormat indexFormat = gl.createIndexFormat()
@@ -183,12 +188,24 @@ public class TestLWJGL2 {
 
         UniformBuffer<UniformAttribs> uniformBuffer = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
+        Texture2D<TextureAttribs> texture = textureFormat.createTexture(512, 512, 1);
+        try (TextureWriter2D<TextureAttribs> writer = textureFormat.createWriter(512, 512)) {
+            for (int x = 0; x < 512; x++) {
+                for (int y = 0; y < 512; y++) {
+                    writer.set(x, y, new TextureAttribs(ThreadLocalRandom.current().nextInt() | 0xFF000000));
+                }
+            }
+
+            texture.set(0, 0, 0, writer);
+        }
+
         DrawBindingIndexed binding = layout.createBinding()
                 .withIndexes(indexBuffer)
                 .withUniforms(uniformBuffer)
                 .withUniformArrays(uniformArrayBuffer)
                 .withGlobals(globalBuffer)
                 .withLocals(localBuffer)
+                .withTexture(texture)
                 .build();
 
         DrawCommandBuffer<DrawCommandArrays> commandBufferArrays = gl.createCommandBuffer()
@@ -260,5 +277,11 @@ public class TestLWJGL2 {
         @Attribute(vectorAxes = { "X", "Y" }, convert = Attribute.Conversion.TO_FLOAT)
         public final byte a_posX;
         public final byte a_posY;
+    }
+
+    @Data
+    public static class TextureAttribs {
+        @Attribute(transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
+        public final int t_colorFactor;
     }
 }

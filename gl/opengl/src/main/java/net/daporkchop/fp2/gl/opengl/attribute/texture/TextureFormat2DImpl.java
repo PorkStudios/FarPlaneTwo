@@ -18,23 +18,43 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.texture;
+package net.daporkchop.fp2.gl.opengl.attribute.texture;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-
-import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
+import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
+import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
+import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.StructLayouts;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Getter
-public enum TextureTarget {
-    TEXTURE_BUFFER("samplerBuffer", GL_TEXTURE_BUFFER);
+public class TextureFormat2DImpl<S> extends BaseTextureFormatImpl<S> implements TextureFormat2D<S> {
+    public TextureFormat2DImpl(@NonNull OpenGL gl, @NonNull Class<S> clazz) {
+        super(gl, gl.structFormatGenerator().getTexture(StructLayouts.texture(gl, new StructInfo<>(clazz))));
+    }
 
-    @NonNull
-    private final String glslSamplerName;
-    private final int target;
+    @Override
+    public TextureWriter2D<S> createWriter(int width, int height) {
+        return new TextureWriter2DImpl<>(this, width, height);
+    }
+
+    @Override
+    public Texture2D<S> createTexture(int width, int height, int levels) {
+        return new Texture2DImpl<>(this, width, height, levels);
+    }
+
+    @Override
+    public Texture2D<S> wrapExternalTexture(@NonNull Object id) throws UnsupportedOperationException {
+        return new WrappedTexture2DImpl<>(this, (Integer) id);
+    }
+
+    @Override
+    public TextureTarget target() {
+        return TextureTarget.TEXTURE_2D;
+    }
 }
