@@ -22,7 +22,7 @@ package net.daporkchop.fp2.asm.core.world;
 
 import net.daporkchop.fp2.mode.api.ctx.IFarWorld;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;

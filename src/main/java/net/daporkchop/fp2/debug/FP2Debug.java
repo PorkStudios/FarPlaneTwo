@@ -22,7 +22,6 @@ package net.daporkchop.fp2.debug;
 
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.FP2Client;
-import net.daporkchop.fp2.client.gl.shader.ShaderManager;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.debug.client.DebugClientEvents;

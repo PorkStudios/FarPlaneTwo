@@ -37,15 +37,15 @@ public class TestEventBus {
 
     @Test
     public void test() {
-        FP2Core.get().eventBus().register(this);
+        FP2Core.fp2().eventBus().register(this);
         checkState(this.object == 0 && this.baseString == 0);
-        FP2Core.get().eventBus().fire(new Object());
+        FP2Core.fp2().eventBus().fire(new Object());
         checkState(this.object == 1 && this.baseString == 0);
-        FP2Core.get().eventBus().fire(new Base<String>() {});
+        FP2Core.fp2().eventBus().fire(new Base<String>() {});
         checkState(this.object == 2 && this.baseString == 1);
 
         checkState(this.eventBaseWildcard == 0);
-        FP2Core.get().eventBus().fire(new Event<Base<?>>() {});
+        FP2Core.fp2().eventBus().fire(new Event<Base<?>>() {});
         checkState(this.eventBaseWildcard == 1);
 
         Object listener = new Object() {
@@ -60,16 +60,16 @@ public class TestEventBus {
         };
         WeakReference<Object> listenerReference = new WeakReference<>(listener);
 
-        FP2Core.get().eventBus().fire("!!! this should not be printed !!!");
-        FP2Core.get().eventBus().registerWeak(listener);
-        FP2Core.get().eventBus().fire("hello world");
+        FP2Core.fp2().eventBus().fire("!!! this should not be printed !!!");
+        FP2Core.fp2().eventBus().registerWeak(listener);
+        FP2Core.fp2().eventBus().fire("hello world");
 
         listener = null;
         do {
             System.gc();
         } while (listenerReference.get() != null);
 
-        FP2Core.get().eventBus().fire("!!! this should not be printed !!!");
+        FP2Core.fp2().eventBus().fire("!!! this should not be printed !!!");
     }
 
     @FEventHandler

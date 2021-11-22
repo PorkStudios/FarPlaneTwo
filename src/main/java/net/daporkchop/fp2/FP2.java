@@ -20,21 +20,29 @@
 
 package net.daporkchop.fp2;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.event.RegisterEvent;
 import net.daporkchop.fp2.client.FP2Client;
+import net.daporkchop.fp2.common.util.Identifier;
+import net.daporkchop.fp2.common.util.ResourceProvider;
+import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.x86.x86FeatureDetector;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.debug.FP2Debug;
+import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
 import net.daporkchop.fp2.mode.voxel.VoxelRenderMode;
 import net.daporkchop.fp2.net.FP2Network;
 import net.daporkchop.fp2.server.FP2Server;
+import net.daporkchop.fp2.util.event.IdMappingsChangedEvent;
 import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
+import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -45,6 +53,9 @@ import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
 import net.minecraftforge.fml.common.network.NetworkCheckHandler;
 import net.minecraftforge.fml.relauncher.Side;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
 
 import static net.daporkchop.fp2.FP2.*;
@@ -58,9 +69,7 @@ import static net.daporkchop.fp2.util.Constants.*;
         useMetadata = true,
         dependencies = "required-after:forgerocks@[6.20.3-1.12.2,);after:cubicchunks@[1.12.2-0.0.1188.0,)",
         acceptedMinecraftVersions = "1.12.2")
-public class FP2 {
-    public static final String MODID = "fp2";
-
+public class FP2 extends FP2Core implements ResourceProvider {
     private String version = "";
 
     @Mod.EventHandler
@@ -78,8 +87,6 @@ public class FP2 {
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
             FP2Client.preInit();
         }
-
-        FP2Core.get().eventBus().register(this);
     }
 
     @Mod.EventHandler
@@ -114,6 +121,8 @@ public class FP2 {
 
     @Mod.EventHandler
     public void onIdsChanged(FMLModIdMappingEvent event) {
+        this.eventBus.fire(new IdMappingsChangedEvent());
+
         FastRegistry.reload();
     }
 
@@ -131,5 +140,37 @@ public class FP2 {
         event.registry()
                 .addLast("voxel", new VoxelRenderMode())
                 .addLast("heightmap", new HeightmapRenderMode());
+    }
+
+    //
+    // ResourceProvider
+    //
+
+    @Override
+    public ResourceProvider resourceProvider() {
+        return this;
+    }
+
+    @Override
+    public InputStream provideResourceAsStream(@NonNull Identifier id) throws IOException {
+        try {
+            return FMLClientHandler.instance().getClient().getResourceManager().getResource(new ResourceLocation(id.toString())).getInputStream();
+        } catch (FileNotFoundException e) {
+            throw new ResourceNotFoundException(id, e);
+        }
+    }
+
+    //
+    // FP2Core
+    //
+
+    @Override
+    public boolean hasClient() {
+        return FMLCommonHandler.instance().getSide() == Side.SERVER;
+    }
+
+    @Override
+    public boolean hasServer() {
+        return FMLCommonHandler.instance().getSide() == Side.CLIENT;
     }
 }

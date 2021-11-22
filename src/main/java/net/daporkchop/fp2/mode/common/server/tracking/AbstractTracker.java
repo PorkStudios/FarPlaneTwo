@@ -36,7 +36,7 @@ import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.fp2.util.annotation.RemovalPolicy;
 import net.daporkchop.fp2.util.datastructure.RecyclingArrayDeque;
 import net.daporkchop.fp2.util.datastructure.SimpleSet;
-import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.lib.unsafe.PUnsafe;
 

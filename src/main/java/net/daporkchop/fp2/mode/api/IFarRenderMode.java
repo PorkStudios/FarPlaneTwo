@@ -32,7 +32,7 @@ import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.util.SimpleRecycler;
+import net.daporkchop.fp2.core.util.SimpleRecycler;
 import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.relauncher.Side;

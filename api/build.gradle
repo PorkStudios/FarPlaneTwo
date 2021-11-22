@@ -19,4 +19,5 @@
  */
 
 dependencies {
+    implementationProvided "net.daporkchop.lib:common:$porklibVersion"
 }

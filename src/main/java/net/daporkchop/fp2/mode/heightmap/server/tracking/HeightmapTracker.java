@@ -27,7 +27,7 @@ import net.daporkchop.fp2.mode.common.server.tracking.AbstractTrackerManager;
 import net.daporkchop.fp2.mode.common.server.tracking.TrackingState;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
-import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 
 import java.util.Comparator;
 import java.util.function.Consumer;

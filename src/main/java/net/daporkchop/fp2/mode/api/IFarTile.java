@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.mode.api;
 
-import net.daporkchop.fp2.util.IReusablePersistent;
+import net.daporkchop.fp2.core.util.IReusablePersistent;
 
 /**
  * The core component of all FarPlaneTwo render modes, a tile contains all the data at a tile position.

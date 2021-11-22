@@ -27,8 +27,6 @@ import java.lang.annotation.Target;
 
 /**
  * Indicates that the annotated instance method can accept events fired on an {@link FEventBus}.
- * <p>
- * Has no effect if placed on a static method.
  *
  * @author DaPorkchop_
  */

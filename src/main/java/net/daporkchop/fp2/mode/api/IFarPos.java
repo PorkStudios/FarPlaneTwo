@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.api;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 
 import java.util.stream.Stream;
 

@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.lib.common.reference.Reference;
@@ -46,6 +47,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -111,14 +113,16 @@ public class EventBus implements FEventBus {
             .build(CacheLoader.from(clazz -> {
                 ImmutableList.Builder<HandlerMethod> builder = ImmutableList.builder();
                 for (Method method : clazz.getMethods()) {
-                    if ((method.getModifiers() & Modifier.STATIC) == 0 //method isn't static
-                        && method.isAnnotationPresent(FEventHandler.class)) { //method is annotated as @FEventHandler
+                    if (method.isAnnotationPresent(FEventHandler.class)) { //method is annotated as @FEventHandler
                         checkArg(method.getReturnType() == void.class, "method annotated as %s must return void: %s", FEventHandler.class.getTypeName(), method);
                         checkArg(method.getParameterCount() == 1, "method annotated as %s must have exactly one parameter: %s", FEventHandler.class.getTypeName(), method);
 
                         try {
                             method.setAccessible(true);
-                            builder.add(new HandlerMethod(method.getGenericParameterTypes()[0], MethodHandles.publicLookup().unreflect(method)));
+                            builder.add(new HandlerMethod(
+                                    method.getGenericParameterTypes()[0],
+                                    MethodHandles.publicLookup().unreflect(method),
+                                    (method.getModifiers() & Modifier.STATIC) == 0));
                         } catch (IllegalAccessException | IllegalArgumentException e) {
                             PUnsafe.throwException(e);
                         }
@@ -223,25 +227,34 @@ public class EventBus implements FEventBus {
 
     @Override
     public void register(@NonNull Object listener) {
-        this.registerReference(listener, ReferenceStrength.STRONG);
+        this.registerMember(listener, ReferenceStrength.STRONG);
     }
 
     @Override
     public void registerWeak(@NonNull Object listener) {
-        this.registerReference(listener, ReferenceStrength.WEAK);
+        this.registerMember(listener, ReferenceStrength.WEAK);
     }
 
-    protected synchronized void registerReference(@NonNull Object listener, @NonNull ReferenceStrength strength) {
+    protected synchronized void registerMember(@NonNull Object listener, @NonNull ReferenceStrength strength) {
         Class<?> listenerClass = listener.getClass();
         Reference<Object> reference = strength.createReference(listener, ref -> this.cleanup(listenerClass, ref));
 
         LISTENER_METHOD_CACHE.getUnchecked(listener.getClass()).forEach(method -> {
-            Handler handler = method.handler(reference);
+            method.handlerMember(reference).ifPresent(handler -> this.addHandler(handler, method.signature));
+        });
+    }
 
-            this.signatureToHandlers.computeIfAbsent(method.signature, _unused -> new HandlerList()).add(handler);
-            this.signatureToEventClasses.getOrDefault(method.signature, Collections.emptySet()).forEach(eventClass -> {
-                this.eventClassesToHandlers.get(eventClass).add(handler);
-            });
+    @Override
+    public synchronized void registerStatic(@NonNull Class<?> listener) {
+        LISTENER_METHOD_CACHE.getUnchecked(listener).forEach(method -> {
+            method.handlerStatic(listener).ifPresent(handler -> this.addHandler(handler, method.signature));
+        });
+    }
+
+    protected void addHandler(@NonNull Handler handler, @NonNull Type signature) {
+        this.signatureToHandlers.computeIfAbsent(signature, _unused -> new HandlerList()).add(handler);
+        this.signatureToEventClasses.getOrDefault(signature, Collections.emptySet()).forEach(eventClass -> {
+            this.eventClassesToHandlers.get(eventClass).add(handler);
         });
     }
 
@@ -264,13 +277,18 @@ public class EventBus implements FEventBus {
     }
 
     @Override
+    public void unregisterStatic(@NonNull Class<?> listener) {
+        this.cleanup(listener, listener);
+    }
+
+    @Override
     public <T> T fire(@NonNull T event) {
         HandlerList handlers = this.eventClassesToHandlers.get(event.getClass());
         if (handlers == null) {
             handlers = this.createListForUnknownEventType(event);
         }
 
-        handlers.fire(event);
+        handlers.forEach(handler -> handler.fire(event));
         return event;
     }
 
@@ -295,9 +313,18 @@ public class EventBus implements FEventBus {
         protected final Type signature;
         @NonNull
         protected final MethodHandle handle;
+        protected final boolean member;
 
-        public Handler handler(@NonNull Reference<Object> reference) {
-            return new Handler(reference, this.handle);
+        public Optional<Handler> handlerMember(@NonNull Reference<Object> reference) {
+            return this.member
+                    ? Optional.of(new Handler.Member(reference, this.handle))
+                    : Optional.empty();
+        }
+
+        public Optional<Handler> handlerStatic(@NonNull Class<?> clazz) {
+            return this.member
+                    ? Optional.empty()
+                    : Optional.of(new Handler.Static(this.handle, clazz));
         }
     }
 
@@ -305,39 +332,69 @@ public class EventBus implements FEventBus {
      * @author DaPorkchop_
      */
     protected static class HandlerList extends CopyOnWriteArrayList<Handler> {
-        public void fire(@NonNull Object event) {
-            this.forEach(handler -> {
-                Object instance = handler.reference.get();
-                if (instance != null) {
-                    try {
-                        handler.handle.invoke(instance, event);
-                    } catch (Throwable t) {
-                        PUnsafe.throwException(t);
-                    }
-                }
-            });
-        }
-
         public void cleanAndRemove(@NonNull Object referenceOrListener) {
-            this.removeIf(handler -> {
-                if (handler.reference == referenceOrListener) { //referenceOrListener is a reference, and is the same
-                    return true;
-                } else {
-                    Object instance = handler.reference.get();
-                    return instance == null || instance == referenceOrListener;
-                }
-            });
+            this.removeIf(handler -> handler.shouldRemove(referenceOrListener));
         }
     }
 
     /**
      * @author DaPorkchop_
      */
-    @RequiredArgsConstructor
-    protected static class Handler {
-        @NonNull
-        protected final Reference<Object> reference;
-        @NonNull
-        protected final MethodHandle handle;
+    protected static abstract class Handler {
+        public abstract void fire(@NonNull Object event);
+
+        public abstract boolean shouldRemove(@NonNull Object referenceOrListener);
+
+        /**
+         * @author DaPorkchop_
+         */
+        @RequiredArgsConstructor
+        protected static class Member extends Handler {
+            @NonNull
+            protected final Reference<Object> reference;
+            @NonNull
+            protected final MethodHandle handle;
+
+            @Override
+            @SneakyThrows
+            public void fire(@NonNull Object event) {
+                Object instance = this.reference.get();
+                if (instance != null) {
+                    this.handle.invoke(instance, event);
+                }
+            }
+
+            @Override
+            public boolean shouldRemove(@NonNull Object referenceOrListener) {
+                if (this.reference == referenceOrListener) { //referenceOrListener is a reference, and is the same
+                    return true;
+                } else {
+                    Object instance = this.reference.get();
+                    return instance == null || instance == referenceOrListener;
+                }
+            }
+        }
+
+        /**
+         * @author DaPorkchop_
+         */
+        @RequiredArgsConstructor
+        protected static class Static extends Handler {
+            @NonNull
+            protected final MethodHandle handle;
+            @NonNull
+            protected final Class<?> clazz;
+
+            @Override
+            @SneakyThrows
+            public void fire(@NonNull Object event) {
+                this.handle.invoke(event);
+            }
+
+            @Override
+            public boolean shouldRemove(@NonNull Object referenceOrListener) {
+                return this.clazz == referenceOrListener;
+            }
+        }
     }
 }

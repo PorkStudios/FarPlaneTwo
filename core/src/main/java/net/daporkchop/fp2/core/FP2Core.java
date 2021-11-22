@@ -21,21 +21,53 @@
 package net.daporkchop.fp2.core;
 
 import lombok.Getter;
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.FP2;
-import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.api.event.RegisterEvent;
+import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.core.event.EventBus;
+import net.daporkchop.lib.common.util.PorkUtil;
+
+import java.lang.reflect.Method;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public class FP2Core implements FP2 {
-    private static final FP2Core INSTANCE = new FP2Core();
-
-    public static FP2Core get() {
-        return INSTANCE;
+public abstract class FP2Core implements FP2 {
+    public static final String MODID = FP2.MODID;
+    
+    /**
+     * @return the current FP2 instance
+     */
+    public static FP2Core fp2() {
+        return (FP2Core) FP2.fp2();
     }
 
     protected final EventBus eventBus = new EventBus();
+
+    @SneakyThrows
+    protected FP2Core() {
+        //initialize global fp2 instance
+        Method method = PorkUtil.classForName(FP2.class.getCanonicalName() + "Holder").getDeclaredMethod("init", FP2.class);
+        method.setAccessible(true);
+        method.invoke(null, this);
+
+        //register self as an event listener
+        this.eventBus.register(this);
+    }
+
+    /**
+     * @return a {@link ResourceProvider} which can load game resources
+     */
+    public abstract ResourceProvider resourceProvider();
+
+    /**
+     * @return whether or not the active game distribution contains a client
+     */
+    public abstract boolean hasClient();
+
+    /**
+     * @return whether or not the active game distribution contains a server
+     */
+    public abstract boolean hasServer();
 }

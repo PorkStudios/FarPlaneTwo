@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.util;
+package net.daporkchop.fp2.core.util;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;

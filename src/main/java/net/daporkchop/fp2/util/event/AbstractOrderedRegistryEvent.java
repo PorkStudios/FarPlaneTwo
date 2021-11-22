@@ -30,7 +30,6 @@ import net.daporkchop.fp2.util.registry.ImmutableOrderedRegistry;
 import net.daporkchop.fp2.util.registry.LinkedOrderedRegistry;
 import net.daporkchop.lib.common.util.GenericMatcher;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.eventhandler.Event;
 
 import java.lang.reflect.Array;
 import java.util.Map;
@@ -56,7 +55,7 @@ public abstract class AbstractOrderedRegistryEvent<T> implements RegisterEvent<T
      * Fires this event on {@link MinecraftForge#EVENT_BUS}.
      */
     public AbstractOrderedRegistryEvent<T> fire() {
-        return FP2Core.get().eventBus().fire(this);
+        return FP2Core.fp2().eventBus().fire(this);
     }
 
     /**

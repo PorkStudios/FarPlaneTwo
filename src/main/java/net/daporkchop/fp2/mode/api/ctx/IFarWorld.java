@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.mode.api.ctx;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.minecraft.world.World;
 

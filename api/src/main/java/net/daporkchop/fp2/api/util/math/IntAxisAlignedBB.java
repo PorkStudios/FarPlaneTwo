@@ -18,28 +18,34 @@
  *
  */
 
-package net.daporkchop.fp2.api;
+package net.daporkchop.fp2.api.util.math;
 
-import net.daporkchop.fp2.api.event.FEventBus;
+import lombok.Data;
 
 /**
+ * A 3-dimensional axis-aligned bounding box using {@code int} coordinates.
+ * <p>
+ * All coordinates are inclusive.
+ *
  * @author DaPorkchop_
  */
-public interface FP2 {
-    /**
-     * FP2's mod ID.
-     */
-    String MODID = "fp2";
+@Data
+public final class IntAxisAlignedBB {
+    protected final int minX;
+    protected final int minY;
+    protected final int minZ;
+    protected final int maxX;
+    protected final int maxY;
+    protected final int maxZ;
 
-    /**
-     * @return the current {@link FP2} instance
-     */
-    static FP2 fp2() {
-        return FP2Holder.INSTANCE;
+    public boolean contains(int x, int y, int z) {
+        return x >= this.minX && x <= this.maxX
+               && y >= this.minY && y <= this.maxY
+               && z >= this.minZ && z <= this.maxZ;
     }
 
-    /**
-     * @return the {@link FEventBus} on which FP2 events are fired
-     */
-    FEventBus eventBus();
+    public boolean contains2d(int x, int z) {
+        return x >= this.minX && x <= this.maxX
+               && z >= this.minZ && z <= this.maxZ;
+    }
 }

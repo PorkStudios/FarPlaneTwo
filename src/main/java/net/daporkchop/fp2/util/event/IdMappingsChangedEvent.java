@@ -18,28 +18,10 @@
  *
  */
 
-package net.daporkchop.fp2.api;
-
-import net.daporkchop.fp2.api.event.FEventBus;
+package net.daporkchop.fp2.util.event;
 
 /**
  * @author DaPorkchop_
  */
-public interface FP2 {
-    /**
-     * FP2's mod ID.
-     */
-    String MODID = "fp2";
-
-    /**
-     * @return the current {@link FP2} instance
-     */
-    static FP2 fp2() {
-        return FP2Holder.INSTANCE;
-    }
-
-    /**
-     * @return the {@link FEventBus} on which FP2 events are fired
-     */
-    FEventBus eventBus();
+public class IdMappingsChangedEvent {
 }

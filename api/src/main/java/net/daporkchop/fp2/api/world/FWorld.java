@@ -18,28 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.api;
+package net.daporkchop.fp2.api.world;
 
-import net.daporkchop.fp2.api.event.FEventBus;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 
 /**
+ * A world consisting of blocks.
+ *
  * @author DaPorkchop_
  */
-public interface FP2 {
+public interface FWorld {
     /**
-     * FP2's mod ID.
+     * @return the {@link FGameRegistry} used in this world
      */
-    String MODID = "fp2";
+    FGameRegistry gameRegistry();
 
     /**
-     * @return the current {@link FP2} instance
+     * @return the world's coordinate limits, in blocks
      */
-    static FP2 fp2() {
-        return FP2Holder.INSTANCE;
-    }
-
-    /**
-     * @return the {@link FEventBus} on which FP2 events are fired
-     */
-    FEventBus eventBus();
+    IntAxisAlignedBB bounds();
 }

@@ -92,7 +92,7 @@ public class FP2Network {
         }
 
         IMessageHandler<IMessage, IMessage> serverboundHandler = new ServerboundHandler();
-        IMessageHandler<IMessage, IMessage> clientboundHandler = IS_DEDICATED_SERVER ? new ClientboundHandlerOnDedicatedServer() : new ClientboundHandler();
+        IMessageHandler<IMessage, IMessage> clientboundHandler = fp2().hasClient() ? new ClientboundHandler() : new ClientboundHandlerOnDedicatedServer();
 
         int id = 0;
 
@@ -142,7 +142,7 @@ public class FP2Network {
         }
 
         IMessageHandler<IMessage, IMessage> serverboundHandler = new ServerboundHandler();
-        IMessageHandler<IMessage, IMessage> clientboundHandler = IS_DEDICATED_SERVER ? new ClientboundHandlerOnDedicatedServer() : new ClientboundHandler();
+        IMessageHandler<IMessage, IMessage> clientboundHandler = fp2().hasClient() ? new ClientboundHandler() : new ClientboundHandlerOnDedicatedServer();
 
         int id = 0;
 

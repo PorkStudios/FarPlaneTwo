@@ -24,7 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.util.SimpleRecycler;
+import net.daporkchop.fp2.core.util.SimpleRecycler;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
 
 /**

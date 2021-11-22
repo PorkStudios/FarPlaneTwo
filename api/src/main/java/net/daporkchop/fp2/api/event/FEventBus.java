@@ -52,6 +52,15 @@ public interface FEventBus {
     void registerWeak(@NonNull Object listener);
 
     /**
+     * Registers the given event listener class.
+     * <p>
+     * The behavior is undefined if the class has already been registered.
+     *
+     * @param listener the event listener class
+     */
+    void registerStatic(@NonNull Class<?> listener);
+
+    /**
      * Unregisters the given event listener instance.
      * <p>
      * The behavior is undefined if the instance is not registered.
@@ -62,6 +71,18 @@ public interface FEventBus {
      * @param listener the event listener
      */
     void unregister(@NonNull Object listener);
+
+    /**
+     * Unregisters the given event listener class.
+     * <p>
+     * The behavior is undefined if the class is not registered.
+     * <p>
+     * Once this method returns, the listener will have been removed from the bus and will not be notified of any subsequent events (unless, of course, it is registered again)
+     * and all events fired prior to this method invocation will have completed handling.
+     *
+     * @param listener the event listener class
+     */
+    void unregisterStatic(@NonNull Class<?> listener);
 
     /**
      * Dispatches the given event to all registered listeners for the corresponding type.

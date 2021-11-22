@@ -18,16 +18,25 @@
  *
  */
 
-subprojects {
-    apply plugin: "com.github.johnrengelman.shadow"
-    apply plugin: "net.minecraftforge.gradle"
-    apply plugin: "org.spongepowered.mixin"
+package net.daporkchop.fp2.api;
 
-    dependencies {
-        minecraft "net.minecraftforge:forge:$minecraftVersion-$minecraftforgeVersion"
+import lombok.NonNull;
+import lombok.experimental.UtilityClass;
 
-        apiShade project(":api")
-        implementationShade project(":core")
-        implementation project(":gl")
+/**
+ * Internal dummy class which holds a reference to {@link FP2}.
+ *
+ * @author DaPorkchop_
+ */
+@UtilityClass
+class FP2Holder {
+    FP2 INSTANCE;
+
+    public synchronized void init(@NonNull FP2 fp2) {
+        if (INSTANCE != null) {
+            throw new IllegalStateException("fp2 instance has already been set!");
+        }
+
+        INSTANCE = fp2;
     }
 }

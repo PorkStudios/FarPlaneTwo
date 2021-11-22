@@ -18,6 +18,8 @@
  *
  */
 
+apply from: "${project.rootDir}/mc/forge.gradle"
+
 minecraft {
     mappings mappingsChannel, mappingsVersion
 
@@ -79,8 +81,6 @@ repositories {
 dependencies {
     runtimeOnlyShade project(":gl:opengl-lwjgl2")
 
-    implementationShade project(":common")
-
     implementationShade("net.daporkchop.lib:compression-zstd:$porklibVersion") {
         exclude group: "io.netty"
     }
@@ -100,15 +100,6 @@ dependencies {
     //implementation "com.github.OpenCubicChunks.CubicChunks:cubicchunks:355923c35c:dev"
     implementationProvided "io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT:dev"
     //implementation fg.deobf("io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT")
-
-    if (ideaSyncActive.toBoolean()) {
-        //intellij is present - we don't want it to register mixin as an annotation processor, so we just add it as a standard dependency.
-        //  if we don't do this, the intellij annotation processors will get totally screwed up
-        implementationProvided "org.spongepowered:mixin:$mixinVersion"
-    } else {
-        //register mixin as a standard annotation processor
-        annotationProcessor "org.spongepowered:mixin:$mixinVersion:processor"
-    }
 }
 
 processResources {

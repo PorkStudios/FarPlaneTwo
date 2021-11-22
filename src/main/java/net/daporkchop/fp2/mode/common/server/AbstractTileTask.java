@@ -29,7 +29,7 @@ import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
-import net.daporkchop.fp2.util.SimpleRecycler;
+import net.daporkchop.fp2.core.util.SimpleRecycler;
 import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
 import net.minecraft.util.math.ChunkPos;

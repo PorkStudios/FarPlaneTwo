@@ -30,8 +30,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.FP2;
-import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.common.pool.handle.Handle;
@@ -53,8 +52,6 @@ import net.minecraft.world.gen.IChunkGenerator;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.Loader;
-import net.minecraftforge.fml.common.network.NetworkRegistry;
-import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.logging.log4j.Level;
@@ -78,6 +75,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -127,14 +125,11 @@ public class Constants {
     public static final Cached<ArrayAllocator<double[]>> ALLOC_DOUBLE = Cached.threadLocal(() -> ArrayAllocator.pow2(double[]::new, ReferenceStrength.STRONG, 32), ReferenceStrength.WEAK);
     public static final Cached<ArrayAllocator<Object[]>> ALLOC_OBJECT = Cached.threadLocal(() -> ArrayAllocator.pow2(Object[]::new, ReferenceStrength.STRONG, 32), ReferenceStrength.WEAK);
 
-    public static final boolean IS_DEDICATED_SERVER = !FP2_TEST && FMLCommonHandler.instance().getSide() == Side.SERVER;
-    public static final boolean IS_CLIENT = !FP2_TEST && FMLCommonHandler.instance().getSide() == Side.CLIENT;
-
     @SideOnly(Side.CLIENT)
     public static Minecraft MC;
 
     static {
-        if (IS_CLIENT) { //initialize client-only fields here to prevent errors
+        if (fp2().hasClient()) { //initialize client-only fields here to prevent errors
             MC = Minecraft.getMinecraft();
         }
     }

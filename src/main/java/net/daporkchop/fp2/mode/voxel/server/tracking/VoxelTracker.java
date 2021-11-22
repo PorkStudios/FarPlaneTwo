@@ -27,7 +27,7 @@ import net.daporkchop.fp2.mode.common.server.tracking.AbstractTrackerManager;
 import net.daporkchop.fp2.mode.common.server.tracking.TrackingState;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 
 import java.util.Comparator;
 import java.util.function.Consumer;
