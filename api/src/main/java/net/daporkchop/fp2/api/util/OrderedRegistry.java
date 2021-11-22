@@ -18,9 +18,8 @@
  *
  */
 
-package net.daporkchop.fp2.util.registry;
+package net.daporkchop.fp2.api.util;
 
-import io.netty.channel.ChannelPipeline;
 import lombok.NonNull;
 
 import java.util.Iterator;
@@ -30,19 +29,17 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /**
- * A sort of "registry", in which entries are identified by a {@link String} key.
+ * A registry in which entries are identified by a {@link String} key.
  * <p>
  * Entries maintain a strict order, and can be inserted/removed at either end of the registry, or at positions relative to each other.
  * <p>
  * Not thread-safe.
  * <p>
- * Inspired by Netty's {@link ChannelPipeline}.
+ * Inspired by Netty's {@code ChannelPipeline}.
  * <p>
  * Will probably be hoisted into PorkLib at some point.
  *
  * @author DaPorkchop_
- * @see LinkedOrderedRegistry
- * @see ImmutableOrderedRegistry
  */
 public interface OrderedRegistry<T> extends Iterable<Map.Entry<String, T>> {
     /**

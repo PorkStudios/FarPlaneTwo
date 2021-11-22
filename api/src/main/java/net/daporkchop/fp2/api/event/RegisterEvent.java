@@ -18,23 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.event;
+package net.daporkchop.fp2.api.event;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.util.registry.OrderedRegistry;
-import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
-import net.minecraftforge.common.MinecraftForge;
+import net.daporkchop.fp2.api.util.OrderedRegistry;
 
 /**
- * Fired on {@link MinecraftForge#EVENT_BUS} to register rough tile generators for the voxel render mode.
- *
  * @author DaPorkchop_
  */
-public class RegisterRoughVoxelGeneratorsEvent extends AbstractOrderedRegistryEvent<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>> {
-    public RegisterRoughVoxelGeneratorsEvent(@NonNull OrderedRegistry<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>> registry) {
-        super(registry);
-    }
+public interface RegisterEvent<T> {
+    /**
+     * @return the {@link OrderedRegistry} to which entries should be added
+     */
+    OrderedRegistry<T> registry();
 }

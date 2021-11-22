@@ -18,20 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.util.event;
+package net.daporkchop.fp2.api.event;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.util.registry.OrderedRegistry;
-import net.minecraftforge.common.MinecraftForge;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Fired on {@link MinecraftForge#EVENT_BUS} to register render modes.
+ * Indicates that the annotated instance method can accept events fired on an {@link FEventBus}.
+ * <p>
+ * Has no effect if placed on a static method.
  *
  * @author DaPorkchop_
  */
-public final class RegisterRenderModesEvent extends AbstractOrderedRegistryEvent<IFarRenderMode<?, ?>> {
-    public RegisterRenderModesEvent(@NonNull OrderedRegistry<IFarRenderMode<?, ?>> registry) {
-        super(registry);
-    }
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface FEventHandler {
 }

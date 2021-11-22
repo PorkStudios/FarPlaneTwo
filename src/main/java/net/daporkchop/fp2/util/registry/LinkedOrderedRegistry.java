@@ -22,6 +22,7 @@ package net.daporkchop.fp2.util.registry;
 
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.util.OrderedRegistry;
 import net.daporkchop.lib.common.misc.string.PStrings;
 
 import java.util.Iterator;

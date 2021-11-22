@@ -23,8 +23,11 @@ package net.daporkchop.fp2.util.event;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.api.event.RegisterEvent;
+import net.daporkchop.fp2.api.util.OrderedRegistry;
+import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.util.registry.ImmutableOrderedRegistry;
-import net.daporkchop.fp2.util.registry.OrderedRegistry;
+import net.daporkchop.fp2.util.registry.LinkedOrderedRegistry;
 import net.daporkchop.lib.common.util.GenericMatcher;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.eventhandler.Event;
@@ -41,16 +44,19 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @RequiredArgsConstructor
 @Getter
-public abstract class AbstractOrderedRegistryEvent<T> extends Event {
+public abstract class AbstractOrderedRegistryEvent<T> implements RegisterEvent<T> {
     @NonNull
     protected final OrderedRegistry<T> registry;
+
+    public AbstractOrderedRegistryEvent() {
+        this.registry = new LinkedOrderedRegistry<>();
+    }
 
     /**
      * Fires this event on {@link MinecraftForge#EVENT_BUS}.
      */
     public AbstractOrderedRegistryEvent<T> fire() {
-        MinecraftForge.EVENT_BUS.post(this);
-        return this;
+        return FP2Core.get().eventBus().fire(this);
     }
 
     /**

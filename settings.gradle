@@ -18,6 +18,7 @@
  *
  */
 
+include 'api'
 include 'common'
 include 'core'
 include 'gl'

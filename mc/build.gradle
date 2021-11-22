@@ -18,5 +18,16 @@
  *
  */
 
-dependencies {
+subprojects {
+    apply plugin: "com.github.johnrengelman.shadow"
+    apply plugin: "net.minecraftforge.gradle"
+    apply plugin: "org.spongepowered.mixin"
+
+    dependencies {
+        minecraft "net.minecraftforge:forge:$minecraftVersion-$minecraftforgeVersion"
+
+        apiShade project(":api")
+        implementationShade project(":core")
+        implementation project(":gl")
+    }
 }

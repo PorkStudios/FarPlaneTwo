@@ -22,21 +22,18 @@ package net.daporkchop.fp2.mode.api;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.util.OrderedRegistry;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
-import net.daporkchop.fp2.mode.voxel.VoxelRenderMode;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.util.SimpleRecycler;
-import net.daporkchop.fp2.util.event.RegisterRenderModesEvent;
-import net.daporkchop.fp2.util.registry.LinkedOrderedRegistry;
-import net.daporkchop.fp2.util.registry.OrderedRegistry;
+import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -45,9 +42,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  * @author DaPorkchop_
  */
 public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
-    OrderedRegistry<IFarRenderMode<?, ?>> REGISTRY = new RegisterRenderModesEvent(new LinkedOrderedRegistry<IFarRenderMode<?, ?>>()
-            .addLast("voxel", new VoxelRenderMode())
-            .addLast("heightmap", new HeightmapRenderMode())).fire().immutableRegistry();
+    OrderedRegistry<IFarRenderMode<?, ?>> REGISTRY = new AbstractOrderedRegistryEvent<IFarRenderMode<?, ?>>() {}.fire().immutableRegistry();
 
     /**
      * @return this storage version's name

@@ -20,12 +20,18 @@
 
 package net.daporkchop.fp2;
 
+import net.daporkchop.fp2.api.event.FEventHandler;
+import net.daporkchop.fp2.api.event.RegisterEvent;
 import net.daporkchop.fp2.client.FP2Client;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.x86.x86FeatureDetector;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
+import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.debug.FP2Debug;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
+import net.daporkchop.fp2.mode.voxel.VoxelRenderMode;
 import net.daporkchop.fp2.net.FP2Network;
 import net.daporkchop.fp2.server.FP2Server;
 import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
@@ -72,6 +78,8 @@ public class FP2 {
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
             FP2Client.preInit();
         }
+
+        FP2Core.get().eventBus().register(this);
     }
 
     @Mod.EventHandler
@@ -116,5 +124,12 @@ public class FP2 {
         return FP2_DEBUG //accept any version in debug mode
                || remoteVersion == null //fp2 isn't present on the remote side, so it doesn't matter whether or not it's compatible
                || this.version.equals(remoteVersion); //if fp2 is present, the versions must match
+    }
+
+    @FEventHandler
+    public void registerDefaultRenderModes(RegisterEvent<IFarRenderMode<?, ?>> event) {
+        event.registry()
+                .addLast("voxel", new VoxelRenderMode())
+                .addLast("heightmap", new HeightmapRenderMode());
     }
 }

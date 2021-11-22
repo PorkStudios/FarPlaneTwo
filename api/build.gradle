@@ -18,23 +18,5 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.event;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
-import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
-import net.daporkchop.fp2.util.registry.OrderedRegistry;
-import net.minecraftforge.common.MinecraftForge;
-
-/**
- * Fired on {@link MinecraftForge#EVENT_BUS} to register exact tile generators for the heightmap render mode.
- *
- * @author DaPorkchop_
- */
-public class RegisterExactHeightmapGeneratorsEvent extends AbstractOrderedRegistryEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>> {
-    public RegisterExactHeightmapGeneratorsEvent(@NonNull OrderedRegistry<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>> registry) {
-        super(registry);
-    }
+dependencies {
 }

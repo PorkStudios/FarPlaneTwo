@@ -19,7 +19,12 @@
  */
 
 dependencies {
-    implementation project(":gl")
+    implementationShade project(":api")
+    implementationShade project(":common")
+    implementationShade project(":gl")
 
-    implementation "org.rocksdb:rocksdbjni:$rocksdbVersion"
+    implementationProvided "org.ow2.asm:asm-debug-all:$asmVersion"
+    implementationProvided "it.unimi.dsi:fastutil:$fastutilVersion"
+    implementationProvided "com.google.guava:guava:$guavaVersion"
+    implementationProvided "org.rocksdb:rocksdbjni:$rocksdbVersion"
 }

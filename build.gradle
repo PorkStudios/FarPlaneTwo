@@ -18,6 +18,29 @@
  *
  */
 
+//global buildscript dependencies! these are inherited by all subprojects
+buildscript {
+    repositories {
+        maven {
+            name = "Gradle"
+            url = "https://plugins.gradle.org/m2/"
+        }
+        maven {
+            name = "Minecraft Forge"
+            url = "https://maven.minecraftforge.net/"
+        }
+        maven {
+            name = "SpongePowered"
+            url = "https://repo.spongepowered.org/maven"
+        }
+    }
+    dependencies {
+        classpath "gradle.plugin.com.github.johnrengelman:shadow:7.1.0"
+        classpath "net.minecraftforge.gradle:ForgeGradle:5.1.+"
+        classpath "org.spongepowered:mixingradle:0.7-SNAPSHOT"
+    }
+}
+
 import org.gradle.api.internal.artifacts.dependencies.DefaultProjectDependency
 
 //this can't be set in gradle.properties since it's dynamic

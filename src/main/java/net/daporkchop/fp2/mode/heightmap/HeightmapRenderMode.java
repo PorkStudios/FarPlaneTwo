@@ -36,8 +36,6 @@ import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.common.AbstractFarRenderMode;
 import net.daporkchop.fp2.mode.heightmap.ctx.HeightmapClientContext;
 import net.daporkchop.fp2.mode.heightmap.ctx.HeightmapServerContext;
-import net.daporkchop.fp2.mode.heightmap.event.RegisterExactHeightmapGeneratorsEvent;
-import net.daporkchop.fp2.mode.heightmap.event.RegisterRoughHeightmapGeneratorsEvent;
 import net.daporkchop.fp2.mode.heightmap.server.HeightmapTileProvider;
 import net.daporkchop.fp2.mode.heightmap.server.gen.exact.CCHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.exact.VanillaHeightmapGenerator;
@@ -67,17 +65,17 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
 
     @Override
     protected AbstractOrderedRegistryEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>> exactGeneratorFactoryEvent() {
-        return new RegisterExactHeightmapGeneratorsEvent(new LinkedOrderedRegistry<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>>()
+        return new AbstractOrderedRegistryEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>>(new LinkedOrderedRegistry<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>>()
                 .addLast("cubic_chunks", world -> Constants.isCubicWorld(world) ? new CCHeightmapGenerator(world) : null)
-                .addLast("vanilla", VanillaHeightmapGenerator::new));
+                .addLast("vanilla", VanillaHeightmapGenerator::new)) {};
     }
 
     @Override
     protected AbstractOrderedRegistryEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>> roughGeneratorFactoryEvent() {
-        return new RegisterRoughHeightmapGeneratorsEvent(new LinkedOrderedRegistry<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>>()
+        return new AbstractOrderedRegistryEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>>(new LinkedOrderedRegistry<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>>()
                 .addLast("superflat", world -> Constants.getTerrainGenerator(world) instanceof ChunkGeneratorFlat ? new FlatHeightmapGenerator(world) : null)
                 .addLast("flatcubic", world -> CWG && Constants.getTerrainGenerator(world) instanceof FlatTerrainProcessor ? new CWGFlatHeightmapGenerator(world) : null)
-                .addLast("cubic_world_gen", world -> Constants.isCwgWorld(world) ? new CWGHeightmapGenerator(world) : null));
+                .addLast("cubic_world_gen", world -> Constants.isCwgWorld(world) ? new CWGHeightmapGenerator(world) : null)) {};
     }
 
     @Override

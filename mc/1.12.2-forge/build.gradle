@@ -18,38 +18,6 @@
  *
  */
 
-buildscript {
-    repositories {
-        maven {
-            name = "Minecraft Forge"
-            url = "https://maven.minecraftforge.net/"
-        }
-        maven {
-            name = "SpongePowered"
-            url = "https://repo.spongepowered.org/maven"
-        }
-    }
-    dependencies {
-        classpath "net.minecraftforge.gradle:ForgeGradle:5.1.+"
-        classpath "org.spongepowered:mixingradle:0.7-SNAPSHOT"
-    }
-}
-
-plugins {
-    id "com.github.johnrengelman.shadow" version "7.1.0"
-}
-
-apply plugin: "net.minecraftforge.gradle"
-apply plugin: "org.spongepowered.mixin"
-
-ext {
-    mappingsChannel = "stable"
-    mappingsVersion = "39-1.12"
-
-    minecraftforgeVersion = "14.23.5.2855"
-    minecraftVersion = "1.12.2"
-}
-
 minecraft {
     mappings mappingsChannel, mappingsVersion
 
@@ -109,11 +77,6 @@ repositories {
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:$minecraftVersion-$minecraftforgeVersion"
-
-    //shade project(path: ":gl", configuration: "shade")
-
-    implementation project(":gl")
     runtimeOnlyShade project(":gl:opengl-lwjgl2")
 
     implementationShade project(":common")

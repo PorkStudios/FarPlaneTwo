@@ -18,23 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.event;
+package net.daporkchop.fp2.core;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.util.registry.OrderedRegistry;
-import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
-import net.minecraftforge.common.MinecraftForge;
+import lombok.Getter;
+import net.daporkchop.fp2.api.FP2;
+import net.daporkchop.fp2.api.event.FEventHandler;
+import net.daporkchop.fp2.api.event.RegisterEvent;
+import net.daporkchop.fp2.core.event.EventBus;
 
 /**
- * Fired on {@link MinecraftForge#EVENT_BUS} to register exact tile generators for the voxel render mode.
- *
  * @author DaPorkchop_
  */
-public class RegisterExactVoxelGeneratorsEvent extends AbstractOrderedRegistryEvent<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>> {
-    public RegisterExactVoxelGeneratorsEvent(@NonNull OrderedRegistry<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>> registry) {
-        super(registry);
+@Getter
+public class FP2Core implements FP2 {
+    private static final FP2Core INSTANCE = new FP2Core();
+
+    public static FP2Core get() {
+        return INSTANCE;
     }
+
+    protected final EventBus eventBus = new EventBus();
 }

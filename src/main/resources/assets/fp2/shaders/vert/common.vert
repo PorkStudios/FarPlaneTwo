@@ -25,17 +25,6 @@
 
 //
 //
-// INPUTS
-//
-//
-
-/*layout(std430, binding = 3) readonly buffer POSITIONS {
-    ivec4 positions[];
-} in_positions;
-#define tile_position (in_positions.positions[gl_DrawID])*/
-
-//
-//
 // OUTPUTS
 //
 //

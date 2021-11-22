@@ -23,6 +23,7 @@ package net.daporkchop.fp2.util.registry;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.util.OrderedRegistry;
 
 import java.util.Iterator;
 import java.util.Map;
