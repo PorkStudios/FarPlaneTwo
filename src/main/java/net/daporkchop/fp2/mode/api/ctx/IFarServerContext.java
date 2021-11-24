@@ -22,14 +22,14 @@ package net.daporkchop.fp2.mode.api.ctx;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.tracking.IFarTracker;
 import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
-import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
+import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 
 /**
  * A server-side context for a specific {@link IFarPlayerServer} in a {@link IFarWorldServer} using a specific {@link IFarRenderMode}.

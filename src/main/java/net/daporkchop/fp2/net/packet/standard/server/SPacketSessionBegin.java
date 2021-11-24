@@ -25,7 +25,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
-import net.daporkchop.fp2.util.annotation.CalledFromClientThread;
+import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -96,6 +96,11 @@ public class SPacketSessionBegin implements IMessage {
             @Override
             public <T> CompletableFuture<T> fp2_IFarWorld_scheduleTask(@NonNull Supplier<T> task) {
                 return ThreadingHelper.scheduleTaskInClientThread(task);
+            }
+
+            @Override
+            public int fp2_IFarWorld_dimensionId() {
+                throw new UnsupportedOperationException();
             }
         };
     }

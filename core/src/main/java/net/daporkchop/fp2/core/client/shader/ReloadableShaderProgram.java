@@ -18,21 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.shader.reload;
+package net.daporkchop.fp2.core.client.shader;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.common.util.capability.CloseableResource;
+import net.daporkchop.fp2.core.event.AbstractReloadEvent;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
-import net.daporkchop.fp2.gl.shader.BaseShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
+import net.daporkchop.fp2.gl.draw.shader.VertexShader;
+import net.daporkchop.fp2.gl.shader.BaseShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 
 import java.util.function.Supplier;
+
+import static net.daporkchop.fp2.core.FP2Core.*;
 
 /**
  * @author DaPorkchop_
@@ -55,5 +58,20 @@ public interface ReloadableShaderProgram<P extends BaseShaderProgram> extends Su
                 }
             }
         };
+    }
+
+    static void reloadAll() {
+        new AbstractReloadEvent<ReloadableShaderProgram<?>>() {
+            @Override
+            protected void handleSuccess(int total) {
+                fp2().chat().success("§a%d shaders successfully reloaded.", total);
+            }
+
+            @Override
+            protected void handleFailure(int failed, int total, @NonNull Throwable cause) {
+                fp2().log().error("shader reload failed", cause);
+                fp2().chat().error("§c%d/%d shaders failed to reload (check log for info)", failed, total);
+            }
+        }.fire();
     }
 }

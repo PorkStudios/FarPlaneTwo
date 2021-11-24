@@ -21,9 +21,9 @@
 package net.daporkchop.fp2.mode.api.server;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;

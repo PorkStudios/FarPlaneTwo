@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.heightmap;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.camera.IFrustum;
+import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.heightmap.util.HeightmapPosSet;
 import net.daporkchop.fp2.util.datastructure.SimpleSet;

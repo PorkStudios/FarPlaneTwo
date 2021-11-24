@@ -28,4 +28,17 @@ dependencies {
     implementationProvided "com.google.guava:guava:$guavaVersion"
     implementationProvided "io.netty:netty-all:$nettyVersion"
     implementationProvided "org.rocksdb:rocksdbjni:$rocksdbVersion"
+
+    implementationShade("net.daporkchop.lib:compression-zstd:$porklibVersion") {
+        exclude group: "io.netty"
+    }
+    implementationShade("net.daporkchop.lib:concurrent:$porklibVersion") {
+        exclude group: "io.netty"
+    }
+    implementationShade("net.daporkchop.lib:logging:$porklibVersion") {
+        exclude group: "io.netty"
+    }
+    implementationShade("net.daporkchop.lib:primitive:$porklibVersion") {
+        exclude group: "io.netty"
+    }
 }

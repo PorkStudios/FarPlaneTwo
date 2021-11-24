@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.mode.common.client.bake;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
 
 import java.util.stream.Stream;
 

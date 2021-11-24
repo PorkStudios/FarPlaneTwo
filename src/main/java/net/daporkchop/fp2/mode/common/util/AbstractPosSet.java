@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.mode.common.util;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.util.datastructure.Datastructures;
 import net.daporkchop.fp2.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.fp2.util.datastructure.SimpleSet;

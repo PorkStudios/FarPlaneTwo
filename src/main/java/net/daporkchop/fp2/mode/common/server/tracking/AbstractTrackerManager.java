@@ -25,8 +25,8 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
@@ -36,7 +36,7 @@ import net.daporkchop.fp2.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.mode.api.tile.ITileSnapshot;
-import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
+import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.fp2.util.datastructure.CompactReferenceArraySet;
 import net.daporkchop.fp2.util.threading.ThreadingHelper;
@@ -56,7 +56,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**

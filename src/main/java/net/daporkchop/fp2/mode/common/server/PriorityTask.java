@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.mode.common.server;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
 
 import java.util.Comparator;
 

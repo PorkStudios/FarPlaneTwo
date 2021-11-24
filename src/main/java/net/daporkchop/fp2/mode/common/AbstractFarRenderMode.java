@@ -26,9 +26,9 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
-import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
@@ -38,7 +38,7 @@ import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.util.SimpleRecycler;
-import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
+import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
@@ -66,9 +66,9 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     @Getter
     protected final int storageVersion;
 
-    protected abstract AbstractOrderedRegistryEvent<IFarGeneratorExact.Factory<POS, T>> exactGeneratorFactoryEvent();
+    protected abstract AbstractRegisterEvent<IFarGeneratorExact.Factory<POS, T>> exactGeneratorFactoryEvent();
 
-    protected abstract AbstractOrderedRegistryEvent<IFarGeneratorRough.Factory<POS, T>> roughGeneratorFactoryEvent();
+    protected abstract AbstractRegisterEvent<IFarGeneratorRough.Factory<POS, T>> roughGeneratorFactoryEvent();
 
     protected abstract T newTile();
 

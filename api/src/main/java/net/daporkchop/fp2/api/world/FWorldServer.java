@@ -18,20 +18,28 @@
  *
  */
 
-package net.daporkchop.fp2.util.annotation;
+package net.daporkchop.fp2.api.world;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.*;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 
 /**
- * Indicates that the annotated method must be called from a network thread.
+ * A world consisting of blocks.
  *
  * @author DaPorkchop_
  */
-@Retention(CLASS)
-@Target(METHOD)
-public @interface CalledFromNetworkThread {
+public interface FWorldServer {
+    /**
+     * @return the implementation-specific server world instance
+     */
+    Object internalWorld();
+
+    /**
+     * @return the {@link FGameRegistry} used in this world
+     */
+    FGameRegistry gameRegistry();
+
+    /**
+     * @return the world's coordinate limits, in blocks
+     */
+    IntAxisAlignedBB bounds();
 }

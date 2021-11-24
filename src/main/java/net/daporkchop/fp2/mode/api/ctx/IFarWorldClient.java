@@ -20,17 +20,14 @@
 
 package net.daporkchop.fp2.mode.api.ctx;
 
-import net.daporkchop.fp2.util.annotation.CalledFromClientThread;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
+import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 
 /**
- * Provides access to {@link IFarClientContext} instances in a {@link WorldClient}.
+ * Provides access to {@link IFarClientContext} instances in a client world.
  *
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
 public interface IFarWorldClient extends IFarWorld {
     @CalledFromClientThread
     @Override

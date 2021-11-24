@@ -22,12 +22,12 @@ package net.daporkchop.fp2.mode.api.ctx;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
-import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
+import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
 
 /**
  * A client-side context for a specific {@link IFarRenderMode} in a {@link IFarWorldClient}.

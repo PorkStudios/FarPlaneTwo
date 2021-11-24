@@ -23,7 +23,7 @@ package net.daporkchop.fp2.client;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
-import net.daporkchop.fp2.client.gl.camera.IFrustum;
+import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.renderer.GlStateManager;

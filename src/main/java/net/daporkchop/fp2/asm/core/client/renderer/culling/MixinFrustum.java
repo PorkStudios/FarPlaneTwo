@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.asm.core.client.renderer.culling;
 
-import net.daporkchop.fp2.client.gl.camera.IFrustum;
+import net.daporkchop.fp2.core.client.IFrustum;
 import net.minecraft.client.renderer.culling.Frustum;
 import org.spongepowered.asm.mixin.Implements;
 import org.spongepowered.asm.mixin.Interface;

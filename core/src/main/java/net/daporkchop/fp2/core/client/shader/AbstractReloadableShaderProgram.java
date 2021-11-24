@@ -18,15 +18,17 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.shader.reload;
+package net.daporkchop.fp2.core.client.shader;
 
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import net.daporkchop.fp2.api.event.FEventHandler;
+import net.daporkchop.fp2.api.event.ReloadEvent;
 import net.daporkchop.fp2.gl.shader.BaseShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+
+import static net.daporkchop.fp2.core.FP2Core.*;
 
 /**
  * Base implementation of {@link ReloadableShaderProgram}.
@@ -48,7 +50,7 @@ abstract class AbstractReloadableShaderProgram<P extends BaseShaderProgram> impl
         this.reload(this.macrosSnapshot);
 
         //register this program to receive reload events
-        MinecraftForge.EVENT_BUS.register(this);
+        fp2().eventBus().registerWeak(this);
     }
 
     protected abstract void reload(@NonNull ShaderMacros.Immutable macrosSnapshot) throws ShaderCompilationException, ShaderLinkageException;
@@ -69,18 +71,13 @@ abstract class AbstractReloadableShaderProgram<P extends BaseShaderProgram> impl
     @Override
     public void close() {
         //stop receiving reload events
-        MinecraftForge.EVENT_BUS.unregister(this);
+        fp2().eventBus().unregister(this);
 
         this.program.close();
     }
 
-    @SubscribeEvent
-    public void onReload(@NonNull ReloadShadersEvent event) {
-        try {
-            this.reload(this.macrosSnapshot);
-            event.handleSuccess();
-        } catch (ShaderCompilationException | ShaderLinkageException e) {
-            event.handleFailure(e);
-        }
+    @FEventHandler
+    protected void onReload(@NonNull ReloadEvent<ReloadableShaderProgram<?>> event) {
+        event.doReload(() -> this.reload(this.macrosSnapshot));
     }
 }

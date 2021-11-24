@@ -25,8 +25,6 @@ import io.github.opencubicchunks.cubicchunks.cubicgen.ConversionUtils;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
 import net.daporkchop.fp2.compat.cwg.noise.CWGNoiseProvider;
 import net.daporkchop.lib.common.misc.string.PStrings;
-import net.daporkchop.lib.random.PRandom;
-import net.daporkchop.lib.random.impl.FastJavaPRandom;
 import net.minecraft.world.gen.NoiseGeneratorImproved;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -68,7 +66,7 @@ public class TestCwgNoiseGen {
      */
     @BeforeClass
     public static void bbb_initFlowNoiseHack() {
-        PRandom random = new FastJavaPRandom(123456789);
+        SplittableRandom random = new SplittableRandom(123456789);
         for (int i = 0; i < Utils.RANDOM_VECTORS.length / 4; i++) {
             int j = random.nextInt(NoiseGeneratorImproved.GRAD_X.length);
             Utils.RANDOM_VECTORS[i * 4] = NoiseGeneratorImproved.GRAD_X[j] / 2;

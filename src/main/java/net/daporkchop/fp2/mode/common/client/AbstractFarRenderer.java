@@ -22,14 +22,13 @@ package net.daporkchop.fp2.mode.common.client;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.client.gl.object.GLBuffer;
+import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.impl.ResourceProvider1_12_2;
-import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.ResourceProvider1_12_2;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
@@ -41,7 +40,6 @@ import net.minecraft.util.BlockRenderLayer;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
-import static org.lwjgl.opengl.GL15.*;
 
 /**
  * @author DaPorkchop_

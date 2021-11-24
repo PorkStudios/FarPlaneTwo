@@ -44,8 +44,8 @@ import net.daporkchop.fp2.mode.heightmap.server.gen.rough.CWGHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.rough.FlatHeightmapGenerator;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
-import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
-import net.daporkchop.fp2.util.registry.LinkedOrderedRegistry;
+import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
+import net.daporkchop.fp2.core.util.registry.LinkedOrderedRegistry;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.gen.ChunkGeneratorFlat;
 import net.minecraftforge.fml.relauncher.Side;
@@ -64,15 +64,15 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
     }
 
     @Override
-    protected AbstractOrderedRegistryEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>> exactGeneratorFactoryEvent() {
-        return new AbstractOrderedRegistryEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>>(new LinkedOrderedRegistry<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>>()
+    protected AbstractRegisterEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>> exactGeneratorFactoryEvent() {
+        return new AbstractRegisterEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>>(new LinkedOrderedRegistry<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>>()
                 .addLast("cubic_chunks", world -> Constants.isCubicWorld(world) ? new CCHeightmapGenerator(world) : null)
                 .addLast("vanilla", VanillaHeightmapGenerator::new)) {};
     }
 
     @Override
-    protected AbstractOrderedRegistryEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>> roughGeneratorFactoryEvent() {
-        return new AbstractOrderedRegistryEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>>(new LinkedOrderedRegistry<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>>()
+    protected AbstractRegisterEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>> roughGeneratorFactoryEvent() {
+        return new AbstractRegisterEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>>(new LinkedOrderedRegistry<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>>()
                 .addLast("superflat", world -> Constants.getTerrainGenerator(world) instanceof ChunkGeneratorFlat ? new FlatHeightmapGenerator(world) : null)
                 .addLast("flatcubic", world -> CWG && Constants.getTerrainGenerator(world) instanceof FlatTerrainProcessor ? new CWGFlatHeightmapGenerator(world) : null)
                 .addLast("cubic_world_gen", world -> Constants.isCwgWorld(world) ? new CWGHeightmapGenerator(world) : null)) {};

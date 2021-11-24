@@ -25,7 +25,7 @@ import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
-import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;

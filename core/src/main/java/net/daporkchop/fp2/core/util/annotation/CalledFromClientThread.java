@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.util.annotation;
+package net.daporkchop.fp2.core.util.annotation;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -27,12 +27,11 @@ import static java.lang.annotation.ElementType.*;
 import static java.lang.annotation.RetentionPolicy.*;
 
 /**
- * Indicates that the annotated method must be called from the server thread.
+ * Indicates that the annotated method must be called from the client thread.
  *
  * @author DaPorkchop_
  */
-//TODO: runtime code generation of sanity checks
 @Retention(CLASS)
 @Target(METHOD)
-public @interface CalledFromServerThread {
+public @interface CalledFromClientThread {
 }

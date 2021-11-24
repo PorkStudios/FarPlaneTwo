@@ -18,58 +18,54 @@
  *
  */
 
-package net.daporkchop.fp2.client.texture;
+package net.daporkchop.fp2.core.event;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.debug.util.DebugUtils;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.eventhandler.Event;
+import net.daporkchop.fp2.api.event.FEventBus;
+import net.daporkchop.fp2.api.event.ReloadEvent;
+import net.daporkchop.fp2.core.FP2Core;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.core.FP2Core.*;
 
 /**
- * Fired on {@link MinecraftForge#EVENT_BUS} when FarPlaneTwo's texture UV cache should be reloaded.
+ * Implementation of {@link ReloadEvent}.
  *
  * @author DaPorkchop_
  */
-public class ReloadTextureUVsEvent extends Event {
+public abstract class AbstractReloadEvent<T> implements ReloadEvent<T> {
+    private final List<Throwable> failureCauses = new ArrayList<>();
+    private int total;
+
     /**
-     * Fires a texture UV reload event. The player will be notified with the result.
+     * Fires this event on {@link FP2Core#fp2()}'s {@link FEventBus}.
      */
-    public static void fire() {
-        ReloadTextureUVsEvent event = new ReloadTextureUVsEvent();
-        MinecraftForge.EVENT_BUS.post(event);
+    public void fire() {
+        fp2().eventBus().fire(this);
 
-        if (event.failureCauses.isEmpty()) {
-            DebugUtils.clientMsg("§a" + event.total + " texture UV caches successfully reloaded.");
+        if (this.failureCauses.isEmpty()) {
+            this.handleSuccess(this.total);
         } else {
-            Throwable throwable = new RuntimeException();
-            event.failureCauses.forEach(throwable::addSuppressed);
-            FP2_LOG.error("texture UV cache reload failed", throwable);
+            Throwable cause = new RuntimeException();
+            this.failureCauses.forEach(cause::addSuppressed);
 
-            DebugUtils.clientMsg("§c" + event.failureCauses.size() + '/' + event.total + " texture UV cache failed to reload (check log for info)");
+            this.handleFailure(this.failureCauses.size(), this.total, cause);
         }
     }
 
-    protected List<Throwable> failureCauses = new ArrayList<>();
-    protected int total;
+    protected abstract void handleSuccess(int total);
 
-    /**
-     * Called by handlers when a shader was successfully reloaded.
-     */
-    public void handleSuccess() {
+    protected abstract void handleFailure(int failed, int total, @NonNull Throwable cause);
+
+    @Override
+    public void notifySuccess() {
         this.total++;
     }
 
-    /**
-     * Called by handlers when a shader fails to be reloaded.
-     *
-     * @param cause the cause of the failure
-     */
-    public void handleFailure(@NonNull Throwable cause) {
+    @Override
+    public void notifyFailure(@NonNull Throwable cause) {
         this.failureCauses.add(cause);
         this.total++;
     }

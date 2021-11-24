@@ -22,7 +22,7 @@ package net.daporkchop.fp2.asm.core.client.renderer;
 
 import net.daporkchop.fp2.asm.interfaz.client.renderer.IMixinRenderGlobal;
 import net.daporkchop.fp2.client.VanillaRenderabilityTracker;
-import net.daporkchop.fp2.client.gl.camera.IFrustum;
+import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;

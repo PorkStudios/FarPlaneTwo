@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api;
+package net.daporkchop.fp2.core.mode.api;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;

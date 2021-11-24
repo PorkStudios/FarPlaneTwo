@@ -34,6 +34,7 @@ import static java.lang.annotation.RetentionPolicy.*;
 //TODO: implement this
 @Retention(CLASS)
 @Target({ TYPE, FIELD, METHOD, CONSTRUCTOR })
+@Deprecated
 public @interface DebugOnly {
     /**
      * @return what to do to the annotated element when not running in debug mode

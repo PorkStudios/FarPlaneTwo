@@ -20,9 +20,10 @@
 
 package net.daporkchop.fp2.asm.core.world;
 
-import net.daporkchop.fp2.mode.api.ctx.IFarWorld;
-import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
+import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -68,5 +69,10 @@ public abstract class MixinWorld implements IFarWorld {
                         asrCeil(bounds.maxY(), T_SHIFT + lvl),
                         asrCeil(bounds.maxZ(), T_SHIFT + lvl)))
                 .toArray(IntAxisAlignedBB[]::new);
+    }
+
+    @Override
+    public int fp2_IFarWorld_dimensionId() {
+        return PorkUtil.<World>uncheckedCast(this).provider.getDimension();
     }
 }

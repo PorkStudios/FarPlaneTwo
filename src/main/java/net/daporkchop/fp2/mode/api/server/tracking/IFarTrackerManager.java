@@ -21,10 +21,10 @@
 package net.daporkchop.fp2.mode.api.server.tracking;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
+import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
 
 /**

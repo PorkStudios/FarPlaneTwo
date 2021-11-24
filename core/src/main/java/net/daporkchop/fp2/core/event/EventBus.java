@@ -44,6 +44,7 @@ import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -220,8 +221,8 @@ public class EventBus implements FEventBus {
         }
     }
 
-    protected final Map<Type, Set<Class<?>>> signatureToEventClasses = new WeakHashMap<>();
-    protected final Map<Type, HandlerList> signatureToHandlers = new WeakHashMap<>();
+    protected final Map<Type, Set<Class<?>>> signatureToEventClasses = new HashMap<>();
+    protected final Map<Type, HandlerList> signatureToHandlers = new HashMap<>();
 
     protected final Map<Class<?>, HandlerList> eventClassesToHandlers = new WeakHashMap<>();
 

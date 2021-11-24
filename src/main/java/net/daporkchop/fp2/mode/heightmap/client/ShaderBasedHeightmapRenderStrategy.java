@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.shader.reload.ReloadableShaderProgram;
+import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;

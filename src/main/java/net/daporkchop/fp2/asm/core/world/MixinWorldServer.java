@@ -24,19 +24,22 @@ import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.cc.asyncblockaccess.CCAsyncBlockAccessImpl;
 import net.daporkchop.fp2.compat.vanilla.asyncblockaccess.VanillaAsyncBlockAccessImpl;
-import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.minecraft.world.WorldServer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -72,6 +75,16 @@ public abstract class MixinWorldServer extends MixinWorld implements IFarWorldSe
     @Override
     public void fp2_IFarWorld_close() {
         this.fp2_IFarWorldServer_forEachTileProvider(IFarTileProvider::close);
+    }
+
+    @Override
+    public CompletableFuture<Void> fp2_IFarWorld_scheduleTask(@NonNull Runnable task) {
+        return ThreadingHelper.scheduleTaskInWorldThread(uncheckedCast(this), task);
+    }
+
+    @Override
+    public <T> CompletableFuture<T> fp2_IFarWorld_scheduleTask(@NonNull Supplier<T> task) {
+        return ThreadingHelper.scheduleTaskInWorldThread(uncheckedCast(this), task);
     }
 
     @Override

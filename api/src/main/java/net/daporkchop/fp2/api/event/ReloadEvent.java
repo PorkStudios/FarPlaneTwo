@@ -18,20 +18,40 @@
  *
  */
 
-package net.daporkchop.fp2.util.annotation;
+package net.daporkchop.fp2.api.event;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.*;
+import lombok.NonNull;
+import net.daporkchop.lib.common.function.throwing.ERunnable;
 
 /**
- * Indicates that the annotated method must be called from the client thread.
+ * Fired when all resources of a certain type should be reloaded.
  *
  * @author DaPorkchop_
  */
-@Retention(CLASS)
-@Target(METHOD)
-public @interface CalledFromClientThread {
+public interface ReloadEvent<T> {
+    /**
+     * Notify the event that the listener was able to be reloaded successfully.
+     */
+    void notifySuccess();
+
+    /**
+     * Notify the event that the listener could not be reloaded.
+     *
+     * @param cause the {@link Throwable} which caused the reload to to fail
+     */
+    void notifyFailure(@NonNull Throwable cause);
+
+    /**
+     * Tries to run the given {@link ERunnable} which will reload the resource.
+     *
+     * @param reloadAction the {@link ERunnable}
+     */
+    default void doReload(@NonNull ERunnable reloadAction) {
+        try {
+            reloadAction.runThrowing();
+            this.notifySuccess();
+        } catch (Throwable cause) {
+            this.notifyFailure(cause);
+        }
+    }
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,18 +18,10 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.camera;
-
-import lombok.NonNull;
-import net.minecraft.client.renderer.culling.ICamera;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.Vec3d;
+package net.daporkchop.fp2.core.client;
 
 /**
- * Basically the same as {@link ICamera}, but not shitty and bad.
- * <p>
- * (also: why did microjang decide to make ICamera an interface, when they only use one implementation? not that i'm complaining, but it's very unlike notch
- * to abstract things away nicely, ESPECIALLY when there seems to be no valid reason to do so...)
+ * A view frustum which can check for intersection with objects.
  *
  * @author DaPorkchop_
  */
@@ -45,16 +37,6 @@ public interface IFrustum {
     boolean containsPoint(double x, double y, double z);
 
     /**
-     * Checks whether or not the given point is contained in this frustum.
-     *
-     * @param pos the point
-     * @return whether or not the given point is contained in this frustum
-     */
-    default boolean containsPoint(@NonNull Vec3d pos) {
-        return this.containsPoint(pos.x, pos.y, pos.z);
-    }
-
-    /**
      * Checks whether or not the given axis-aligned bounding box intersects with this frustum.
      *
      * @param minX the minimum X coordinate of the bounding box
@@ -66,14 +48,4 @@ public interface IFrustum {
      * @return whether or not the given axis-aligned bounding box intersects with this frustum
      */
     boolean intersectsBB(double minX, double minY, double minZ, double maxX, double maxY, double maxZ);
-
-    /**
-     * Checks whether or not the given axis-aligned bounding box intersects with this frustum.
-     *
-     * @param bb the bounding box
-     * @return whether or not the given axis-aligned bounding box intersects with this frustum
-     */
-    default boolean intersectsBB(AxisAlignedBB bb) {
-        return this.intersectsBB(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
-    }
 }

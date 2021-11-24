@@ -23,15 +23,15 @@ package net.daporkchop.fp2.mode.common.ctx;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.mode.common.client.FarTileCache;
-import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
+import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 

@@ -18,18 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api;
+package net.daporkchop.fp2.core.util.annotation;
 
-import net.daporkchop.fp2.core.util.IReusablePersistent;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.*;
 
 /**
- * The core component of all FarPlaneTwo render modes, a tile contains all the data at a tile position.
+ * Indicates that the annotated method must be able to be safely called from any thread at any time.
  *
  * @author DaPorkchop_
  */
-public interface IFarTile extends IReusablePersistent {
-    /**
-     * @return any extra data that will be saved with the tile
-     */
-    long extra();
+@Retention(CLASS)
+@Target(METHOD)
+public @interface CalledFromAnyThread {
 }

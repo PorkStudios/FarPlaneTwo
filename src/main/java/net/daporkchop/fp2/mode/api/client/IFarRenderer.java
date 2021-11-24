@@ -21,12 +21,11 @@
 package net.daporkchop.fp2.mode.api.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.camera.IFrustum;
+import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.unsafe.capability.Releasable;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.util.BlockRenderLayer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;

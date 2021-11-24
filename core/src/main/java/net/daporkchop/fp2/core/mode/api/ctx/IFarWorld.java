@@ -18,34 +18,53 @@
  *
  */
 
-package net.daporkchop.fp2.impl;
+package net.daporkchop.fp2.core.mode.api.ctx;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.common.util.Identifier;
-import net.daporkchop.fp2.common.util.ResourceProvider;
-import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
-import net.minecraft.client.Minecraft;
-import net.minecraft.util.ResourceLocation;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 /**
+ * Provides access to additional fp2 information in a world.
+ *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public class ResourceProvider1_12_2 implements ResourceProvider {
-    @NonNull
-    protected final Minecraft mc;
+public interface IFarWorld {
+    /**
+     * @return the tile coordinate limits in this world, indexed by detail level
+     */
+    IntAxisAlignedBB[] fp2_IFarWorld_coordLimits();
 
-    @Override
-    public InputStream provideResourceAsStream(@NonNull Identifier id) throws IOException {
-        try {
-            return this.mc.getResourceManager().getResource(new ResourceLocation(id.toString())).getInputStream();
-        } catch (FileNotFoundException e) {
-            throw new ResourceNotFoundException(id, e);
-        }
-    }
+    /**
+     * Called when the world is being loaded.
+     */
+    void fp2_IFarWorld_init();
+
+    /**
+     * Called when the world is being unloaded.
+     */
+    void fp2_IFarWorld_close();
+
+    /**
+     * Schedules a task to be run on this world's thread.
+     *
+     * @param task the task to run
+     * @return a {@link CompletableFuture} which will be completed with the result of the task
+     */
+    CompletableFuture<Void> fp2_IFarWorld_scheduleTask(@NonNull Runnable task);
+
+    /**
+     * Schedules a task to be run on this world's thread.
+     *
+     * @param task the task to run
+     * @return a {@link CompletableFuture} which will be completed with the result of the task
+     */
+    <T> CompletableFuture<T> fp2_IFarWorld_scheduleTask(@NonNull Supplier<T> task);
+
+    /**
+     * @return this world's dimension ID
+     */
+    int fp2_IFarWorld_dimensionId();
 }

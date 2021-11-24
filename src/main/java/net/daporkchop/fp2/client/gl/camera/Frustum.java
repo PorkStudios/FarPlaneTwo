@@ -22,10 +22,9 @@ package net.daporkchop.fp2.client.gl.camera;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
+import net.daporkchop.fp2.core.client.IFrustum;
 import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.util.math.AxisAlignedBB;
-
-import java.nio.FloatBuffer;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
@@ -175,6 +174,6 @@ public class Frustum implements IFrustum, ICamera {
 
     @Override
     public boolean isBoundingBoxInFrustum(AxisAlignedBB bb) {
-        return this.intersectsBB(bb);
+        return this.intersectsBB(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
     }
 }

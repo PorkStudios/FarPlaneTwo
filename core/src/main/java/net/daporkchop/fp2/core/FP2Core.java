@@ -20,12 +20,16 @@
 
 package net.daporkchop.fp2.core;
 
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.FP2;
+import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.core.event.EventBus;
 import net.daporkchop.lib.common.util.PorkUtil;
+import net.daporkchop.lib.logging.Logger;
 
 import java.lang.reflect.Method;
 
@@ -35,7 +39,7 @@ import java.lang.reflect.Method;
 @Getter
 public abstract class FP2Core implements FP2 {
     public static final String MODID = FP2.MODID;
-    
+
     /**
      * @return the current FP2 instance
      */
@@ -43,7 +47,13 @@ public abstract class FP2Core implements FP2 {
         return (FP2Core) FP2.fp2();
     }
 
-    protected final EventBus eventBus = new EventBus();
+    private final FEventBus eventBus = new EventBus();
+
+    @Setter(AccessLevel.PROTECTED)
+    private Logger log;
+
+    @Setter(AccessLevel.PROTECTED)
+    private Logger chat;
 
     @SneakyThrows
     protected FP2Core() {

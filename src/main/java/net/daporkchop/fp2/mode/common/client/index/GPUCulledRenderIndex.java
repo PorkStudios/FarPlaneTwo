@@ -23,15 +23,15 @@ package net.daporkchop.fp2.mode.common.client.index;
 import lombok.NonNull;
 import net.daporkchop.fp2.asm.interfaz.client.renderer.IMixinRenderGlobal;
 import net.daporkchop.fp2.client.ShaderClippingStateHelper;
-import net.daporkchop.fp2.client.gl.camera.IFrustum;
+import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.client.gl.shader.ComputeShaderBuilder;
 import net.daporkchop.fp2.client.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.command.DrawCommand;
 import net.daporkchop.fp2.gl.compute.ComputeLocalSize;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 

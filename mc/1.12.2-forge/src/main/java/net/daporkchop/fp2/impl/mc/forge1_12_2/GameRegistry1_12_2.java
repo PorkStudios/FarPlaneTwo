@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.impl;
+package net.daporkchop.fp2.impl.mc.forge1_12_2;
 
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;

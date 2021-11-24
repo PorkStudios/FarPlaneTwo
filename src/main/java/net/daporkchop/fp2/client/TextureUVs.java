@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.client.texture;
+package net.daporkchop.fp2.client;
 
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
@@ -26,6 +26,9 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.event.FEventHandler;
+import net.daporkchop.fp2.api.event.ReloadEvent;
+import net.daporkchop.fp2.core.event.AbstractReloadEvent;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
@@ -44,8 +47,6 @@ import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.EnumFacing;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 
 import static net.daporkchop.fp2.compat.of.OFHelper.*;
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -141,7 +143,22 @@ public class TextureUVs extends AbstractReleasable {
         });
 
         //reload texture UVs for the first time
-        ReloadTextureUVsEvent.fire();
+        reloadAll();
+    }
+
+    public static void reloadAll() {
+        new AbstractReloadEvent<TextureUVs>() {
+            @Override
+            protected void handleSuccess(int total) {
+                fp2().chat().success("§a%d texture UV caches successfully reloaded.", total);
+            }
+
+            @Override
+            protected void handleFailure(int failed, int total, @NonNull Throwable cause) {
+                fp2().log().error("texture UV cache reload failed", cause);
+                fp2().chat().error("§c%d/%d texture UV cache failed to reload (check log for info)", failed, total);
+            }
+        }.fire();
     }
 
     protected final GL gl;
@@ -163,30 +180,20 @@ public class TextureUVs extends AbstractReleasable {
 
         this.reloadUVs();
 
-        MinecraftForge.EVENT_BUS.register(this);
+        fp2().eventBus().registerWeak(this);
     }
 
     @Override
     protected void doRelease() {
-        MinecraftForge.EVENT_BUS.unregister(this);
+        fp2().eventBus().unregister(this);
 
         this.quadsBuffer.close();
         this.listsBuffer.close();
     }
 
-    /**
-     * @deprecated internal API, do not touch!
-     */
-    @Deprecated
-    @SubscribeEvent
-    public void _onReload(@NonNull ReloadTextureUVsEvent event) {
-        try {
-            this.reloadUVs();
-
-            event.handleSuccess();
-        } catch (Throwable t) {
-            event.handleFailure(t);
-        }
+    @FEventHandler
+    protected void onReload(@NonNull ReloadEvent<TextureUVs> event) {
+        event.doReload(this::reloadUVs);
     }
 
     protected void reloadUVs() {
@@ -258,7 +265,7 @@ public class TextureUVs extends AbstractReleasable {
         List<PackedBakedQuad> quadsOut = new ArrayList<>(distinctQuadsById.size());
         for (int i = 0, len = distinctQuadsById.size(); i < len; i++) {
             List<PackedBakedQuad> quads = distinctQuadsById.get(i);
-            quadIdToList[i] =new QuadList(quadsOut.size(), quadsOut.size() + quads.size());
+            quadIdToList[i] = new QuadList(quadsOut.size(), quadsOut.size() + quads.size());
             quadsOut.addAll(quads);
         }
         this.quadsBuffer.set(quadsOut.toArray(new PackedBakedQuad[0]));

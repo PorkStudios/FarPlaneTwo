@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.texture.TextureUVs;
+import net.daporkchop.fp2.client.TextureUVs;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;

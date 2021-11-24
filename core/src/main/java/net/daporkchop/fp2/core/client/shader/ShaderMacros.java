@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.client.gl.shader.reload;
+package net.daporkchop.fp2.core.client.shader;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;

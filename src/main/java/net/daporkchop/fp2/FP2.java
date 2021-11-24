@@ -33,7 +33,8 @@ import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.debug.FP2Debug;
-import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.log.ChatAsPorkLibLogger;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.log.Log4jAsPorkLibLogger;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
 import net.daporkchop.fp2.mode.voxel.VoxelRenderMode;
@@ -41,6 +42,7 @@ import net.daporkchop.fp2.net.FP2Network;
 import net.daporkchop.fp2.server.FP2Server;
 import net.daporkchop.fp2.util.event.IdMappingsChangedEvent;
 import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
+import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
@@ -74,6 +76,9 @@ public class FP2 extends FP2Core implements ResourceProvider {
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
+        this.log(new Log4jAsPorkLibLogger(event.getModLog()));
+        this.chat(new ChatAsPorkLibLogger(Minecraft.getMinecraft()));
+
         FP2_LOG = event.getModLog();
         this.version = event.getModMetadata().version;
 
@@ -121,7 +126,7 @@ public class FP2 extends FP2Core implements ResourceProvider {
 
     @Mod.EventHandler
     public void onIdsChanged(FMLModIdMappingEvent event) {
-        this.eventBus.fire(new IdMappingsChangedEvent());
+        this.eventBus().fire(new IdMappingsChangedEvent());
 
         FastRegistry.reload();
     }
@@ -166,11 +171,11 @@ public class FP2 extends FP2Core implements ResourceProvider {
 
     @Override
     public boolean hasClient() {
-        return FMLCommonHandler.instance().getSide() == Side.SERVER;
+        return FMLCommonHandler.instance().getSide() == Side.CLIENT;
     }
 
     @Override
     public boolean hasServer() {
-        return FMLCommonHandler.instance().getSide() == Side.CLIENT;
+        return true; //the server is always present, be it integrated or dedicated
     }
 }

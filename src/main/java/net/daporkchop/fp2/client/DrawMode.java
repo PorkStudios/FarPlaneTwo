@@ -20,7 +20,6 @@
 
 package net.daporkchop.fp2.client;
 
-import net.daporkchop.fp2.client.texture.TextureUVs;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
 

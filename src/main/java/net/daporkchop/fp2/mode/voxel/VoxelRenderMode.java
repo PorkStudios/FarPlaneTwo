@@ -41,8 +41,8 @@ import net.daporkchop.fp2.mode.voxel.server.gen.exact.CCVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.gen.rough.CWGVoxelGenerator;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
-import net.daporkchop.fp2.util.registry.LinkedOrderedRegistry;
+import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
+import net.daporkchop.fp2.core.util.registry.LinkedOrderedRegistry;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -60,15 +60,15 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
     }
 
     @Override
-    protected AbstractOrderedRegistryEvent<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>> exactGeneratorFactoryEvent() {
-        return new AbstractOrderedRegistryEvent<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>>(new LinkedOrderedRegistry<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>>()
+    protected AbstractRegisterEvent<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>> exactGeneratorFactoryEvent() {
+        return new AbstractRegisterEvent<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>>(new LinkedOrderedRegistry<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>>()
                 .addLast("cubic_chunks", world -> Constants.isCubicWorld(world) ? new CCVoxelGenerator(world) : null)
                 .addLast("vanilla", VanillaVoxelGenerator::new)) {};
     }
 
     @Override
-    protected AbstractOrderedRegistryEvent<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>> roughGeneratorFactoryEvent() {
-        return new AbstractOrderedRegistryEvent<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>>(new LinkedOrderedRegistry<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>>()
+    protected AbstractRegisterEvent<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>> roughGeneratorFactoryEvent() {
+        return new AbstractRegisterEvent<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>>(new LinkedOrderedRegistry<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>>()
                 .addLast("cubic_world_gen", world -> Constants.isCwgWorld(world) ? new CWGVoxelGenerator(world) : null)) {};
     }
 

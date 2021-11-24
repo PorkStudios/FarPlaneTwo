@@ -21,11 +21,10 @@
 package net.daporkchop.fp2.debug.client;
 
 import net.daporkchop.fp2.asm.core.client.gui.IGuiScreen;
-import net.daporkchop.fp2.client.texture.ReloadTextureUVsEvent;
-import net.daporkchop.fp2.client.texture.TextureUVs;
-import net.daporkchop.fp2.client.gl.shader.reload.ReloadShadersEvent;
 import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
+import net.daporkchop.fp2.client.TextureUVs;
 import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.debug.util.DebugUtils;
 import net.daporkchop.fp2.net.packet.standard.client.CPacketClientConfig;
 import net.minecraft.client.gui.GuiIngameMenu;
@@ -48,7 +47,7 @@ public class DebugClientEvents {
     @SubscribeEvent
     public void keyInput(InputEvent.KeyInputEvent event) {
         if (DebugKeyBindings.RELOAD_SHADERS.isPressed()) {
-            ReloadShadersEvent.fire();
+            ReloadableShaderProgram.reloadAll();
         }
         if (DebugKeyBindings.DROP_TILES.isPressed()) {
             PROTOCOL_FP2.sendToServer(new CPacketClientConfig().config(null));
@@ -56,7 +55,7 @@ public class DebugClientEvents {
             DebugUtils.clientMsg("§aReloading session");
         }
         if (DebugKeyBindings.REBUILD_UVS.isPressed()) {
-            ReloadTextureUVsEvent.fire();
+            TextureUVs.reloadAll();
         }
 
         FP2Config oldConfig = FP2Config.global();

@@ -59,13 +59,13 @@ minecraft {
 }*/
 
 sourceSets.main {
-    java.srcDirs = ["../../src/main/java"]
-    resources.srcDirs = ["../../src/main/resources"]
+    java.srcDirs += ["../../src/main/java"]
+    resources.srcDirs += ["../../src/main/resources"]
 }
 
 sourceSets.test {
-    java.srcDirs = ["../../src/test/java"]
-    resources.srcDirs = ["../../src/test/resources"]
+    java.srcDirs += ["../../src/test/java"]
+    resources.srcDirs += ["../../src/test/resources"]
 }
 
 repositories {
@@ -87,7 +87,10 @@ dependencies {
     implementationShade("net.daporkchop.lib:concurrent:$porklibVersion") {
         exclude group: "io.netty"
     }
-    implementationShade("net.daporkchop.lib:noise:$porklibVersion") {
+    implementationShade("net.daporkchop.lib:logging:$porklibVersion") {
+        exclude group: "io.netty"
+    }
+    implementationShade("net.daporkchop.lib:math:$porklibVersion") {
         exclude group: "io.netty"
     }
     implementationShade("net.daporkchop.lib:primitive:$porklibVersion") {

@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.util.registry;
+package net.daporkchop.fp2.core.util.registry;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;

@@ -18,18 +18,18 @@
  *
  */
 
-package net.daporkchop.fp2.util.event;
+package net.daporkchop.fp2.core.event;
 
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.event.RegisterEvent;
 import net.daporkchop.fp2.api.util.OrderedRegistry;
 import net.daporkchop.fp2.core.FP2Core;
-import net.daporkchop.fp2.util.registry.ImmutableOrderedRegistry;
-import net.daporkchop.fp2.util.registry.LinkedOrderedRegistry;
+import net.daporkchop.fp2.core.util.registry.ImmutableOrderedRegistry;
+import net.daporkchop.fp2.core.util.registry.LinkedOrderedRegistry;
 import net.daporkchop.lib.common.util.GenericMatcher;
-import net.minecraftforge.common.MinecraftForge;
 
 import java.lang.reflect.Array;
 import java.util.Map;
@@ -37,24 +37,24 @@ import java.util.Map;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Fired on {@link MinecraftForge#EVENT_BUS}.
+ * Implementation of {@link RegisterEvent}.
  *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
 @Getter
-public abstract class AbstractOrderedRegistryEvent<T> implements RegisterEvent<T> {
+public abstract class AbstractRegisterEvent<T> implements RegisterEvent<T> {
     @NonNull
     protected final OrderedRegistry<T> registry;
 
-    public AbstractOrderedRegistryEvent() {
+    public AbstractRegisterEvent() {
         this.registry = new LinkedOrderedRegistry<>();
     }
 
     /**
-     * Fires this event on {@link MinecraftForge#EVENT_BUS}.
+     * Fires this event on {@link FP2Core#fp2()}'s {@link FEventBus}.
      */
-    public AbstractOrderedRegistryEvent<T> fire() {
+    public AbstractRegisterEvent<T> fire() {
         return FP2Core.fp2().eventBus().fire(this);
     }
 
@@ -71,7 +71,7 @@ public abstract class AbstractOrderedRegistryEvent<T> implements RegisterEvent<T
      * @return the registry values
      */
     public T[] collectValues() {
-        Class<?> t = GenericMatcher.find(this.getClass(), AbstractOrderedRegistryEvent.class, "T");
+        Class<?> t = GenericMatcher.find(this.getClass(), AbstractRegisterEvent.class, "T");
         return this.registry.stream()
                 .map(Map.Entry::getValue)
                 .toArray(i -> uncheckedCast(Array.newInstance(t, i)));

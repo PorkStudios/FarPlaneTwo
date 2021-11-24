@@ -22,13 +22,13 @@ package net.daporkchop.fp2.mode.api.player;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.net.packet.debug.server.SPacketDebugUpdateStatistics;
-import net.daporkchop.fp2.util.annotation.CalledFromAnyThread;
-import net.daporkchop.fp2.util.annotation.CalledFromClientThread;
-import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
+import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
+import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
+import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;

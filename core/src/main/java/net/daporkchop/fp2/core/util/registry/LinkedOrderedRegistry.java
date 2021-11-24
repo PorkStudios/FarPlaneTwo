@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.util.registry;
+package net.daporkchop.fp2.core.util.registry;
 
 import lombok.AllArgsConstructor;
 import lombok.NonNull;

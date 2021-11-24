@@ -22,8 +22,8 @@ package net.daporkchop.fp2.mode.api.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.debug.util.DebugStats;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.unsafe.capability.Releasable;

@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.common.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.VanillaRenderabilityTracker;
 import net.daporkchop.fp2.client.gl.shader.ComputeShaderBuilder;
-import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
 
 /**
  * General-purpose functions for tile culling and selection.
