@@ -23,9 +23,11 @@ package net.daporkchop.fp2.mode.api;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.OrderedRegistry;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.util.SimpleRecycler;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
@@ -34,11 +36,11 @@ import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.core.util.SimpleRecycler;
-import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
 import net.minecraft.world.WorldServer;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+
+import java.io.IOException;
 
 /**
  * @author DaPorkchop_
@@ -97,7 +99,6 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @param config
      * @return the new {@link IFarClientContext}
      */
-    @SideOnly(Side.CLIENT)
     IFarClientContext<POS, T> clientContext(@NonNull IFarWorldClient world, @NonNull FP2Config config);
 
     /**
@@ -116,7 +117,40 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @param buf the {@link ByteBuf} to read from
      * @return the tile position
      */
+    @Deprecated
     POS readPos(@NonNull ByteBuf buf);
+
+    /**
+     * Reads a tile position from the given {@link DataIn}.
+     *
+     * @param in the {@link DataIn} to read from
+     * @return the tile position
+     */
+    POS readPos(@NonNull DataIn in) throws IOException;
+
+    /**
+     * Reads a tile position from the given {@code byte[]}.
+     *
+     * @param arr the {@code byte[]} containing the tile position
+     * @return the tile position
+     */
+    POS readPos(@NonNull byte[] arr);
+
+    /**
+     * Writes a tile position to the given {@link DataOut}.
+     *
+     * @param out the {@link DataOut} to write to
+     * @param pos the tile position
+     */
+    void writePos(@NonNull DataOut out, @NonNull POS pos) throws IOException;
+
+    /**
+     * Writes a tile position to a {@code byte[]}.
+     *
+     * @param pos the tile position
+     * @return a {@code byte[]} containing the written data
+     */
+    byte[] writePos(@NonNull POS pos);
 
     /**
      * @return an array of {@link POS}

@@ -46,35 +46,17 @@ import static org.lwjgl.util.glu.GLU.*;
  */
 @UtilityClass
 public class OpenGL {
-    public final int BYTE_SIZE = Byte.BYTES;
-    public final int SHORT_SIZE = Short.BYTES;
-    public final int MEDIUM_SIZE = SHORT_SIZE + BYTE_SIZE;
     public final int FLOAT_SIZE = Float.BYTES;
     public final int INT_SIZE = Integer.BYTES;
-    public final int DOUBLE_SIZE = Double.BYTES;
-    public final int LONG_SIZE = Long.BYTES;
-
-    public final int VEC2_ELEMENTS = 2;
-    public final int VEC2_SIZE = VEC2_ELEMENTS * FLOAT_SIZE;
-    public final int IVEC2_SIZE = VEC2_ELEMENTS * INT_SIZE;
-    public final int DVEC2_SIZE = VEC2_ELEMENTS * DOUBLE_SIZE;
 
     public final int VEC3_ELEMENTS = 3;
-    public final int VEC3_SIZE_TIGHT = VEC3_ELEMENTS * FLOAT_SIZE;
-    public final int IVEC3_SIZE_TIGHT = VEC3_ELEMENTS * INT_SIZE;
-    public final int DVEC3_SIZE_TIGHT = VEC3_ELEMENTS * DOUBLE_SIZE;
-    public final int VEC3_SIZE = (VEC3_ELEMENTS + 1) * FLOAT_SIZE;
     public final int IVEC3_SIZE = (VEC3_ELEMENTS + 1) * INT_SIZE;
-    public final int DVEC3_SIZE = (VEC3_ELEMENTS + 1) * DOUBLE_SIZE;
 
     public final int VEC4_ELEMENTS = 4;
     public final int VEC4_SIZE = VEC4_ELEMENTS * FLOAT_SIZE;
-    public final int IVEC4_SIZE = VEC4_ELEMENTS * INT_SIZE;
-    public final int DVEC4_SIZE = VEC4_ELEMENTS * DOUBLE_SIZE;
 
     public final int MAT4_ELEMENTS = 4 * 4;
     public final int MAT4_SIZE = MAT4_ELEMENTS * FLOAT_SIZE;
-    public final int DMAT4_SIZE = MAT4_ELEMENTS * DOUBLE_SIZE;
 
     public final boolean OPENGL_33;
     public final boolean OPENGL_42;
@@ -261,28 +243,5 @@ public class OpenGL {
                 .orElseThrow(() -> new IllegalArgumentException(PStrings.fastFormat(
                         "impossible to find a work group size in range [%d, %d] (GL_MAX_COMPUTE_WORK_GROUP_SIZE=%s, GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS=%d)",
                         minSize, maxSize, MAX_COMPUTE_WORK_GROUP_SIZE, MAX_COMPUTE_WORK_GROUP_INVOCATIONS)));
-    }
-
-    /**
-     * @return the size of the given OpenGL type, in bytes
-     */
-    public int typeSizeBytes(int type) {
-        switch (type) {
-            case GL_BYTE:
-            case GL_UNSIGNED_BYTE:
-                return BYTE_SIZE;
-            case GL_SHORT:
-            case GL_UNSIGNED_SHORT:
-                return SHORT_SIZE;
-            case GL_INT:
-            case GL_UNSIGNED_INT:
-                return INT_SIZE;
-            case GL_FLOAT:
-                return FLOAT_SIZE;
-            case GL_DOUBLE:
-                return DOUBLE_SIZE;
-            default:
-                throw new IllegalArgumentException();
-        }
     }
 }

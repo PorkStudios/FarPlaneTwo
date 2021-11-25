@@ -38,10 +38,6 @@ import static org.lwjgl.opengl.GL11.*;
 public class RenderConstants {
     public final int RENDER_PASS_COUNT = 3; //the total number of render passes
 
-    public final int INDEX_TYPE = GL_UNSIGNED_SHORT;
-    public final int INDEX_SIZE = SHORT_SIZE;
-    public final int INDEX_SHIFT = Integer.numberOfTrailingZeros(INDEX_SIZE);
-
     /**
      * Emits the indices for drawing a quad.
      *

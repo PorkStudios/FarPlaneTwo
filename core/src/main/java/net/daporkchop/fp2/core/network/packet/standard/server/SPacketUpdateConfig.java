@@ -18,30 +18,53 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.standard.client;
+package net.daporkchop.fp2.core.network.packet.standard.server;
 
-import io.netty.buffer.ByteBuf;
 import lombok.Getter;
-import lombok.Setter;
-import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.util.Constants;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import lombok.NonNull;
+import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.network.IPacket;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
+
+import java.io.IOException;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-@Setter
 @Getter
-public class CPacketClientConfig implements IMessage {
+public abstract class SPacketUpdateConfig<I extends SPacketUpdateConfig<I>> implements IPacket {
     protected FP2Config config;
 
-    @Override
-    public void fromBytes(ByteBuf buf) {
-        this.config = FP2Config.fromJson(Constants.readString(buf));
+    public I config(FP2Config config) {
+        this.config = config;
+        return uncheckedCast(this);
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
-        Constants.writeString(buf, FP2Config.toJson(this.config));
+    public void read(@NonNull DataIn in) throws IOException {
+        this.config = in.readBoolean() ? FP2Config.fromJson(in.readVarUTF()) : null;
+    }
+
+    @Override
+    public void write(@NonNull DataOut out) throws IOException {
+        out.writeBoolean(this.config != null);
+        if (this.config != null) {
+            out.writeVarUTF(FP2Config.toJson(this.config));
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public static class Merged extends SPacketUpdateConfig<Merged> {
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public static class Server extends SPacketUpdateConfig<Server> {
     }
 }

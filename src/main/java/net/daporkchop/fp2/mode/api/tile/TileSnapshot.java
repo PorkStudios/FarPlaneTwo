@@ -26,12 +26,15 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.util.SimpleRecycler;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
+
+import java.io.IOException;
 
 /**
  * @author DaPorkchop_
@@ -46,6 +49,19 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements IT
     @Getter(AccessLevel.NONE)
     protected final byte[] data;
 
+    public TileSnapshot(@NonNull DataIn in, @NonNull IFarRenderMode<POS, T> mode) throws IOException {
+        this.pos = mode.readPos(in);
+        this.timestamp = in.readVarLongZigZag();
+
+        int len = in.readVarIntZigZag();
+        if (len < 0) { //no data!
+            this.data = null;
+        } else {
+            this.data = new byte[len];
+            in.readFully(this.data);
+        }
+    }
+
     public TileSnapshot(@NonNull ByteBuf src, @NonNull IFarRenderMode<POS, T> mode) {
         this.pos = mode.readPos(src);
         this.timestamp = src.readLongLE();
@@ -56,6 +72,18 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements IT
         } else { //tile data is non-empty, read it
             this.data = new byte[len];
             src.readBytes(this.data);
+        }
+    }
+
+    public void write(@NonNull DataOut out, @NonNull IFarRenderMode<POS, T> mode) throws IOException {
+        mode.writePos(out, this.pos);
+        out.writeVarLongZigZag(this.timestamp);
+
+        if (this.data == null) { //no data!
+            out.writeVarIntZigZag(-1);
+        } else { //tile data is present, write it
+            out.writeVarIntZigZag(this.data.length);
+            out.write(this.data);
         }
     }
 
@@ -88,7 +116,8 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements IT
 
     @Override
     public ITileSnapshot<POS, T> compressed() {
-        return new CompressedTileSnapshot<>(this);
+        //return new CompressedTileSnapshot<>(this);
+        return null;
     }
 
     @Override
@@ -96,7 +125,6 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements IT
         return this; //we're already uncompressed!
     }
 
-    @DebugOnly
     @Override
     public DebugStats.TileSnapshot stats() {
         if (this.data == null) { //this tile is empty!

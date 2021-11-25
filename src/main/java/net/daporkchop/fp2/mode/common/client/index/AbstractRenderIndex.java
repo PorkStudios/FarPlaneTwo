@@ -27,8 +27,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
-import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawMode;
@@ -57,6 +57,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -131,7 +132,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
     public void draw(int level, int pass, @NonNull DrawShaderProgram shader) {
         checkIndex(RENDER_PASS_COUNT, pass);
 
-        if (FP2_DEBUG && !FP2Config.global().debug().levelZeroRendering() && level == 0) { //debug mode: skip level-0 rendering if needed
+        if (FP2_DEBUG && !fp2().globalConfig().debug().levelZeroRendering() && level == 0) { //debug mode: skip level-0 rendering if needed
             return;
         }
 

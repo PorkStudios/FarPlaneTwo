@@ -24,6 +24,7 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.ReversedZ;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
+import net.daporkchop.fp2.common.util.TypeSize;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -32,6 +33,7 @@ import java.nio.FloatBuffer;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -43,7 +45,7 @@ import static org.lwjgl.opengl.GL11.*;
  */
 @UtilityClass
 public class MatrixHelper {
-    private final long TEMP_MATRIX = PUnsafe.allocateMemory(DMAT4_SIZE);
+    private final long TEMP_MATRIX = PUnsafe.allocateMemory(16 * DOUBLE_SIZE);
 
     public int matrixIndex(int x, int y) {
         return x * 4 + y;
@@ -116,7 +118,7 @@ public class MatrixHelper {
             modelViewProjection[14] += offset * abs(modelViewProjection[3] + modelViewProjection[7] + modelViewProjection[11] + modelViewProjection[15]);
 
             //copy result to destination address
-            PUnsafe.copyMemory(modelViewProjection, PUnsafe.ARRAY_FLOAT_BASE_OFFSET, null, dst, (long) MAT4_ELEMENTS * FLOAT_SIZE);
+            PUnsafe.copyMemory(modelViewProjection, PUnsafe.ARRAY_FLOAT_BASE_OFFSET, null, dst, 16 * (long) TypeSize.FLOAT_SIZE);
         } finally {
             alloc.release(modelViewProjection);
             alloc.release(projection);

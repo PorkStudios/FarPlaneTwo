@@ -18,33 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.debug.server;
+package net.daporkchop.fp2.core.network.packet.standard.server;
 
-import io.netty.buffer.ByteBuf;
-import lombok.Getter;
-import lombok.Setter;
-import net.daporkchop.fp2.debug.util.DebugStats;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import lombok.NonNull;
+import net.daporkchop.fp2.core.network.IPacket;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
 
-import static net.daporkchop.fp2.util.Constants.*;
+import java.io.IOException;
 
 /**
+ * Sent by the server to tell the client that FP2 is present on the remote server and that it should send its config to the server in order to continue
+ * the handshake process.
+ *
  * @author DaPorkchop_
  */
-@Getter
-@Setter
-@DebugOnly
-public class SPacketDebugUpdateStatistics implements IMessage {
-    protected DebugStats.Tracking tracking;
-
+public class SPacketHandshake implements IPacket {
     @Override
-    public void fromBytes(ByteBuf buf) {
-        this.tracking = GSON.fromJson(readString(buf), DebugStats.Tracking.class);
+    public void read(@NonNull DataIn in) throws IOException {
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
-        writeString(buf, GSON.toJson(this.tracking));
+    public void write(@NonNull DataOut out) throws IOException {
     }
 }

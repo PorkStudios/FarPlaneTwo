@@ -28,7 +28,7 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import lombok.NonNull;
 import lombok.SneakyThrows;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
@@ -67,6 +67,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.mode.api.tile.ITileMetadata.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -167,7 +168,7 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
     protected final int version;
 
     protected final LoadingCache<POS, ITileHandle<POS, T>> handleCache = CacheBuilder.newBuilder()
-            .concurrencyLevel(FP2Config.global().performance().terrainThreads())
+            .concurrencyLevel(fp2().globalConfig().performance().terrainThreads())
             .weakValues()
             .build(CacheLoader.from(pos -> new RocksTileHandle<>(pos, this)));
 

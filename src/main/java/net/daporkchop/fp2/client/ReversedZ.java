@@ -21,9 +21,9 @@
 package net.daporkchop.fp2.client;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.config.FP2Config;
 import net.minecraft.client.renderer.GlStateManager;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL45.*;
@@ -36,7 +36,7 @@ public class ReversedZ {
     public boolean REVERSED = false;
 
     public void enable() {
-        if (FP2Config.global().compatibility().reversedZ()) {
+        if (fp2().globalConfig().compatibility().reversedZ()) {
             REVERSED = true;
 
             GlStateManager.depthFunc(GL_LEQUAL);

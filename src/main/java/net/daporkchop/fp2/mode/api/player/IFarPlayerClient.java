@@ -21,15 +21,15 @@
 package net.daporkchop.fp2.mode.api.player;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.net.packet.debug.server.SPacketDebugUpdateStatistics;
+import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
+import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -41,13 +41,11 @@ public interface IFarPlayerClient {
     @CalledFromNetworkThread
     void fp2_IFarPlayerClient_handle(@NonNull Object packet);
 
-    @DebugOnly
-    @CalledFromNetworkThread
-    void fp2_IFarPlayerClient_handleDebug(@NonNull Object packet);
-
-    @DebugOnly
     @CalledFromAnyThread
-    SPacketDebugUpdateStatistics fp2_IFarPlayerClient_debugServerStats();
+    void fp2_IFarPlayerClient_send(@NonNull IPacket packet);
+
+    @CalledFromAnyThread
+    DebugStats.Tracking fp2_IFarPlayerClient_debugServerStats();
 
     @CalledFromClientThread
     void fp2_IFarPlayerClient_ready();

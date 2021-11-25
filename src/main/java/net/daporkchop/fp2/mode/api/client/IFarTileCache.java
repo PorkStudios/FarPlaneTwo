@@ -21,14 +21,11 @@
 package net.daporkchop.fp2.mode.api.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.tile.ITileSnapshot;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.unsafe.capability.Releasable;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.stream.Stream;
 
@@ -37,7 +34,6 @@ import java.util.stream.Stream;
  *
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
 public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> extends Releasable {
     void receiveTile(@NonNull ITileSnapshot<POS, T> tile);
 
@@ -76,7 +72,6 @@ public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> extends 
      */
     Stream<ITileSnapshot<POS, T>> getTilesCached(@NonNull Stream<POS> positions);
 
-    @DebugOnly
     DebugStats.TileCache stats();
 
     /**
@@ -84,7 +79,6 @@ public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> extends 
      *
      * @author DaPorkchop_
      */
-    @SideOnly(Side.CLIENT)
     interface Listener<POS extends IFarPos, T extends IFarTile> {
         /**
          * Fired when a new tile is added to the cache.

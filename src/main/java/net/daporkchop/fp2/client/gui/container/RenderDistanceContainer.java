@@ -29,7 +29,7 @@ import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
 import net.daporkchop.fp2.client.gui.element.AbstractConfigGuiElement;
 import net.daporkchop.fp2.client.gui.util.ComponentDimensions;
 import net.daporkchop.fp2.client.gui.util.ElementBounds;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.minecraft.client.resources.I18n;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;

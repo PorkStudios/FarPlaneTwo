@@ -20,8 +20,6 @@
 
 package net.daporkchop.fp2.util;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorldServer;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubeGenerator;
@@ -33,13 +31,9 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
-import net.daporkchop.lib.common.pool.handle.Handle;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
 import net.daporkchop.lib.common.util.PorkUtil;
-import net.daporkchop.lib.compression.zstd.Zstd;
-import net.daporkchop.lib.compression.zstd.ZstdDeflater;
-import net.daporkchop.lib.compression.zstd.ZstdInflater;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
@@ -71,7 +65,6 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import static java.lang.Math.*;
@@ -84,6 +77,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @UtilityClass
+@Deprecated
 public class Constants {
     //definitions of tile sizes
     public static final int T_SHIFT = 4;
@@ -107,12 +101,6 @@ public class Constants {
     public static final boolean FP2_TEST = Boolean.parseBoolean(System.getProperty("fp2.test", "false"));
 
     public static Logger FP2_LOG = new SimpleLogger("[fp2 bootstrap]", Level.INFO, true, false, true, false, "[yyyy/MM/dd HH:mm:ss:SSS]", null, new PropertiesUtil("log4j2.simplelog.properties"), System.out);
-
-    public static final Cached<ZstdDeflater> ZSTD_DEF = Cached.threadLocal(() -> Zstd.PROVIDER.deflater(Zstd.PROVIDER.deflateOptions()), ReferenceStrength.WEAK);
-    public static final Cached<ZstdInflater> ZSTD_INF = Cached.threadLocal(() -> Zstd.PROVIDER.inflater(Zstd.PROVIDER.inflateOptions()), ReferenceStrength.WEAK);
-
-    public static final Gson GSON = new Gson();
-    public static final Gson GSON_PRETTY = new GsonBuilder().setPrettyPrinting().create();
 
     public static final IBlockState STATE_AIR = Blocks.AIR.getDefaultState();
 
@@ -377,114 +365,11 @@ public class Constants {
 
     //math
 
-    //buffer I/O
-    public static void writeVarInt(@NonNull ByteBuf dst, int value) {
-        try (Handle<byte[]> handle = PorkUtil.TINY_BUFFER_POOL.get()) {
-            byte[] arr = handle.get();
-            int i = 0;
-            do {
-                byte temp = (byte) (value & 0b01111111);
-                value >>>= 7;
-                if (value != 0) {
-                    temp |= 0b10000000;
-                }
-                arr[i++] = temp;
-            } while (value != 0);
-            dst.writeBytes(arr, 0, i);
-        }
-    }
-
-    public static void writeVarIntZigZag(@NonNull ByteBuf dst, int value) {
-        writeVarInt(dst, (value << 1) ^ (value >> 31));
-    }
-
-    public static void writeVarLong(@NonNull ByteBuf dst, long value) {
-        try (Handle<byte[]> handle = PorkUtil.TINY_BUFFER_POOL.get()) {
-            byte[] arr = handle.get();
-            int i = 0;
-            do {
-                byte temp = (byte) (value & 0b01111111);
-                value >>>= 7L;
-                if (value != 0) {
-                    temp |= 0b10000000;
-                }
-                arr[i++] = temp;
-            } while (value != 0);
-            dst.writeBytes(arr, 0, i);
-        }
-    }
-
-    public static void writeVarLongZigZag(@NonNull ByteBuf dst, long value) {
-        writeVarLong(dst, (value << 1L) ^ (value >> 63L));
-    }
-
-    public static int readVarInt(@NonNull ByteBuf src) {
-        int bytesRead = 0;
-        int value = 0;
-        int b;
-        do {
-            b = src.readUnsignedByte();
-            value |= ((b & 0b01111111) << (7 * bytesRead));
-
-            if (++bytesRead > 5) {
-                throw new RuntimeException("VarInt is too big");
-            }
-        } while ((b & 0b10000000) != 0);
-        return value;
-    }
-
-    public static int readVarIntZigZag(@NonNull ByteBuf src) {
-        int i = readVarInt(src);
-        return (i >> 1) ^ -(i & 1);
-    }
-
-    public static long readVarLong(@NonNull ByteBuf src) {
-        int bytesRead = 0;
-        long value = 0;
-        int b;
-        do {
-            b = src.readUnsignedByte();
-            value |= ((b & 0b01111111L) << (7 * bytesRead));
-
-            if (++bytesRead > 10) {
-                throw new RuntimeException("VarLong is too big");
-            }
-        } while ((b & 0b10000000) != 0);
-        return value;
-    }
-
-    public static long readVarLongZigZag(@NonNull ByteBuf src) {
-        long l = readVarLong(src);
-        return (l >> 1L) ^ -(l & 1L);
-    }
-
-    public static void writeString(@NonNull ByteBuf dst, @NonNull String value) {
-        int i = dst.writerIndex();
-        int len = dst.writeInt(-1).writeCharSequence(value, StandardCharsets.UTF_8);
-        dst.setInt(i, len);
-    }
-
-    public static String readString(@NonNull ByteBuf src) {
-        return src.readCharSequence(src.readInt(), StandardCharsets.UTF_8).toString();
-    }
-
-    public static int or(@NonNull int[] arr) {
-        int val = 0;
-        for (int i : arr) {
-            val |= i;
-        }
-        return val;
-    }
-
     public static void unsupported(String msg) {
         bigWarning(msg);
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
             JOptionPane.showMessageDialog(null, msg, null, JOptionPane.ERROR_MESSAGE);
         }
         FMLCommonHandler.instance().exitJava(1, true);
-    }
-
-    public static <T> T preventInline(T value) {
-        return value;
     }
 }

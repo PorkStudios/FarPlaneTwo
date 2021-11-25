@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.mode.api.ctx;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;

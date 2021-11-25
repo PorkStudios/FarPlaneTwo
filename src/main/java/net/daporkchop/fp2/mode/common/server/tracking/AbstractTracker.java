@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.mode.common.server.tracking;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
@@ -49,6 +49,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -222,7 +223,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
      * Mark completed tiles as loaded, and replaces them by beginning to wait on new positions from the queue (if possible).
      */
     protected void updateWaiting() {
-        int targetLoadQueueSize = FP2Config.global().performance().terrainThreads();
+        int targetLoadQueueSize = fp2().globalConfig().performance().terrainThreads();
         List<POS> positions = new ArrayList<>();
 
         do {

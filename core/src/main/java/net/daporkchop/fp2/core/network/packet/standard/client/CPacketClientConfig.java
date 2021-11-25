@@ -18,22 +18,36 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.debug.client;
+package net.daporkchop.fp2.core.network.packet.standard.client;
 
-import io.netty.buffer.ByteBuf;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.network.IPacket;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
+
+import java.io.IOException;
 
 /**
  * @author DaPorkchop_
  */
-@DebugOnly
-public class CPacketDebugDropAllTiles implements IMessage {
+@Setter
+@Getter
+public class CPacketClientConfig implements IPacket {
+    protected FP2Config config;
+
     @Override
-    public void fromBytes(ByteBuf buf) {
+    public void read(@NonNull DataIn in) throws IOException {
+        this.config = in.readBoolean() ? FP2Config.fromJson(in.readVarUTF()) : null;
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
+    public void write(@NonNull DataOut out) throws IOException {
+        out.writeBoolean(this.config != null);
+        if (this.config != null) {
+            out.writeVarUTF(FP2Config.toJson(this.config));
+        }
     }
 }

@@ -25,6 +25,7 @@ dependencies {
 
     implementationProvided "org.ow2.asm:asm-debug-all:$asmVersion"
     implementationProvided "it.unimi.dsi:fastutil:$fastutilVersion"
+    implementationProvided "com.google.code.gson:gson:$gsonVersion"
     implementationProvided "com.google.guava:guava:$guavaVersion"
     implementationProvided "io.netty:netty-all:$nettyVersion"
     implementationProvided "org.rocksdb:rocksdbjni:$rocksdbVersion"

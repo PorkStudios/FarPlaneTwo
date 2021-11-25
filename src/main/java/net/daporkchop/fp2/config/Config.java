@@ -24,8 +24,6 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gui.IConfigGuiElement;
 import net.daporkchop.fp2.client.gui.IConfigGuiScreen;
 import net.daporkchop.fp2.client.gui.container.ColumnsContainer;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -52,7 +50,6 @@ public class Config {
      */
     @Retention(RUNTIME)
     @Target(TYPE)
-    @SideOnly(Side.CLIENT)
     public @interface GuiScreenClass {
         /**
          * @return the class type of the {@link IConfigGuiScreen} to use for this object
@@ -65,7 +62,6 @@ public class Config {
      */
     @Retention(RUNTIME)
     @Target(FIELD)
-    @SideOnly(Side.CLIENT)
     public @interface GuiElementClass {
         /**
          * @return the class type of the {@link IConfigGuiElement} to use for this setting
@@ -78,7 +74,6 @@ public class Config {
      */
     @Retention(RUNTIME)
     @Target(TYPE)
-    @SideOnly(Side.CLIENT)
     public @interface GuiCategories {
         /**
          * @return a {@link CategoryMeta} for each available category
@@ -91,7 +86,6 @@ public class Config {
      */
     @Retention(RUNTIME)
     @Target({})
-    @SideOnly(Side.CLIENT)
     public @interface CategoryMeta {
         /**
          * @return the name of the category
@@ -114,7 +108,6 @@ public class Config {
      */
     @Retention(RUNTIME)
     @Target(FIELD)
-    @SideOnly(Side.CLIENT)
     public @interface GuiCategory {
         /**
          * @return the name of the category which this setting should be added to
@@ -127,7 +120,6 @@ public class Config {
      */
     @Retention(RUNTIME)
     @Target(FIELD)
-    @SideOnly(Side.CLIENT)
     public @interface GuiShowServerValue {
     }
 
@@ -136,7 +128,6 @@ public class Config {
      */
     @Retention(RUNTIME)
     @Target(FIELD)
-    @SideOnly(Side.CLIENT)
     public @interface GuiRange {
         Constant min();
 

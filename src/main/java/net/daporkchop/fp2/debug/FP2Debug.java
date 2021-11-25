@@ -22,7 +22,7 @@ package net.daporkchop.fp2.debug;
 
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.FP2Client;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.debug.client.DebugClientEvents;
 import net.daporkchop.fp2.debug.client.DebugKeyBindings;
@@ -32,6 +32,7 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.relauncher.Side;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -58,8 +59,8 @@ public class FP2Debug {
 
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
             ConfigListenerManager.add(() -> FP2Client.GLOBAL_SHADER_MACROS
-                    .define("FP2_DEBUG_COLORS_ENABLED", FP2Config.global().debug().debugColors().enable())
-                    .define("FP2_DEBUG_COLORS_MODE", FP2Config.global().debug().debugColors().ordinal()));
+                    .define("FP2_DEBUG_COLORS_ENABLED", fp2().globalConfig().debug().debugColors().enable())
+                    .define("FP2_DEBUG_COLORS_MODE", fp2().globalConfig().debug().debugColors().ordinal()));
 
             MinecraftForge.EVENT_BUS.register(new DebugClientEvents());
         }

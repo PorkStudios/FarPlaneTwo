@@ -22,7 +22,10 @@ package net.daporkchop.fp2.mode.voxel;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.config.FP2Config;
+import lombok.SneakyThrows;
+import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
+import net.daporkchop.fp2.core.util.registry.LinkedOrderedRegistry;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
@@ -41,12 +44,17 @@ import net.daporkchop.fp2.mode.voxel.server.gen.exact.CCVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.gen.rough.CWGVoxelGenerator;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
-import net.daporkchop.fp2.core.util.registry.LinkedOrderedRegistry;
+import net.daporkchop.fp2.util.math.MathUtil;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -103,6 +111,39 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
     @Override
     public VoxelPos readPos(@NonNull ByteBuf buf) {
         return new VoxelPos(buf);
+    }
+
+    @Override
+    public VoxelPos readPos(@NonNull DataIn in) throws IOException {
+        int level = in.readUnsignedByte();
+
+        int interleavedHigh = in.readInt();
+        long interleavedLow = in.readLong();
+        int x = MathUtil.uninterleave3_0(interleavedLow, interleavedHigh);
+        int y = MathUtil.uninterleave3_1(interleavedLow, interleavedHigh);
+        int z = MathUtil.uninterleave3_2(interleavedLow, interleavedHigh);
+        return new VoxelPos(level, x, y, z);
+    }
+
+    @Override
+    @SneakyThrows(IOException.class)
+    public VoxelPos readPos(@NonNull byte[] arr) {
+        return this.readPos(DataIn.wrap(ByteBuffer.wrap(arr)));
+    }
+
+    @Override
+    public void writePos(@NonNull DataOut out, @NonNull VoxelPos pos) throws IOException {
+        out.writeByte(pos.level);
+        out.writeInt(MathUtil.interleaveBitsHigh(pos.x, pos.y, pos.z));
+        out.writeLong(MathUtil.interleaveBits(pos.x, pos.y, pos.z));
+    }
+
+    @Override
+    @SneakyThrows(IOException.class)
+    public byte[] writePos(@NonNull VoxelPos pos) {
+        byte[] arr = new byte[BYTE_SIZE + INT_SIZE + LONG_SIZE];
+        this.writePos(DataOut.wrap(ByteBuffer.wrap(arr)), pos);
+        return arr;
     }
 
     @Override

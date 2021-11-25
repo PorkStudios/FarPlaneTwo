@@ -29,9 +29,10 @@ import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.x86.x86FeatureDetector;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.core.FP2Core;
+import net.daporkchop.fp2.core.network.RegisterPacketsEvent;
 import net.daporkchop.fp2.debug.FP2Debug;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.log.ChatAsPorkLibLogger;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.log.Log4jAsPorkLibLogger;
@@ -39,6 +40,10 @@ import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
 import net.daporkchop.fp2.mode.voxel.VoxelRenderMode;
 import net.daporkchop.fp2.net.FP2Network;
+import net.daporkchop.fp2.net.packet.standard.server.SPacketSessionBegin;
+import net.daporkchop.fp2.net.packet.standard.server.SPacketTileData;
+import net.daporkchop.fp2.net.packet.standard.server.SPacketUnloadTile;
+import net.daporkchop.fp2.net.packet.standard.server.SPacketUnloadTiles;
 import net.daporkchop.fp2.server.FP2Server;
 import net.daporkchop.fp2.util.event.IdMappingsChangedEvent;
 import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
@@ -46,6 +51,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLModIdMappingEvent;
@@ -58,6 +64,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Map;
 
 import static net.daporkchop.fp2.FP2.*;
@@ -84,7 +91,6 @@ public class FP2 extends FP2Core implements ResourceProvider {
 
         FP2_LOG.info("Detected x86 SIMD extension: {}", x86FeatureDetector.INSTANCE.maxSupportedVectorExtension());
 
-        FP2Config.load();
         FP2Network.preInit();
         FP2Debug.preInit();
         FP2Server.preInit();
@@ -177,5 +183,20 @@ public class FP2 extends FP2Core implements ResourceProvider {
     @Override
     public boolean hasServer() {
         return true; //the server is always present, be it integrated or dedicated
+    }
+
+    @Override
+    protected Path configDir() {
+        return Loader.instance().getConfigDir().toPath();
+    }
+
+    @Override
+    protected void registerPackets(@NonNull RegisterPacketsEvent event) { //TODO: remove this once all packets have been moved to :core module
+        super.registerPackets(event);
+
+        event.registerClientbound(SPacketSessionBegin.class)
+                .registerClientbound(SPacketTileData.class)
+                .registerClientbound(SPacketUnloadTile.class)
+                .registerClientbound(SPacketUnloadTiles.class);
     }
 }

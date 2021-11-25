@@ -22,21 +22,33 @@ package net.daporkchop.fp2.core;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.FP2;
 import net.daporkchop.fp2.api.event.FEventBus;
+import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.common.util.ResourceProvider;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.event.EventBus;
+import net.daporkchop.fp2.core.network.RegisterPacketsEvent;
+import net.daporkchop.fp2.core.network.packet.debug.client.CPacketDebugDropAllTiles;
+import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
+import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.logging.Logger;
 
 import java.lang.reflect.Method;
+import java.nio.file.Path;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
+@Setter(AccessLevel.PROTECTED)
 public abstract class FP2Core implements FP2 {
     public static final String MODID = FP2.MODID;
 
@@ -49,10 +61,9 @@ public abstract class FP2Core implements FP2 {
 
     private final FEventBus eventBus = new EventBus();
 
-    @Setter(AccessLevel.PROTECTED)
-    private Logger log;
+    private FP2Config globalConfig;
 
-    @Setter(AccessLevel.PROTECTED)
+    private Logger log;
     private Logger chat;
 
     @SneakyThrows
@@ -64,6 +75,9 @@ public abstract class FP2Core implements FP2 {
 
         //register self as an event listener
         this.eventBus.register(this);
+
+        //load global config
+        this.globalConfig = FP2Config.load(this.configDir());
     }
 
     /**
@@ -80,4 +94,31 @@ public abstract class FP2Core implements FP2 {
      * @return whether or not the active game distribution contains a server
      */
     public abstract boolean hasServer();
+
+    /**
+     * @return the directory where fp2's config file is stored
+     */
+    protected abstract Path configDir();
+
+    /**
+     * Sets the global {@link FP2Config}.
+     *
+     * @param config the new {@link FP2Config} instance
+     */
+    public synchronized void globalConfig(@NonNull FP2Config config) {
+        FP2Config.save(this.configDir(), config);
+        this.globalConfig = config;
+    }
+
+    @FEventHandler
+    protected void registerPackets(@NonNull RegisterPacketsEvent event) {
+        event.registerServerbound(CPacketClientConfig.class)
+                .registerServerbound(CPacketDebugDropAllTiles.class);
+
+        event.registerClientbound(SPacketHandshake.class)
+                .registerClientbound(SPacketUpdateConfig.Merged.class)
+                .registerClientbound(SPacketUpdateConfig.Server.class)
+                .registerClientbound(SPacketSessionEnd.class)
+                .registerClientbound(SPacketDebugUpdateStatistics.class);
+    }
 }

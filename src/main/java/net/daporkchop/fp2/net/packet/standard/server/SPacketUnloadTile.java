@@ -20,35 +20,39 @@
 
 package net.daporkchop.fp2.net.packet.standard.server;
 
-import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.util.Constants;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
+
+import java.io.IOException;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
 @Setter
-public class SPacketUnloadTile implements IMessage {
+public class SPacketUnloadTile implements IPacket {
     @NonNull
     protected IFarRenderMode<?, ?> mode;
     @NonNull
     protected IFarPos pos;
 
     @Override
-    public void fromBytes(ByteBuf buf) {
-        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
-        this.pos = this.mode.readPos(buf);
+    public void read(@NonNull DataIn in) throws IOException {
+        this.mode = IFarRenderMode.REGISTRY.get(in.readVarUTF());
+        this.pos = this.mode.readPos(in);
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
-        Constants.writeString(buf, this.mode.name());
-        this.pos.writePos(buf);
+    public void write(@NonNull DataOut out) throws IOException {
+        out.writeVarUTF(this.mode.name());
+        this.mode.writePos(out, uncheckedCast(this.pos));
     }
 }

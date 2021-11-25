@@ -21,10 +21,10 @@
 package net.daporkchop.fp2.client;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.core.client.shader.ShaderMacros;
-import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
-import net.daporkchop.fp2.net.packet.standard.client.CPacketClientConfig;
+import net.daporkchop.fp2.core.client.shader.ShaderMacros;
+import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -35,8 +35,8 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.compat.of.OFHelper.*;
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
-import static net.daporkchop.fp2.net.FP2Network.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL43.*;
@@ -75,7 +75,11 @@ public class FP2Client {
 
         ClientEvents.register();
 
-        ConfigListenerManager.add(() -> PROTOCOL_FP2.sendToServer(new CPacketClientConfig().config(FP2Config.global())));
+        ConfigListenerManager.add(() -> {
+            if (MC.player != null && MC.player.connection != null) {
+                ((IFarPlayerClient) MC.player.connection).fp2_IFarPlayerClient_send(new CPacketClientConfig().config(fp2().globalConfig()));
+            }
+        });
     }
 
     /**

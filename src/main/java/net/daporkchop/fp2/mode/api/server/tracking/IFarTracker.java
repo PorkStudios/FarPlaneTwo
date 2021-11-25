@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.mode.api.server.tracking;
 
-import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;

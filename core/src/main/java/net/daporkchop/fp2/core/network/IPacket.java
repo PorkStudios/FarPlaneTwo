@@ -18,22 +18,32 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.standard.server;
+package net.daporkchop.fp2.core.network;
 
 import io.netty.buffer.ByteBuf;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import lombok.NonNull;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
+
+import java.io.IOException;
 
 /**
- * Notifies the client to stop the current session.
+ * Base interface for network packets.
  *
  * @author DaPorkchop_
  */
-public class SPacketSessionEnd implements IMessage {
-    @Override
-    public void fromBytes(ByteBuf buf) {
-    }
+public interface IPacket {
+    /**
+     * Reads this packet from the given {@link ByteBuf}.
+     *
+     * @param in the source {@link ByteBuf}
+     */
+    void read(@NonNull DataIn in) throws IOException;
 
-    @Override
-    public void toBytes(ByteBuf buf) {
-    }
+    /**
+     * Encodes this packet to the given {@link ByteBuf}.
+     *
+     * @param out the destination {@link ByteBuf}
+     */
+    void write(@NonNull DataOut out) throws IOException;
 }

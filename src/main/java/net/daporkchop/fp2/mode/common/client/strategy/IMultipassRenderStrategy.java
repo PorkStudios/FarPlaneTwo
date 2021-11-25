@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.DrawMode;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.gl.draw.command.DrawCommand;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
@@ -35,6 +35,7 @@ import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.util.BlockRenderLayer;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -78,7 +79,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
     }
 
     default void preRender() {
-        if (FP2_DEBUG && !FP2Config.global().debug().backfaceCulling()) {
+        if (FP2_DEBUG && !fp2().globalConfig().debug().backfaceCulling()) {
             GlStateManager.disableCull();
         }
 
@@ -91,7 +92,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
     default void postRender() {
         glDisable(GL_STENCIL_TEST);
 
-        if (FP2_DEBUG && !FP2Config.global().debug().backfaceCulling()) {
+        if (FP2_DEBUG && !fp2().globalConfig().debug().backfaceCulling()) {
             GlStateManager.enableCull();
         }
     }

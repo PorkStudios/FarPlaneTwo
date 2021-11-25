@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.common.client.bake.indexed;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalBuffer;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;

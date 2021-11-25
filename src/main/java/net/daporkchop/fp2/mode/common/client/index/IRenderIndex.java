@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.common.client.index;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
-import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.gl.draw.command.DrawCommand;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;

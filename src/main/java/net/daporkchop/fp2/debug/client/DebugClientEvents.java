@@ -21,12 +21,13 @@
 package net.daporkchop.fp2.debug.client;
 
 import net.daporkchop.fp2.asm.core.client.gui.IGuiScreen;
-import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
 import net.daporkchop.fp2.client.TextureUVs;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
+import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.debug.util.DebugUtils;
-import net.daporkchop.fp2.net.packet.standard.client.CPacketClientConfig;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
 import net.minecraft.client.gui.GuiIngameMenu;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
@@ -37,7 +38,8 @@ import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import static net.daporkchop.fp2.net.FP2Network.*;
+import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -50,15 +52,16 @@ public class DebugClientEvents {
             ReloadableShaderProgram.reloadAll();
         }
         if (DebugKeyBindings.DROP_TILES.isPressed()) {
-            PROTOCOL_FP2.sendToServer(new CPacketClientConfig().config(null));
-            PROTOCOL_FP2.sendToServer(new CPacketClientConfig().config(FP2Config.global()));
+            IFarPlayerClient playerClient = (IFarPlayerClient) MC.player.connection;
+            playerClient.fp2_IFarPlayerClient_send(new CPacketClientConfig().config(null));
+            playerClient.fp2_IFarPlayerClient_send(new CPacketClientConfig().config(fp2().globalConfig()));
             DebugUtils.clientMsg("§aReloading session");
         }
         if (DebugKeyBindings.REBUILD_UVS.isPressed()) {
             TextureUVs.reloadAll();
         }
 
-        FP2Config oldConfig = FP2Config.global();
+        FP2Config oldConfig = fp2().globalConfig();
         FP2Config newConfig = oldConfig;
 
         if (DebugKeyBindings.TOGGLE_REVERSED_Z.isPressed()) {
@@ -89,7 +92,7 @@ public class DebugClientEvents {
         }
 
         if (!oldConfig.equals(newConfig)) { //config changed!
-            FP2Config.set(newConfig);
+            fp2().globalConfig(newConfig);
         }
     }
 

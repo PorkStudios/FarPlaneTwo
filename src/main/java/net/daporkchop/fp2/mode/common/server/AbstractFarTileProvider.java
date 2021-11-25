@@ -25,7 +25,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
@@ -57,6 +57,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static java.util.Spliterator.*;
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -118,7 +119,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
                 },
                 ThreadingHelper.workerGroupBuilder()
                         .world(this.world)
-                        .threads(FP2Config.global().performance().terrainThreads())
+                        .threads(fp2().globalConfig().performance().terrainThreads())
                         .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
                                 .name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build()),
                 PriorityTask.approxComparator());

@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.debug.util;
+package net.daporkchop.fp2.core.debug.util;
 
 import lombok.Builder;
 import lombok.Data;
@@ -26,9 +26,6 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.common.util.stats.AbstractLongStatistics;
 import net.daporkchop.fp2.common.util.stats.Statistics;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -39,7 +36,6 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @UtilityClass
-@DebugOnly
 public class DebugStats {
     /**
      * @author DaPorkchop_
@@ -81,7 +77,6 @@ public class DebugStats {
      */
     @Builder
     @Data
-    @SideOnly(Side.CLIENT)
     public static final class TileCache extends AbstractLongStatistics<TileCache> {
         public static final TileCache ZERO = builder().build();
 
@@ -99,7 +94,6 @@ public class DebugStats {
      */
     @Builder
     @Data
-    @SideOnly(Side.CLIENT)
     public static final class Renderer implements Statistics<Renderer> {
         public static final Renderer ZERO = builder().build();
 

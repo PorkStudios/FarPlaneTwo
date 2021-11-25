@@ -30,9 +30,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.event.FEventHandler;
+import net.daporkchop.lib.common.function.throwing.EFunction;
 import net.daporkchop.lib.common.reference.Reference;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
-import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -111,26 +111,34 @@ public class EventBus implements FEventBus {
 
     protected static final LoadingCache<Class<?>, List<HandlerMethod>> LISTENER_METHOD_CACHE = CacheBuilder.newBuilder()
             .weakKeys().weakValues()
-            .build(CacheLoader.from(clazz -> {
-                ImmutableList.Builder<HandlerMethod> builder = ImmutableList.builder();
-                for (Method method : clazz.getMethods()) {
-                    if (method.isAnnotationPresent(FEventHandler.class)) { //method is annotated as @FEventHandler
-                        checkArg(method.getReturnType() == void.class, "method annotated as %s must return void: %s", FEventHandler.class.getTypeName(), method);
-                        checkArg(method.getParameterCount() == 1, "method annotated as %s must have exactly one parameter: %s", FEventHandler.class.getTypeName(), method);
+            .build(new CacheLoader<Class<?>, List<HandlerMethod>>() {
+                @Override
+                public List<HandlerMethod> load(Class<?> clazz) throws Exception {
+                    return this.getAllSuperclasses(clazz)
+                            .map(Class::getDeclaredMethods)
+                            .flatMap(Stream::of)
+                            .filter(method -> method.isAnnotationPresent(FEventHandler.class))
+                            .map((EFunction<Method, HandlerMethod>) method -> {
+                                checkArg(method.getReturnType() == void.class, "method annotated as %s must return void: %s", FEventHandler.class.getTypeName(), method);
+                                checkArg(method.getParameterCount() == 1, "method annotated as %s must have exactly one parameter: %s", FEventHandler.class.getTypeName(), method);
 
-                        try {
-                            method.setAccessible(true);
-                            builder.add(new HandlerMethod(
-                                    method.getGenericParameterTypes()[0],
-                                    MethodHandles.publicLookup().unreflect(method),
-                                    (method.getModifiers() & Modifier.STATIC) == 0));
-                        } catch (IllegalAccessException | IllegalArgumentException e) {
-                            PUnsafe.throwException(e);
-                        }
-                    }
+                                method.setAccessible(true);
+                                return new HandlerMethod(method.getGenericParameterTypes()[0],
+                                        MethodHandles.publicLookup().unreflect(method),
+                                        (method.getModifiers() & Modifier.STATIC) == 0);
+                            })
+                            .collect(Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
                 }
-                return builder.build();
-            }));
+
+                protected Stream<Class<?>> getAllSuperclasses(@NonNull Class<?> clazz) {
+                    return Stream.concat(
+                            Stream.of(clazz),
+                            Stream.concat(Stream.of(clazz.getSuperclass()), Stream.of(clazz.getInterfaces()))
+                                    .filter(Objects::nonNull)
+                                    .flatMap(this::getAllSuperclasses))
+                            .distinct();
+                }
+            });
 
     protected static Type resolveType(Type type, Map<String, Type> parameters) {
         if (type == null || type instanceof Class) {

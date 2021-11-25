@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.api.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
-import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.unsafe.capability.Releasable;
 import net.minecraft.client.Minecraft;

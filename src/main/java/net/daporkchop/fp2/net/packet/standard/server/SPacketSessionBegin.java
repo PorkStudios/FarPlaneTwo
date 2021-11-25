@@ -24,14 +24,15 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
-import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.core.network.IPacket;
+import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.util.threading.ThreadingHelper;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
 
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -42,31 +43,34 @@ import java.util.function.Supplier;
  */
 @Getter
 @Setter
-public class SPacketSessionBegin implements IMessage {
+public class SPacketSessionBegin implements IPacket {
     @NonNull
     protected IntAxisAlignedBB[] coordLimits;
 
     @Override
-    public void fromBytes(ByteBuf buf) {
-        int len = buf.readIntLE();
+    public void read(@NonNull DataIn in) throws IOException {
+        int len = in.readIntLE();
 
         this.coordLimits = new IntAxisAlignedBB[len];
         for (int i = 0; i < len; i++) {
-            this.coordLimits[i] = new IntAxisAlignedBB(buf.readIntLE(), buf.readIntLE(), buf.readIntLE(), buf.readIntLE(), buf.readIntLE(), buf.readIntLE());
+            this.coordLimits[i] = new IntAxisAlignedBB(in.readIntLE(), in.readIntLE(), in.readIntLE(), in.readIntLE(), in.readIntLE(), in.readIntLE());
         }
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
-        buf.writeIntLE(this.coordLimits.length);
+    public void write(@NonNull DataOut out) throws IOException {
+        out.writeIntLE(this.coordLimits.length);
 
         for (IntAxisAlignedBB bb : this.coordLimits) {
-            buf.writeIntLE(bb.minX()).writeIntLE(bb.minY()).writeIntLE(bb.minZ())
-                    .writeIntLE(bb.maxX()).writeIntLE(bb.maxY()).writeIntLE(bb.maxZ());
+            out.writeIntLE(bb.minX());
+            out.writeIntLE(bb.minY());
+            out.writeIntLE(bb.minZ());
+            out.writeIntLE(bb.maxX());
+            out.writeIntLE(bb.maxY());
+            out.writeIntLE(bb.maxZ());
         }
     }
 
-    @SideOnly(Side.CLIENT)
     public IFarWorldClient fakeWorldClient() {
         IntAxisAlignedBB[] coordLimits = this.coordLimits;
 

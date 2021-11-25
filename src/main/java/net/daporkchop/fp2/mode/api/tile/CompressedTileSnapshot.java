@@ -26,14 +26,16 @@ import io.netty.buffer.Unpooled;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.util.SimpleRecycler;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
+import net.daporkchop.lib.common.reference.ReferenceStrength;
+import net.daporkchop.lib.common.reference.cache.Cached;
 import net.daporkchop.lib.compression.zstd.Zstd;
+import net.daporkchop.lib.compression.zstd.ZstdDeflater;
+import net.daporkchop.lib.compression.zstd.ZstdInflater;
 
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -43,6 +45,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> implements ITileSnapshot<POS, T> {
+    protected static final Cached<ZstdDeflater> ZSTD_DEF = Cached.threadLocal(() -> Zstd.PROVIDER.deflater(Zstd.PROVIDER.deflateOptions()), ReferenceStrength.WEAK);
+    protected static final Cached<ZstdInflater> ZSTD_INF = Cached.threadLocal(() -> Zstd.PROVIDER.inflater(Zstd.PROVIDER.inflateOptions()), ReferenceStrength.WEAK);
+
     @NonNull
     protected final POS pos;
     protected final long timestamp;
@@ -50,7 +55,7 @@ public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> imp
     @Getter(AccessLevel.NONE)
     protected final byte[] data;
 
-    protected CompressedTileSnapshot(@NonNull TileSnapshot<POS, T> src) {
+    public CompressedTileSnapshot(@NonNull TileSnapshot<POS, T> src) {
         this.pos = src.pos();
         this.timestamp = src.timestamp();
 
@@ -118,7 +123,6 @@ public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> imp
         return new TileSnapshot<>(this.pos, this.timestamp, uncompressedData);
     }
 
-    @DebugOnly
     @Override
     public DebugStats.TileSnapshot stats() {
         if (this.data == null) { //this tile is empty!

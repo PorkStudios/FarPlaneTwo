@@ -74,6 +74,7 @@ public interface IFarPos extends Comparable<IFarPos> {
      *
      * @param dst the {@link ByteBuf} to write to
      */
+    @Deprecated
     void writePos(@NonNull ByteBuf dst);
 
     /**
@@ -83,6 +84,7 @@ public interface IFarPos extends Comparable<IFarPos> {
      *
      * @return the encoded position
      */
+    @Deprecated
     byte[] toBytes();
 
     /**

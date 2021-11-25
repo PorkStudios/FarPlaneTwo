@@ -22,7 +22,7 @@ package net.daporkchop.fp2.asm.core.client.renderer;
 
 import net.daporkchop.fp2.client.ReversedZ;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
 import net.minecraft.client.Minecraft;

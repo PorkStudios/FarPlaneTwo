@@ -21,12 +21,11 @@
 package net.daporkchop.fp2.asm.debug.client.gui;
 
 import net.daporkchop.fp2.client.gui.GuiHelper;
-import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
-import net.daporkchop.fp2.net.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiOverlayDebug;
 import org.spongepowered.asm.mixin.Mixin;
@@ -102,19 +101,14 @@ public abstract class MixinGuiOverlayDebug extends Gui {
             list.add("");
             list.add("§lFarPlaneTwo (Server):");
 
-            SPacketDebugUpdateStatistics packet = player.fp2_IFarPlayerClient_debugServerStats();
-            if (packet != null) {
-                DebugStats.Tracking trackingStats = packet.tracking();
-                if (trackingStats != null) {
-                    list.add("Tracker: " + numberFormat.format(trackingStats.tilesTrackedGlobal()) + "G "
-                             + numberFormat.format(trackingStats.tilesTotal()) + "T " + numberFormat.format(trackingStats.tilesLoaded()) + "L "
-                             + numberFormat.format(trackingStats.tilesLoading()) + "P " + numberFormat.format(trackingStats.tilesQueued()) + 'Q');
-                    list.add("Updates: " + GuiHelper.formatDuration(trackingStats.avgUpdateDuration()) + " avg, " + GuiHelper.formatDuration(trackingStats.lastUpdateDuration()) + " last");
-                } else {
-                    list.add("§oTracking data not available");
-                }
+            DebugStats.Tracking trackingStats = player.fp2_IFarPlayerClient_debugServerStats();
+            if (trackingStats != null) {
+                list.add("Tracker: " + numberFormat.format(trackingStats.tilesTrackedGlobal()) + "G "
+                         + numberFormat.format(trackingStats.tilesTotal()) + "T " + numberFormat.format(trackingStats.tilesLoaded()) + "L "
+                         + numberFormat.format(trackingStats.tilesLoading()) + "P " + numberFormat.format(trackingStats.tilesQueued()) + 'Q');
+                list.add("Updates: " + GuiHelper.formatDuration(trackingStats.avgUpdateDuration()) + " avg, " + GuiHelper.formatDuration(trackingStats.lastUpdateDuration()) + " last");
             } else {
-                list.add("§oData not available");
+                list.add("§oTracking data not available");
             }
         }
     }

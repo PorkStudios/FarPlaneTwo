@@ -21,24 +21,24 @@
 package net.daporkchop.fp2.asm.core.network;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.network.IPacket;
+import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
+import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
-import net.daporkchop.fp2.net.packet.debug.client.CPacketDebugDropAllTiles;
-import net.daporkchop.fp2.net.packet.standard.client.CPacketClientConfig;
+import net.daporkchop.fp2.core.network.packet.debug.client.CPacketDebugDropAllTiles;
+import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
+import net.daporkchop.fp2.net.FP2Network;
 import net.daporkchop.fp2.net.packet.standard.server.SPacketSessionBegin;
-import net.daporkchop.fp2.net.packet.standard.server.SPacketSessionEnd;
-import net.daporkchop.fp2.net.packet.standard.server.SPacketUpdateConfig;
-import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
-import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
 import net.daporkchop.lib.math.vector.d.Vec3d;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.NetHandlerPlayServer;
 import net.minecraft.util.text.ITextComponent;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -46,7 +46,6 @@ import org.spongepowered.asm.mixin.Unique;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.net.FP2Network.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -91,6 +90,8 @@ public abstract class MixinNetHandlerPlayServer implements IFarPlayerServer {
         this.world.fp2_IFarWorld_scheduleTask(() -> { //TODO: move all logic to network threads
             if (packet instanceof CPacketClientConfig) {
                 this.handle((CPacketClientConfig) packet);
+            } else if (packet instanceof CPacketDebugDropAllTiles) {
+                this.handleDebug((CPacketDebugDropAllTiles) packet);
             } else {
                 throw new IllegalArgumentException("don't know how to handle " + className(packet));
             }
@@ -102,20 +103,6 @@ public abstract class MixinNetHandlerPlayServer implements IFarPlayerServer {
         this.updateConfig(this.serverConfig, packet.config());
     }
 
-    @DebugOnly
-    @CalledFromNetworkThread
-    @Override
-    public void fp2_IFarPlayerServer_handleDebug(@NonNull Object packet) {
-        this.world.fp2_IFarWorld_scheduleTask(() -> { //TODO: move all logic to network threads
-            if (packet instanceof CPacketDebugDropAllTiles) {
-                this.handleDebug((CPacketDebugDropAllTiles) packet);
-            } else {
-                throw new IllegalArgumentException("don't know how to handle " + className(packet));
-            }
-        });
-    }
-
-    @DebugOnly
     @Unique
     private void handleDebug(@NonNull CPacketDebugDropAllTiles packet) {
         this.world.fp2_IFarWorld_scheduleTask(() -> {
@@ -221,17 +208,9 @@ public abstract class MixinNetHandlerPlayServer implements IFarPlayerServer {
     }
 
     @Override
-    public void fp2_IFarPlayer_sendPacket(@NonNull IMessage packet) {
+    public void fp2_IFarPlayer_sendPacket(@NonNull IPacket packet) {
         if (!this.closed) {
-            PROTOCOL_FP2.sendTo(packet, this.player);
-        }
-    }
-
-    @DebugOnly
-    @Override
-    public void fp2_IFarPlayer_debugSendPacket(@NonNull IMessage packet) {
-        if (!this.closed) {
-            PROTOCOL_DEBUG.sendTo(packet, this.player);
+            FP2Network.sendToPlayer(packet, this.player);
         }
     }
 

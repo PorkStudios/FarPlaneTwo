@@ -23,13 +23,17 @@ package net.daporkchop.fp2.mode.heightmap;
 import io.github.opencubicchunks.cubicchunks.cubicgen.flat.FlatTerrainProcessor;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.config.FP2Config;
+import lombok.SneakyThrows;
+import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
+import net.daporkchop.fp2.core.util.registry.LinkedOrderedRegistry;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
@@ -43,14 +47,18 @@ import net.daporkchop.fp2.mode.heightmap.server.gen.rough.CWGFlatHeightmapGenera
 import net.daporkchop.fp2.mode.heightmap.server.gen.rough.CWGHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.rough.FlatHeightmapGenerator;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
-import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
-import net.daporkchop.fp2.core.util.registry.LinkedOrderedRegistry;
+import net.daporkchop.fp2.util.math.MathUtil;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.gen.ChunkGeneratorFlat;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -109,6 +117,36 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
     @Override
     public HeightmapPos readPos(@NonNull ByteBuf buf) {
         return new HeightmapPos(buf);
+    }
+
+    @Override
+    public HeightmapPos readPos(@NonNull DataIn in) throws IOException {
+        int level = in.readUnsignedByte();
+
+        long interleaved = in.readLong();
+        int x = MathUtil.uninterleave2_0(interleaved);
+        int z = MathUtil.uninterleave2_1(interleaved);
+        return new HeightmapPos(level, x, z);
+    }
+
+    @Override
+    @SneakyThrows(IOException.class)
+    public HeightmapPos readPos(@NonNull byte[] arr) {
+        return this.readPos(DataIn.wrap(ByteBuffer.wrap(arr)));
+    }
+
+    @Override
+    public void writePos(@NonNull DataOut out, @NonNull HeightmapPos pos) throws IOException {
+        out.writeByte(pos.level);
+        out.writeLong(MathUtil.interleaveBits(pos.x, pos.z));
+    }
+
+    @Override
+    @SneakyThrows(IOException.class)
+    public byte[] writePos(@NonNull HeightmapPos pos) {
+        byte[] arr = new byte[BYTE_SIZE + LONG_SIZE];
+        this.writePos(DataOut.wrap(ByteBuffer.wrap(arr)), pos);
+        return arr;
     }
 
     @Override

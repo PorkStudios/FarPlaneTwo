@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.voxel.ctx;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.of.OFHelper;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;

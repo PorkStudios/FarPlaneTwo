@@ -18,23 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.standard.server;
+package net.daporkchop.fp2.core.network;
 
-import io.netty.buffer.ByteBuf;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import lombok.NonNull;
 
 /**
- * Sent by the server to tell the client that FP2 is present on the remote server and that it should send its config to the server in order to continue
- * the handshake process.
- *
  * @author DaPorkchop_
  */
-public class SPacketHandshake implements IMessage {
-    @Override
-    public void fromBytes(ByteBuf buf) {
-    }
+public interface RegisterPacketsEvent {
+    RegisterPacketsEvent registerClientbound(@NonNull Class<? extends IPacket> clazz);
 
-    @Override
-    public void toBytes(ByteBuf buf) {
-    }
+    RegisterPacketsEvent registerServerbound(@NonNull Class<? extends IPacket> clazz);
 }

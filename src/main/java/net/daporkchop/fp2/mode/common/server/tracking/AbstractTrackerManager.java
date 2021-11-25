@@ -24,7 +24,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
@@ -56,6 +56,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -70,7 +71,7 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
 
     protected final Scheduler<AbstractTracker<POS, T, ?>, Void> scheduler; //TODO: make this global rather than per-mode and per-dimension
 
-    protected final int generationThreads = FP2Config.global().performance().terrainThreads();
+    protected final int generationThreads = fp2().globalConfig().performance().terrainThreads();
 
     public AbstractTrackerManager(@NonNull IFarTileProvider<POS, T> tileProvider) {
         this.tileProvider = tileProvider;
@@ -78,7 +79,7 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
         this.scheduler = new NoFutureScheduler<>(AbstractTracker::doUpdate,
                 ThreadingHelper.workerGroupBuilder()
                         .world(tileProvider.world())
-                        .threads(FP2Config.global().performance().trackingThreads())
+                        .threads(fp2().globalConfig().performance().trackingThreads())
                         .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
                                 .name(PStrings.fastFormat("FP2 %s DIM%d Tracker #%%d", tileProvider.mode().name(), ((IFarWorldServer) tileProvider.world()).fp2_IFarWorld_dimensionId())).build()));
 

@@ -18,47 +18,45 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.standard.server;
+package net.daporkchop.fp2.core.network.packet.debug.server;
 
-import io.netty.buffer.ByteBuf;
 import lombok.Getter;
-import net.daporkchop.fp2.config.FP2Config;
-import net.daporkchop.fp2.util.Constants;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import lombok.NonNull;
+import lombok.Setter;
+import net.daporkchop.fp2.core.debug.util.DebugStats;
+import net.daporkchop.fp2.core.network.IPacket;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
 
-import static net.daporkchop.lib.common.util.PorkUtil.*;
+import java.io.IOException;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public abstract class SPacketUpdateConfig<I extends SPacketUpdateConfig<I>> implements IMessage {
-    protected FP2Config config;
+@Setter
+public class SPacketDebugUpdateStatistics implements IPacket {
+    protected DebugStats.Tracking tracking;
 
-    public I config(FP2Config config) {
-        this.config = config;
-        return uncheckedCast(this);
+    @Override
+    public void read(@NonNull DataIn in) throws IOException {
+        this.tracking = DebugStats.Tracking.builder()
+                .tilesLoaded(in.readLongLE())
+                .tilesLoading(in.readLongLE())
+                .tilesQueued(in.readLongLE())
+                .tilesTrackedGlobal(in.readLongLE())
+                .avgUpdateDuration(in.readLongLE())
+                .lastUpdateDuration(in.readLongLE())
+                .build();
     }
 
     @Override
-    public void fromBytes(ByteBuf buf) {
-        this.config = FP2Config.fromJson(Constants.readString(buf));
-    }
-
-    @Override
-    public void toBytes(ByteBuf buf) {
-        Constants.writeString(buf, FP2Config.toJson(this.config));
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public static class Merged extends SPacketUpdateConfig<Merged> {
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public static class Server extends SPacketUpdateConfig<Server> {
+    public void write(@NonNull DataOut out) throws IOException {
+        out.writeLongLE(this.tracking.tilesLoaded());
+        out.writeLongLE(this.tracking.tilesLoading());
+        out.writeLongLE(this.tracking.tilesQueued());
+        out.writeLongLE(this.tracking.tilesTrackedGlobal());
+        out.writeLongLE(this.tracking.avgUpdateDuration());
+        out.writeLongLE(this.tracking.lastUpdateDuration());
     }
 }

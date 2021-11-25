@@ -20,35 +20,39 @@
 
 package net.daporkchop.fp2.net.packet.standard.server;
 
-import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
-import net.daporkchop.fp2.util.Constants;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
+
+import java.io.IOException;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
 @Setter
-public class SPacketTileData implements IMessage {
+public class SPacketTileData implements IPacket {
     @NonNull
     protected IFarRenderMode<?, ?> mode;
     @NonNull
     protected TileSnapshot<?, ?> tile;
 
     @Override
-    public void fromBytes(ByteBuf buf) {
-        this.mode = IFarRenderMode.REGISTRY.get(Constants.readString(buf));
-        this.tile = new TileSnapshot<>(buf, this.mode);
+    public void read(@NonNull DataIn in) throws IOException {
+        this.mode = IFarRenderMode.REGISTRY.get(in.readVarUTF());
+        this.tile = new TileSnapshot<>(in, this.mode);
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
-        Constants.writeString(buf, this.mode.name());
-        this.tile.write(buf);
+    public void write(@NonNull DataOut out) throws IOException {
+        out.writeVarUTF(this.mode.name());
+        this.tile.write(out, uncheckedCast(this.mode));
     }
 }

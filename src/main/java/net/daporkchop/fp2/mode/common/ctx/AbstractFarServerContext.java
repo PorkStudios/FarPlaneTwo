@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.common.ctx;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Synchronized;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
@@ -33,7 +33,7 @@ import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.tracking.IFarTracker;
 import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
-import net.daporkchop.fp2.net.packet.debug.server.SPacketDebugUpdateStatistics;
+import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.net.packet.standard.server.SPacketTileData;
 import net.daporkchop.fp2.net.packet.standard.server.SPacketUnloadTile;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
@@ -120,7 +120,7 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
         if (++this.debugLastUpdateSent == 20) { //send a debug statistics update packet once every 20s
             this.debugLastUpdateSent = 0;
 
-            this.player.fp2_IFarPlayer_debugSendPacket(new SPacketDebugUpdateStatistics().tracking(this.tracker.debugStats()));
+            this.player.fp2_IFarPlayer_sendPacket(new SPacketDebugUpdateStatistics().tracking(this.tracker.debugStats()));
         }
     }
 

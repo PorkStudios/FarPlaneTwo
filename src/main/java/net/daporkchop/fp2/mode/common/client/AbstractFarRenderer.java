@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.common.client;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
-import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.ResourceProvider1_12_2;
 import net.daporkchop.fp2.core.mode.api.IFarPos;

@@ -18,27 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.element;
+package net.daporkchop.fp2.core.network.packet.debug.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.client.gui.IGuiContext;
-import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.daporkchop.fp2.core.network.IPacket;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
 
-import static net.daporkchop.fp2.debug.FP2Debug.*;
+import java.io.IOException;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public class GuiDebugButton extends GuiSubmenuButton<FP2Config.Debug> {
-    public GuiDebugButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<FP2Config.Debug> access) {
-        super(context, access);
+public class CPacketDebugDropAllTiles implements IPacket {
+    @Override
+    public void read(@NonNull DataIn in) throws IOException {
+    }
 
-        if (!FP2_DEBUG) {
-            this.button.enabled = false;
-        }
+    @Override
+    public void write(@NonNull DataOut out) throws IOException {
     }
 }

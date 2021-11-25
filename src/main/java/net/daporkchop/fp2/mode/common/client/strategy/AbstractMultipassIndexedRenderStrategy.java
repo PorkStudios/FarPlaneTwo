@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.GlStateUniformAttributes;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
@@ -43,6 +43,7 @@ import net.daporkchop.fp2.mode.common.client.index.GPUCulledRenderIndex;
 import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
 import net.daporkchop.lib.common.util.PArrays;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
@@ -62,7 +63,7 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
 
     @Override
     public IRenderIndex<POS, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> createIndex() {
-        return false && FP2Config.global().performance().gpuFrustumCulling()
+        return false && fp2().globalConfig().performance().gpuFrustumCulling()
                 ? new GPUCulledRenderIndex<>(this)
                 : new CPUCulledRenderIndex<>(this);
     }

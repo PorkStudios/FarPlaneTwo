@@ -21,26 +21,28 @@
 package net.daporkchop.fp2.asm.core.client.network;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
-import net.daporkchop.fp2.net.packet.debug.server.SPacketDebugUpdateStatistics;
-import net.daporkchop.fp2.net.packet.standard.client.CPacketClientConfig;
-import net.daporkchop.fp2.net.packet.standard.server.SPacketHandshake;
+import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
+import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
+import net.daporkchop.fp2.net.FP2Network;
 import net.daporkchop.fp2.net.packet.standard.server.SPacketSessionBegin;
-import net.daporkchop.fp2.net.packet.standard.server.SPacketSessionEnd;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
 import net.daporkchop.fp2.net.packet.standard.server.SPacketTileData;
 import net.daporkchop.fp2.net.packet.standard.server.SPacketUnloadTile;
 import net.daporkchop.fp2.net.packet.standard.server.SPacketUnloadTiles;
-import net.daporkchop.fp2.net.packet.standard.server.SPacketUpdateConfig;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.network.NetworkManager;
@@ -54,6 +56,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Objects;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.net.FP2Network.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -82,9 +85,8 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
     @Unique
     private boolean sessionOpen;
 
-    @DebugOnly
     @Unique
-    private SPacketDebugUpdateStatistics debugServerStats;
+    private DebugStats.Tracking debugServerStats;
 
     @CalledFromNetworkThread
     @Override
@@ -105,6 +107,8 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
             this.handle((SPacketUpdateConfig.Merged) packet);
         } else if (packet instanceof SPacketUpdateConfig.Server) {
             this.handle((SPacketUpdateConfig.Server) packet);
+        } else if (packet instanceof SPacketDebugUpdateStatistics) {
+            this.handleDebug((SPacketDebugUpdateStatistics) packet);
         } else {
             throw new IllegalArgumentException("don't know how to handle " + className(packet));
         }
@@ -145,7 +149,7 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
 
-        this.context.tileCache().receiveTile(uncheckedCast(packet.tile().compressed()));
+        this.context.tileCache().receiveTile(uncheckedCast(packet.tile()));
     }
 
     @Unique
@@ -186,27 +190,19 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
         this.serverConfig = packet.config();
     }
 
-    @DebugOnly
-    @CalledFromNetworkThread
-    @Override
-    public void fp2_IFarPlayerClient_handleDebug(@NonNull Object packet) {
-        if (packet instanceof SPacketDebugUpdateStatistics) {
-            this.handleDebug((SPacketDebugUpdateStatistics) packet);
-        } else {
-            throw new IllegalArgumentException("don't know how to handle " + className(packet));
-        }
-    }
-
-    @DebugOnly
     @Unique
     private void handleDebug(@NonNull SPacketDebugUpdateStatistics packet) {
-        this.debugServerStats = packet;
+        this.debugServerStats = packet.tracking();
     }
 
-    @DebugOnly
+    @Override
+    public void fp2_IFarPlayerClient_send(@NonNull IPacket packet) {
+        FP2Network.sendToServer(packet);
+    }
+
     @CalledFromAnyThread
     @Override
-    public SPacketDebugUpdateStatistics fp2_IFarPlayerClient_debugServerStats() {
+    public DebugStats.Tracking fp2_IFarPlayerClient_debugServerStats() {
         return this.debugServerStats;
     }
 
@@ -227,7 +223,7 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
             if (this.handshakeReceived && this.clientReady) {
                 this.initialConfigSent = true;
 
-                PROTOCOL_FP2.sendToServer(new CPacketClientConfig().config(FP2Config.global()));
+                this.fp2_IFarPlayerClient_send(new CPacketClientConfig().config(fp2().globalConfig()));
             }
         }
     }
