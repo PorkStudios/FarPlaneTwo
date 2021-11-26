@@ -107,12 +107,6 @@ public class Constants {
     public static final boolean CC = !FP2_TEST && Loader.isModLoaded("cubicchunks");
     public static final boolean CWG = !FP2_TEST && Loader.isModLoaded("cubicgen");
 
-    public static final Cached<ArrayAllocator<byte[]>> ALLOC_BYTE = Cached.threadLocal(() -> ArrayAllocator.pow2(byte[]::new, ReferenceStrength.STRONG, 32), ReferenceStrength.WEAK);
-    public static final Cached<ArrayAllocator<int[]>> ALLOC_INT = Cached.threadLocal(() -> ArrayAllocator.pow2(int[]::new, ReferenceStrength.STRONG, 32), ReferenceStrength.WEAK);
-    public static final Cached<ArrayAllocator<float[]>> ALLOC_FLOAT = Cached.threadLocal(() -> ArrayAllocator.pow2(float[]::new, ReferenceStrength.STRONG, 32), ReferenceStrength.WEAK);
-    public static final Cached<ArrayAllocator<double[]>> ALLOC_DOUBLE = Cached.threadLocal(() -> ArrayAllocator.pow2(double[]::new, ReferenceStrength.STRONG, 32), ReferenceStrength.WEAK);
-    public static final Cached<ArrayAllocator<Object[]>> ALLOC_OBJECT = Cached.threadLocal(() -> ArrayAllocator.pow2(Object[]::new, ReferenceStrength.STRONG, 32), ReferenceStrength.WEAK);
-
     @SideOnly(Side.CLIENT)
     public static Minecraft MC;
 

@@ -47,7 +47,7 @@ import net.daporkchop.fp2.mode.heightmap.server.gen.rough.CWGFlatHeightmapGenera
 import net.daporkchop.fp2.mode.heightmap.server.gen.rough.CWGHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.rough.FlatHeightmapGenerator;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.math.MathUtil;
+import net.daporkchop.fp2.core.util.math.MathUtil;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 import net.minecraft.world.WorldServer;

@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.compat.vanilla;
 
-import net.daporkchop.fp2.util.IHeightMap;
+import net.daporkchop.fp2.core.util.IHeightMap;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.biome.Biome;

@@ -24,7 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IZoomingLayer;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
-import static net.daporkchop.fp2.util.math.MathUtil.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
 /**
  * Extension of {@link IZoomingLayer} for Java implementations.

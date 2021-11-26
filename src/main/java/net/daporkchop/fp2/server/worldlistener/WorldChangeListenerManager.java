@@ -23,13 +23,15 @@ package net.daporkchop.fp2.server.worldlistener;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.util.reference.ReferenceHandlerThread;
-import net.daporkchop.fp2.util.reference.WeakEqualityForwardingReference;
+import net.daporkchop.fp2.core.util.reference.WeakEqualityForwardingReference;
+import net.daporkchop.lib.common.reference.HandleableReference;
+import net.daporkchop.lib.common.reference.PReferenceHandler;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;
 
+import java.lang.ref.ReferenceQueue;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -60,7 +62,7 @@ public class WorldChangeListenerManager {
      * @param listener the {@link IWorldChangeListener} to add
      */
     public void addGlobal(@NonNull IWorldChangeListener listener) {
-        GLOBAL_ARENA.add(new ListenerWrapper(listener, GLOBAL_ARENA));
+        GLOBAL_ARENA.add(PReferenceHandler.createReference(listener, (referent, queue) -> new ListenerWrapper(referent, queue, GLOBAL_ARENA)));
     }
 
     /**
@@ -80,7 +82,7 @@ public class WorldChangeListenerManager {
      */
     public void add(@NonNull World world, @NonNull IWorldChangeListener listener) {
         Set<ListenerWrapper> arena = ARENAS.computeIfAbsent(world, COMPUTE_ARENA_FUNCTION);
-        arena.add(new ListenerWrapper(listener, arena));
+        arena.add(PReferenceHandler.createReference(listener, (referent, queue) -> new ListenerWrapper(referent, queue, arena)));
     }
 
     /**
@@ -155,17 +157,17 @@ public class WorldChangeListenerManager {
      *
      * @author DaPorkchop_
      */
-    private static class ListenerWrapper extends WeakEqualityForwardingReference<IWorldChangeListener> implements Runnable, Predicate<ListenerWrapper> {
+    private static class ListenerWrapper extends WeakEqualityForwardingReference<IWorldChangeListener> implements HandleableReference, Predicate<ListenerWrapper> {
         private final Set<ListenerWrapper> arena;
 
-        public ListenerWrapper(@NonNull IWorldChangeListener referent, @NonNull Set<ListenerWrapper> arena) {
-            super(referent, ReferenceHandlerThread.queue());
+        public ListenerWrapper(@NonNull IWorldChangeListener referent, ReferenceQueue<? super IWorldChangeListener> queue, @NonNull Set<ListenerWrapper> arena) {
+            super(referent, queue);
 
             this.arena = arena;
         }
 
         @Override
-        public void run() { //called by the reference handler thread after the listener is garbage collected
+        public void handle() { //called by the reference handler thread after the listener is garbage collected
             this.arena.removeIf(this);
         }
 

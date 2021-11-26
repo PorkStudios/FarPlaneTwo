@@ -34,7 +34,7 @@ import java.util.function.Consumer;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.fp2.util.math.MathUtil.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
 /**

@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.fp2.util.math.MathUtil.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
 /**
  * Base interface for a faster alternative to {@link GenLayer}.

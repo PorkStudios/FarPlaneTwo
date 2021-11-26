@@ -23,6 +23,7 @@ package net.daporkchop.fp2.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
+import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -34,7 +35,6 @@ import java.nio.FloatBuffer;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.compat.of.OFHelper.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.minecraft.util.math.MathHelper.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -113,7 +113,7 @@ public class GlStateUniformAttributes {
     }
 
     private void initModelViewProjectionMatrix() {
-        ArrayAllocator<float[]> alloc = ALLOC_FLOAT.get();
+        ArrayAllocator<float[]> alloc = GlobalAllocators.ALLOC_FLOAT.get();
 
         float[] modelView = alloc.atLeast(MAT4_ELEMENTS);
         float[] projection = alloc.atLeast(MAT4_ELEMENTS);

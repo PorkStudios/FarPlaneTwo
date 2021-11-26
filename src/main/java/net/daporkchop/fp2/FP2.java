@@ -32,7 +32,8 @@ import net.daporkchop.fp2.compat.x86.x86FeatureDetector;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.network.RegisterPacketsEvent;
-import net.daporkchop.fp2.debug.FP2Debug;
+import net.daporkchop.fp2.debug.client.DebugClientEvents;
+import net.daporkchop.fp2.debug.client.DebugKeyBindings;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.log.ChatAsPorkLibLogger;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.log.Log4jAsPorkLibLogger;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
@@ -48,6 +49,7 @@ import net.daporkchop.fp2.util.event.IdMappingsChangedEvent;
 import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Loader;
@@ -67,7 +69,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import static net.daporkchop.fp2.FP2.*;
-import static net.daporkchop.fp2.debug.FP2Debug.*;
+import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -93,10 +95,22 @@ public class FP2 extends FP2Core implements ResourceProvider {
         FP2_LOG.info("Detected x86 SIMD extension: {}", x86FeatureDetector.INSTANCE.maxSupportedVectorExtension());
 
         FP2Network.preInit();
-        FP2Debug.preInit();
+
+        if (FP2_DEBUG) {
+            bigWarning("FarPlaneTwo debug mode enabled!");
+
+            if (this.hasClient()) {
+                ConfigListenerManager.add(() -> FP2Client.GLOBAL_SHADER_MACROS
+                        .define("FP2_DEBUG_COLORS_ENABLED", fp2().globalConfig().debug().debugColors().enable())
+                        .define("FP2_DEBUG_COLORS_MODE", fp2().globalConfig().debug().debugColors().ordinal()));
+
+                MinecraftForge.EVENT_BUS.register(new DebugClientEvents());
+            }
+        }
+
         FP2Server.preInit();
 
-        if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
+        if (this.hasClient()) {
             FP2Client.preInit();
         }
     }
@@ -105,11 +119,13 @@ public class FP2 extends FP2Core implements ResourceProvider {
     public void init(FMLInitializationEvent event) {
         FP2Server.init();
 
-        if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
+        if (this.hasClient()) {
             FP2Client.init();
         }
 
-        FP2Debug.init();
+        if (FP2_DEBUG && this.hasClient()) {
+            DebugKeyBindings.register();
+        }
     }
 
     @Mod.EventHandler
@@ -117,7 +133,7 @@ public class FP2 extends FP2Core implements ResourceProvider {
         ConfigListenerManager.fire();
         FP2Server.postInit();
 
-        if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
+        if (this.hasClient()) {
             FP2Client.postInit();
         }
     }

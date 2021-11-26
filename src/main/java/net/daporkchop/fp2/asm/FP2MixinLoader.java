@@ -29,7 +29,7 @@ import org.spongepowered.asm.mixin.Mixins;
 import javax.annotation.Nullable;
 import java.util.Map;
 
-import static net.daporkchop.fp2.debug.FP2Debug.*;
+import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 
 /**
  * @author DaPorkchop_

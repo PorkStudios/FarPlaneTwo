@@ -30,16 +30,16 @@ import net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper;
 import net.daporkchop.fp2.compat.vanilla.biome.IBiomeProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.weight.BiomeWeightHelper;
 import net.daporkchop.fp2.compat.vanilla.biome.weight.VanillaBiomeWeightHelper;
+import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.math.grid.Grid3d;
 import net.daporkchop.lib.math.interpolation.Interpolation;
 import net.daporkchop.lib.math.interpolation.LinearInterpolation;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeProvider;
 
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.fp2.util.math.MathUtil.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -256,7 +256,7 @@ public class CWGContext {
     }
 
     protected void get3d_resampleXYZ(@NonNull double[] out, int baseY) {
-        ArrayAllocator<double[]> alloc = ALLOC_DOUBLE.get();
+        ArrayAllocator<double[]> alloc = GlobalAllocators.ALLOC_DOUBLE.get();
 
         int cacheBaseY = baseY & ~GTV_MASK;
         int cacheHeight = asrCeil(this.cacheSize, 1) + 2;
@@ -287,7 +287,7 @@ public class CWGContext {
     protected void get3d_resampleY(@NonNull double[] out, int baseY) {
         checkState(this.cacheSize == this.size, "cacheSize (%d) != size (%d)", this.cacheSize, this.size);
 
-        ArrayAllocator<double[]> alloc = ALLOC_DOUBLE.get();
+        ArrayAllocator<double[]> alloc = GlobalAllocators.ALLOC_DOUBLE.get();
 
         int cacheBaseY = baseY & ~GTV_MASK;
         int cacheHeight = asrCeil(this.size, 1);

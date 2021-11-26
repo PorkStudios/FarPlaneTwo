@@ -28,7 +28,7 @@ import net.minecraft.world.biome.Biome;
 
 import java.util.Arrays;
 
-import static net.daporkchop.fp2.util.math.MathUtil.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
 /**
  * Implementation of {@link IBiomeProvider} which uses a constant, fixed biome.

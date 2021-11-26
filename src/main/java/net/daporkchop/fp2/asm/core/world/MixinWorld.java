@@ -31,7 +31,7 @@ import org.spongepowered.asm.mixin.Unique;
 import java.util.stream.IntStream;
 
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.fp2.util.math.MathUtil.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 

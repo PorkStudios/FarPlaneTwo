@@ -20,7 +20,7 @@
 
 package util.math;
 
-import net.daporkchop.fp2.util.math.MathUtil;
+import net.daporkchop.fp2.core.util.math.MathUtil;
 import org.junit.Test;
 
 import java.util.concurrent.ThreadLocalRandom;

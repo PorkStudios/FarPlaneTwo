@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.voxel.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.TextureUVs;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
+import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
@@ -45,7 +46,7 @@ import java.util.stream.Stream;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.fp2.util.math.MathUtil.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
 /**
  * Shared code for baking voxel geometry.
@@ -109,7 +110,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         //write globals
         output.globals().set(new VoxelGlobalAttributes(pos.x(), pos.y(), pos.z(), pos.level()));
 
-        ArrayAllocator<int[]> alloc = ALLOC_INT.get();
+        ArrayAllocator<int[]> alloc = GlobalAllocators.ALLOC_INT.get();
         int[] map = alloc.atLeast(cb(T_VERTS) * EDGE_COUNT);
         Arrays.fill(map, 0, cb(T_VERTS) * EDGE_COUNT, -1);
 

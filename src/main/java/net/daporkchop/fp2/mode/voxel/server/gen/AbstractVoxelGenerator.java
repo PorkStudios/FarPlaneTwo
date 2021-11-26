@@ -27,7 +27,7 @@ import net.daporkchop.lib.common.reference.cache.Cached;
 import net.minecraft.world.WorldServer;
 
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.fp2.util.math.MathUtil.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
 /**
  * @author DaPorkchop_

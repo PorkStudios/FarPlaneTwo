@@ -24,11 +24,12 @@ import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.weight.BiomeWeightHelper;
+import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.biome.BiomeProvider;
 
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.fp2.util.math.MathUtil.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -45,7 +46,7 @@ public class FastThreadSafeBiomeProvider implements IBiomeProvider {
 
     @Override
     public void generateBiomes(int x, int z, int level, int size, @NonNull int[] biomes) {
-        ArrayAllocator<int[]> alloc = ALLOC_INT.get();
+        ArrayAllocator<int[]> alloc = GlobalAllocators.ALLOC_INT.get();
         if (level == 0) { //max zoom level, the values are tightly packed so we just need to sample a single grid
             this.biomeLayer.getGrid(alloc, x, z, size, size, biomes);
         } else if (level == 1) {
@@ -92,7 +93,7 @@ public class FastThreadSafeBiomeProvider implements IBiomeProvider {
         this.generateBiomes(x, z, level, size, biomes);
 
         //generate biomes on generation-scale grid to compute weights
-        ArrayAllocator<int[]> alloc = ALLOC_INT.get();
+        ArrayAllocator<int[]> alloc = GlobalAllocators.ALLOC_INT.get();
 
         int shift = GTH_SHIFT - level;
         int smoothRadius = weightHelper.smoothRadius();
@@ -114,7 +115,7 @@ public class FastThreadSafeBiomeProvider implements IBiomeProvider {
     }
 
     protected void generateBiomesAndWeightedHeightsVariations_lowres(int x, int z, int level, int size, @NonNull int[] biomes, @NonNull double[] heights, @NonNull double[] variations, @NonNull BiomeWeightHelper weightHelper) {
-        ArrayAllocator<int[]> alloc = ALLOC_INT.get();
+        ArrayAllocator<int[]> alloc = GlobalAllocators.ALLOC_INT.get();
 
         int smoothRadius = weightHelper.smoothRadius();
         int smoothDiameter = weightHelper.smoothDiameter();

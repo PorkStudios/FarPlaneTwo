@@ -28,7 +28,7 @@ import net.minecraft.world.gen.layer.GenLayerHills;
 
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper.*;
 import static net.daporkchop.fp2.compat.vanilla.biome.BiomeHelperCached.*;
-import static net.daporkchop.fp2.util.math.MathUtil.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
 /**
  * @author DaPorkchop_

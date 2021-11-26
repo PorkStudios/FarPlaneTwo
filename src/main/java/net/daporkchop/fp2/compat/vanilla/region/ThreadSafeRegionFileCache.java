@@ -22,7 +22,7 @@ package net.daporkchop.fp2.compat.vanilla.region;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.util.FastByteArrayOutputStream;
+import net.daporkchop.fp2.core.util.FastByteArrayOutputStream;
 import net.daporkchop.lib.common.function.io.IOBiFunction;
 import net.daporkchop.lib.common.function.io.IOFunction;
 import net.daporkchop.lib.common.misc.string.PStrings;

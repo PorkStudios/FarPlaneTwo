@@ -29,8 +29,8 @@ import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.core.util.SimpleRecycler;
-import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
-import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
+import net.daporkchop.fp2.core.util.threading.futurecache.GenerationNotAllowedException;
+import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
 
@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.debug.FP2Debug.*;
+import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**

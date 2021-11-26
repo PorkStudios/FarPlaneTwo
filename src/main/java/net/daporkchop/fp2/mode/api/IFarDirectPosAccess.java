@@ -23,8 +23,8 @@ package net.daporkchop.fp2.mode.api;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.util.datastructure.SimpleSet;
-import net.daporkchop.fp2.util.math.geometry.Volume;
+import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
+import net.daporkchop.fp2.core.util.math.geometry.Volume;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 

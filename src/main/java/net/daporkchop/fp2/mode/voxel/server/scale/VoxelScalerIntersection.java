@@ -27,10 +27,8 @@ import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.util.BlockType;
-import net.daporkchop.fp2.util.math.Vector3d;
-import net.daporkchop.fp2.util.math.qef.QefSolver;
-import net.minecraft.block.Block;
+import net.daporkchop.fp2.core.util.math.Vector3d;
+import net.daporkchop.fp2.core.util.math.qef.QefSolver;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;

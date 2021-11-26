@@ -22,9 +22,11 @@ package net.daporkchop.fp2.config.listener;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.util.reference.ReferenceHandlerThread;
-import net.daporkchop.fp2.util.reference.WeakEqualityForwardingReference;
+import net.daporkchop.fp2.core.util.reference.WeakEqualityForwardingReference;
+import net.daporkchop.lib.common.reference.HandleableReference;
+import net.daporkchop.lib.common.reference.PReferenceHandler;
 
+import java.lang.ref.ReferenceQueue;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
@@ -52,7 +54,7 @@ public class ConfigListenerManager {
      * @param listener the {@link IConfigListener}
      */
     public void add(@NonNull IConfigListener listener) {
-        ACTIVE_LISTENERS.add(new ListenerWrapper(listener));
+        ACTIVE_LISTENERS.add(PReferenceHandler.<IConfigListener, ListenerWrapper>createReference(listener, ListenerWrapper::new));
     }
 
     /**
@@ -76,13 +78,13 @@ public class ConfigListenerManager {
      *
      * @author DaPorkchop_
      */
-    private static class ListenerWrapper extends WeakEqualityForwardingReference<IConfigListener> implements Runnable, Predicate<ListenerWrapper> {
-        public ListenerWrapper(@NonNull IConfigListener referent) {
-            super(referent, ReferenceHandlerThread.queue());
+    private static class ListenerWrapper extends WeakEqualityForwardingReference<IConfigListener> implements HandleableReference, Predicate<ListenerWrapper> {
+        public ListenerWrapper(@NonNull IConfigListener referent, ReferenceQueue<? super IConfigListener> queue) {
+            super(referent, queue);
         }
 
         @Override
-        public void run() { //called by the reference handler thread after the listener is garbage collected
+        public void handle() { //called by the reference handler thread after the listener is garbage collected
             ACTIVE_LISTENERS.removeIf(this);
         }
 

@@ -27,6 +27,7 @@ import net.daporkchop.fp2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IPaddedLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.IZoomingLayer;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
+import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.WorldType;
@@ -65,7 +66,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -266,14 +266,14 @@ public class TestFastBiomeGen {
 
         List<CompletableFuture<int[]>> gridFutures = Stream.of(layers).map(layer -> CompletableFuture.supplyAsync(() -> {
             int[] grid = new int[sizeX * sizeZ];
-            layer.layer.getGrid(ALLOC_INT.get(), x, z, sizeX, sizeZ, grid);
+            layer.layer.getGrid(GlobalAllocators.ALLOC_INT.get(), x, z, sizeX, sizeZ, grid);
             return grid;
         })).collect(Collectors.toList());
 
         List<CompletableFuture<int[]>> singleFutures = !testSingle ? null : Stream.of(layers).map(layer -> CompletableFuture.supplyAsync(() -> {
             int[] grid = new int[sizeX * sizeZ];
             IntStream.range(0, sizeX).parallel().forEach(dx -> {
-                ArrayAllocator<int[]> alloc1 = ALLOC_INT.get();
+                ArrayAllocator<int[]> alloc1 = GlobalAllocators.ALLOC_INT.get();
                 for (int i = dx * sizeZ, dz = 0; dz < sizeZ; dz++) {
                     grid[i++] = layer.layer.getSingle(alloc1, x + dx, z + dz);
                 }
@@ -332,7 +332,7 @@ public class TestFastBiomeGen {
 
         List<CompletableFuture<int[]>> fastFutures = Stream.of(layers).map(layer -> CompletableFuture.supplyAsync(() -> {
             int[] grids = new int[count * count * size * size];
-            layer.layer.multiGetGrids(ALLOC_INT.get(), x, z, size, dist, 0, count, grids);
+            layer.layer.multiGetGrids(GlobalAllocators.ALLOC_INT.get(), x, z, size, dist, 0, count, grids);
             return grids;
         })).collect(Collectors.toList());
 

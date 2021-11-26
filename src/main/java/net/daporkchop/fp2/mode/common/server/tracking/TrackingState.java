@@ -26,9 +26,9 @@ import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.lib.math.vector.d.Vec3d;
 
-import static net.daporkchop.fp2.debug.FP2Debug.*;
+import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.fp2.util.math.MathUtil.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
 /**
  * Immutable container with the information required for an {@link AbstractTrackerManager} implementation to know which tiles to load for a given player.

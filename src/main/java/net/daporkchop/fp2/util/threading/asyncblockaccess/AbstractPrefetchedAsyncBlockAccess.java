@@ -23,18 +23,14 @@ package net.daporkchop.fp2.util.threading.asyncblockaccess;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
-import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
 
-import javax.annotation.Nullable;
 import java.util.function.Function;
 import java.util.stream.Stream;
 

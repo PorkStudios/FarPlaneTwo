@@ -27,7 +27,7 @@ import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import static net.daporkchop.fp2.debug.FP2Debug.*;
+import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 
 /**
  * @author DaPorkchop_

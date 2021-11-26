@@ -33,8 +33,8 @@ import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.fp2.util.annotation.RemovalPolicy;
-import net.daporkchop.fp2.util.datastructure.RecyclingArrayDeque;
-import net.daporkchop.fp2.util.datastructure.SimpleSet;
+import net.daporkchop.fp2.core.util.datastructure.RecyclingArrayDeque;
+import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -49,7 +49,7 @@ import java.util.function.Consumer;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.fp2.util.math.MathUtil.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 

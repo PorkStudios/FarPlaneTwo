@@ -25,6 +25,7 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.ReversedZ;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.common.util.TypeSize;
+import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -34,7 +35,6 @@ import java.nio.FloatBuffer;
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
 
@@ -99,7 +99,7 @@ public class MatrixHelper {
     }
 
     public void getModelViewProjectionMatrix(long dst) {
-        ArrayAllocator<float[]> alloc = ALLOC_FLOAT.get();
+        ArrayAllocator<float[]> alloc = GlobalAllocators.ALLOC_FLOAT.get();
 
         float[] modelView = alloc.atLeast(MAT4_ELEMENTS);
         float[] projection = alloc.atLeast(MAT4_ELEMENTS);

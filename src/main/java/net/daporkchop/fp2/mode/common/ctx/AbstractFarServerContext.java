@@ -44,7 +44,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
-import static net.daporkchop.fp2.debug.FP2Debug.*;
+import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**

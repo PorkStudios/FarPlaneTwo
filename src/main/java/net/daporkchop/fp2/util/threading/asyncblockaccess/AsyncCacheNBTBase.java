@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.util.threading.asyncblockaccess;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.reference.WeakSelfRemovingReference;
-import net.daporkchop.fp2.util.threading.futurecache.AsyncCacheBase;
+import net.daporkchop.fp2.core.util.reference.WeakSelfRemovingReference;
+import net.daporkchop.fp2.core.util.threading.futurecache.AsyncCacheBase;
 import net.daporkchop.lib.primitive.map.concurrent.ObjObjConcurrentHashMap;
 import net.minecraft.nbt.NBTTagCompound;
 
@@ -49,7 +49,7 @@ public abstract class AsyncCacheNBTBase<K, P, V> extends AsyncCacheBase<K, V> {
      * @param nbt the new NBT data
      */
     public void notifyUpdate(@NonNull K key, @NonNull NBTTagCompound nbt) {
-        this.nbt.put(key, new WeakSelfRemovingReference<>(nbt, key, this.nbt));
+        this.nbt.put(key, WeakSelfRemovingReference.create(nbt, key, this.nbt));
         super.invalidate(key);
     }
 
